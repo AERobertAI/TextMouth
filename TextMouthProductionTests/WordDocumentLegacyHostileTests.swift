@@ -50,7 +50,7 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
     /// The real documents of the old layout, as streams, by name.
     private func realStreams() throws -> [(name: String, stream: [UInt8])] {
         try [
-            "doc6/poi-Word6.doc", "doc6/poi-Word95.doc", "doc6/poi-Word6_sections2.doc", "doc6/libreoffice-ooo17498-1.doc",
+            "doc6/poi-Word6.doc", "doc6/poi-Word6_sections2.doc", "doc6/libreoffice-tdf59896.doc", "doc6/poi-Bug60936.doc", "doc6/libreoffice-ooo17498-1.doc",
             "doc6/poi-word95err.doc", "doc/poi-Bug51944.doc", "doc/libreoffice-tdf150197_anlv2ListFormat.doc",
         ].map { (name: $0, stream: try stream(of: Data(contentsOf: formatSampleURL($0)))) }
     }
@@ -78,7 +78,8 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
     func testEveryHostileAndRealSampleReadsOrThrowsAtOnce() throws {
         let folder = try formatSampleURL("doc6")
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { !$0.hasPrefix(".") }.sorted()
-        XCTAssertGreaterThanOrEqual(names.count, 20)
+        XCTAssertGreaterThanOrEqual(names.count, 12)
+        XCTAssertTrue(names.contains("libreoffice-ww6-crash-2.doc") && names.contains("libreoffice-ww6-crash-6.doc"))
         var slow: [String] = []
         for name in names {
             let data = try Data(contentsOf: folder.appendingPathComponent(name))

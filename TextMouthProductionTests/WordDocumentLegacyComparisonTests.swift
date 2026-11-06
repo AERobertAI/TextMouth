@@ -18,7 +18,7 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
 
     /// The real samples of the old layout, as paths under the format samples.
     private static let samples = [
-        "doc6/poi-Word6.doc", "doc6/poi-Word6_sections.doc", "doc6/poi-Word6_sections2.doc", "doc6/poi-Word95.doc",
+        "doc6/poi-Word6.doc", "doc6/poi-Word6_sections.doc", "doc6/poi-Word6_sections2.doc", "doc6/poi-Bug60936.doc", "doc6/libreoffice-tdf59896.doc",
         "doc6/poi-word95err.doc",
         "doc6/libreoffice-ooo17498-1.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
         "doc6/libreoffice-ooo17498-4.doc", "doc6/libreoffice-ooo8726-1.doc",
@@ -32,7 +32,7 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
     /// characters: textutil reads the Simplified Chinese one as Shift JIS half-width katakana, the Korean one as
     /// another set of characters, and reads nothing at all of the two Traditional Chinese ones.
     private static let readInTheRightCodePageNotTextutils: Set<String> = [
-        "doc6/poi-word95err.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
+        "doc6/poi-word95err.doc", "doc6/poi-Bug60936.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
         "doc6/libreoffice-ooo17498-4.doc", "doc6/libreoffice-ooo8726-1.doc",
     ]
 

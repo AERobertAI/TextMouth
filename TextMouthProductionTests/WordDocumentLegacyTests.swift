@@ -55,12 +55,18 @@ final class WordDocumentLegacyTests: XCTestCase {
         XCTAssertEqual(try sampleBody("poi-Word6.doc"), "<p>The quick brown fox jumps over the lazy dog</p>\n")
     }
 
-    func testWord95ReadsItsParagraphsAndLeavesTheCodePageToTheWesternFonts() throws {
-        // Its font table holds Far East fonts beside the Western ones, and its text is Western.
-        let body = try sampleBody("poi-Word95.doc")
-        XCTAssertTrue(body.contains("<p>The quick brown fox jumps over the lazy dog</p>"), body)
-        XCTAssertTrue(body.contains("Paragraph 2"), body)
-        XCTAssertTrue(body.contains("Paragraph 3."), body)
+    func testTheCzechSampleIsReadInCentralEuropeanBecauseOfTheFontOfItsLetters() throws {
+        // The language says English; the one font of a Central European set ("inherit", chs 238) holds every
+        // high character of the text, so the document's default is Windows-1250: "před", not "pøed".
+        XCTAssertEqual(try sampleBody("poi-Bug60936.doc"), "<p>4 skóre a před 7 lety</p>\n")
+    }
+
+    func testTheSampleWhoseBinTableListsOnePageReadsTheFormattingOfThePagesThatFollow() throws {
+        // The bin table lists one page of runs; the FIB says four hold them. Bold runs on the second and
+        // the third are read.
+        let body = try sampleBody("libreoffice-tdf59896.doc")
+        XCTAssertTrue(body.contains("<strong>QuickTime folder</strong>"), body)
+        XCTAssertTrue(body.contains("<strong>Support and Training folder</strong>"), body)
     }
 
     func testTheSectionSamplesReadTheirTextWhateverTheirSectionsDo() throws {
