@@ -138,20 +138,22 @@ enum WordDocumentReader {
             return (body, writer.wroteCountedCharacter)
         }
 
-        // The main story is the book, and the footnotes and endnotes follow it,
-        // as they follow it in textutil's reading, so their words are not
-        // lost; headers, comments, and text boxes are left out, since a
-        // header would repeat page furniture at the end of the book. Only when
-        // the main story holds no words at all (a document whose text is in a
-        // text box, or a header) are all the stories after it read, in the
-        // order the file keeps them, as textutil reads them.
+        // The main story is the book. The footnotes, the endnotes, and the
+        // text boxes of the main story follow it, in that order, as they
+        // follow it in textutil's reading, so their words are not lost: a
+        // person reading the document sees them. The headers, the comments,
+        // and the text boxes of the headers are left out, since a header
+        // would repeat page furniture at the end of the book. Only when the
+        // main story holds no words at all (a document whose text is in a
+        // header, say) are all the stories after it read, in the order the
+        // file keeps them, as textutil reads them.
         let main = 0..<textEnd
         var written = try write([main])
         if !written.hasWords {
             if pieces.characterCount > textEnd { written = try write([0..<pieces.characterCount]) }
         } else {
-            let notes = try fib.noteRanges(limit: pieces.characterCount)
-            if !notes.isEmpty { written = try write([main] + notes) }
+            let following = try fib.followingStoryRanges(limit: pieces.characterCount)
+            if !following.isEmpty { written = try write([main] + following) }
         }
         let body = written.body
 

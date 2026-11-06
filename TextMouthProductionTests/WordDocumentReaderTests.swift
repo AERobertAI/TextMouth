@@ -328,10 +328,23 @@ final class WordDocumentReaderTests: XCTestCase {
         return builder
     }
 
-    func testAMainStoryWithWordsIsFollowedByItsFootnotesAndEndnotesAndNothingElse() throws {
-        // Headers, comments, and text boxes are left out; the notes follow, as in textutil's reading.
+    func testAMainStoryWithWordsIsFollowedByItsNotesAndTextBoxesAndNothingElse() throws {
+        // Headers, comments, and the text boxes of headers are left out; the
+        // footnotes, the endnotes, and the text boxes follow, as in textutil's reading.
         let body = try body(of: storyDocument(main: [Paragraph("Main words.")]).build())
-        XCTAssertEqual(body, "<p>Main words.</p>\n<p>Footnote words.</p>\n<p>Endnote words.</p>\n")
+        XCTAssertEqual(body, "<p>Main words.</p>\n<p>Footnote words.</p>\n<p>Endnote words.</p>\n<p>Textbox words.</p>\n")
+    }
+
+    func testTextBoxesFollowTheNotesInTheOrderOfTheirStories() throws {
+        // Only text boxes, then boxes with a second paragraph, a table, and a hidden word.
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Main words.")]
+        builder.stories = [.textBoxes: [Paragraph("Box one."), Paragraph(runs: [Run("Box "), Run("secret ", hidden: 1), Run("two.")])]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n<p>Box two.</p>\n")
+        builder.stories = [.headerTextBoxes: [Paragraph("Header box.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n")
+        builder.stories = [.endnotes: [Paragraph("End.")], .textBoxes: [Paragraph("Box.")], .footnotes: [Paragraph("Foot.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Foot.</p>\n<p>End.</p>\n<p>Box.</p>\n")
     }
 
     func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {

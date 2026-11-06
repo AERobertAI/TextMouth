@@ -108,19 +108,28 @@ struct WordFileInformationBlock {
         )
     }
 
-    /// The stories of footnotes and of endnotes, as character positions
-    /// (the stories are laid end to end after the main text: footnotes,
-    /// headers, macros, comments, endnotes, text boxes, header text boxes),
-    /// each cut at `limit`, the characters the document holds; empty ones are
-    /// left out. A FIB too short to give the lengths gives none.
-    func noteRanges(limit: Int) throws -> [Range<Int>] {
+    /// The stories a person reading the document sees after its main text:
+    /// the footnotes, the endnotes, and the main document's text boxes, as
+    /// character positions in that order. (The stories are laid end to end
+    /// after the main text: footnotes, headers, macros, comments, endnotes,
+    /// text boxes, header text boxes. The headers, the comments, and the
+    /// header text boxes are page furniture or notes to the author and are
+    /// not read.) Each is cut at `limit`, the characters the document holds,
+    /// and an empty one is left out. A FIB too short to give the lengths
+    /// gives none.
+    func followingStoryRanges(limit: Int) throws -> [Range<Int>] {
         guard longValueCount >= 9 else { return [] }
-        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText.
-        let lengths = try (1...5).map { try stream.u32(longValuesOffset + (3 + $0) * 4) }
+        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText, and
+        // ccpTxbx follows them when the FIB is long enough to hold it.
+        let lengths = try (1...6).map { index -> Int in
+            index + 3 < longValueCount ? try stream.u32(longValuesOffset + (3 + index) * 4) : 0
+        }
         let footnotes = mainTextLength..<mainTextLength + lengths[0]
         let endnotesStart = mainTextLength + lengths[0] + lengths[1] + lengths[2] + lengths[3]
         let endnotes = endnotesStart..<endnotesStart + lengths[4]
-        return [footnotes, endnotes].compactMap { range in
+        let textBoxesStart = endnotesStart + lengths[4]
+        let textBoxes = textBoxesStart..<textBoxesStart + lengths[5]
+        return [footnotes, endnotes, textBoxes].compactMap { range in
             // A story that begins past the characters the document holds has none.
             guard range.lowerBound < limit else { return nil }
             let cut = range.lowerBound..<min(range.upperBound, limit)
