@@ -347,6 +347,17 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Foot.</p>\n<p>End.</p>\n<p>Box.</p>\n")
     }
 
+    func testTheRealSampleWithTextBoxesReadsThemAfterTheMainText() throws {
+        // The notice's body ends with the Mayor's name; the contact details
+        // of the text boxes follow it, and the last box ends the reading.
+        let body = try sampleBody("doc/poi-textboxes.doc", pages: false)
+        let main = try XCTUnwrap(body.range(of: "mgr inż. Jacek Brygman"), body)
+        let box = try XCTUnwrap(body.range(of: "inwestycje.cekcyn@las.pl"), body)
+        let last = try XCTUnwrap(body.range(of: "ww.ekomel.com.pl"), body)
+        XCTAssertLessThan(main.lowerBound, box.lowerBound)
+        XCTAssertLessThan(box.lowerBound, last.lowerBound)
+    }
+
     func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {
         var builder = storyDocument(main: [Paragraph("Main words.")])
         builder.stories = [.endnotes: [Paragraph("Endnote one."), Paragraph("Endnote two.")], .headers: [Paragraph("Header.")]]
