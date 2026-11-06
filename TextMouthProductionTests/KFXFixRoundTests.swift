@@ -183,7 +183,7 @@ final class KFXFixRoundTests: XCTestCase {
         let pipe = sdr.appendingPathComponent("pipe.kfx")
         XCTAssertEqual(mkfifo(pipe.path, 0o600), 0)
         // A pipe with no writer would block an open for good: this returns at once.
-        assertQuick("pipe") {
+        try assertQuick("pipe") {
             XCTAssertEqual(try? KFXSignature.kind(ofFileAt: pipe), .other)
             XCTAssertEqual(try KFXParser.prepareBook(url: main).chapters.count, 1)
         }
@@ -197,7 +197,7 @@ final class KFXFixRoundTests: XCTestCase {
         let azw = url.deletingLastPathComponent().appendingPathComponent("Bought.azw")
         try FileManager.default.copyItem(at: url, to: azw)
         // A limit far below the file's size, as the real one is far below a 70 MB file's.
-        DocumentByteLimit.$current.withValue(1_000) {
+        try DocumentByteLimit.$current.withValue(1_000) {
             XCTAssertThrowsError(try KFXParser.prepareBook(url: url)) { XCTAssertEqual($0 as? MOBIError, .copyProtected) }
             XCTAssertThrowsError(try MOBIParser.prepareBook(url: azw)) { XCTAssertEqual($0 as? MOBIError, .copyProtected) }
         }
