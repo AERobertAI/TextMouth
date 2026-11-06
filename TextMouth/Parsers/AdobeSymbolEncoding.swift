@@ -48,6 +48,14 @@ enum AdobeSymbolEncoding {
         0xF8F8, 0xF8F9, 0xF8FA, 0xF8FB, 0xF8FC, 0xF8FD, 0xF8FE, 0,  // 0xF8
     ]
 
+    /// The character Word shows for the code `code` of the Symbol font, or nil when there is none a voice can
+    /// speak: the encoding's (`scalar(forCode:)`), except code 190. That is the extender of a horizontal
+    /// arrow, and Word's authors use it for a long dash: in the real documents it stands alone between two words
+    /// ("goals" and "achieve"), where the dash is, and nothing in them uses it as an arrow's shaft. It is U+2014.
+    static func wordScalar(forCode code: Int) -> Unicode.Scalar? {
+        code == 190 ? "\u{2014}" : scalar(forCode: code)
+    }
+
     /// The scalar the code `code` (0 to 255) is, or nil when the encoding defines none or only a
     /// private-use one.
     static func scalar(forCode code: Int) -> Unicode.Scalar? {

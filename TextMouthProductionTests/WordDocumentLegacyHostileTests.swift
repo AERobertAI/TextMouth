@@ -131,6 +131,19 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
         }
     }
 
+    func testTheCountsOfPagesOfFormattingAtTheLargestReadAtOnce() throws {
+        // `cpnBteChp` and `cpnBtePap` (0x18E and 0x190) say how many pages of formatting follow the last the bin table lists.
+        for (name, stream) in try realStreams() + builtStreams() where stream.count > 0x192 {
+            for offset in [0x18E, 0x190] {
+                for value in [0xFFFF, 0x7FFF, 0x1000, 1, 0] {
+                    var damaged = stream
+                    damaged.replaceSubrange(offset..<offset + 2, with: [UInt8(value & 0xFF), UInt8(value >> 8)])
+                    XCTAssertLessThan(read(file(holding: damaged)), limit, "\(name): count at \(String(offset, radix: 16)) = \(value)")
+                }
+            }
+        }
+    }
+
     func testRandomByteFlipsOfRealAndBuiltDocumentsReadOrThrowAtOnce() throws {
         var generator = SeededGenerator(state: 0x6F66_6669_6365)
         for (name, stream) in try realStreams() + builtStreams() {
@@ -207,6 +220,23 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
                                                    characterSprms: index % 2 == 0 ? Builder.bold() : []))
             }
             builder.paragraphs = (0..<length).map { Paragraph("paragraph \($0)", style: first + $0) }
+            return builder.build()
+        }
+    }
+
+    func testRunsInManyFontsAndSymbolsGrowInStep() {
+        // Every run names a font of fifty (the code page of each stretch is found from them), and a symbol follows it.
+        assertLinear(300, "runs with fonts and symbols") { count in
+            var builder = Builder()
+            builder.fontCharacterSets = (0..<50).map { [0, 204, 161, 2][$0 % 4] }
+            builder.fontNames = (0..<50).map { $0 % 4 == 3 ? "Symbol" : "Font\($0)" }
+            builder.paragraphs = (0..<count).map { index in
+                Paragraph(runs: [
+                    Run("word ", sprms: Builder.sprm(93, [UInt8(index % 50), 0])),
+                    Run("(", sprms: Builder.sprm(74, [3, 3, 0, 0x61])),
+                    Run("\u{E9} text"),
+                ])
+            }
             return builder.build()
         }
     }

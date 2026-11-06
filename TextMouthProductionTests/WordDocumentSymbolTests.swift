@@ -95,6 +95,18 @@ final class WordDocumentSymbolTests: XCTestCase {
         XCTAssertEqual(try body([Paragraph(runs: [Run("x"), Run("(", sprms: []), Run("y")])]), "<p>x(y</p>\n")
     }
 
+    func testTextInTheSymbolFontIsInTheSymbolEncoding() throws {
+        // Typed in the font named Symbol, "a", "b", and "c" are alpha, beta, and chi; textutil reads them so, and a listener
+        // must hear the letter that is shown.
+        let inSymbol = Builder.sprm(93, [1, 0])
+        XCTAssertEqual(try body([Paragraph(runs: [Run("abc", sprms: inSymbol)])]), "<p>\u{03B1}\u{03B2}\u{03C7}</p>\n")
+        // Mixed with text of another font, and with a placeholder in the same font (whose "(" is not a letter of Symbol).
+        let mixed = [Run("angle "), Run("a", sprms: inSymbol), Run(" and 28"), Run("(", sprms: inSymbol + symbol(font: 1, code: 0xB0)), Run("C")]
+        XCTAssertEqual(try body([Paragraph(runs: mixed)]), "<p>angle \u{03B1} and 28\u{00B0}C</p>\n")
+        // A code with no character a voice can speak is a space; the paragraph mark stays a mark.
+        XCTAssertEqual(try body([Paragraph(runs: [Run("x"), Run("\u{E6}", sprms: inSymbol), Run("y")])]), "<p>x y</p>\n")
+    }
+
     func testASymbolInHiddenOrDeletedTextIsNotRead() throws {
         for sprms in [Builder.hidden(), Builder.deleted()] {
             let run = Run("(", sprms: symbol(font: 1, code: 0xB0) + sprms)

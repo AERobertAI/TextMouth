@@ -8,6 +8,9 @@ import Foundation
 /// language of the document says. The rule, in order, for the text of a run:
 /// 1. the run's own mark (`sprmCChse`): 256 is the Macintosh's (Mac Roman), else the FIB's mark for
 ///    a Macintosh document;
+/// 0. text in the font named Symbol is in the Symbol encoding (its letters are Greek, its other characters
+///    mathematical): `AdobeSymbolEncoding`. A run that holds a symbol of Insert Symbol is not: its "(" is a
+///    placeholder (`WordHTMLWriter`);
 /// 2. the character set of the run's font, if it names a code page. The font is the run's own
 ///    (`sprmCFtc`), else its character style's, else its paragraph style's, else the sheet's default,
 ///    each through the styles it is based on. A Far East font names none: whether the characters are
@@ -24,6 +27,9 @@ import Foundation
 /// each character asks a cursor that moves forward, so the cost grows with the runs and the text.
 /// Damaged tables give the document's default.
 struct WordLegacyCodePages {
+
+    /// The name by which the decoding of the Symbol font stands among the tables (no code page has it).
+    private static let symbolFontIdentifier = "adobe-symbol"
 
     /// The decoding tables in use (single byte to code unit); the first is the document's default.
     private let tables: [[UInt16]]
@@ -76,10 +82,12 @@ struct WordLegacyCodePages {
             let isMacintosh: Bool
             let isWindowsMarked: Bool
             let fontPage: String?
+            let isSymbolFont: Bool
         }
         var stretches: [Stretch] = []
         var characterCursor = characterRuns.cursor()
         var paragraphCursor = paragraphs.cursor()
+        let symbolFonts = characters.fonts.symbolFonts
         var usage: [String: Int] = [:]
         var otherHighCharacters = 0
         for (start, end) in zip(boundaries, boundaries.dropFirst()) where start < end {
@@ -88,18 +96,23 @@ struct WordLegacyCodePages {
             let isMacintosh = character.characterSet.map { $0 == 256 } ?? characters.isMacintosh
             // The run's font, by its set.
             var fontPage: String?
-            if let font = styles.fontIndex(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontIndex),
+            var isSymbolFont = false
+            let font = styles.fontIndex(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontIndex)
+            if let font, symbolFonts.contains(font), character.symbolFont == nil {
+                isSymbolFont = true
+            } else if let font,
                characters.fonts.characterSets.indices.contains(font),
                let page = WordLegacyCharacters.codePage(ofFontCharacterSet: characters.fonts.characterSets[font]),
                !WordLegacyCharacters.doubleByteCodePages.contains(page) {
                 fontPage = page
             }
-            let high = pieces.countBytesAbove7F(in: start..<end, document: document)
+            let high = isSymbolFont ? 0 : pieces.countBytesAbove7F(in: start..<end, document: document)
             if high > 0 {
                 if let fontPage { usage[fontPage, default: 0] += high } else { otherHighCharacters += high }
             }
             stretches.append(Stretch(
-                range: start..<end, isMacintosh: isMacintosh, isWindowsMarked: character.characterSet == 0, fontPage: fontPage
+                range: start..<end, isMacintosh: isMacintosh, isWindowsMarked: character.characterSet == 0, fontPage: fontPage,
+                isSymbolFont: isSymbolFont
             ))
         }
 
@@ -115,17 +128,23 @@ struct WordLegacyCodePages {
         var tables: [[UInt16]] = []
         func index(of identifier: String) -> Int {
             if let known = identifiers.firstIndex(of: identifier) { return known }
-            let encoding = WordLegacyCharacters.encoding(named: identifier)
-                ?? WordLegacyCharacters.encoding(named: TextEncodingCatalog.windows1252Identifier) ?? .windowsCP1252
             identifiers.append(identifier)
-            tables.append(WordLegacyCharacters.table(for: encoding))
+            if identifier == Self.symbolFontIdentifier {
+                tables.append(WordLegacyCharacters.symbolFontTable())
+            } else {
+                let encoding = WordLegacyCharacters.encoding(named: identifier)
+                    ?? WordLegacyCharacters.encoding(named: TextEncodingCatalog.windows1252Identifier) ?? .windowsCP1252
+                tables.append(WordLegacyCharacters.table(for: encoding))
+            }
             return identifiers.count - 1
         }
         _ = index(of: defaultPage)
         var joined: [(range: Range<Int>, table: Int)] = []
         for stretch in stretches {
             let page: String
-            if stretch.isMacintosh {
+            if stretch.isSymbolFont {
+                page = Self.symbolFontIdentifier
+            } else if stretch.isMacintosh {
                 page = "macintosh"
             } else if let fontPage = stretch.fontPage {
                 page = fontPage
