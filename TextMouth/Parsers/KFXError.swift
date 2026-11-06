@@ -8,10 +8,6 @@ import Foundation
 /// sentence a listener can act on; none names the file, which an import's
 /// failure does (`ImportFailure`).
 enum KFXError: LocalizedError, Equatable {
-    /// The file is a DRM-free KFX container, which no layer of the reader
-    /// walks yet. The first layer of the reader (recognize and refuse) ends
-    /// here; the case goes when the walk is in.
-    case notReadableYet
     /// The file is a Kindle Create package (a ZIP holding a `.kdf` database,
     /// the file Kindle Create and Kindle Previewer write for an author).
     /// TextMouth does not read it; it is a later item.
@@ -26,8 +22,6 @@ enum KFXError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .notReadableYet:
-            return "This Kindle book is in the newer KFX format, which TextMouth can't read yet."
         case .kindleCreatePackage:
             return "This file is a Kindle Create package, which TextMouth can't read yet."
         case .noFlowingText:

@@ -167,10 +167,10 @@ final class KFXRecognitionTests: XCTestCase {
         assertRefused(url, MOBIError.copyProtected, sentence: Self.protectedSentence)
     }
 
-    func testASetOfPlainContainersIsRefusedUntilTheWalkExists() throws {
+    func testASetWhoseContainerStopsShortIsDamaged() throws {
         let url = try archive([TestZIPEntry("Book.kfx", Data(containerBytes))], named: "set.kfx-zip")
         XCTAssertThrowsError(try KFXParser.prepareBook(url: url)) {
-            XCTAssertEqual($0 as? KFXError, .notReadableYet)
+            guard case .damaged = $0 as? MOBIError else { return XCTFail("\($0)") }
         }
     }
 

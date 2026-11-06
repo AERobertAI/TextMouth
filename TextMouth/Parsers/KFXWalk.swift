@@ -63,6 +63,8 @@ struct KFXWalk {
     private let targets: KFXTargets
     /// The heading level the book's headings container gives a node.
     private let headingLevels: [Int: Int]
+    /// The most nodes the walk visits.
+    private let nodeLimit: Int
     /// The nodes walked so far in the book.
     private var nodeCount = 0
     /// The HTML written so far in the book.
@@ -75,7 +77,12 @@ struct KFXWalk {
     /// - Parameters:
     ///   - targets: The places the navigation and links point at.
     ///   - headingLevels: The level the headings container gives a node, by id.
-    init(fragments: KFXFragments, targets: KFXTargets = KFXTargets(), headingLevels: [Int: Int] = [:]) {
+    ///   - maximumNodes: The most nodes the walk visits in all; a test gives a small one.
+    init(
+        fragments: KFXFragments, targets: KFXTargets = KFXTargets(), headingLevels: [Int: Int] = [:],
+        maximumNodes: Int = KFXWalk.maximumNodes
+    ) {
+        self.nodeLimit = maximumNodes
         self.fragments = fragments
         self.styles = KFXStyles(fragments)
         self.targets = targets
@@ -195,7 +202,7 @@ struct KFXWalk {
             return
         }
         nodeCount += 1
-        guard nodeCount <= Self.maximumNodes else { throw MOBIError.damaged("the book holds more nodes than TextMouth reads") }
+        guard nodeCount <= nodeLimit else { throw MOBIError.damaged("the book holds more nodes than TextMouth reads") }
 
         let type = node[KFXSymbol.nodeType]?.symbolID
         if type == KFXSymbol.hiddenContent || type == KFXSymbol.vectorGraphic || type == KFXSymbol.plugin { return }
