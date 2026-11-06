@@ -84,6 +84,7 @@ extension ReaderViewModel {
                 threshold: bookmarkProximityThreshold,
                 chapterLength: chapterLength
             )
+            let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
             libraryViewModel.addBookmark(
                 bookID: book.id,
                 chapterIndex: currentChapterIndex,
@@ -92,7 +93,7 @@ extension ReaderViewModel {
                 anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: adjustedOffset))
             )
             bookmarks = libraryViewModel.bookmarksForBook(book.id)
-            announceToVoiceOver("Bookmark \(bookmarks.count) added")
+            announceBookmarkAdded(bookmarks.first { !existingIDs.contains($0.id) })
         }
     }
 
@@ -160,8 +161,28 @@ extension ReaderViewModel {
             anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
-        announceToVoiceOver("Bookmark \(bookmarks.count) added")
-        return bookmarks.first { !existingIDs.contains($0.id) }
+        let added = bookmarks.first { !existingIDs.contains($0.id) }
+        announceBookmarkAdded(added)
+        return added
+    }
+
+    /// What VoiceOver says when no bookmark could be added because the
+    /// library holds no record of the book, as when the book was removed
+    /// while its reader was open.
+    static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
+        "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library. Nothing was changed."
+    }
+
+    /// Says which bookmark was added, by the number it was given, or that
+    /// none was when `added` is nil. The number is the new bookmark's own,
+    /// never a count of the bookmarks, so it names the bookmark that was
+    /// made, and a command that added nothing never claims a bookmark.
+    private func announceBookmarkAdded(_ added: Bookmark?) {
+        if let added {
+            announceToVoiceOver("Bookmark \(added.number) added")
+        } else {
+            announceToVoiceOver(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
+        }
     }
 
     /// Update the user-facing label on an existing bookmark

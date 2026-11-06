@@ -55,6 +55,48 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertNil(added)
     }
 
+    /// The announcement names the number of the bookmark added, not how
+    /// many bookmarks there are: with bookmarks numbered 1 and 4, the new
+    /// one is 5, though the book then holds three (the bookmark work's
+    /// follow-up). The toggle and the panel's Add say it the same way.
+    func testAddingABookmarkAnnouncesItsOwnNumber() {
+        let gapped = [
+            Bookmark(number: 1, chapterIndex: 0, characterOffset: 10),
+            Bookmark(number: 4, chapterIndex: 1, characterOffset: 10),
+        ]
+        let reader = makeReader(bookmarks: gapped)
+        defer { reader.close() }
+
+        let panelAdd = recordingAnnouncements {
+            reader.addBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(panelAdd.announcements.map(\.message), ["Bookmark 5 added"])
+
+        // A position well away from the others toggles a new one in.
+        reader.currentChapterIndex = 3
+        reader.currentCharacterOffset = 900
+        let toggled = recordingAnnouncements {
+            reader.toggleBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(toggled.announcements.map(\.message), ["Bookmark 6 added"])
+    }
+
+    /// A command that adds nothing, because the library holds no record of
+    /// the book, says so in a full sentence rather than claiming a bookmark.
+    func testAddingABookmarkForAnUnknownBookSaysNothingWasAdded() {
+        let reader = makeReader(isInLibrary: false)
+        defer { reader.close() }
+
+        let recorded = recordingAnnouncements {
+            reader.addBookmarkAtCurrentPosition()
+            reader.toggleBookmarkAtCurrentPosition()
+        }
+
+        let expected = ReaderViewModel.bookmarkNotAddedAnnouncement(bookTitle: "Bookmark Focus")
+        XCTAssertEqual(recorded.announcements.map(\.message), [expected, expected])
+        XCTAssertTrue(expected.contains("no longer in the library"))
+    }
+
     // MARK: - Where focus goes
 
     /// The panel lists bookmarks by number, the order they were added in.
