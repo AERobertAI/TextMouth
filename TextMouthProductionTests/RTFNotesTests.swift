@@ -172,6 +172,23 @@ final class RTFNotesTests: XCTestCase {
         XCTAssertEqual(try paragraphs(source), ["Body.", "Outer note."])
     }
 
+    /// A note whose reference is in a text box is read, as the reference is
+    /// seen: after the main text, in the file's order, where a DOCX reads it.
+    /// A note in a note in a box is not read, and a reference in hidden text in
+    /// the box brings no note.
+    func testANoteWhoseReferenceIsInATextBoxIsRead() throws {
+        let source = #"""
+            {\rtf1\ansi A{\shp{\*\shpinst{\shptxt Boxed{\super\chftn{\footnote\pard\plain Box note.}}\par}}}B{\super\chftn{\footnote\pard\plain Body note.}}\par}
+            """#
+        XCTAssertEqual(try paragraphs(source), ["AB", "Boxed", "Box note.", "Body note."])
+        let hidden = #"{\rtf1\ansi A{\shp{\*\shpinst{\shptxt Boxed{\v{\footnote\pard\plain Unseen.}}\par}}}B\par}"#
+        XCTAssertEqual(try paragraphs(hidden), ["AB", "Boxed"])
+        let inner = #"{\rtf1\ansi A{\shp{\*\shpinst{\shptxt Boxed{\footnote\pard\plain Outer {\footnote inner} note.}\par}}}B\par}"#
+        XCTAssertEqual(try paragraphs(inner), ["AB", "Boxed", "Outer note."])
+        // A note and a box left open at the end of the file are both finished.
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi A{\shp{\*\shpinst{\shptxt Boxed{\footnote\pard\plain Open"#), ["A", "Boxed", "Open"])
+    }
+
     /// A note's words go through the same escaping as any text.
     func testANotesTextIsEscaped() throws {
         let html = try rtfHTML(#"{\rtf1\ansi Body{\footnote\pard\plain <b>Fish</b> & chips.}.\par}"#)

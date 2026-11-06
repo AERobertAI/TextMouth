@@ -288,22 +288,95 @@ struct RTFBlockBuilder {
 
     /// Adds the text of shapes' text boxes right after the paragraph or cell
     /// that has just ended and held their anchors: as blocks of the body, or as
-    /// paragraphs of the cell (a cell holds paragraphs, not blocks).
+    /// paragraphs of the cell (a cell holds paragraphs, not blocks). The pages
+    /// that wait begin at the first letter or digit written, the box's when
+    /// the paragraph held none of its own (a paragraph with nothing but a
+    /// shape), as they would at the paragraph's.
     /// - Parameters:
     ///   - inTable: whether the paragraph that ended is in a table's cell.
     ///   - afterCell: whether a `\cell` ended it, so that the cell has been
     ///     closed into its row.
     mutating func appendBoxBlocks(_ boxes: [RTFBlock], inTable: Bool, afterCell: Bool) {
+        var boxes = boxes
         guard inTable else {
+            for index in boxes.indices {
+                if placePendingBreaks(in: &boxes[index]) { break }
+            }
             blocks.append(contentsOf: boxes)
             return
         }
-        let paragraphs = RTFHTMLWriter.paragraphs(of: boxes).filter(\.hasWords)
+        var paragraphs = RTFHTMLWriter.paragraphs(of: boxes).filter(\.hasWords)
+        for index in paragraphs.indices {
+            if placePendingBreaks(in: &paragraphs[index]) { break }
+        }
         if afterCell, !row.isEmpty {
             row[row.count - 1].append(contentsOf: paragraphs)
         } else {
             cell.append(contentsOf: paragraphs)
         }
+    }
+
+    /// Settles what words of a text box settle (a section break that waits)
+    /// and writes the waiting page breaks before its first letter or digit,
+    /// as `appendText` does for the words of the body.
+    /// - Returns: whether the block held a letter or a digit, so that it has
+    ///   been settled and the blocks after it need not be looked at.
+    private mutating func placePendingBreaks(in block: inout RTFBlock) -> Bool {
+        switch block {
+        case .paragraph(var paragraph):
+            let settled = placePendingBreaks(in: &paragraph)
+            block = .paragraph(paragraph)
+            return settled
+        case .heading(var paragraph, let level):
+            let settled = placePendingBreaks(in: &paragraph)
+            block = .heading(paragraph, level: level)
+            return settled
+        case .listItem(var paragraph, let level, let numbered):
+            let settled = placePendingBreaks(in: &paragraph)
+            block = .listItem(paragraph, level: level, numbered: numbered)
+            return settled
+        case .table(var table):
+            var settled = false
+            search: for row in table.rows.indices {
+                for cell in table.rows[row].indices {
+                    for index in table.rows[row][cell].indices {
+                        settled = placePendingBreaks(in: &table.rows[row][cell][index])
+                        if settled { break search }
+                    }
+                }
+            }
+            block = .table(table)
+            return settled
+        }
+    }
+
+    /// `placePendingBreaks(in:)` for one paragraph.
+    private mutating func placePendingBreaks(in paragraph: inout RTFParagraph) -> Bool {
+        for index in paragraph.inlines.indices {
+            guard case .text(let text, let bold, let italic, let size) = paragraph.inlines[index] else { continue }
+            if text.contains(where: { !$0.isWhitespace }) { resolveSectionBreak() }
+            let words = Substring(text)
+            guard let split = firstCountedIndex(in: words) else { continue }
+            if pendingBreaks > 0 {
+                // The text before the first letter or digit, then the pages
+                // that begin there, then the rest.
+                var inlines: [RTFInline] = []
+                let before = words[..<split]
+                if !before.isEmpty {
+                    inlines.append(.text(String(before), bold: bold, italic: italic, size: size))
+                }
+                for _ in 0..<pendingBreaks {
+                    pageNumber += 1
+                    inlines.append(.pageBreak(pageNumber))
+                }
+                pendingBreaks = 0
+                inlines.append(.text(String(words[split...]), bold: bold, italic: italic, size: size))
+                paragraph.inlines.replaceSubrange(index...index, with: inlines)
+            }
+            hasCountedText = true
+            return true
+        }
+        return false
     }
 
     // MARK: Tables

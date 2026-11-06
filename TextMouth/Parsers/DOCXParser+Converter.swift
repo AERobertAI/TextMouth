@@ -500,7 +500,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // A table may begin a section, and a page pending when an
             // outermost one begins is written before it (PG07)
             pageTracker?.beginBlock()
-            writePendingPageBeforeTable()
+            writePendingPageAsBlock()
             // Start of a table, at the top level or inside a cell
             tables.append(TableInProgress())
         case "tr":
@@ -702,6 +702,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private struct FinishedBox {
         var markdown: String
         var texts: [String]?
+
+        /// Whether the box holds a character other than white space, so that
+        /// a page that waits begins at it.
+        var hasWords: Bool {
+            markdown.contains { !$0.isWhitespace } || (texts?.contains { $0.contains { !$0.isWhitespace } } ?? false)
+        }
     }
 
     /// What the converter held outside a text box while the box is read.
@@ -758,12 +764,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// Writes the text boxes anchored in the paragraph that has just ended,
     /// after it: in the cell the paragraph is in, in the box it is in, or as
     /// blocks of the page's flow. A list the paragraph was in is ended by
-    /// them.
+    /// them. A page still pending (the paragraph held no words of its own)
+    /// begins at the first box that has words, as it would at the paragraph's.
     private func writePendingBoxes() {
         let boxes = paragraph.pendingBoxes
         guard !boxes.isEmpty else { return }
         paragraph.pendingBoxes = []
         for box in boxes {
+            if box.hasWords { placePendingPageBeforeBox() }
             if let texts = box.texts {
                 for text in texts {
                     if !tables.isEmpty {
@@ -1307,7 +1315,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     }
 
     /// The text of a cell of a Markdown table: the text of its paragraphs,
-    /// joined by spaces and trimmed.
+    /// joined by spaces and trimmed. A table row is one line of Markdown, so
+    /// a line break inside a paragraph (`w:br`) is a space here: a newline
+    /// would end the row, and the rest of the cell would be read as a row of
+    /// its own, after a pipe the listener would hear.
     private static func cellText(_ cell: ReadTable.Cell) -> String {
         cell.compactMap { content -> String? in
             if case .text(let text) = content {
@@ -1315,6 +1326,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             }
             return nil
         }
+        .flatMap { $0.split(whereSeparator: \.isNewline) }
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
         .joined(separator: " ")
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -1472,12 +1486,25 @@ extension DOCXToMarkdownConverter {
         return page.joinsWords
     }
 
-    /// A page pending when an outermost table begins is a block before it. The
-    /// table ends any list, so the list is closed first.
-    fileprivate func writePendingPageBeforeTable() {
+    /// A page pending when an outermost table begins, or when a text box with
+    /// words is written outside any table, is a block before it. The block
+    /// ends any list, so the list is closed first.
+    fileprivate func writePendingPageAsBlock() {
         guard tables.isEmpty, let page = pageTracker?.takePendingMarker() else { return }
         paragraph.openListItems.removeAll()
         MarkdownMarkerWriter.write(page.marker.markdown, inline: false, into: &markdown)
+    }
+
+    /// A page pending when a text box with words is written begins at the
+    /// box (the paragraph that held its anchor had none): a block before it,
+    /// or, in a table, kept for after the table, whose Markdown cannot hold a
+    /// comment between its rows (`placePendingPage`).
+    private func placePendingPageBeforeBox() {
+        if tables.isEmpty {
+            writePendingPageAsBlock()
+        } else if let page = pageTracker?.takePendingMarker() {
+            tableTrailingMarker = page.marker.markdown
+        }
     }
 
     /// Write, as a block after the outermost table that has just been written,
