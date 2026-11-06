@@ -72,8 +72,9 @@ extension XCTestCase {
         let outcome = TimedOutcome<T>()
         let done = DispatchSemaphore(value: 0)
         // A thread of its own with a large stack, as the main thread has.
+        let carried = CarriedWork(work)
         let thread = Thread {
-            outcome.result = Result { try ImportCancellation.$current.withValue(cancellation) { try work() } }
+            outcome.result = Result { try ImportCancellation.$current.withValue(cancellation) { try carried.work() } }
             done.signal()
         }
         thread.stackSize = 8 << 20
@@ -171,6 +172,16 @@ extension TextPipelineFixtures {
     /// readers' samples change too.
     static func isComparedByODTTests(_ name: String) -> Bool {
         name.hasPrefix("format-samples/odt/libreoffice-")
+    }
+}
+
+/// A test's work on its way to the thread that runs it. The test waits for that
+/// thread, or gives up on it, so nothing else touches the work meanwhile.
+private final class CarriedWork<T>: @unchecked Sendable {
+    let work: () throws -> T
+
+    init(_ work: @escaping () throws -> T) {
+        self.work = work
     }
 }
 
