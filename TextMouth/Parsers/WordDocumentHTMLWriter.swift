@@ -333,19 +333,16 @@ struct WordHTMLWriter {
 
     /// What the placeholder `scalar` of a run `format` stands for. A symbol (`sprmCSymbol`) is stored as
     /// the text "(" with the font and the code of the character it shows; what is read there is:
-    /// - the character of the Symbol encoding, for a font named Symbol (`AdobeSymbolEncoding`), where the
-    ///   encoding gives a character a voice can speak; code 190 (the extender of a horizontal arrow) is
-    ///   read as a long dash, U+2014, because it is what Word's authors use it for: in the real documents
-    ///   it stands alone between two words ("goals" and "achieve"), where the dash is, and nothing in
-    ///   the text uses it as an arrow's shaft;
+    /// - the character of the Symbol encoding, for a font named Symbol (`AdobeSymbolEncoding.wordScalar(forCode:)`:
+    ///   the code 190, an arrow's extender, is a long dash there, with the reason), where the encoding gives a
+    ///   character a voice can speak;
     /// - a space for a symbol of any other font (Wingdings and the like: pictures with no words, between
     ///   which the words on either side must not run together) and for a code Symbol has no character for.
     /// A "(" with no symbol, or any other text with one, is left as it is.
     private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat) -> Unicode.Scalar {
         guard scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter else { return scalar }
         guard symbolFonts.contains(font) else { return " " }
-        if code == 190 { return "\u{2014}" }
-        return AdobeSymbolEncoding.scalar(forCode: code) ?? " "
+        return AdobeSymbolEncoding.wordScalar(forCode: code) ?? " "
     }
 
     /// Notes white space, written when the next character that is not white

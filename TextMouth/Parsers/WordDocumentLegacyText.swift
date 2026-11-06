@@ -62,6 +62,18 @@ struct WordLegacyCharacters {
         }
     }
 
+    /// The code unit of each single byte of text in the font named Symbol: the Adobe Symbol encoding
+    /// (`AdobeSymbolEncoding.wordScalar(forCode:)`) from 0x20 up, a space for a code with no character a voice can
+    /// speak, and the control bytes as themselves (a line feed a line break, as in every table).
+    static func symbolFontTable() -> [UInt16] {
+        (0..<256).map { byte in
+            if byte == 0x0A { return 0x0B }
+            if byte < 0x20 { return UInt16(byte) }
+            guard let scalar = AdobeSymbolEncoding.wordScalar(forCode: byte), scalar.value <= 0xFFFF else { return 0x20 }
+            return UInt16(scalar.value)
+        }
+    }
+
     /// The code unit `encoding` gives the single byte `byte`, or nil if it is not a character of it.
     private static func unit(ofByte byte: UInt8, in encoding: String.Encoding) -> UInt16? {
         guard let text = String(data: Data([byte]), encoding: encoding), text.utf16.count == 1,
