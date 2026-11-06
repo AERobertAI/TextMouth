@@ -472,6 +472,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 // A page break starts a page where it stands (PG07). The
                 // words around it are kept apart by the marker, not a newline.
                 cutRun(joinsWords: true)
+            } else if name == "br" && attributes["w:type"] == "page" && lineEndsWithBreak {
+                // Where there are no pages a page break is a line break, but not a
+                // blank line after the line break that is already there (it would
+                // split the paragraph; with pages the same two breaks are one)
             } else {
                 paragraph.runText += "\n"
             }
@@ -1011,6 +1015,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runSkipsText = false
         paragraph.runCount += 1
         updateRunHidden()
+    }
+
+    /// Whether the line being gathered (the paragraph, or the label of the link
+    /// being read) ends with a line break, the run in progress included.
+    private var lineEndsWithBreak: Bool {
+        if let last = paragraph.runText.last { return last == "\n" }
+        let line = paragraph.isInHyperlink ? paragraph.linkLine : paragraph.line
+        return line.last == "\n"
     }
 
     /// Whether the run being read is read by nobody: hidden, or inside text a

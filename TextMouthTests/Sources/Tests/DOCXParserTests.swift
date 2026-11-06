@@ -144,10 +144,11 @@ test("DOCX Markdown contains bold-italic text") {
     try assertTrue(markdown.contains("***Critical observation***"), "Should contain bold-italic text")
 }
 
-test("DOCX Markdown contains strikethrough text") {
+test("DOCX Markdown contains struck text, written plain") {
     let url = try requireFile("test_book.docx")
     let markdown = try parseDOCXToMarkdown(from: url)
-    try assertTrue(markdown.contains("~~"), "Should contain strikethrough markers")
+    try assertTrue(markdown.contains("The old semaphore codes are no longer required knowledge"), "Should contain the struck sentence")
+    try assertTrue(!markdown.contains("~"), "Should hold no tilde: strikethrough is written as plain text")
 }
 
 test("DOCX Markdown contains bullet list items") {

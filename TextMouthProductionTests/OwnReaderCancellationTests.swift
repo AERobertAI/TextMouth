@@ -164,7 +164,9 @@ final class OwnReaderCancellationTests: XCTestCase {
         let folder = docx.deletingLastPathComponent()
         let before = try FileManager.default.contentsOfDirectory(atPath: folder.path)
         let running = ImportCancellation()
-        let markdown = try ImportCancellation.$current.withValue(running) { try DOCXParser.extractMarkdown(from: docx) }
+        let markdown = try ImportCancellation.$current.withValue(running) {
+            try DOCXParser.extractMarkdown(from: docx, includesPages: false)
+        }
         XCTAssertEqual(markdown, "Some words")
         let cancelled = ImportCancellation()
         cancelled.cancel()
