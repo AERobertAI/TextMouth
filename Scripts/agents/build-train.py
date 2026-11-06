@@ -43,6 +43,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -66,6 +67,9 @@ WORKTREE = ROOT / ".claude" / "worktrees" / "train"
 # the sweep took the cache's precompiled modules (.pcm) between loops, and the next train failed
 # before testing. The ".noindex" ending keeps Spotlight from indexing a gigabyte of build products.
 DERIVED = TRAIN_DIR / "DerivedData.noindex"
+# How long a run may write nothing to its log before its test host counts as
+# hung and is killed: longer than any one test has ever taken.
+HUNG_RUN_MINUTES = 15
 BBS = ROOT / ".claude" / "skills" / "agent-bbs" / "scripts" / "bbs.py"
 XCODEGEN = "/opt/homebrew/bin/xcodegen"
 DEFAULT_BASE = "train/base"
@@ -266,6 +270,27 @@ def errors_in_branch(errors, base, branch):
     return [error for error in errors if any(name in error for name in names)]
 
 
+def watch_for_a_hung_run(log, finished):
+    """Kills the train's test host when the run's log has stopped growing, until
+    `finished` is set. Runs on a thread of its own.
+
+    A test that waits forever never fails, so xcodebuild waits with it, and every
+    agent's request waits behind the heavy-work lock: on November 6, 2026 one
+    unbounded `await` held a train for 90 minutes. Killing the host fails that test
+    as a crash, and xcodebuild goes on with the tests after it. The pattern is the
+    host under the train's own derived data, so it never matches the user's
+    installed app. A quiet compile has no host to kill, so it is left alone."""
+    host = str(DERIVED / "Build" / "Products" / "Debug" / "TextMouth.app" / "Contents" / "MacOS" / "TextMouth")
+    while not finished.wait(60):
+        try:
+            idle = time.time() - log.stat().st_mtime
+        except OSError:
+            continue  # The run has not written its log yet.
+        if idle >= HUNG_RUN_MINUTES * 60 and subprocess.run(["pkill", "-9", "-f", host], check=False).returncode == 0:
+            post("orchestrator", f"build-train: a test wrote nothing for {HUNG_RUN_MINUTES} minutes, "
+                                 f"so its test host was killed; see the end of {log}", tag="notice")
+
+
 def run_tests(merged, train_dir):
     """Runs the union of the merged requests' areas and classes; returns run-area's
     output. Names the merged tree does not know are left out, and each request
@@ -286,8 +311,14 @@ def run_tests(merged, train_dir):
     # agent can start a build of its own; the train itself runs outside them.
     command += ["--jobs", "2", "--no-slot", "--derived-data", str(DERIVED), "--log", str(train_dir / "run.log")]
     (train_dir / "command.txt").write_text(" ".join(command) + "\n")
-    result = subprocess.run(command, cwd=WORKTREE, capture_output=True, text=True,
-                            env={**os.environ, "BBS_AGENT": "build-train"})
+    # A test that hangs must not hold the train, and every agent behind it, for ever.
+    finished = threading.Event()
+    threading.Thread(target=watch_for_a_hung_run, args=(train_dir / "run.log", finished), daemon=True).start()
+    try:
+        result = subprocess.run(command, cwd=WORKTREE, capture_output=True, text=True,
+                                env={**os.environ, "BBS_AGENT": "build-train"})
+    finally:
+        finished.set()
     output = result.stdout + result.stderr
     (train_dir / "run-summary.txt").write_text(output)
     return output
