@@ -552,9 +552,16 @@ struct WordDocumentBuilder {
         }
         // The LVLF: start, format, flags, the placeholders (nine bytes), what follows, and sizes.
         var bytes = le32(level.start) + [UInt8(level.numberFormat)]
-        bytes.append((level.isLegal ? 0x04 : 0) | (level.restartLimit != nil ? 0x08 : 0))
+        let legal: UInt8 = level.isLegal ? 0x04 : 0
+        let noRestart: UInt8 = level.restartLimit != nil ? 0x08 : 0
+        bytes.append(legal | noRestart)
         bytes += (placeholders + [UInt8](repeating: 0, count: 9)).prefix(9)
-        bytes += [0] + le32(0) + le32(0) + [0, 0, UInt8(level.restartLimit ?? 0), 0]
+        // ixchFollow (a tab), dxaIndentSav and an unused field (4 bytes each), then the
+        // sizes of the two property lists (none), ilvlRestartLim, and grfhic.
+        bytes.append(0)
+        bytes += le32(0)
+        bytes += le32(0)
+        bytes += [0, 0, UInt8(level.restartLimit ?? 0), 0] as [UInt8]
         return bytes + le16(units.count) + units.flatMap { le16(Int($0)) }
     }
 
@@ -564,8 +571,11 @@ struct WordDocumentBuilder {
         var header = le16(lists.count)
         var levels: [UInt8] = []
         for list in lists {
-            header += le32(list.identifier) + le32(0) + (0..<9).flatMap { _ in le16(0x0FFF) }
-            header += [list.isSimple ? 1 : 0, 0]
+            header += le32(list.identifier)
+            header += le32(0)
+            // rgistdPara: no style is linked to any of the nine levels.
+            for _ in 0..<9 { header += le16(0x0FFF) }
+            header += [list.isSimple ? 1 : 0, 0] as [UInt8]
             for level in list.levels.prefix(list.isSimple ? 1 : 9) { levels += levelBytes(level) }
         }
         return (header, levels)
@@ -575,13 +585,17 @@ struct WordDocumentBuilder {
     private static func listOverrideBytes(_ instances: [ListInstance]) -> [UInt8] {
         var bytes = le32(instances.count)
         for instance in instances {
-            bytes += le32(instance.listIdentifier) + le32(0) + le32(0) + [UInt8(instance.overrides.count), 0, 0, 0]
+            bytes += le32(instance.listIdentifier)
+            bytes += le32(0)
+            bytes += le32(0)
+            bytes += [UInt8(instance.overrides.count), 0, 0, 0] as [UInt8]
         }
         for instance in instances {
             bytes += le32(0)
             for entry in instance.overrides {
                 let flags = entry.level | (entry.startAt != nil ? 0x10 : 0) | (entry.replacement != nil ? 0x20 : 0)
-                bytes += le32(entry.startAt ?? 0) + le32(flags)
+                bytes += le32(entry.startAt ?? 0)
+                bytes += le32(flags)
                 if let replacement = entry.replacement { bytes += levelBytes(replacement) }
             }
         }
