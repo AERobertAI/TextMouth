@@ -203,7 +203,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
             why: "textutil reads the text of the hidden sections, which a person does not see (212 words); the own reader reads the bodies of the notes, which textutil drops (21 words)"
         ),
         RealFile(
-            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 387,
+            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 386,
             headings: ["1: Demo of bug", "1: References", "1: Main index"],
             why: "textutil runs the endnote's number into the word before it and drops the endnote's body, which here holds the whole bibliography; the own reader reads the word whole and the note after the text"
         ),
@@ -233,12 +233,8 @@ final class ODTTextutilComparisonTests: XCTestCase {
         ),
         RealFile(
             name: "libreoffice-tdf152710.odt",
-            textutilOnly: [
-                "akl", "akl", "baltix", "childsplay", "downloads", "gcompris", "http", "http", "http", "http", "http", "lt",
-                "lt", "mokslui", "net", "net", "org", "sf", "tuxpaint",
-            ],
             headings: ["1: Laisvos programos vaikų lavinimui"], pages: (2, 1),
-            why: "the words of five hyperlink addresses, which textutil's reading keeps in the Markdown links and the own reader does not (the words of each link are read); the own reader begins a page at the layout's soft page break"
+            why: "the own reader begins a page at the layout's soft page break"
         ),
         RealFile(
             name: "libreoffice-tdf156905.odt",
@@ -247,18 +243,17 @@ final class ODTTextutilComparisonTests: XCTestCase {
         ),
         RealFile(
             name: "libreoffice-tdf169882.odt",
-            textutilOnly: ["3", "4", "5", "6", "7", "8", "9", "10"],
-            ownOnly: ["1", "2", "3", "4", "5", "6", "7", "8", "nibh", "eu", "sollicitudin", "molestie"],
+            ownOnly: ["nibh", "eu", "sollicitudin", "molestie"],
             headings: [
                 "1: Heading", "2: Heading", "3: Heading", "2: Heading", "2: Heading", "2: Heading", "1: Heading",
                 "1: Heading", "2: Heading",
             ],
             pages: (7, 1),
-            why: "the own reader reads the text box, which textutil drops, and begins pages at soft page breaks and master pages; textutil writes the numbers of a numbered list as words (3 to 10) where the converter numbers the own reader's list itself, from 1 (1 to 8)"
+            why: "the own reader reads the text box, which textutil drops, and begins pages at soft page breaks and master pages"
         ),
         RealFile(
-            name: "libreoffice-whitespace.odt", textutilOnly: ["1", "com", "example", "http"], ownOnly: ["X", "X", "X", "X"],
-            why: "textutil drops the words of text boxes and shapes (four \"X\"), reads the mark of a footnote (\"1\"), and keeps a hyperlink's address (http://example.com) in the Markdown link; the own reader reads the words and neither the mark nor the address"
+            name: "libreoffice-whitespace.odt", textutilOnly: ["1"], ownOnly: ["X", "X", "X", "X"],
+            why: "textutil drops the words of text boxes and shapes (four \"X\"), and reads the mark of a footnote (\"1\"); the own reader reads the words and not the mark"
         ),
     ]
 

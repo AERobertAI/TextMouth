@@ -205,15 +205,15 @@ final class WordMLReaderTests: XCTestCase {
         ])
     }
 
-    /// A no-break space and a soft hyphen join no words, and a tab and a
-    /// break are spacing, in what is heard.
+    /// A no-break space, a soft hyphen, and a page break join no words, and a
+    /// tab and a break are spacing, in what is heard.
     func testSpacingCharactersJoinNoWordsAndAreNotSpoken() throws {
-        let xml = document(body: "<w:p><w:r><w:t>one</w:t><w:br/><w:t>two</w:t><w:tab/><w:t>three \u{00A0}four\u{00AD}five\u{00A0}six</w:t></w:r></w:p>")
+        let xml = document(body: "<w:p><w:r><w:t>one</w:t><w:br/><w:t>two</w:t><w:tab/><w:t>three \u{00A0}four\u{00AD}five\u{00A0}six</w:t><w:br w:type=\"page\"/><w:t>seven</w:t></w:r></w:p>")
         let html = try WordMLDocumentReader.html(of: file(holding: xml), includesPages: false)
         let markdown = try HTMLToMarkdownConverter.convert(html, includesPages: false)
         let heard = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
             .text.split(whereSeparator: \.isWhitespace).map(String.init)
-        XCTAssertEqual(heard, ["one", "two", "three", "fourfive", "six"])
+        XCTAssertEqual(heard, ["one", "two", "three", "fourfive", "six", "seven"])
     }
 
     /// A bullet and a tab that begin a paragraph make it a bullet item; a

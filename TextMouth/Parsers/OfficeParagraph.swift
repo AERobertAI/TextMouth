@@ -165,8 +165,14 @@ struct OfficeOpenParagraph {
         followsSpace = true
     }
 
-    /// Marks that a page begins here.
+    /// Marks that a page begins here. A break between words that touch (Word
+    /// writes `and`, a page break, `continues` in one run) keeps them apart
+    /// with a space, so that the marker, which is no white space, joins nothing.
     mutating func addPageStart() {
+        if case .text(let before, _)? = pieces.last, let last = before.unicodeScalars.last, !last.properties.isWhitespace {
+            add(" ")
+            followsSpace = true
+        }
         pieces.append(.pageStart)
     }
 
