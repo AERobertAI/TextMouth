@@ -132,6 +132,8 @@ INLINE_CHAPTERS = [
 <h2 id="i3"><img src="plan.png" alt="Picture Only Heading"/></h2>
 <p><em>Whole paragraph in em.</em></p>
 <p>Number shown before<span epub:type="pagebreak" role="doc-pagebreak" id="p11" aria-label="11">11</span> and after.</p>
+<h2 id="i4">Alpha <span style="float:right">fl words</span> gamma</h2>
+<p><span style="float:right">Floated first</span> then the remaining words</p>
 """),
     ("ch2.xhtml", "Second Part", """
 <h1 id="j1">Second Part</h1>

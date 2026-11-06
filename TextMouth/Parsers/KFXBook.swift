@@ -48,15 +48,29 @@ struct KFXBook {
         let navigation = KFXNavigation(fragments)
         var walk = KFXWalk(
             fragments: fragments, targets: navigation.targets(includingPages: includesPages),
-            headingLevels: navigation.headingLevels)
+            headingLevels: navigation.headingLevels,
+            maximumWork: Self.workLimit(forBytes: (containers + sidecars).reduce(0) { $0 + $1.view.count }))
         var walked: [KFXWalk.Section] = []
         for name in order { walked.append(try walk.section(named: name)) }
         // Sections that are all pictures: no words to read.
         guard walked.contains(where: \.holdsText) else { throw KFXError.noFlowingText }
 
         sections = Self.sections(
-            of: walked, names: order, navigation: navigation, fragments: fragments, includesPages: includesPages)
+            of: walked, navigation: navigation, includesPages: includesPages)
     }
+
+    /// The most work a walk of containers of `bytes` bytes may do: a generous
+    /// multiple of their size (a real book's work is about its size, each
+    /// text counted once), never less than a floor that small books fit
+    /// under, never more than the walk's own limit.
+    static func workLimit(forBytes bytes: Int) -> Int {
+        let product = bytes.multipliedReportingOverflow(by: workPerByte)
+        return product.overflow ? KFXWalk.maximumWork : min(KFXWalk.maximumWork, max(workFloor, product.partialValue))
+    }
+
+    /// The floor and the multiple of `workLimit(forBytes:)`.
+    static let workFloor = 200_000
+    static let workPerByte = 16
 
     /// The fragments of the containers: the main ones strictly, the sidecars
     /// each by itself, leaving out one that does not decode.
@@ -105,13 +119,11 @@ struct KFXBook {
     /// - every other contents entry is a heading kept as an annotation at
     ///   its place, one level deeper for each level of nesting;
     /// - each print page the page list names begins at its place;
-    /// - a section the book does not begin (no contents entry, no heading at
-    ///   its start, and no mark that its author began it) continues the
-    ///   chapter before it: Amazon cuts a long document where its style asks
-    ///   for a page break, and the cut is not a chapter.
+    /// - a section with no contents entry at its start and no heading at its
+    ///   start continues the chapter before it: Amazon cuts a long document
+    ///   where its style asks for a page break, and the cut is not a chapter.
     private static func sections(
-        of walked: [KFXWalk.Section], names: [String], navigation: KFXNavigation,
-        fragments: KFXFragments, includesPages: Bool
+        of walked: [KFXWalk.Section], navigation: KFXNavigation, includesPages: Bool
     ) -> [MOBIBook.Section] {
         // The section that holds each node the navigation points at.
         var sectionOfNode: [Int: Int] = [:]
@@ -123,12 +135,10 @@ struct KFXBook {
         // A place is named once, by the first entry that points at it (as an
         // EPUB's contents name each destination once).
         var named: Set<String> = []
-        var entered = Set<Int>()
         for entry in navigation.contents {
             guard let index = sectionOfNode[entry.node] else { continue }
             let anchor = KFXTargets.anchorID(node: entry.node, offset: entry.offset)
             guard named.insert(anchor).inserted else { continue }
-            entered.insert(index)
             if entry.offset == 0, walked[index].startNodeIDs.contains(entry.node), titles[index] == nil {
                 titles[index] = entry.label
             } else {
@@ -151,43 +161,29 @@ struct KFXBook {
             }
         }
 
-        // The sections the book's author began are marked by an auxiliary
-        // fragment; a book whose producer writes none has no cuts to join.
-        let marked = beganSections(in: fragments)
-        let marksSections = !fragments.all(KFXSymbol.auxiliaryData).isEmpty
-
+        // A section begins a chapter when a contents entry lands at its start
+        // or when it starts with a heading; any other continues the chapter
+        // before it (Amazon cuts a long document where its style asks for a
+        // page break, and a cut is no chapter). The first section always
+        // begins one. Nothing is invented for a chapter nothing titles.
         var result: [MOBIBook.Section] = []
         for (index, section) in walked.enumerated() {
             let page = HTMLPageTargets(
                 markers: pageTargets[index], sourceLabels: pageLabels[index], pageBreaksArePages: false)
-            let continues = index > 0 && !result.isEmpty && marksSections && !entered.contains(index)
-                && !section.startsWithHeading && !marked.contains(names[index])
-            if continues {
+            let begins = index == 0 || result.isEmpty || titles[index] != nil || section.startsWithHeading
+            if begins {
+                result.append(MOBIBook.Section(
+                    title: titles[index], html: section.html, headingTargets: headings[index], pages: page,
+                    untitledTakesBookTitle: true))
+            } else {
                 // Joined to the section before it: one chapter.
                 result[result.count - 1].html += section.html
                 result[result.count - 1].headingTargets.merge(headings[index]) { first, _ in first }
                 result[result.count - 1].pages.markers.merge(page.markers) { first, _ in first }
                 result[result.count - 1].pages.sourceLabels.merge(page.sourceLabels) { first, _ in first }
-            } else {
-                result.append(MOBIBook.Section(title: titles[index], html: section.html, headingTargets: headings[index], pages: page))
             }
         }
         return result
-    }
-
-    /// The names of the sections an auxiliary fragment marks as their
-    /// author's own (`IS_TARGET_SECTION`). The fragment is named like its
-    /// section, with "-ad" after.
-    private static func beganSections(in fragments: KFXFragments) -> Set<String> {
-        var names: Set<String> = []
-        for (name, value) in fragments.all(KFXSymbol.auxiliaryData) where name.hasSuffix("-ad") {
-            for entry in value.structValue?[KFXSymbol.categoryEntries]?.listValue ?? [] {
-                guard let pair = entry.structValue, pair[KFXSymbol.entryKey]?.stringValue == "IS_TARGET_SECTION",
-                      pair[KFXSymbol.entryValue]?.boolValue == true else { continue }
-                names.insert(String(name.dropLast(3)))
-            }
-        }
-        return names
     }
 
     /// What the containers of a book say about itself, read without walking
