@@ -547,8 +547,8 @@ final class OnDiskContractTests: XCTestCase {
         XCTAssertEqual(
             versions,
             Dictionary(uniqueKeysWithValues: withPages.map { name -> (String, String) in
-                // Rich text and Word 97-2003 went to TextMouth's own readers (FMT47) at 1.1.0.
-                (name, ["epub", "html"].contains(name) ? "1.0.3" : ["rtf", "rtfd", "doc"].contains(name) ? "1.1.0" : "1.0.0")
+                // Rich text, Word 97-2003, OpenDocument text, and Word 2003 XML went to TextMouth's own readers at 1.1.0.
+                (name, ["epub", "html"].contains(name) ? "1.0.3" : ["rtf", "rtfd", "doc", "odt", "wordml"].contains(name) ? "1.1.0" : "1.0.0")
             }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )

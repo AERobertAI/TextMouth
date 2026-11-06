@@ -65,7 +65,12 @@ enum PageReaderVersions {
             // document's own structure, so every .doc book is read again once.
             return "1.1.0"
         case .odt, .wordml:
-            return "1.0.0"
+            // OpenDocument text (FMT27) and Word 2003 XML (FMT53) are read by
+            // TextMouth's own readers from "1.1.0": the documents' own
+            // headings, the pages of their style breaks, master pages, and
+            // soft page breaks (OpenDocument), hidden text left out, and
+            // notes after the text, so every such book is read again once.
+            return "1.1.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or
             // a PEF (PG12), so its own case reads again only braille books
