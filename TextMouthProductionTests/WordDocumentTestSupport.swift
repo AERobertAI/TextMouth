@@ -810,12 +810,15 @@ func wordBody(
     return String(html[start.upperBound..<end.lowerBound])
 }
 
-/// The body of the format sample at `path`, as `wordBody(of:)` reads it.
-func wordSampleBody(
-    _ path: String, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
-    file: StaticString = #filePath, line: UInt = #line
-) throws -> String {
-    try wordBody(of: Data(contentsOf: formatSampleURL(path)), pages: pages, speaksNumbers: speaksNumbers, file: file, line: line)
+extension XCTestCase {
+    /// The body of the format sample at `path`, as `wordBody(of:)` reads it.
+    /// (A method of the test case, because the sample's place is found by it.)
+    func wordSampleBody(
+        _ path: String, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
+        file: StaticString = #filePath, line: UInt = #line
+    ) throws -> String {
+        try wordBody(of: Data(contentsOf: formatSampleURL(path)), pages: pages, speaksNumbers: speaksNumbers, file: file, line: line)
+    }
 }
 
 /// The chapter an import makes of the HTML the reader writes for `data`: its
