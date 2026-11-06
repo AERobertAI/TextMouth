@@ -731,7 +731,7 @@ extension LibraryViewModel {
         guard hasStartedLibrary, dataDirectoryUnavailability == nil, let available = availableDataDirectory else {
             return
         }
-        if let root, URL(fileURLWithPath: root).standardizedFileURL.path != available.named.path {
+        if let root, URL(fileURLWithPath: root, isDirectory: true).standardizedFileURL.path != available.named.path {
             return
         }
         guard !checkDataDirectory() else { return }

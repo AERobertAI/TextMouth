@@ -285,7 +285,9 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
     /// The reason as a debug log line gives it: the folder by its short
     /// name (`DataDirectoryPaths.shortName(of:)`), never its absolute path.
     var logDescription: String {
-        let name = DataDirectoryPaths.shortName(of: URL(fileURLWithPath: folder))
+        // A folder, named as one: this runs on the main thread, where a stat(2)
+        // of a path under a dataless folder would wait on the network.
+        let name = DataDirectoryPaths.shortName(of: URL(fileURLWithPath: folder, isDirectory: true))
         switch self {
         case .driveNotConnected(let volume, _):
             return "the drive \(volume) holding \(name) isn't connected"
