@@ -665,7 +665,7 @@ struct DataDirectoryCheck {
     /// Whether the file at `file` exists with its content only in the
     /// cloud: as the sync service reports it, or as the file system marks
     /// it (`SF_DATALESS`).
-    private static func isOnlyInCloud(_ file: URL, itemStatus: any CloudItemStatusProviding) -> Bool {
+    static func isOnlyInCloud(_ file: URL, itemStatus: any CloudItemStatusProviding) -> Bool {
         switch itemStatus.status(of: file).state {
         case .notDownloaded, .downloading:
             return true

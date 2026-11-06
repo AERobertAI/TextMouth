@@ -374,6 +374,16 @@ final class ReadingStatsService: ObservableObject {
         )
     }
 
+    /// Reads reading_stats.json again once it may be on this Mac, after it was
+    /// found only in the cloud (`statsAwaitFileInCloud`), without waiting for
+    /// a save: the listening credited meanwhile is added to what the file
+    /// holds, as a save would do. Does nothing unless the file was waiting;
+    /// while it still is, nothing is read or written.
+    func fileMayHaveArrived() {
+        guard statsAwaitFileInCloud else { return }
+        _ = mayReplaceStatsFile()
+    }
+
     /// Whether a save may replace reading_stats.json now: always, unless
     /// the file waits in the cloud (`statsAwaitFileInCloud`). Then it is read
     /// again first: once it is on this Mac, the listening credited meanwhile

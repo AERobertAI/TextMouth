@@ -352,6 +352,10 @@ final class LibraryViewModel: ObservableObject {
     /// screen, which then announces that the library is available, since
     /// an announcement needs a window to come from.
     weak var unavailabilityWindow: PlatformWindow?
+    /// What the services that read the library's small launch files are told
+    /// when each has been fetched from the cloud (`fetchLaunchFilesInBackground`):
+    /// the app's services, unless a test passes recorders.
+    var launchFileTakeUp = LibraryLaunchFileTakeUp.app
 
     /// The feed engine whose feeds' items this library lists in their feeds'
     /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
@@ -438,6 +442,9 @@ final class LibraryViewModel: ObservableObject {
         startFeeds()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
+        // In a cloud library, the other small files it opens with that are
+        // only in the cloud come down now, without holding anything back.
+        fetchLaunchFilesInBackground()
     }
 
     // MARK: - Book Update Helpers
@@ -676,6 +683,7 @@ extension LibraryViewModel {
         if hasStartedLibrary {
             reloadLibraryAfterDataDirectoryReturned()
             dataDirectoryEnvironment.sessionLease?.begin()
+            fetchLaunchFilesInBackground()
         } else {
             startLibrary()
         }

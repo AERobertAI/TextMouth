@@ -210,7 +210,7 @@ extension LibraryViewModel {
     /// and the error's domain and code (never a message that may hold a
     /// path); nil when the read succeeded. Blocks, so call it off the main
     /// thread.
-    private nonisolated static func failure(reading file: URL, in root: URL, with fetch: LibraryFileFetch) -> String? {
+    nonisolated static func failure(reading file: URL, in root: URL, with fetch: LibraryFileFetch) -> String? {
         do {
             try fetch(file)
             return nil
@@ -276,7 +276,7 @@ extension LibraryViewModel {
     }
 
     /// Whether a read of `file` was started and has not returned.
-    private func isBeingRead(_ file: URL) -> Bool {
+    func isBeingRead(_ file: URL) -> Bool {
         libraryFilesBeingRead.contains(file.standardizedFileURL.path)
     }
 
