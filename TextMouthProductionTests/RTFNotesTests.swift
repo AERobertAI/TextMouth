@@ -55,11 +55,12 @@ final class RTFNotesTests: XCTestCase {
     }
 
     /// The emphasis of the reference's own run is not the note's: a note
-    /// begins in the plain style, bold only where it says so.
+    /// begins in the plain style, bold or italic only where it says so.
     func testANoteDoesNotInheritTheReferencesEmphasis() throws {
         let html = try rtfHTML(#"{\rtf1\ansi Some plain words here. {\b\i\fs40 Loud{\footnote Quiet note.}} more.\par}"#)
         let body = try rtfBody(html)
         XCTAssertEqual(try body.select("strong").array().map { try $0.text() }, ["Loud"])
+        XCTAssertEqual(try body.select("em").array().map { try $0.text() }, ["Loud"])
         XCTAssertEqual(try body.select("p").array().map { try $0.text() }, ["Some plain words here. Loud more.", "Quiet note."])
     }
 
@@ -70,10 +71,35 @@ final class RTFNotesTests: XCTestCase {
         XCTAssertEqual(try paragraphs(source), ["A B C.", "Shown words."])
     }
 
-    /// A note whose reference mark was deleted goes with it.
-    func testANoteWhoseReferenceWasDeletedIsLeftOut() throws {
-        let source = #"{\rtf1\ansi Kept{\deleted\super\chftn{\footnote\pard\plain Deleted note.}} text.\par}"#
-        XCTAssertEqual(try paragraphs(source), ["Kept text."])
+    /// A note whose reference nobody sees is not read: one whose reference
+    /// was deleted, moved away, or hidden, in a run of its own or in the run
+    /// around it, even though the note itself begins with `\pard\plain`.
+    func testANoteWhoseReferenceIsNotSeenIsLeftOut() throws {
+        let note = #"{\footnote\pard\plain Unseen note.}"#
+        for reference in [
+            #"{\deleted\super\chftn\#(note)}"#, #"{\mvf\super\chftn\#(note)}"#, #"{\v\super\chftn\#(note)}"#,
+            #"{\v Hidden words\#(note) more}"#, #"{\deleted gone \#(note)}"#,
+        ] {
+            let source = #"{\rtf1\ansi Kept\#(reference) text.\par}"#
+            XCTAssertEqual(try paragraphs(source), ["Kept text."], reference)
+        }
+        // A reference that is read brings its note.
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi Kept{\super\chftn\#(note)} text.\par}"#), ["Kept text.", "Unseen note."])
+    }
+
+    /// A note's custom mark (text before its first `\pard`, as short as a mark
+    /// is) is not read; text that long enough to be words is, and a note with no
+    /// `\pard` at all keeps its text.
+    func testACustomMarkIsNotReadButWordsAre() throws {
+        // LibreOffice writes the mark of a note whose mark is a dollar sign this way
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi Text{\*\footnote\ftnalt $\pard\plain Titolo note}.\par}"#), ["Text.", "Titolo note"])
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi Text{\footnote (1)\pard\plain Note words.}.\par}"#), ["Text.", "Note words."])
+        XCTAssertEqual(
+            try paragraphs(#"{\rtf1\ansi Text{\footnote Real words before the paragraph. \pard\plain More.}.\par}"#),
+            ["Text.", "Real words before the paragraph. More."]
+        )
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi Text{\footnote No paragraph word at all.}.\par}"#), ["Text.", "No paragraph word at all."])
+        XCTAssertEqual(try paragraphs(#"{\rtf1\ansi Text{\footnote Short.\par Next.\par}.\par}"#), ["Text.", "Short.", "Next."])
     }
 
     /// A note's own text is not a heading, by style or by outline level, and

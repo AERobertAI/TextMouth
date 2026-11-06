@@ -39,7 +39,8 @@ enum RTFDestination: Equatable {
     /// A footnote or an endnote (`\footnote`, with `\ftnalt` for an
     /// endnote): its text is read after the main text, in the order the file
     /// keeps the notes. Its group's text is the body of the document, set
-    /// apart.
+    /// apart. (Started by the interpreter, which knows whether the note's
+    /// reference is read; no name leads here.)
     case note
 
     /// Whether the text of the destination is read by nobody: skipped
@@ -68,7 +69,7 @@ enum RTFDestination: Equatable {
     /// an unknown starred destination, as textutil's reading does.
     private static let known: [String: RTFDestination] = {
         var table: [String: RTFDestination] = [
-            "rtf": .body, "field": .body, "fldrslt": .body, "footnote": .note,
+            "rtf": .body, "field": .body, "fldrslt": .body,
             "fonttbl": .fontTable, "stylesheet": .styleSheet, "info": .info,
             "listtable": .listTable, "listoverridetable": .listTable,
             "listtext": .listText, "pntext": .listText,
@@ -123,10 +124,12 @@ struct RTFGroupState: Equatable {
     var isItalic = false
     /// Hidden text, `\v`, which is not read.
     var isHidden = false
-    /// Text a tracked change deleted, `\deleted`, which is not read (text
-    /// it inserted, `\revised`, is). A revision mark is not character
-    /// formatting, so `\plain` leaves it alone: only the group that set it
-    /// ending, or `\deleted0`, brings the text back.
+    /// Text a tracked change deleted or moved away, `\deleted` and `\mvf`,
+    /// which is not read (text a change inserted, `\revised`, is, and moved
+    /// text is read where it was moved to, `\mvt`). Microsoft's table lists
+    /// `\deleted` with the character formatting properties, so `\plain`
+    /// brings the text back, as the group that set it ending, or `\deleted0`,
+    /// does.
     var isDeleted = false
     /// The font size in half points, `\fsN`; 24 (12 points) until set.
     var fontSize = RTFGroupState.defaultFontSize
@@ -143,7 +146,8 @@ struct RTFGroupState: Equatable {
 
     /// Whether the text now is read by nobody: hidden by `\v`, or deleted
     /// by a tracked change. One place for the rule, so that the words, the
-    /// page breaks, and the paragraph marks all follow it.
+    /// line breaks, the page and section breaks, and the notes referred to
+    /// all follow it. (A paragraph mark is not read in any case.)
     var isUnreadRun: Bool { isHidden || isDeleted }
 
     /// `\plain`: the character formatting back to its defaults. (The
@@ -153,6 +157,7 @@ struct RTFGroupState: Equatable {
         isBold = false
         isItalic = false
         isHidden = false
+        isDeleted = false
         fontSize = Self.defaultFontSize
         font = nil
     }

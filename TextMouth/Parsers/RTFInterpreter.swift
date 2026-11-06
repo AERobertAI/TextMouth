@@ -158,7 +158,7 @@ struct RTFInterpreter {
         // A note the document ended in the middle of is finished as it stands.
         try finishNote()
         let kind = paragraphKind(of: lastParagraphProperties)
-        if case .heading = kind { hasNamedHeading = true }
+        if case .heading = kind, builder.currentParagraphHasWords { hasNamedHeading = true }
         var document = RTFDocument()
         document.blocks = try builder.finish(lastParagraph: kind, inTable: lastParagraphProperties.inTable)
         document.notes = noteBlocks
@@ -292,14 +292,16 @@ struct RTFInterpreter {
     private func destination(named name: String, starred: Bool) -> RTFDestination? {
         // The words in a shape's text box (`\shptxt`, and `\dptxbxtext` of an
         // old drawing object) are text of the document, set in a frame: they
-        // are read. A shape in a header, a footer, or a footnote is skipped
-        // with them, and so is its text box.
+        // are read. A shape in a header or a footer is skipped with its text
+        // box; one in a note is read with the note.
         if state.destination == .shape, name == "shptxt" || name == "dptxbxtext" { return .body }
         if state.destination.isUnread { return nil }
         // A note is read where the body is read: not inside the title, a list
-        // marker, or another note.
+        // marker, or another note, and only when a person who reads the body
+        // sees its reference: a note referred to in hidden or deleted text is
+        // not read.
         if name == "footnote" {
-            return state.destination == .body && !isReadingNote ? .note : .skipped
+            return state.destination == .body && !isReadingNote && !state.isUnreadRun ? .note : .skipped
         }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
@@ -334,11 +336,13 @@ struct RTFInterpreter {
     }
 
     /// A footnote or endnote begins: the body is set aside, and the note is
-    /// built apart, with no page breaks and a share of what is left of the
-    /// text budget. The note is its own context: it begins with no paragraph
+    /// built apart, with no page breaks and all of what is left of the text
+    /// budget. The note is its own context: it begins with no paragraph
     /// properties of the paragraph around its reference mark (no table, no
-    /// list), and with that run's emphasis, size, and hiding undone. (A
-    /// tracked deletion of the reference mark stays: the note goes with it.)
+    /// list), and with that run's emphasis undone. (Its reference is read, or
+    /// the note would not have begun, so the text of the note is read.) Text
+    /// before the note's first `\pard` may be the note's own custom mark, so it
+    /// is held until that is known (`holdsNoteMark`).
     private mutating func beginNote() {
         bodyInHand = BodyInHand(builder: builder, listMarker: listMarker, lastParagraphProperties: lastParagraphProperties)
         builder = RTFBlockBuilder(includesPages: false, limit: builder.limit, budget: builder.remainingBudget)
@@ -346,8 +350,39 @@ struct RTFInterpreter {
         state.paragraph = RTFParagraphProperties()
         state.isBold = false
         state.isItalic = false
-        state.isHidden = false
-        state.fontSize = RTFGroupState.defaultFontSize
+        holdsNoteMark = true
+        heldNoteMark = []
+    }
+
+    // MARK: A note's custom mark
+
+    /// The longest text before a note's first `\pard` that is taken for the
+    /// note's own mark (a custom mark is a few characters: "*", "$", "(1)").
+    /// Longer text is words, and is read.
+    private static let longestNoteMark = 10
+
+    /// Whether text read now may be a note's custom mark: no `\pard`, `\par`,
+    /// or other structure has come in the note yet.
+    private var holdsNoteMark = false
+
+    /// The text held while `holdsNoteMark`, in the emphasis it was set in.
+    private var heldNoteMark: [(text: String, bold: Bool, italic: Bool, size: Int)] = []
+
+    /// Ends the wait for a custom mark. Text held before a `\pard` that is no
+    /// longer than a mark is the mark, and is not read; any other text is
+    /// written as the words it is. A note with no `\pard` at all keeps its text.
+    /// - Parameter isParagraphStart: whether `\pard` is what ended the wait.
+    private mutating func endNoteMarkWait(isParagraphStart: Bool) throws {
+        guard holdsNoteMark else { return }
+        holdsNoteMark = false
+        let held = heldNoteMark
+        heldNoteMark = []
+        let length = held.reduce(0) { $0 + $1.text.count }
+        if isParagraphStart && length <= Self.longestNoteMark { return }
+        for piece in held {
+            lastParagraphProperties = state.paragraph
+            try builder.appendText(piece.text, bold: piece.bold, italic: piece.italic, size: piece.size)
+        }
     }
 
     /// The note being read ends (or the document does): its blocks join the
@@ -356,8 +391,7 @@ struct RTFInterpreter {
     /// - Throws: `DocumentTooLargeError`.
     private mutating func finishNote() throws {
         guard let saved = bodyInHand else { return }
-        flushBytes()
-        flushLoneSurrogate()
+        try endNoteMarkWait(isParagraphStart: false)
         // Whatever the note leaves open is closed as paragraphs of body text.
         let blocks = try builder.finish(lastParagraph: .body, inTable: false)
         let spent = builder.spentBytes
@@ -498,14 +532,19 @@ struct RTFInterpreter {
         guard !text.isEmpty else { return }
         switch state.destination {
         case .body, .note:
-            guard !state.isUnreadRun else { return }
+            guard !state.isUnreadRun else {
+                // The words are not read, and a page that a `\pagebb` of their
+                // paragraph began is not begun if they were all it held
+                builder.noteUnreadWords(text)
+                return
+            }
+            let words = RTFInterpreter.readable(text)
+            if holdsNoteMark {
+                heldNoteMark.append((words, state.isBold, state.isItalic, state.fontSize))
+                return
+            }
             lastParagraphProperties = state.paragraph
-            try builder.appendText(
-                RTFInterpreter.readable(text),
-                bold: state.isBold,
-                italic: state.isItalic,
-                size: state.fontSize
-            )
+            try builder.appendText(words, bold: state.isBold, italic: state.isItalic, size: state.fontSize)
         case .listText:
             if markerText.count < Self.longestName { markerText += text }
         case .title, .author:
@@ -694,7 +733,7 @@ struct RTFInterpreter {
     /// for each would be slow.
     private enum BodyWord: String, CaseIterable {
         case ansi, mac, pc, pca, ansicpg, deff
-        case plain, b, i, v, deleted, f, fs, uc
+        case plain, b, i, v, deleted, mvf, f, fs, uc
         case line, lbr, par, pard, s, outlinelevel, ls, ilvl, intbl, itap
         case cell, row, nestcell
         case page, pagebb, sect, sectd, sbkpage, sbkeven, sbkodd, sbknone, sbkcol
@@ -725,15 +764,25 @@ struct RTFInterpreter {
         case .b: state.isBold = parameter != 0
         case .i: state.isItalic = parameter != 0
         case .v: state.isHidden = parameter != 0
-        case .deleted: state.isDeleted = parameter != 0
+        // Deleted text, and text moved away (`\mvf`: it is read where it was
+        // moved to)
+        case .deleted, .mvf: state.isDeleted = parameter != 0
         case .f: state.font = parameter
         case .fs: state.fontSize = max(parameter ?? RTFGroupState.defaultFontSize, 1)
         case .uc: state.unicodeSkip = max(parameter ?? 1, 0)
 
         // Line and paragraph structure
-        case .line, .lbr: if !state.isUnreadRun { builder.appendLineBreak() }
-        case .par: try endParagraph()
-        case .pard: state.paragraph = RTFParagraphProperties()
+        case .line, .lbr:
+            if !state.isUnreadRun {
+                try endNoteMarkWait(isParagraphStart: false)
+                builder.appendLineBreak()
+            }
+        case .par:
+            try endNoteMarkWait(isParagraphStart: false)
+            try endParagraph()
+        case .pard:
+            try endNoteMarkWait(isParagraphStart: true)
+            state.paragraph = RTFParagraphProperties()
         case .s: setStyle(parameter)
         case .outlinelevel: state.paragraph.outlineLevel = parameter
         case .ls: state.paragraph.listOverride = parameter
@@ -744,9 +793,15 @@ struct RTFInterpreter {
         // Tables. A nested cell ends a paragraph of the cell it is in, and a
         // nested row ends nothing: the words of a nested table stay in the
         // cell around it.
-        case .cell: try endCell()
-        case .row: try endRow()
-        case .nestcell: try endParagraph(inTable: true)
+        case .cell:
+            try endNoteMarkWait(isParagraphStart: false)
+            try endCell()
+        case .row:
+            try endNoteMarkWait(isParagraphStart: false)
+            try endRow()
+        case .nestcell:
+            try endNoteMarkWait(isParagraphStart: false)
+            try endParagraph(inTable: true)
 
         // Pages and sections
         case .page:
@@ -756,7 +811,8 @@ struct RTFInterpreter {
         case .pagebb: builder.addParagraphPageBreak()
         case .sect:
             try endParagraph()
-            builder.beginSectionBreak()
+            // A section break in text nobody reads begins no page
+            if !state.isUnreadRun { builder.beginSectionBreak() }
         case .sectd, .sbkpage, .sbkeven, .sbkodd: builder.setSectionStartsPage(true)
         case .sbknone, .sbkcol: builder.setSectionStartsPage(false)
         }
@@ -801,14 +857,15 @@ struct RTFInterpreter {
         } else {
             numbered = false
         }
-        return .listItem(level: properties.listLevel, numbered: numbered)
+        return .listItem(RTFListPosition(level: properties.listLevel, numbered: numbered))
     }
 
     /// `\par`: the paragraph ends.
     private mutating func endParagraph(inTable forcedInTable: Bool = false) throws {
         let properties = state.paragraph
         let kind = paragraphKind(of: properties)
-        if case .heading = kind { hasNamedHeading = true }
+        // A heading that holds no words (all hidden, say) names no heading
+        if case .heading = kind, builder.currentParagraphHasWords { hasNamedHeading = true }
         try builder.finishParagraph(kind, inTable: forcedInTable || properties.inTable)
         listMarker = nil
     }

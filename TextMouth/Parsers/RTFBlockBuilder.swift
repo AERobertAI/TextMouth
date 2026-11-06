@@ -21,7 +21,7 @@ struct RTFBlockBuilder {
         /// A heading at this level, 1 to 6.
         case heading(Int)
         /// An item of a list, at this depth (0 is the outermost list).
-        case listItem(level: Int, numbered: Bool)
+        case listItem(RTFListPosition)
     }
 
     // MARK: State
@@ -73,6 +73,13 @@ struct RTFBlockBuilder {
     private var sectionStartsPage = true
     /// Whether the paragraph being read already counted its `\pagebb`.
     private var paragraphBreakCounted = false
+    /// Whether the paragraph being read began a page by its `\pagebb` (or its
+    /// style's), and whether words were left out of it because they are not
+    /// read (hidden or deleted). A paragraph that held only such words
+    /// begins no page.
+    private var paragraphBreakAdded = false
+    private var paragraphHadUnreadWords = false
+
     /// Whether the document has had a letter or a digit yet. A paragraph
     /// that begins a page (`\pagebb`, or a style with it) before any words
     /// begins the document's first page, which is page 1 already: Word's
@@ -203,7 +210,33 @@ struct RTFBlockBuilder {
     mutating func addParagraphPageBreak() {
         guard !paragraphBreakCounted else { return }
         paragraphBreakCounted = true
-        if hasCountedText { addPageBreak() }
+        if hasCountedText {
+            addPageBreak()
+            paragraphBreakAdded = includesPages
+        }
+    }
+
+    /// Words of the paragraph were left out because they are not read.
+    mutating func noteUnreadWords(_ text: String) {
+        if text.contains(where: { !$0.isWhitespace }) { paragraphHadUnreadWords = true }
+    }
+
+    /// Takes back the page the paragraph that has ended began by its
+    /// `\pagebb`, when every word it held was left out (`finished` is what it
+    /// holds), and forgets what was noted of the paragraph.
+    private mutating func settleParagraphBreak(of finished: RTFParagraph) {
+        if paragraphBreakAdded && paragraphHadUnreadWords && !finished.hasWords && pendingBreaks > 0 {
+            pendingBreaks -= 1
+            pageBreaks -= 1
+        }
+        paragraphBreakAdded = false
+        paragraphHadUnreadWords = false
+    }
+
+    /// Whether the paragraph being read holds a word so far.
+    var currentParagraphHasWords: Bool {
+        if paragraph.hasWords { return true }
+        return openRun?.text.contains(where: { !$0.isWhitespace }) ?? false
     }
 
     /// `\sect`: a section ends. Whether the next one begins a page is known
@@ -236,6 +269,7 @@ struct RTFBlockBuilder {
         let finished = paragraph
         paragraph = RTFParagraph()
         paragraphBreakCounted = false
+        settleParagraphBreak(of: finished)
         try spend(Self.paragraphAllowance)
         if inTable {
             if finished.hasWords { cell.append(Self.markingListItem(finished, as: kind)) }
@@ -246,7 +280,7 @@ struct RTFBlockBuilder {
         switch kind {
         case .body: blocks.append(.paragraph(finished))
         case .heading(let level): blocks.append(.heading(finished, level: level))
-        case .listItem(let level, let numbered): blocks.append(.listItem(finished, level: level, numbered: numbered))
+        case .listItem(let position): blocks.append(.listItem(finished, position))
         }
     }
 
@@ -255,9 +289,9 @@ struct RTFBlockBuilder {
     /// `paragraph` for a table's cell: when it is a list item, carrying its
     /// place in the list (a heading or body paragraph carries nothing).
     private static func markingListItem(_ paragraph: RTFParagraph, as kind: Kind) -> RTFParagraph {
-        guard case .listItem(let level, let numbered) = kind else { return paragraph }
+        guard case .listItem(let position) = kind else { return paragraph }
         var marked = paragraph
-        marked.listItem = RTFListPosition(level: level, numbered: numbered)
+        marked.listItem = position
         return marked
     }
 
@@ -269,8 +303,10 @@ struct RTFBlockBuilder {
     /// - Throws: `DocumentTooLargeError`: every cell is charged to the budget,
     ///   empty or not.
     mutating func endCell(lastParagraph kind: Kind = .body) throws {
-        try spend(Self.runAllowance)
+        // A cell costs what a paragraph does: it writes a `td`, and may write more
+        try spend(Self.paragraphAllowance)
         closeRun()
+        settleParagraphBreak(of: paragraph)
         if paragraph.hasWords { cell.append(Self.markingListItem(paragraph, as: kind)) }
         paragraph = RTFParagraph()
         paragraphBreakCounted = false
@@ -298,7 +334,13 @@ struct RTFBlockBuilder {
         guard table != nil || !row.isEmpty || !cell.isEmpty else { return }
         // Cells and rows left open by a damaged table are closed here.
         if !cell.isEmpty { row.append(cell); cell = [] }
-        if !row.isEmpty { table?.rows.append(row); row = [] }
+        if !row.isEmpty {
+            // Words in a table's cell that no `\cell` or `\row` ever closed are
+            // in a table all the same
+            if table == nil { table = RTFTable() }
+            table?.rows.append(row)
+            row = []
+        }
         if let finished = table, finished.rows.contains(where: { $0.contains { !$0.isEmpty } }) {
             blocks.append(.table(finished))
         }

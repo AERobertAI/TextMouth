@@ -60,7 +60,7 @@ enum RTFHTMLWriter {
     static func paragraphs(of blocks: [RTFBlock]) -> [RTFParagraph] {
         blocks.flatMap { block -> [RTFParagraph] in
             switch block {
-            case .paragraph(let paragraph), .heading(let paragraph, _), .listItem(let paragraph, _, _):
+            case .paragraph(let paragraph), .heading(let paragraph, _), .listItem(let paragraph, _):
                 return [paragraph]
             case .table(let table):
                 return table.rows.flatMap { $0.flatMap { $0 } }
@@ -85,8 +85,8 @@ enum RTFHTMLWriter {
 
         /// Writes `block`, first closing the lists it does not continue.
         mutating func write(_ block: RTFBlock, to output: inout String) {
-            if case .listItem(let paragraph, let level, let numbered) = block {
-                writeListItem(paragraph, level: level, numbered: numbered, to: &output)
+            if case .listItem(let paragraph, let position) = block {
+                writeListItem(paragraph, level: position.level, numbered: position.numbered, to: &output)
                 return
             }
             closeLists(in: &output)

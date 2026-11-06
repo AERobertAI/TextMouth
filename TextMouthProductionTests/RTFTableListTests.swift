@@ -5,9 +5,12 @@ import SwiftSoup
 // MARK: - List Items Inside Table Cells
 
 /// A list item inside a table cell of a rich text document is a list item
-/// as it is outside a table: the cell writes it in a list, so the reading
-/// text has its number or bullet, in the same words as a list outside a
-/// table, and the item's words stay in their cell.
+/// as it is outside a table: the cell writes it in a list (HTML's `ol` or
+/// `ul`), so that the Markdown, and the exports made from it, have the list
+/// as they have a list outside a table, and the item's words stay in their
+/// cell. The reading text leaves every list's number out, in a table and
+/// out of one, in every format (`docs/user/what-textmouth-reads.md`), so this
+/// changes no word a listener hears.
 final class RTFTableListTests: XCTestCase {
 
     /// The list table and override table of the sample documents below: a
@@ -44,9 +47,10 @@ final class RTFTableListTests: XCTestCase {
         }
     }
 
-    /// The reading text has the number of a list item in a cell, as it has
-    /// one outside a table.
-    func testTheNumberIsReadInTheReadingText() throws {
+    /// The Markdown has the list of a list item in a cell as it has one outside
+    /// a table. (It is the Markdown that has the number: the reading text
+    /// leaves it out of both.)
+    func testTheMarkdownHasTheListAsOutsideATable() throws {
         let inCell = try markdown(#"""
             \trowd\cellx3000
             \pard\intbl\ls1\ilvl0{\listtext 1.\tab}First\par
@@ -60,6 +64,38 @@ final class RTFTableListTests: XCTestCase {
         XCTAssertTrue(inCell.contains("2. Second"), inCell)
         XCTAssertTrue(outside.contains("1. First"), outside)
         XCTAssertTrue(outside.contains("2. Second"), outside)
+        // What a listener hears is the same with or without the list
+        let heard = { (markdown: String) in try MarkdownDocParser.parseChapter(markdown: markdown).text }
+        XCTAssertFalse(try heard(inCell).contains("1."), "The number is not heard")
+        XCTAssertTrue(try heard(inCell).contains("First"))
+    }
+
+    /// Words in a table cell that no `\cell` or `\row` ever closed are in a
+    /// table all the same, and are not lost, whether the file ends there or
+    /// not, and in a note as in the body.
+    func testWordsOfACellThatIsNeverClosedAreKept() throws {
+        let body = try rtfHTML(#"{\rtf1\ansi\pard\intbl Lost words\par\pard After\par}"#)
+        XCTAssertEqual(try rtfBody(body).select("td").array().map { try $0.text() }, ["Lost words"])
+        XCTAssertEqual(try rtfBody(body).select("body > p").array().map { try $0.text() }, ["After"])
+        let cutOff = try rtfHTML(#"{\rtf1\ansi\trowd\cellx1000\pard\intbl Cut off in the first cell"#)
+        XCTAssertEqual(try rtfBody(cutOff).text(), "Cut off in the first cell")
+        let note = try rtfHTML(#"{\rtf1\ansi A{\footnote\pard\intbl In table words\par}B\par}"#)
+        XCTAssertEqual(try rtfBody(note).text(), "AB In table words")
+    }
+
+    /// A cell is charged to the budget as a paragraph is, so that a small
+    /// file cannot make millions of table cells for the next steps to hold.
+    func testEveryCellIsChargedLikeAParagraph() throws {
+        let source = "{\\rtf1\\trowd\\cellx1\\pard\\intbl " + String(repeating: "x\\cell ", count: 2_000) + "}"
+        // Each cell costs 64 bytes and its word's 17: 2,000 of them are about 162,000
+        try DocumentByteLimit.$current.withValue(250_000) {
+            XCTAssertNoThrow(try RTFDocumentReader.html(from: Data(source.utf8), includesPages: false))
+        }
+        try DocumentByteLimit.$current.withValue(120_000) {
+            XCTAssertThrowsError(try RTFDocumentReader.html(from: Data(source.utf8), includesPages: false)) { error in
+                XCTAssertTrue(error is DocumentTooLargeError)
+            }
+        }
     }
 
     /// A bulleted item and a nested numbered item in a cell are a bulleted

@@ -31,11 +31,22 @@ final class RTFTrackedChangesTests: XCTestCase {
         XCTAssertEqual(try text(of: source), "ACDF")
     }
 
-    /// `\plain` resets character formatting but a revision mark is not
-    /// formatting: deleted text stays deleted.
-    func testPlainDoesNotBringDeletedTextBack() throws {
-        let source = #"{\rtf1\ansi A{\deleted B\plain C}D\par}"#
-        XCTAssertEqual(try text(of: source), "AD")
+    /// Microsoft's table lists `\deleted` with the character formatting
+    /// properties `\plain` resets, so `\plain` brings deleted text back; and a
+    /// `\deleted` set outside any group, as `\v` is, no longer takes every later
+    /// word of the document with it.
+    func testPlainBringsDeletedTextBack() throws {
+        XCTAssertEqual(try text(of: #"{\rtf1\ansi A{\deleted B\plain C}D\par}"#), "ACD")
+        XCTAssertEqual(try text(of: #"{\rtf1\ansi A\deleted B\par\pard\plain C\par}"#), "A C")
+        // `\pard` alone resets no character formatting
+        XCTAssertEqual(try text(of: #"{\rtf1\ansi A\deleted B\par\pard C\par}"#), "A")
+    }
+
+    /// Text moved away (`\mvf`) is deleted at its old place and read once, where
+    /// it was moved to (`\mvt`).
+    func testMovedTextIsReadOnceWhereItWasMovedTo() throws {
+        let source = #"{\rtf1\ansi Start {\mvf moved words }middle {\mvt moved words}.\par}"#
+        XCTAssertEqual(try text(of: source), "Start middle moved words.")
     }
 
     /// Hidden text and deleted text are both left out, together or apart.
@@ -88,5 +99,34 @@ final class RTFTrackedChangesTests: XCTestCase {
     func testADeletionAcrossParagraphsKeepsTheParagraphsApart() throws {
         let html = try rtfHTML(#"{\rtf1\ansi Before.\par{\deleted Gone one.\par Gone two.\par}After.\par}"#)
         XCTAssertEqual(try rtfBody(html).select("p").array().map { try $0.text() }, ["Before.", "After."])
+    }
+
+    /// A section break inside hidden or deleted text begins no page, nor does a
+    /// `\pagebb` on a paragraph that held only such words; a section break and a
+    /// `\pagebb` in text that is read still do.
+    func testBreaksInUnreadTextBeginNoPage() throws {
+        func pages(_ source: String) throws -> [String] { try rtfPages(try rtfHTML(source)) }
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par{\deleted\sect}Two.\par}"#), ["1"])
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par{\v\sect}Two.\par}"#), ["1"])
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\pard\pagebb{\v Gone\par}\pard Two.\par}"#), ["1"])
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\pard\pagebb{\deleted Gone}\par\pard Two.\par}"#), ["1"])
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\sect Two.\par}"#), ["1", "2"])
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\pard\pagebb Two.\par}"#), ["1", "2"])
+        // An empty paragraph that begins a page still does: the page is the next word's
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\pard\pagebb\par\pard Two.\par}"#), ["1", "2"])
+        // A paragraph with read words and hidden words begins its page
+        XCTAssertEqual(try pages(#"{\rtf1\ansi One.\par\pard\pagebb{\v Gone }Two.\par}"#), ["1", "2"])
+    }
+
+    /// A named heading that holds no word (all hidden or deleted) names no
+    /// heading: the headings found by size are still found.
+    func testAHeadingOfUnreadWordsDoesNotTurnOffTheSizeHeadings() throws {
+        let source = #"""
+            {\rtf1\ansi\fs24 Plain body words here.\par
+            \pard\fs48\b Big Title\par
+            \pard\fs24\b0 More body words here.\par
+            \pard\outlinelevel0{\deleted Gone}\par}
+            """#
+        XCTAssertEqual(try rtfHeadings(try rtfHTML(source)), ["1: Big Title"])
     }
 }
