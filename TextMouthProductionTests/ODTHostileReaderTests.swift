@@ -169,7 +169,7 @@ final class ODTHostileReaderTests: XCTestCase {
         // hundred bytes, against a limit of 20,000 bytes of text.
         let body = "<text:p>x" + String(repeating: "<text:s text:c=\"1000\"/>y", count: 30) + "</text:p>"
         let url = try makeODT(body: body)
-        DocumentByteLimit.$current.withValue(20_000) {
+        try DocumentByteLimit.$current.withValue(20_000) {
             XCTAssertThrowsError(try ODTDocumentReader.html(of: url, includesPages: true)) {
                 XCTAssertEqual($0 as? DocumentTooLargeError, DocumentTooLargeError(limit: 20_000))
             }
@@ -246,13 +246,13 @@ final class ODTHostileReaderTests: XCTestCase {
     func testAPartPastTheLimitIsRefused() throws {
         let big = odfContent(body: "<text:p>" + String(repeating: "word ", count: 200_000) + "</text:p>")
         let url = try makeODT(content: big, compression: .deflate)
-        DocumentByteLimit.$current.withValue(100_000) {
+        try DocumentByteLimit.$current.withValue(100_000) {
             XCTAssertThrowsError(try ODTDocumentReader.html(of: url, includesPages: true)) {
                 XCTAssertEqual($0 as? DocumentTooLargeError, DocumentTooLargeError(limit: 100_000))
             }
         }
         // The archive itself is held to the limit as well.
-        DocumentByteLimit.$current.withValue(500) {
+        try DocumentByteLimit.$current.withValue(500) {
             XCTAssertThrowsError(try ODTDocumentReader.html(of: url, includesPages: true)) {
                 XCTAssertEqual($0 as? DocumentTooLargeError, DocumentTooLargeError(limit: 500))
             }

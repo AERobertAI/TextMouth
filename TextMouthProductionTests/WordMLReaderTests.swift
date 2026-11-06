@@ -300,7 +300,7 @@ final class WordMLReaderTests: XCTestCase {
     func testTextPastTheLimitIsRefused() throws {
         let body = paragraph(String(repeating: "word ", count: 5_000))
         let url = try file(holding: document(body: body))
-        DocumentByteLimit.$current.withValue(10_000) {
+        try DocumentByteLimit.$current.withValue(10_000) {
             XCTAssertThrowsError(try WordMLDocumentReader.html(of: url, includesPages: true)) {
                 XCTAssertEqual($0 as? DocumentTooLargeError, DocumentTooLargeError(limit: 10_000))
             }

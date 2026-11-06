@@ -1,5 +1,4 @@
 import XCTest
-import SwiftSoup
 @testable import TextMouth
 
 /// TextMouth's own OpenDocument reader against textutil's reading of the
