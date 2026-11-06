@@ -48,6 +48,10 @@ enum DOCXParser {
         static let documentRelationships = "word/_rels/document.xml.rels"
         /// Core properties: the document's title and author.
         static let coreProperties = "docProps/core.xml"
+        /// The document's footnotes, read after its text.
+        static let footnotes = "word/footnotes.xml"
+        /// The document's endnotes, read after its footnotes.
+        static let endnotes = "word/endnotes.xml"
     }
 
     /// Parse a DOCX file into DocumentContent for reading/playback
@@ -114,7 +118,49 @@ enum DOCXParser {
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
         }
-        return conversion.markdown
+
+        // The footnotes and then the endnotes follow the text, each in the
+        // order its part keeps them (a Word document reads them the same way).
+        var markdown = conversion.markdown
+        for notesPart in [Part.footnotes, Part.endnotes] {
+            let notes = try convertNotes(from: archive, at: notesPart, styles: styles, numbering: numbering)
+            if let diagnostic = notes?.diagnostic {
+                reportIncompleteContent(diagnostic)
+            }
+            if let notesMarkdown = notes?.markdown, !notesMarkdown.isEmpty {
+                markdown = markdown.isEmpty ? notesMarkdown : markdown + "\n\n" + notesMarkdown
+            }
+        }
+        return markdown
+    }
+
+    /// The notes part at `path` as Markdown, or nil when the package has no
+    /// such part. The part goes through the same conversion as the text, with
+    /// these differences: no page begins in it, its text is never a heading,
+    /// the notes that are only separators are left out, the marks that
+    /// stand for the notes' numbers (`w:footnoteRef`, `w:endnoteRef`) hold no
+    /// text, and a link in it keeps its label alone (its targets are in a
+    /// part of their own, not read). The part is held to the size limit every
+    /// part is.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
+    ///   more than `ArchiveEntryLimits.current` allows, or is damaged before
+    ///   any of its text.
+    private static func convertNotes(
+        from archive: IndexedArchive,
+        at path: String,
+        styles: DOCXStyles,
+        numbering: DOCXNumbering
+    ) throws -> DOCXConversion? {
+        guard let data = try extractOptionalData(from: archive, path: path) else { return nil }
+        return try DOCXToMarkdownConverter(
+            data: data,
+            file: path,
+            styles: styles,
+            numbering: numbering,
+            relationships: [:],
+            includesPages: false,
+            readsNotes: true
+        ).convert()
     }
 
     /// Default report for a document whose text part broke off after some of
