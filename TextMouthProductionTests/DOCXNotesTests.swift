@@ -152,7 +152,7 @@ final class DOCXNotesTests: XCTestCase {
         let footnotes = footnotesPart(docxNote("footnote", id: 1, text: String(repeating: "word ", count: 400)))
         let docx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("Body"))), footnotes: footnotes)
         let limit: Int64 = 1_000
-        ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: limit, text: limit)) {
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: limit, text: limit)) {
             XCTAssertThrowsError(try DOCXParser.extractMarkdown(from: docx)) { error in
                 guard case let .malformedXML(file, reason)? = error as? DOCXParserError else {
                     return XCTFail("Expected a damaged part, got \(error)")
