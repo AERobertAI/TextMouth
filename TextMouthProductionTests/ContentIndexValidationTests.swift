@@ -705,22 +705,64 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
-    /// A symbolic link among the tracks is passed over, and nothing else is:
-    /// asking the enumerator to skip a link's "descendants" skips the rest of
-    /// the folder being listed, and the next folder's tracks with it. Many
-    /// links stand among many tracks, so whichever order the folder lists
-    /// them in, a link comes before some track.
-    func testALinkAmongTheTracksHidesNoOtherTrack() throws {
-        let folder = try scratchFolder("ContentIndexLinksAmongTracks")
-        let realNames = (1...12).map { String(format: "t%02d.wav", $0) } + ["Disc 2/d01.wav", "Disc 2/d02.wav"]
-        try createFiles(realNames, in: folder)
-        let target = folder.appendingPathComponent("t01.wav")
-        for index in 1...12 {
+    // MARK: - Walks That Pass Over Links
+
+    /// A walk that calls `skipDescendants()` on a file or a link skips the
+    /// contents of the next folder listed beside it (found on this Mac: a
+    /// link at 02.wav, listed before "Disc 2", and Disc 2's tracks were never
+    /// listed). The tests below build folders in which that call would lose
+    /// something, and require, before they look at what the walk found, that
+    /// the folder really lists the offending item right before the folder it
+    /// hides, since the order a volume lists in is its own: a fixture that
+    /// does not list so would pass whatever the code did.
+    private func requireListing(
+        _ isLead: (URL) -> Bool, rightBefore folderName: String, in folder: URL,
+        file: StaticString = #filePath, line: UInt = #line
+    ) throws {
+        let walk = try XCTUnwrap(
+            FileManager.default.enumerator(
+                at: folder,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            ),
+            file: file, line: line
+        )
+        let listed = walk.allObjects.compactMap { $0 as? URL }
+        let index = try XCTUnwrap(listed.firstIndex { $0.lastPathComponent == folderName }, file: file, line: line)
+        XCTAssertTrue(
+            index > 0 && isLead(listed[index - 1]),
+            "this volume does not list the item to test right before \(folderName): \(listed.map(\.lastPathComponent))",
+            file: file, line: line
+        )
+    }
+
+    /// Whether `url` is a symbolic link.
+    private func isLink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+    }
+
+    /// Makes `count` links named "0-link01" to "0-linkNN" in `folder`, to the
+    /// file `target`, with `suffix` after each name: names that sort before
+    /// the folders and tracks beside them, as a listing by name would put them.
+    private func makeLinks(_ count: Int, suffix: String, in folder: URL, to target: URL) throws {
+        for index in 1...count {
             try FileManager.default.createSymbolicLink(
-                at: folder.appendingPathComponent(String(format: "l%02d.wav", index)),
+                at: folder.appendingPathComponent(String(format: "0-link%02d", index) + suffix),
                 withDestinationURL: target
             )
         }
+    }
+
+    /// A symbolic link among the tracks is passed over, and nothing else is:
+    /// every track in every folder is found, no link is listed as one, and
+    /// the tracks in a folder listed right after a link are not lost.
+    func testALinkAmongTheTracksHidesNoOtherTrack() throws {
+        let folder = try scratchFolder("ContentIndexLinksAmongTracks")
+        let realNames = (1...6).map { String(format: "t%02d.wav", $0) }
+            + (2...5).flatMap { disc in ["Disc \(disc)/d01.wav", "Disc \(disc)/d02.wav"] }
+        try createFiles(realNames, in: folder)
+        try makeLinks(12, suffix: ".wav", in: folder, to: folder.appendingPathComponent("t01.wav"))
+        try requireListing(isLink, rightBefore: "Disc 2", in: folder)
 
         // Compared by file name (all unique here), since the temporary
         // folder may be reached through a link (/var is /private/var).
@@ -730,29 +772,56 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(found.count, realNames.count, "every track is listed once, and no link is listed as one")
     }
 
-    /// The import's two walks over a folder pass over links the same way:
-    /// the count of the files held counts every regular file, and the search
-    /// for a DAISY book beneath a folder still finds one after a link.
-    func testTheImportWalksPassOverALinkWithoutSkippingTheRest() throws {
-        let folder = try scratchFolder("ImportWalksLinks")
-        let noteNames = (1...12).map { String(format: "n%02d.txt", $0) } + ["Disc 2/m01.txt", "Disc 2/m02.txt"]
-        try createFiles(noteNames, in: folder)
-        // Three DAISY books, each in a folder of its own, among the links:
-        // the search has found none unless it passed the links.
-        try createFiles(["Talking1/ncc.html", "Talking2/ncc.html", "Talking3/ncc.html"], in: folder)
-        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("Talking1")))
-        for index in 1...12 {
-            try FileManager.default.createSymbolicLink(
-                at: folder.appendingPathComponent(String(format: "l%02d", index)),
-                withDestinationURL: folder.appendingPathComponent("n01.txt")
-            )
+    /// Finder's metadata folder is skipped, but only when it is a folder: a
+    /// file or link named __MACOSX is passed over like any other, and does
+    /// not hide the folder listed after it.
+    func testAFileNamedLikeFindersMetadataFolderHidesNoTrack() throws {
+        let folder = try scratchFolder("ContentIndexMetadataNames")
+        // The folder is named to sort after "__MACOSX" in a listing by name.
+        try createFiles(["a-disc/d01.wav", "a-disc/d02.wav", "t01.wav"], in: folder)
+        try Data("not a folder".utf8).write(to: folder.appendingPathComponent("__MACOSX"))
+        try requireListing({ $0.lastPathComponent == "__MACOSX" }, rightBefore: "a-disc", in: folder)
+
+        XCTAssertEqual(
+            Set(try AudioBookParser.audioFiles(in: folder).map(\.lastPathComponent)),
+            ["d01.wav", "d02.wav", "t01.wav"]
+        )
+
+        // As a folder, it is skipped with what it holds.
+        let withFolder = try scratchFolder("ContentIndexMetadataFolder")
+        try createFiles(["__MACOSX/junk.wav", "t01.wav"], in: withFolder)
+        XCTAssertEqual(try AudioBookParser.audioFiles(in: withFolder).map(\.lastPathComponent), ["t01.wav"])
+    }
+
+    /// A folder holding a DAISY book beneath a folder is no folder of tracks,
+    /// and the search for it passes over the links beside that folder: with
+    /// the call that skips the next folder's contents made on a link, the
+    /// book beneath "Series" is never met, and the folder is taken for an
+    /// audiobook of the tracks beside it (`isFolderOfTracks`).
+    func testADAISYBookBeneathAFolderIsFoundAmongLinks() throws {
+        let folder = try scratchFolder("ImportWalkDAISYBeneath")
+        try createFiles(["t01.wav", "Series/Talking/ncc.html"], in: folder)
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("Series/Talking")))
+        try makeLinks(24, suffix: "", in: folder, to: folder.appendingPathComponent("t01.wav"))
+        try requireListing(isLink, rightBefore: "Series", in: folder)
+
+        XCTAssertFalse(FileImportService.isFolderOfTracks(folder))
+    }
+
+    /// A folder holding no book names the files it holds, and counts the
+    /// files in a folder listed right after a link as well as the others.
+    func testAFolderWithoutABookCountsTheFilesBesideLinks() throws {
+        let folder = try scratchFolder("ImportWalkFilesHeld")
+        let names = (1...6).map { String(format: "n%02d.xyz", $0) }
+            + (2...5).flatMap { disc in ["Disc \(disc)/m01.xyz", "Disc \(disc)/m02.xyz"] }
+        try createFiles(names, in: folder)
+        try makeLinks(12, suffix: ".xyz", in: folder, to: folder.appendingPathComponent("n01.xyz"))
+        try requireListing(isLink, rightBefore: "Disc 2", in: folder)
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: folder)) { error in
+            let held = ((error as? ImportFailure)?.underlying as? FolderWithoutBookError)?.files
+            XCTAssertEqual(held?.countsByExtension, ["xyz": names.count], "\(error)")
         }
-
-        let held = FileImportService.filesHeld(by: folder)
-
-        // The notes, and the three ncc.html files.
-        XCTAssertEqual(held.total, noteNames.count + 3)
-        XCTAssertTrue(FileImportService.holdsDAISYBookBeneath(folder))
     }
 
     /// A folder, even one inside the book's folder, is not a playable file.
