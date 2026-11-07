@@ -32,24 +32,24 @@ enum WordSymbolFontEncodings {
     }
 
     /// The fonts that are the Symbol encoding under another name (lowercased).
-    private static let symbolClones: Set<String> = ["symbol", "mt symbol"]
+    private static let symbolClones: Set<String> = ["symbol", "mt symbol", "symbolps"]
 
     /// The codes of the WordPerfect fonts that the real documents settle, by font name (lowercased).
     private static let tables: [String: [Int: Unicode.Scalar]] = [
         // Typographic symbols: the curly quotation marks, the bullet, the section sign, the inverted question mark.
         "wp typographicsymbols": [
             0x3D: "\u{2019}", 0x3E: "\u{2018}", 0x41: "\u{201C}", 0x40: "\u{201D}",
-            0x24: "\u{2022}", 0x27: "\u{00A7}", 0x29: "\u{00BF}",
+            0x24: "\u{2022}", 0x27: "\u{00A7}", 0x29: "\u{00BF}", 0x43: "\u{2014}",
         ],
-        // Math symbols: the degree sign and the bullet.
-        "wp matha": [0x45: "\u{00B0}", 0x43: "\u{2022}"],
+        // Math symbols: the degree sign, the bullet, and the micro sign (a unit: "100 micrometres" must not read "100 m").
+        "wp matha": [0x45: "\u{00B0}", 0x43: "\u{2022}", 0x46: "\u{00B5}"],
         // The Greek fonts: the micro sign, in a unit.
         "wp greek courier": [0x3A: "\u{00B5}"],
         "wp greek century": [0x3A: "\u{00B5}"],
     ]
 
     /// The names (lowercased) that begin the fonts of pictures.
-    private static let pictureFontPrefixes = ["wingdings", "webdings", "zapf", "monotype sorts", "dingbats", "wp "]
+    private static let pictureFontPrefixes = ["wingdings", "webdings", "zapfdingbats", "zapf dingbats", "monotype sorts", "dingbats", "wp "]
 
     /// The character set (`chs`) of a font of symbols: its codes are the font's own and no code page's.
     private static let symbolCharacterSet = 2
@@ -67,10 +67,12 @@ enum WordSymbolFontEncodings {
     /// - Parameter codePage: the encoding of an ordinary font's own character set (nil: Windows-1252).
     /// - Parameter isPrivateUse: whether Word 97 stored the code as U+F0xx (its code plus 0xF000: text typed in a
     ///   symbol font, or a symbol whose character is so stored). In an ordinary text font that is read through the
-    ///   Symbol table, not the font's code page: Word shows such a character from the Symbol font, textutil reads
-    ///   it so, and in the real files it is mostly maths (`p` for pi, `D` for delta, `m` for mu: `100mm` for
-    ///   100 micrometres would change a measurement a thousandfold). Checkboxes are the exception and read wrongly
-    ///   either way (`gov216-216376`: Arial runs of U+F071 beside Wingdings runs of it; textutil gives theta).
+    ///   Symbol table, not the font's code page, as textutil reads it. What the rule buys: maths typed this way reads
+    ///   as itself (`p` is pi, `D` is delta, `m` is mu: the code page would read 100 micrometres as `100mm`, a
+    ///   measurement a thousand times out). What it costs: of the 134 such characters in 11 real documents only about
+    ///   half are maths. The rest are checkboxes or nothing (one government form sets its checkboxes in Arial, and
+    ///   they read as theta; the code page would read them as `q`, no better), a digit that is a picture's code, and
+    ///   spaces.
     static func scalar(forCode code: Int, reading: Reading, codePage: String.Encoding? = nil, isPrivateUse: Bool = false) -> Unicode.Scalar? {
         switch reading {
         case .adobeSymbol:
