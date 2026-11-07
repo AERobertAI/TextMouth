@@ -42,6 +42,16 @@ final class XMLInputGuardTests: XCTestCase {
         XCTAssertNil(problem("<r a=\"" + String(repeating: "=' >", count: 400_000) + "\"/>"))
     }
 
+    /// The count is of one tag: many tags of a few attributes each hold far
+    /// more than the limit between them, as every real document does, and are
+    /// read.
+    func testTheCountStartsAgainInEachTag() {
+        let tags = String(repeating: "<p a=\"1\" b=\"2\" c=\"3\"/>", count: 5_000)
+        XCTAssertNil(problem("<r>\(tags)</r>"))
+        // And the one tag over the limit among them is found.
+        XCTAssertEqual(problem("<r>\(tags)<p \(attributes(1_025))/>\(tags)</r>"), .tooManyAttributes)
+    }
+
     /// Quotes are honoured: a value holding thousands of `=` is one attribute
     /// (the quotes of both kinds), and a `>` in a value does not end the tag
     /// early, which would count the attributes after it in no tag at all.
