@@ -306,11 +306,13 @@ final class BrailleExportWriterTests: XCTestCase {
 
     // MARK: - Registration and Wording
 
-    /// The registry lists BRF and PEF after Word 97-2003, and finds both by
-    /// their ids, with the names, hints, and extensions the picker shows.
+    /// The registry lists BRF and PEF last, after Word 97-2003 and EPUB, and
+    /// finds both by their ids, with the names, hints, and extensions the
+    /// picker shows.
     func testTheWritersAreRegisteredAfterWord() throws {
         let ids = TextExportWriters.all.map(\.id)
-        XCTAssertEqual(Array(ids.suffix(3)), ["doc", "brf", "pef"])
+        XCTAssertEqual(Array(ids.suffix(2)), ["brf", "pef"], "braille comes last")
+        XCTAssertEqual(Array(ids.suffix(4)), ["doc", "epub", "brf", "pef"], "Word, then EPUB, then braille")
         let brf = try XCTUnwrap(TextExportWriters.writer(id: "brf"))
         let pef = try XCTUnwrap(TextExportWriters.writer(id: "pef"))
         XCTAssertEqual([brf.name, pef.name], ["BRF", "PEF"])
