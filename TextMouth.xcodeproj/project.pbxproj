@@ -7729,8 +7729,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
+				INFOPLIST_FILE = iOSApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TextMouth;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -7739,7 +7740,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.4.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth.iOS;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = iphoneos;
@@ -8101,8 +8102,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
+				INFOPLIST_FILE = iOSApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TextMouth;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -8111,7 +8113,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.4.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth.iOS;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = iphoneos;
