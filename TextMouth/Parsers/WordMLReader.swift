@@ -85,6 +85,9 @@ final class WordMLReader: OfficeXMLReader {
         var properties = WordMLRunProperties()
         var isStarted = false
         var isHidden = false
+        /// The font of the run: its own, else its character style's, else its paragraph style's, else the
+        /// document defaults' (nil when none is named). A symbol is read in it.
+        var font: String?
     }
     private var runs: [OpenRun] = []
 
@@ -130,7 +133,8 @@ final class WordMLReader: OfficeXMLReader {
                 if naming == "o:Title", title.utf8.count < 4_096 { title += text }
                 if naming == "o:Author", author.utf8.count < 4_096 { author += text }
             } else if inText {
-                try writer.addLiteral(text)
+                // Text typed in a symbol font (U+F020 to U+F0FF) is read in the run's font.
+                try writer.addLiteral(sheet.fonts.readingSymbolText(text, inFont: runs.last?.font))
             }
         } catch {
             fail(error)
@@ -197,6 +201,13 @@ final class WordMLReader: OfficeXMLReader {
         case "w:noBreakHyphen":
             try startRunIfNeeded()
             if runs.last?.isHidden == false { try writer.addLiteral("-") }
+        case "w:sym":
+            // A symbol: a character of a font, read as the Word 97 reader reads one (`WordXMLFonts`);
+            // a space where the font gives no character a voice can speak keeps the words apart.
+            try startRunIfNeeded()
+            guard runs.last?.isHidden == false else { return }
+            let symbol = sheet.fonts.symbol(font: attributes["w:font"], character: WordXMLFonts.character(attributes["w:char"]))
+            try writer.addLiteral(String(symbol))
         case "w:footnote", "w:endnote":
             try startRunIfNeeded()
             if runs.last?.isHidden == true { return skipSubtree() }
@@ -311,6 +322,7 @@ final class WordMLReader: OfficeXMLReader {
             Self.toggled(paragraphStyle: paragraphStyle[keyPath: property], characterStyle: character[keyPath: property], direct: direct[keyPath: property])
         }
         runs[index].isHidden = settle(\.hidden) == true
+        runs[index].font = direct.font ?? character.font ?? paragraphStyle.font ?? sheet.defaultFont
         if runs[index].isHidden { writer.markHiddenText() }
         let size = direct.size ?? character.size ?? paragraphStyle.size
         writer.beginSpan(OfficeRun(size: size ?? 24).applying(bold: settle(\.bold) ?? false, italic: settle(\.italic) ?? false, size: nil))
@@ -328,6 +340,9 @@ final class WordMLReader: OfficeXMLReader {
             style?.style.isDefault = attributes["w:default"].map { $0 == "on" || $0 == "1" || $0 == "true" } ?? false
         case "w:name": style?.style.name = attributes["w:val"]
         case "w:basedOn": style?.style.basedOn = attributes["w:val"]
+        case "w:docDefaults": inDocumentDefaults = true
+        case "w:font": declaringFont = attributes["w:name"]
+        case "w:charset": if let font = declaringFont { sheet.fonts.declare(font: font, characterSet: attributes["w:val"]) }
         case "w:pPr": inParagraphProperties = true
         case "w:rPr": inRunProperties = true
         case "w:listDef": listDefinition = attributes["w:listDefId"]
@@ -343,12 +358,19 @@ final class WordMLReader: OfficeXMLReader {
         default:
             if style != nil, inRunProperties {
                 style?.style.run.read(name, attributes)
+            } else if inDocumentDefaults, inRunProperties, name == "w:rFonts" {
+                // The font of all text that no style or run names another for.
+                sheet.defaultFont = WordMLRunProperties.fontName(in: attributes) ?? sheet.defaultFont
             } else if style != nil, inParagraphProperties {
                 style?.style.paragraph.read(name, attributes)
             }
         }
         if sheet.count > WordMLStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
     }
+
+    /// Whether `w:docDefaults` is open, and the font (`w:font`) of the font table being read.
+    private var inDocumentDefaults = false
+    private var declaringFont: String?
 
     /// The list (`w:list`, by `w:ilfo`) being read in `w:lists`.
     private var currentList: String?
@@ -365,6 +387,8 @@ final class WordMLReader: OfficeXMLReader {
             style = nil
             // A style is added where it ends, so this is where the limit is met.
             if sheet.count > WordMLStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
+        case "w:docDefaults": inDocumentDefaults = false
+        case "w:font": declaringFont = nil
         case "w:lvl": listLevel = nil
         case "w:listDef": listDefinition = nil
         case "w:list": currentList = nil

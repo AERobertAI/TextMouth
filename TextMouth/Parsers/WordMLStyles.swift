@@ -14,6 +14,8 @@ struct WordMLRunProperties: Equatable {
     var size: Int?
     /// `w:rStyle`: the character style of a run.
     var characterStyle: String?
+    /// `w:rFonts`: the font, its `w:ascii`, else its `w:h-ansi`; a symbol is read in it.
+    var font: String?
 
     /// Reads the run property element `name`, when it is one of these.
     mutating func read(_ name: String, _ attributes: [String: String]) {
@@ -23,8 +25,17 @@ struct WordMLRunProperties: Equatable {
         case "w:vanish": hidden = Self.isOn(attributes)
         case "w:sz": size = attributes["w:val"].flatMap { Int($0) }.map { min(max($0, 1), 2_000) }
         case "w:rStyle": characterStyle = attributes["w:val"]
+        case "w:rFonts": font = Self.fontName(in: attributes) ?? font
         default: break
         }
+    }
+
+    /// The font the attributes of a `w:rFonts` name (`w:ascii`, else `w:h-ansi`), or nil for none.
+    static func fontName(in attributes: [String: String]) -> String? {
+        for key in ["w:ascii", "w:h-ansi"] {
+            if let name = attributes[key], !name.isEmpty { return name }
+        }
+        return nil
     }
 
     /// Whether a toggle property is on: present with no value, or with a
@@ -38,7 +49,7 @@ struct WordMLRunProperties: Equatable {
     func overridden(by child: WordMLRunProperties) -> WordMLRunProperties {
         WordMLRunProperties(
             bold: child.bold ?? bold, italic: child.italic ?? italic, hidden: child.hidden ?? hidden,
-            size: child.size ?? size, characterStyle: child.characterStyle ?? characterStyle
+            size: child.size ?? size, characterStyle: child.characterStyle ?? characterStyle, font: child.font ?? font
         )
     }
 }
@@ -123,6 +134,10 @@ final class WordMLStyleSheet {
     private var styles: [String: WordMLStyle] = [:]
     /// The id of the default paragraph style (`w:default="on"`).
     private var defaultParagraphID: String?
+    /// The font the document defaults name (`w:docDefaults`), if they name one.
+    var defaultFont: String?
+    /// What the document's font table declares of its fonts (`w:fonts`).
+    var fonts = WordXMLFonts()
     /// How each list mark: list (`w:ilfo`) to level to whether it is numbered
     /// (false for a bullet), from `w:lists`.
     private var listLevels: [String: [Int: Bool]] = [:]
