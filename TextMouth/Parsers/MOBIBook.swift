@@ -181,7 +181,8 @@ struct MOBIBook {
     ) throws -> MOBIBook {
         // The KF8 half names the book; where it names nothing, the MOBI 6 half does.
         let metadata = Self.metadata(of: [headers] + (firstHeaders.map { [$0] } ?? []), database: database)
-        let text = try MOBIText.bytes(of: database, headers: headers)
+        let text = try MOBIText.bytes(
+            of: database, headers: headers, through: KF8Layout.flowTableEnd(database: database, headers: headers))
         return MOBIBook(
             metadata: metadata,
             sections: try KF8Book.sections(

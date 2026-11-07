@@ -156,6 +156,27 @@ struct KF8Layout {
     /// sheet or two, and an SVG picture for each cover or drawing).
     static let maximumFlows = 65_536
 
+    /// Where the flow table (FDST) says the text ends: the end of its last
+    /// flow, or 0 when the book has no flow table that reads. The markup is
+    /// the first flow, so this is never less than where it ends. A table with
+    /// a flow that ends before the one before it, or an entry cut short, is
+    /// not believed (0).
+    static func flowTableEnd(database: MOBIPalmDatabase, headers: MOBIHeaders) -> Int {
+        guard let record = headers.flowTableRecord,
+              let table = try? database.record(record, "The flow table"),
+              table.hasTag("FDST", at: 0),
+              let count = try? table.uint32(8, "The flow count"), count >= 1, count <= maximumFlows else { return 0 }
+        var previousEnd = 0
+        for index in 0..<count {
+            guard let start = try? table.uint32(12 + index * 8, "A flow's start"),
+                  let end = try? table.uint32(16 + index * 8, "A flow's end"),
+                  start >= previousEnd, start <= end else { return 0 }
+            previousEnd = end
+        }
+        // An end past what a document's text may be is not believed: the text is then read at its declared length.
+        return Int64(previousEnd) <= DocumentByteLimit.current ? previousEnd : 0
+    }
+
     /// The flows of the text, in order, from the flow table (FDST). The first
     /// is the markup. A flow table that is missing, or that does not read, or
     /// whose entries do not lie inside the text and in order, leaves one
@@ -171,10 +192,14 @@ struct KF8Layout {
         for index in 0..<count {
             guard let start = try? table.uint32(12 + index * 8, "A flow's start"),
                   let end = try? table.uint32(16 + index * 8, "A flow's end"),
-                  start >= previousEnd, start <= end, end <= textLength else { return whole }
+                  start >= previousEnd, start <= end else { return whole }
+            // A flow that the text does not reach (the records hold less than the table says) is left out,
+            // with all after it; the markup flow must lie in the text.
+            if end > textLength { break }
             flows.append(start..<end)
             previousEnd = end
         }
+        if flows.isEmpty { return whole }
         // The markup flow must hold something, or the table is a lie.
         return flows[0].isEmpty ? whole : flows
     }

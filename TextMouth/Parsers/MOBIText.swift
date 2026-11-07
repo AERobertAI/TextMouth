@@ -37,12 +37,21 @@ enum MOBIText {
     ///   `DocumentTooLargeError` for a text that declares
     ///   more than `DocumentByteLimit` allows; `FileImportError.noTextToRead`
     ///   for a book that declares none.
-    static func bytes(of database: MOBIPalmDatabase, headers: MOBIHeaders) throws -> [UInt8] {
+    ///
+    /// - Parameter extent: Where the text is known to end when that is past
+    ///   the length the header declares: kindlegen's KF8 headers declare only
+    ///   the markup, and the SVG flows its flow table names lie after it in
+    ///   the same records. The text is then read through `extent` (so far as
+    ///   the records hold it), never less than the declared length. 0, as for
+    ///   every other book, reads the declared length and no more.
+    static func bytes(of database: MOBIPalmDatabase, headers: MOBIHeaders, through extent: Int = 0) throws -> [UInt8] {
         let declared = headers.textLength
         guard declared > 0, headers.textRecordCount > 0 else { throw FileImportError.noTextToRead }
-        // The decompressed size is held to its declared size, and that to an
+        // What is read: the declared length, or the extent when that is more.
+        let wanted = max(declared, extent)
+        // The decompressed size is held to its wanted size, and that to an
         // absolute cap, before any record is read.
-        try DocumentByteLimit.check(byteCount: Int64(declared))
+        try DocumentByteLimit.check(byteCount: Int64(wanted))
 
         // The records the text lies in follow record 0. A count that passes
         // the records the book has is a truncated book, or a hostile one.
@@ -55,21 +64,21 @@ enum MOBIText {
         var text: [UInt8] = []
         // Room for what the records can plausibly hold, never for what the
         // header merely claims: a hostile header may claim 64 MB of a file of 4 KB.
-        text.reserveCapacity(min(declared, lastTextRecord * 8192))
+        text.reserveCapacity(min(wanted, lastTextRecord * 8192))
         for index in 1...lastTextRecord {
             let record = try database.record(index, "A text record")
             let length = try usableLength(of: record, flags: headers.extraDataFlags)
             let bytes = record.bytes
             let start = record.range.lowerBound
-            try decompress(bytes, start..<(start + length), &text, declared)
-            if text.count >= declared { break }
+            try decompress(bytes, start..<(start + length), &text, wanted)
+            if text.count >= wanted { break }
         }
         // A book may decompress to a little more than it declares (padding
         // in its last record): the declared length is the text. One that
         // decompresses to less has lost part of its text, as a download that
         // stopped short does, and is not read as if it were whole.
-        if text.count > declared { text.removeLast(text.count - declared) }
-        guard text.count == declared else {
+        if text.count > wanted { text.removeLast(text.count - wanted) }
+        guard text.count >= declared else {
             throw MOBIError.damaged("its text records hold \(text.count) bytes of the \(declared) it says the text has")
         }
         return text

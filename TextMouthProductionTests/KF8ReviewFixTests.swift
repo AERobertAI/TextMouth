@@ -308,6 +308,29 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertTrue(chapter.contains("Visible chart words"), chapter)
     }
 
+    func testAnSVGFlowPastTheLengthTheHeaderDeclaresIsStillRead() throws {
+        // kindlegen's KF8 header declares the length of the markup only; its SVG flows follow in the same records.
+        var fixture = KF8Fixture(body: "<p>Before.</p><img src=\"kindle:flow:0002?mime=image/svg+xml\"/><p>After.</p>")
+        fixture.flows = ["p { margin: 0 }", Self.svg]
+        fixture.declaresMarkupOnly = true
+        for compression in [1, 2] {
+            fixture.compression = compression
+            let html = try opened(fixture.data()).sections[0].html
+            XCTAssertTrue(html.contains("Visible chart words"), "compression \(compression): \(html)")
+        }
+        // The same book in a hybrid file.
+        XCTAssertTrue(try opened(hybrid(fixture)).sections[0].html.contains("Visible chart words"))
+        // A flow table that names more text than the records hold leaves those flows out and reads the book.
+        var short = fixture
+        short.flows = ["p { margin: 0 }"]
+        var bytes = short.data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let flowRecord = (0..<4).reduce(0) { $0 << 8 | Int(bytes[offsets[0] + 192 + $1]) }
+        MOBIFixture.put32(&bytes, offsets[flowRecord] + 12 + 8 + 4, 5_000)
+        let book = try opened(bytes)
+        XCTAssertTrue(book.sections[0].html.contains("Before."))
+    }
+
     func testOnlyASmallSVGFlowThatIsOneIsPutBack() throws {
         var fixture = KF8Fixture(
             body: "<p>Words.</p><img src=\"kindle:flow:0001?mime=image/svg+xml\"/><img src=\"kindle:flow:0002?mime=image/png\"/>"

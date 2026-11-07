@@ -75,6 +75,9 @@ struct KF8Fixture {
     var contentsOverride: (rows: [Row], strings: [String])?
     /// The place in its fragment that a guide entry names (0 for the start of a document).
     var guideOffset = 0
+    /// Whether the header declares only the markup flow's length as the text's, as kindlegen's does, leaving the
+    /// flows after it outside the declared text.
+    var declaresMarkupOnly = false
 
     // MARK: Layout
 
@@ -211,7 +214,7 @@ struct KF8Fixture {
         }
 
         records.append(record0(
-            textLength: text.count, textRecordCount: textRecords.count, flowTable: first,
+            textLength: declaresMarkupOnly ? markupEnd : text.count, textRecordCount: textRecords.count, flowTable: first,
             skeleton: skeletonRecord, fragment: fragmentRecord, ncx: ncxRecord, guide: guideRecord
         ))
         return records + textRecords + tables
