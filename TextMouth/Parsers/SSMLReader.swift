@@ -23,6 +23,10 @@ enum SSMLReader {
         /// The file is not well-formed XML; `reason` completes the sentence
         /// as `PackageSAXParser` words it, with the position.
         case damaged(reason: String)
+        /// The file is not damaged, but TextMouth will not read it: it defines
+        /// entities of its own, or is written in an encoding the guard cannot
+        /// see through (`XMLInputGuard`).
+        case unsafe(XMLInputGuard.Problem)
 
         var errorDescription: String? {
             switch self {
@@ -30,6 +34,12 @@ enum SSMLReader {
                 return "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”."
             case .damaged(let reason):
                 return "This SSML file is damaged or incomplete: \(reason)."
+            case .unsafe(.encoding(let name)):
+                return "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding. "
+                    + "Save it as UTF-8, then import it again."
+            case .unsafe:
+                return "TextMouth can't safely read this SSML file, because it defines entities of its own. "
+                    + "Open it in a text editor, take the entity definitions out, save it, then import it again."
             }
         }
     }
@@ -108,7 +118,10 @@ enum SSMLReader {
 
         /// Prepare to read `data`; a damaged file is `Failure.damaged`.
         init(data: Data) {
-            super.init(data: data, file: "SSML") { _, reason in Failure.damaged(reason: reason) }
+            super.init(
+                data: data, file: "SSML",
+                malformedXMLError: { _, reason in Failure.damaged(reason: reason) },
+                refusedXMLError: { _, problem in Failure.unsafe(problem) })
         }
 
         // MARK: Elements

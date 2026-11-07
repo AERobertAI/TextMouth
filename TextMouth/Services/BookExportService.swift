@@ -1045,6 +1045,7 @@ enum BookExportService {
                 fromContentBytes: bytes,
                 at: source,
                 book: book,
+                options: text.walkOptions,
                 cancellation: cancellation
             )
             try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
