@@ -72,7 +72,7 @@ enum EPUBLinkAddress {
         if text.hasPrefix("[") {
             guard let close = text.firstIndex(of: "]") else { return nil }
             let literal = text[text.index(after: text.startIndex)..<close]
-            guard !literal.isEmpty, literal.allSatisfy({ $0.isHexDigit || $0 == ":" || $0 == "." }) else { return nil }
+            guard !literal.isEmpty, literal.allSatisfy({ ($0.isASCII && $0.isHexDigit) || $0 == ":" || $0 == "." }) else { return nil }
             host = text[...close]
             let after = text[text.index(after: close)...]
             if !after.isEmpty {
@@ -86,12 +86,20 @@ enum EPUBLinkAddress {
             }
             guard !host.isEmpty, host.allSatisfy({ allowedInHost.contains($0) }) else { return nil }
         }
-        // ":" and one to five digits, or nothing.
+        // ":" and a number of at most 65535, or nothing.
         let digits = port.dropFirst()
-        guard port.isEmpty || ((1...5).contains(digits.count) && digits.allSatisfy({ $0.isASCII && $0.isNumber })) else {
+        guard port.isEmpty || ((1...5).contains(digits.count)
+            && digits.allSatisfy({ $0.isASCII && $0.isNumber })
+            && (Int(digits) ?? Int.max) <= 65_535) else {
             return nil
         }
         return (String(host), port)
+    }
+
+    /// Whether `character` is an ASCII hexadecimal digit (`isHexDigit` also
+    /// takes the fullwidth forms, which no URL allows).
+    private static func isASCIIHexDigit(_ character: Character) -> Bool {
+        character.isASCII && character.isHexDigit
     }
 
     /// `text` with every character not in `allowed` written as the percent
@@ -110,7 +118,7 @@ enum EPUBLinkAddress {
                 hasHash = true
                 result.append(character)
             } else if character == "%", index + 2 < characters.count,
-                      characters[index + 1].isHexDigit, characters[index + 2].isHexDigit {
+                      Self.isASCIIHexDigit(characters[index + 1]), Self.isASCIIHexDigit(characters[index + 2]) {
                 result.append(character)
             } else {
                 for byte in String(character).utf8 {
