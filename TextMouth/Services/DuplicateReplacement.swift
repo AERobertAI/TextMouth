@@ -759,6 +759,15 @@ enum DuplicateReplacement {
             return TranscriptCarried()
         }
         var result = TranscriptCarried(wasEdited: transcript.editedAt != nil)
+        // A transcript the new copy was given at its import, from a file
+        // the listener brought with the audio (FMT23), is the listener's
+        // latest word: the old copy's, which nothing of the listener's own
+        // (an edit, a cleanup) has touched, does not replace it. An edited
+        // or cleaned-up one is still carried, as it is the listener's work.
+        if copy.format.isAudio, transcript.editedAt == nil, transcript.cleanedUp == nil,
+           TranscriptStore.hasTranscript(of: copy) {
+            return result
+        }
         guard copy.format.isAudio,
               let index = (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex,
               let fitted = fitted(
