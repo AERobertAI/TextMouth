@@ -1,20 +1,20 @@
 import SwiftUI
 
-/// The root of the iPhone app's window: the one navigation stack, and what is
-/// presented over every screen.
+/// The root of the iPhone app's window: the one navigation stack, bound to the
+/// model's path, and what is presented over every screen, each slice's in a
+/// modifier of its own file, so that this view is edited again only for its
+/// first screen.
 ///
 /// Slice 1's first screen is thin on purpose: a list of the library's books by
-/// title. Slice 2 replaces `bookList` with `PhoneLibraryView`.
+/// title. The Library's slice replaces `bookList` with `PhoneLibraryView`.
 struct PhoneRootView: View {
-    /// The app's one model.
-    let model: PhoneAppModel
+    /// The app's one model, whose path the stack binds to.
+    @ObservedObject private var model: PhoneAppModel
     /// The library the list shows, and whose errors the alert says.
     @ObservedObject private var library: LibraryViewModel
-    /// The owner of the reader. Only its own `reader` and `snapshot` publish,
-    /// so this view never hears the reader's place move.
+    /// The owner of the readers. Only its own published values change, so this
+    /// view never hears a reader's place move.
     @ObservedObject private var session: PhoneSession
-    /// The screens pushed over the Library.
-    @State private var path: [PhoneRoute] = []
 
     /// A root view over `model`.
     init(model: PhoneAppModel) {
@@ -24,13 +24,17 @@ struct PhoneRootView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack(path: $model.path) {
             bookList
                 .navigationTitle(PhoneAppWording.libraryTitle)
                 .navigationDestination(for: PhoneRoute.self) { route in
                     switch route {
                     case .reader:
                         PhoneReaderView(session: session)
+                    case .folder, .settings:
+                        // Nothing pushes these yet: the Library's slice and
+                        // the Settings slice build them.
+                        EmptyView()
                     }
                 }
         }
@@ -40,10 +44,8 @@ struct PhoneRootView: View {
         } message: {
             Text(library.errorMessage ?? PhoneAppWording.unknownError)
         }
-        // A book opened by something other than its row, such as an import.
-        .onReceive(session.showReaderRequests) { _ in
-            path = PhoneRoute.showingReader(on: path)
-        }
+        .phoneImportPresentations(model)
+        .phoneReopening(model)
         .task {
             model.startAfterFirstWindow()
         }
@@ -60,8 +62,8 @@ struct PhoneRootView: View {
             }
             ForEach(books) { book in
                 Button(book.title) {
-                    session.open(book)
-                    path = PhoneRoute.showingReader(on: path)
+                    guard session.open(book) != nil else { return }
+                    model.showReader()
                 }
             }
         }
