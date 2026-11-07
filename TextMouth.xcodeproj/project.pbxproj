@@ -1090,6 +1090,7 @@
 		8A39A00A0543DF5F5529F9B5 /* SSMLReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FB754EDCAD346448D59062 /* SSMLReaderTests.swift */; };
 		8A3DD23BFD3E84818EFECBAD /* LegacyPDFParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8B945AEFFB8DFC43FE7A35 /* LegacyPDFParserTests.swift */; };
 		8A4EBDFA6411BF610455BCF5 /* ODTTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13F10E24C4398AD13253A9A /* ODTTestSupport.swift */; };
+		8A5D5A26956178697358149E /* PhoneBookmarksSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC5BD7D3927F5BE9C6BEFEC /* PhoneBookmarksSheet.swift */; };
 		8A5F7F6255C329B5B6774636 /* LibraryViewEditorWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F99CE69A563E54CA02A401 /* LibraryViewEditorWording.swift */; };
 		8A636089A751157223362A3B /* id3tag.c in Sources */ = {isa = PBXBuildFile; fileRef = A79E393E2092CB70E65F7B16 /* id3tag.c */; };
 		8A6B5557FE210EE8361BF5F1 /* CloudDriveTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EAB4BCBB762B2C7EFB8877 /* CloudDriveTestSupport.swift */; };
@@ -2227,6 +2228,7 @@
 		0A9038CE24226E677C56AB39 /* AsyncBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncBridge.swift; sourceTree = "<group>"; };
 		0AAA0FA0EEF9B5BE05909946 /* DOCXPageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXPageTests.swift; sourceTree = "<group>"; };
 		0AB06F14B0457FAAC6C77EB1 /* OggConversionProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggConversionProgress.swift; sourceTree = "<group>"; };
+		0AC5BD7D3927F5BE9C6BEFEC /* PhoneBookmarksSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneBookmarksSheet.swift; sourceTree = "<group>"; };
 		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
 		0ADC7F01E33F051F35D1E26B /* libliblouis.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libliblouis.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYInlineFragmentTests.swift; sourceTree = "<group>"; };
@@ -3670,6 +3672,7 @@
 		152D0077BCC31C1181594ACE /* Reader */ = {
 			isa = PBXGroup;
 			children = (
+				0AC5BD7D3927F5BE9C6BEFEC /* PhoneBookmarksSheet.swift */,
 				2FCE35A7FA1912B4C3A0C90A /* PhoneGoToSheet.swift */,
 				96E8C9CCECC242C39E4FCB0A /* PhoneHeadingsSheet.swift */,
 				F13226B57AAF1436754DE35C /* PhoneReaderSheetContent.swift */,
@@ -7644,6 +7647,7 @@
 				D5030150662570F333AE2713 /* PhoneAppModel.swift in Sources */,
 				DCAC05891005CA8A521F8654 /* PhoneAppWording.swift in Sources */,
 				579AC5542A9A0090208850BF /* PhoneBookmarksModel.swift in Sources */,
+				8A5D5A26956178697358149E /* PhoneBookmarksSheet.swift in Sources */,
 				B5DBAA520FB3B807603F2456 /* PhoneChoice.swift in Sources */,
 				6882C42A17987B35E044D05D /* PhoneChoiceSheet.swift in Sources */,
 				7735C70C77A3A9C346F56C1A /* PhoneControlKind.swift in Sources */,
