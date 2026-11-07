@@ -1,6 +1,36 @@
 import Combine
 import Foundation
 
+/// What a Library screen hears of the open book, from the session's snapshot:
+/// which book it is, and whether it plays. Nothing else, so the screen never
+/// hears the book's place move.
+struct PhoneLibraryListening: Equatable, Sendable {
+    /// The open book, or nil when none is open.
+    let bookID: UUID?
+    /// Whether it plays.
+    let isPlaying: Bool
+
+    /// No book open.
+    static let nothingOpen = PhoneLibraryListening(bookID: nil, isPlaying: false)
+}
+
+/// The Continue row as it was last built (the iPhone interface spec, "The
+/// Continue row"): the Mac's Continue button, as the first row of every
+/// Library screen.
+struct PhoneContinueRow: Equatable, Sendable {
+    /// The book in reach, which the row opens.
+    let bookID: UUID
+    /// What VoiceOver says: the Mac's "Continue listening to Emma, 16 minutes
+    /// remaining", or "Now Playing: Emma" while it plays.
+    let label: String
+    /// What it shows, the Mac's "Continue: Emma".
+    let visibleTitle: String
+    /// The time left it shows, the Mac's "16:00 left", or nil.
+    let timeText: String?
+    /// Whether the book plays, which the visible Play button shows.
+    let isPlaying: Bool
+}
+
 /// The rows of one iPhone Library screen, held as values and published only
 /// when the list itself changes (the engineering review's F11).
 ///
@@ -27,6 +57,10 @@ final class PhoneLibraryRows: ObservableObject {
     /// total remaining at current speed", or nil while searching or with no
     /// books. It is built with the rows, so it never changes as a book plays.
     @Published private(set) var summary: String?
+    /// The Continue row, or nil while no book is in reach. Its words change
+    /// only when the book starts or stops playing, when the book in reach
+    /// changes, and when the rows are built afresh.
+    @Published private(set) var continueRow: PhoneContinueRow?
 
     /// Where the screen is.
     private(set) var location: LibraryLocation
@@ -48,8 +82,10 @@ final class PhoneLibraryRows: ObservableObject {
     private let removalPreferences: () -> RemovalPreferences
     /// The signature of the list last published.
     private var publishedSignature: Signature?
-    /// Whether a book played when last heard, or nil before the first word.
-    private var wasPlaying: Bool?
+    /// The book in reach: the open reader's, else the one last opened.
+    private let bookInReach: () -> Book?
+    /// What was last heard of the open book, or nil before the first word.
+    private var listening: PhoneLibraryListening?
     /// The library's changes and the book's playing, heard while the model lasts.
     private var subscriptions = Set<AnyCancellable>()
 
@@ -60,19 +96,23 @@ final class PhoneLibraryRows: ObservableObject {
     ///   - location: Where the screen is.
     ///   - wordsPerMinute: The speed time left is counted at, read at each build.
     ///   - removalPreferences: The removal preferences, read at each build.
-    ///   - playing: Whether a book plays, from the session's snapshot: when it
-    ///     stops, the rows are built afresh with the place it reached.
+    ///   - bookInReach: The book the Continue row opens, read when it is built.
+    ///   - listening: The open book and whether it plays, from the session's
+    ///     snapshot: when it stops, the rows are built afresh with the place
+    ///     it reached.
     init(
         library: LibraryViewModel,
         location: LibraryLocation,
         wordsPerMinute: @escaping () -> Double,
         removalPreferences: @escaping () -> RemovalPreferences,
-        playing: AnyPublisher<Bool, Never>
+        bookInReach: @escaping () -> Book?,
+        listening: AnyPublisher<PhoneLibraryListening, Never>
     ) {
         self.library = library
         self.location = location
         self.wordsPerMinute = wordsPerMinute
         self.removalPreferences = removalPreferences
+        self.bookInReach = bookInReach
 
         // `$library` publishes before the library changes, so the change is
         // read a turn of the main queue later, once it is in place.
@@ -84,12 +124,12 @@ final class PhoneLibraryRows: ObservableObject {
                 }
             }
             .store(in: &subscriptions)
-        playing
+        listening
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isPlaying in
+            .sink { [weak self] heard in
                 MainActor.assumeIsolated {
-                    self?.playingChanged(to: isPlaying)
+                    self?.listeningChanged(to: heard)
                 }
             }
             .store(in: &subscriptions)
@@ -157,19 +197,58 @@ final class PhoneLibraryRows: ObservableObject {
     // MARK: - Hearing the Library and the Book
 
     /// Builds the rows afresh once a book stops playing, so they say the
-    /// place it reached; starting to play changes nothing.
-    private func playingChanged(to isPlaying: Bool) {
-        defer { wasPlaying = isPlaying }
-        if wasPlaying == true && !isPlaying {
+    /// place it reached; otherwise only the Continue row changes, as the
+    /// book starts playing or another opens.
+    private func listeningChanged(to heard: PhoneLibraryListening) {
+        let stopped = listening?.isPlaying == true && !heard.isPlaying
+        listening = heard
+        if stopped {
             rebuild()
+        } else {
+            refreshContinueRow()
         }
+    }
+
+    /// Builds the Continue row for the book in reach now, and publishes it
+    /// only when it differs.
+    private func refreshContinueRow() {
+        let built = continueRow(for: bookInReach())
+        if built != continueRow {
+            continueRow = built
+        }
+    }
+
+    /// The Continue row of `book`: "Now Playing: Emma" while it is the open
+    /// book and plays, and otherwise the Mac's Continue label with the time
+    /// left now.
+    private func continueRow(for book: Book?) -> PhoneContinueRow? {
+        guard let listed = book else { return nil }
+        let book = library.livePositions.applied(to: listed)
+        let isPlaying = listening?.bookID == book.id && listening?.isPlaying == true
+        return PhoneContinueRow(
+            bookID: book.id,
+            label: isPlaying
+                ? PhoneRowWording.nowPlayingLabel(title: book.title)
+                : PhoneRowWording.continueLabel(for: book, wordsPerMinute: wordsPerMinute()),
+            visibleTitle: PhoneRowWording.continueVisibleTitle(for: book),
+            timeText: isPlaying ? nil : PhoneRowWording.continueTimeText(for: book, wordsPerMinute: wordsPerMinute()),
+            isPlaying: isPlaying
+        )
     }
 
     /// Rebuilds the rows only when the library's change changed the list's
     /// signature, not at a checkpoint that moved a reading position alone.
     private func libraryChanged() {
         let gathered = gather()
-        guard gathered.signature != publishedSignature else { return }
+        guard gathered.signature != publishedSignature else {
+            // The book in reach may have left the library, or been renamed,
+            // with the list itself unchanged.
+            let reach = bookInReach()
+            if reach?.id != continueRow?.bookID || reach.map({ PhoneRowWording.continueVisibleTitle(for: $0) }) != continueRow?.visibleTitle {
+                refreshContinueRow()
+            }
+            return
+        }
         publish(gathered)
     }
 
@@ -303,6 +382,7 @@ final class PhoneLibraryRows: ObservableObject {
             summary = newSummary
         }
         searchCounts = isSearching ? (contents.books.count, contents.folders.count) : (0, 0)
+        refreshContinueRow()
     }
 
     /// The sections of `contents`: the folders, then the books, by letter

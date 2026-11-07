@@ -41,19 +41,21 @@ enum PhoneLibraryFixture {
     /// The removal preferences of a phone: ask first, and delete for good.
     static let phoneRemoval = RemovalPreferences(confirmsFirst: true, movesToTrash: false)
 
-    /// The rows of `model` at `location`, with a book's playing told by
-    /// `playing`.
+    /// The rows of `model` at `location`, with the open book told by
+    /// `listening`, and `reach` the book in reach.
     static func rows(
         of model: LibraryViewModel,
         at location: LibraryLocation = LibraryLocation(category: .folders, folderPath: ""),
-        playing: CurrentValueSubject<Bool, Never> = CurrentValueSubject(false)
+        listening: CurrentValueSubject<PhoneLibraryListening, Never> = CurrentValueSubject(.nothingOpen),
+        reach: @escaping () -> Book? = { nil }
     ) -> PhoneLibraryRows {
         PhoneLibraryRows(
             library: model,
             location: location,
             wordsPerMinute: { 200 },
             removalPreferences: { phoneRemoval },
-            playing: playing.eraseToAnyPublisher()
+            bookInReach: reach,
+            listening: listening.eraseToAnyPublisher()
         )
     }
 }
@@ -145,12 +147,12 @@ final class PhoneLibraryRowsTests: XCTestCase {
     func testStoppingPlaybackBuildsTheRowsAfresh() throws {
         let book = PhoneLibraryFixture.book("Middlemarch", percent: 10)
         let model = PhoneLibraryFixture.model(books: [book])
-        let playing = CurrentValueSubject<Bool, Never>(false)
-        let rows = PhoneLibraryFixture.rows(of: model, playing: playing)
+        let listening = CurrentValueSubject<PhoneLibraryListening, Never>(PhoneLibraryListening(bookID: book.id, isPlaying: false))
+        let rows = PhoneLibraryFixture.rows(of: model, listening: listening)
         drainMainQueue()
         let builds = rows.buildCount
 
-        playing.send(true)
+        listening.send(PhoneLibraryListening(bookID: book.id, isPlaying: true))
         drainMainQueue()
         XCTAssertEqual(rows.buildCount, builds, "Starting to play built the rows")
 
@@ -158,7 +160,7 @@ final class PhoneLibraryRowsTests: XCTestCase {
         drainMainQueue()
         XCTAssertEqual(rows.buildCount, builds, "A checkpoint built the rows")
 
-        playing.send(false)
+        listening.send(PhoneLibraryListening(bookID: book.id, isPlaying: false))
         drainMainQueue()
         XCTAssertEqual(rows.buildCount, builds + 1)
         let row = try XCTUnwrap(rows.sections.flatMap(\.rows).first)
@@ -356,6 +358,44 @@ final class PhoneLibraryRowsTests: XCTestCase {
         let mac = TimeRemainingBar(books: books, wpm: 200)
         XCTAssertEqual(rows.summary, mac.summaryAccessibilityLabel)
         XCTAssertTrue(rows.summary?.hasPrefix("2 books. ") == true, rows.summary ?? "nil")
+    }
+
+    // MARK: - The Continue Row
+
+    /// Not playing, the Continue row says the Mac's words with the time left;
+    /// playing, "Now Playing:" and the title, and a checkpoint changes neither.
+    func testTheContinueRowFollowsPlayingAlone() throws {
+        let book = PhoneLibraryFixture.book("Emma", percent: 50)
+        let model = PhoneLibraryFixture.model(books: [book])
+        let listening = CurrentValueSubject<PhoneLibraryListening, Never>(.nothingOpen)
+        let rows = PhoneLibraryFixture.rows(of: model, listening: listening, reach: { model.bookByID(book.id) })
+
+        let resting = try XCTUnwrap(rows.continueRow)
+        XCTAssertEqual(resting.label, LibraryView.continueAccessibilityLabel(for: book, wpm: 200))
+        XCTAssertEqual(resting.visibleTitle, "Continue: Emma")
+        XCTAssertFalse(resting.isPlaying)
+
+        listening.send(PhoneLibraryListening(bookID: book.id, isPlaying: true))
+        drainMainQueue()
+        XCTAssertEqual(rows.continueRow?.label, "Now Playing: Emma")
+        XCTAssertNil(rows.continueRow?.timeText)
+
+        model.library.updateReadingPosition(bookID: book.id, position: ReadingPosition(characterOffset: 8_000, globalCharacterOffset: 8_000))
+        drainMainQueue()
+        XCTAssertEqual(rows.continueRow?.label, "Now Playing: Emma", "A checkpoint changed the row")
+    }
+
+    /// The book in reach leaving the library takes the row with it.
+    func testTheContinueRowLeavesWithItsBook() {
+        let book = PhoneLibraryFixture.book("Emma")
+        let model = PhoneLibraryFixture.model(books: [book, PhoneLibraryFixture.book("Dune")])
+        let rows = PhoneLibraryFixture.rows(of: model, reach: { model.bookByID(book.id) })
+        XCTAssertEqual(rows.continueRow?.bookID, book.id)
+
+        model.library.removeBook(id: book.id)
+        drainMainQueue()
+
+        XCTAssertNil(rows.continueRow)
     }
 
     // MARK: - Helpers

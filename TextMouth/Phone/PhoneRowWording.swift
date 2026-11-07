@@ -25,6 +25,22 @@ enum PhoneRowWording {
         FolderNavigationHistory.announcement(for: path, library: library)
     }
 
+    // MARK: The Library View Row and the Bottom Bar
+
+    /// The Library view row's label, the Mac's "Library view".
+    static let libraryViewLabel = LibraryView.categoryPickerLabel
+    /// What the Library view row does (the spec's).
+    static let libraryViewHint = "Chooses what the Library lists."
+    /// Settings' label and title (the spec's).
+    static let settingsTitle = "Settings"
+    /// What Settings does (the spec's).
+    static let settingsHint = "Opens TextMouth's settings."
+    /// What Sort does (the spec's).
+    static let sortHint = "Chooses the order of the books."
+    /// What Add to Library does on a phone, which offers only these two ways
+    /// (the spec's; the Mac's hint names ways a phone doesn't have).
+    static let addToLibraryHint = "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+
     // MARK: The Continue Row
 
     /// What VoiceOver says for the Continue row while `book` isn't playing:
