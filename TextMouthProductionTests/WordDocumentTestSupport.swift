@@ -94,6 +94,8 @@ struct WordDocumentBuilder {
         /// The style's list instance (`sprmPIlfo`) and level (`sprmPIlvl`).
         var listIndex: Int?
         var listLevel: Int?
+        /// The style's font (`sprmCRgFtc0`, an index into `fonts`).
+        var fontIndex: Int?
     }
 
     /// One level of a list: its number format (an MSONFC), where it counts
@@ -215,6 +217,8 @@ struct WordDocumentBuilder {
     var isEncrypted = false
     /// The names of the fonts of the font table, in order (none writes no table).
     var fonts: [String] = []
+    /// The font of the style sheet's default characters (`ftcAsci` of the sheet's header), an index into `fonts`.
+    var defaultFont = 0
     var title: String?
     var author: String?
     /// Left out when false: the properties of paragraphs, of characters.
@@ -598,7 +602,8 @@ struct WordDocumentBuilder {
         // Stshi: the count of styles, the size of each style's fixed part,
         // and fields this reader does not read.
         var stshi = Self.le16(styles.count) + Self.le16(10)
-        stshi += Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(0) + [UInt8](repeating: 0, count: 6)
+        // Then the flags and versions, and the default fonts (the ASCII one first, 12 bytes in).
+        stshi += Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(defaultFont) + [UInt8](repeating: 0, count: 4)
         var bytes = Self.le16(stshi.count) + stshi
         for (index, style) in styles.enumerated() {
             guard let style else {
@@ -622,6 +627,7 @@ struct WordDocumentBuilder {
             if let italic = style.italic { characters += Self.modifier(WordSprm.italic, italic) }
             if let hidden = style.hidden { characters += Self.modifier(WordSprm.hidden, hidden) }
             if let size = style.fontSize { characters += Self.le16(WordSprm.fontSize) + Self.le16(size) }
+            if let font = style.fontIndex { characters += Self.le16(WordSprm.fontAscii) + Self.le16(font) }
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }
