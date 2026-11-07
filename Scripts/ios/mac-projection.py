@@ -269,9 +269,14 @@ def changed_swift_files(base, head):
 
 
 def mac_compiles(path):
-    """Whether the Mac app compiles a file at `path` (app sources only)."""
+    """Whether the Mac app compiles a file at `path` (app sources only) that the
+    projection reads. TextMouth/Phone/ is left out: the Mac compiles it, but it
+    is the iPhone's own shared code, which only the tests and the iPhone reach,
+    and no file outside TextMouth/Phone/ and TextMouth/Platform/iOS/ may name a
+    type of it outside `#if os(iOS)` (IOSBranchTests holds that), so it changes
+    nothing the Mac does."""
     return path is not None and path.startswith("TextMouth/") and not path.startswith("TextMouth/Platform/iOS/") \
-        and not path.startswith("TextMouth/Resources/")
+        and not path.startswith("TextMouth/Resources/") and not path.startswith("TextMouth/Phone/")
 
 
 def report(base, head, show_diff):
@@ -384,6 +389,9 @@ def self_test():
             ["  .toggleStyle(.checkbox)", "  .pickerStyle(.radioGroup)"]:
         failures += 1
         print("FAIL helper equivalences")
+    if mac_compiles("TextMouth/Phone/PhoneSession.swift") or not mac_compiles("TextMouth/Models/Book.swift"):
+        failures += 1
+        print("FAIL the iPhone's shared folder")
     print("self-test: " + ("PASSED" if not failures else f"{failures} FAILED"))
     return 1 if failures else 0
 

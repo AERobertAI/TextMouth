@@ -765,7 +765,17 @@ enum ImportAudioConverter {
     static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
         let started = Date()
         let name = source.lastPathComponent
-        guard let info = try await inspect(source, using: tool.info) else { throw Failure.unreadable(fileName: name) }
+        guard let info = try await inspect(source, using: tool.info) else {
+            #if os(iOS)
+            // iOS has no afinfo, so `inspect` has no answer for any format but
+            // Ogg, and every file reaching this line is one the import would
+            // convert. It is not unreadable: the phone cannot convert it, and
+            // says so as Ogg's refusal does, in `WatchedProcess.run`.
+            throw IOSUnavailable.feature("Converting this kind of file")
+            #else
+            throw Failure.unreadable(fileName: name)
+            #endif
+        }
         // A header can state any sample rate. One that is no number, or past
         // the most a cap counts, is a damaged header, refused as an
         // unreadable one is before the target is worked out from it: a

@@ -543,11 +543,15 @@ struct DataDirectoryEnvironment {
         #else
         // iOS has no workspace to announce unmounted volumes (phase 0): the
         // default center stands in, and nothing posts the unmount names to it.
+        // A phone's library is in its own container, never shared with
+        // another device and never in a cloud drive, so it holds no session
+        // lease, whose repeating timer would run for nothing, and fetches
+        // nothing from a cloud (the engineering review's F30).
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             volumeNotifications: .default,
-            sessionLease: .shared,
-            libraryFetch: LibraryFileFetcher.app
+            sessionLease: nil,
+            libraryFetch: nil
         )
         #endif
     }
