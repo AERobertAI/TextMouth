@@ -52,6 +52,11 @@ protocol TextExportWriter: Sendable {
     /// as "html".
     var fileExtension: String { get }
 
+    /// What the walk of the book's content.md keeps for this writer besides
+    /// the words (`ExportWalkOptions`): nothing unless the writer has a place
+    /// for chapters and pages, as an e-book has.
+    var walkOptions: ExportWalkOptions { get }
+
     /// The options each Export dialog starts with.
     @MainActor func defaultOptions() -> Options
 
@@ -76,6 +81,12 @@ protocol TextExportWriter: Sendable {
         to url: URL,
         cancellation: BookExportCancellation
     ) throws
+}
+
+/// What a writer gets without saying so.
+extension TextExportWriter {
+    /// A writer of the words alone asks the walk for nothing more.
+    var walkOptions: ExportWalkOptions { .plain }
 }
 
 extension TextExportWriter where Options == NoTextExportOptions {
@@ -122,6 +133,8 @@ struct TextExportConversion: Sendable, Equatable {
     let name: String
     /// The writer's `fileExtension`.
     let fileExtension: String
+    /// The writer's `walkOptions`: what the walk of the book keeps for it.
+    let walkOptions: ExportWalkOptions
     /// The options chosen, which `==` compares.
     private let options: any TextExportOptions
     /// The writer's `write`, with the options chosen.
@@ -132,6 +145,7 @@ struct TextExportConversion: Sendable, Equatable {
         writerID = writer.id
         name = writer.name
         fileExtension = writer.fileExtension
+        walkOptions = writer.walkOptions
         self.options = options
         writeDocument = { document, url, cancellation in
             try writer.write(document, options: options, to: url, cancellation: cancellation)
@@ -221,6 +235,7 @@ enum TextExportWriters {
         HTMLExportWriter(),
         RTFExportWriter(),
         WordDocExportWriter(),
+        EPUBExportWriter(),
         BRFExportWriter(),
         PEFExportWriter(),
     ]
@@ -229,6 +244,7 @@ enum TextExportWriters {
     static let all: [any TextExportWriter] = [
         HTMLExportWriter(),
         RTFExportWriter(),
+        EPUBExportWriter(),
         BRFExportWriter(),
         PEFExportWriter(),
     ]

@@ -148,7 +148,13 @@ enum EPUBParser {
             let author = authorName(in: doc) ?? ""
             let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
             let date = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first?.stringValue ?? ""
-            let language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
+            var language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
+            // "und" is the tag for a language that is undetermined, which is how a
+            // book says it names none (TextMouth's own EPUB export does, for a
+            // book whose language it does not know): there is no language to show.
+            if language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "und" {
+                language = ""
+            }
 
             // Extract identifier (often ISBN)
             let identifiers = (try? doc.nodes(forXPath: "//*[local-name()='identifier']")) ?? []

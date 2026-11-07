@@ -285,7 +285,9 @@ final class HTMLExportWriterTests: XCTestCase {
 
     // MARK: - The Contents List
 
-    /// Levels 1, 3, 2: the deeper list closes before a list for the shallower one opens.
+    /// Levels 1, 3, 2: the heading that rises out of the skipped level joins
+    /// the list of the one it rose out of, so the item holds one list (it held
+    /// two before the contents were shared with EPUB, which allows one).
     func testTheContentsListForLevelsOneThreeTwo() throws {
         let document = documentOf([heading(1, "A", id: "a"), heading(3, "C", id: "c"), heading(2, "B", id: "b")])
 
@@ -295,9 +297,35 @@ final class HTMLExportWriterTests: XCTestCase {
             "<li><a href=\"#a\">A</a>",
             "<ol>",
             "<li><a href=\"#c\">C</a></li>",
+            "<li><a href=\"#b\">B</a></li>",
             "</ol>",
+            "</li>",
+            "</ol>",
+            "</nav>",
+        ])
+    }
+
+    /// Levels 3, 1, 2, 1, 2: a first heading deeper than the rest does not
+    /// keep the contents flat: the outermost list lowers to level 1, and
+    /// each 2 nests under the 1 before it.
+    func testTheContentsListLowersWhenAHeadingRisesAboveTheFirst() throws {
+        let document = documentOf([
+            heading(3, "N", id: "n"), heading(1, "A", id: "a"), heading(2, "B", id: "b"),
+            heading(1, "C", id: "c"), heading(2, "D", id: "d"),
+        ])
+
+        XCTAssertEqual(try navLines(of: document), [
+            "<nav aria-label=\"Contents\">",
+            "<ol>",
+            "<li><a href=\"#n\">N</a></li>",
+            "<li><a href=\"#a\">A</a>",
             "<ol>",
             "<li><a href=\"#b\">B</a></li>",
+            "</ol>",
+            "</li>",
+            "<li><a href=\"#c\">C</a>",
+            "<ol>",
+            "<li><a href=\"#d\">D</a></li>",
             "</ol>",
             "</li>",
             "</ol>",
