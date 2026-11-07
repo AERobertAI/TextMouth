@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The HTML Writer
 
-/// Writes the body of the HTML document that stands for a Word 97-2003
+/// Writes the body of the HTML document that stands for a Word 6 to 2003
 /// document (the contract is the comment on `OwnDocumentReaders`), one
 /// character at a time, in the order the characters are in the text.
 ///

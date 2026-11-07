@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - A Level of a List
 
-/// One level of a list of a Word 97-2003 document: the `LVL` of [MS-DOC]
+/// One level of a list of a Word 6 to 2003 document: the `LVL` of [MS-DOC]
 /// 2.9.149, with the parts this reader uses. A level says how its items are
 /// numbered (or that they are bullets, or are not numbered), where its count
 /// begins and when it begins again, and the text that stands before an item:
@@ -123,7 +123,7 @@ struct WordListLevel {
 
 // MARK: - The List Tables
 
-/// The lists of a Word 97-2003 document: the list table (`PlfLst`, [MS-DOC]
+/// The lists of a Word 6 to 2003 document: the list table (`PlfLst`, [MS-DOC]
 /// 2.9.201), which defines each list's levels, and the list override table
 /// (`PlfLfo`, 2.9.200), by which a paragraph names the list it is in
 /// (`sprmPIlfo`, an index into the overrides) and which may start a level

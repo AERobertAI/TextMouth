@@ -96,8 +96,8 @@ final class WordDocumentSymbolTests: XCTestCase {
     }
 
     func testTextInTheSymbolFontIsInTheSymbolEncoding() throws {
-        // Typed in the font named Symbol, "a", "b", and "c" are alpha, beta, and chi; textutil reads them so, and a listener
-        // must hear the letter that is shown.
+        // Typed in the font named Symbol, "a", "b", and "c" are alpha, beta, and chi: that is what Word shows (textutil does not
+        // decode text typed in Symbol in Word 6 and Word 95), and a listener must hear the letter that is shown.
         let inSymbol = Builder.sprm(93, [1, 0])
         XCTAssertEqual(try body([Paragraph(runs: [Run("abc", sprms: inSymbol)])]), "<p>\u{03B1}\u{03B2}\u{03C7}</p>\n")
         // Mixed with text of another font, and with a placeholder in the same font (whose "(" is not a letter of Symbol).

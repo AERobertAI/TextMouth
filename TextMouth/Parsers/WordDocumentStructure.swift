@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The File Information Block
 
-/// The File Information Block (FIB) at the start of a Word 97-2003
+/// The File Information Block (FIB) at the start of a Word 6 to 2003
 /// document's `WordDocument` stream ([MS-DOC] 2.5.1): the version, the flags,
 /// the length of the main text, and a table of (offset, length) pairs that
 /// say where each structure lives in the table stream (`0Table` or

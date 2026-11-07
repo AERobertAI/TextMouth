@@ -6,17 +6,17 @@ import Foundation
 /// document holds text in several: Word marks a run of Macintosh text in a Windows document (and the
 /// reverse) with `sprmCChse`, and a run in a Cyrillic or Greek font is in that code page whatever the
 /// language of the document says. The rule, in order, for the text of a run:
-/// 1. the run's own mark (`sprmCChse`): 256 is the Macintosh's (Mac Roman), else the FIB's mark for
+/// 1. text in the font named Symbol is in the Symbol encoding (its letters are Greek, its other characters
+///    mathematical): `AdobeSymbolEncoding`. It is what Word shows (textutil does not decode it). A run that
+///    holds a symbol of Insert Symbol is not: its "(" is a placeholder (`WordHTMLWriter`);
+/// 2. the run's own mark (`sprmCChse`): 256 is the Macintosh's (Mac Roman), else the FIB's mark for
 ///    a Macintosh document;
-/// 0. text in the font named Symbol is in the Symbol encoding (its letters are Greek, its other characters
-///    mathematical): `AdobeSymbolEncoding`. A run that holds a symbol of Insert Symbol is not: its "(" is a
-///    placeholder (`WordHTMLWriter`);
-/// 2. the character set of the run's font, if it names a code page. The font is the run's own
+/// 3. the character set of the run's font, if it names a code page. The font is the run's own
 ///    (`sprmCFtc`), else its character style's, else its paragraph style's, else the sheet's default,
 ///    each through the styles it is based on. A Far East font names none: whether the characters are
 ///    two bytes is the document's choice, and a run never switches into or out of double-byte;
-/// 3. an explicit Windows mark (`sprmCChse` 0) in a document marked Macintosh is Windows-1252;
-/// 4. the document's default: the non-Western code page whose fonts hold more than half the characters
+/// 4. an explicit Windows mark (`sprmCChse` 0) in a document marked Macintosh is Windows-1252;
+/// 5. the document's default: the non-Western code page whose fonts hold more than half the characters
 ///    above 0x7F that have a code page of their font, else the language's code page.
 ///
 /// The language alone does not do: the FIB's language says English on three of four real Cyrillic
@@ -41,6 +41,7 @@ struct WordLegacyCodePages {
         fileprivate let pages: WordLegacyCodePages
         private var index = 0
 
+        /// A cursor over `pages`, at its first stretch.
         fileprivate init(pages: WordLegacyCodePages) {
             self.pages = pages
         }
@@ -126,6 +127,8 @@ struct WordLegacyCodePages {
         // The tables, the default first, and the stretches that use them, joined when they run on.
         var identifiers: [String] = []
         var tables: [[UInt16]] = []
+        /// The index in `tables` of the table that decodes the code page `identifier` (or the Symbol font's), made
+        /// the first time it is asked for.
         func index(of identifier: String) -> Int {
             if let known = identifiers.firstIndex(of: identifier) { return known }
             identifiers.append(identifier)
