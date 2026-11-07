@@ -70,6 +70,10 @@ struct PhoneLibraryView: View {
     @State private var searchCountTask: Task<Void, Never>?
     /// Whether "No books match." was said for the current run of no results.
     @State private var saidNoMatches = false
+    /// What was read of the book whose Book Info is shown.
+    @State private var bookInfo: LibraryBookInfo = .simple
+    /// The Book Info being read, so a later request replaces one still reading.
+    @State private var bookInfoRequest: UUID?
     /// The list's scroller, kept for focus requests from outside its builder.
     @State private var scroller: ScrollViewProxy?
     /// The search field's keyboard focus, put down when a book opens.
@@ -173,7 +177,7 @@ struct PhoneLibraryView: View {
                 bottomBar
             }
         }
-        .sheet(item: $sheet, onDismiss: sheetClosed) { shown in
+        .sheet(item: $sheet, onDismiss: { sheetClosed() }) { shown in
             sheetView(shown)
         }
         .alert(
@@ -287,7 +291,7 @@ struct PhoneLibraryView: View {
                     center: LibraryFeedFolders.shared.center
                 ),
                 selected: rows.location.view.id,
-                onChoose: chooseView
+                onChoose: { chooseView($0) }
             )
         case .sort:
             let sort = library.sortState(at: rows.location)
@@ -299,12 +303,12 @@ struct PhoneLibraryView: View {
                     hasSubfolders: !library.subfoldersOf(rows.location.folderPath).isEmpty
                 ),
                 selected: PhoneLibraryChoices.currentSortChoice(at: rows.location, sort: sort),
-                onChoose: chooseSort
+                onChoose: { chooseSort($0) }
             )
         case .bookInfo(let bookID):
             // It says "Metadata updated" itself, once the save is done.
             if let book = library.bookByID(bookID) {
-                PhoneBookInfoSheet(book: book, library: library)
+                PhoneBookInfoSheet(book: book, library: library, info: bookInfo)
             }
         case .folder(_, let title):
             // Slice 2b's sheets take this place as they reach the branch.
@@ -454,7 +458,7 @@ struct PhoneLibraryView: View {
         guard let book = library.bookByID(bookID) else { return }
         switch action {
         case .bookInfo:
-            open(.bookInfo(bookID), from: .row(.book(bookID)))
+            showBookInfo(for: book)
         case .addToReadingList:
             PhoneAnnouncer.say(PhoneRowWording.readingListAdded(title: book.title, added: !library.addToReadingList([bookID]).isEmpty))
             rows.rebuild()
@@ -494,6 +498,22 @@ struct PhoneLibraryView: View {
         default: return
         }
         open(.folder(shown, title: title), from: .row(.folder(folderID)))
+    }
+
+    /// Shows Book Info for `book` once what it shows is read, off the main
+    /// thread, as the Mac's Library reads it: an EPUB's or an audiobook's
+    /// metadata, or nothing more for any other book. A later request replaces
+    /// one still reading.
+    private func showBookInfo(for book: Book) {
+        let request = UUID()
+        bookInfoRequest = request
+        Task { @MainActor in
+            let info = await LibraryBookInfoReader.system.info(for: book)
+            guard bookInfoRequest == request else { return }
+            bookInfoRequest = nil
+            bookInfo = info
+            open(.bookInfo(book.id), from: .row(.book(book.id)))
+        }
     }
 
     /// Moves `book` one place up (-1) or down (+1) in the order the list

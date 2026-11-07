@@ -70,6 +70,37 @@ enum PhoneLibraryVocabulary {
     /// What VoiceOver says once Book Info is saved (the Mac's reader's).
     static let metadataUpdated = "Metadata updated"
 
+    // MARK: Book Info of an EPUB or an Audiobook (the Mac's MetadataEditorView)
+
+    /// An EPUB's publisher field, its visible name and spoken label.
+    static let publisherField = "Publisher"
+    /// An EPUB's publication date field's visible name.
+    static let publicationDateField = "Publication Date"
+    /// An EPUB's publication date field's spoken label.
+    static let publicationDateFieldLabel = "Publication date"
+    /// An EPUB's read-only row of its ISBN.
+    static let isbnRow = "ISBN"
+    /// An EPUB's read-only row of its language.
+    static let languageRow = "Language"
+    /// An EPUB's read-only row of its identifier.
+    static let identifierRow = "Identifier"
+    /// An EPUB's read-only row of its EPUB version.
+    static let epubVersionRow = "EPUB Version"
+    /// An audiobook's artist field's visible name.
+    static let artistField = "Artist"
+    /// An audiobook's artist field's spoken label.
+    static let artistFieldLabel = "Artist or narrator"
+    /// An audiobook's album field's visible name.
+    static let albumField = "Album"
+    /// An audiobook's album field's spoken label.
+    static let albumFieldLabel = "Album name"
+    /// An audiobook's genre field, its visible name and spoken label.
+    static let genreField = "Genre"
+    /// An audiobook's year field, its visible name and spoken label.
+    static let yearField = "Year"
+    /// An audiobook's read-only row of its duration.
+    static let durationRow = "Duration"
+
     // MARK: Removing a Book (the Mac's ContentView)
 
     /// The removal question's button that removes nothing.
