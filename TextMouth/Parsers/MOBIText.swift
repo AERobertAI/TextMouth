@@ -78,7 +78,7 @@ enum MOBIText {
     /// A function that decompresses one record's bytes (`bytes[range]`),
     /// appending to the text so far, which it brings to no more than the
     /// limit it is given, the book's declared length.
-    typealias Decompressor = ([UInt8], Range<Int>, inout [UInt8], Int) throws -> Void
+    typealias Decompressor = (Data, Range<Int>, inout [UInt8], Int) throws -> Void
 
     /// The decompressor for the book's compression type.
     /// - Throws: `MOBIError.unsupportedCompression` for a type this reader
@@ -149,7 +149,7 @@ enum MOBIText {
     /// high bit set, and the size counts the number's own bytes. It is at
     /// most 4 bytes long.
     /// - Throws: `MOBIError.damaged` when no byte in the last four starts a number.
-    private static func trailingEntrySize(endingAt end: Int, in bytes: [UInt8], from lowerBound: Int) throws -> Int {
+    private static func trailingEntrySize(endingAt end: Int, in bytes: Data, from lowerBound: Int) throws -> Int {
         var value = 0
         var shift = 0
         var position = end - 1
@@ -179,7 +179,9 @@ enum MOBIText {
     /// before this record's first byte of output, is refused, as is a record
     /// that ends in the middle of a run or a reference.
     /// - Throws: `MOBIError.damaged` for such a record.
-    static func decompressPalmDOC(_ bytes: [UInt8], _ range: Range<Int>, into output: inout [UInt8], limit: Int) throws {
+    static func decompressPalmDOC<Bytes: RandomAccessCollection>(
+        _ bytes: Bytes, _ range: Range<Int>, into output: inout [UInt8], limit: Int
+    ) throws where Bytes.Element == UInt8, Bytes.Index == Int {
         // A reference counts back from the record's own output, never the
         // earlier records'.
         let recordStart = output.count
