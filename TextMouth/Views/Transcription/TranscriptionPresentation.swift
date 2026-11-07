@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 #endif
+import os
 import SwiftUI
 
 // MARK: - A Window's Transcription Dialogs
@@ -75,11 +76,16 @@ final class TranscriptionPresenter: ObservableObject {
     /// until the transcript is saved (`replaceConfirmed(_:)`).
     @Published var attachReplacement: TranscriptAttachRequest? {
         didSet {
+            askedBookID.withLock { $0 = attachReplacement?.book.id }
             if let oldValue, oldValue.book.id != attachReplacement?.book.id {
                 TranscriptAttachments.shared.end(oldValue.book.id)
             }
         }
     }
+    /// The book `attachReplacement` asks about, kept where the presenter's
+    /// deinitializer, which is not on the main actor, can read it
+    /// (`attachReplacement` itself it cannot).
+    private nonisolated let askedBookID = OSAllocatedUnfairLock<UUID?>(initialState: nil)
     /// The notice showing, or nil.
     @Published var notice: TranscriptionNotice?
     /// Whether Attach Transcript…'s Open panel shows on this window (FMT23).
@@ -130,7 +136,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// send. (Replace has its own task, which holds the presenter until the
     /// transcript is saved, so a presenter is never released mid-save.)
     deinit {
-        guard let bookID = attachReplacement?.book.id else { return }
+        guard let bookID = askedBookID.withLock({ $0 }) else { return }
         Task { @MainActor in
             TranscriptAttachments.shared.end(bookID)
         }
