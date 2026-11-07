@@ -372,11 +372,6 @@ struct PhoneSettingsVoiceOffer {
 
 /// The screen's decisions that belong to no one row.
 enum PhoneSettingsModel {
-    /// How long to wait after a sheet closes before asking for VoiceOver's
-    /// focus: the figure careful apps report, and the one `PhoneChoiceSheet`
-    /// waits on arrival. On the spec's hand-check list.
-    static let focusReturnDelay: Duration = .milliseconds(350)
-
     // MARK: Language
 
     /// A language's name, as the Language row and its choices say it: "All"
@@ -410,6 +405,22 @@ enum PhoneSettingsModel {
     /// Sentence and Paragraph, since an audiobook has no text to stop at (the
     /// spec, under "Navigation unit").
     static let audioNavigationUnits: [SkipUnit] = SkipUnit.allCases.filter { $0 != .sentence && $0 != .paragraph }
+
+    /// The unit the Navigation unit for text books row says and its sheet
+    /// marks: the one kept in `preferences`, as a text book with none of its
+    /// own takes it (`PhoneDefaults.navigationUnit`).
+    @MainActor
+    static func textNavigationUnit(in preferences: UserDefaults) -> SkipUnit {
+        PhoneDefaults.navigationUnit(ownRawValue: nil, isAudio: false, offered: textNavigationUnits, in: preferences)
+    }
+
+    /// The unit the Navigation unit for audiobooks row says and its sheet
+    /// marks: the one kept, as an audiobook with none of its own takes it, so
+    /// a kept unit it can't move by, such as Sentence, says its default.
+    @MainActor
+    static func audioNavigationUnit(in preferences: UserDefaults) -> SkipUnit {
+        PhoneDefaults.navigationUnit(ownRawValue: nil, isAudio: true, offered: audioNavigationUnits, in: preferences)
+    }
 
     /// The Navigation unit for text books row's choices.
     static var textNavigationUnitChoices: [PhoneChoice<SkipUnit>] { choices(of: textNavigationUnits) }

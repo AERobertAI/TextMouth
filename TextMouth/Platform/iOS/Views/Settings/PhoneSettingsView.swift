@@ -31,6 +31,9 @@ struct PhoneSettingsView: View {
     /// Which row has VoiceOver's focus, set only on a return from what the row
     /// opened.
     @AccessibilityFocusState private var focusedRow: PhoneSettingsRow?
+    /// The row focus is to return to, asked for by whatever closes over the
+    /// screen, and carried out inside the list's `ScrollViewReader`.
+    @State private var refocusRequest: PhoneSettingsRow?
     /// How many changes were made on this screen. Nothing shows the count:
     /// reading it in `body` is what redraws the screen after a change. Most of
     /// the model's settings are `@AppStorage` properties, and only some of
@@ -68,16 +71,26 @@ struct PhoneSettingsView: View {
     var body: some View {
         // See `changeCount`.
         let _ = changeCount
-        Form {
-            ForEach(PhoneSettingsSection.allCases) { section in
-                Section {
-                    rows(in: section)
-                } header: {
-                    // The header trait is what the Headings rotor moves by
-                    // (the spec, under "Lists").
-                    Text(section.title)
-                        .accessibilityAddTraits(.isHeader)
+        ScrollViewReader { proxy in
+            Form {
+                ForEach(PhoneSettingsSection.allCases) { section in
+                    Section {
+                        rows(in: section)
+                    } header: {
+                        // The header trait is what the Headings rotor moves
+                        // by (the spec, under "Lists").
+                        Text(section.title)
+                            .accessibilityAddTraits(.isHeader)
+                    }
                 }
+            }
+            // A row may not have been made by the list when focus is asked
+            // for, so the shared helper scrolls it into being first (the
+            // engineering review's F12), then asks after VoiceOver has landed.
+            .onChange(of: refocusRequest) { _, request in
+                guard let request else { return }
+                PhoneListFocus.focus(request, proxy: proxy, state: $focusedRow)
+                refocusRequest = nil
             }
         }
         .navigationTitle(PhoneSettingsWording.screenTitle)
@@ -114,8 +127,8 @@ struct PhoneSettingsView: View {
             sliderRow(.defaultSpeed, value: noted($settings.wordsPerMinute))
             sliderRow(.defaultPitch, value: noted($settings.pitchMultiplier))
         case .navigation:
-            choiceRow(.textNavigationUnit, value: textNavigationUnit.wrappedValue.rawValue)
-            choiceRow(.audioNavigationUnit, value: audioNavigationUnit.wrappedValue.rawValue)
+            choiceRow(.textNavigationUnit, value: textNavigationUnit.rawValue)
+            choiceRow(.audioNavigationUnit, value: audioNavigationUnit.rawValue)
             switchRow(.autoPlayAfterNavigation, isOn: noted($settings.autoPlayOnNavigate))
         case .rewindOnResume:
             choiceRow(.rewindTo, value: settings.rewindOnResumeUnit.rawValue)
@@ -150,7 +163,7 @@ struct PhoneSettingsView: View {
             switchRow(.showPageInReader, isOn: noted($settings.showsPageInReader))
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
-            switchRow(.followInBraille, isOn: stored(PhoneSettingsDefaults.followInBraille))
+            switchRow(.followInBraille, isOn: followsInBraille)
         case .removalBehavior:
             switchRow(.confirmBeforeRemoving, isOn: confirmsBeforeRemoving)
         case .statistics:
@@ -175,6 +188,7 @@ struct PhoneSettingsView: View {
         .accessibilityValue(value)
         .accessibilityHint(isEnabled ? row.hint ?? "" : "")
         .accessibilityFocused($focusedRow, equals: row)
+        .id(row)
     }
 
     /// A slider, with its value and caption above and below it for the eye.
@@ -245,6 +259,7 @@ struct PhoneSettingsView: View {
             Text(row.title)
         }
         .accessibilityFocused($focusedRow, equals: row)
+        .id(row)
     }
 
     /// The app's version, as the Mac's About and its logs name it
@@ -261,6 +276,7 @@ struct PhoneSettingsView: View {
         return Button(row.title, action: shareLogs)
             .accessibilityHint(row.hint ?? "")
             .accessibilityFocused($focusedRow, equals: row)
+            .id(row)
     }
 
     // MARK: - The Sheets
@@ -292,17 +308,19 @@ struct PhoneSettingsView: View {
             PhoneChoiceSheet(
                 title: row.title,
                 choices: PhoneSettingsModel.textNavigationUnitChoices,
-                selected: textNavigationUnit.wrappedValue
+                selected: textNavigationUnit
             ) { unit in
-                textNavigationUnit.wrappedValue = unit
+                PhoneDefaults.setTextNavigationUnit(unit, in: TextMouthRuntime.current.preferences)
+                noteChange()
             }
         case .audioNavigationUnit:
             PhoneChoiceSheet(
                 title: row.title,
                 choices: PhoneSettingsModel.audioNavigationUnitChoices,
-                selected: audioNavigationUnit.wrappedValue
+                selected: audioNavigationUnit
             ) { unit in
-                audioNavigationUnit.wrappedValue = unit
+                PhoneDefaults.setAudioNavigationUnit(unit, in: TextMouthRuntime.current.preferences)
+                noteChange()
             }
         case .rewindTo:
             PhoneChoiceSheet(
@@ -343,17 +361,12 @@ struct PhoneSettingsView: View {
         returnFocus(to: lastOpenedRow)
     }
 
-    /// Asks for VoiceOver's focus on `row`, a moment after what covered it has
-    /// gone. Sheets don't return focus by themselves, and a request made at
-    /// once is lost while VoiceOver lands somewhere by itself (the spec, under
-    /// "Focus on arrival and return"). Focus is cleared first, since setting
-    /// the same value again moves nothing, in case it's still `row`.
+    /// Asks for VoiceOver's focus on `row`, once what covered it has gone.
+    /// Sheets don't return focus by themselves (the spec, under "Focus on
+    /// arrival and return"); `PhoneListFocus.focus` waits for VoiceOver to land
+    /// first, since a request made at once is lost.
     private func returnFocus(to row: PhoneSettingsRow) {
-        focusedRow = nil
-        Task {
-            try? await Task.sleep(for: PhoneSettingsModel.focusReturnDelay)
-            focusedRow = row
-        }
+        refocusRequest = row
     }
 
     // MARK: - The Actions
@@ -418,24 +431,24 @@ struct PhoneSettingsView: View {
         )
     }
 
-    /// What a text book moves by until it has a unit of its own.
-    private var textNavigationUnit: Binding<SkipUnit> {
-        stored(PhoneSettingsDefaults.textNavigationUnit)
+    /// What a text book moves by until it has a unit of its own, as kept in
+    /// `PhoneDefaults`, in the app's preferences.
+    private var textNavigationUnit: SkipUnit {
+        PhoneSettingsModel.textNavigationUnit(in: TextMouthRuntime.current.preferences)
     }
 
     /// What an audiobook moves by until it has a unit of its own.
-    private var audioNavigationUnit: Binding<SkipUnit> {
-        stored(PhoneSettingsDefaults.audioNavigationUnit)
+    private var audioNavigationUnit: SkipUnit {
+        PhoneSettingsModel.audioNavigationUnit(in: TextMouthRuntime.current.preferences)
     }
 
-    /// One of the phone's own settings, kept in the app's preferences, where
-    /// the settings model keeps its own, counting each change so the screen
-    /// redraws.
-    private func stored<Value: Equatable & Sendable>(_ preference: StoredPreference<Value>) -> Binding<Value> {
+    /// Follow in Braille, as kept in `PhoneDefaults`, counting each change so
+    /// the screen redraws.
+    private var followsInBraille: Binding<Bool> {
         Binding(
-            get: { preference.read(from: TextMouthRuntime.current.preferences) },
-            set: { newValue in
-                preference.write(newValue, to: TextMouthRuntime.current.preferences)
+            get: { PhoneDefaults.followInBraille(in: TextMouthRuntime.current.preferences) },
+            set: { isOn in
+                PhoneDefaults.setFollowInBraille(isOn, in: TextMouthRuntime.current.preferences)
                 noteChange()
             }
         )
