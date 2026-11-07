@@ -6,8 +6,9 @@ import Foundation
 enum PhoneRowID: Hashable, Sendable {
     /// A book's row.
     case book(UUID)
-    /// A folder's row, by the folder's full path.
-    case folder(String)
+    /// A folder's row, by the folder's ID, which a rename keeps, so the row
+    /// keeps its identity and VoiceOver's cursor stays on it.
+    case folder(UUID)
     /// The one sentence a list shows where it has nothing.
     case note(PhoneRowNote)
 }

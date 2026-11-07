@@ -47,7 +47,7 @@ enum PhoneLibraryFixture {
         of model: LibraryViewModel,
         at location: LibraryLocation = LibraryLocation(category: .folders, folderPath: ""),
         listening: CurrentValueSubject<PhoneLibraryListening, Never> = CurrentValueSubject(.nothingOpen),
-        reach: @escaping () -> Book? = { nil }
+        reach: @escaping @MainActor () -> Book? = { nil }
     ) -> PhoneLibraryRows {
         PhoneLibraryRows(
             library: model,
@@ -183,12 +183,26 @@ final class PhoneLibraryRowsTests: XCTestCase {
 
         XCTAssertEqual(rows.sections.map(\.header), ["Folders", "Books (1)"])
         let folderRow = try XCTUnwrap(rows.sections.first?.rows.first)
-        XCTAssertEqual(folderRow.id, .folder("Fiction"))
+        XCTAssertEqual(folderRow.id, .folder(fiction.id))
         XCTAssertEqual(folderRow.label, "Fiction, 2 books")
         XCTAssertEqual(folderRow.label, FolderRow.accessibilityLabel(name: "Fiction", bookCount: 2, feedCounts: nil))
         XCTAssertEqual(folderRow.detail, "2 books")
         XCTAssertEqual(folderRow.commands.map(\.title), ["Rename Folder...", "Move Folder...", "Delete Folder..."])
         XCTAssertEqual(rows.sections.last?.rows.map(\.title), ["Orchard"])
+    }
+
+    /// A folder renamed keeps its row's identity, with its new name.
+    func testARenamedFolderKeepsItsRow() throws {
+        let fiction = BookFolder(name: "Fiction")
+        let model = PhoneLibraryFixture.model(books: [PhoneLibraryFixture.book("Weir", in: "Fiction")], folders: [fiction])
+        let rows = PhoneLibraryFixture.rows(of: model)
+
+        let index = try XCTUnwrap(model.library.folders.firstIndex { $0.id == fiction.id })
+        model.library.folders[index].name = "Novels"
+        drainMainQueue()
+
+        XCTAssertEqual(rows.sections.first?.rows.first?.id, .folder(fiction.id))
+        XCTAssertEqual(rows.sections.first?.rows.first?.title, "Novels")
     }
 
     /// A folder's count changing is a change of the list.
@@ -256,13 +270,14 @@ final class PhoneLibraryRowsTests: XCTestCase {
     /// its folders, and the folders whose names hold the text, and the
     /// summary steps aside.
     func testSearchCoversTheWholeLibrary() {
+        let seaStories = BookFolder(name: "Sea Stories")
         let model = PhoneLibraryFixture.model(
             books: [
                 PhoneLibraryFixture.book("Dune", in: "Sea Stories"),
                 PhoneLibraryFixture.book("Sea Room", in: "Fiction/Old"),
                 PhoneLibraryFixture.book("Orchard"),
             ],
-            folders: [BookFolder(name: "Fiction"), BookFolder(name: "Old", parentPath: "Fiction"), BookFolder(name: "Sea Stories")]
+            folders: [BookFolder(name: "Fiction"), BookFolder(name: "Old", parentPath: "Fiction"), seaStories]
         )
         let rows = PhoneLibraryFixture.rows(of: model)
         XCTAssertNotNil(rows.summary)
@@ -270,7 +285,7 @@ final class PhoneLibraryRowsTests: XCTestCase {
         rows.search(for: "sea")
 
         XCTAssertTrue(rows.isSearching)
-        XCTAssertEqual(rows.rowIDs.first, .folder("Sea Stories"))
+        XCTAssertEqual(rows.rowIDs.first, .folder(seaStories.id))
         XCTAssertEqual(rows.sections.flatMap(\.rows).filter { $0.kind == .book }.map(\.title), ["Sea Room"])
         XCTAssertEqual(rows.searchCounts.books, 1)
         XCTAssertEqual(rows.searchCounts.folders, 1)

@@ -73,6 +73,30 @@ final class PhoneRowWordingTests: XCTestCase {
         XCTAssertFalse(PhoneRowWording.removalMessage.contains("Trash"))
     }
 
+    // MARK: - The Reading List and the Bar
+
+    /// A row's reading list commands say what the Mac's commands say.
+    func testTheReadingListSentences() {
+        XCTAssertEqual(PhoneRowWording.readingListAdded(title: "Dune", added: true), "Added to reading list: Dune")
+        XCTAssertEqual(PhoneRowWording.readingListAdded(title: "Dune", added: false), "Dune is already in the reading list.")
+        XCTAssertEqual(PhoneRowWording.readingListRemoved(title: "Dune", removed: true), "Removed from reading list: Dune")
+        XCTAssertEqual(PhoneRowWording.readingListRemoved(title: "Dune", removed: false), "Dune isn't in the reading list.")
+    }
+
+    /// The Library view row and the bar say the spec's words, and the row's
+    /// label is the Mac's.
+    func testTheBarsWords() {
+        XCTAssertEqual(PhoneRowWording.libraryViewLabel, "Library view")
+        XCTAssertEqual(PhoneRowWording.libraryViewHint, "Chooses what the Library lists.")
+        XCTAssertEqual(PhoneRowWording.settingsTitle, "Settings")
+        XCTAssertEqual(PhoneRowWording.settingsHint, "Opens TextMouth's settings.")
+        XCTAssertEqual(PhoneRowWording.sortHint, "Chooses the order of the books.")
+        XCTAssertEqual(
+            PhoneRowWording.addToLibraryHint,
+            "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+        )
+    }
+
     // MARK: - Titles and Arrival
 
     /// "Library" at the top, the folder's name in a folder, and "Library:"

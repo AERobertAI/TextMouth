@@ -77,13 +77,13 @@ final class PhoneLibraryRows: ObservableObject {
     /// The library the rows come from.
     private let library: LibraryViewModel
     /// The speed time left is counted at.
-    private let wordsPerMinute: () -> Double
+    private let wordsPerMinute: @MainActor () -> Double
     /// The removal preferences, which name a row's removal.
-    private let removalPreferences: () -> RemovalPreferences
+    private let removalPreferences: @MainActor () -> RemovalPreferences
     /// The signature of the list last published.
     private var publishedSignature: Signature?
     /// The book in reach: the open reader's, else the one last opened.
-    private let bookInReach: () -> Book?
+    private let bookInReach: @MainActor () -> Book?
     /// What was last heard of the open book, or nil before the first word.
     private var listening: PhoneLibraryListening?
     /// The library's changes and the book's playing, heard while the model lasts.
@@ -103,9 +103,9 @@ final class PhoneLibraryRows: ObservableObject {
     init(
         library: LibraryViewModel,
         location: LibraryLocation,
-        wordsPerMinute: @escaping () -> Double,
-        removalPreferences: @escaping () -> RemovalPreferences,
-        bookInReach: @escaping () -> Book?,
+        wordsPerMinute: @escaping @MainActor () -> Double,
+        removalPreferences: @escaping @MainActor () -> RemovalPreferences,
+        bookInReach: @escaping @MainActor () -> Book?,
         listening: AnyPublisher<PhoneLibraryListening, Never>
     ) {
         self.library = library
@@ -430,7 +430,7 @@ final class PhoneLibraryRows: ObservableObject {
     private func folderRow(_ folder: BookFolder) -> PhoneRowValue {
         let count = library.bookCount(inFolderTree: folder.fullPath)
         return PhoneRowValue(
-            id: .folder(folder.fullPath),
+            id: .folder(folder.id),
             label: FolderRow.accessibilityLabel(name: folder.name, bookCount: count, feedCounts: nil),
             title: folder.name,
             detail: FolderRow.countText(bookCount: count, feedCounts: nil),

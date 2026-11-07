@@ -48,6 +48,26 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
         XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.cancel)\", role: .cancel)"))
     }
 
+    /// Book Info's words are the Mac's simple Book Information sheet's, and
+    /// what is said once saved is the Mac's reader's.
+    func testBookInfosWordsAreTheMacs() throws {
+        let sheet = try Self.source("Views/Library/LibrarySheetViews.swift")
+        let reader = try Self.source("ViewModels/ReaderViewModel+Bookmarks.swift")
+
+        XCTAssertTrue(sheet.contains("Text(\"\(PhoneLibraryVocabulary.bookInformation)\")"))
+        XCTAssertTrue(sheet.contains("TextField(\"\(PhoneLibraryVocabulary.titleField)\", text: $title)"))
+        XCTAssertTrue(sheet.contains("MetadataEditorWording.fieldLabel(\"\(PhoneLibraryVocabulary.titleFieldLabel)\", for: .title"))
+        XCTAssertTrue(sheet.contains("TextField(\"\(PhoneLibraryVocabulary.authorField)\", text: $author)"))
+        XCTAssertTrue(sheet.contains("MetadataEditorWording.fieldLabel(\"\(PhoneLibraryVocabulary.authorFieldLabel)\", for: .author"))
+        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.formatRow)\")"))
+        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.addedRow)\")"))
+        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.lastOpenedRow)\")"))
+        XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.wordCountRow)\")"))
+        XCTAssertTrue(sheet.contains("Button(\"\(PhoneLibraryVocabulary.save)\")"))
+        XCTAssertTrue(sheet.contains("Button(\"\(PhoneLibraryVocabulary.cancel)\")"))
+        XCTAssertTrue(reader.contains("announceToVoiceOver(\"\(PhoneLibraryVocabulary.metadataUpdated)\")"))
+    }
+
     /// The text of the source file at `path` in the app's source folder.
     private static func source(_ path: String) throws -> String {
         try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)

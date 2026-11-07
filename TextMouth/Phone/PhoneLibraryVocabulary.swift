@@ -45,6 +45,31 @@ enum PhoneLibraryVocabulary {
     /// What the Continue row does.
     static let continueHint = "Opens the last book you were reading"
 
+    // MARK: Book Info (the Mac's LibrarySheetViews, and its reader's words)
+
+    /// The sheet's title, a heading.
+    static let bookInformation = "Book Information"
+    /// The title field's visible label.
+    static let titleField = "Title"
+    /// The title field's spoken label, before "edited by hand".
+    static let titleFieldLabel = "Book title"
+    /// The author field's visible label.
+    static let authorField = "Author"
+    /// The author field's spoken label, before "edited by hand".
+    static let authorFieldLabel = "Book author"
+    /// The read-only row of the book's format.
+    static let formatRow = "Format"
+    /// The read-only row of the day the book was added.
+    static let addedRow = "Added"
+    /// The read-only row of the day the book was last opened.
+    static let lastOpenedRow = "Last Opened"
+    /// The read-only row of the book's word count.
+    static let wordCountRow = "Word Count"
+    /// The button that saves the sheet.
+    static let save = "Save"
+    /// What VoiceOver says once Book Info is saved (the Mac's reader's).
+    static let metadataUpdated = "Metadata updated"
+
     // MARK: Removing a Book (the Mac's ContentView)
 
     /// The removal question's button that removes nothing.

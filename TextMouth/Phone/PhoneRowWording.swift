@@ -108,6 +108,26 @@ enum PhoneRowWording {
         }
     }
 
+    // MARK: The Reading List
+
+    /// What VoiceOver says after a row's Add to Reading List, as the Mac's
+    /// command says it: "Added to reading list: Dune", or, when it added
+    /// nothing, "Dune is already in the reading list.".
+    static func readingListAdded(title: String, added: Bool) -> String {
+        added
+            ? ReadingListWording.addedAnnouncement(added: [title], alreadyIn: 0)
+            : ReadingListWording.addRefusal(selected: [title])
+    }
+
+    /// What VoiceOver says after a row's Remove from Reading List, as the
+    /// Mac's command says it: "Removed from reading list: Dune", or, when it
+    /// took nothing off, "Dune isn't in the reading list.".
+    static func readingListRemoved(title: String, removed: Bool) -> String {
+        removed
+            ? ReadingListWording.removedAnnouncement(removed: [title], notIn: 0)
+            : ReadingListWording.removeRefusal(selected: [title])
+    }
+
     // MARK: Removing a Book
 
     /// The removal question's message on a phone, which has no Trash a person

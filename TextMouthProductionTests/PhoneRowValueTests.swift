@@ -19,7 +19,7 @@ final class PhoneRowValueTests: XCTestCase {
     /// The kind follows the identity.
     func testTheKindFollowsTheIdentity() {
         let book = PhoneRowValue(id: .book(UUID()), label: "Dune", title: "Dune", detail: nil, commands: [])
-        let folder = PhoneRowValue(id: .folder("Fiction"), label: "Fiction, 1 book", title: "Fiction", detail: "1 book", commands: [])
+        let folder = PhoneRowValue(id: .folder(UUID()), label: "Fiction, 1 book", title: "Fiction", detail: "1 book", commands: [])
 
         XCTAssertEqual(book.kind, .book)
         XCTAssertEqual(folder.kind, .folder)
