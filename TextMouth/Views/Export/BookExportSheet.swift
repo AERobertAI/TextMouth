@@ -134,12 +134,18 @@ struct BookExportSheet: View {
     }
 
     /// The folder the items go to, and the button choosing another.
+    ///
+    /// The folder's name never widens the dialog: the line takes the room
+    /// the button leaves, at no width of its own when the dialog is sized,
+    /// and a name too long for it is shortened in its middle on screen.
+    /// VoiceOver and a braille display still get the whole name. Without
+    /// this, a long name made the dialog as wide as the name itself.
     private var destination: some View {
         HStack {
             Text(BookExportWording.destination(folderName: BookExportWording.folderName(of: model.destination)))
                 .lineLimit(1)
                 .truncationMode(.middle)
-            Spacer()
+                .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
             Button(BookExportWording.chooseFolderTitle) {
                 model.chooseDestination(from: window)
             }

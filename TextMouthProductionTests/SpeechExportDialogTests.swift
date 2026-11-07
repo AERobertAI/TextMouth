@@ -529,7 +529,10 @@ final class SpeechExportDialogTests: XCTestCase {
 
     /// The sheet with the options shown, and a heading of 300 characters, is
     /// no wider than 560 points and no taller than 700: it fits any Mac's
-    /// screen, and a long heading never widens it.
+    /// screen, and a long heading never widens it. Nor does a long folder
+    /// name: the sandbox folder it exports to is named by its label and a
+    /// UUID, 61 characters, which made the sheet 669 points wide until the
+    /// folder line stopped growing to show a name whole (train 1107-0800).
     func testTheSheetWithTheOptionsFits() async throws {
         let long = String(repeating: "W", count: 300)
         let markdown = """
