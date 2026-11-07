@@ -287,44 +287,111 @@ final class ReadingListViewTests: XCTestCase {
     }
 
     /// Move Book Up and Move Book Down from the Library menu and the
-    /// keyboard never stay silent: where the list shows no order to arrange,
-    /// with no book or several selected, or with the book at the edge, the
-    /// sentence says why, and a move that is made says what moved (the
-    /// follow-up noted with TODO A06: "do nothing silently").
+    /// keyboard never stay silent: with no book or several selected, a
+    /// feed's item, or the book at the edge, the sentence says why, and a
+    /// move that is made says what moved (the follow-up noted with TODO A06:
+    /// "do nothing silently"). What it tells a listener to do where nothing
+    /// can move is the next test's.
     @MainActor
     func testMoveCommandsAlwaysSayWhatHappened() {
         let shelf = Self.shelf()
         shelf.model.addToReadingList(shelf.ids("Field Notes", "Loose Pages"))
         let fieldNotes = shelf.id("Field Notes")
         let loosePages = shelf.id("Loose Pages")
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        let sort = shelf.model.library.sortState(at: readingList)
 
-        // No order the user arranges here.
-        XCTAssertEqual(
-            shelf.model.moveSelection([fieldNotes], direction: 1, in: nil),
-            ManualBookOrder.noArrangedOrderAnnouncement
-        )
-        XCTAssertTrue(ManualBookOrder.noArrangedOrderAnnouncement.contains("Manual Order"))
         // Nothing selected, and several selected.
         XCTAssertEqual(
-            shelf.model.moveSelection([], direction: 1, in: .readingList),
+            shelf.model.moveSelection([], direction: 1, at: readingList, sortedBy: sort),
             ManualBookOrder.noBookToMoveAnnouncement
         )
         XCTAssertEqual(
-            shelf.model.moveSelection([fieldNotes, loosePages], direction: 1, in: .readingList),
+            shelf.model.moveSelection([fieldNotes, loosePages], direction: 1, at: readingList, sortedBy: sort),
             ManualBookOrder.severalBooksToMoveAnnouncement
         )
         // At the top, the book cannot move up, and the order is unchanged.
         XCTAssertEqual(
-            shelf.model.moveSelection([fieldNotes], direction: -1, in: .readingList),
+            shelf.model.moveSelection([fieldNotes], direction: -1, at: readingList, sortedBy: sort),
             "Field Notes can't move up."
         )
         XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages])
         // A move that can be made says what moved, and does it.
         XCTAssertEqual(
-            shelf.model.moveSelection([loosePages], direction: -1, in: .readingList),
+            shelf.model.moveSelection([loosePages], direction: -1, at: readingList, sortedBy: sort),
             "Moved Loose Pages above Field Notes"
         )
         XCTAssertEqual(shelf.model.library.readingList.bookIDs, [loosePages, fieldNotes])
+    }
+
+    /// Where the list shows no order to arrange, the sentence sends the
+    /// listener somewhere they can go. A folder in Folders not sorted by
+    /// Manual Order is one Sort menu choice from it. Every other view
+    /// (All Items, Unopened, Recently Opened, Feeds) mixes folders, has no
+    /// Manual Order to choose, and keeps its sort whatever is chosen, so it
+    /// sends the listener to a folder or the Reading List and never to the
+    /// Sort menu. A folder in manual order, and the Reading List, move.
+    @MainActor
+    func testMoveCommandsSendTheListenerSomewhereTheyCanMoveBooks() throws {
+        let shelf = Self.shelf()
+        let book = shelf.id("Field Notes")
+        let byTitle = LibrarySortState(restoring: .defaultSort)
+        let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
+        let feeds = try XCTUnwrap(LibraryViewDefinition.shipped(.feeds))
+        func say(_ location: LibraryLocation, _ sort: LibrarySortState) -> String {
+            shelf.model.moveSelection([book], direction: 1, at: location, sortedBy: sort)
+        }
+
+        // A folder not in manual order: choose Manual Order.
+        let essays = LibraryLocation(category: .folders, folderPath: "Essays")
+        let chooseManual = say(essays, byTitle)
+        XCTAssertTrue(chooseManual.contains("Choose Manual Order in the Sort menu"), chooseManual)
+        // The root of Folders is a folder too.
+        XCTAssertEqual(say(LibraryLocation(category: .folders, folderPath: ""), byTitle), chooseManual)
+
+        // Every other view, in either sort: go to a folder or the Reading List.
+        let elsewhere = "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again."
+        let views = [
+            LibraryLocation(category: .allItems, folderPath: "Essays"),
+            LibraryLocation(category: .unopened, folderPath: "Essays"),
+            LibraryLocation(category: .recent, folderPath: "Essays"),
+            LibraryLocation(view: feeds, folderPath: "Essays"),
+        ]
+        for location in views {
+            for sort in [byTitle, manual] {
+                XCTAssertEqual(say(location, sort), elsewhere, "\(location.name), \(sort.field)")
+            }
+        }
+        XCTAssertFalse(elsewhere.contains("Sort menu"))
+        XCTAssertFalse(elsewhere.contains("Manual"))
+
+        // A folder in manual order moves its books; the book is first, so
+        // it moves down past the other, and cannot then move down further.
+        let before = shelf.model.library.booksInFolder("Essays").map(\.title).sorted()
+        XCTAssertEqual(before, ["Field Notes", "Unlisted Essay"])
+        XCTAssertEqual(say(essays, manual), "Moved Field Notes below Unlisted Essay")
+        XCTAssertEqual(say(essays, manual), "Field Notes can't move down.")
+    }
+
+    /// A feed's item has no place in an order the listener arranges, so the
+    /// command says that instead of "can't move up" and "can't move down".
+    @MainActor
+    func testMoveCommandsSayAFeedItemCannotMove() {
+        let shelf = Self.shelf()
+        var episode = Self.book("Episode Nine", in: "Essays")
+        episode.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:nine")
+        shelf.model.library.books.append(episode)
+        let essays = LibraryLocation(category: .folders, folderPath: "Essays")
+        let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
+
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: -1, at: essays, sortedBy: manual),
+            ManualBookOrder.feedItemCannotMoveAnnouncement("Episode Nine")
+        )
+        XCTAssertEqual(
+            ManualBookOrder.feedItemCannotMoveAnnouncement("Episode Nine"),
+            "Episode Nine is an item of a feed, and a feed's items can't be moved."
+        )
     }
 
     // MARK: - The Edit-Mode Bar

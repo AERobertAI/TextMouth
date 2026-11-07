@@ -364,6 +364,13 @@ struct LibraryCommands: Commands {
         _shortcuts = ObservedObject(wrappedValue: shortcuts)
     }
 
+    /// Whether a Library window can take a command this menu posts: one is
+    /// in front, or no window is open at all, as a menu's items must act
+    /// then (`ShortcutScope.admitsMenuCommand(in:)`).
+    private var libraryWindowCanTakeCommands: Bool {
+        ShortcutScope.library.admitsMenuCommand(in: front.kind)
+    }
+
     var body: some Commands {
         CommandMenu("Library") {
             // Chooses DAISY books kept as loose files by their folders, in a
@@ -465,14 +472,19 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Only a Library window takes these two, and says what it did or
+            // why it could not, so they are dimmed in any other window,
+            // where nothing would answer.
             Button("Move Book Up") {
                 NotificationCenter.default.post(name: .moveBookUp, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Up handled by KeyboardShortcutManager
 
             Button("Move Book Down") {
                 NotificationCenter.default.post(name: .moveBookDown, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Down handled by KeyboardShortcutManager
 
             Divider()
