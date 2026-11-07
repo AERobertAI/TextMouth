@@ -46,12 +46,13 @@ enum MarkupGuard {
         ///
         /// - **Nesting, 32.** The deepest real document nests 12 levels. The converter
         ///   calls itself for every level of the tree, with over 4 KB of stack a level
-        ///   in a debug build, so an import in a debug build overflows between 112 and
-        ///   121 levels; the app's optimized build, at 552 at the least, where the
-        ///   Markdown parser reads nested quotes. A tree can go twice as deep as the
-        ///   count, and two more, as when a form's end tag leaves what it holds open:
-        ///   at 32 the deepest tree, 66 levels, takes three fifths of a debug build's
-        ///   stack, and plain nesting, 32 levels, under a third.
+        ///   in a debug build, so there an import reads 108 levels of lists and 117 of
+        ///   divisions and overflows just past them; in the app's optimized build it
+        ///   reads 552 at the least, where the Markdown parser reads nested quotes. A
+        ///   tree can go twice as deep as the count, and two more, as when a form's
+        ///   end tag leaves what it holds open: at 32 the deepest tree, 66 levels,
+        ///   takes three fifths of a debug build's stack, and plain nesting, 32 levels,
+        ///   under a third.
         /// - **Memory, 1,000,000 units.** The most in a real document is 431,296,
         ///   Webster's Unabridged Dictionary as one 32 MB HTML file. A unit is about
         ///   800 bytes of SwiftSoup's tree, so the limit holds a parse near 800 MB.
