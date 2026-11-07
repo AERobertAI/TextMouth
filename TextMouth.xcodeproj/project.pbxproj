@@ -7922,7 +7922,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -8080,7 +8080,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
@@ -8294,7 +8294,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -8412,7 +8412,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
