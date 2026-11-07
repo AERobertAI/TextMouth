@@ -147,6 +147,15 @@ struct WordXMLFonts: Equatable {
             characterSet: characterSets[font.lowercased()] ?? 0, isPrivateUse: isPrivateUse) ?? " "
     }
 
+    /// The font a `w:rFonts` element names: the first of `keys` (its attributes for the Latin letters and symbols, in
+    /// the order to try) that holds a name, or nil when none does. A font named by a theme only is none.
+    static func name(in attributes: [String: String], keys: [String]) -> String? {
+        for key in keys {
+            if let name = attributes[key], !name.isEmpty { return name }
+        }
+        return nil
+    }
+
     /// The most that `w:char` may say: four hexadecimal digits.
     private static let mostCharacterDigits = 4
 

@@ -32,10 +32,7 @@ struct WordMLRunProperties: Equatable {
 
     /// The font the attributes of a `w:rFonts` name (`w:ascii`, else `w:h-ansi`), or nil for none.
     static func fontName(in attributes: [String: String]) -> String? {
-        for key in ["w:ascii", "w:h-ansi"] {
-            if let name = attributes[key], !name.isEmpty { return name }
-        }
-        return nil
+        WordXMLFonts.name(in: attributes, keys: ["w:ascii", "w:h-ansi"])
     }
 
     /// Whether a toggle property is on: present with no value, or with a

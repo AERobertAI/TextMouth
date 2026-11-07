@@ -104,10 +104,7 @@ struct DOCXStyles {
 enum DOCXRunFonts {
     /// The font the attributes of a `w:rFonts` name, or nil when they name none.
     static func name(in attributes: [String: String]) -> String? {
-        for key in ["w:ascii", "w:hAnsi"] {
-            if let name = attributes[key], !name.isEmpty { return name }
-        }
-        return nil
+        WordXMLFonts.name(in: attributes, keys: ["w:ascii", "w:hAnsi"])
     }
 }
 
