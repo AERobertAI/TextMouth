@@ -376,13 +376,13 @@ struct PhoneLibraryView: View {
     /// Pushes the folder `folderID`, by its path now. Back returns focus to
     /// its row.
     private func openFolder(_ folderID: UUID) {
-        guard let folder = folder(folderID) else { return }
+        guard let folder = libraryFolder(folderID) else { return }
         leaveRow(.folder(folderID))
         model.path.append(.folder(path: folder.fullPath))
     }
 
     /// The library's folder `folderID`, or nil once it has gone.
-    private func folder(_ folderID: UUID) -> BookFolder? {
+    private func libraryFolder(_ folderID: UUID) -> BookFolder? {
         library.library.folders.first { $0.id == folderID }
     }
 
@@ -488,7 +488,7 @@ struct PhoneLibraryView: View {
 
     /// Runs a folder row's command: each a folder sheet.
     private func perform(_ action: PhoneLibraryOffer.Action, onFolder folderID: UUID, titled row: PhoneRowValue) {
-        guard let folder = folder(folderID) else { return }
+        guard let folder = libraryFolder(folderID) else { return }
         let title = row.commands.first { $0.action == action }?.title ?? ""
         let shown: PhoneLibraryFolderSheet
         switch action {
