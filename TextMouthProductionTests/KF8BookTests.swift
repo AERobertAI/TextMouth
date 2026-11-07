@@ -376,6 +376,16 @@ final class KF8BookTests: XCTestCase {
         }
     }
 
+    func testACompressionNoOneDefinedIsRefusedInAKF8BookToo() {
+        for compression in [0, 3, 17479] {
+            var fixture = threeParagraphs()
+            fixture.compression = compression
+            XCTAssertThrowsError(try opened(fixture.data()), "compression \(compression)") {
+                XCTAssertEqual($0 as? MOBIError, .unsupportedCompression)
+            }
+        }
+    }
+
     func testABookWithNoTextOrNoWordsHasNothingToRead() throws {
         let empty = KF8Fixture(documents: [KF8Fixture.Document(html: "<html><body></body></html>")])
         XCTAssertThrowsError(try prepared(empty)) { XCTAssertTrue($0 is FileImportError, "\($0)") }
