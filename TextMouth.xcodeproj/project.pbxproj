@@ -618,6 +618,7 @@
 		4CF4D2CCA1A74A94C9901D4A /* AudioSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B14263B41C4B092A93FE5A0 /* AudioSegment.swift */; };
 		4CFE420F7576E7CB0BC4FF0D /* AudioEditError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E12A085AEF054ED75245185 /* AudioEditError.swift */; };
 		4D0E2C96A5216DD72E911A8F /* DTBookImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8591DE381514CDA6908FA06E /* DTBookImportTests.swift */; };
+		4D25D212735200B038B512E0 /* PhoneReaderModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C88361BA148EC495A9444B /* PhoneReaderModel.swift */; };
 		4D4075B6CD8B6A671E3009B5 /* LibraryViewModel+AudioEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F767BE78C6D4E99D99C3A904 /* LibraryViewModel+AudioEditing.swift */; };
 		4D64A04A093587EEE7ADB3C6 /* ReaderViewModel+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D47009C3DD6A616ECFC05551 /* ReaderViewModel+Navigation.swift */; };
 		4D701B82B69821939DD633F7 /* BookRecordFailureReportingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45260B78618F2BDA64C0FC26 /* BookRecordFailureReportingTests.swift */; };
@@ -1959,6 +1960,7 @@
 		F6BFEF8E9E23946A70D921AA /* EndOfBookWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD7679C82DA9F884FE72619 /* EndOfBookWording.swift */; };
 		F704EC9DCD4219F283F18DBC /* EPUBMetadataWritebackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF7E0A885F8C1D6DC6D79FF /* EPUBMetadataWritebackTests.swift */; };
 		F706AD36E24AB8B00AE8445C /* SuccessionSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1804658BBE7D5306DAC87E /* SuccessionSearchTests.swift */; };
+		F718BF656F440F3607BD67F1 /* PhoneReaderModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C88361BA148EC495A9444B /* PhoneReaderModel.swift */; };
 		F72BA1A922786F6D5360327E /* PDFPageImageScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1677B7F2E6442C2C19C33511 /* PDFPageImageScannerTests.swift */; };
 		F7599CF89DBAE1D422DDD9D7 /* BookExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6DEE4925392A8D7725710E /* BookExportSheet.swift */; };
 		F75CEFBF91B108CC0F47E8F8 /* FeedDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F00D6BDF1C8F4F3C2D68FD /* FeedDates.swift */; };
@@ -2468,6 +2470,7 @@
 		3513FFEA50E02225F427D2D5 /* TranscriptionModelInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionModelInstaller.swift; sourceTree = "<group>"; };
 		355AF98D1BE85A2716138BCB /* AudioMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMetadata.swift; sourceTree = "<group>"; };
 		35951F52468B32A1E1179FBE /* ContentAnalysisSummaryBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentAnalysisSummaryBuffer.swift; sourceTree = "<group>"; };
+		35C88361BA148EC495A9444B /* PhoneReaderModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneReaderModel.swift; sourceTree = "<group>"; };
 		35F00D6BDF1C8F4F3C2D68FD /* FeedDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDates.swift; sourceTree = "<group>"; };
 		35F25CA63A45738F43F19341 /* TranscribedBooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscribedBooks.swift; sourceTree = "<group>"; };
 		35FEA6C384EB84BB8DD1CDB9 /* PageNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageNavigationTests.swift; sourceTree = "<group>"; };
@@ -4062,6 +4065,7 @@
 				1B733CAF65C8D9534BDE0FCF /* PhoneMoveFeedback.swift */,
 				C90B532399DA51DBF2FBE52D /* PhoneNavigationUnits.swift */,
 				836E17F65DF12FECC4795CBB /* PhoneReaderControls.swift */,
+				35C88361BA148EC495A9444B /* PhoneReaderModel.swift */,
 				37AB63B2AA0FC0C7986B350C /* PhoneReaderSnapshot.swift */,
 				CDD71D54835D0958EAE1B0C5 /* PhoneReaderState.swift */,
 				0E2ED20C31EE5E3D81DE1134 /* PhoneReaderVocabulary.swift */,
@@ -6907,6 +6911,7 @@
 				D74C666556F413AC1C3EA824 /* PhoneMoveFeedback.swift in Sources */,
 				6C5CA2DD43116F1EBBEF9660 /* PhoneNavigationUnits.swift in Sources */,
 				475D5022F18692E47BAF4F17 /* PhoneReaderControls.swift in Sources */,
+				4D25D212735200B038B512E0 /* PhoneReaderModel.swift in Sources */,
 				0661C5F9CA8427A669738886 /* PhoneReaderSnapshot.swift in Sources */,
 				002F486DADC77C86DDEEA4DE /* PhoneReaderState.swift in Sources */,
 				DA90A6C06D40A400B18F1FA6 /* PhoneReaderVocabulary.swift in Sources */,
@@ -7587,6 +7592,7 @@
 				49D22CE6E29D98855200CC81 /* PhoneMoveFeedback.swift in Sources */,
 				31ABAB4A932F21D9C7352D6C /* PhoneNavigationUnits.swift in Sources */,
 				FD8469AE6F5BEFB5CA533884 /* PhoneReaderControls.swift in Sources */,
+				F718BF656F440F3607BD67F1 /* PhoneReaderModel.swift in Sources */,
 				60A8C94B7E4CDBF00E4338F0 /* PhoneReaderSnapshot.swift in Sources */,
 				8FA0B469FDAF83B671C41FFE /* PhoneReaderState.swift in Sources */,
 				0A7D6091DE1486ED1E7970DD /* PhoneReaderView.swift in Sources */,
