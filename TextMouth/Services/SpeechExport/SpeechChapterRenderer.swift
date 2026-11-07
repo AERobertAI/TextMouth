@@ -16,7 +16,9 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
     /// text they can't speak, such as a script they don't read or a line of
     /// symbols (`SpeechChapterRenderer.silenceCeiling`).
     case noSound(String)
-    /// The voice wrote nothing for the synthesizer's stall limit.
+    /// The voice wrote nothing for the synthesizer's stall limit: before its
+    /// first buffer, in the time the text's length gives it, or for a minute
+    /// after a buffer.
     case stalled(String)
     /// The voice's audio changed its sample rate, channel count, kind of
     /// sample, or interleaving partway through the chapter.
@@ -32,7 +34,7 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
         case .noSound(let title):
             return "The voice made no sound for “\(title)”. Check that the book's voice speaks the book's language."
         case .stalled(let title):
-            return "The voice stopped partway through “\(title)” and made no sound for a minute."
+            return "The voice stopped making sound partway through “\(title)”, and TextMouth stopped waiting for it."
         case .formatChanged(let title):
             return "The voice changed its kind of audio partway through “\(title)”."
         case .unusableVoice:
