@@ -461,6 +461,7 @@ struct HTMLTreeModel {
 
     /// `BeforeHtml`.
     private mutating func beforeHtml(_ token: Token) -> Bool {
+        /// The mode's anything else: `html` made up, and the token read again before the head.
         func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
             model.insertMadeUp("html", counted: false)
             model.mode = .beforeHead
@@ -502,6 +503,7 @@ struct HTMLTreeModel {
 
     /// `InHead`.
     private mutating func inHead(_ token: Token) -> Bool {
+        /// The mode's anything else: the head closed, and the token read again after it.
         func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
             model.processEndTag("head")
             return model.process(token)
@@ -567,6 +569,7 @@ struct HTMLTreeModel {
 
     /// `AfterHead`.
     private mutating func afterHead(_ token: Token) -> Bool {
+        /// The mode's anything else: `body` made up, and the token read again in it.
         func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
             model.processStartTag("body")
             return model.process(token)
@@ -933,6 +936,7 @@ struct HTMLTreeModel {
 
     /// `InTable`.
     private mutating func inTable(_ token: Token) -> Bool {
+        /// The mode's anything else: the body's rules, beside the table.
         func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
             model.inBodyFostered(token)
         }
@@ -1032,6 +1036,7 @@ struct HTMLTreeModel {
 
     /// `InColumnGroup`.
     private mutating func inColumnGroup(_ token: Token) -> Bool {
+        /// The mode's anything else: the column group closed, and the token read again in the table, unless it could not close.
         func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
             if model.processEndTag("colgroup") { return model.process(token) }
             return true
@@ -1058,6 +1063,7 @@ struct HTMLTreeModel {
 
     /// `InTableBody`.
     private mutating func inTableBody(_ token: Token) -> Bool {
+        /// `exitTableBody`: the section closed, and the token read again in the table, unless no section is open.
         func exitTableBody(_ model: inout HTMLTreeModel) -> Bool {
             // `tfoot` is asked after in the ordinary scope, where markers stop it: a slip of the parser.
             guard model.isInTableScope("tbody") || model.isInTableScope("thead") || model.isInScope("tfoot") else { return false }
@@ -1099,6 +1105,7 @@ struct HTMLTreeModel {
 
     /// `InRow`.
     private mutating func inRow(_ token: Token) -> Bool {
+        /// `handleMissingTr`: the row closed, and the token read again, unless no row could close.
         func handleMissingTr(_ model: inout HTMLTreeModel) -> Bool {
             model.processEndTag("tr") ? model.process(token) : false
         }
@@ -1138,6 +1145,7 @@ struct HTMLTreeModel {
 
     /// `InCell`.
     private mutating func inCell(_ token: Token) -> Bool {
+        /// `closeCell`: the open `td`, or else `th`, closed by an end tag the parser makes up.
         func closeCell(_ model: inout HTMLTreeModel) {
             if model.isInTableScope("td") {
                 model.processEndTag("td")
