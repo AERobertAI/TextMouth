@@ -63,6 +63,9 @@ enum PhoneReaderWording {
         return "\(sentence) \(Self.sentence(heading))"
     }
 
+    /// The name of Book content's rotor that moves by sentence.
+    static let sentencesRotor = "Sentences"
+
     // MARK: The Grid's Buttons
 
     /// Bookmarks' hint.

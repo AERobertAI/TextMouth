@@ -36,6 +36,8 @@ final class PhoneReaderModel {
     private let currentReader: @MainActor () -> ReaderViewModel?
     /// Plays or pauses the screen's book, as the session does.
     private let playOrPause: @MainActor () -> Void
+    /// Plays the screen's book, leaving one that plays as it is.
+    private let play: @MainActor () -> Void
     /// Where Settings keeps what a book of each kind moves by until it has a
     /// unit of its own (`PhoneDefaults`).
     private let preferences: UserDefaults
@@ -59,6 +61,12 @@ final class PhoneReaderModel {
     /// The readers the session publishes, heard to fill each one's hooks.
     private var readerSubscription: AnyCancellable?
 
+    /// Told after the place of the screen's book has moved by the model's own
+    /// doing, so Book content can follow a paused move
+    /// (`PhonePassagePolicy.Event.movedWhilePaused`). One listener: the
+    /// reader's text.
+    var placeDidMove: (@MainActor () -> Void)?
+
     /// A model for the readers `readers` publishes, the one on screen being
     /// `currentReader`'s.
     ///
@@ -78,6 +86,7 @@ final class PhoneReaderModel {
         currentReader: @escaping @MainActor () -> ReaderViewModel?,
         readers: AnyPublisher<ReaderViewModel?, Never>,
         playOrPause: @escaping @MainActor () -> Void,
+        play: @escaping @MainActor () -> Void = {},
         preferences: UserDefaults = TextMouthRuntime.current.preferences,
         collect: @escaping Collector = { body in VoiceOverAnnouncer.collectingAnnouncements(during: body) },
         post: @escaping @MainActor (VoiceOverAnnouncement) -> Void = PhoneReaderModel.postThroughAnnouncer,
@@ -86,6 +95,7 @@ final class PhoneReaderModel {
     ) {
         self.currentReader = currentReader
         self.playOrPause = playOrPause
+        self.play = play
         self.preferences = preferences
         self.collect = collect
         self.post = post
@@ -114,6 +124,7 @@ final class PhoneReaderModel {
             currentReader: { [weak session] in session?.reader },
             readers: session.$reader.merge(with: session.$listeningReader).eraseToAnyPublisher(),
             playOrPause: { [weak session] in session?.togglePlayPause() },
+            play: { [weak session] in session?.play() },
             noteEngaged: { [weak session] in session?.noteBookEngaged() }
         )
     }
@@ -291,6 +302,9 @@ final class PhoneReaderModel {
         ))
         moveWords = feedback.playValue.map { (bookID: reader.book.id, words: $0) }
         invalidate()
+        if reader === currentReader() {
+            placeDidMove?()
+        }
         announceLater(feedback.announcements)
     }
 
@@ -411,6 +425,40 @@ final class PhoneReaderModel {
     /// previous position", or "No previous position to return to."
     func returnToPreviousPlace() {
         answer { $0.goBack() }
+        placeDidMove?()
+    }
+
+    /// Listen from Here: moves the screen's book to `offset` in chapter
+    /// `chapterIndex`, keeping the old place for Return, and plays it. What
+    /// the jump says is collected and dropped: the book, starting there, is
+    /// the answer. Engages the book, as reading it has.
+    func listen(fromChapter chapterIndex: Int, offset: Int) {
+        guard let reader, !reader.isLoading, reader.content != nil else { return }
+        moveWords = nil
+        _ = collect {
+            reader.navigatePreservingReturnPosition(chapterIndex: chapterIndex, characterOffset: offset)
+        }
+        noteEngaged()
+        play()
+        invalidate()
+    }
+
+    /// Book content took focus: the book counts as opened, as reading it has.
+    func noteReading() {
+        noteEngaged()
+    }
+
+    /// Moves the screen's paused book to `offset` in chapter `chapterIndex`
+    /// as a page of Book content is turned, keeping the old place for
+    /// Return, and saying nothing: the page's own status says where.
+    func turnPage(toChapter chapterIndex: Int, offset: Int) {
+        guard let reader, !reader.isLoading, reader.content != nil else { return }
+        moveWords = nil
+        _ = collect {
+            reader.navigatePreservingReturnPosition(chapterIndex: chapterIndex, characterOffset: offset)
+        }
+        noteEngaged()
+        invalidate()
     }
 
     /// Runs `body` on the screen's reader, and says what it said a moment

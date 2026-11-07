@@ -86,6 +86,42 @@ enum PhonePassagePolicy {
         return start..<(start + window.upperBound)
     }
 
+    /// Where the passage after or before one showing `shown` of chapter
+    /// `chapter` begins, for paging through Book content across chapters:
+    /// the next passage starts where this one ends, or at the next chapter
+    /// with words in it; the previous one a passage's length before this
+    /// one's start, or at the last passage of the chapter with words before.
+    /// Nil at either end of the book.
+    ///
+    /// - Parameters:
+    ///   - chapters: Every chapter's text, in order.
+    ///   - chapter: The chapter shown.
+    ///   - shown: The passage shown, as UTF-16 offsets in that chapter.
+    ///   - forward: Whether to page forward.
+    ///   - maximumLength: The longest a passage is.
+    static func pageTarget(
+        chapters: [String],
+        chapter: Int,
+        shown: Range<Int>,
+        forward: Bool,
+        maximumLength: Int
+    ) -> (chapter: Int, offset: Int)? {
+        guard chapters.indices.contains(chapter) else { return nil }
+        let hasWords: (Int) -> Bool = { !chapters[$0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        if forward {
+            if shown.upperBound < chapters[chapter].utf16Length {
+                return (chapter: chapter, offset: shown.upperBound)
+            }
+            let next = chapters.indices.dropFirst(chapter + 1).first(where: hasWords)
+            return next.map { (chapter: $0, offset: 0) }
+        }
+        if shown.lowerBound > 0 {
+            return (chapter: chapter, offset: max(0, shown.lowerBound - maximumLength))
+        }
+        let before = chapters.indices.prefix(chapter).last(where: hasWords)
+        return before.map { (chapter: $0, offset: max(0, chapters[$0].utf16Length - maximumLength)) }
+    }
+
     /// Where Listen from Here plays from, as an offset in the chapter:
     /// VoiceOver's cursor in the text, found in the spec's order. First the
     /// text view's selection, if VoiceOver or a braille display's router key
