@@ -316,8 +316,7 @@ enum TranscriptionWording {
     /// Moby-Dick: 7,077 words in 51 seconds." The count is written with the
     /// user's grouping, as in "7,077".
     static func finished(bookTitle: String, wordCount: Int, seconds: TimeInterval) -> String {
-        let words = "\(wordCount.formatted()) \(wordCount == 1 ? "word" : "words")"
-        return "Transcribed \(bookTitle): \(words) in \(TimeFormatting.spoken(seconds))."
+        "Transcribed \(bookTitle): \(words(wordCount)) in \(TimeFormatting.spoken(seconds))."
     }
 
     /// Why a transcription stopped, as `TranscriptionError` words it, or as
@@ -389,10 +388,15 @@ enum TranscriptionWording {
     /// What the confirmation explains, saying when the user's own edits go
     /// too.
     static func deleteConfirmationMessage(isEdited: Bool) -> String {
-        let message = "The transcript and the text made from it are deleted. The audiobook's audio, your place, "
-            + "and your bookmarks stay as they are, and the book can be transcribed again."
+        let message = "The transcript and the text made from it are deleted. \(whatStays), "
+            + "and the book can be transcribed again."
         return isEdited ? message + " Your edits to the transcript are deleted too." : message
     }
+
+    /// What a confirmation before a transcript goes, deleted or replaced,
+    /// promises stays: "The audiobook's audio, your place, and your
+    /// bookmarks stay as they are", the same words in each.
+    private static let whatStays = "The audiobook's audio, your place, and your bookmarks stay as they are"
 
     /// The confirmation's deleting button.
     static let deleteButtonTitle = "Delete Transcript"
@@ -412,7 +416,94 @@ enum TranscriptionWording {
 
     /// Why Delete Transcript waits while the same book is transcribed.
     static func deleteWhileTranscribing(bookTitle: String) -> String {
-        "\(bookTitle) is being transcribed. Cancel the transcription first, or delete the transcript once it finishes."
+        whileTranscribing(bookTitle: bookTitle, orElse: "delete the transcript")
+    }
+
+    /// Why a command waits while the same book is transcribed, as Delete
+    /// Transcript and Attach Transcript say it: "Moby-Dick is being
+    /// transcribed. Cancel the transcription first, or `action` once it
+    /// finishes."
+    private static func whileTranscribing(bookTitle: String, orElse action: String) -> String {
+        "\(bookTitle) is being transcribed. Cancel the transcription first, or \(action) once it finishes."
+    }
+
+    // MARK: Attach Transcript
+
+    /// The command that gives an audiobook a transcript from a WebVTT or
+    /// SubRip file instead of transcribing it, in the reader's Book menu
+    /// (FMT23).
+    static let attachCommandTitle = "Attach Transcript…"
+
+    /// What the Open panel asks for: "Choose a WebVTT (.vtt) or SubRip
+    /// (.srt) transcript of Moby-Dick. Its times count from the start of the
+    /// book's audio." A book of several tracks takes one file for the whole
+    /// book, its times running on across the tracks.
+    static func attachPanelMessage(bookTitle: String) -> String {
+        "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle). "
+            + "Its times count from the start of the book's audio."
+    }
+
+    /// The Open panel's button, which attaches the file chosen.
+    static let attachPanelPrompt = "Attach"
+
+    /// The title of the alert saying why Attach Transcript did nothing, or
+    /// why the file chosen was not attached.
+    static let attachNoticeTitle = "Attach Transcript"
+
+    /// Why Attach Transcript waits while the same book is transcribed.
+    static func attachWhileTranscribing(bookTitle: String) -> String {
+        whileTranscribing(bookTitle: bookTitle, orElse: "attach the transcript")
+    }
+
+    /// Why a file of another kind than WebVTT or SubRip was not attached.
+    static let attachUnknownFormat = "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."
+
+    /// Why the file chosen was not attached, `reason` saying it in a
+    /// sentence of its own: "“lecture.vtt” wasn't attached to Moby-Dick:
+    /// The file isn't a WebVTT transcript TextMouth can read."
+    static func attachFailed(fileName: String, bookTitle: String, reason: String) -> String {
+        "“\(fileName)” wasn't attached to \(bookTitle): \(reason)"
+    }
+
+    /// The title of the confirmation before a transcript from a file
+    /// replaces the book's own: "Replace the Transcript of Moby-Dick?"
+    static func replaceConfirmationTitle(bookTitle: String) -> String {
+        "Replace the Transcript of \(bookTitle)?"
+    }
+
+    /// What the confirmation explains: the transcript from the file named
+    /// `fileName` replaces the book's and its text, while the audio, the
+    /// place, and the bookmarks stay; then whether the user's own edits of
+    /// the transcript go too, and whether its cleanup does.
+    static func replaceConfirmationMessage(fileName: String, isEdited: Bool, isCleanedUp: Bool) -> String {
+        var message = "The transcript from “\(fileName)” replaces the book's transcript and the text made from it. "
+            + "\(whatStays)."
+        if isEdited {
+            message += " Your edits to the transcript are replaced too."
+        }
+        if isCleanedUp {
+            message += " Its cleanup is replaced too."
+        }
+        return message
+    }
+
+    /// The confirmation's replacing button.
+    static let replaceButtonTitle = "Replace Transcript"
+
+    /// What VoiceOver hears once the file is attached: "Attached
+    /// “lecture.vtt” to Moby-Dick: 7,077 words.", the count written with the
+    /// user's grouping, as a finished transcription says it; then, when
+    /// `skipped` of the file's timed passages could not be read, how many
+    /// were left out: " 1 timed passage couldn't be read and was left out."
+    static func attached(fileName: String, bookTitle: String, wordCount: Int, skipped: Int) -> String {
+        let sentence = "Attached “\(fileName)” to \(bookTitle): \(words(wordCount))."
+        guard skipped > 0 else { return sentence }
+        let leftOut = grouped(
+            skipped,
+            singular: "timed passage couldn't be read and was left out",
+            plural: "timed passages couldn't be read and were left out"
+        )
+        return "\(sentence) \(leftOut)."
     }
 
     // MARK: The Library Row
@@ -433,6 +524,19 @@ enum TranscriptionWording {
     /// `date` as a day in the user's own words: "October 4, 2026".
     static func day(_ date: Date) -> String {
         date.formatted(date: .long, time: .omitted)
+    }
+
+    /// `count` words, the count written with the user's grouping: "1 word",
+    /// "7,077 words".
+    private static func words(_ count: Int) -> String {
+        grouped(count, singular: "word", plural: "words")
+    }
+
+    /// `count`, written with the user's grouping, followed by `singular`
+    /// after exactly one and `plural` after every other count, as
+    /// `CountWording.phrase` counts but with "7,077" in place of "7077".
+    private static func grouped(_ count: Int, singular: String, plural: String) -> String {
+        "\(count.formatted()) \(count == 1 ? singular : plural)"
     }
 }
 
