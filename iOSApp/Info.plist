@@ -15,6 +15,15 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<!-- One scene at a time, also on an iPad: one PhoneSession cannot serve two
+	     windows. No configurations: the app delegate names the scene's classes
+	     in code. Xcode's generated manifest, which this replaces, allows several
+	     scenes (the engineering review's F27). -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 	<!-- Copied from the Mac's Info.plist, less what iOS refuses, so that no app
 	     offers TextMouth a file it would refuse: Ogg Audio, Audio Converted at
 	     Import, ALAC Audio (its entry names CAF), and the three braille files.
