@@ -239,7 +239,7 @@ extension EPUBExportWriterTests {
         XCTAssertFalse(try XCTUnwrap(first.last).contains("pagebreak"), "the page is not left at the end of the first file")
         let second = try bodyLines("OEBPS/chapter-2.xhtml", in: url)
         XCTAssertTrue(try XCTUnwrap(second.first).contains("id=\"page_1\""), "\(second)")
-        XCTAssertTrue(second[1].hasPrefix("<h2 "))
+        XCTAssertTrue(try XCTUnwrap(second.dropFirst().first).hasPrefix("<h2 "))
     }
 
     /// A run of only pages is not ended at, so the pages stay together in a
