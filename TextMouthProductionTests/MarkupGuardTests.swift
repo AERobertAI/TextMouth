@@ -372,6 +372,125 @@ final class MarkupGuardTests: XCTestCase {
         XCTAssertLessThan(try inspected("<head><noscript><link rel=x><style>\(tags)</style></noscript></head><body>", as: .html).deepest, 5)
     }
 
+    // MARK: - Each Format's Own Path
+
+    /// An EPUB of the given chapters, each an XHTML file, in reading order.
+    private func makeEPUB(chapters: [String]) throws -> URL {
+        let items = chapters.indices.map { "<item id=\"c\($0)\" href=\"c\($0).xhtml\" media-type=\"application/xhtml+xml\"/>" }.joined()
+        let spine = chapters.indices.map { "<itemref idref=\"c\($0)\"/>" }.joined()
+        let package = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id">
+            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">urn:uuid:\(UUID().uuidString)</dc:identifier>
+            <dc:title>Guarded \(UUID().uuidString)</dc:title><dc:language>en</dc:language></metadata>
+            <manifest>\(items)</manifest><spine>\(spine)</spine></package>
+            """
+        var entries = [
+            TestZIPEntry("mimetype", Data("application/epub+zip".utf8)),
+            TestZIPEntry("META-INF/container.xml", Data("""
+                <?xml version="1.0"?>
+                <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+                </container>
+                """.utf8)),
+            TestZIPEntry("OEBPS/content.opf", Data(package.utf8)),
+        ]
+        for (number, chapter) in chapters.enumerated() {
+            entries.append(TestZIPEntry("OEBPS/c\(number).xhtml", Data(chapter.utf8)))
+        }
+        let zip = try makeTemporaryZip(prefix: "TextMouthMarkupGuard", orderedEntries: entries)
+        let epub = try makeSandboxDirectory("MarkupGuard").appendingPathComponent("book.epub")
+        try FileManager.default.moveItem(at: zip, to: epub)
+        return epub
+    }
+
+    /// An EPUB's chapter holding a broken declaration reads, on an import's stack, and one
+    /// that would overflow the stack is left out by name, with the others read.
+    func testAnEPUBReadsAroundWhatItsChaptersHold() throws {
+        let epub = try makeEPUB(chapters: [
+            xhtml("<?a><p>First chapter words.</p>"),
+            xhtml(String(repeating: "<div></x>", count: 5_000)),
+            Self.declaration + "<?1?><html><body><p>Third chapter words.</p></body></html>",
+        ])
+        let read = onWorkerSizedStack { Result { try EPUBParser.prepareBook(url: epub) }.map { book in
+            (book.chapters.map(\.chapter.text), book.report.omissions.map(\.chapterNumber))
+        } }
+        let (texts, omitted) = try XCTUnwrap(read).get()
+        XCTAssertEqual(texts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }, ["First chapter words.", "Third chapter words."])
+        XCTAssertEqual(omitted, [2])
+    }
+
+    /// An honest EPUB nested 5,000 deep, which once ended the app, says what is wrong with it.
+    func testAnEPUBWhoseOnlyChapterIsTooDeepIsRefused() throws {
+        let deep = String(repeating: "<div>", count: 5_000) + "words" + String(repeating: "</div>", count: 5_000)
+        let epub = try makeEPUB(chapters: [xhtml(deep)])
+        let read = onWorkerSizedStack { Result { try EPUBParser.prepareBook(url: epub).title } }
+        XCTAssertThrowsError(try XCTUnwrap(read).get()) { error in
+            guard case .noReadableChapters = error as? EPUBParserError else { return XCTFail("\(error)") }
+        }
+    }
+
+    /// A Kindle book's section meets the same guard, through the reader's whole path.
+    func testAKindleBookHoldsToo() throws {
+        func prepared(_ html: String) throws -> Result<[String], Error> {
+            var fixture = MOBIFixture()
+            fixture.html = html
+            let url = try writeMOBI(fixture.data())
+            return try XCTUnwrap(onWorkerSizedStack {
+                Result { try MOBIParser.prepareBook(url: url).chapters.map(\.chapter.text) }
+            })
+        }
+        // A section that opens as XML goes to SwiftSoup's XML parser.
+        let words = try prepared(Self.declaration + "<?a><p>The words.</p>").get().joined()
+        XCTAssertEqual(words.trimmingCharacters(in: .whitespacesAndNewlines), "The words.")
+        for hostile in [
+            "<html><body>" + String(repeating: "<div></x>", count: 5_000) + "</body></html>",
+            "<html><body>" + String(repeating: "<span><div></span>", count: 5_000) + "</body></html>",
+            Self.declaration + String(repeating: "<br>", count: 5_000),
+        ] {
+            XCTAssertThrowsError(try prepared(hostile).get(), String(hostile.prefix(60))) { error in
+                XCTAssertEqual(error as? MarkupRefusal, .nestedTooDeeply(limit: MarkupGuard.Limits.standard.deepestNesting))
+            }
+        }
+    }
+
+    /// A DAISY navigation file meets it too.
+    func testADAISYNavigationFileHoldsToo() throws {
+        let opening = Self.declaration + "<?a><html><head></head><body>"
+        let navigation = opening + "<h1><a href=\"part1.smil#p1\">Leadline Readings</a></h1></body></html>"
+        XCTAssertNoThrow(try DAISY202NCCParser(html: navigation, file: "ncc.html").parse())
+        let deep = opening + String(repeating: "<div></x>", count: 5_000) + "</body></html>"
+        let read = onWorkerSizedStack { Result { _ = try DAISY202NCCParser(html: deep, file: "ncc.html").parse() } }
+        XCTAssertThrowsError(try XCTUnwrap(read).get()) { error in
+            XCTAssertEqual(error as? MarkupRefusal, .nestedTooDeeply(limit: MarkupGuard.Limits.standard.deepestNesting))
+        }
+    }
+
+    /// A web archive's main page reads through the two paths a page takes.
+    func testAWebArchivePageHoldsToo() throws {
+        let page = WebArchiveReader.MainPage(text: xhtml("<?a><p>Words.</p>"), isHTML: true)
+        XCTAssertTrue(try page.markdown().contains("Words."))
+        let deep = WebArchiveReader.MainPage(text: "<html><body>" + String(repeating: "<div></x>", count: 5_000), isHTML: true)
+        let refused = onWorkerSizedStack {
+            ((try? deep.markdown()) == nil, (try? deep.parsed(title: "T")) == nil)
+        }
+        XCTAssertEqual(refused?.0, true)
+        XCTAssertEqual(refused?.1, true)
+    }
+
+    /// A feed's page or title is never read past the limits: it reads as nothing, or as the text it is.
+    func testAFeedsMarkupHoldsToo() throws {
+        let hostile = "<html><body>" + String(repeating: "<div></x>", count: 5_000) + "</body></html>"
+        let page = try XCTUnwrap(URL(string: "https://example.com/feed"))
+        let links = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: hostile, pageURL: page).count }
+        XCTAssertEqual(links, 0)
+        let text = onWorkerSizedStack { FeedTextConverter.read(html: hostile) == nil }
+        XCTAssertEqual(text, true)
+        let line = onWorkerSizedStack { FeedTextConverter.plainLine(hostile, isHTML: true) }
+        XCTAssertEqual(line, hostile)
+        XCTAssertEqual(FeedTextConverter.plainLine("<?a><b>Words</b>", isHTML: true), "Words")
+    }
+
     // MARK: - Size
 
     /// The limit on tags counts everything that takes a node in the tree.
