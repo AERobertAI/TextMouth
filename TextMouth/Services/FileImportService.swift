@@ -187,6 +187,9 @@ private final class SMILTextSources: NSObject, XMLParserDelegate {
     /// The `src` of each text element in `data`, in order, up to the point
     /// a damaged document stops the read; the sources found stand.
     static func scan(_ data: Data) -> [String] {
+        // A SMIL file with a tag the parser would take too long over names no source
+        // (`XMLInputGuard`).
+        guard XMLInputGuard.problem(with: data) == nil else { return [] }
         let scanner = SMILTextSources()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false

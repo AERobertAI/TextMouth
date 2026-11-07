@@ -230,6 +230,12 @@ enum FeedParser {
             return try JSONFeedParser.parse(data, baseURL: baseURL, maximumItems: maximumItems)
         }
 
+        // A tag with more attributes than a parser can take in reasonable time
+        // is a fault (`XMLInputGuard`). Only the attributes are counted: old
+        // feeds declare entities of their own, and are read.
+        if XMLInputGuard.hasTag(withMoreAttributesThan: XMLInputGuard.mostAttributesInATag, in: data) {
+            throw FeedParseError.damaged(problem: XMLInputGuard.tooManyAttributesProblem, line: 1, column: 1)
+        }
         let strict = StrictFeedReading(data: data, reader: FeedDocumentReader(baseURL: baseURL, itemLimit: maximumItems))
         switch strict.read() {
         case .feed(let feed):
