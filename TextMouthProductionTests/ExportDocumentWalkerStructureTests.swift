@@ -99,14 +99,144 @@ final class ExportDocumentWalkerStructureTests: XCTestCase {
         XCTAssertEqual(try walk("## <!-- page: 7 -->").blocks, [.pageBreak(page("7", "page_1"))])
     }
 
-    /// A marker in a table's cell starts its page before the table, which
-    /// keeps its cells' words.
-    func testAMarkerInATableCellIsABreakBeforeTheTable() throws {
+    /// A marker in a table's cell starts its page in the cell, after as many
+    /// Characters of its words as come before it (S3), so a table that crosses
+    /// a print page starts the page where the reader has it.
+    func testAMarkerInATableCellStaysInTheCell() throws {
         let document = try walk("| A | B |\n|---|---|\n| x <!-- page: 8 --> | y |")
         XCTAssertEqual(document.blocks, [
-            .pageBreak(page("8", "page_1")),
-            .table(ExportTable(rows: [["A", "B"], ["x", "y"]], hasHeaderRow: true)),
+            .table(ExportTable(
+                rows: [["A", "B"], ["x", "y"]],
+                hasHeaderRow: true,
+                cellPages: [ExportCellPage(row: 1, column: 0, offset: 1, page: page("8", "page_1"))]
+            )),
         ])
+        XCTAssertEqual(ExportBlock.pageBreaks(in: document.blocks), [page("8", "page_1")])
+    }
+
+    /// A marker before a cell's words, in a head row that is left out for
+    /// having no words, and in a later cell: each page is kept, the first
+    /// before the table and the rest in their cells with the rows moved up.
+    func testPagesInAnEmptyHeadRowAndInLaterCellsAreKept() throws {
+        let document = try walk("| <!-- page: 1 --> | |\n|---|---|\n| a | <!-- page: 2 -->b |")
+        XCTAssertEqual(document.blocks, [
+            .pageBreak(page("1", "page_1")),
+            .table(ExportTable(
+                rows: [["a", "b"]],
+                hasHeaderRow: false,
+                cellPages: [ExportCellPage(row: 0, column: 1, offset: 0, page: page("2", "page_2"))]
+            )),
+        ])
+    }
+
+    // MARK: - Places the Contents Point At (B3)
+
+    /// The target of a heading annotation, as the walk makes it.
+    private func target(_ level: Int, _ text: String, _ id: String) -> ExportNavigationTarget {
+        ExportNavigationTarget(level: level, text: text, id: id)
+    }
+
+    /// A heading annotation is a target between blocks, with its level and
+    /// words and an id of its own; a walk of the words alone has none.
+    func testAHeadingAnnotationIsATarget() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Aside").markdown
+        let markdown = "Before.\n\n\(annotation)\n\nAfter."
+        XCTAssertEqual(try walk(markdown).blocks, [
+            paragraph("Before."), .navigationTarget(target(2, "Aside", "target_1")), paragraph("After."),
+        ])
+        XCTAssertEqual(try walk(markdown, .plain).blocks, [paragraph("Before."), paragraph("After.")])
+        XCTAssertEqual(ExportBlock.contentsItems(in: try walk(markdown).blocks), [
+            ExportContentsItem(level: 2, text: "Aside", id: "target_1", isHeading: false),
+        ])
+    }
+
+    /// An annotation inside a paragraph is a run at its place, in the style
+    /// it is in, and the contents find it there.
+    func testAnAnnotationInsideAParagraphIsARun() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 3, text: "Middle").markdown
+        let document = try walk("Words \(annotation) more.")
+        XCTAssertEqual(document.blocks, [
+            .paragraph([ExportRun("Words "), ExportRun("", navigationTarget: target(3, "Middle", "target_1")), ExportRun(" more.")]),
+        ])
+        XCTAssertEqual(ExportBlock.contentsItems(in: document.blocks).map(\.text), ["Middle"])
+    }
+
+    /// A target with no words between it and a heading is that heading's
+    /// place, so the reader lists it once: the target is dropped. Of several
+    /// with none between them the first stays. A page between changes
+    /// nothing, and words between do.
+    func testATargetAtAnotherEntrysPlaceIsDropped() throws {
+        let one = MarkdownHeadingAnnotation(level: 2, text: "One").markdown
+        let two = MarkdownHeadingAnnotation(level: 2, text: "Two").markdown
+        let atHeading = try walk("\(one)\n\n<!-- page: 1 -->\n\n# Real\n\nWords.")
+        XCTAssertEqual(ExportBlock.contentsItems(in: atHeading.blocks).map(\.text), ["Real"])
+        XCTAssertEqual(ExportBlock.pageBreaks(in: atHeading.blocks).count, 1, "the page stays")
+
+        let three = MarkdownHeadingAnnotation(level: 2, text: "Three").markdown
+        let twice = try walk("\(one)\n\n<!-- page: 1 -->\n\n\(two)\n\nWords.\n\n\(three)")
+        XCTAssertEqual(
+            ExportBlock.contentsItems(in: twice.blocks).map(\.text), ["One", "Three"],
+            "Two is at One's place, and Three has words before it"
+        )
+    }
+
+    /// An annotation inside a heading names the heading's own place, which the
+    /// contents already link: the reader adds no row for it, and nor does the
+    /// walk.
+    func testAnAnnotationInsideAHeadingAddsNoEntry() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Inside").markdown
+        let document = try walk("## Title \(annotation)here")
+        XCTAssertEqual(document.blocks, [
+            .heading(ExportHeading(level: 2, runs: [ExportRun("Title here")], id: "title-here")),
+        ])
+    }
+
+    /// An annotation in a table cell is a place before the table.
+    func testAnAnnotationInATableCellIsATargetBeforeTheTable() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Cell").markdown
+        let document = try walk("| A | B |\n|---|---|\n| x \(annotation) | y |")
+        XCTAssertEqual(document.blocks.first, .navigationTarget(target(2, "Cell", "target_1")))
+        XCTAssertEqual(document.blocks.count, 2)
+    }
+
+    /// An annotation's level is kept within 1 to 6.
+    func testAnAnnotationsLevelStaysWithinOneToSix() throws {
+        let document = try walk("\(MarkdownHeadingAnnotation(level: 6, text: "Deep").markdown)\n\nWords.")
+        XCTAssertEqual(ExportBlock.contentsItems(in: document.blocks).map(\.level), [6])
+    }
+
+    // MARK: - Page Labels (S5)
+
+    /// A page label with no word left once the characters XML forbids are
+    /// gone is the page's number among the book's pages; a label with words
+    /// keeps them.
+    func testAPageLabelWithNothingLeftIsThePagesNumber() throws {
+        let document = try walk("<!-- page: 7 -->\n\n<!-- page: %01 -->\n\n<!-- page: %EF%BF%BF -->\n\nWords.")
+        XCTAssertEqual(ExportBlock.pageBreaks(in: document.blocks).map(\.label), ["7", "2", "3"])
+    }
+
+    // MARK: - A Line Read One Level Deep
+
+    /// The rest of a line that markers lead is read one level deep, as the
+    /// reader reads it and no more: a block inside that rest which is itself
+    /// led by markers and holds words reads as nothing, so only the first
+    /// marker is a page, as the reader finds one page.
+    func testTheRestOfAMarkerLineIsReadOneLevelDeepAsTheReaderReadsIt() throws {
+        let line = "<!-- page: 1 -->> <!-- page: 2 -->> Words"
+        let document = try walk(line)
+        XCTAssertEqual(ExportBlock.pageBreaks(in: document.blocks).map(\.label), ["1"])
+        let chapter = try MarkdownDocParser.parseChapter(markdown: line, includeNavigationHeadings: true)
+        XCTAssertEqual(chapter.pages.map(\.label), ["1"], "the reader finds the same")
+    }
+
+    /// A chapter of nothing but a comment makes no blocks, though its section
+    /// is not empty.
+    func testAChapterOfOnlyACommentHasNoBlocks() throws {
+        let document = try walk("<!-- chapter: A -->\n<!-- a plain comment -->\n\n<!-- chapter: B -->\nWords.")
+        XCTAssertEqual(document.chapterStarts, [
+            ExportChapterStart(blockIndex: 0, title: "A"), ExportChapterStart(blockIndex: 0, title: "B"),
+        ])
+        XCTAssertEqual(document.blocks, [paragraph("Words.")])
     }
 
     /// A marker in a list item or a quote is found where it stands, and
@@ -161,14 +291,19 @@ final class ExportDocumentWalkerStructureTests: XCTestCase {
     }
 
     /// Several markers before the words, a heading annotation among them:
-    /// the pages are kept, the annotation is not, and the words are read.
+    /// the pages and the target are kept in order, the annotation's words are
+    /// no text of the book, and the words are read.
     func testSeveralMarkersBeforeWordsAreAllRead() throws {
         let annotation = MarkdownHeadingAnnotation(level: 2, text: "Somewhere").markdown
         let document = try walk("<!-- page: 1 -->\(annotation)<!-- page: 2 -->Words.")
         XCTAssertEqual(document.blocks, [
-            .pageBreak(page("1", "page_1")), .pageBreak(page("2", "page_2")), paragraph("Words."),
+            .pageBreak(page("1", "page_1")),
+            .navigationTarget(target(2, "Somewhere", "target_1")),
+            .pageBreak(page("2", "page_2")),
+            paragraph("Words."),
         ])
         XCTAssertFalse(document.blocks.map(\.plainText).joined().contains("Somewhere"))
+        XCTAssertEqual(try walk("<!-- page: 1 -->\(annotation)Words.", .plain).blocks, [paragraph("Words.")])
     }
 
     /// A long line of markers is read in a loop, in a moment, and every

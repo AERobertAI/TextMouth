@@ -2,157 +2,15 @@ import XCTest
 import ZIPFoundation
 @testable import TextMouth
 
-// MARK: - What a Book Reads As
-
-/// What a listener gets from a book's text: its words in order, its headings
-/// with their levels, and its pages with the number of words before each.
-/// Two books that read the same have equal readings.
-struct BookReading: Equatable {
-    /// Every word, chapter after chapter, split at white space.
-    var words: [String] = []
-    /// Each heading as "level: words", in order.
-    var headings: [String] = []
-    /// Each page as "label@N": N is the number of words before it.
-    var pages: [String] = []
-
-    /// Adds one chapter's reading text with its headings (level and words)
-    /// and pages (label and UTF-16 offset in the text).
-    mutating func append(text: String, headings chapterHeadings: [(level: Int, text: String)], pages chapterPages: [(label: String, offset: Int)]) {
-        let before = words.count
-        words += text.split(whereSeparator: \.isWhitespace).map(String.init)
-        headings += chapterHeadings.map { "\($0.level): \($0.text.split(whereSeparator: \.isWhitespace).joined(separator: " "))" }
-        let utf16 = Array(text.utf16)
-        for page in chapterPages {
-            let offset = min(max(page.offset, 0), utf16.count)
-            let prefix = String(decoding: utf16[0..<offset], as: UTF16.self)
-            pages.append("\(page.label)@\(before + prefix.split(whereSeparator: \.isWhitespace).count)")
-        }
-    }
-}
-
-/// The two readings a round trip compares: the book as TextMouth reads its
-/// content.md, and the book as TextMouth's own EPUB reader reads the file
-/// exported from it.
-enum EPUBRoundTrip {
-    /// The words and pages of `markdown`, a content.md, as
-    /// `MarkdownDocParser.parseChapter` reads them chapter by chapter, as the
-    /// reader loads it (`MarkdownCacheService.parseMultiChapterMarkdown`). Its
-    /// headings are left to `expectedReading(ofMarkdown:title:)`.
-    static func wordsAndPages(ofMarkdown markdown: String) throws -> BookReading {
-        var sections = MarkdownCacheService.splitChapters(markdown)
-        if sections.isEmpty {
-            sections = [(title: "", content: markdown)]
-        }
-        var reading = BookReading()
-        for section in sections {
-            let chapter = try MarkdownDocParser.parseChapter(
-                markdown: section.content, title: section.title, includeNavigationHeadings: true
-            )
-            reading.append(
-                text: chapter.text,
-                headings: [],
-                pages: chapter.pages.map { (label: $0.label, offset: $0.characterOffset) }
-            )
-        }
-        return reading
-    }
-
-    /// `text` as a name on one line, as the reader's headings are compared.
-    private static func line(_ text: String) -> String {
-        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-    }
-
-    /// The headings the EPUB reader finds in the export of `document`, a walk
-    /// that kept the chapters: the book's own headings, and, at the start of
-    /// each chapter whose text does not begin with a heading, the one entry
-    /// the reader gives a file that begins with other text. That entry is
-    /// named as the reader names it: by the contents entry that links the
-    /// file when the chapter has no heading (the chapter's title, or the
-    /// book's for a book that is one untitled chapter), else by the file's
-    /// title (the chapter's) unless that is the book's or none, which the
-    /// reader calls "Chapter N" for the Nth file. Each chapter here is one file.
-    static func expectedHeadings(of document: ExportDocument, bookTitle: String) -> [String] {
-        let blocks = document.blocks
-        let starts = document.chapterStarts
-        var headings: [String] = []
-        var fileNumber = 0
-        for (index, start) in starts.enumerated() {
-            let lower = min(max(start.blockIndex, 0), blocks.count)
-            let upper = index + 1 < starts.count ? min(max(starts[index + 1].blockIndex, lower), blocks.count) : blocks.count
-            guard lower < upper else { continue }
-            fileNumber += 1
-            let chapter = Array(blocks[lower..<upper])
-            let own = ExportBlock.headings(in: chapter)
-            let firstText = chapter.first { block in
-                if case .pageBreak = block { return false }
-                return true
-            }
-            var startsWithHeading = false
-            if case .heading? = firstText { startsWithHeading = true }
-            if !startsWithHeading {
-                let title = line(start.title)
-                let name: String
-                if own.isEmpty {
-                    name = title.isEmpty ? line(bookTitle) : title
-                } else {
-                    name = title.isEmpty || title == line(bookTitle) ? "Chapter \(fileNumber)" : title
-                }
-                headings.append("1: \(name)")
-            }
-            headings += own.map { "\($0.level): \(line($0.plainText))" }
-        }
-        return headings
-    }
-
-    /// The reading of the EPUB at `url` by TextMouth's own EPUB reader.
-    static func reading(ofEPUB url: URL) throws -> BookReading {
-        var reading = BookReading()
-        for prepared in try EPUBParser.prepareBook(url: url).chapters {
-            let chapter = prepared.chapter
-            reading.append(
-                text: chapter.text,
-                headings: chapter.headings.map { (level: $0.level, text: $0.text) },
-                pages: chapter.pages.map { (label: $0.label, offset: $0.characterOffset) }
-            )
-        }
-        return reading
-    }
-
-    /// The reading the export of `markdown` should have: the words and pages
-    /// of the book as read, and the headings the EPUB reader finds in the
-    /// export (`expectedHeadings(of:bookTitle:)`).
-    static func expectedReading(ofMarkdown markdown: String, title: String) throws -> BookReading {
-        var expected = try wordsAndPages(ofMarkdown: markdown)
-        let document = try ExportDocumentWalker.document(
-            fromMarkdown: markdown, book: ExportBookDetails(title: title), options: .bookStructure
-        )
-        expected.headings = expectedHeadings(of: document, bookTitle: title)
-        return expected
-    }
-
-    /// Writes the EPUB of `markdown` for a book titled `title` into a new
-    /// folder `folder` and returns its URL.
-    static func export(
-        _ markdown: String,
-        title: String,
-        in folder: URL,
-        writer: EPUBExportWriter = EPUBExportWriterTests.writer()
-    ) throws -> URL {
-        let book = ExportBookDetails(title: title, author: "Test Author", language: "en", identifier: UUID())
-        let document = try ExportDocumentWalker.document(fromMarkdown: markdown, book: book, options: writer.walkOptions)
-        let url = folder.appendingPathComponent("\(UUID().uuidString).epub")
-        try writer.write(document, options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
-        return url
-    }
-}
-
 // MARK: - The Round Trip
 
 /// Export a book as EPUB, import the file through TextMouth's own EPUB reader,
 /// and compare what the two read as: the same words in order, the same
 /// headings at the same levels, the same pages at the same places. The
-/// comparison is of `MarkdownDocParser.parseChapter`'s reading text, never of
-/// markup.
+/// expected reading is the reader's own reading of the book's content.md
+/// (`MarkdownCacheService.parseMultiChapterMarkdown`), never the walk the
+/// writer reads, so a heading the walk loses is a heading the test misses
+/// (`EPUBRoundTrip`, in `EPUBRoundTripSupport.swift`).
 final class EPUBExportRoundTripTests: XCTestCase {
     /// The title the books of these tests are exported under.
     private let title = "Harbour Notes"
@@ -162,11 +20,12 @@ final class EPUBExportRoundTripTests: XCTestCase {
     private func assertRoundTrips(
         _ markdown: String,
         writer: EPUBExportWriter = EPUBExportWriterTests.writer(),
+        language: String? = "en",
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
         let folder = try makeSandboxDirectory("EPUB Round Trip")
-        let url = try EPUBRoundTrip.export(markdown, title: title, in: folder, writer: writer)
+        let url = try EPUBRoundTrip.export(markdown, title: title, in: folder, writer: writer, language: language)
         let expected = try EPUBRoundTrip.expectedReading(ofMarkdown: markdown, title: title)
         let actual = try EPUBRoundTrip.reading(ofEPUB: url)
         XCTAssertEqual(actual.words, expected.words, "the words", file: file, line: line)
@@ -307,11 +166,105 @@ final class EPUBExportRoundTripTests: XCTestCase {
         """)
     }
 
+    /// Every level of heading, 1 to 6, reads back at its level: a build that
+    /// turns a level into a paragraph, or caps the levels, loses a row here.
+    func testEveryLevelOfHeadingReadsBack() throws {
+        try assertRoundTrips("# One\n\na\n\n## Two\n\nb\n\n### Three\n\nc\n\n#### Four\n\nd\n\n##### Five\n\ne\n\n###### Six\n\nf")
+    }
+
+    /// A converted book's contents entries that point at styled paragraphs,
+    /// not headings (a heading annotation of content.md), reach the file and
+    /// read back as entries at their levels: chapters and the sections in them,
+    /// the shape of an ordinary converter's EPUB (B3).
+    func testContentsEntriesThatAreNoHeadingsReadBack() throws {
+        func annotation(_ level: Int, _ text: String) -> String {
+            MarkdownHeadingAnnotation(level: level, text: text).markdown
+        }
+        let markdown = """
+        <!-- chapter: Chapter One -->
+        \(annotation(1, "Chapter One"))
+
+        Chapter One
+
+        Opening words of the first chapter.
+
+        \(annotation(2, "First Section"))
+
+        First Section
+
+        Words of the first section, with a \(annotation(2, "Middle Place")) place inside its words.
+
+        \(annotation(2, "Second Section"))
+
+        Second Section
+
+        Words of the second section.
+
+        <!-- chapter: Chapter Two -->
+        \(annotation(1, "Chapter Two"))
+
+        Chapter Two
+
+        Words of the second chapter.
+
+        \(annotation(2, "Third Section"))
+
+        Third Section
+
+        Words of the third section.
+        """
+        try assertRoundTrips(markdown)
+        // The reader lists every one of them, so the test can fail.
+        let reading = try EPUBRoundTrip.expectedReading(ofMarkdown: markdown, title: title)
+        XCTAssertEqual(reading.headings, [
+            "1: Chapter One", "2: First Section", "2: Middle Place", "2: Second Section",
+            "1: Chapter Two", "2: Third Section",
+        ])
+    }
+
+    /// A contents entry at the same place as a heading is one row, as the
+    /// reader lists it, not two.
+    func testAnEntryAtAHeadingsPlaceReadsBackOnce() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Real").markdown
+        try assertRoundTrips("# Top\n\nWords.\n\n\(annotation)\n\n## Real\n\nMore words.")
+    }
+
+    /// A page inside a table's cell reads back at the same place, after the
+    /// cell's first word (S3).
+    func testAPageInATableCellReadsBackAtTheSamePlace() throws {
+        try assertRoundTrips("# Table\n\n| Port | Depth |\n|------|-------|\n| Alder <!-- page: 12 --> | 12 |\n| Brant | 9 |\n\nAfter the table.")
+    }
+
+    /// A chapter of only a page (a plate) joins the next file, so its page
+    /// lands at the next words, where the reader has it; the plate's entry is
+    /// in the contents, and the reader's own row for it is the next heading's
+    /// place, which keeps one row (S2).
+    func testAChapterOfOnlyAPageKeepsItsPage() throws {
+        let markdown = "<!-- chapter: One -->\n# One\n\nWords one.\n\n<!-- chapter: Plate -->\n<!-- page: 3 -->\n\n<!-- chapter: Two -->\n# Two\n\nWords two."
+        let folder = try makeSandboxDirectory("EPUB Round Trip Plate")
+        let url = try EPUBRoundTrip.export(markdown, title: title, in: folder, writer: EPUBExportWriterTests.writer())
+        let expected = try EPUBRoundTrip.expectedReading(ofMarkdown: markdown, title: title)
+        let actual = try EPUBRoundTrip.reading(ofEPUB: url)
+        XCTAssertEqual(actual.words, expected.words)
+        XCTAssertEqual(actual.pages, expected.pages)
+        XCTAssertEqual(actual.pages, ["3@2"])
+        let archive = try Archive(url: url, accessMode: .read)
+        XCTAssertEqual(archive.filter { $0.path.hasPrefix("OEBPS/chapter-") }.count, 2, "the plate has no file of its own")
+    }
+
+    /// A right-to-left book exported with its language, and one with none,
+    /// read back the same words.
+    func testRightToLeftBooksReadBackWithOrWithoutALanguage() throws {
+        let markdown = "# \u{5E9}\u{5DC}\u{5D5}\u{5DD}\n\n\u{5D4}\u{5D9}\u{5D4} \u{5D6}\u{5DE}\u{5DF} \u{5D0}\u{5D7}\u{5D3}."
+        try assertRoundTrips(markdown, language: "he")
+        try assertRoundTrips(markdown, language: nil)
+    }
+
     /// A book with no text reads back as the EPUB reader says of any book with
     /// nothing to read, rather than as a book with an invented chapter.
     func testABookWithNoTextHasNothingToReadBack() throws {
         let folder = try makeSandboxDirectory("EPUB Round Trip Empty")
-        let url = try EPUBRoundTrip.export("", title: title, in: folder)
+        let url = try EPUBRoundTrip.export("", title: title, in: folder, writer: EPUBExportWriterTests.writer())
         XCTAssertThrowsError(try EPUBParser.prepareBook(url: url)) {
             guard case EPUBParserError.noReadableChapters? = $0 as? EPUBParserError else {
                 return XCTFail("\($0)")

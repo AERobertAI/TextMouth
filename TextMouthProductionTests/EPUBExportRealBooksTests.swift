@@ -99,85 +99,18 @@ final class EPUBExportRealBooksTests: XCTestCase {
         let expected = try EPUBRoundTrip.expectedReading(ofMarkdown: markdown, title: book.title)
         let actual = try EPUBRoundTrip.reading(ofEPUB: exported)
         XCTAssertFalse(expected.words.isEmpty, "\(name) has words to compare", file: file, line: line)
-        XCTAssertNil(Self.firstDifference(expected.words, actual.words), "\(name): words: \(Self.firstDifference(expected.words, actual.words) ?? "")", file: file, line: line)
-        XCTAssertNil(Self.firstDifference(expected.headings, actual.headings), "\(name): headings: \(Self.firstDifference(expected.headings, actual.headings) ?? "")", file: file, line: line)
-        XCTAssertNil(Self.firstDifference(expected.pages, actual.pages), "\(name): pages: \(Self.firstDifference(expected.pages, actual.pages) ?? "")", file: file, line: line)
+        for (kind, wanted, found) in [
+            ("words", expected.words, actual.words),
+            ("headings", expected.headings, actual.headings),
+            ("pages", expected.pages, actual.pages),
+        ] {
+            XCTAssertNil(EPUBRoundTrip.firstDifference(wanted, found), "\(name): \(kind): \(EPUBRoundTrip.firstDifference(wanted, found) ?? "")", file: file, line: line)
+        }
 
         // EPUBCheck, where it is installed.
         let verdict = EPUBCheck.run(on: exported, in: try makeSandboxDirectory("EPUB Check Output"))
-        XCTAssertTrue(verdict.isClean, "\(name): epubcheck: \(verdict.summary)", file: file, line: line)
+        XCTAssertTrue(verdict.isAcceptable, "\(name): epubcheck: \(verdict.summary)", file: file, line: line)
         // One line a table of results can be made from (read from the test log).
         print("EPUBEXPORT-RESULT | \(name) | \(files) files | \(expected.words.count) words | \(actual.headings.count) headings | \(actual.pages.count) pages | epubcheck: \(verdict.summary)")
-    }
-
-    /// The first place two lists differ, as a sentence with both lists'
-    /// lengths, or nil when they are equal.
-    private static func firstDifference(_ expected: [String], _ actual: [String]) -> String? {
-        if expected == actual { return nil }
-        let index = zip(expected, actual).enumerated().first { $0.element.0 != $0.element.1 }?.offset ?? min(expected.count, actual.count)
-        let window = { (list: [String]) in Array(list[max(0, index - 2)..<min(list.count, index + 3)]) }
-        return "differ at \(index) (\(expected.count) expected, \(actual.count) read back): expected \(window(expected)), read back \(window(actual))"
-    }
-}
-
-// MARK: - EPUBCheck
-
-/// Runs `epubcheck` where it is installed, so a test can check the real files
-/// against EPUB's own validator without depending on it.
-enum EPUBCheck {
-    /// Where Homebrew puts it.
-    static let path = "/opt/homebrew/bin/epubcheck"
-    /// The longest a run may take before it is stopped.
-    static let timeoutSeconds: TimeInterval = 180
-
-    /// What a run found.
-    struct Verdict {
-        /// Whether the validator was run.
-        var ran: Bool
-        /// Its summary line, or why it did not run.
-        var summary: String
-        /// Whether the run found no fatal, error, or warning, or was not made.
-        var isClean: Bool
-    }
-
-    /// Validates the EPUB at `url`, writing the validator's output into `folder`.
-    /// A validator that is absent, will not start, or does not finish in
-    /// `timeoutSeconds` is not a failure of the export, and says so.
-    static func run(on url: URL, in folder: URL) -> Verdict {
-        guard FileManager.default.isExecutableFile(atPath: path) else {
-            return Verdict(ran: false, summary: "not installed", isClean: true)
-        }
-        let output = folder.appendingPathComponent("epubcheck.txt")
-        guard FileManager.default.createFile(atPath: output.path, contents: nil),
-              let handle = try? FileHandle(forWritingTo: output) else {
-            return Verdict(ran: false, summary: "no place to write its output", isClean: true)
-        }
-        defer { try? handle.close() }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = [url.path]
-        process.standardOutput = handle
-        process.standardError = handle
-        let finished = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in finished.signal() }
-        do {
-            try process.run()
-        } catch {
-            return Verdict(ran: false, summary: "would not start", isClean: true)
-        }
-        if finished.wait(timeout: .now() + timeoutSeconds) == .timedOut {
-            process.terminate()
-            return Verdict(ran: false, summary: "did not finish in \(Int(timeoutSeconds)) seconds", isClean: true)
-        }
-        let text = (try? String(contentsOf: output, encoding: .utf8)) ?? ""
-        guard let line = text.components(separatedBy: "\n").first(where: { $0.hasPrefix("Messages:") }) else {
-            return Verdict(ran: false, summary: "no summary in its output: \(text.prefix(300))", isClean: true)
-        }
-        let clean = line.contains("0 fatals / 0 errors / 0 warnings")
-        // A failing run shows its messages, not only the count.
-        let messages = text.components(separatedBy: "\n")
-            .filter { $0.hasPrefix("ERROR") || $0.hasPrefix("WARNING") || $0.hasPrefix("FATAL") }
-            .prefix(8).joined(separator: " | ")
-        return Verdict(ran: true, summary: clean ? line : "\(line) \(messages)", isClean: clean)
     }
 }

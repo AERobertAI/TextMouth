@@ -32,7 +32,7 @@ final class EPUBExportWriterTests: XCTestCase {
 
     /// The EPUB of `markdown` for `book`, written by `writer` into a folder
     /// of this test's own, walked as the export walks it.
-    private func export(
+    func export(
         _ markdown: String,
         book: ExportBookDetails = EPUBExportWriterTests.book,
         writer: EPUBExportWriter = EPUBExportWriterTests.writer()
@@ -46,12 +46,12 @@ final class EPUBExportWriterTests: XCTestCase {
     }
 
     /// The paths of the files in the EPUB at `url`, in the order the ZIP holds them.
-    private func paths(of url: URL) throws -> [String] {
+    func paths(of url: URL) throws -> [String] {
         try Archive(url: url, accessMode: .read).map(\.path)
     }
 
     /// The text of the file `path` in the EPUB at `url`.
-    private func text(_ path: String, in url: URL, file: StaticString = #filePath, line: UInt = #line) throws -> String {
+    func text(_ path: String, in url: URL, file: StaticString = #filePath, line: UInt = #line) throws -> String {
         let archive = try Archive(url: url, accessMode: .read)
         guard let entry = archive[path] else {
             XCTFail("\(path) is not in the file", file: file, line: line)
@@ -64,7 +64,7 @@ final class EPUBExportWriterTests: XCTestCase {
 
     /// Fails unless every XML file of the EPUB parses; returns how many it parsed.
     @discardableResult
-    private func assertWellFormed(_ url: URL, file: StaticString = #filePath, line: UInt = #line) throws -> Int {
+    func assertWellFormed(_ url: URL, file: StaticString = #filePath, line: UInt = #line) throws -> Int {
         var count = 0
         for path in try paths(of: url) where path != "mimetype" {
             let parser = XMLParser(data: Data(try text(path, in: url, file: file, line: line).utf8))
@@ -75,12 +75,12 @@ final class EPUBExportWriterTests: XCTestCase {
     }
 
     /// The chapter files of the EPUB at `url`, in the order of the spine.
-    private func chapterPaths(of url: URL) throws -> [String] {
+    func chapterPaths(of url: URL) throws -> [String] {
         try paths(of: url).filter { $0.hasPrefix("OEBPS/chapter-") }
     }
 
     /// The body lines of the chapter file `path`.
-    private func bodyLines(_ path: String, in url: URL) throws -> [String] {
+    func bodyLines(_ path: String, in url: URL) throws -> [String] {
         let lines = try text(path, in: url).components(separatedBy: "\n")
         guard let start = lines.firstIndex(of: "<body>"), let end = lines.firstIndex(of: "</body>") else {
             XCTFail("\(path) has no body")
@@ -90,13 +90,13 @@ final class EPUBExportWriterTests: XCTestCase {
     }
 
     /// The package document of the EPUB at `url`.
-    private func package(of url: URL) throws -> String {
+    func package(of url: URL) throws -> String {
         try text("OEBPS/content.opf", in: url)
     }
 
     /// The content of every `<meta property="name">` in `package`, in order.
-    private func metas(_ name: String, in package: String) -> [String] {
-        Self.captures(of: "<meta property=\"\(name)\">([^<]*)</meta>", in: package)
+    func metas(_ name: String, in package: String) -> [String] {
+        Self.captures(of: "<meta property=\"\(name)\"[^>]*>([^<]*)</meta>", in: package)
     }
 
     /// Every capture of group 1 of `pattern` in `text`, in order.
@@ -109,7 +109,7 @@ final class EPUBExportWriterTests: XCTestCase {
 
     /// The links of the navigation document's `nav` of `kind` ("toc" or
     /// "page-list"), each with the depth of lists it is in and its text.
-    private func navLinks(_ kind: String, in url: URL) throws -> [NavLink] {
+    func navLinks(_ kind: String, in url: URL) throws -> [NavLink] {
         let reader = NavReader(kind: kind)
         let parser = XMLParser(data: Data(try text("OEBPS/nav.xhtml", in: url).utf8))
         parser.delegate = reader
@@ -127,12 +127,17 @@ final class EPUBExportWriterTests: XCTestCase {
         XCTAssertEqual(try paths(of: url).first, "mimetype")
 
         let bytes = [UInt8](try Data(contentsOf: url))
-        XCTAssertEqual(Array(bytes[0..<4]), [0x50, 0x4B, 0x03, 0x04], "a ZIP local file header")
-        XCTAssertEqual(Int(bytes[8]) | Int(bytes[9]) << 8, 0, "stored, not deflated")
-        XCTAssertEqual(Int(bytes[28]) | Int(bytes[29]) << 8, 0, "no extra field")
-        XCTAssertEqual(Int(bytes[26]) | Int(bytes[27]) << 8, 8, "the name is 8 bytes long")
-        XCTAssertEqual(String(decoding: bytes[30..<38], as: UTF8.self), "mimetype")
-        XCTAssertEqual(String(decoding: bytes[38..<58], as: UTF8.self), "application/epub+zip")
+        XCTAssertGreaterThanOrEqual(bytes.count, 58, "a header and the media type")
+        /// The little-endian 16-bit number at `offset` of the file's first bytes.
+        func number(at offset: Int) -> Int {
+            bytes.count >= offset + 2 ? Int(bytes[offset]) | Int(bytes[offset + 1]) << 8 : -1
+        }
+        XCTAssertEqual(Array(bytes.prefix(4)), [0x50, 0x4B, 0x03, 0x04], "a ZIP local file header")
+        XCTAssertEqual(number(at: 8), 0, "stored, not deflated")
+        XCTAssertEqual(number(at: 28), 0, "no extra field")
+        XCTAssertEqual(number(at: 26), 8, "the name is 8 bytes long")
+        XCTAssertEqual(String(decoding: bytes.dropFirst(30).prefix(8), as: UTF8.self), "mimetype")
+        XCTAssertEqual(String(decoding: bytes.dropFirst(38).prefix(20), as: UTF8.self), "application/epub+zip")
         XCTAssertEqual(try text("mimetype", in: url), "application/epub+zip")
     }
 
@@ -200,7 +205,10 @@ final class EPUBExportWriterTests: XCTestCase {
     /// a book with no heading does not state structural navigation.
     func testPageNavigationIsStatedOnlyWithPagesAndStructureOnlyWithHeadings() throws {
         let paged = try package(of: export("<!-- page: 1 -->\nWords.\n\n<!-- page: 2 -->\nMore words."))
-        XCTAssertEqual(metas("schema:accessibilityFeature", in: paged), ["tableOfContents", "readingOrder", "pageNavigation"])
+        XCTAssertEqual(
+            metas("schema:accessibilityFeature", in: paged),
+            ["tableOfContents", "readingOrder", "pageNavigation", "pageBreakMarkers"]
+        )
         XCTAssertTrue(try XCTUnwrap(metas("schema:accessibilitySummary", in: paged).first).contains("page list"))
 
         let plain = try package(of: export("Words."))
@@ -245,24 +253,29 @@ final class EPUBExportWriterTests: XCTestCase {
             writer: EPUBExportWriter(modified: { Self.exportDate.addingTimeInterval(86_400) })
         )
         let identifiers = try [first, later].map { Self.captures(of: "<dc:identifier id=\"book-id\">([^<]*)</dc:identifier>", in: try package(of: $0)) }
-        XCTAssertEqual(identifiers[0], identifiers[1])
+        XCTAssertEqual(identifiers.count, 2)
+        XCTAssertEqual(identifiers.first, identifiers.last)
         XCTAssertEqual(metas("dcterms:modified", in: try package(of: later)), ["2026-11-07T17:30:00Z"])
     }
 
-    /// A book made without an identity gets one derived from its title and
-    /// author: stable, a valid lower-case UUID of version 5, and different for
-    /// another book.
-    func testABookWithNoIdentityGetsAStableDerivedOne() {
-        let first = EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables", author: "A. Pell"))
-        XCTAssertEqual(first, EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables", author: "A. Pell")))
-        XCTAssertNotEqual(first, EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables", author: "B. Pell")))
-        XCTAssertNotEqual(first, EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables")))
-        XCTAssertTrue(first.hasPrefix("urn:uuid:"))
-        let uuid = String(first.dropFirst("urn:uuid:".count))
-        XCTAssertNotNil(UUID(uuidString: uuid))
-        XCTAssertEqual(uuid, uuid.lowercased())
-        XCTAssertEqual(uuid[uuid.index(uuid.startIndex, offsetBy: 14)], "5", "the version nibble")
-        XCTAssertTrue("89ab".contains(uuid[uuid.index(uuid.startIndex, offsetBy: 19)]), "the variant nibble")
+    /// A book made without an identity (only a test's details are) gets a
+    /// valid lower-case UUID of its own for each export; one with an identity
+    /// gets that identity, whatever its title.
+    func testTheIdentifierIsTheBooksOrANewUUID() {
+        let id = UUID()
+        XCTAssertEqual(
+            EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables", identifier: id)),
+            "urn:uuid:" + id.uuidString.lowercased()
+        )
+        let first = EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables"))
+        let second = EPUBExportWriter.identifier(of: ExportBookDetails(title: "Tide Tables"))
+        XCTAssertNotEqual(first, second)
+        for identifier in [first, second] {
+            XCTAssertTrue(identifier.hasPrefix("urn:uuid:"))
+            let uuid = String(identifier.dropFirst("urn:uuid:".count))
+            XCTAssertNotNil(UUID(uuidString: uuid))
+            XCTAssertEqual(uuid, uuid.lowercased())
+        }
     }
 
     // MARK: - The Contents
@@ -501,20 +514,28 @@ final class EPUBExportWriterTests: XCTestCase {
     }
 
     /// A heading of only forbidden characters is linked by a name, not by
-    /// nothing, so the contents link has words.
-    func testAHeadingOfOnlyForbiddenCharactersIsLinkedByAName() throws {
+    /// nothing, so the contents link has words, and no empty heading is
+    /// written for a screen reader to meet: the target stays, with the id.
+    func testAHeadingOfOnlyForbiddenCharactersIsLinkedByANameAndWritesNoEmptyHeading() throws {
         let url = try export("# \u{1}\u{2}\n\nWords.")
         try assertWellFormed(url)
         XCTAssertEqual(try navLinks("toc", in: url).map(\.text), ["Untitled"])
+        XCTAssertEqual(try navLinks("toc", in: url).map(\.address), ["chapter-1.xhtml#heading"])
+        XCTAssertEqual(
+            try bodyLines("OEBPS/chapter-1.xhtml", in: url),
+            ["<span id=\"heading\"></span>", "<p>Words.</p>"]
+        )
     }
 
     /// A link that is not a web or mail address is plain text, a hostile
-    /// scheme included, and no attribute breaks out of its quotes.
+    /// scheme included, and no attribute breaks out of its quotes: a quote in
+    /// a web address is percent-encoded, which EPUB's validator accepts.
     func testOnlyWebAndMailLinksBecomeLinks() throws {
         let url = try export("[a](javascript:alert(1)) [b](https://x.example/\"onmouseover=\"y) [c](mailto:z@example.com)")
         let body = try bodyLines("OEBPS/chapter-1.xhtml", in: url).joined(separator: "\n")
         XCTAssertFalse(body.contains("javascript"))
         XCTAssertFalse(body.contains("onmouseover=\"y"))
+        XCTAssertTrue(body.contains("<a href=\"https://x.example/%22onmouseover=%22y\">b</a>"), body)
         XCTAssertTrue(body.contains("<a href=\"mailto:z@example.com\">c</a>"))
         try assertWellFormed(url)
     }
@@ -607,11 +628,21 @@ final class EPUBExportWriterTests: XCTestCase {
         XCTAssertEqual(words, paragraphs.joined(separator: " ").split(whereSeparator: \.isWhitespace).map(String.init))
     }
 
-    /// A long run of page markers with no text between is written in a moment.
-    func testALongRunOfPagesIsWrittenQuickly() throws {
-        let markers = (1...5_000).map { "<!-- page: \($0) -->" }.joined(separator: "\n\n")
-        let url = try export("Words.\n\n\(markers)\n\n# End\n\nMore.", writer: Self.writer(maximumFileBytes: 2_000))
-        XCTAssertEqual(try navLinks("page-list", in: url).count, 5_000)
+    /// A long run of page markers with no text between is written in a
+    /// moment, every page is in the list, and the files stay near the hard
+    /// limit: 60,000 pages with a quadratic scan for what follows each would
+    /// take minutes. The clock's bound is generous so a busy Mac does not
+    /// fail it; the count of files is what notices a file never ended.
+    func testALongRunOfPagesIsWrittenQuicklyInFilesNearTheLimit() throws {
+        let markers = (1...60_000).map { "<!-- page: \($0) -->" }.joined(separator: "\n\n")
+        let started = ContinuousClock.now
+        let url = try export("Words.\n\n\(markers)\n\n# End\n\nMore.", writer: Self.writer(maximumFileBytes: 20_000))
+        XCTAssertLessThan(started.duration(to: .now), .seconds(90))
+        XCTAssertEqual(try navLinks("page-list", in: url).count, 60_000)
+        // About 8.4 MB of page elements, in files of about 80 KB.
+        let files = try chapterPaths(of: url).count
+        XCTAssertGreaterThan(files, 50)
+        XCTAssertLessThan(files, 400)
     }
 
     // MARK: - Stop and Failure
@@ -646,9 +677,10 @@ final class EPUBExportWriterTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
-    /// A write that fails partway removes the file it began, and says in a
-    /// plain sentence that the file could not be written.
-    func testAFailurePartwayRemovesTheFileAndSaysSo() throws {
+    /// A write that fails partway removes the file it began, and throws the
+    /// error it failed with, as every other writer's failure does, so the
+    /// export names the system's words.
+    func testAFailurePartwayRemovesTheFileAndThrowsTheFailure() throws {
         struct Boom: Error {}
         let folder = try makeSandboxDirectory("EPUB Failure Partway")
         let url = folder.appendingPathComponent("book.epub")
@@ -658,19 +690,22 @@ final class EPUBExportWriterTests: XCTestCase {
         let document = ExportDocument(book: Self.book, blocks: [.paragraph([ExportRun("Words.")])])
         XCTAssertThrowsError(
             try writer.write(document, options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
-        ) { XCTAssertEqual(($0 as? TextExportError)?.sentence, "The EPUB file could not be written.") }
+        ) { XCTAssertTrue($0 is Boom, "\($0)") }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
     /// A destination that cannot be written (its folder does not exist)
-    /// fails with the sentence and creates nothing.
+    /// fails with words to name, and creates nothing.
     func testADestinationThatCannotBeWrittenFailsAndCreatesNothing() throws {
         let folder = try makeSandboxDirectory("EPUB Bad Destination")
         let url = folder.appendingPathComponent("missing").appendingPathComponent("book.epub")
         let document = ExportDocument(book: Self.book, blocks: [.paragraph([ExportRun("Words.")])])
         XCTAssertThrowsError(
             try Self.writer().write(document, options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
-        ) { XCTAssertEqual(($0 as? TextExportError)?.sentence, "The EPUB file could not be written.") }
+        ) {
+            XCTAssertFalse($0 is CancellationError)
+            XCTAssertFalse($0.localizedDescription.isEmpty)
+        }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [], "no folder was made")
     }
 

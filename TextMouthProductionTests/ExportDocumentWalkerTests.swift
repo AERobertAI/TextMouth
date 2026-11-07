@@ -52,7 +52,7 @@ final class ExportDocumentWalkerTests: XCTestCase {
             case .table(let table): return table.rows.flatMap { $0 }
             case .blockQuote(let quoted): return pieces(of: quoted)
             case .list(let list): return list.items.flatMap { pieces(of: $0.blocks) }
-            case .thematicBreak, .pageBreak: return []
+            case .thematicBreak, .pageBreak, .navigationTarget: return []
             }
         }
     }
@@ -75,7 +75,7 @@ final class ExportDocumentWalkerTests: XCTestCase {
                     listDepth = max(listDepth, inner.listDepth)
                 }
                 result = (max(result.nesting, nesting + 1), max(result.listDepth, listDepth))
-            case .heading, .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak:
+            case .heading, .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak, .navigationTarget:
                 break
             }
         }
