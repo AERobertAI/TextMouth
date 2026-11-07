@@ -576,6 +576,56 @@ FEED_DOWNLOAD_FINISHED: x"
         XCTAssertEqual(debugLogLines(containing: "FEED_EPISODE_FILES_TIMED_OUT: \(title) (The Tactile Atlas): still fetching after 1 seconds").count, 1)
     }
 
+    /// Files that come at once return at once: the limit on the whole is a
+    /// ceiling, not a wait. Its own timer is stopped as the fetching ends, so
+    /// an episode whose files came in a moment does not wait the two minutes
+    /// of the limit before it is imported.
+    func testFilesThatComeAtOnceDoNotWaitForTheLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasQuick")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: "/c.json")
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+        world.server.serve("/c.json", try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json"))
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+
+        // The limit given is the one the app uses; a mistake that kept it
+        // running would take all of it.
+        let seconds = await secondsTaken {
+            let fetched = await FeedEpisodeExtras.fetch(for: item, of: feed, network: world.environment.network, discretionary: false)
+            XCTAssertNotNil(fetched.transcript)
+            XCTAssertNotNil(fetched.chapters)
+        }
+
+        XCTAssertLessThan(seconds, 20, "the fetch waited for the limit on the whole")
+    }
+
+    /// A server that sends its file a byte at a time, so slowly that no
+    /// request's own timeout ends it and the file's size limit is never
+    /// reached in time, is held to the limit on the whole: the fetch returns
+    /// when it runs out, with the transcript left out.
+    func testAServerSendingAByteNowAndThenIsHeldToTheLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasTrickle")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        var trickle = StubResponse(headers: ["Content-Type": "text/vtt"], body: Data(repeating: 0x20, count: 60))
+        trickle.chunkSize = 1
+        trickle.pause = 0.4
+        world.server.serve("/t.vtt", trickle)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+
+        var fetched = FeedEpisodeExtras.Fetched()
+        let seconds = await secondsTaken {
+            fetched = await FeedEpisodeExtras.fetch(
+                for: item, of: feed, network: world.environment.network, discretionary: false, timeLimit: .seconds(1)
+            )
+        }
+
+        // The whole file would have taken 24 seconds.
+        XCTAssertLessThan(seconds, 10, "the trickle held the fetch past the limit")
+        XCTAssertNil(fetched.transcript)
+        XCTAssertEqual(debugLogLines(containing: "FEED_EPISODE_FILES_TIMED_OUT: \(title) (The Tactile Atlas): still fetching after 1 seconds").count, 1)
+    }
+
     /// Files fetched in time say nothing of the limit, and a task cancelled
     /// from outside stops at once and returns what it has, with no such line.
     func testACancelledFetchStopsAtOnceSayingNothingOfTheTime() async throws {
@@ -923,6 +973,13 @@ FEED_DOWNLOAD_FINISHED: x"
         var held = response
         held.pause = Self.hangingPause
         return held
+    }
+
+    /// How many seconds `body` takes to run.
+    private func secondsTaken(_ body: () async -> Void) async -> TimeInterval {
+        let started = Date()
+        await body()
+        return Date().timeIntervalSince(started)
     }
 
     /// An episode's title no other test's lines of the debug log hold.
