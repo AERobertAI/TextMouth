@@ -222,27 +222,39 @@ final class MarkupGuardTests: XCTestCase {
         }
     }
 
-    /// Exactly the limit reads to its words on an import's stack, in the shapes
-    /// that cost the parser most; one level past it is refused.
+    /// Exactly the limit passes the guard's own count, in the shapes that cost
+    /// the parser most, and one level past it is refused before any parse. The
+    /// limit is checked on the count alone: a debug build's converter, with
+    /// over 4 KB of stack a level, reads only about 108 levels on an import's
+    /// stack, so this suite converts 40 levels at most.
     func testTheDepthLimitIsExact() throws {
         let limit = MarkupGuard.Limits.standard.deepestNesting
         // In XML the guard counts `html` and `body` as it counts anything; in HTML it adds them to
         // what it sees. Each end tag makes the HTML parser walk to the root.
-        let shapes: [(Int) -> String] = [
-            { self.xhtml(String(repeating: "<div>", count: $0) + "words" + String(repeating: "</div>", count: $0)) },
-            { "<html><body>" + String(repeating: "<div>", count: $0) + "words" + String(repeating: "</span></div>", count: $0) },
+        let shapes: [(dialect: MarkupGuard.Dialect, markup: (Int) -> String)] = [
+            (.xml, { self.xhtml(String(repeating: "<div>", count: $0) + "words" + String(repeating: "</div>", count: $0)) }),
+            (.html, { "<html><body>" + String(repeating: "<div>", count: $0) + "words" + String(repeating: "</span></div>", count: $0) }),
         ]
         for shape in shapes {
-            let atLimit = try XCTUnwrap(converted(shape(limit - 2)))
-            XCTAssertTrue(try atLimit.get().contains("words"))
-            let past = try XCTUnwrap(converted(shape(limit - 1)))
-            XCTAssertThrowsError(try past.get()) { error in
+            let atLimit = shape.markup(limit - 2)
+            XCTAssertEqual(try MarkupGuard.inspect(Array(atLimit.utf8), as: shape.dialect, limits: .standard).deepest, limit)
+            let past = shape.markup(limit - 1)
+            XCTAssertThrowsError(try MarkupGuard.inspect(Array(past.utf8), as: shape.dialect, limits: .standard)) { error in
                 XCTAssertEqual(error as? MarkupRefusal, .nestedTooDeeply(limit: limit))
             }
+            // The real path refuses it the same way, before SwiftSoup parses it.
+            XCTAssertThrowsError(try MarkupGuard.parse(past)) { error in
+                XCTAssertEqual(error as? MarkupRefusal, .nestedTooDeeply(limit: limit))
+            }
+            // A conversion well inside a debug build's stack reads to its words.
+            XCTAssertTrue(try XCTUnwrap(converted(shape.markup(38))).get().contains("words"))
         }
         // The worst that fits: each level a table's four, or a formatting element's copy.
-        let tables = "<html><body>" + String(repeating: "<table><td>", count: (limit - 2) / 4) + "words"
-        XCTAssertTrue(try XCTUnwrap(converted(tables)).get().contains("words"))
+        let tables = { (steps: Int) in "<html><body>" + String(repeating: "<table><td>", count: steps) + "words" }
+        let fitting = try MarkupGuard.inspect(Array(tables((limit - 2) / 4).utf8), as: .html, limits: .standard).deepest
+        XCTAssertLessThanOrEqual(fitting, limit)
+        XCTAssertGreaterThan(fitting, limit - 4)
+        XCTAssertTrue(try XCTUnwrap(converted(tables(9))).get().contains("words"))
     }
 
     // MARK: - The Pass Against the Parser
@@ -587,7 +599,7 @@ final class MarkupGuardTests: XCTestCase {
     func testTheStandardLimitsArePinned() {
         XCTAssertEqual(
             MarkupGuard.Limits.standard,
-            MarkupGuard.Limits(deepestNesting: 32, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
+            MarkupGuard.Limits(deepestNesting: 128, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
         )
     }
 

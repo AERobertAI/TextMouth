@@ -44,15 +44,19 @@ enum MarkupGuard {
         /// Project Gutenberg's and Standard Ebooks' largest among them), and from how
         /// deep a tree each reading path survives on the 512 KiB stack of an import:
         ///
-        /// - **Nesting, 32.** The deepest real document nests 12 levels. The converter
-        ///   calls itself for every level of the tree, with over 4 KB of stack a level
-        ///   in a debug build, so there an import reads 108 levels of lists and 117 of
-        ///   divisions and overflows just past them; in the app's optimized build it
-        ///   reads 552 at the least, where the Markdown parser reads nested quotes. A
-        ///   tree can go twice as deep as the count, and two more, as when a form's
-        ///   end tag leaves what it holds open: at 32 the deepest tree, 66 levels,
-        ///   takes three fifths of a debug build's stack, and plain nesting, 32 levels,
-        ///   under a third.
+        /// - **Nesting, 128.** The deepest real book nests 12 levels, and 34 real web
+        ///   pages of news, documentation, shops, and governments 10 to 36 (GitHub's
+        ///   36, IKEA's 35, CNN's 33), which TextMouth imports as pages and web
+        ///   archives. The converter calls itself for every level of the tree, and on
+        ///   the 512 KiB stack of an import the app's Release build reads 552 levels
+        ///   at the least (nested quotes, where the Markdown parser runs out), 862 of
+        ///   lists, and about 1,190 of most other shapes. A tree can go twice as deep
+        ///   as the count, and two more, as when a form's end tag leaves what it holds
+        ///   open: at 128 the deepest tree, 258 levels, is under half of 552.
+        ///   A debug build takes over 4 KB of stack a level and reads only 108 levels
+        ///   of lists and 117 of divisions, so a hostile file nested between about 108
+        ///   and 128 levels can overflow a developer's debug build, never the app. The
+        ///   tests that convert in a debug test host keep to 40 levels at most.
         /// - **Memory, 1,000,000 units.** The most in a real document is 431,296,
         ///   Webster's Unabridged Dictionary as one 32 MB HTML file. A unit is about
         ///   800 bytes of SwiftSoup's tree, so the limit holds a parse near 800 MB.
@@ -61,7 +65,7 @@ enum MarkupGuard {
         /// - **Work, 30,000,000,000.** The most in a real document is 1,300; the limit
         ///   is about half a minute.
         static let standard = Limits(
-            deepestNesting: 32, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
+            deepestNesting: 128, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
         )
     }
 
