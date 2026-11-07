@@ -589,10 +589,12 @@ final class DAISYMalformedXMLTests: XCTestCase {
         XCTAssertEqual(result.pages.map { "\($0.label) → \($0.href)" }, ["1 → part1.smil#pg1", "ii → part2.smil#pg2"])
     }
 
-    /// An NCC nesting 20,000 divisions around a heading is read on a worker
+    /// An NCC nesting 5,000 divisions around a heading is read on a worker
     /// thread's 512 KiB stack, where an import reads it, and gives that
     /// heading. The walk once called itself for every element, which
-    /// overflowed that stack and ended TextMouth during the import.
+    /// overflowed that stack and ended TextMouth during the import. (At
+    /// 20,000, the guard's pass, which looks down the open elements for each
+    /// division it opens, took 19 seconds of the test's 60 in a debug build.)
     ///
     /// `</body>` closes the heading and the divisions: SwiftSoup itself calls
     /// itself once for every level above an `</h1>` or `</span>` it reads,
@@ -601,7 +603,7 @@ final class DAISYMalformedXMLTests: XCTestCase {
     /// lifted here, to hold the walk to itself.
     func testNCCNestedThousandsDeepIsReadOnAWorkerStack() {
         let html = "<html><head><meta name=\"dc:title\" content=\"Harbor Soundings\"/></head><body>"
-            + String(repeating: "<div>", count: 20_000)
+            + String(repeating: "<div>", count: 5_000)
             + "<h1><a href=\"part1.smil#p1\">Leadline Readings</a></body></html>"
         let outline = onWorkerSizedStack {
             MarkupGuard.$limits.withValue(.withoutDepthLimit) { DAISYMalformedXMLTests.outlineOfNCC(html) }
