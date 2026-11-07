@@ -64,7 +64,7 @@ enum WebVTTReader {
     /// line, or after its first line when it has none, run to the first
     /// blank line or the first line holding "-->", which begins the next
     /// block.
-    private static func block(at start: Int, in lines: [TimedTextMarkup.Line]) -> (timingLine: Int?, end: Int) {
+    private static func block(at start: Int, in lines: TimedTextMarkup.Lines) -> (timingLine: Int?, end: Int) {
         let holdsNoCue = ignoredBlockWords.contains { line(lines[start], isWord: $0) }
         let timingLine = holdsNoCue ? nil : [start, start + 1].first { candidate in
             candidate < lines.count && TimedTextMarkup.holdsArrow(lines[candidate])

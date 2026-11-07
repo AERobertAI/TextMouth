@@ -133,6 +133,48 @@ enum TimedTextMarkup {
 
     // MARK: Lines
 
+    /// The lines of a file: its text as UTF-8 bytes, held once, and where
+    /// each line begins, four bytes to a line.
+    ///
+    /// An array of one `ArraySlice` per line would take 32 bytes for each
+    /// line, so a 20 MB file of nothing but line feeds (20 million empty
+    /// lines) would take some 640 MB; this takes 80 MB, and a line is made
+    /// only when the reader asks for it. It splits the text exactly as
+    /// `split(separator: lineFeed, omittingEmptySubsequences: false)` does:
+    /// a text holding n line feeds has n + 1 lines, the first and last
+    /// possibly empty.
+    struct Lines: RandomAccessCollection {
+        /// The whole text, as UTF-8 bytes.
+        private let bytes: [UInt8]
+        /// Where each line begins in `bytes`: the first at 0, each other
+        /// just after a line feed.
+        private let starts: [UInt32]
+
+        /// The lines of `bytes`; nil when they number more than a
+        /// four-byte offset reaches (4 GB), far beyond a file TextMouth reads.
+        init?(bytes: [UInt8]) {
+            guard bytes.count < Int(UInt32.max) else { return nil }
+            var starts: [UInt32] = [0]
+            for (offset, byte) in bytes.enumerated() where byte == Byte.lineFeed {
+                starts.append(UInt32(offset + 1))
+            }
+            self.bytes = bytes
+            self.starts = starts
+        }
+
+        var startIndex: Int { 0 }
+        var endIndex: Int { starts.count }
+
+        /// The line at `index`, without its line feed.
+        subscript(index: Int) -> Line {
+            let start = Int(starts[index])
+            // A line ends just before the next one begins, less the line
+            // feed between them; the last ends with the text.
+            let end = index + 1 < starts.count ? Int(starts[index + 1]) - 1 : bytes.count
+            return bytes[start..<end]
+        }
+    }
+
     /// The lines of the timed-text file whose bytes are `data`, a file of
     /// `format`. The bytes are read by `TextFileDecoder` as a new text file
     /// is: leading byte-order marks dropped, UTF-8 and UTF-16 recognized, a
@@ -141,7 +183,7 @@ enum TimedTextMarkup {
     /// - Throws: `TimedTextError.notTimedText(format)` when the bytes cannot
     ///   be read as text: a UTF-16 or UTF-32 byte-order mark before bytes
     ///   that are not in its encoding.
-    static func lines(of data: Data, format: TimedTextFormat) throws -> [Line] {
+    static func lines(of data: Data, format: TimedTextFormat) throws -> Lines {
         let decoded: DecodedText
         do {
             decoded = try TextFileDecoder.decode(
@@ -152,7 +194,10 @@ enum TimedTextMarkup {
             // the file; a timed-text reader throws its own kind alone.
             throw TimedTextError.notTimedText(format)
         }
-        return Array(decoded.text.utf8).split(separator: Byte.lineFeed, omittingEmptySubsequences: false)
+        guard let lines = Lines(bytes: Array(decoded.text.utf8)) else {
+            throw TimedTextError.notTimedText(format)
+        }
+        return lines
     }
 
     /// Whether `line` is blank: empty, or nothing but spaces and tabs.

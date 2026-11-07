@@ -888,6 +888,43 @@ final class TimedTextReaderTests: XCTestCase {
         }
     }
 
+    /// The lines of a text (`TimedTextMarkup.Lines`, held as offsets into
+    /// the text's bytes) are exactly the lines splitting it at each line
+    /// feed gives, empty ones at the start, the end, and between two line
+    /// feeds included, and an empty text is one empty line.
+    func testTheLinesOfATextAreWhatSplittingItAtLineFeedsGives() throws {
+        var generator = SeededBytes(seed: 0x11E5)
+        let alphabet: [UInt8] = [10, 97, 98]
+        var texts: [[UInt8]] = [[], [10], [97], [10, 10], [97, 10], [10, 97], [97, 10, 98, 10, 10, 99]]
+        for _ in 0..<60 {
+            texts.append((0..<Int(generator.next() % 48)).map { _ in alphabet[Int(generator.next()) % alphabet.count] })
+        }
+
+        for bytes in texts {
+            let lines = try XCTUnwrap(TimedTextMarkup.Lines(bytes: bytes))
+            let expected = bytes.split(separator: 10, omittingEmptySubsequences: false)
+            XCTAssertEqual(lines.count, expected.count, "\(bytes)")
+            XCTAssertEqual(lines.map { Array($0) }, expected.map { Array($0) }, "\(bytes)")
+        }
+    }
+
+    /// A file of millions of blank lines is held as offsets, not as a
+    /// slice of bytes for each (some 640 MB for 20 million lines on a Mac
+    /// with 8 GB), and is read by either reader in a moment.
+    func testAFileOfNothingButBlankLinesReadsInAMoment() throws {
+        let blank = [UInt8](repeating: 10, count: 4_000_000)
+        let webVTTFile = Data("WEBVTT\n\n00:01.000 --> 00:02.000\nHello.\n".utf8) + blank
+        let subRipFile = Data("1\n00:00:01,000 --> 00:00:02,000\nHello.\n".utf8) + blank
+
+        var texts: [String] = []
+        let elapsed = try ContinuousClock().measure {
+            texts = [try WebVTTReader.read(webVTTFile).cues[0].text, try SubRipReader.read(subRipFile).cues[0].text]
+        }
+
+        XCTAssertEqual(texts, ["Hello.", "Hello."])
+        XCTAssertLessThan(elapsed, .seconds(10))
+    }
+
     /// A hostile cue of 150,000 "<" and "{\" with no ">" or "}" after them
     /// stays as text and reads in a moment, in either format: each is known
     /// at once to have no closer, rather than by reading the rest of the cue
