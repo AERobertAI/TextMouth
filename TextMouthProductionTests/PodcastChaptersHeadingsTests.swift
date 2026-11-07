@@ -232,6 +232,21 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(parsed.chapterSource, .wholeFile)
     }
 
+    // MARK: - The Book's Chapters
+
+    /// A podcast's chapters, one for each of `starts` (seconds), titled
+    /// "One", "Two", and so on, as a book of `fileDuration` seconds takes
+    /// them.
+    private func bookChapters(
+        starting starts: [TimeInterval],
+        fileDuration: TimeInterval
+    ) -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
+        let titles = ["One", "Two", "Three", "Four", "Five"]
+        return PodcastChapters(chapters: starts.enumerated().map { place, start in
+            PodcastChapter(startMilliseconds: Int((start * 1_000).rounded()), title: titles[place % titles.count])
+        }).bookChapters(fileDuration: fileDuration)
+    }
+
     // MARK: - The Analysis
 
     /// An episode's chapters kept beside its audio become its chapters and
@@ -351,6 +366,26 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         )
     }
 
+    /// An analysis told not to read the podcast's chapters leaves the episode
+    /// one chapter though they are kept beside its audio and fit it, and says
+    /// nothing; the same analysis not told takes them. An edit of the audio
+    /// asks for the first, since the chapters it could not remove were timed
+    /// to the audio as it was.
+    func testAnAnalysisToldNotToReadThePodcastsChaptersLeavesTheEpisodeOneChapter() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Not Read")
+        let title = uniqueTitle("Four Tones")
+        let book = try makeSilentEpisode(in: world, title: title, duration: 4, keeping: sampleChaptersFile())
+
+        let skipped = try BookContentAnalysisService.analyzeAudio(
+            book: book, url: book.bookFileURL, readingPodcastChapters: false
+        )
+        XCTAssertEqual(skipped.index.allHeadings.map(\.text), [title])
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
+
+        let read = try BookContentAnalysisService.analyzeAudio(book: book, url: book.bookFileURL)
+        XCTAssertEqual(read.index.allHeadings.map(\.text), Self.sampleTitles)
+    }
+
     /// A book without a package of its own, as only the earliest books
     /// are, takes no chapters from the folder its file lies in, which is
     /// where its package would be.
@@ -442,6 +477,54 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(
             loggedLines(from: "PODCAST_CHAPTERS_DROPPED: \(title): "),
             ["PODCAST_CHAPTERS_DROPPED: \(title): the audio was edited, so the podcast's chapters no longer fit it"]
+        )
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
+    }
+
+    /// Chapters that could not be removed after an edit are not laid over the
+    /// edited audio all the same: the save's analysis does not read them, so
+    /// the episode is one chapter, the log says the file was left, and the
+    /// save has gone on. (The file is made undeletable with the immutable flag.)
+    func testChaptersThatCannotBeDroppedAreNotLaidOverTheEditedAudio() async throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Edit Left")
+        let title = uniqueTitle("Canal Survey")
+        let chapters = try PodcastChapters(chapters: [
+            PodcastChapter(startMilliseconds: 0, title: "Locks"),
+            PodcastChapter(startMilliseconds: 4_000, title: "Weirs"),
+            PodcastChapter(startMilliseconds: 8_000, title: "Towpaths"),
+        ]).normalizedJSON()
+        let book = try makeEpisode(in: world, title: title, fileName: "\(title).wav", keeping: chapters) { file in
+            try AudioTestFixtures.writeIdentityRamp(to: file, frames: 80_000, sampleRate: 8_000)
+        }
+        addTeardownBlock {
+            AudioEditScratch.remove(for: book.id)
+            ReadingTextCache.shared.remove(bookID: book.id)
+        }
+        XCTAssertEqual(try indexedHeadings(of: book), ["Locks", "Weirs", "Towpaths"])
+        let kept = TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: kept.path)
+        // Lifted before the world's tear-down removes the package.
+        addTeardownBlock {
+            try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: kept.path)
+        }
+        let failure = try XCTUnwrap(thrownError(by: { try FileManager.default.removeItem(at: kept) }))
+
+        let session = try await AudioEditSession.open(bookID: book.id, in: world.library)
+        defer { session.close() }
+        try await session.perform(.cut(AudioTimeRange(start: 1, end: 2)))
+        let outcome = try await session.save()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertTrue(outcome.rendered)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path))
+        let saved = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(try indexedHeadings(of: saved), [title])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): "),
+            [
+                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be removed: "
+                    + loggedName(of: failure),
+            ]
         )
         XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
     }
