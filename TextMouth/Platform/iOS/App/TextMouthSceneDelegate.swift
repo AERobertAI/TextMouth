@@ -14,16 +14,17 @@ final class TextMouthSceneDelegate: UIResponder, UIWindowSceneDelegate {
     private var backgroundSaveTask = UIBackgroundTaskIdentifier.invalid
 
     /// Makes the window over the app's one model, shows it, and opens any file
-    /// the scene was made for: at a cold launch a file arrives here, and
-    /// `scene(_:openURLContexts:)` does not hear of it.
+    /// the scene was made for: at a cold launch a file arrives in the connection
+    /// options, which the header calls the contexts "to handle on connection".
     func scene(
         _ scene: UIScene,
         willConnectTo session: UISceneSession,
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
-        // Reading the model the first time loads the library, on this thread,
-        // before the first frame (see the report on Slice 1).
+        // Reading the model the first time loads the library's index on this
+        // thread, before the first frame: about 134 milliseconds for 643 books
+        // on the development Mac. Nothing it does needs the scene or the window.
         let model = TextMouthAppDelegate.model
         let window = MagicTapWindow(windowScene: windowScene)
         window.session = model.session

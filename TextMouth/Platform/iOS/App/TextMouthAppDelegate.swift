@@ -5,13 +5,14 @@ import UIKit
 /// reliable home for the magic tap, and placing a window subclass under a
 /// SwiftUI `App` takes an empty scene and a delegate that may not be called.
 ///
-/// UIKit's order at launch: this delegate is made, then
-/// `application(_:didFinishLaunchingWithOptions:)` would be called, then
-/// `application(_:configurationForConnecting:options:)`, then the scene
-/// delegate it names is made and told `scene(_:willConnectTo:options:)`, where
-/// `model` is first read. So everything the model makes runs with
-/// `UIApplication.shared` in place and a scene connecting. Nothing has run on
-/// iOS yet: this order is from Apple's documentation.
+/// UIKit's order at launch, from Apple's "About the app launch sequence":
+/// `UIApplicationMain` makes `UIApplication` and this delegate; then
+/// `application(_:didFinishLaunchingWithOptions:)`, not needed yet; then, "after
+/// the app launch completes", the scene's configuration, which names the scene
+/// delegate, and that delegate's `scene(_:willConnectTo:options:)`, where `model`
+/// is first read. So everything the model makes runs with `UIApplication.shared`
+/// in place and a scene connecting. Nothing has run on iOS yet, so this order is
+/// the documentation's, not an observation.
 @main
 final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// The app's one model, made at its first use and kept for the process.
