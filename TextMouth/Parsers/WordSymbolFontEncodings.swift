@@ -159,9 +159,12 @@ struct WordXMLFonts: Equatable {
     /// The most that `w:char` may say: four hexadecimal digits.
     private static let mostCharacterDigits = 4
 
-    /// The number a `w:char` value gives, or nil when it is not up to four hexadecimal digits.
+    /// The number a `w:char` value gives, or nil when it is not up to four hexadecimal digits (a sign, which
+    /// `Int(_:radix:)` accepts, is no digit: a negative code would trap the tables).
     static func character(_ value: String?) -> Int? {
-        guard let value, !value.isEmpty, value.utf8.count <= mostCharacterDigits else { return nil }
+        guard let value, !value.isEmpty, value.utf8.count <= mostCharacterDigits,
+              value.utf8.allSatisfy({ ($0 >= 0x30 && $0 <= 0x39) || ($0 >= 0x41 && $0 <= 0x46) || ($0 >= 0x61 && $0 <= 0x66) })
+        else { return nil }
         return Int(value, radix: 16)
     }
 
