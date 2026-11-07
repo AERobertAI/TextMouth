@@ -129,9 +129,17 @@ final class PhoneImportCopier: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.releaseHeldFiles() }
         }
+        // Read, then removed, before this run's first import writes its own.
+        stoppedAtLastClose = Self.stoppedImports(in: library)
+        try? FileManager.default.removeItem(at: Self.recordFile)
         questionsChanged()
         updateUnderWay()
     }
+
+    /// What the last run's close stopped importing, read as the copier is
+    /// installed, before anything sweeps the record; said once the first
+    /// screen has settled.
+    private var stoppedAtLastClose: String?
 
     /// Whether `rootAppeared()` has run.
     private var hasRootAppeared = false
@@ -143,8 +151,10 @@ final class PhoneImportCopier: ObservableObject {
         install()
         guard !hasRootAppeared else { return }
         hasRootAppeared = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSentenceDelay) { [weak self] in
-            self?.sayWhatACloseStopped()
+        guard let sentence = stoppedAtLastClose else { return }
+        stoppedAtLastClose = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSentenceDelay) {
+            PhoneAnnouncer.low(sentence)
         }
     }
 
@@ -392,27 +402,30 @@ final class PhoneImportCopier: ObservableObject {
         }
     }
 
-    /// Removes, off the main thread, every scratch copy and every Inbox file
-    /// past its grace, and the record of what imported: the app's own files,
-    /// at run time, which nothing needs once the import is over.
+    /// Removes every scratch copy and every Inbox file past its grace, and
+    /// the record of what imported: the app's own files, at run time, which
+    /// nothing needs once the import is over. What to remove is listed here,
+    /// on the main thread, so a copy that starts a moment later is never in
+    /// the list; the removing is done off it.
     private func sweep() {
-        let scratchRoot = PhoneImportCopyPlan.scratchRoot(in: FileManager.default.temporaryDirectory)
-        let inbox = Self.inboxFolder
-        let recordFile = Self.recordFile
-        DispatchQueue.global(qos: .utility).async {
-            let manager = FileManager.default
-            try? manager.removeItem(at: recordFile)
-            for item in (try? manager.contentsOfDirectory(at: scratchRoot, includingPropertiesForKeys: nil)) ?? [] {
-                try? manager.removeItem(at: item)
-            }
-            guard let inbox else { return }
-            let keys: [URLResourceKey] = [.addedToDirectoryDateKey, .creationDateKey]
-            for item in (try? manager.contentsOfDirectory(at: inbox, includingPropertiesForKeys: keys)) ?? [] {
-                let values = try? item.resourceValues(forKeys: Set(keys))
-                if PhoneImportHolding.sweepsInboxFile(addedAt: values?.addedToDirectoryDate ?? values?.creationDate, at: Date()) {
-                    try? manager.removeItem(at: item)
+        let manager = FileManager.default
+        try? manager.removeItem(at: Self.recordFile)
+        let scratchRoot = PhoneImportCopyPlan.scratchRoot(in: manager.temporaryDirectory)
+        var doomed = (try? manager.contentsOfDirectory(at: scratchRoot, includingPropertiesForKeys: nil)) ?? []
+        if let inbox = Self.inboxFolder {
+            let keys: Set<URLResourceKey> = [.addedToDirectoryDateKey, .creationDateKey]
+            let now = Date()
+            for item in (try? manager.contentsOfDirectory(at: inbox, includingPropertiesForKeys: Array(keys))) ?? [] {
+                let values = try? item.resourceValues(forKeys: keys)
+                if PhoneImportHolding.sweepsInboxFile(addedAt: values?.addedToDirectoryDate ?? values?.creationDate, at: now) {
+                    doomed.append(item)
                 }
             }
+        }
+        guard !doomed.isEmpty else { return }
+        let removing = doomed
+        DispatchQueue.global(qos: .utility).async {
+            for item in removing { try? FileManager.default.removeItem(at: item) }
         }
     }
 
@@ -464,16 +477,14 @@ final class PhoneImportCopier: ObservableObject {
         try? record.save(to: Self.recordFile)
     }
 
-    /// Says, with low priority, what a close stopped importing, from the
-    /// record an earlier run left, then removes the record. A book whose copy
-    /// the library holds was imported before the close, and isn't named.
-    private func sayWhatACloseStopped() {
-        guard let record = PhoneImportRecord.load(from: Self.recordFile) else { return }
+    /// What to say of the imports a close stopped, from the record an
+    /// earlier run left in `library`'s process; nil when there is none. A
+    /// book whose copy the library holds was imported before the close, and
+    /// isn't named. The record itself goes with the first sweep.
+    private static func stoppedImports(in library: LibraryViewModel) -> String? {
+        guard let record = PhoneImportRecord.load(from: recordFile) else { return nil }
         let imported = Set(library.library.books.compactMap(\.sourceFilePath))
-        if let sentence = PhoneImportWording.stoppedWhenClosed(record.stoppedNames(importedPaths: imported)) {
-            PhoneAnnouncer.low(sentence)
-        }
-        try? FileManager.default.removeItem(at: Self.recordFile)
+        return PhoneImportWording.stoppedWhenClosed(record.stoppedNames(importedPaths: imported))
     }
 }
 
