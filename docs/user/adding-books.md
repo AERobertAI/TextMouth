@@ -305,20 +305,20 @@ Part of [TextMouth's documentation](../../README.md).
 ## The Book Imported alert
 
 - An import that adds its book but has something to tell ends with an alert titled "Book Imported", where a failure's alert is titled "Error": the entries a playlist skipped, the original of an .rtfd that was kept, or chapters or pages that were left out.
-  - The book is in the library, but it is not opened, so the alert is not left behind a reader window.
-  - A ZIP batch's alert that sums up its failed and incomplete books is still titled "Error".
+- The book is in the library, but it is not opened, so the alert is not left behind a reader window.
+- A ZIP batch's alert that sums up its failed and incomplete books is still titled "Error".
 
 ## A book that is already in the library
 
 - When a book's content is already in the library, TextMouth asks whether to keep both, replace the existing book, or cancel.
-  - A feed's episode or article holding the same file doesn't count.
-  - The question says which file matches which book, as in "“Moby-Dick.epub” matches “Moby-Dick”, which is already in your library. Replace the existing copy, or keep both as separate books?", and then, after a blank line, what Replace Existing keeps of the existing copy and where its files go:
-    - For a text book: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it."
-    - For an audiobook: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same. Edits of its audio or of its manifest are not kept."
-    - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
-    - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
-    - A copy that is missing chapters adds "The copy just imported is incomplete." and what it lacks.
-    - The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
+- A feed's episode or article holding the same file doesn't count.
+- The question says which file matches which book, as in "“Moby-Dick.epub” matches “Moby-Dick”, which is already in your library. Replace the existing copy, or keep both as separate books?", and then, after a blank line, what Replace Existing keeps of the existing copy and where its files go:
+  - For a text book: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it."
+  - For an audiobook: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same. Edits of its audio or of its manifest are not kept."
+  - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+  - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
+  - A copy that is missing chapters adds "The copy just imported is incomplete." and what it lacks.
+- The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
 
 ## What Replace Existing keeps
 
@@ -326,12 +326,17 @@ Part of [TextMouth's documentation](../../README.md).
   - It keeps the existing copy's date added, its place among the books of its folder when you ordered them by hand, when it was last opened and played, the details you edited by hand in Book Info, and its own voice, speed, pitch, end-of-book choice, and skip units.
     - Everything else is the new copy's: its file and text, and its title and author where you edited neither.
   - The reading position, the bookmarks with their notes, and the skipped headings of a text book move to their words in the new text, as when a book's text is read again (see [Reader windows](reader-windows.md)), and a place whose words are not found stays where it was saved.
-    - They move from the existing copy's text only when that is the text they were saved in; from text saved in an editor without TextMouth's taking the edit, they are found by their words in the new text alone.
+    - They move from the existing copy's text only when that is the text they were saved in.
+    - From text saved in an editor without TextMouth's taking the edit, they are found by their words in the new text alone.
   - An audiobook's places count time in its recording.
-    - Where the new copy has other chapters than the existing one, a book of tracks keeps each place at the same time into the same track, and a skipped heading follows its track; any other audiobook keeps each place at the same time on the recording, never cut short at the old chapter's end, and keeps its skipped headings aside, skipping nothing (see [Reader windows](reader-windows.md)).
+    - Where the new copy has other chapters than the existing one, a book of tracks keeps each place at the same time into the same track, and a skipped heading follows its track.
+    - Any other audiobook keeps each place at the same time on the recording, never cut short at the old chapter's end, and keeps its skipped headings aside, skipping nothing (see [Reader windows](reader-windows.md)).
   - The copies of edited text that Edit Text kept for the existing copy go with it into the new copy's package, and so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](where-your-library-lives.md)).
     - When such a copy is kept, VoiceOver says, after the answer, "Replaced “X”. Its earlier text was kept as content.md.edited-…, in the book's package.", with X the book's title and the dots standing for the date and time in the copy's name.
-  - An audiobook's transcript comes along only when the new copy's audio is proven to be the same, without reading the audio whole: a book of one audio file that is the very file transcribed, under the same name or another; the same archive or folder imported again, with every audio file at the same path and of the same size; or every audio file the same by path, size, and date.
+  - An audiobook's transcript comes along only when the new copy's audio is proven to be the same, without reading the audio whole:
+    - A book of one audio file that is the very file transcribed, under the same name or another.
+    - The same archive or folder imported again, with every audio file at the same path and of the same size.
+    - Every audio file the same by path, size, and date.
     - A file only in the cloud proves nothing.
     - A transcript you edited that stays behind, because the audio is not proven the same, leaves its text beside the new copy as a content.md.edited- copy too, and an audiobook that kept its transcript is not offered for transcription afterwards.
   - A BRF or BRL book keeps the braille file characters it is read with (see Book Information, in [The Library window](library-window.md)).
@@ -344,48 +349,50 @@ Part of [TextMouth's documentation](../../README.md).
 ## When Replace Existing waits
 
 - Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
-  - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
-  - Once the cause is gone, choose Replace Existing again.
-  - With X the title of the existing copy, the sentences are:
-    - Open in a reader: "“X” is open in a reader. Close it, then choose Replace Existing again."
-    - Being transcribed: "“X” is being transcribed, and replacing it now would lose the transcript. Wait until the transcription ends, or cancel it, then choose Replace Existing again."
-    - Being exported: "“X” is being exported, and replacing it now would stop the export. Wait until the export ends, then choose Replace Existing again."
-    - Its audio being edited in the audio editor, or saved from it: "The audio of “X” is being edited. Close the audio editor, or wait until it has saved, then choose Replace Existing again."
-    - Its text being read again in another encoding, from the Text Encoding pop-up in Book Information: "TextMouth is reading “X” again in another encoding. Try again when that finishes."
-    - Its text being read again with other braille file characters, from the Braille File Characters pop-up in Book Information: "TextMouth is reading “X” again with other braille file characters. Try again when that finishes."
-    - Files only in the cloud: "Some of the files of “X” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose Replace Existing again."
-    - Books moving between folders: "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
-    - The data directory being rebuilt: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose Replace Existing again."
+- The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
+- Once the cause is gone, choose Replace Existing again.
+- With X the title of the existing copy, the sentences are:
+  - Open in a reader: "“X” is open in a reader. Close it, then choose Replace Existing again."
+  - Being transcribed: "“X” is being transcribed, and replacing it now would lose the transcript. Wait until the transcription ends, or cancel it, then choose Replace Existing again."
+  - Being exported: "“X” is being exported, and replacing it now would stop the export. Wait until the export ends, then choose Replace Existing again."
+  - Its audio being edited in the audio editor, or saved from it: "The audio of “X” is being edited. Close the audio editor, or wait until it has saved, then choose Replace Existing again."
+  - Its text being read again in another encoding, from the Text Encoding pop-up in Book Information: "TextMouth is reading “X” again in another encoding. Try again when that finishes."
+  - Its text being read again with other braille file characters, from the Braille File Characters pop-up in Book Information: "TextMouth is reading “X” again with other braille file characters. Try again when that finishes."
+  - Files only in the cloud: "Some of the files of “X” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose Replace Existing again."
+  - Books moving between folders: "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
+  - The data directory being rebuilt: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose Replace Existing again."
 
 ## When a replacement fails
 
 - A replacement that fails leaves the question open with "Could not replace duplicate: " and the reason, and both copies as they were, the new copy as it was imported.
-  - Two reasons are TextMouth's own words: "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are." and "TextMouth couldn't save the library's index, so it left both copies as they are."
-  - Any other failure gives the system's own reason.
+- Two reasons are TextMouth's own words:
+  - "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are."
+  - "TextMouth couldn't save the library's index, so it left both copies as they are."
+- Any other failure gives the system's own reason.
 
 ## When the replaced copy's files can't be removed
 
 - When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands, and the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason, with "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
-  - With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
+- With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
 
 ## A replaced book open in Edit Text
 
 - If the replaced book was open in Edit Text, VoiceOver says, once, "Edit Text has stopped for X, since a new copy replaced it. Choose Edit Text again to edit the new copy's text.", with X the book's title, so that you are not left saving into an editor nothing listens to (see [Editing a book's text](editing-book-text.md)).
-  - An Edit Manifest session for the replaced book ends without a word.
+- An Edit Manifest session for the replaced book ends without a word.
 
 ## The original file after an import
 
 - Storage settings decide what happens to the original file after an import: keep it (the default), delete it, or ask each time.
-  - A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
-  - When After Importing a Book is set to Delete After Import or Ask Each Time, an alert titled "Book Imported" says "The original file was kept: it is a folder, and an import never deletes a folder.", and the book is added without opening, even if it came from Finder.
+- A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
+- When After Importing a Book is set to Delete After Import or Ask Each Time, an alert titled "Book Imported" says "The original file was kept: it is a folder, and an import never deletes a folder.", and the book is added without opening, even if it came from Finder.
 - A file inside a book's package, a folder ending in .tmb, or inside TextMouth's data directory is never deleted or offered for deletion, whatever After Importing a Book says: such a file, opened with Show Package Contents and Open With, is a copy of part of a book that is still in the library.
-  - It is kept with nothing said, and the debug log notes it.
+- It is kept with nothing said, and the debug log notes it.
 
 ## A ZIP holding a DAISY book with audio
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
-  - For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
-  - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
+- For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
+- A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
 ## A Markdown book named content.md
 
