@@ -118,35 +118,43 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### Word 6 and Word 95 documents
 
-- Word 6 and Word 95 documents (.doc and .dot), which TextMouth reads with code of its own since version 0.4.1, the same on the Mac as on iOS, as it reads a Word 97-2003 one.
-  - The format has no published description, so the layout was worked out from real files; a document older than Word 6 is the only Word document left to textutil, below.
-  - TextMouth tells a Word 6 or Word 95 document from a Word 97-2003 one by the file's own bytes, not its name.
-  - Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
-  - No helper process runs.
+- TextMouth reads Word 6 and Word 95 documents (.doc and .dot) with code of its own since version 0.4.1, the same on the Mac as on iOS, as it reads a Word 97-2003 one.
+- The format has no published description, so the layout was worked out from real files.
+- A document older than Word 6 is the only Word document left to textutil, below.
+- TextMouth tells a Word 6 or Word 95 document from a Word 97-2003 one by the file's own bytes, not its name.
+- Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
+- No helper process runs.
 
 #### Word 6 and Word 95 headings
 
 - Headings are the document's own heading styles (Heading 1 to 9, Title, Subtitle, and outline levels), and a document that names even one keeps exactly the headings it names.
-  - A document that names none gets its headings guessed from font sizes and bold, as in the other Word formats; text in a table or a list is never a heading, so a few documents have fewer headings than textutil guessed.
+- A document that names none gets its headings guessed from font sizes and bold, as in the other Word formats.
+- Text in a table or a list is never a heading, so a few documents have fewer headings than textutil guessed.
 
 #### Word 6 and Word 95 text and code pages
 
-- The text is read in the code page of each run, in this order: the run's own mark (Macintosh text in a Windows document, and the reverse), the character set of the run's font (a Cyrillic, Greek, or Central European font), and the document's default, which is the foreign code page whose fonts hold over half the accented characters, else the language's.
-  - Far East documents are read as double-byte text, a document at a time.
-  - Text in the Symbol font is read as Greek letters and mathematical signs.
+- The text is read in the code page of each run, in this order:
+  - The run's own mark (Macintosh text in a Windows document, and the reverse).
+  - The character set of the run's font (a Cyrillic, Greek, or Central European font).
+  - The document's default, which is the foreign code page whose fonts hold over half the accented characters, else the language's.
+- Far East documents are read as double-byte text, a document at a time.
+- Text in the Symbol font is read as Greek letters and mathematical signs.
 
 #### Word 6 and Word 95 emphasis, notes, tables, and lists
 
 - Bold and italic keep their emphasis and the marks that show it are never spoken.
-  - Hidden text and tracked deletions are not read, and a note is read only if its reference is shown.
-  - Footnotes, endnotes, and text boxes follow the main text.
-  - A table is a table.
-  - A paragraph that Word numbers or bullets is a real list item, with its number silent; a numbering that a style carries is not followed, so a numbered heading reads without its number.
-  - A field's result is read and its instruction never.
+- Hidden text and tracked deletions are not read, and a note is read only if its reference is shown.
+- Footnotes, endnotes, and text boxes follow the main text.
+- A table is a table.
+- A paragraph that Word numbers or bullets is a real list item, with its number silent.
+- A numbering that a style carries is not followed, so a numbered heading reads without its number.
+- A field's result is read and its instruction never.
 
 #### What Word 6 and Word 95 reading leaves out
 
-- Not read: headers, footers, comments, and pictures; text typed in Wingdings reads as the letters of its bytes. A custom note mark (an asterisk, say) is read as typed.
+- Headers, footers, comments, and pictures are not read.
+- Text typed in Wingdings reads as the letters of its bytes.
+- A custom note mark (an asterisk, say) is read as typed.
 
 #### Word 1 and Word 2 documents
 
@@ -158,98 +166,112 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### Documents that Apple's textutil tool still reads
 
-- Documents that Apple's textutil tool still reads, on the Mac only: a compound-file Word document older than Word 6, which TextMouth's reader does not know the layout of. On iOS such a document is refused, since iOS runs no helper program (see [Adding books](adding-books.md)).
+- On the Mac only, textutil reads a compound-file Word document older than Word 6, which TextMouth's reader does not know the layout of.
+- On iOS such a document is refused, since iOS runs no helper program (see [Adding books](adding-books.md)).
 
 #### How textutil is run
 
 - textutil runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in Apple's readers costs that process and never TextMouth or the import.
-  - It loads nothing that the document links to and fetches nothing from the network.
-  - It converts the document once for each import, and the book's title and author come from that same run; a second run reads the page breaks (see Pages, below).
-  - Cancel in the import overlay stops it at once (see [Adding books](adding-books.md)). [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
+- It loads nothing that the document links to and fetches nothing from the network.
+- It converts the document once for each import, and the book's title and author come from that same run. A second run reads the page breaks (see Pages, below).
+- Cancel in the import overlay stops it at once (see [Adding books](adding-books.md)).
+- [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
 
 #### Headings in a document textutil reads
 
 - Headings in such a document are found from font sizes and bold, since textutil writes every heading as an ordinary paragraph.
-  - The body size is the commonest size, counted by characters.
-  - A paragraph of at most 120 characters that is larger than the body is a heading, and so is one that is bold throughout at the body's size, unless more than half of the body is bold.
-  - A heading's level comes from its size's rank, the largest size being level 1, in at most six levels, and a heading found from bold follows the larger sizes.
-  - Text in a table or a list is never a heading.
-  - Bold and italic keep their emphasis, pictures are silent, and a field's instruction is never read.
+- The body size is the commonest size, counted by characters.
+- A paragraph of at most 120 characters that is larger than the body is a heading, and so is one that is bold throughout at the body's size, unless more than half of the body is bold.
+- A heading's level comes from its size's rank, the largest size being level 1, in at most six levels, and a heading found from bold follows the larger sizes.
+- Text in a table or a list is never a heading.
+- Bold and italic keep their emphasis, pictures are silent, and a field's instruction is never read.
 
 ### Kindle books in the MOBI format
 
-- Kindle books in the MOBI format (.mobi, .prc, and .azw) that are not copy-protected.
-  - TextMouth reads them with code of its own, the same on the Mac as on iOS.
-  - It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8, and the MOBI 6 part of a book that holds both, as many .mobi files made for the Kindle do.
-  - A book only in the newer KF8 format, as an .azw3 is, is refused for now, and a copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](adding-books.md) for the sentences).
+- TextMouth reads Kindle books in the MOBI format (.mobi, .prc, and .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
+- It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8, and the MOBI 6 part of a book that holds both, as many .mobi files made for the Kindle do.
+- A book only in the newer KF8 format, as an .azw3 is, is refused for now.
+- A copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](adding-books.md) for the sentences).
 
 #### MOBI chapters
 
 - Chapters come from the book's own table of contents, and an entry under a chapter's entry is a heading in that chapter, as in an EPUB.
-  - Words before the first entry are a chapter of their own.
-  - A book with no table of contents is a chapter for each page break its maker wrote.
-  - A chapter that begins with no heading is named by its entry, or "Chapter" and its number when it has none, and the name is never read aloud.
+- Words before the first entry are a chapter of their own.
+- A book with no table of contents is a chapter for each page break its maker wrote.
+- A chapter that begins with no heading is named by its entry, or "Chapter" and its number when it has none, and the name is never read aloud.
 
 #### MOBI title and author
 
-- The title and author come from the book's own record of them. A book that gives no title is named by the title in its header, or by the file's name. What a book's head says about it, such as the title and publisher in an older book's metadata, is never read aloud: the words start where its body does.
+- The title and author come from the book's own record of them.
+- A book that gives no title is named by the title in its header, or by the file's name.
+- What a book's head says about it, such as the title and publisher in an older book's metadata, is never read aloud: the words start where its body does.
 
 #### MOBI text and emphasis
 
 - The text is read in the encoding the book names, UTF-8 or Windows-1252 (Western European).
-  - Bold and italic text keeps its emphasis, as in the other text formats.
-  - A picture's description, when it has one, is read like the words around it, and a picture without one is silent, as calibre's are.
-  - The table of contents that calibre adds at the end of a book it converts is read as text at the end of the last chapter.
+- Bold and italic text keeps its emphasis, as in the other text formats.
+- A picture's description, when it has one, is read like the words around it, and a picture without one is silent, as calibre's are.
+- The table of contents that calibre adds at the end of a book it converts is read as text at the end of the last chapter.
 
 #### PalmDOC books
 
-- A PalmDOC book (.prc), the plain-text Palm format that MOBI grew from, is read as paragraphs of text in Windows-1252, unless its text is HTML, as an early Mobipocket book's is: that is read like any other Kindle book, so its markup is never spoken.
+- A PalmDOC book (.prc), the plain-text Palm format that MOBI grew from, is read as paragraphs of text in Windows-1252, unless its text is HTML, as an early Mobipocket book's is.
+- A PalmDOC book whose text is HTML is read like any other Kindle book, so its markup is never spoken.
 
 ### Kindle books in the KFX format
 
-- Kindle books in the KFX format (.kfx, .kfx-zip, .azw8, and an .azw file that holds KFX, as Kindle's apps name their KFX books) that are not copy-protected.
-  - TextMouth reads them with code of its own, the same on the Mac as on iOS, and the Library window names the format "Kindle Book (KFX)".
-  - A KFX book is read like a MOBI book, and into the same kind of chapters.
-  - A .kfx-zip, a ZIP that holds the parts of one book, is read as that one book.
+- TextMouth reads Kindle books in the KFX format (.kfx, .kfx-zip, .azw8, and an .azw file that holds KFX, as Kindle's apps name their KFX books) that are not copy-protected, with code of its own, the same on the Mac as on iOS, and the Library window names the format "Kindle Book (KFX)".
+- A KFX book is read like a MOBI book, and into the same kind of chapters.
+- A .kfx-zip, a ZIP that holds the parts of one book, is read as that one book.
 
 #### KFX chapters and headings
 
 - Chapters come from the book's own table of contents, and an entry under a chapter's entry is a heading in that chapter, as in a MOBI book.
-  - A heading's level is the one the book gives it, from 1 to 6.
-  - A chapter that begins with no heading is named by its entry, and the name is never read aloud.
-  - A part of the book that no entry starts and that begins with no heading continues the chapter before it, so a forced page break makes no new chapter.
-  - A first chapter that nothing names takes the book's title, and no heading is ever made up.
+- A heading's level is the one the book gives it, from 1 to 6.
+- A chapter that begins with no heading is named by its entry, and the name is never read aloud.
+- A part of the book that no entry starts and that begins with no heading continues the chapter before it, so a forced page break makes no new chapter.
+- A first chapter that nothing names takes the book's title, and no heading is ever made up.
 
 #### KFX pages
 
-- Pages are the book's print page list, when it has one, as an EPUB's are, so Page works as it does there (see Pages, below). A page list that a machine made to approximate pages, which the book marks as such, is not read as pages. A KFX book that is an .azw file is read without pages.
+- Pages are the book's print page list, when it has one, as an EPUB's are, so Page works as it does there (see Pages, below).
+- A page list that a machine made to approximate pages, which the book marks as such, is not read as pages.
+- A KFX book that is an .azw file is read without pages.
 
 #### KFX emphasis, lists, and tables
 
 - Bold and italic text keeps its emphasis, and lists and tables are lists and tables, a table being read a row at a time.
-  - A footnote's text is read at the end of its chapter.
-  - A picture's description, when the book gives one, is read like the words around it, and a picture without one is silent.
-  - The title and author come from the book's own record of them.
+- A footnote's text is read at the end of its chapter.
+- A picture's description, when the book gives one, is read like the words around it, and a picture without one is silent.
+- The title and author come from the book's own record of them.
 
 #### KFX copy protection
 
-- A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." This holds whether the protection is in the book's file, in a license file that sits beside it, or in any part of a book made of several.
+- A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
+- This holds whether the protection is in the book's file, in a license file that sits beside it, or in any part of a book made of several.
 
 #### KFX books with no flowing text
 
-- A book with no flowing text to read is refused: a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book whose pages are only pictures. The sentence is "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+- A book with no flowing text to read is refused: a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book whose pages are only pictures.
+- The sentence is "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
 
 #### Kindle Create packages
 
-- A Kindle Create package (.kpf), the file an author makes before a book is published, is refused with its own sentence: "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+- A Kindle Create package (.kpf), the file an author makes before a book is published, is refused with its own sentence: "This file is a Kindle Create package, which TextMouth can't read yet."
+- [Adding books](adding-books.md) gives every sentence.
 
 ### DAISY books
 
-- DAISY books, versions 2.02 and 3: a book's folder, its navigation or package file (ncc.html or a .opf file), or a ZIP holding the book. A DTBook file on its own (.xml) imports as a book too, and so does a NIMAS package, which is a DTBook with its package file.
+- TextMouth reads DAISY books, versions 2.02 and 3: a book's folder, its navigation or package file (ncc.html or a .opf file), or a ZIP holding the book.
+- A DTBook file on its own (.xml) imports as a book too, and so does a NIMAS package, which is a DTBook with its package file.
 
 ### XML files
 
-- XML files (.xml): TextMouth reads the start of each one and names its kind by the element it begins with. A DTBook goes to the DAISY reader, Word 2003 XML goes to TextMouth's own Word 2003 XML reader, a PEF braille file goes to the braille reader (below), and any other XML is refused by name.
+- TextMouth reads the start of each .xml file and names its kind by the element it begins with:
+  - A DTBook goes to the DAISY reader.
+  - Word 2003 XML goes to TextMouth's own Word 2003 XML reader.
+  - A PEF braille file goes to the braille reader (below).
+  - Any other XML is refused by name.
 
 ### Braille files
 
