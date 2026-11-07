@@ -1035,6 +1035,7 @@
 		830247293856F9A120229BBD /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 799C6CABC6FBDA4AA38809D1 /* JSONValue.swift */; };
 		833E26F070A72F578C3B05AC /* AudioEditHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC11C822D96F24617261001 /* AudioEditHistoryStore.swift */; };
 		8355AC711795D68AA9B503A6 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 7D8ABAF885921CCC9068372C /* main.c */; };
+		8376172B7894E8D476609A7B /* PhoneHeadingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C9CCECC242C39E4FCB0A /* PhoneHeadingsSheet.swift */; };
 		839A8A4A08E7C9712AF01600 /* ImportConcurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D2210724B40BF276058B99 /* ImportConcurrencyTests.swift */; };
 		839B9573A027FC258783107D /* HostedControlReachSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1075E904100C93B9C077326C /* HostedControlReachSupport.swift */; };
 		8410C3A3F194B5F83D063A17 /* ObjCExceptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E9925E2D4BDCF8385F1C0F /* ObjCExceptionTests.swift */; };
@@ -3005,6 +3006,7 @@
 		969BFAFFAD5915A2E8887A28 /* ViewsAndWindowsBenchmarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsAndWindowsBenchmarks.swift; sourceTree = "<group>"; };
 		96BC569364608C0D733F1BB0 /* KFXNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXNavigation.swift; sourceTree = "<group>"; };
 		96C3CE7A47FA15F716CC1AAB /* MarkdownTableReadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTableReadingTests.swift; sourceTree = "<group>"; };
+		96E8C9CCECC242C39E4FCB0A /* PhoneHeadingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHeadingsSheet.swift; sourceTree = "<group>"; };
 		975B2526B11B89D8539A7EC4 /* FeedItemRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItemRecordTests.swift; sourceTree = "<group>"; };
 		9796080EE27EA74E47D9C04A /* BookExportWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportWording.swift; sourceTree = "<group>"; };
 		97AFAA3632BE4247E5BF1241 /* TranscriptTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptTestSupport.swift; sourceTree = "<group>"; };
@@ -3666,6 +3668,7 @@
 		152D0077BCC31C1181594ACE /* Reader */ = {
 			isa = PBXGroup;
 			children = (
+				96E8C9CCECC242C39E4FCB0A /* PhoneHeadingsSheet.swift */,
 				F13226B57AAF1436754DE35C /* PhoneReaderSheetContent.swift */,
 				23854EE45A32406115E3F04E /* PhoneReaderView.swift */,
 				1B2F6DB67463910560824B19 /* WindowAccessor+iOS.swift */,
@@ -7646,6 +7649,7 @@
 				FCCCCB02500B775BC3A1B5A8 /* PhoneFocusRegistry.swift in Sources */,
 				B5D59B9201BFA88BF8494B2D /* PhoneGoToModel.swift in Sources */,
 				560E258B692CC24F7FE75A60 /* PhoneHeadingsModel.swift in Sources */,
+				8376172B7894E8D476609A7B /* PhoneHeadingsSheet.swift in Sources */,
 				98F8FCA24047D9FB7F51FDA4 /* PhoneImportPresentations.swift in Sources */,
 				CEFCF55961641C49FF106639 /* PhoneLifeCycle.swift in Sources */,
 				4460ACC90C3BCB71841BC565 /* PhoneListFocus+iOS.swift in Sources */,

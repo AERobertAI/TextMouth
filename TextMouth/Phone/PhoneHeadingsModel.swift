@@ -16,6 +16,8 @@ enum PhoneHeadingsVocabulary {
     static let backToBook = "Back to Book"
     /// What Back to Book does.
     static let backToBookHint = "Close the headings screen and return to the book"
+    /// The display's visible word, the title of its list of choices.
+    static let displayTitle = "Display"
     /// The display row's label: which time or percent each row ends with.
     static let displayLabel = "Heading info display mode"
     /// What the sheet says for a book without headings.

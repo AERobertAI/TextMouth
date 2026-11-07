@@ -181,6 +181,7 @@ final class PhoneHeadingsVocabularyTests: XCTestCase {
         XCTAssertTrue(macView.contains("Text(\"\(PhoneHeadingsVocabulary.title)\")"))
         XCTAssertTrue(macView.contains("Button(\"\(PhoneHeadingsVocabulary.backToBook)\")"))
         XCTAssertTrue(macView.contains(".accessibilityHint(\"\(PhoneHeadingsVocabulary.backToBookHint)\")"))
+        XCTAssertTrue(macView.contains("Picker(\"\(PhoneHeadingsVocabulary.displayTitle)\", selection: $displayMode)"))
         XCTAssertTrue(macView.contains(".accessibilityLabel(\"\(PhoneHeadingsVocabulary.displayLabel)\")"))
         XCTAssertTrue(macView.contains("Text(\"\(PhoneHeadingsVocabulary.empty)\")"))
         XCTAssertTrue(macView.contains("\"\(PhoneHeadingsVocabulary.rowHint)\""))
