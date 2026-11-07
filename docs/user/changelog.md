@@ -48,6 +48,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
   - Such an entry in a table cell moves to just before the table, so its place reads back a few words early. A page that begins in a cell stays in the cell.
   - In a run of chapters that hold only page markers, the chapters' titles all point at one file, and the reader keeps only the first title: chapters A, B, C, and D read back as A.
   - A chapter that begins with words before any heading shows one more heading row at its start. A long book with no headings, which the export split into several files, shows a row named for the book and then rows named "Chapter 2", "Chapter 3", and so on, one for each file that continues it. The words and the pages are the same.
+- An EPUB whose language is "und", which is how TextMouth's own export says a book names none, now shows no language when it is imported, where Book Info would have shown "und". Only a book imported from now on is affected: no book already in the library is read again for it.
 - HTML export is changed for books that skip heading levels: its contents list put two lists inside one item for them, which is not valid markup, and now has one list, with a heading that rises out of a skipped level beside its sibling (headings 1, 3, then 2 list the 3 and the 2 together under the 1). HTML and PEF files carry the book's language only when it is a well-formed language tag. Every export keeps the words that follow a page marker on the same line, which the walk of the text used to drop.
 
 ### Word 6 and Word 95 documents
