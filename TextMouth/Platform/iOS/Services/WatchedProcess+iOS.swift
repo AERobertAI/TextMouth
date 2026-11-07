@@ -1,12 +1,14 @@
 // Phase 0 stand-in: the Mac's WatchedProcess (Platform/macOS/Services) runs
 // textutil, afconvert, afinfo and the braille helper as child processes that a
 // watchdog kills when they hang or grow too large. iOS lets an app start no
-// child process at all, so here nothing is ever started: every run throws
-// `IOSUnavailable`, and the callers' existing error paths report that the
-// conversion cannot be done. `Limits`, `KillReason` (with its `words`), and
-// `Outcome` are plain values that callers build and switch over, so they are
-// copied here from the Mac file with the same members; a phase 1 clean-up
-// could move them to a file both platforms share.
+// child process at all, so here nothing is ever started. `run`, which does a
+// conversion, throws `IOSUnavailable`, and the callers' existing error paths
+// report that the conversion cannot be done. `runCapturingOutput`, which only
+// asks a helper a question, answers that the helper could not start, which its
+// caller reads as "no answer" (see its comment). `Limits`, `KillReason` (with
+// its `words`), and `Outcome` are plain values that callers build and switch
+// over, so they are copied here from the Mac file with the same members; a
+// phase 1 clean-up could move them to a file both platforms share.
 
 import Foundation
 
@@ -102,7 +104,16 @@ enum WatchedProcess {
     }
 
     /// Would run `executable` and return what it prints; on iOS it starts
-    /// nothing and throws `IOSUnavailable`. The parameters match the Mac's.
+    /// nothing, and answers that the helper could not start, with nothing
+    /// printed. The parameters match the Mac's.
+    ///
+    /// It answers rather than throws because its one caller,
+    /// `AudioFileInfo.read`, is documented to throw only for cancellation, and
+    /// reads `.couldNotStart` as "no answer". That is what an M4B, M4A, or MP4
+    /// needs: its bytes leave open what it holds, so the import asks afinfo
+    /// (`ImportAudioConverter.needsConversion(among:using:)`), and a file with
+    /// no answer is left as it is and played by `AVPlayer`. A throw here once
+    /// stopped every such import at "Converting its audio".
     static func runCapturingOutput(
         _ executable: URL,
         arguments: [String],
@@ -112,6 +123,6 @@ enum WatchedProcess {
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> (outcome: Outcome, output: Data) {
-        throw IOSUnavailable.feature("Converting this kind of file")
+        (outcome: .couldNotStart, output: Data())
     }
 }
