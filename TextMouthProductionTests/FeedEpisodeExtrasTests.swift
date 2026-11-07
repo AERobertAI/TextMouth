@@ -142,7 +142,14 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: "/c.json")
         try serveAudio(in: world, duration: 4)
         world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
-        world.server.serve("/c.json", try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json+chapters"))
+        // The chapters file names a link and a picture at example.invalid,
+        // where nothing records a request: moved to the stub server, a request
+        // for either would show among the requests below.
+        var chapters = try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json+chapters")
+        chapters.body = Data(String(decoding: chapters.body, as: UTF8.self)
+            .replacingOccurrences(of: "example.invalid", with: world.server.host).utf8)
+        XCTAssertTrue(String(decoding: chapters.body, as: UTF8.self).contains("https://\(world.server.host)/art.jpg"))
+        world.server.serve("/c.json", chapters)
         let wordsBefore = debugLogLines(containing: "First tone").count
 
         world.center.download("guid:ep-1", of: feed.id)
@@ -282,6 +289,20 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertEqual(FeedEpisodeExtras.logReason(of: secret), "error 4 in NSCocoaErrorDomain")
     }
 
+    /// The version a file names for itself is the file's own text, and never
+    /// reaches the log, whatever it holds: a line break in it would make a
+    /// line of the log of its own.
+    func testTheVersionAFileNamesNeverReachesTheLog() {
+        let hostile = "9\nFEED_DOWNLOAD_FINISHED: x"
+        let transcript = FeedEpisodeExtras.logReason(of: TimedTextError.unsupportedVersion(.podcastJSON, hostile))
+        XCTAssertEqual(transcript, "it is a Podcasting 2.0 JSON transcript of a version TextMouth doesn't read")
+        let chapters = FeedEpisodeExtras.logReason(of: PodcastChaptersError.unsupportedVersion(hostile))
+        XCTAssertEqual(chapters, "its version is not one TextMouth reads")
+        for reason in [transcript, chapters] {
+            XCTAssertFalse(reason.contains("FEED_DOWNLOAD_FINISHED") || reason.contains("\n"), reason)
+        }
+    }
+
     /// A WebVTT link answering "not found" goes on to the JSON link after it,
     /// whose transcript the episode then takes, with its format recorded.
     func testTheNextTranscriptLinkIsTriedWhenOneFails() async throws {
@@ -383,6 +404,36 @@ final class FeedEpisodeExtrasTests: XCTestCase {
             debugLogLines(containing: "PODCAST_CHAPTERS_UNUSED: \(title): its last chapter begins past the end of the audio").count,
             1
         )
+    }
+
+    /// A video episode with a transcript downloads as it always did, and its
+    /// outcome is told by one line: the transcript attached, or the reason it
+    /// was not. Measuring video's sound is where an attach could fail, and a
+    /// failure there must not touch the download.
+    func testAVideoEpisodeWithATranscriptStillDownloadsAndSaysWhatBecameOfIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasVideo")
+        let title = uniqueTitle()
+        let feed = try await subscribe(
+            world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil, audio: ("/video/tour.mp4", "video/mp4")
+        )
+        let video = try await FeedMediaFixtures.silentVideo(duration: 4)
+        world.server.serve("/video/tour.mp4", FeedMediaFixtures.file(video, mimeType: "video/mp4"))
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
+        let episode = "\(title) (The Tactile Atlas)"
+        let attached = debugLogLines(containing: "FEED_TRANSCRIPT_ATTACHED: \(episode): WebVTT, ").count
+        let notAttached = debugLogLines(containing: "FEED_TRANSCRIPT_NOT_ATTACHED: \(episode): ").count
+        XCTAssertEqual(attached + notAttached, 1, "the transcript's outcome was not told by exactly one line")
+        // What the line says is what the package holds.
+        if case .found = TranscriptStore.read(from: book.tmbDirectory) {
+            XCTAssertEqual(attached, 1)
+        } else {
+            XCTAssertEqual(notAttached, 1)
+        }
     }
 
     /// Links that carry no times are never asked for.
@@ -553,6 +604,56 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "FEED_EPISODE_FILES_TIMED_OUT: \(title) (The Tactile Atlas): still fetching after 1 seconds").count, 1)
     }
 
+    /// Files that come at once return at once: the limit on the whole is a
+    /// ceiling, not a wait. Its own timer is stopped as the fetching ends, so
+    /// an episode whose files came in a moment does not wait the two minutes
+    /// of the limit before it is imported.
+    func testFilesThatComeAtOnceDoNotWaitForTheLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasQuick")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: "/c.json")
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+        world.server.serve("/c.json", try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json"))
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+
+        // The limit given is the one the app uses; a mistake that kept it
+        // running would take all of it.
+        let seconds = await secondsTaken {
+            let fetched = await FeedEpisodeExtras.fetch(for: item, of: feed, network: world.environment.network, discretionary: false)
+            XCTAssertNotNil(fetched.transcript)
+            XCTAssertNotNil(fetched.chapters)
+        }
+
+        XCTAssertLessThan(seconds, 20, "the fetch waited for the limit on the whole")
+    }
+
+    /// A server that sends its file a byte at a time, so slowly that no
+    /// request's own timeout ends it and the file's size limit is never
+    /// reached in time, is held to the limit on the whole: the fetch returns
+    /// when it runs out, with the transcript left out.
+    func testAServerSendingAByteNowAndThenIsHeldToTheLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasTrickle")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        var trickle = StubResponse(headers: ["Content-Type": "text/vtt"], body: Data(repeating: 0x20, count: 60))
+        trickle.chunkSize = 1
+        trickle.pause = 0.4
+        world.server.serve("/t.vtt", trickle)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+
+        var fetched = FeedEpisodeExtras.Fetched()
+        let seconds = await secondsTaken {
+            fetched = await FeedEpisodeExtras.fetch(
+                for: item, of: feed, network: world.environment.network, discretionary: false, timeLimit: .seconds(1)
+            )
+        }
+
+        // The whole file would have taken 24 seconds.
+        XCTAssertLessThan(seconds, 10, "the trickle held the fetch past the limit")
+        XCTAssertNil(fetched.transcript)
+        XCTAssertEqual(debugLogLines(containing: "FEED_EPISODE_FILES_TIMED_OUT: \(title) (The Tactile Atlas): still fetching after 1 seconds").count, 1)
+    }
+
     /// Files fetched in time say nothing of the limit, and a task cancelled
     /// from outside stops at once and returns what it has, with no such line.
     func testACancelledFetchStopsAtOnceSayingNothingOfTheTime() async throws {
@@ -602,6 +703,41 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertTrue(world.library.library.books.isEmpty, "a cancelled download became a book")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path), [])
         XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_CANCELLED: \(title)").count, 1)
+    }
+
+    /// The episode asked for again after Cancel Download stopped it while its
+    /// files came downloads whole, as if the cancel had not happened: its
+    /// audio from the start, its transcript this time, one book, and nothing
+    /// left in the holding folder by either.
+    func testAnEpisodeAskedForAgainAfterACancelDuringItsFilesDownloadsWhole() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasCancelAgain")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        try serveAudio(in: world, duration: 4)
+        // The first request for the transcript hangs; the second is answered.
+        world.server.serve(
+            "/t.vtt",
+            hanging(try sampleResponse("vtt/tone4.vtt", type: "text/vtt")),
+            try sampleResponse("vtt/tone4.vtt", type: "text/vtt")
+        )
+
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the transcript is asked for", timeout: 20) { !world.server.requests(to: "/t.vtt").isEmpty }
+        XCTAssertEqual(world.center.cancelDownload("guid:ep-1", of: feed.id), .stopped)
+        await waitFor("the download stops", timeout: 20) {
+            !world.center.downloads.isDownloading("guid:ep-1", of: feed.id)
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path), [])
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.library.library.books.map(\.id), [book.id], "the episode is not in the library exactly once")
+        XCTAssertEqual(try foundTranscript(of: book).source, TranscriptSource(origin: .podcast, format: .webVTT))
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a").count, 2, "the audio was not downloaded again")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path), [])
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_CANCELLED: \(title)").count, 1)
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_FINISHED: \(title)").count, 1)
     }
 
     /// A quit while the files come imports nothing: the download is listed,
@@ -855,6 +991,37 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: path.path), "asking moved a file that does not read aside")
     }
 
+    /// A transcript.json that names its edit or its cleanup at all, even as
+    /// null, is the listener's: it is the key that counts, not what it holds,
+    /// so a file another version of TextMouth wrote with the key present and
+    /// empty is never taken for untouched.
+    func testAnEditOrCleanupKeyHoldingNullStillCountsAsTheListeners() throws {
+        let package = try makeSandboxDirectory("FeedExtrasWhoseNull")
+        let path = TextMouthPaths.transcriptPath(in: package)
+        let podcasts = Transcript(
+            version: Transcript.currentVersion,
+            locale: OutsideTranscript.undeterminedLocale,
+            model: OutsideTranscript.noRecognizer,
+            app: .current,
+            createdAt: TranscriptFixtures.date,
+            files: [],
+            source: TranscriptSource(origin: .podcast, format: .webVTT)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let written = try encoder.encode(podcasts)
+        try written.write(to: path)
+        XCTAssertTrue(TranscriptStore.holdsUntouchedPodcastTranscript(in: package), "the control was not untouched")
+
+        for key in ["editedAt", "cleanedUp"] {
+            var object = try XCTUnwrap(JSONSerialization.jsonObject(with: written) as? [String: Any])
+            object[key] = NSNull()
+            try JSONSerialization.data(withJSONObject: object).write(to: path)
+            XCTAssertFalse(TranscriptStore.holdsUntouchedPodcastTranscript(in: package), "a null \(key) was taken for untouched")
+            XCTAssertTrue(FeedItemPackage.holdsListenersFiles(package), "a null \(key) did not keep the package")
+        }
+    }
+
     /// A transcript only in the cloud is taken for the listener's: reading it
     /// would download it, and a guess must not delete it.
     func testATranscriptOnlyInTheCloudIsTakenForTheListeners() throws {
@@ -902,6 +1069,13 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         return held
     }
 
+    /// How many seconds `body` takes to run.
+    private func secondsTaken(_ body: () async -> Void) async -> TimeInterval {
+        let started = Date()
+        await body()
+        return Date().timeIntervalSince(started)
+    }
+
     /// An episode's title no other test's lines of the debug log hold.
     private func uniqueTitle() -> String {
         "Episode \(UUID().uuidString.prefix(8))"
@@ -947,7 +1121,8 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         _ world: FeedTestWorld,
         title: String,
         transcripts: [(path: String, type: String?)],
-        chapters: String?
+        chapters: String?,
+        audio: (path: String, type: String) = ("/audio/1.m4a", "audio/mp4")
     ) async throws -> Feed {
         await world.start()
         let transcriptLinks = transcripts.map { link in
@@ -963,7 +1138,7 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         <channel><title>The Tactile Atlas</title><link>https://show.example/</link>
         <description>A show for tests.</description>
         <item><title>\(title)</title><guid isPermaLink="false">ep-1</guid>
-        <enclosure url="\(world.server.url("/audio/1.m4a").absoluteString)" length="1000" type="audio/mp4"/>
+        <enclosure url="\(world.server.url(audio.path).absoluteString)" length="1000" type="\(audio.type)"/>
         \(transcriptLinks)\(chaptersLink)
         </item>
         </channel></rss>
