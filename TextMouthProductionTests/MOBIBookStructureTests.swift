@@ -328,14 +328,16 @@ final class MOBIBookStructureTests: XCTestCase {
                 + String(repeating: "</div>", count: depth) + "</body></html>"
             return fixture
         }
-        XCTAssertNoThrow(try opened(book(depth: 100)))
-        XCTAssertThrowsError(try opened(book(depth: 300))) {
-            guard case .damaged = $0 as? MOBIError else { return XCTFail("\($0)") }
+        // Three times the deepest real book, and well inside what a debug build's
+        // converter survives on a worker's stack (about 108 levels).
+        XCTAssertNoThrow(try prepared(book(depth: 36)))
+        XCTAssertThrowsError(try prepared(book(depth: 300))) {
+            XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: MarkupGuard.Limits.standard.deepestNesting))
         }
         // End tags a book leaves out do not count as nesting for a paragraph.
         var loose = MOBIFixture()
         loose.html = "<html><body>" + String(repeating: "<p>word<br>", count: 5000) + "</body></html>"
-        XCTAssertNoThrow(try opened(loose))
+        XCTAssertNoThrow(try prepared(loose))
     }
 
     // MARK: - Encodings

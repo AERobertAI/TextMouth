@@ -4,7 +4,7 @@ import SwiftSoup
 enum HTMLParser {
 
     static func parse(html: String, title: String = "Untitled") throws -> DocumentContent {
-        let doc = try SwiftSoup.parse(html)
+        let doc = try MarkupGuard.parse(html)
 
         // Try to get title from <title> tag
         let docTitle = (try? doc.title()).flatMap({ $0.isEmpty ? nil : $0 }) ?? title

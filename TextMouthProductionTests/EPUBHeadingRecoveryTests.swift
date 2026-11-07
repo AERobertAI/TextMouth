@@ -190,9 +190,14 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// The lists are left for `</nav>` to close: SwiftSoup itself calls
     /// itself once for every level above an `</li>` it reads, so closing
     /// each list item would overflow the stack in SwiftSoup's parse, before
-    /// TextMouth's walk.
+    /// TextMouth's walk. `MarkupGuard` refuses such a document before any of
+    /// this, so its limit is lifted here, to hold the walk to itself.
     func testNavigationDocumentNestedThousandsDeepIsReadOnAWorkerStack() throws {
-        let depth = 20_000
+        // Deep enough that a walk calling itself for each level would overflow the
+        // worker's stack many times over, and shallow enough that the guard's pass,
+        // which looks down the open elements for each list it opens, stays quick
+        // in a debug build.
+        let depth = 5_000
         let nav = "<html xmlns:epub='http://www.idpf.org/2007/ops'><body><nav epub:type='toc'>"
             + "<ol><li><a href='../Text/one.xhtml'>Outer entry</a>"
             + String(repeating: "<ol><li>", count: depth - 2)
@@ -203,7 +208,9 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             extraFiles: ["Navigation/nav.xhtml": nav],
             manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>"
         )
-        let chapters = onWorkerSizedStack { EPUBHeadingRecoveryTests.chapterTitlesAndWords(of: url) }
+        let chapters = onWorkerSizedStack {
+            MarkupGuard.$limits.withValue(.withoutDepthLimit) { EPUBHeadingRecoveryTests.chapterTitlesAndWords(of: url) }
+        }
         XCTAssertEqual(chapters, ["Outer entry: First chapter words.", "Innermost entry: Second chapter words."])
     }
 

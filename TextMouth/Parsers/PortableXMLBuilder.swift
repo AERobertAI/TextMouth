@@ -414,13 +414,17 @@ enum PortableXMLLenientReader {
 
     /// Reads `data` into `builder`.
     /// - Throws: `PortableXMLError.tooDeep` when the markup nests deeper than
-    ///   the tree allows (checked before SwiftSoup builds a tree of its own
-    ///   that deep), an empty-document error for no data, or SwiftSoup's error.
+    ///   the tree allows (checked by `MarkupGuard` before SwiftSoup builds a
+    ///   tree of its own that deep), an empty-document error for no data,
+    ///   `MarkupRefusal` for too many tags, or SwiftSoup's error.
     static func read(_ data: Data, into builder: PortableXMLTreeBuilder) throws {
         guard !data.isEmpty else { throw PortableXMLTreeBuilder.error(XMLParser.ErrorCode.emptyDocumentError.rawValue, "zero length data") }
-        let text = decodedText(of: data)
-        if nestsTooDeeply(Array(text.utf8)) { throw PortableXMLError.tooDeep }
-        let parsed = try SwiftSoup.parse(text, "", Parser.xmlParser())
+        let parsed: Document
+        do {
+            parsed = try MarkupGuard.parseXML(decodedText(of: data), deepestNesting: PortableXMLDocument.maximumDepth)
+        } catch MarkupRefusal.nestedTooDeeply {
+            throw PortableXMLError.tooDeep
+        }
 
         // Depth first, in document order, with an explicit stack. Only the first
         // element at the top is a root; Foundation's tidying drops any other.
@@ -482,102 +486,5 @@ enum PortableXMLLenientReader {
         let encoding = CFStringConvertIANACharSetNameToEncoding(String(name) as CFString)
         guard encoding != kCFStringEncodingInvalidId else { return nil }
         return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(encoding))
-    }
-
-    /// Whether SwiftSoup's tree for `bytes` would nest elements more than
-    /// `PortableXMLDocument.maximumDepth` levels deep, found by a plain scan
-    /// of its tags that keeps the stack of open element names as SwiftSoup's
-    /// XML tree builder does (`XmlTreeBuilder.popStackToClose`):
-    ///
-    /// - a start tag that is not self-closing pushes its name (an HTML
-    ///   `<br>` too, since XML has no void elements);
-    /// - an end tag pops down to the nearest open element of the same name,
-    ///   the elements above it with it, and is ignored when none is open;
-    /// - comments, CDATA, declarations, and processing instructions are skipped.
-    ///
-    /// So unclosed `<br>` elements that an ancestor's end tag closes do not
-    /// add up, and stray end tags that close nothing do not hide the depth.
-    /// The scan stops as soon as the stack passes the bound, so the search an
-    /// end tag makes is at most that deep and the scan stays linear.
-    static func nestsTooDeeply(_ bytes: [UInt8]) -> Bool {
-        let lessThan = UInt8(ascii: "<")
-        // The names of the elements open, innermost last.
-        var open: [ArraySlice<UInt8>] = []
-        var index = 0
-        while index < bytes.count {
-            guard bytes[index] == lessThan, index + 1 < bytes.count else { index += 1; continue }
-            let next = bytes[index + 1]
-            if next == UInt8(ascii: "!") {
-                // A comment, a CDATA section, or a declaration.
-                let end: String = starts("<!--", at: index, in: bytes) ? "-->" : (starts("<![CDATA[", at: index, in: bytes) ? "]]>" : ">")
-                index = find(Array(end.utf8), after: index + 2, in: bytes)
-            } else if next == UInt8(ascii: "?") {
-                index = find(Array("?>".utf8), after: index + 2, in: bytes)
-            } else if next == UInt8(ascii: "/") {
-                let name = tagName(from: index + 2, in: bytes)
-                if let match = open.lastIndex(of: name) { open.removeSubrange(match...) }
-                index = find([UInt8(ascii: ">")], after: index + 2, in: bytes)
-            } else if isNameStart(next) {
-                let close = endOfStartTag(from: index + 1, in: bytes)
-                if close == 0 || bytes[close - 1] != UInt8(ascii: "/") { open.append(tagName(from: index + 1, in: bytes)) }
-                if open.count > PortableXMLDocument.maximumDepth { return true }
-                index = close + 1
-            } else {
-                index += 1
-            }
-        }
-        return false
-    }
-
-    /// The name of the tag whose name begins at `start`: up to the first
-    /// space, `/`, or `>`.
-    private static func tagName(from start: Int, in bytes: [UInt8]) -> ArraySlice<UInt8> {
-        let ends: [UInt8] = [0x20, 0x09, 0x0A, 0x0D, UInt8(ascii: "/"), UInt8(ascii: ">")]
-        var end = start
-        while end < bytes.count, !ends.contains(bytes[end]) { end += 1 }
-        return bytes[start..<end]
-    }
-
-    /// Whether `bytes` has `text` at `index`.
-    private static func starts(_ text: String, at index: Int, in bytes: [UInt8]) -> Bool {
-        let wanted = Array(text.utf8)
-        return index + wanted.count <= bytes.count && Array(bytes[index..<index + wanted.count]) == wanted
-    }
-
-    /// The index just past the first `pattern` found at or after `start`, or
-    /// the end of `bytes` when there is none.
-    private static func find(_ pattern: [UInt8], after start: Int, in bytes: [UInt8]) -> Int {
-        var index = start
-        while index + pattern.count <= bytes.count {
-            if bytes[index..<index + pattern.count].elementsEqual(pattern) { return index + pattern.count }
-            index += 1
-        }
-        return bytes.count
-    }
-
-    /// The index of the `>` that ends the start tag whose name begins at
-    /// `start`, skipping any `>` inside a quoted attribute value; the end of
-    /// `bytes` when there is none.
-    private static func endOfStartTag(from start: Int, in bytes: [UInt8]) -> Int {
-        var quote: UInt8?
-        var index = start
-        while index < bytes.count {
-            let byte = bytes[index]
-            if let open = quote {
-                if byte == open { quote = nil }
-            } else if byte == UInt8(ascii: "\"") || byte == UInt8(ascii: "'") {
-                quote = byte
-            } else if byte == UInt8(ascii: ">") {
-                return index
-            }
-            index += 1
-        }
-        return bytes.count
-    }
-
-    /// Whether `byte` can begin an element name.
-    private static func isNameStart(_ byte: UInt8) -> Bool {
-        (byte >= UInt8(ascii: "a") && byte <= UInt8(ascii: "z")) || (byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "Z"))
-            || byte == UInt8(ascii: "_") || byte == UInt8(ascii: ":")
     }
 }

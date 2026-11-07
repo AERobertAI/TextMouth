@@ -787,7 +787,7 @@ enum DAISYParser {
                     continue
                 }
                 html = decodedHTML
-                doc = try SwiftSoup.parse(decodedHTML)
+                doc = try MarkupGuard.parse(decodedHTML)
                 documents[split.path] = doc
                 htmlByPath[split.path] = decodedHTML
             }
