@@ -149,7 +149,14 @@ enum TranscriptionWording {
     /// English (United States). Transcribing again replaces this
     /// transcript."
     static func alreadyTranscribed(on date: Date, languageName: String) -> String {
-        "Transcribed on \(day(date)), in \(languageName). \(transcribingAgainReplaces)"
+        "\(transcribedOn(date, languageName: languageName)) \(transcribingAgainReplaces)"
+    }
+
+    /// The sentence saying when and in which language recognition made a
+    /// transcript: "Transcribed on October 4, 2026, in English (United
+    /// States)." The sheet's line and Book Information's both begin with it.
+    private static func transcribedOn(_ date: Date, languageName: String) -> String {
+        "Transcribed on \(day(date)), in \(languageName)."
     }
 
     /// The line naming a transcript the book has from outside TextMouth's
@@ -221,8 +228,11 @@ enum TranscriptionWording {
 
     /// The line for a transcript written in a layout this TextMouth does
     /// not read.
-    static let transcriptFromLaterVersion = "This book has a transcript made by a later version of TextMouth. "
-        + "Transcribing again replaces it."
+    static let transcriptFromLaterVersion = "\(laterVersionSentence) Transcribing again replaces it."
+
+    /// The sentence saying a book's transcript is a later TextMouth's, which
+    /// the sheet's line and Book Information's both begin with.
+    private static let laterVersionSentence = "This book has a transcript made by a later version of TextMouth."
 
     /// The line saying another book is being transcribed, which keeps
     /// Transcribe unavailable until it finishes.
@@ -505,6 +515,57 @@ enum TranscriptionWording {
         )
         return "\(sentence) \(leftOut)."
     }
+
+    // MARK: Book Information
+
+    /// The label of the read-only detail in Book Information that says where
+    /// a book's transcript came from.
+    static let bookInfoLabel = "Transcript"
+
+    /// What Book Information's detail says of a book's transcript, from what
+    /// a read of it found: nil when the book has none the sheet could name
+    /// (none, or one set aside as unusable, as the Transcribe Audio sheet
+    /// counts them), and otherwise one line, with no word about
+    /// transcribing again, which Book Information does not offer.
+    static func bookInfoLine(for lookup: TranscriptStore.Lookup) -> String? {
+        switch lookup {
+        case .missing, .unusable:
+            return nil
+        case .inCloud:
+            return transcriptDetailsInCloud
+        case .unsupportedVersion:
+            return laterVersionSentence
+        case .found(let transcript):
+            return bookInfoLine(of: transcript)
+        }
+    }
+
+    /// The line for a transcript that was read: where it came from and when
+    /// (from outside, as the sheet words it, or from recognition, with its
+    /// language), then, when the listener changed it, when they edited it
+    /// and when they cleaned it up.
+    static func bookInfoLine(of transcript: Transcript) -> String {
+        var sentences: [String]
+        if let source = transcript.source {
+            // A transcript from outside names no language worth saying; as
+            // in the sheet, where it came from is said instead.
+            sentences = [cameFrom(source, on: day(transcript.createdAt))]
+        } else {
+            let language = TranscriptionLanguage.name(of: transcript.locale)
+            sentences = [transcribedOn(transcript.createdAt, languageName: language)]
+        }
+        if let edited = transcript.editedAt {
+            sentences.append("You edited it on \(day(edited)).")
+        }
+        if let cleaned = transcript.cleanedUp?.cleanedAt {
+            sentences.append("You cleaned it up on \(day(cleaned)).")
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// The line for a book whose transcript is only in iCloud, which Book
+    /// Information does not download, so none of its details can be told yet.
+    private static let transcriptDetailsInCloud = "It is in iCloud, and its details appear once the book is downloaded."
 
     // MARK: The Library Row
 
