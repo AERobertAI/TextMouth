@@ -68,6 +68,23 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
     /// on either side apart (see `writePageMarker()`).
     private var dropsLeadingSpace = false
 
+    /// Where the last page marker went, for a run of them after a line break
+    /// (`MarkdownMarkerWriter.RunMemo`): each is placed at the end of the line
+    /// before, which a line of megabytes made slow for every one.
+    private var markerRun = MarkdownMarkerWriter.RunMemo()
+
+    /// How many parser events (elements started and ended, and runs of text)
+    /// have been heard, to ask now and then whether the import was cancelled.
+    private var eventsRead = 0
+
+    /// Whether the import running this conversion was cancelled, so the parse
+    /// was stopped for it.
+    private var wasCancelled = false
+
+    /// How many events pass between asks. A page marker after a line of
+    /// megabytes can take milliseconds, so the ask is often.
+    private static let eventsBetweenCancellationChecks = 256
+
     /// Prepare to convert `data`, reporting problems under the name `file`.
     /// With `includesPages` false the Markdown is what it was before pages.
     init(data: Data, file: String, includesPages: Bool = true) {
@@ -94,6 +111,9 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         do {
             try parseDocument()
             return DTBookConversion(markdown: normalizeWhitespace(markdown), diagnostic: nil)
+        } catch where wasCancelled {
+            // The import was cancelled and the parse stopped for it.
+            throw ImportCancelled()
         } catch let damage as DAISYParserError where producedText {
             closeOpenElements()
             return DTBookConversion(markdown: normalizeWhitespace(markdown), diagnostic: damage)
@@ -103,6 +123,7 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
     func parser(_ parser: XMLParser, didStartElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
+        if stopIfCancelled(parser) { return }
         let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
         elementStack.append(localName)
 
@@ -271,6 +292,7 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
 
     func parser(_ parser: XMLParser, didEndElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?) {
+        if stopIfCancelled(parser) { return }
         endElement(ParserUtilities.stripNamespacePrefix(elementName).lowercased())
     }
 
@@ -403,8 +425,22 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         pageLabelDepth = 0
 
         let atBlockBoundary = markdown.unicodeScalars.last.map { $0 == "\n" } ?? true
-        MarkdownMarkerWriter.write(marker, inline: !atBlockBoundary, keepingWordsApart: true, into: &markdown)
+        MarkdownMarkerWriter.write(
+            marker, inline: !atBlockBoundary, keepingWordsApart: true, remembering: &markerRun, into: &markdown)
         dropsLeadingSpace = !atBlockBoundary
+    }
+
+    /// Counts the event and, every `eventsBetweenCancellationChecks`, ends the
+    /// parse if the import running on this thread was cancelled (as the DOCX
+    /// converter does), so `convert()` throws `ImportCancelled`. A conversion
+    /// outside an import is never stopped. True when the parse was stopped.
+    private func stopIfCancelled(_ parser: XMLParser) -> Bool {
+        eventsRead += 1
+        guard eventsRead % Self.eventsBetweenCancellationChecks == 0,
+              ImportCancellation.current?.isCancelled == true else { return wasCancelled }
+        wasCancelled = true
+        parser.abortParsing()
+        return true
     }
 
     // MARK: - Helpers

@@ -64,6 +64,11 @@ enum FeedOPML {
     static func subscriptions(in data: Data) throws(OPMLReadError) -> [OPMLSubscription] {
         guard data.contains(where: { !isXMLWhitespace($0) }) else { throw .empty }
         guard data.count <= maximumBytes else { throw .damaged(problem: "the file is larger than TextMouth reads", line: 1) }
+        // As for a feed, the attributes and the encoding are asked, and not the
+        // entities of the file's own (`XMLInputGuard`).
+        if let problem = XMLInputGuard.problemLeavingDefinitions(with: data) {
+            throw .damaged(problem: XMLInputGuard.reason(for: problem), line: 1)
+        }
         let strict = OPMLStrictReading(data: data)
         switch strict.read() {
         case .read(let outlines):

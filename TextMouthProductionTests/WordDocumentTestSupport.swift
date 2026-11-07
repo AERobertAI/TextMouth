@@ -94,6 +94,8 @@ struct WordDocumentBuilder {
         /// The style's list instance (`sprmPIlfo`) and level (`sprmPIlvl`).
         var listIndex: Int?
         var listLevel: Int?
+        /// The style's font (`sprmCRgFtc0`, an index into `fonts`).
+        var fontIndex: Int?
     }
 
     /// One level of a list: its number format (an MSONFC), where it counts
@@ -213,6 +215,10 @@ struct WordDocumentBuilder {
     var identifier = 0xA5EC
     /// Whether `fEncrypted` is set.
     var isEncrypted = false
+    /// The names of the fonts of the font table, in order (none writes no table).
+    var fonts: [String] = []
+    /// The font of the style sheet's default characters (`ftcAsci` of the sheet's header), an index into `fonts`.
+    var defaultFont = 0
     var title: String?
     var author: String?
     /// Left out when false: the properties of paragraphs, of characters.
@@ -477,6 +483,19 @@ struct WordDocumentBuilder {
             table += bytes
         }
 
+        // The font table (SttbfFfn): a count and a size of extra data, then each font: its size byte, flags, weight,
+        // character set, a byte for a second name, 10 bytes of PANOSE and 24 of font signature, and its name in UTF-16.
+        if !fonts.isEmpty {
+            while table.count % 4 != 0 { table.append(0) }
+            var bytes = Self.le16(fonts.count) + Self.le16(0)
+            for name in fonts {
+                let characters = name.utf16.flatMap { Self.le16(Int($0)) } + Self.le16(0)
+                bytes += [UInt8(39 + characters.count), 0x10, 0x90, 0x01, 0, 0] + [UInt8](repeating: 0, count: 34) + characters
+            }
+            listPairs[WordFileInformationBlock.Structure.fontTable.rawValue] = (table.count, bytes.count)
+            table += bytes
+        }
+
         // The pairs of the FIB: (offset, length) of each structure.
         let styleSheetLength = layout.sectionTable - layout.styleSheet
         let sectionLength = sectionTable.count
@@ -583,7 +602,8 @@ struct WordDocumentBuilder {
         // Stshi: the count of styles, the size of each style's fixed part,
         // and fields this reader does not read.
         var stshi = Self.le16(styles.count) + Self.le16(10)
-        stshi += Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(0) + [UInt8](repeating: 0, count: 6)
+        // Then the flags and versions, and the default fonts (the ASCII one first, 12 bytes in).
+        stshi += Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(0) + Self.le16(defaultFont) + [UInt8](repeating: 0, count: 4)
         var bytes = Self.le16(stshi.count) + stshi
         for (index, style) in styles.enumerated() {
             guard let style else {
@@ -607,6 +627,7 @@ struct WordDocumentBuilder {
             if let italic = style.italic { characters += Self.modifier(WordSprm.italic, italic) }
             if let hidden = style.hidden { characters += Self.modifier(WordSprm.hidden, hidden) }
             if let size = style.fontSize { characters += Self.le16(WordSprm.fontSize) + Self.le16(size) }
+            if let font = style.fontIndex { characters += Self.le16(WordSprm.fontAscii) + Self.le16(font) }
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }

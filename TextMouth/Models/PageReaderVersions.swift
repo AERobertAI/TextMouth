@@ -58,8 +58,11 @@ enum PageReaderVersions {
             // TextMouth follows: hidden text (w:vanish) is not read, a
             // text box written twice is read once, and the footnotes and
             // endnotes are read after the text. Every .docx book is read
-            // again once.
-            return "1.1.0"
+            // again once ("1.1.0"). At "1.2.0" the toggle rule for hidden
+            // text takes in a table style's own w:vanish and the document
+            // defaults' (not a table style's conditional formatting), so
+            // every .docx book is read again once more.
+            return "1.2.0"
         case .rtf, .rtfd:
             // TextMouth's own reader reads rich text (FMT47) instead of
             // textutil: headings from the style sheet, bold and italic, and
@@ -80,15 +83,28 @@ enum PageReaderVersions {
             // numbered and bulleted paragraphs list items (their numbers are
             // not heard while `WordDocumentReader.speaksListNumbers` is off),
             // and reads the main document's text boxes after the notes, so
-            // every .doc book is read again once more.
-            return "1.2.0"
-        case .odt, .wordml:
-            // OpenDocument text (FMT27) and Word 2003 XML (FMT53) are read by
-            // TextMouth's own readers from "1.1.0": the documents' own
-            // headings, the pages of their style breaks, master pages, and
-            // soft page breaks (OpenDocument), hidden text left out, and
-            // notes after the text, so every such book is read again once.
+            // every .doc book is read again once more. At "1.3.0" it reads
+            // Word 6 and Word 95 documents too (which textutil read before on
+            // the Mac): their headings from the style sheet, their hidden
+            // text, tracked deletions, numbering and notes by the same
+            // policy, and Far East and Cyrillic text in the code page their
+            // fonts name, so every .doc book is read again once more.
+            return "1.3.0"
+        case .odt:
+            // OpenDocument text (FMT27) is read by TextMouth's own reader from
+            // "1.1.0": the document's own headings, the pages of its style
+            // breaks, master pages, and soft page breaks, hidden text left
+            // out, and notes after the text, so every such book is read again
+            // once.
             return "1.1.0"
+        case .wordml:
+            // Word 2003 XML (FMT53) is read by TextMouth's own reader from
+            // "1.1.0", with the same policy for hidden text and notes. At
+            // "1.2.0" a row marked hidden (`w:trPr/w:hidden`) no longer hides
+            // the visible words in it, which each run's own toggle decides
+            // (the hidden row rule of `DOCXHiding`), so every such book is
+            // read again once more.
+            return "1.2.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or
             // a PEF (PG12), so its own case reads again only braille books
