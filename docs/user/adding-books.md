@@ -186,7 +186,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - On iOS, which runs no helper program, a Word document older than Word 6 is refused with "Converting this kind of file is not available on iPhone yet."
 - Rich text, rich text with attachments, Word 6 to Word 2003 documents, OpenDocument text, and Word 2003 XML are read there, as on the Mac.
-- A Word 6 or Word 95 document has been read there since version 0.4.1; it was refused on iOS before, and read by textutil on the Mac.
+- A Word 6 or Word 95 document has been read there since version 0.4.1. It was refused on iOS before, and read by textutil on the Mac.
 - A Word 6 or Word 95 document is told from a Word 97-2003 one by its own bytes.
 
 ### An OpenDocument text document's title and author
@@ -405,18 +405,19 @@ Part of [TextMouth's documentation](../../README.md).
 ## Questions about imports wait their turn
 
 - These questions wait their turn.
-  - They are asked one at a time, in the order they arose, in the Library window where the import started, or in another Library window if that one has closed.
-  - When there is more than one, each title gives its place, as in "Duplicate Book Found, 2 of 5".
-  - Return chooses Keep Both, Create Folder, or Transcribe, and Escape chooses Cancel, Keep, No Thanks, or Not Now; Replace Existing and deleting an original file are never on a key.
-  - A question that appears while you are working in another window, such as a reader, waits in its Library window without taking focus or speaking.
+- They are asked one at a time, in the order they arose, in the Library window where the import started, or in another Library window if that one has closed.
+- When there is more than one, each title gives its place, as in "Duplicate Book Found, 2 of 5".
+- Return chooses Keep Both, Create Folder, or Transcribe, and Escape chooses Cancel, Keep, No Thanks, or Not Now.
+- Replace Existing and deleting an original file are never on a key.
+- A question that appears while you are working in another window, such as a reader, waits in its Library window without taking focus or speaking.
 
 ### A duplicate's new copy waits in the library
 
 - A duplicate's new copy waits in the library, in a package marked with a hidden file, .awaitingDuplicateAnswer, until you answer.
-  - When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash", as in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back."
-  - For two or three copies it says "TextMouth moved the new copies of “A”, “B”, and “C” to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.", and for more, "TextMouth moved 4 new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
-  - A copy whose question is less than a day old stays, since another Mac sharing the library may be asking it.
-  - The file the copy came from is never deleted.
+- When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash", as in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back."
+- For two or three copies it says "TextMouth moved the new copies of “A”, “B”, and “C” to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.", and for more, "TextMouth moved 4 new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+- A copy whose question is less than a day old stays, since another Mac sharing the library may be asking it.
+- The file the copy came from is never deleted.
 
 ### When Keep Both and Replace Existing keep the question
 
@@ -431,20 +432,26 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### Cancel and the questions
 
-- The progress overlay's Cancel button also withdraws the questions of the imports started before it was pressed, those waiting and any still to come: a duplicate's new copy is discarded, an original file is kept, a ZIP's books stay where they are, and an offer to transcribe is dropped.
+- The progress overlay's Cancel button also withdraws the questions of the imports started before it was pressed, those waiting and any still to come:
+  - A duplicate's new copy is discarded.
+  - An original file is kept.
+  - A ZIP's books stay where they are.
+  - An offer to transcribe is dropped.
 
 ## Importing audio that TextMouth converts
 
-- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked; the overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
-  - The archive, folder, or file you import from is never changed.
-  - A track that can't be converted stops the import, and nothing is added; the alert says which track and why, as in "Could not import “My Tracks.zip”. Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
-  - That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes. [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
-  - Cancel kills the conversions at once, and the import ends as a cancelled one.
-  - The reasons, with X the track's file name:
-    - "The audio file X could not be read for converting." The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
-    - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
-    - "The audio converted from X could not be given its name."
-    - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
-    - "Converting X failed (the converter ended with code N)."
-    - "There is not enough free disk space to convert X: it needs N GB free." This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
-    - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
+- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
+- The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
+- The archive, folder, or file you import from is never changed.
+- A track that can't be converted stops the import, and nothing is added.
+- The alert says which track and why, as in "Could not import “My Tracks.zip”. Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
+- That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes. [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
+- Cancel kills the conversions at once, and the import ends as a cancelled one.
+- The reasons, with X the track's file name:
+  - "The audio file X could not be read for converting." The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
+  - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
+  - "The audio converted from X could not be given its name."
+  - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
+  - "Converting X failed (the converter ended with code N)."
+  - "There is not enough free disk space to convert X: it needs N GB free." This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
+  - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
