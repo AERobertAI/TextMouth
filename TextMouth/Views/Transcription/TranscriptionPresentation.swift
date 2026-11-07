@@ -118,6 +118,24 @@ final class TranscriptionPresenter: ObservableObject {
         self.cleanupServices = cleanupServices
     }
 
+    /// A window that closes while its confirmation to replace a transcript
+    /// shows takes the presenter with it, and the alert's own dismissal may
+    /// never reach `attachReplacement` then, so the book would stay "being
+    /// attached to" for good: Attach Transcript… dimmed for it in every
+    /// window until TextMouth quits. A presenter going away with a
+    /// confirmation showing ends that book's attaching itself.
+    ///
+    /// A deinitializer is not on the main actor, so the ending is handed to
+    /// it with the book's ID alone, which is all it needs and is safe to
+    /// send. (Replace has its own task, which holds the presenter until the
+    /// transcript is saved, so a presenter is never released mid-save.)
+    deinit {
+        guard let bookID = attachReplacement?.book.id else { return }
+        Task { @MainActor in
+            TranscriptAttachments.shared.end(bookID)
+        }
+    }
+
     /// Opens the Transcribe Audio sheet for `books`, the books a command was
     /// chosen for, transcribing through `library` and announcing from
     /// `window`: one audiobook's sheet, or, for several books or a book that

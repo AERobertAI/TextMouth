@@ -344,6 +344,40 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(transcript.source?.fileName, "tone4.vtt")
     }
 
+    /// A window that closes while its confirmation shows takes its presenter
+    /// with it, and the alert's dismissal may never run: the book must not
+    /// stay "being attached to", which would dim Attach Transcript… for it in
+    /// every window until TextMouth quits. The transcript stays byte for
+    /// byte.
+    func testAPresenterGoingAwayWhileAskingEndsTheAttaching() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Window Closed")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let path = try XCTUnwrap(try TranscriptionPlan.make(for: book).files.first?.path)
+        try TranscriptStore.install(
+            try TranscriptFixtures.transcript(
+                of: book,
+                sentences: [path: [TranscriptFixtures.sentence("Gulls circle the lock gates.", from: 0, to: 1_800)]]
+            ),
+            for: book
+        )
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let before = try Data(contentsOf: transcriptFile)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        var presenter: TranscriptionPresenter? = TranscriptionPresenter(services: {
+            self.makeSheetServices(transcript: TranscriptStore.read(from: book.tmbDirectory))
+        })
+        await presenter?.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+        XCTAssertNotNil(presenter?.attachReplacement, "the replacement was not confirmed first")
+        XCTAssertTrue(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book stopped being attached to while asked")
+
+        // The window closes: nothing else is told.
+        presenter = nil
+
+        let ended = await eventuallyHolds { !TranscriptAttachments.shared.bookIDs.contains(book.id) }
+        XCTAssertTrue(ended, "the book is still being attached to after its window closed")
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), before, "the transcript changed without the listener's say")
+    }
+
     // MARK: - Refusals
 
     /// A .vtt file without its WEBVTT line is refused with the reader's own
