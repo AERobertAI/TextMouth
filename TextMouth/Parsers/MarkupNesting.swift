@@ -209,6 +209,8 @@ struct HTMLOpenElements {
     struct Costs: Equatable {
         /// Elements made again, or made by a stray end tag.
         var elements = 0
+        /// How many of them hold attributes.
+        var elementsWithAttributes = 0
         /// The attributes copied onto them.
         var attributes = 0
         /// Time that grows with the square of the markup, in about a nanosecond each.
@@ -667,6 +669,7 @@ struct HTMLOpenElements {
             }
             // The copy of the formatting element, which is not active.
             costs.elements += 1
+            if entry.attributeCount > 0 { costs.elementsWithAttributes += 1 }
             costs.attributes += entry.attributeCount
             stack.insert(Open(name: name, activeID: nil, madeBefore: startTags + costs.elements), at: block + 1)
             stack.remove(at: format)
@@ -853,6 +856,7 @@ struct HTMLOpenElements {
             active[position].isOnStack = true
             stack.append(Open(name: active[position].name, activeID: active[position].id, madeBefore: startTags + costs.elements))
             costs.elements += 1
+            if active[position].attributeCount > 0 { costs.elementsWithAttributes += 1 }
             costs.attributes += active[position].attributeCount
         }
     }

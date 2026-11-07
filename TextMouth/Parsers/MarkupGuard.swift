@@ -32,10 +32,8 @@ enum MarkupGuard {
     struct Limits: Equatable, Sendable {
         /// The deepest nesting read, by `Inspection.deepest`.
         var deepestNesting: Int
-        /// The most tags read in one document, by `Inspection.tags`.
-        var mostTags: Int
-        /// The most attributes read in one document, by `Inspection.attributes`.
-        var mostAttributes: Int
+        /// The most memory one document may take, by `Inspection.memoryUnits`.
+        var mostMemoryUnits: Int
         /// The most attributes read on one tag.
         var mostAttributesOnATag: Int
         /// The most work the parser may be set, by `Inspection.work`.
@@ -45,7 +43,7 @@ enum MarkupGuard {
         ///
         /// REAL_LIMITS
         static let standard = Limits(
-            deepestNesting: 256, mostTags: 1_000_000, mostAttributes: 2_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
+            deepestNesting: 256, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
         )
     }
 
@@ -112,7 +110,9 @@ enum MarkupGuard {
         /// What takes a node in the tree: start tags, comments, and declarations
         /// read, and the elements the parser makes beyond them. An end tag takes none.
         var tags = 0
-        /// The attributes those nodes hold.
+        /// How many of those nodes hold attributes.
+        var tagsWithAttributes = 0
+        /// The attributes they hold.
         var attributes = 0
         /// The most attributes on any one tag.
         var mostAttributesOnATag = 0
@@ -121,6 +121,11 @@ enum MarkupGuard {
         var work = 0
         /// Declarations that would trap SwiftSoup's XML parser, whole, in order.
         var brokenDeclarations: [Range<Int>] = []
+
+        /// What the tree will take, in plain elements with their text, about 800
+        /// bytes each: a tag's first attribute takes about twice that again, and
+        /// each further one about a third of it.
+        var memoryUnits: Int { tags + 2 * tagsWithAttributes + attributes / 3 }
     }
 
     /// One pass over `bytes`, as the parser for `dialect` will read them.
@@ -217,7 +222,7 @@ enum MarkupGuard {
                 // Elements made again, or made by a stray end tag, cost what any other does.
                 let costs = open.costs
                 try countMade(costs.elements - counted.elements)
-                try countAttributes(costs.attributes - counted.attributes)
+                try countAttributes(costs.attributes - counted.attributes, onTags: costs.elementsWithAttributes - counted.elementsWithAttributes)
                 try addWork(costs.work - counted.work)
                 counted = costs
             }
@@ -238,13 +243,19 @@ enum MarkupGuard {
             guard tag.attributeCount <= limits.mostAttributesOnATag else {
                 throw MarkupRefusal.tooManyAttributes(limit: limits.mostAttributesOnATag)
             }
-            if holdsThem { try countAttributes(tag.attributeCount) }
+            if holdsThem, tag.attributeCount > 0 { try countAttributes(tag.attributeCount, onTags: 1) }
         }
 
-        /// Counts `made` more attributes.
-        private mutating func countAttributes(_ made: Int) throws {
+        /// Counts `made` more attributes, held by that many more tags.
+        private mutating func countAttributes(_ made: Int, onTags tags: Int) throws {
             inspection.attributes += made
-            guard inspection.attributes <= limits.mostAttributes else { throw MarkupRefusal.tooManyAttributes(limit: limits.mostAttributes) }
+            inspection.tagsWithAttributes += tags
+            try checkMemory()
+        }
+
+        /// Refuses markup whose tree would take too much memory.
+        private func checkMemory() throws {
+            guard inspection.memoryUnits <= limits.mostMemoryUnits else { throw MarkupRefusal.tooMuchMarkup }
         }
 
         /// Counts `made` more of what SwiftSoup's time grows with the square of.
@@ -261,7 +272,7 @@ enum MarkupGuard {
         /// Counts `made` more things that take memory.
         private mutating func countMade(_ made: Int) throws {
             inspection.tags += made
-            guard inspection.tags <= limits.mostTags else { throw MarkupRefusal.tooManyTags(limit: limits.mostTags) }
+            try checkMemory()
         }
 
         /// Records how many elements are open.
@@ -340,9 +351,9 @@ enum MarkupDeclaration {
 enum MarkupRefusal: LocalizedError, Equatable {
     /// The markup holds elements nested more than `limit` levels deep.
     case nestedTooDeeply(limit: Int)
-    /// One document holds more than `limit` tags.
-    case tooManyTags(limit: Int)
-    /// One tag, or one document, has more than `limit` attributes.
+    /// One document's tree would take too much memory.
+    case tooMuchMarkup
+    /// One tag has more than `limit` attributes.
     case tooManyAttributes(limit: Int)
     /// The markup would take the parser far longer than its size warrants.
     case tooMuchWork
@@ -352,11 +363,11 @@ enum MarkupRefusal: LocalizedError, Equatable {
         case let .nestedTooDeeply(limit):
             return "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely. "
                 + "Get another copy of the file, or save it in another format, then import it again."
-        case let .tooManyTags(limit):
-            return "One document in this file holds more than \(limit.formatted()) tags, too many for TextMouth to read without "
-                + "running out of memory. Divide the document into smaller files, then import them."
+        case .tooMuchMarkup:
+            return "One document in this file holds too much markup for TextMouth to read without running out of memory. "
+                + "Divide the document into smaller files, then import them."
         case let .tooManyAttributes(limit):
-            return "Part of this file's markup has more than \(limit.formatted()) attributes, too many for TextMouth to read safely. "
+            return "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely. "
                 + "Get another copy of the file, or save it in another format, then import it again."
         case .tooMuchWork:
             return "This file's markup is built in a way that would take TextMouth far too long to read. "

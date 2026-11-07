@@ -6,7 +6,7 @@ extension MarkupGuard.Limits {
     /// The standard limits but for nesting, for the tests that hold the app's
     /// own walks over a tree to not recursing, on trees the guard would refuse.
     static let withoutDepthLimit = MarkupGuard.Limits(
-        deepestNesting: .max, mostTags: standard.mostTags, mostAttributes: standard.mostAttributes,
+        deepestNesting: .max, mostMemoryUnits: standard.mostMemoryUnits,
         mostAttributesOnATag: standard.mostAttributesOnATag, mostWork: standard.mostWork
     )
 }
@@ -35,7 +35,7 @@ final class MarkupGuardTests: XCTestCase {
     }
 
     /// Limits no document here reaches, to see what the pass counts.
-    private static let unbounded = MarkupGuard.Limits(deepestNesting: .max, mostTags: .max, mostAttributes: .max, mostAttributesOnATag: .max, mostWork: .max)
+    private static let unbounded = MarkupGuard.Limits(deepestNesting: .max, mostMemoryUnits: .max, mostAttributesOnATag: .max, mostWork: .max)
 
     /// How deep the tree SwiftSoup made goes, counting from the document.
     private func depth(of document: Document) -> Int {
@@ -497,13 +497,13 @@ final class MarkupGuardTests: XCTestCase {
 
     /// The limit on tags counts everything that takes a node in the tree.
     func testTheLimitOnTagsCountsWhatTakesMemory() throws {
-        let limits = MarkupGuard.Limits(deepestNesting: 256, mostTags: 1_000, mostAttributes: 100_000, mostAttributesOnATag: 100, mostWork: .max)
+        let limits = MarkupGuard.Limits(deepestNesting: 256, mostMemoryUnits: 1_000, mostAttributesOnATag: 100, mostWork: .max)
         func refused(_ markup: String, as dialect: MarkupGuard.Dialect) -> Bool {
             do {
                 _ = try MarkupGuard.inspect(Array(markup.utf8), as: dialect, limits: limits)
                 return false
             } catch {
-                XCTAssertEqual(error as? MarkupRefusal, .tooManyTags(limit: 1_000), String(markup.prefix(40)))
+                XCTAssertEqual(error as? MarkupRefusal, .tooMuchMarkup, String(markup.prefix(40)))
                 return true
             }
         }
@@ -519,12 +519,17 @@ final class MarkupGuardTests: XCTestCase {
         // A stray end tag of a paragraph makes a paragraph.
         XCTAssertFalse(refused(String(repeating: "</p>", count: 1_000), as: .html))
         XCTAssertTrue(refused(String(repeating: "</p>", count: 1_001), as: .html))
+        // A tag's first attribute takes twice what a plain tag takes, and three more one again.
+        XCTAssertFalse(refused(String(repeating: "<i a></i>", count: 333), as: .html))
+        XCTAssertTrue(refused(String(repeating: "<i a></i>", count: 334), as: .html))
+        XCTAssertEqual(try inspected("<i a b c d>", as: .html).memoryUnits, 1 + 2 + 1)
         // Formatting made again costs what its element costs: 100 for each of 12 paragraphs, with their own.
         let formatting = "<p>" + (0..<100).map { "<b n=\($0)>" }.joined() + "</p>"
         XCTAssertTrue(refused(formatting + String(repeating: "<p>x</p>", count: 12), as: .html))
         // And each copy holds the attributes its original does.
         let copied = try inspected(formatting + String(repeating: "<p>x</p>", count: 12), as: .html)
         XCTAssertEqual(copied.attributes, 100 * 13)
+        XCTAssertEqual(copied.tagsWithAttributes, 100 * 13)
     }
 
     /// What SwiftSoup spends the square of is counted: moving a block's children,
@@ -546,20 +551,20 @@ final class MarkupGuardTests: XCTestCase {
     /// A refusal reaches the reader through the real path, with the limits a test
     /// binds; a document under them reads.
     func testTheLimitsInForceReachTheRealPath() throws {
-        let limits = MarkupGuard.Limits(deepestNesting: 10, mostTags: 100, mostAttributes: 100, mostAttributesOnATag: 5, mostWork: 1_000)
+        let limits = MarkupGuard.Limits(deepestNesting: 10, mostMemoryUnits: 100, mostAttributesOnATag: 5, mostWork: 1_000)
         try MarkupGuard.$limits.withValue(limits) {
             XCTAssertEqual(try HTMLToMarkdownConverter.convert("<p>Words.</p>"), "Words.")
             XCTAssertThrowsError(try HTMLToMarkdownConverter.convert(String(repeating: "<div>", count: 11))) {
                 XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: 10))
             }
             XCTAssertThrowsError(try HTMLToMarkdownConverter.convert(String(repeating: "<br>", count: 101))) {
-                XCTAssertEqual($0 as? MarkupRefusal, .tooManyTags(limit: 100))
+                XCTAssertEqual($0 as? MarkupRefusal, .tooMuchMarkup)
             }
             XCTAssertThrowsError(try HTMLToMarkdownConverter.convert("<a b c d e f g>")) {
                 XCTAssertEqual($0 as? MarkupRefusal, .tooManyAttributes(limit: 5))
             }
-            XCTAssertThrowsError(try HTMLToMarkdownConverter.convert(String(repeating: "<a b c d e>", count: 26))) {
-                XCTAssertEqual($0 as? MarkupRefusal, .tooManyAttributes(limit: 100))
+            XCTAssertThrowsError(try HTMLToMarkdownConverter.convert(String(repeating: "<i a></i>", count: 34))) {
+                XCTAssertEqual($0 as? MarkupRefusal, .tooMuchMarkup)
             }
             XCTAssertThrowsError(try HTMLToMarkdownConverter.convert("<title>" + String(repeating: "<a ", count: 100) + "</title>")) {
                 XCTAssertEqual($0 as? MarkupRefusal, .tooMuchWork)
@@ -574,7 +579,7 @@ final class MarkupGuardTests: XCTestCase {
     func testTheStandardLimitsArePinned() {
         XCTAssertEqual(
             MarkupGuard.Limits.standard,
-            MarkupGuard.Limits(deepestNesting: 256, mostTags: 1_000_000, mostAttributes: 2_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
+            MarkupGuard.Limits(deepestNesting: 256, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
         )
     }
 
@@ -588,13 +593,13 @@ final class MarkupGuardTests: XCTestCase {
                 + "Get another copy of the file, or save it in another format, then import it again."
         )
         XCTAssertEqual(
-            MarkupRefusal.tooManyTags(limit: 1_000).errorDescription,
-            "One document in this file holds more than \(1_000.formatted()) tags, too many for TextMouth to read without "
-                + "running out of memory. Divide the document into smaller files, then import them."
+            MarkupRefusal.tooMuchMarkup.errorDescription,
+            "One document in this file holds too much markup for TextMouth to read without running out of memory. "
+                + "Divide the document into smaller files, then import them."
         )
         XCTAssertEqual(
             MarkupRefusal.tooManyAttributes(limit: 1_000).errorDescription,
-            "Part of this file's markup has more than \(1_000.formatted()) attributes, too many for TextMouth to read safely. "
+            "One tag in this file has more than \(1_000.formatted()) attributes, which TextMouth can't read safely. "
                 + "Get another copy of the file, or save it in another format, then import it again."
         )
         XCTAssertEqual(
