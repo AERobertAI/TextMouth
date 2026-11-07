@@ -341,13 +341,13 @@ struct WordHTMLWriter {
     /// A "(" with no symbol, or any other text, is left as it is.
     private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat, paragraph: WordParagraphFormat) -> Unicode.Scalar {
         if scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter {
-            return fonts.symbolScalar(forCode: code, inFont: font) ?? " "
+            return fonts.symbolScalar(forCode: code, inFont: font, isPrivateUse: format.symbolIsPrivateUse) ?? " "
         }
         // Word 97 stores text typed in a symbol font as its code plus 0xF000: the run's font reads it.
         if (0xF020...0xF0FF).contains(scalar.value),
            let font = styles.fontIndex(paragraphStyle: paragraph.style, characterStyle: format.style, direct: format.fontIndex),
            fonts.reading(ofFont: font) != nil {
-            return fonts.symbolScalar(forCode: Int(scalar.value & 0xFF), inFont: font) ?? " "
+            return fonts.symbolScalar(forCode: Int(scalar.value & 0xFF), inFont: font, isPrivateUse: true) ?? " "
         }
         return scalar
     }

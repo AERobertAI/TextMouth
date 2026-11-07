@@ -66,6 +66,8 @@ struct WordCharacterFormat: Equatable {
     /// (`sprmCSymbol`): the run's text is a placeholder ("(") for it.
     var symbolFont: Int?
     var symbolCharacter: Int?
+    /// Whether Word 97 stored the symbol's character as U+F0xx (the code plus 0xF000).
+    var symbolIsPrivateUse = false
 }
 
 // MARK: - Runs of Formats
@@ -288,7 +290,8 @@ enum WordDocumentProperties {
             if operand.count >= 4 {
                 format.symbolFont = value & 0xFFFF
                 let character = (value >> 16) & 0xFFFF
-                format.symbolCharacter = (0xF000...0xF0FF).contains(character) ? character & 0xFF : character
+                format.symbolIsPrivateUse = (0xF000...0xF0FF).contains(character)
+                format.symbolCharacter = format.symbolIsPrivateUse ? character & 0xFF : character
             }
         case WordSprm.fontSize: format.fontSize = value
         // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
