@@ -25,17 +25,13 @@ struct PhoneRootView: View {
 
     var body: some View {
         NavigationStack(path: $model.path) {
-            PhoneLibraryView(model: model, location: Self.libraryTop, navigation: libraryNavigation)
+            PhoneLibraryView(model: model, location: Self.libraryTop)
                 .navigationDestination(for: PhoneRoute.self) { route in
                     switch route {
                     case .reader:
                         PhoneReaderView(session: session)
                     case .folder(let path):
-                        PhoneLibraryView(
-                            model: model,
-                            location: LibraryLocation(category: .folders, folderPath: path),
-                            navigation: libraryNavigation
-                        )
+                        PhoneLibraryView(model: model, location: LibraryLocation(category: .folders, folderPath: path))
                     case .settings:
                         // The Settings slice's screen takes this place.
                         EmptyView()
@@ -52,12 +48,6 @@ struct PhoneRootView: View {
 
     /// Where the app opens: the top of the Folders view.
     private static let libraryTop = LibraryLocation(category: .folders, folderPath: "")
-
-    /// What every Library screen asks of the slices around it. Add to Library
-    /// is the import slice's sheet, which reaches this branch with it.
-    private var libraryNavigation: PhoneLibraryNavigation {
-        PhoneLibraryNavigation(addToLibrary: {})
-    }
 }
 
 /// The Mac's alert for what the library reports, as ContentView shows it. The

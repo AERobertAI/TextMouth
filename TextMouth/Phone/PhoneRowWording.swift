@@ -39,8 +39,9 @@ enum PhoneRowWording {
     /// What Sort does (the spec's).
     static let sortHint = "Chooses the order of the books."
     /// What Add to Library does on a phone, which offers only these two ways
-    /// (the spec's; the Mac's hint names ways a phone doesn't have).
-    static let addToLibraryHint = "Opens a sheet with the ways to add to the library: open a book, or import a folder."
+    /// (the spec's; the Mac's hint names ways a phone doesn't have): the
+    /// import's own words, kept in one place.
+    static let addToLibraryHint = PhoneImportWording.addToLibraryButtonHint
 
     // MARK: The Continue Row
 

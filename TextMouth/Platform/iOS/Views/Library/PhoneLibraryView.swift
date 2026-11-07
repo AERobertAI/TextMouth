@@ -41,8 +41,6 @@ enum PhoneLibraryFocus: Hashable, Sendable {
 struct PhoneLibraryView: View {
     /// The app's model: the library, the settings, the session, the path.
     private let model: PhoneAppModel
-    /// What the screen asks of the slices around it.
-    private let navigation: PhoneLibraryNavigation
     /// Whether this is a folder's screen, which has Back, no Library view, and
     /// no Settings.
     private let isFolderScreen: Bool
@@ -55,6 +53,8 @@ struct PhoneLibraryView: View {
     @State private var sheet: PhoneLibrarySheet?
     /// The control a sheet returns focus to when it closes.
     @State private var sheetOpener: PhoneLibraryFocus?
+    /// The rows as they were when the sheet opened.
+    @State private var rowsWhenSheetOpened: [PhoneRowID] = []
     /// What VoiceOver says once the sheet has closed.
     @State private var sayAfterSheet: String?
     /// The book the removal question is about.
@@ -82,9 +82,8 @@ struct PhoneLibraryView: View {
     @AccessibilityFocusState private var focus: PhoneLibraryFocus?
 
     /// A Library screen at `location`.
-    init(model: PhoneAppModel, location: LibraryLocation, navigation: PhoneLibraryNavigation) {
+    init(model: PhoneAppModel, location: LibraryLocation) {
         self.model = model
-        self.navigation = navigation
         isFolderScreen = location.view.kind == .folders && !location.folderPath.isEmpty
         let session = model.session
         let settings = model.settings
@@ -112,6 +111,10 @@ struct PhoneLibraryView: View {
     var body: some View {
         ScrollViewReader { proxy in
             List {
+                // The import's progress, Slice 3's, at the top of the list
+                // after the title (the spec's "Progress"): it shows nothing
+                // while nothing imports, and observes only the import.
+                PhoneImportProgressCard()
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -250,10 +253,7 @@ struct PhoneLibraryView: View {
         }
         if rows.location.view.kind == .folders {
             Button {
-                open(
-                    .folder(.newFolder(parentPath: rows.location.folderPath), title: PhoneLibraryVocabulary.newFolderTitle),
-                    from: .newFolder
-                )
+                open(.folder(.newFolder(parentPath: rows.location.folderPath)), from: .newFolder)
             } label: {
                 Label(PhoneLibraryVocabulary.newFolderTitle, systemImage: "folder.badge.plus")
             }
@@ -269,7 +269,9 @@ struct PhoneLibraryView: View {
         .accessibilityHint(PhoneRowWording.sortHint)
         .accessibilityFocused($focus, equals: .sort)
         Button(AddToLibraryWording.buttonTitle) {
-            navigation.addToLibrary()
+            // Slice 3's sheet, importing into the folder this screen shows,
+            // as on the Mac; "" at the top and in any other view.
+            PhoneImportCopier.shared.showAddToLibrary(inFolder: rows.location.folderPath)
         }
         .accessibilityLabel(AddToLibraryWording.buttonLabel)
         .accessibilityHint(PhoneRowWording.addToLibraryHint)
@@ -310,24 +312,59 @@ struct PhoneLibraryView: View {
             if let book = library.bookByID(bookID) {
                 PhoneBookInfoSheet(book: book, library: library, info: bookInfo)
             }
-        case .folder(_, let title):
-            // Slice 2b's sheets take this place as they reach the branch.
-            PhoneLibraryFolderSheetPlaceholder(title: title)
+        case .folder(let request):
+            folderSheet(request)
         }
     }
 
-    /// Shows `shown`, and remembers `opener` for focus to return to.
+    /// Slice 2b's folder sheet for `request`, one initializer for each. Each
+    /// holds its own navigation stack and title, closes itself, and says its
+    /// own words; focus returns in `sheetClosed()`, to the row in the place
+    /// of one that left. A book gone meanwhile has no sheet.
+    @ViewBuilder
+    private func folderSheet(_ request: PhoneLibraryFolderSheet) -> some View {
+        switch request {
+        case .newFolder(let parentPath):
+            PhoneFolderSheet(library: library, newFolderIn: parentPath) { _ in }
+        case .rename(let folder):
+            PhoneFolderSheet(library: library, renaming: folder) { _ in }
+        case .move(let folder):
+            PhoneFolderSheet(library: library, moving: folder) { _ in }
+        case .delete(let folder):
+            PhoneFolderSheet(library: library, deleting: folder) { _ in }
+        case .moveBook(let bookID):
+            if let book = library.bookByID(bookID) {
+                PhoneFolderSheet(library: library, movingBooks: [book]) { _ in }
+            }
+        }
+    }
+
+    /// Shows `shown`, and remembers `opener` for focus to return to, with the
+    /// rows as they were, for a row a sheet moves or deletes.
     private func open(_ shown: PhoneLibrarySheet, from opener: PhoneLibraryFocus) {
         sheetOpener = opener
+        rowsWhenSheetOpened = rows.rowIDs
         sheet = shown
     }
 
-    /// Once a sheet has closed: focus back on what opened it, after the
-    /// moment the list needs, then what the sheet's choice says, after
-    /// VoiceOver has settled (the Mac's `afterSheetDelay`).
+    /// Once a sheet has closed: focus back on what opened it, or, for a row
+    /// the sheet took out of the list, on the row now in its place, a turn
+    /// later, once the list has heard of the change; then what the sheet's
+    /// choice says, after VoiceOver has settled (the Mac's `afterSheetDelay`).
     private func sheetClosed() {
         if let opener = sheetOpener {
-            requestFocus(opener)
+            let before = rowsWhenSheetOpened
+            DispatchQueue.main.async {
+                guard case .row(let row) = opener else {
+                    requestFocus(opener)
+                    return
+                }
+                let now = rows.rowIDs
+                if let target = PhoneListFocus.row(row, in: now, fallback: nil)
+                    ?? PhoneListFocus.fallback(forGone: row, oldRows: before, newRows: now, otherwise: nil) {
+                    requestFocus(.row(target))
+                }
+            }
         }
         sheetOpener = nil
         if let said = sayAfterSheet {
@@ -471,8 +508,7 @@ struct PhoneLibraryView: View {
                 requestFocus(.row(neighbor))
             }
         case .moveToFolder:
-            let title = row.commands.first { $0.action == .moveToFolder }?.title ?? PhoneLibraryVocabulary.moveFolder
-            open(.folder(.moveBook(bookID), title: title), from: .row(.book(bookID)))
+            open(.folder(.moveBook(bookID)), from: .row(.book(bookID)))
         case .moveUp, .moveDown:
             move(book, direction: action == .moveUp ? -1 : 1)
         case .remove:
@@ -486,18 +522,24 @@ struct PhoneLibraryView: View {
         }
     }
 
-    /// Runs a folder row's command: each a folder sheet.
+    /// Runs a folder row's command: each a folder sheet. Delete Folder...
+    /// first takes the Mac's step: a folder holding nothing is removed at
+    /// once, with no question (`PhoneFolderSheetModel.startDeleting`).
     private func perform(_ action: PhoneLibraryOffer.Action, onFolder folderID: UUID, titled row: PhoneRowValue) {
         guard let folder = libraryFolder(folderID) else { return }
-        let title = row.commands.first { $0.action == action }?.title ?? ""
         let shown: PhoneLibraryFolderSheet
         switch action {
-        case .renameFolder: shown = .rename(folder)
-        case .moveFolder: shown = .move(folder)
-        case .deleteFolder: shown = .delete(folder)
-        default: return
+        case .renameFolder:
+            shown = .rename(folder)
+        case .moveFolder:
+            shown = .move(folder)
+        case .deleteFolder:
+            guard PhoneFolderSheetModel.startDeleting(folder, in: library) == .asks else { return }
+            shown = .delete(folder)
+        default:
+            return
         }
-        open(.folder(shown, title: title), from: .row(.folder(folderID)))
+        open(.folder(shown), from: .row(.folder(folderID)))
     }
 
     /// Shows Book Info for `book` once what it shows is read, off the main
