@@ -409,8 +409,19 @@ class DOCXStylesParser: DOCXSAXParser {
 /// - A character style toggles, as the standard says (ECMA-376 17.7.3, with no
 ///   Word note): true flips the state, false leaves it.
 ///
-/// The notes come from Microsoft's document alone; nothing here has been
-/// checked in Word itself.
+/// - A row marked hidden (`w:trPr/w:hidden`) hides nothing of its own, in a
+///   DOCX or in Word 2003 XML: ECMA-376 Part 1 §17.4.20 (Hidden Table Row
+///   Marker) hides the glyph of the row's end marker, "to ensure that the
+///   entire table row is hidden and not displayed in the document, as if any
+///   part of the row is visible, the row is displayed". So a row marked hidden
+///   whose runs are visible shows them, and a row that Word hides has its runs
+///   and marks hidden, which the runs' own `w:vanish` already says. The
+///   clause's example says the row is not displayed, so the clause is not
+///   clean. This is the one place that says so; the readers, the tests, and
+///   the reader versions refer to it as "the hidden row rule of `DOCXHiding`".
+///
+/// The notes come from Microsoft's and ECMA's documents alone; nothing here
+/// has been checked in Word itself.
 enum DOCXHiding {
     /// Whether the text is hidden, given what each level states (nil for a
     /// level that states nothing).

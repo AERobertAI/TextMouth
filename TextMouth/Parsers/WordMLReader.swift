@@ -53,15 +53,8 @@ final class WordMLReader: OfficeXMLReader {
     private var inDocumentProperties = false
 
     /// Whether `w:trPr` is open. A row marked hidden (`w:hidden` in it) hides
-    /// nothing of its own, and its properties are not read:
-    /// ECMA-376 Part 1 §17.4.20 (Hidden Table Row Marker) hides the glyph of the row's
-    /// end marker, "to ensure that the entire table row is hidden and not displayed in
-    /// the document, as if any part of the row is visible, the row is displayed". So a
-    /// row marked hidden whose runs are visible shows them, and a row that Word hides
-    /// has its runs and marks hidden, which the runs' own `w:vanish` already says. The
-    /// clause's example says the row is not displayed, so the clause is not clean, and
-    /// nothing here has been checked in Word itself.
-
+    /// nothing of its own (the hidden row rule of `DOCXHiding`), and its
+    /// properties are not read.
     private var inRowProperties = false
 
     /// Whether each `wx:sect` after the first begins a page (its type is not

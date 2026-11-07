@@ -110,6 +110,7 @@ enum MarkdownMarkerWriter {
         fileprivate var marker = ""
         fileprivate var keepingWordsApart = false
 
+        /// A memo with nothing remembered: the first marker is placed from the line.
         init() {}
     }
 

@@ -3,8 +3,7 @@ import XCTest
 
 /// The pictures Word keeps in `o:gfxdata` attributes, which no reader uses and
 /// `XMLParser` cannot take past 10 MB: a DOCX holding a photo of more than
-/// about 7.5 MB in a group lost every word after it, with only a log line
-/// (found by the review of `readers/followups-1106`, and so on main too).
+/// about 7.5 MB in a group lost every word after it, with only a log line.
 /// `DOCXPictureAttribute` cuts the value out of the bytes before the part is
 /// parsed; these tests pin what it cuts, what it leaves, and what it costs.
 final class DOCXPictureAttributeTests: XCTestCase {

@@ -661,9 +661,8 @@ final class MarkdownPageMarkerTests: XCTestCase {
     /// Eight thousand empty page anchors in a row, a space between each, are
     /// converted in a fraction of a second. Each text node asked where the
     /// page markers that end the Markdown begin, by walking back over all of
-    /// them (5,000 took 24 s in the review of `readers/followups-1106`, and
-    /// 8,000 would take 61 s): the converter now remembers where they begin. The
-    /// limit is twenty seconds.
+    /// them (5,000 took 24 s, and 8,000 would take 61 s, before the converter
+    /// remembered where they begin). The limit is twenty seconds.
     func testManyPageAnchorsInARowAreConvertedInLinearTime() throws {
         let count = 8_000
         let anchors = (0..<count).map { "<span epub:type=\"pagebreak\" id=\"p\($0)\" title=\"\($0)\"></span> " }.joined()
@@ -678,8 +677,7 @@ final class MarkdownPageMarkerTests: XCTestCase {
     }
 
     /// Page anchors among words, breaks, quotes, and lists are written where
-    /// they stood (the comparison with main's converter on 600 random
-    /// documents is in the report).
+    /// they stood.
     func testPageAnchorsAmongWordsAreWrittenWhereTheyStood() throws {
         let html = """
             <html xmlns:epub="http://www.idpf.org/2007/ops"><body>
@@ -762,10 +760,9 @@ final class MarkdownPageMarkerTests: XCTestCase {
     }
 
     /// Twenty thousand markers after a line of 2 MB and a break, which each
-    /// read the line to place themselves (5,000 took 15.7 s in the review of
-    /// `readers/followups-1106`), are written in a few milliseconds with the
-    /// memo. The limit is thirty seconds, checked as they are written: the walk
-    /// of the line passes it at about half of them.
+    /// read the line to place themselves (5,000 took 15.7 s), are written in a
+    /// few milliseconds with the memo. The limit is thirty seconds, checked as
+    /// they are written: the walk of the line passes it at about half of them.
     func testManyMarkersAfterALongLineAreWrittenInLinearTime() {
         var markdown = String(repeating: "word ", count: 400_000) + "  \n"
         var memo = MarkdownMarkerWriter.RunMemo()

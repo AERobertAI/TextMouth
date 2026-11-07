@@ -1052,12 +1052,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// a run's levels (its table style, paragraph style, and character style),
     /// the document defaults, and its own `w:vanish`, by the rule of
     /// `DOCXHiding`. A row marked hidden (`w:trPr/w:hidden`) hides nothing of
-    /// its own: ECMA-376 section 17.4.20 hides the glyph of the row's end
-    /// marker, "to ensure that the entire table row is hidden and not
-    /// displayed in the document, as if any part of the row is visible, the
-    /// row is displayed". The clause's example says the row is not displayed,
-    /// so it is not clean, and nothing here has been checked in Word itself.
-    /// Called at the start of the run and again as its style and `w:vanish`
+    /// its own (the hidden row rule of `DOCXHiding`). Called at the start of the run and again as its style and `w:vanish`
     /// are read, which come before any of its text.
     private func updateRunHidden() {
         // A paragraph that names no style takes the default paragraph style,

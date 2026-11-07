@@ -97,8 +97,8 @@ enum PageReaderVersions {
             // "1.1.0", with the same policy for hidden text and notes. At
             // "1.2.0" a row marked hidden (`w:trPr/w:hidden`) no longer hides
             // the visible words in it, which each run's own toggle decides
-            // (ECMA-376 section 17.4.20), so every such book is read again
-            // once more.
+            // (the hidden row rule of `DOCXHiding`), so every such book is
+            // read again once more.
             return "1.2.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or

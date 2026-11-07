@@ -320,12 +320,9 @@ final class WordMLReaderTests: XCTestCase {
     }
 
     /// A row marked hidden (`w:trPr` holding `w:hidden`) hides nothing of its
-    /// own, as in a DOCX: ECMA-376 §17.4.20 hides the glyph of the row's end
-    /// marker, "to ensure that the entire table row is hidden and not
-    /// displayed in the document, as if any part of the row is visible, the
-    /// row is displayed". So a row with an ordinary run shows its words, and
-    /// a row whose runs and marks are all `w:vanish` reads nothing, which each
-    /// run's own toggle says. (Nothing here has been checked in Word.)
+    /// own, as in a DOCX (the hidden row rule of `DOCXHiding`). So a row with
+    /// an ordinary run shows its words, and a row whose runs and marks are all
+    /// `w:vanish` reads nothing, which each run's own toggle says.
     func testARowMarkedHiddenIsReadRunByRun() throws {
         func row(_ text: String, runProperties: String = "", markProperties: String = "") -> String {
             "<w:tr><w:trPr><w:hidden/></w:trPr><w:tc><w:p><w:pPr><w:rPr>\(markProperties)</w:rPr></w:pPr>"

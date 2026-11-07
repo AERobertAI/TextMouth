@@ -233,9 +233,8 @@ final class EPUBMetadataTests: XCTestCase {
     /// text, and the EPUB is left as it was. XMLDocument once loaded such
     /// entities, so a crafted EPUB put a local file's text into the library
     /// and, on Edit Metadata, into the EPUB itself; since U01 the entity read
-    /// as nothing and the book read, and since the review of
-    /// `readers/followups-1106` (an internal subset hid a tag that stalled the
-    /// parser for 39 s) the book is not read.
+    /// as nothing and the book read; now the book is not read, because an
+    /// internal subset can hide a tag that stalls the parser for 39 s.
     func testAnExternalEntityNeverBringsAFilesTextIntoTheBook() throws {
         let folder = try TextPipelineFixtures.temporaryFolder(for: self)
         let secret = folder.appendingPathComponent("secret.txt")
