@@ -6,6 +6,8 @@ private enum PhoneFolderFormElement: Hashable, Sendable {
     case nameField
     /// The row choosing the folder.
     case folderRow
+    /// Move to Folder's New Folder... row.
+    case newFolderRow
 }
 
 /// The form every folder sheet shows, rebuilt for the phone from the Mac's
@@ -16,7 +18,8 @@ private enum PhoneFolderFormElement: Hashable, Sendable {
 /// host tests them.
 ///
 /// VoiceOver's order: Cancel, the title (a heading), the confirm button, then
-/// the explanation, the name field, the folder row, and the failure. Focus
+/// the explanation, the name field, the folder row, Move to Folder's New
+/// Folder..., and the failure. Focus
 /// lands on the name field, which takes the keyboard, or else on the folder
 /// row (`PhoneFolderSheetModel.arrival`).
 ///
@@ -45,6 +48,8 @@ struct PhoneFolderSheetForm: View {
     @State private var nameSelection: TextSelection?
     /// Whether the list of folders is showing.
     @State private var isChoosingFolder = false
+    /// Whether Move to Folder's New Folder... sheet is showing.
+    @State private var isMakingFolder = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -62,6 +67,9 @@ struct PhoneFolderSheetForm: View {
                 if let label = model.destinationLabel, let caption = model.destinationCaption {
                     Section {
                         folderRow(label: label, caption: caption)
+                        if model.offersNewFolder {
+                            newFolderRow(proxy: proxy)
+                        }
                     }
                 }
                 // The failure sits under what it was about, as the Mac's
@@ -129,15 +137,40 @@ struct PhoneFolderSheetForm: View {
         .id(PhoneFolderFormElement.folderRow)
     }
 
+    /// Move to Folder's New Folder...: a sheet of its own making a folder,
+    /// which becomes the destination once made, as the Mac's folder picker's
+    /// fields make one. Focus comes back to this row as that sheet closes,
+    /// and the sheet says what it made.
+    private func newFolderRow(proxy: ScrollViewProxy) -> some View {
+        Button(PhoneFolderVocabulary.newFolderButton) {
+            isMakingFolder = true
+        }
+        .disabled(model.isWorking)
+        .accessibilityFocused($focus, equals: .newFolderRow)
+        .id(PhoneFolderFormElement.newFolderRow)
+        // On this row rather than beside the folder list's sheet, so each
+        // sheet has a view of its own to hang on.
+        .sheet(isPresented: $isMakingFolder, onDismiss: {
+            PhoneListFocus.focus(PhoneFolderFormElement.newFolderRow, proxy: proxy, state: $focus)
+        }) {
+            PhoneFolderSheet(model: model.newFolderModel()) { result in
+                if case .createdFolder(let path) = result {
+                    model.destination = path
+                }
+            }
+        }
+    }
+
     /// Cancel, where the screen has it, and the confirm button, each dimmed
     /// while the work is under way.
     @ToolbarContentBuilder
     private var toolbarButtons: some ToolbarContent {
         if showsCancel {
             ToolbarItem(placement: .cancellationAction) {
-                Button(PhoneFolderVocabulary.cancel) {
+                Button(model.cancelTitle) {
                     finish(nil)
                 }
+                .accessibilityHint(model.cancelHint ?? "")
                 .disabled(model.isWorking)
             }
         }

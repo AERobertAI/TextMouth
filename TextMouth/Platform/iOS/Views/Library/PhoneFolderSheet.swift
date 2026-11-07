@@ -36,6 +36,14 @@ struct PhoneFolderSheet: View {
         self.onFinish = onFinish
     }
 
+    /// A sheet over a model another sheet made, as Move to Folder makes its
+    /// New Folder...'s (`PhoneFolderSheetModel.newFolderModel()`). SwiftUI
+    /// keeps the first model it's handed for as long as the sheet shows.
+    init(model: PhoneFolderSheetModel, onFinish: @escaping @MainActor (PhoneFolderSheetResult) -> Void) {
+        _model = StateObject(wrappedValue: model)
+        self.onFinish = onFinish
+    }
+
     /// New Folder, making a folder in the one at `parentPath`, the folder the
     /// Library shows ("" at the top).
     init(library: LibraryViewModel, newFolderIn parentPath: String, onFinish: @escaping @MainActor (PhoneFolderSheetResult) -> Void) {

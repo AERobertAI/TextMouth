@@ -86,6 +86,16 @@ enum PhoneFolderVocabulary {
         "Moving \(CountWording.books(count))..."
     }
 
+    // MARK: Move to Folder's New Folder... (the Mac's `LibraryFolderPicker`)
+
+    /// The button that makes a folder to move the books into. Its sheet is
+    /// titled `newFolderTitle`, its name field is labelled `newFolderName`,
+    /// and its Cancel is the Mac's `LibraryFolderPicker.cancelNewFolderTitle`.
+    static let newFolderButton = "New Folder..."
+    /// The spoken label of the row choosing the new folder's parent, whose
+    /// caption is `parentFolder`.
+    static let parentFolderForNewFolder = "Parent folder for new folder"
+
     // MARK: Delete Folder (the Mac's question in `LibraryView`)
 
     /// The Delete Folder question's title.

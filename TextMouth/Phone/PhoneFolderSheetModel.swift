@@ -16,6 +16,9 @@ enum PhoneFolderSheetTask {
     case moveFolder(BookFolder)
     /// Move to Folder, moving these books into another folder.
     case moveBooks([Book])
+    /// Move to Folder's New Folder..., making a folder that becomes the
+    /// books' destination, as the Mac's folder picker makes one.
+    case newFolderForMove
     /// Delete Folder, for a folder holding something: the Mac's question,
     /// with its Move Contents choice and its Delete Everything choice.
     case deleteFolder(BookFolder)
@@ -181,7 +184,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// The sheet's title, read as its heading: the Mac's sheet's heading.
     var title: String {
         switch task {
-        case .newFolder: return PhoneFolderVocabulary.newFolderTitle
+        case .newFolder, .newFolderForMove: return PhoneFolderVocabulary.newFolderTitle
         case .renameFolder: return PhoneFolderVocabulary.renameFolderTitle
         case .moveFolder(let folder): return PhoneFolderVocabulary.moveFolderTitle(folderName: folder.name)
         case .moveBooks(let books): return PhoneFolderVocabulary.moveBooksTitle(titles: books.map(\.title))
@@ -193,7 +196,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// Delete Folder's Move Contents screen, Move Contents & Delete Folder.
     var confirmTitle: String {
         switch task {
-        case .newFolder: return PhoneFolderVocabulary.create
+        case .newFolder, .newFolderForMove: return PhoneFolderVocabulary.create
         case .renameFolder: return PhoneFolderVocabulary.rename
         case .moveFolder, .moveBooks: return PhoneFolderVocabulary.move
         case .deleteFolder: return PhoneFolderVocabulary.moveContentsAndDelete
@@ -204,7 +207,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// indicator does. New Folder's work ends at once, so it has none.
     var workLabel: String? {
         switch task {
-        case .newFolder: return nil
+        case .newFolder, .newFolderForMove: return nil
         case .renameFolder: return PhoneFolderVocabulary.renamingFolder
         case .moveFolder: return PhoneFolderVocabulary.movingFolder
         case .moveBooks(let books): return PhoneFolderVocabulary.movingBooks(count: books.count)
@@ -218,7 +221,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     var nameLabel: String? {
         switch task {
         case .newFolder: return PhoneFolderVocabulary.folderName
-        case .renameFolder: return PhoneFolderVocabulary.newFolderName
+        case .renameFolder, .newFolderForMove: return PhoneFolderVocabulary.newFolderName
         case .moveFolder, .moveBooks, .deleteFolder: return nil
         }
     }
@@ -242,7 +245,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// for Rename Folder, which chooses no folder.
     var destinationCaption: String? {
         switch task {
-        case .newFolder: return PhoneFolderVocabulary.parentFolder
+        case .newFolder, .newFolderForMove: return PhoneFolderVocabulary.parentFolder
         case .renameFolder: return nil
         case .moveFolder: return PhoneFolderVocabulary.newParentFolder
         case .moveBooks: return PhoneFolderVocabulary.destination
@@ -255,11 +258,50 @@ final class PhoneFolderSheetModel: ObservableObject {
     var destinationLabel: String? {
         switch task {
         case .newFolder: return PhoneFolderVocabulary.parentFolder
+        case .newFolderForMove: return PhoneFolderVocabulary.parentFolderForNewFolder
         case .renameFolder: return nil
         case .moveFolder: return PhoneFolderVocabulary.destinationParentFolder
         case .moveBooks: return PhoneFolderVocabulary.destinationFolder
         case .deleteFolder: return PhoneFolderVocabulary.destinationForContents
         }
+    }
+
+    /// The button that closes the sheet with nothing done: the Mac's "Cancel",
+    /// or, in Move to Folder's New Folder..., the Mac's "Cancel New Folder",
+    /// named apart from the Move sheet's own Cancel.
+    var cancelTitle: String {
+        if case .newFolderForMove = task { return LibraryFolderPicker.cancelNewFolderTitle }
+        return PhoneFolderVocabulary.cancel
+    }
+
+    /// What that button does, where the Mac says it: Cancel New Folder's
+    /// "Closes the new folder's fields and keeps the folder chosen."; nil for
+    /// a plain Cancel.
+    var cancelHint: String? {
+        if case .newFolderForMove = task { return LibraryFolderPicker.cancelNewFolderHint }
+        return nil
+    }
+
+    /// Whether the sheet offers New Folder..., making a folder to move the
+    /// books into, as the Mac's Move to Folder does below its folders.
+    var offersNewFolder: Bool {
+        if case .moveBooks = task { return true }
+        return false
+    }
+
+    /// The model of Move to Folder's New Folder..., over the same library,
+    /// calls, and speech: its folder, once made, becomes the destination
+    /// (`PhoneFolderSheetResult.createdFolder`), and it says the Mac's
+    /// "Folder Q3 created. Destination folder: Reports/Q3." once it has
+    /// closed.
+    func newFolderModel() -> PhoneFolderSheetModel {
+        PhoneFolderSheetModel(
+            task: .newFolderForMove,
+            library: library,
+            operations: operations,
+            announce: announce,
+            announceAfterClosing: announceAfterClosing
+        )
     }
 
     /// The words of Delete Folder's question and of Delete Everything, as the
@@ -305,7 +347,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     var destinationOptions: [LibraryFolderOption] {
         let folders = library.library
         switch task {
-        case .newFolder:
+        case .newFolder, .newFolderForMove:
             return LibraryFolderOption.options(in: folders) { $0.depth < BookFolder.maxDepth }
         case .renameFolder:
             return []
@@ -349,7 +391,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     var canConfirm: Bool {
         guard !isWorking else { return false }
         switch task {
-        case .newFolder:
+        case .newFolder, .newFolderForMove:
             return BookFolder.normalizedName(name) != nil
         case .renameFolder(let folder):
             guard let typed = BookFolder.normalizedName(name) else { return false }
@@ -425,10 +467,9 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// Makes the library call for the sheet, and what it did should it work.
     private func perform() async -> (OperationOutcome, PhoneFolderSheetResult) {
         switch task {
-        case .newFolder:
+        case .newFolder, .newFolderForMove:
             let made = BookFolder.normalizedName(name) ?? name
-            let path = destination.isEmpty ? made : "\(destination)/\(made)"
-            return (operations.createFolder(name, destination), .createdFolder(path: path))
+            return (operations.createFolder(name, destination), .createdFolder(path: createdPath(named: made)))
         case .renameFolder(let folder):
             let outcome = await operations.renameFolder(folder, name)
             return (outcome, .renamedFolder(id: folder.id, path: currentPath(of: folder)))
@@ -447,14 +488,23 @@ final class PhoneFolderSheetModel: ObservableObject {
     }
 
     /// The sentence said once the sheet has closed after `outcome`, as the
-    /// Mac's Library window says it: New Folder's "Folder Q3 created in
-    /// Reports.", and what Move to Folder left where it was, if anything. The
-    /// other sheets say nothing on the Mac, where the list shows the change.
+    /// Mac says it: New Folder's "Folder Q3 created in Reports.", Move to
+    /// Folder's New Folder...'s "Folder Q3 created. Destination folder:
+    /// Reports/Q3.", and what Move to Folder left where it was, if anything.
+    /// The other sheets say nothing on the Mac, where the list shows the
+    /// change.
     private func sentenceAfter(_ outcome: OperationOutcome) -> String? {
         switch task {
         case .newFolder:
             guard let made = BookFolder.normalizedName(name) else { return nil }
             return NewFolderSheet.createdAnnouncement(name: made, parentPath: destination)
+        case .newFolderForMove:
+            guard let made = BookFolder.normalizedName(name) else { return nil }
+            return LibraryFolderPicker.newFolderCreatedAnnouncement(
+                name: made,
+                pickerLabel: PhoneFolderVocabulary.destinationFolder,
+                chosen: createdPath(named: made)
+            )
         case .moveBooks:
             return outcome.message
         case .renameFolder, .moveFolder, .deleteFolder:
@@ -463,6 +513,13 @@ final class PhoneFolderSheetModel: ObservableObject {
     }
 
     // MARK: Helpers
+
+    /// The path of the folder New Folder makes, named `made` as the library
+    /// stores the name, in the folder chosen: worked out as the Mac's folder
+    /// picker works it out.
+    private func createdPath(named made: String) -> String {
+        destination.isEmpty ? made : "\(destination)/\(made)"
+    }
 
     /// The path the library gives `folder` now, which an edit may have
     /// changed since the sheet opened; the sheet's copy's when it's gone.
@@ -491,7 +548,7 @@ final class PhoneFolderSheetModel: ObservableObject {
         switch task {
         case .newFolder(let parentPath):
             return parentPath
-        case .renameFolder:
+        case .renameFolder, .newFolderForMove:
             return ""
         case .moveFolder(let folder), .deleteFolder(let folder):
             return folder.parentPath

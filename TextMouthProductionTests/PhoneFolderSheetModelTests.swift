@@ -299,6 +299,70 @@ final class PhoneFolderSheetModelTests: XCTestCase {
         XCTAssertEqual(quiet.afterClosing, [], "a move that left nothing says nothing")
     }
 
+    /// Move to Folder offers New Folder..., as the Mac's does, and no other
+    /// sheet does; every other sheet's Cancel is the plain "Cancel".
+    func testOnlyMoveToFolderOffersANewFolder() {
+        let library = Self.library(folders: ["A"])
+        let folder = Self.folder("A", in: library)
+
+        XCTAssertTrue(PhoneFolderSheetModel(task: .moveBooks([Self.book("Dune", in: "")]), library: library).offersNewFolder)
+        let others: [PhoneFolderSheetTask] = [.newFolder(parentPath: ""), .renameFolder(folder), .moveFolder(folder), .deleteFolder(folder), .newFolderForMove]
+        for task in others {
+            let model = PhoneFolderSheetModel(task: task, library: library)
+            XCTAssertFalse(model.offersNewFolder, model.title)
+        }
+        for task in others.dropLast() {
+            let model = PhoneFolderSheetModel(task: task, library: library)
+            XCTAssertEqual(model.cancelTitle, "Cancel", model.title)
+            XCTAssertNil(model.cancelHint, model.title)
+        }
+    }
+
+    /// Move to Folder's New Folder... is the Mac's folder picker's: its name
+    /// field and parent row have the picker's labels, its parent starts at the
+    /// top, and its Cancel is named apart, with the Mac's hint.
+    func testMoveToFoldersNewFolderHasThePickersWords() {
+        let library = Self.library(folders: ["Reports"])
+        let moving = PhoneFolderSheetModel(task: .moveBooks([Self.book("Dune", in: "")]), library: library)
+        let model = moving.newFolderModel()
+
+        XCTAssertEqual(model.title, "New Folder")
+        XCTAssertEqual(model.nameLabel, "New folder name")
+        XCTAssertEqual(model.destinationLabel, "Parent folder for new folder")
+        XCTAssertEqual(model.destinationCaption, "Parent folder")
+        XCTAssertEqual(model.destination, "")
+        XCTAssertEqual(model.confirmTitle, "Create")
+        XCTAssertEqual(model.cancelTitle, LibraryFolderPicker.cancelNewFolderTitle)
+        XCTAssertEqual(model.cancelHint, LibraryFolderPicker.cancelNewFolderHint)
+        XCTAssertEqual(model.arrival, .nameField)
+        XCTAssertFalse(model.canConfirm)
+        model.name = "Q3"
+        XCTAssertTrue(model.canConfirm)
+    }
+
+    /// The folder New Folder... makes is made through the same library call
+    /// as Move to Folder's own, and, once its sheet has closed, VoiceOver hears
+    /// the Mac's "Folder Q3 created. Destination folder: Reports/Q3.".
+    func testMoveToFoldersNewFolderSaysItBecameTheDestination() async {
+        let speech = Speech()
+        let made = Recorder()
+        var operations = Self.unusedOperations()
+        operations.createFolder = { name, parent in
+            made.items.append("\(parent)|\(name)")
+            return .success(nil)
+        }
+        let moving = speech.model(.moveBooks([Self.book("Dune", in: "")]), Self.library(folders: ["Reports"]), operations)
+        let model = moving.newFolderModel()
+        model.name = "Q3"
+        model.destination = "Reports"
+
+        let result = await model.confirm()
+
+        XCTAssertEqual(result, .createdFolder(path: "Reports/Q3"))
+        XCTAssertEqual(made.items, ["Reports|Q3"])
+        XCTAssertEqual(speech.afterClosing, ["Folder Q3 created. Destination folder: Reports/Q3."])
+    }
+
     // MARK: - Delete Folder
 
     /// Delete Folder's first step is the Mac's: a folder holding nothing is

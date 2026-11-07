@@ -63,6 +63,18 @@ final class PhoneFolderVocabularyTests: XCTestCase {
         XCTAssertEqual(PhoneFolderVocabulary.movingBooks(count: 3), "Moving 3 books...")
     }
 
+    /// Move to Folder's New Folder... has the Mac's folder picker's words.
+    func testMoveToFoldersNewFolderSaysWhatTheMacsPickerSays() throws {
+        let mac = try Self.source(Self.sheetsPath)
+
+        XCTAssertTrue(mac.contains("Button(\"\(PhoneFolderVocabulary.newFolderButton)\") {"))
+        XCTAssertTrue(mac.contains("GroupBox(\"\(PhoneFolderVocabulary.newFolderTitle)\") {"))
+        XCTAssertTrue(mac.contains("TextField(\"\(PhoneFolderVocabulary.folderName)\", text: $newFolderName)"))
+        XCTAssertTrue(mac.contains(".accessibilityLabel(\"\(PhoneFolderVocabulary.newFolderName)\")"))
+        XCTAssertTrue(mac.contains("Picker(\"\(PhoneFolderVocabulary.parentFolder)\", selection: $newFolderParent)"))
+        XCTAssertTrue(mac.contains(".accessibilityLabel(\"\(PhoneFolderVocabulary.parentFolderForNewFolder)\")"))
+    }
+
     /// Delete Folder's question has the Mac's title and Move Contents Out, in
     /// the Library window, where the Mac asks it.
     func testDeleteFolderAsksWhatTheMacAsks() throws {
