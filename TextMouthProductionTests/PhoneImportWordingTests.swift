@@ -4,6 +4,7 @@ import XCTest
 /// `PhoneImportWording` and `PhoneImportRefusal`: every sentence the iPhone's
 /// importing says that the Mac doesn't, word for word as the spec gives it,
 /// and how a refusal names the audio it can't play.
+@MainActor
 final class PhoneImportWordingTests: XCTestCase {
 
     // MARK: - Names
