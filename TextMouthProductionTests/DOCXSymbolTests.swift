@@ -153,6 +153,7 @@ final class DOCXSymbolTests: XCTestCase {
         XCTAssertEqual(try heard(docxParagraph(docxRun("a\u{F061}b"))), "a\u{F061}b")
         // And characters outside U+F020 to U+F0FF are never changed.
         XCTAssertEqual(try heard(docxParagraph(typed("a\u{F01F}\u{F100}b", in: "Symbol"))), "a\u{F01F}\u{F100}b")
+        XCTAssertEqual(try heard(docxParagraph(typed("a\u{F01F}\u{F061}\u{F100}b", in: "Symbol"))), "a\u{F01F}\u{03B1}\u{F100}b")
     }
 
     /// The font of a run is the run's own, else its character style's, else its paragraph style's, else the
@@ -161,6 +162,7 @@ final class DOCXSymbolTests: XCTestCase {
         let styles = stylesPart("""
             <w:style w:type="paragraph" w:styleId="PicturePara"><w:name w:val="PicturePara"/><w:rPr><w:rFonts w:ascii="Wingdings"/></w:rPr></w:style>
             <w:style w:type="paragraph" w:styleId="PictureParaChild"><w:name w:val="PictureParaChild"/><w:basedOn w:val="PicturePara"/></w:style>
+            <w:style w:type="paragraph" w:styleId="PictureHAnsi"><w:name w:val="PictureHAnsi"/><w:rPr><w:rFonts w:hAnsi="Wingdings"/></w:rPr></w:style>
             <w:style w:type="paragraph" w:styleId="SymbolPara"><w:name w:val="SymbolPara"/><w:rPr><w:rFonts w:hAnsi="Symbol"/></w:rPr></w:style>
             <w:style w:type="character" w:styleId="SymbolChar"><w:name w:val="SymbolChar"/><w:rPr><w:rFonts w:ascii="Symbol"/></w:rPr></w:style>
             <w:style w:type="character" w:styleId="SymbolCharChild"><w:name w:val="SymbolCharChild"/><w:basedOn w:val="SymbolChar"/></w:style>
@@ -177,6 +179,11 @@ final class DOCXSymbolTests: XCTestCase {
         XCTAssertEqual(try word(alpha, style: "PicturePara"), "a b")
         XCTAssertEqual(try word(alpha, style: "PictureParaChild"), "a b")
         XCTAssertEqual(try word(alpha, style: "SymbolPara"), "a\u{03B1}b")
+        // A font named by w:hAnsi alone is the font (over the defaults' Symbol), in a style and in a run.
+        XCTAssertEqual(try word(alpha, style: "PictureHAnsi"), "a b")
+        XCTAssertEqual(try word(docxRun("\u{F061}", "<w:rFonts w:hAnsi=\"Wingdings\"/>")), "a b")
+        // A font named by a theme alone is none.
+        XCTAssertEqual(try word(docxRun("\u{F061}", "<w:rFonts w:asciiTheme=\"minorHAnsi\"/>")), "a\u{03B1}b")
         // A character style's over the paragraph's, itself and through its base.
         XCTAssertEqual(try word(docxRun("\u{F061}", "<w:rStyle w:val=\"SymbolChar\"/>"), style: "PicturePara"), "a\u{03B1}b")
         XCTAssertEqual(try word(docxRun("\u{F061}", "<w:rStyle w:val=\"SymbolCharChild\"/>"), style: "PicturePara"), "a\u{03B1}b")
@@ -189,6 +196,22 @@ final class DOCXSymbolTests: XCTestCase {
         XCTAssertEqual(try word(docxRun("\u{F061}", "<w:rStyle w:val=\"Missing\"/>"), style: "Missing"), "a\u{03B1}b")
         // A symbol's font is its own attribute, not the run's.
         XCTAssertEqual(try heard(between(symbol("Symbol", "F061"), before: "a", after: "b"), styles: styles), "a\u{03B1}b")
+    }
+
+    /// A paragraph that names no style takes the default paragraph style's font, over the document defaults'.
+    func testAParagraphThatNamesNoStyleTakesTheDefaultParagraphStylesFont() throws {
+        let styles = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Symbol"/></w:rPr></w:rPrDefault></w:docDefaults>
+            <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="Wingdings"/></w:rPr></w:style>
+            <w:style w:type="paragraph" w:styleId="Other"><w:name w:val="Other"/></w:style>
+            </w:styles>
+            """
+        let run = docxRun("\u{F061}")
+        XCTAssertEqual(try heard(docxParagraph(docxRun("a") + run + docxRun("b")), styles: styles), "a b")
+        // A paragraph style that names no font leaves the document defaults', not the default style's.
+        XCTAssertEqual(try heard(docxParagraph(docxRun("a") + run + docxRun("b"), style: "Other"), styles: styles), "a\u{03B1}b")
     }
 
     /// The properties from before a tracked change (`w:rPrChange`) say nothing of the text as it stands.
@@ -233,6 +256,12 @@ final class DOCXSymbolTests: XCTestCase {
     func testTheFontsAskTheSharedTables() {
         var fonts = WordXMLFonts()
         fonts.declare(font: "Odd Pictures", characterSet: "02")
+        XCTAssertEqual(fonts.characterSets, ["odd pictures": 2])
+        // A character set that is not a byte, or not hexadecimal, or a font with no name declares nothing.
+        fonts.declare(font: "Big", characterSet: "0200")
+        fonts.declare(font: "Odd", characterSet: "zz")
+        fonts.declare(font: "", characterSet: "02")
+        fonts.declare(font: "None", characterSet: nil)
         XCTAssertEqual(fonts.characterSets, ["odd pictures": 2])
         XCTAssertEqual(fonts.symbol(font: "Symbol", character: 0xF061), "\u{03B1}")
         XCTAssertEqual(
