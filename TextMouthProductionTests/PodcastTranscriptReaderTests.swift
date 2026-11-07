@@ -150,6 +150,17 @@ final class PodcastTranscriptReaderTests: XCTestCase {
         XCTAssertNil(validationFailure(of: document))
     }
 
+    /// No control character that is not white space reaches a segment's text
+    /// or its speaker (S2), as NUL and BEL in a feed's JSON would otherwise
+    /// reach a downloaded episode's text.
+    func testControlCharactersNeverReachASegmentsTextOrSpeaker() throws {
+        let document = try PodcastTranscriptReader.read(transcript([
+            segment("before\u{0}after, and a bell\u{7}.", from: 0, to: 900, speaker: "A\u{0}na"),
+        ]))
+
+        XCTAssertEqual(lines(document), ["0...900 Ana: beforeafter, and a bell."])
+    }
+
     // MARK: - Versions
 
     /// A file of major version 1 is read however it writes its version

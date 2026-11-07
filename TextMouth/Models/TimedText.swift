@@ -90,8 +90,12 @@ struct TimedTextCue: Equatable, Sendable {
 
     /// `raw` as a cue's text (`text`): each run of white space (spaces,
     /// tabs, line breaks, no-break spaces, and the rest of Unicode's white
-    /// space) one space, and none at either end. Every reader finishes a
-    /// cue's text with it, so cues read from any format are spaced alike.
+    /// space) one space, and none at either end; and every control character
+    /// that is not white space (NUL, BEL, ESC, DEL, and the C1 controls)
+    /// left out, as the SubRip writer and a chapter's title leave them out.
+    /// Every reader finishes a cue's text, and a speaker's name, with it, so
+    /// cues read from any format are spaced alike, and no third-party file
+    /// puts a control character into a book's text, its speech, or braille.
     static func plainText(_ raw: some StringProtocol) -> String {
         // Built character by character, a space put in only when a word
         // follows: the same text as splitting at white space and joining,
@@ -104,6 +108,9 @@ struct TimedTextCue: Equatable, Sendable {
                 // White space at the start puts nothing in; elsewhere it
                 // waits to see whether a word follows it.
                 followsWhiteSpace = !plain.isEmpty
+            } else if isControl(character) {
+                // Left out as if it were never there: "a\u{7}b" is "ab".
+                continue
             } else {
                 if followsWhiteSpace {
                     plain.append(" ")
@@ -113,6 +120,13 @@ struct TimedTextCue: Equatable, Sendable {
             }
         }
         return plain
+    }
+
+    /// Whether `character` is a control character (Unicode's Cc). A control
+    /// character is always a character of its own, never joined to the
+    /// marks around it, so its first scalar says.
+    private static func isControl(_ character: Character) -> Bool {
+        character.unicodeScalars.first?.properties.generalCategory == .control
     }
 }
 

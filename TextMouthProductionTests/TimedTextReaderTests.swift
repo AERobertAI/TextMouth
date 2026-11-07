@@ -173,6 +173,23 @@ final class TimedTextReaderTests: XCTestCase {
 
     // MARK: - Timestamps
 
+    /// No control character that is not white space reaches a WebVTT or
+    /// SubRip cue's text or voice (S2), written in the file or as a
+    /// character reference, and a cue of nothing but control characters is
+    /// passed over as blank.
+    func testControlCharactersNeverReachACuesTextOrVoice() throws {
+        XCTAssertEqual(
+            try webVTTCue("Bell\u{7} and escape\u{1B} and delete\u{7F} and CSI\u{9B}.").text,
+            "Bell and escape and delete and CSI."
+        )
+        XCTAssertEqual(try webVTTCue("By reference &#7;and&#27; here.").text, "By reference and here.")
+        XCTAssertEqual(try webVTTCue("<v A\u{7}na>Hello.").voice, "Ana")
+        XCTAssertEqual(try subRipCue("Bell\u{7} and escape\u{1B} and CSI\u{9B}.").text, "Bell and escape and CSI.")
+        let blank = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n\u{7}\u{1B}\n\n00:03.000 --> 00:04.000\nWords.\n")
+        XCTAssertEqual(blank.cues.map(\.text), ["Words."])
+        XCTAssertEqual(blank.skippedCueCount, 1)
+    }
+
     /// Every rule of the timestamp grammar, by the times it reads: hours,
     /// minutes, and seconds, or minutes and seconds; fields of one digit;
     /// hours of three digits and any value; minutes alone of four digits

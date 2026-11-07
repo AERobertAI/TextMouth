@@ -78,6 +78,17 @@ final class TimedTextModelTests: XCTestCase {
         XCTAssertEqual(TimedTextCue.plainText("Already plain."), "Already plain.")
     }
 
+    /// A cue's plain text leaves out every control character that is not
+    /// white space (S2): NUL, BEL, ESC, DEL, and a C1 control, wherever they
+    /// stand, so no third-party file puts one into a book's text.
+    func testPlainTextLeavesOutControlCharacters() {
+        XCTAssertEqual(TimedTextCue.plainText("a\u{0}b\u{7}c\u{1B}[31md\u{7F}e\u{9B}f"), "abc[31mdef")
+        // White space that is a control character still makes a space.
+        XCTAssertEqual(TimedTextCue.plainText("one\ttwo\nthree\u{85}four"), "one two three four")
+        XCTAssertEqual(TimedTextCue.plainText("\u{7}\u{1B}\u{0}"), "")
+        XCTAssertEqual(TimedTextCue.plainText("\u{7} lead and trail \u{7}"), "lead and trail")
+    }
+
     /// A cue's plain text is what splitting at white space and joining with
     /// single spaces gives, for every mixture of white space of every kind,
     /// letters, a combining mark, a zero-width space (not white space), and
