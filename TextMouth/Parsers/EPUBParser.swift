@@ -429,16 +429,16 @@ enum EPUBParser {
     /// - Parameters:
     ///   - xml: The file's text.
     ///   - file: The file's path inside the book, which a refusal names.
-    /// - Throws: `EPUBParserError.damagedFile` for a start tag over
-    ///   `XMLInputGuard.longestStartTag`, XMLDocument's error when `xml` is
-    ///   not well-formed, or what `body` throws.
+    /// - Throws: `EPUBParserError.damagedFile` for a tag with more attributes
+    ///   than `XMLInputGuard` allows, XMLDocument's error when `xml` is not
+    ///   well-formed, or what `body` throws.
     static func readingXML<Result>(
         _ xml: String, file: String, _ body: (XMLDocument) throws -> Result
     ) throws -> Result {
-        // A start tag too long for an XML parser is refused as damage before
-        // the parser reads it (`XMLInputGuard`).
-        if XMLInputGuard.hasStartTag(in: Data(xml.utf8)) {
-            throw EPUBParserError.damagedFile(file: file, reason: XMLInputGuard.longStartTagProblem)
+        // A tag the XML parser would take too long over is refused as damage
+        // before the parser reads it (`XMLInputGuard`).
+        if let problem = XMLInputGuard.problem(with: Data(xml.utf8)) {
+            throw EPUBParserError.damagedFile(file: file, reason: problem)
         }
         let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
         defer { takeApart(document) }

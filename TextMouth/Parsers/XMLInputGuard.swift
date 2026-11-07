@@ -7,7 +7,7 @@ import Foundation
 /// guard against. Both are linear in the size of the part and need no tree.
 /// The OpenDocument and Word 2003 XML readers ask both (`OfficeXMLReader`).
 /// Every reader that parses with `PackageSAXParser` (DOCX, DAISY, SSML) asks
-/// for the start tag limit there, and the EPUB reader in `readingXML`. They do
+/// for the attribute count there, and the EPUB reader in `readingXML`. They do
 /// not ask for the document type check: DAISY's DTBook files declare one.
 ///
 /// - **A document type declaration.** It can declare entities that expand
@@ -19,22 +19,24 @@ import Foundation
 ///   no declaration and is not refused. The prolog is read in the part's own
 ///   encoding: UTF-8, Latin-1 and the like (ASCII-compatible), UTF-16 either
 ///   way round, and UTF-32.
-/// - **A very long start tag.** `XMLParser` takes time that grows with the
-///   square of the attributes in one start tag (200,000 attributes: 17
-///   seconds; a start tag of a megabyte: 5 seconds, and 64 of them minutes
-///   in which Cancel cannot land). The longest start tag in 2,067 parts of
-///   535 real files is 2,166 bytes (the root of a document, which declares its
-///   namespaces), so a start tag of 64 KB, 30 times that, is refused: it
-///   costs the parser a fiftieth of a second.
+/// - **Too many attributes in one tag.** `XMLParser` takes time that grows
+///   with the square of the attributes in one start tag (200,000 attributes:
+///   11 to 17 seconds, and 64 of such tags minutes in which Cancel cannot
+///   land). The length of an attribute does not matter: a value of 8 MB costs
+///   a hundredth of a second, and a real document holds a whole picture in
+///   one (`o:gfxdata`, 267 KB). So the attributes are counted, outside the
+///   quotes of their values. The most in any of 3.98 million real start tags,
+///   in 25,019 parts, is 38; 1,024 is 27 times that, and costs the parser
+///   about a fifth of a millisecond a tag.
 enum XMLInputGuard {
-    /// The longest start tag, in bytes of the part, that is read: 64 KB, 30
-    /// times the longest of 2,067 real parts (2,166 bytes).
-    static let longestStartTag = 65_536
+    /// The most attributes one tag may hold: 1,024, 27 times the most in any
+    /// real start tag (38).
+    static let mostAttributesInATag = 1_024
 
-    /// What a part with a start tag over the limit is refused for, as the
+    /// What a part with a tag of more attributes is refused for, as the
     /// reason that completes "The file is damaged or incomplete: …"
     /// (`PackageDamage.message`).
-    static let longStartTagProblem = "it has a start tag longer than 64 KB, which no real file has"
+    static let tooManyAttributesProblem = "it has a tag with too many attributes for TextMouth to read safely"
 
     // MARK: Code units
 
@@ -114,6 +116,33 @@ enum XMLInputGuard {
             }
             return count
         }
+
+        /// The index just after the end of the declaration (`<!DOCTYPE …>`)
+        /// whose body begins at `index`: its first `>` outside quotes and
+        /// outside brackets, or the end of the part. Comments inside an
+        /// internal subset are not looked for: a part with one is a hazard
+        /// of its own, which the readers that take such parts refuse.
+        func skipDeclaration(from index: Int) -> Int {
+            var i = index
+            var quote: UInt8 = 0
+            var depth = 0
+            while i < count {
+                let c = unit(i)
+                if quote != 0 {
+                    if c == quote { quote = 0 }
+                } else if c == UInt8(ascii: "\"") || c == UInt8(ascii: "'") {
+                    quote = c
+                } else if c == UInt8(ascii: "[") {
+                    depth += 1
+                } else if c == UInt8(ascii: "]") {
+                    depth = max(0, depth - 1)
+                } else if c == UInt8(ascii: ">"), depth == 0 {
+                    return i + 1
+                }
+                i += 1
+            }
+            return count
+        }
     }
 
     // MARK: The prolog
@@ -145,11 +174,13 @@ enum XMLInputGuard {
 
     // MARK: Start tags
 
-    /// Whether any start tag of the part is longer than `limit` code units
-    /// (its attribute values, which may hold `>`, are skipped as quoted
-    /// text). Comments, processing instructions, CDATA sections, declarations,
-    /// and end tags are skipped whole.
-    static func hasStartTag(longerThan limit: Int = longestStartTag, in data: Data) -> Bool {
+    /// Whether any start tag of the part holds more than `limit` attributes.
+    /// An attribute is an `=` outside the quotes of a value, so a value of
+    /// any length (a picture in `o:gfxdata`) is one, and costs nothing. A tag
+    /// ends at its first `>` outside quotes. Comments, processing
+    /// instructions, CDATA sections, declarations (read by their quotes and
+    /// brackets, as `skipDeclaration` does), and end tags are skipped whole.
+    static func hasTag(withMoreAttributesThan limit: Int = mostAttributesInATag, in data: Data) -> Bool {
         data.withUnsafeBytes { raw in
             let units = CodeUnits(raw.bindMemory(to: UInt8.self))
             let end = units.count
@@ -162,28 +193,44 @@ enum XMLInputGuard {
                     i = units.skip(to: "]]>", from: i + 9)
                 } else if units.matches("<?", at: i) {
                     i = units.skip(to: "?>", from: i + 2)
-                } else if units.matches("<!", at: i) || units.matches("</", at: i) {
+                } else if units.matches("<!", at: i) {
+                    i = units.skipDeclaration(from: i + 2)
+                } else if units.matches("</", at: i) {
                     i = units.skip(to: ">", from: i + 2)
                 } else {
-                    // A start tag: to the `>` that is not inside quotes.
+                    // A start tag: count its attributes to the `>` that is
+                    // not inside quotes.
                     var j = i + 1
                     var quote: UInt8 = 0
+                    var attributes = 0
                     while j < end {
                         let c = units.unit(j)
                         if quote != 0 {
                             if c == quote { quote = 0 }
                         } else if c == UInt8(ascii: "\"") || c == UInt8(ascii: "'") {
                             quote = c
+                        } else if c == UInt8(ascii: "=") {
+                            attributes += 1
+                            if attributes > limit { return true }
                         } else if c == UInt8(ascii: ">") {
                             break
                         }
                         j += 1
-                        if j - i > limit { return true }
                     }
                     i = j + 1
                 }
             }
             return false
         }
+    }
+
+    // MARK: Asking all of them
+
+    /// Why a part must not be handed to `XMLParser` or `XMLDocument`, as the
+    /// reason that completes "The file is damaged or incomplete: …"
+    /// (`PackageDamage.message`); nil when it may be. For the parts of a
+    /// package: DOCX, EPUB, DAISY, and SSML.
+    static func problem(with data: Data) -> String? {
+        hasTag(withMoreAttributesThan: mostAttributesInATag, in: data) ? tooManyAttributesProblem : nil
     }
 }

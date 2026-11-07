@@ -403,11 +403,11 @@ final class DOCXMalformedXMLTests: XCTestCase {
         }
     }
 
-    // MARK: - A Start Tag Too Long to Parse
+    // MARK: - A Tag With Too Many Attributes
 
     /// The intact package with the first `opening` of `part` replaced by
     /// `hostile`, in which "MANY" stands for 200,000 attributes (the parser
-    /// takes time that grows with the square of them: 17 s).
+    /// takes time that grows with the square of them: 11 to 17 s).
     private func makeDOCX(replacing part: String, opening: String, with hostile: String) throws -> URL {
         let text = try XCTUnwrap(Self.intactParts[part], "No fixture part at \(part)")
         let range = try XCTUnwrap(text.range(of: opening), "\(part) has no \(opening)")
@@ -416,12 +416,14 @@ final class DOCXMalformedXMLTests: XCTestCase {
         return try makeDOCX(replacing: [part: Data(replaced.utf8)])
     }
 
-    /// A start tag over 64 KB (`XMLInputGuard.longestStartTag`, 21 times the
-    /// longest of 264 parts of 25 real DOCX and EPUB files) in any part TextMouth
-    /// reads is refused as damage, naming the part, in a few milliseconds: the
-    /// parser took seventeen seconds over 200,000 attributes. A bound of five
-    /// seconds is far above the refusal and far below the parser.
-    func testAStartTagTooLongToParseIsRefusedAsDamageNamingThePart() throws {
+    /// A tag of more than 1,024 attributes (`XMLInputGuard.mostAttributesInATag`,
+    /// 27 times the most in any of 3.98 million real start tags) in any part
+    /// TextMouth reads is refused as damage, naming the part, in a few
+    /// milliseconds: the parser took 11 to 17 seconds over 200,000. A bound of
+    /// five seconds is far above the refusal and far below the parser. The
+    /// core properties never fail an import: they are logged, and the file's
+    /// name is used.
+    func testATagWithTooManyAttributesIsRefusedAsDamageNamingThePart() throws {
         let cases: [(part: String, opening: String, hostile: String)] = [
             (DOCXParser.Part.document, "<w:p>", "<w:p MANY>"),
             (DOCXParser.Part.styles, "<w:style w:type", "<w:style MANY w:type"),
@@ -433,26 +435,51 @@ final class DOCXMalformedXMLTests: XCTestCase {
             let docx = try makeDOCX(replacing: testCase.part, opening: testCase.opening, with: testCase.hostile)
             let clock = ContinuousClock()
             let start = clock.now
-            // The core properties never fail an import; the others do.
             if testCase.part == DOCXParser.Part.coreProperties {
-                _ = try DOCXParser.extractMarkdown(from: docx)
+                // Only `readMetadata` opens the core properties.
+                var reported: [DOCXParserError] = []
+                let metadata = try DOCXParser.readMetadata(from: docx) { reported.append($0) }
+                XCTAssertNil(metadata)
+                guard case .malformedXML(let file, let reason)? = reported.first, reported.count == 1 else {
+                    XCTFail("Expected one report for the core properties, got \(reported)")
+                    continue
+                }
+                XCTAssertEqual(file, testCase.part)
+                XCTAssertEqual(reason, XMLInputGuard.tooManyAttributesProblem)
             } else {
                 let reason = malformedXMLReason(naming: testCase.part) { try DOCXParser.extractMarkdown(from: docx) }
-                XCTAssertEqual(reason, XMLInputGuard.longStartTagProblem, testCase.part)
+                XCTAssertEqual(reason, XMLInputGuard.tooManyAttributesProblem, testCase.part)
             }
             XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.part) took too long")
         }
     }
 
-    /// The refusal reads as the other damage does: it names the part and says
-    /// what to do.
-    func testTheRefusalOfALongStartTagIsInTheSentenceOfAnyDamagedPart() {
-        let error = DOCXParserError.malformedXML(file: "word/document.xml", reason: XMLInputGuard.longStartTagProblem)
+    /// The refusal reads as the other damage does: it names the part, says
+    /// what is wrong in words a listener can use, and says what to do.
+    func testTheRefusalOfATagWithTooManyAttributesIsInTheSentenceOfAnyDamagedPart() {
+        let error = DOCXParserError.malformedXML(file: "word/document.xml", reason: XMLInputGuard.tooManyAttributesProblem)
         XCTAssertEqual(
             error.errorDescription,
-            "The file “word/document.xml” in this document is damaged or incomplete: "
-                + "it has a start tag longer than 64 KB, which no real file has. "
+            "The file \u{201C}word/document.xml\u{201D} in this document is damaged or incomplete: "
+                + "it has a tag with too many attributes for TextMouth to read safely. "
                 + "Get a fresh copy of the document, then import it again.")
+    }
+
+    /// A document text whose group holds a picture in one attribute
+    /// (`o:gfxdata`, a base64 ZIP of the shape, as Word writes it for a photo
+    /// in a group): a real SAMHSA postcard has one of 267,106 characters in a
+    /// tag of 267,352 bytes. The attribute is no hazard, whatever its length,
+    /// so the words before and after it are read.
+    func testALongPictureAttributeIsNoHazardAndTheWordsAroundItAreRead() throws {
+        let picture = String(repeating: "UEsDBBQAAAAIAA==", count: 20_000)
+        XCTAssertGreaterThan(picture.utf8.count, 300_000)
+        let body = docxParagraph(docxRun("Before the picture."))
+            + "<w:p><w:r><w:pict><v:group xmlns:o=\"urn:schemas-microsoft-com:office:office\" o:gfxdata=\"\(picture)\"/></w:pict></w:r></w:p>"
+            + docxParagraph(docxRun("After the picture."))
+        let docx = try makeDOCXPackage(document: docxDocumentXML(body))
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false)
+        let heard = try MarkdownDocParser.parseChapter(markdown: markdown).text
+        XCTAssertEqual(heard.split(whereSeparator: \.isWhitespace).joined(separator: " "), "Before the picture. After the picture.")
     }
 
     /// Markup after the document's root element comes after all of its text,

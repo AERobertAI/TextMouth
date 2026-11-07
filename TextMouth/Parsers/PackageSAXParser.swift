@@ -40,17 +40,17 @@ class PackageSAXParser: NSObject, XMLParserDelegate {
     }
 
     /// Stream the file through `XMLParser`, delivering events to this delegate.
-    /// - Throws: the format's malformed-XML error when the part has a start
-    ///   tag over `XMLInputGuard.longestStartTag`, or when the parser stops
-    ///   before the end of the document. Events delivered before the stop
+    /// - Throws: the format's malformed-XML error when the part has a tag
+    ///   with more attributes than `XMLInputGuard` allows, or when the parser
+    ///   stops before the end of the document. Events delivered before the stop
     ///   stand, so a subclass may still inspect what it had read.
     final func parseDocument() throws {
         // `XMLParser` takes time that grows with the square of the attributes
         // in one start tag, so a hostile part could stall an import. No real
-        // part has a start tag near the limit (`XMLInputGuard`), so a part
-        // that does is refused as damaged, before the parser reads it.
-        if XMLInputGuard.hasStartTag(in: data) {
-            throw malformedXMLError(file, XMLInputGuard.longStartTagProblem)
+        // part has a tag near the limit (`XMLInputGuard`), so a part that
+        // does is refused as damaged, before the parser reads it.
+        if let problem = XMLInputGuard.problem(with: data) {
+            throw malformedXMLError(file, problem)
         }
 
         let parser = XMLParser(data: data)

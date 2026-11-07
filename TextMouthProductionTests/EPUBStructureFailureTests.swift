@@ -71,16 +71,16 @@ final class EPUBStructureFailureTests: XCTestCase {
         )
     }
 
-    // MARK: - A Start Tag Too Long to Parse
+    // MARK: - A Tag With Too Many Attributes
 
-    /// A start tag over 64 KB (`XMLInputGuard.longestStartTag`, 21 times the
-    /// longest of 264 parts of 25 real DOCX and EPUB files) in the container
+    /// A tag of more than 1,024 attributes (`XMLInputGuard.mostAttributesInATag`,
+    /// 27 times the most in any of 3.98 million real start tags) in the container
     /// or the package document is refused as damage, naming the file, before
     /// the XML reader sees it: 200,000 attributes in one tag cost the reader
     /// seconds, and a hostile book could stall an import with them. The bound
     /// of five seconds is far above the refusal and below the reader's cost.
     @MainActor
-    func testAStartTagTooLongToParseIsRefusedAsDamageNamingTheFile() throws {
+    func testATagWithTooManyAttributesIsRefusedAsDamageNamingTheFile() throws {
         let many = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
         let hostileContainer = Self.container().replacingOccurrences(of: "<rootfiles>", with: "<rootfiles \(many)>")
         let hostilePackage = Self.packageDocument().replacingOccurrences(of: "<manifest>", with: "<manifest \(many)>")
@@ -95,9 +95,9 @@ final class EPUBStructureFailureTests: XCTestCase {
             try assertRefused(
                 epub,
                 throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
-                    file: testCase.file, reason: XMLInputGuard.longStartTagProblem))),
+                    file: testCase.file, reason: XMLInputGuard.tooManyAttributesProblem))),
                 saying: "The file “\(testCase.file)” in this EPUB book is damaged or incomplete: "
-                    + "it has a start tag longer than 64 KB, which no real file has. "
+                    + "it has a tag with too many attributes for TextMouth to read safely. "
                     + "Get a fresh copy of the book, then import it again.")
             XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.file) took too long")
         }
