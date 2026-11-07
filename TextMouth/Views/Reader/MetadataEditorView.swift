@@ -21,8 +21,9 @@ struct MetadataEditorView: View {
     /// The audio metadata the editor opened with, handed to `onSaveAudio`.
     @State private var openedAudioMetadata: AudioMetadata
     @State private var writeToFile = false
-    /// Why the last EPUB save failed, shown above the buttons until the user
-    /// changes an edit or the choice to write the file.
+    /// Why the last save failed (an EPUB's write, or a title emptied), shown
+    /// above the buttons until the user changes an edit or the choice to
+    /// write the file.
     @State private var failureMessage: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -140,6 +141,7 @@ struct MetadataEditorView: View {
         .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
         // A reason that no longer applies is never read beside new input.
         .clearingFailure($failureMessage, whenChanged: editedEPUBFields)
+        .clearingFailure($failureMessage, whenChanged: editedAudioMetadata.title)
         .clearingFailure($failureMessage, whenChanged: writesToFile)
     }
 
@@ -147,6 +149,16 @@ struct MetadataEditorView: View {
 
     /// Saves the edits the way the book's format needs.
     private func save() {
+        // A title the user emptied is refused here, in the editor, which stays
+        // open with their edits and says why, so a book is never left with no
+        // name to hear in the library, the windows, or Now Playing.
+        let openedTitle = isAudio ? openedAudioMetadata.title : openedEPUBMetadata.title
+        let editedTitle = isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title
+        if Book.MetadataEdit.clearsTitle(opened: openedTitle, edited: editedTitle) {
+            failureMessage = MetadataEditorWording.titleCleared
+            VoiceOverAnnouncer.announce(MetadataEditorWording.titleCleared)
+            return
+        }
         if isAudio {
             saveAudioAfterClosing()
         } else {
@@ -353,6 +365,10 @@ enum MetadataEditorWording {
         guard handEdits?.contains(field) == true else { return label }
         return "\(label), \(editedByHand)"
     }
+
+    /// What the editor says when Save is pressed after the title was
+    /// emptied.
+    static let titleCleared = "Could not save: the book's title is empty. Type a title, then save again."
 
     /// When the book titled `title` has left the library, so its edit has
     /// nowhere to go: "Could not save metadata: “Notes” is no longer in the

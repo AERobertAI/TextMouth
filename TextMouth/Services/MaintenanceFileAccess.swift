@@ -190,7 +190,7 @@ struct MaintenanceFileAccess: Sendable {
             let refused = RefusedListing()
             guard let items = FileManager.default.enumerator(
                 at: folder,
-                includingPropertiesForKeys: nil,
+                includingPropertiesForKeys: [.isDirectoryKey],
                 options: [.skipsHiddenFiles],
                 errorHandler: { url, error in
                     // Stop at a refused listing, which needed a download;
@@ -202,7 +202,13 @@ struct MaintenanceFileAccess: Sendable {
             ) else { return nil }
             for case let item as URL in items {
                 if items.level == 1, !includes(item.lastPathComponent) {
-                    items.skipDescendants()
+                    // Only a folder's contents are skipped: on a file the
+                    // call skips the next folder listed beside it, so a
+                    // package whose contentIndex.json is listed before its
+                    // audio folder would never have its tracks visited.
+                    if (try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
+                        items.skipDescendants()
+                    }
                     continue
                 }
                 if isDataless(item) {

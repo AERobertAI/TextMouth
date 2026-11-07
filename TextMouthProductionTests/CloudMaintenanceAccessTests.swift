@@ -137,15 +137,36 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
     func testFileInCloudLooksInsideFoldersOfContentOnly() throws {
         let packageName = "Tracks-\(UUID().uuidString).tmb"
         let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: packageName)
-        let tracks = package.appendingPathComponent("audio", isDirectory: true)
+        // Named to sort after the package's own files, which a listing by
+        // name puts first.
+        let tracks = package.appendingPathComponent("tracks", isDirectory: true)
         let spoken = TextMouthPaths.cachedAudioDir(in: package)
         for folder in [tracks, spoken] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
+        // The package's own records, which are not its content, as every
+        // real audiobook package has them.
+        let records = [
+            package.appendingPathComponent(TextMouthPaths.bookInfoFileName),
+            package.appendingPathComponent(TextMouthPaths.contentIndexFileName),
+            package.appendingPathComponent(TextMouthPaths.contentMarkdownFileName),
+        ]
         for file in [tracks.appendingPathComponent("01.mp3"), tracks.appendingPathComponent("02.mp3"),
-                     spoken.appendingPathComponent("chapter.caf"), package.appendingPathComponent(".DS_Store")] {
+                     spoken.appendingPathComponent("chapter.caf"), package.appendingPathComponent(".DS_Store")] + records {
             try Data("bytes".utf8).write(to: file)
         }
+        // The walk skips those records, and calling `skipDescendants()` on a
+        // file skips the next folder listed beside it. The fixture must list
+        // one right before the tracks' folder, or it would pass whatever the
+        // walk did; the order a volume lists in is its own.
+        let listing = try XCTUnwrap(FileManager.default.enumerator(
+            at: package, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        )).allObjects.compactMap { $0 as? URL }
+        let tracksIndex = try XCTUnwrap(listing.firstIndex { $0.lastPathComponent == "tracks" })
+        XCTAssertTrue(
+            tracksIndex > 0 && records.contains { $0.lastPathComponent == listing[tracksIndex - 1].lastPathComponent },
+            "this volume does not list a record right before the tracks: \(listing.map(\.lastPathComponent))"
+        )
         let book = Book(
             title: "Tracks",
             format: .audio,
