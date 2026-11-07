@@ -34,6 +34,12 @@ final class PhoneAudioSession {
     /// session may fill it otherwise.
     var reopenBookAfterMediaServicesReset: (@MainActor () -> Void)?
 
+    /// Carries out what `PhoneAudioEventPolicy` decided for an event: the app
+    /// sets it at launch (`install(session:)`) to the Now Playing coordinator,
+    /// which reaches the readers (`NowPlayingService.perform(_:)`). Nil, before
+    /// launch, carries out nothing.
+    var carryOut: (@MainActor (PhoneAudioResponse) -> Void)?
+
     /// Whether the system has taken the audio away and not given it back
     /// (`PhoneAudioEventPolicy.isInterrupted`): a speech synthesizer's cancel
     /// then is no refusal of the text (`SpeechService`).
@@ -56,6 +62,7 @@ final class PhoneAudioSession {
         audio.startObserving()
 
         let nowPlaying = NowPlayingService.shared
+        audio.carryOut = { nowPlaying.perform($0) }
         // A killed app the system wakes for a Play opens the book last open
         // and plays it, as the magic tap does with no book open.
         nowPlaying.noOwnerPlayHandler = { [weak session] in
@@ -298,7 +305,7 @@ final class PhoneAudioSession {
             SpeechRenderCoordinator.shared.forgetWarmedVoices()
             reopenBookAfterMediaServicesReset?()
         }
-        nowPlaying.perform(response)
+        carryOut?(response)
     }
 
     /// An interruption's notification as an event, or nil when it says
