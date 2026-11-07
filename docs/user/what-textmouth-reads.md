@@ -15,8 +15,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### Rich text, Word 6 to Word 2003, OpenDocument text, and Word 2003 XML
 
-- Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, below), which TextMouth reads with code of its own, the same on the Mac as on iOS, where Apple's textutil tool does not exist.
-  - (Word 6 and Word 95 documents, which textutil read on the Mac until version 0.4.1, are described below.)
+- Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, below), which TextMouth reads with code of its own, the same on the Mac as on iOS, where Apple's textutil tool does not exist. (Word 6 and Word 95 documents, which textutil read on the Mac until version 0.4.1, are described below.)
   - Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
   - An .rtfd is a package that the Finder shows as one file, and it imports as one book: TextMouth reads the text file in it, TXT.rtf, and leaves its attachments alone.
   - No helper process runs.
