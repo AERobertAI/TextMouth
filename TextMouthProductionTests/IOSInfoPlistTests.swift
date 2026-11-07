@@ -40,11 +40,22 @@ final class IOSInfoPlistTests: XCTestCase {
     /// These have INFOPLIST_KEY_ settings, in project.yml.
     func testNoKeyAlsoHasABuildSetting() throws {
         let plist = try Self.iOSPlist()
-        for key in [
-            "CFBundleDisplayName", "LSSupportsOpeningDocumentsInPlace", "UILaunchScreen", "UIApplicationSceneManifest",
-        ] {
+        for key in ["CFBundleDisplayName", "LSSupportsOpeningDocumentsInPlace", "UILaunchScreen"] {
             XCTAssertNil(plist[key], "\(key) has an INFOPLIST_KEY_ setting in project.yml")
         }
+    }
+
+    /// One scene at a time, also on an iPad, since one session cannot serve two
+    /// windows; and nothing generates a manifest allowing several (F27).
+    func testOneSceneAtATime() throws {
+        let manifest = try XCTUnwrap(try Self.iOSPlist()["UIApplicationSceneManifest"] as? [String: Any])
+        XCTAssertEqual(manifest["UIApplicationSupportsMultipleScenes"] as? Bool, false)
+        let project = try String(contentsOf: Self.repository.appendingPathComponent("project.yml"), encoding: .utf8)
+        let iOSTarget = try XCTUnwrap(Self.block(ofTarget: "TextMouthiOS", in: project))
+        XCTAssertFalse(
+            iOSTarget.contains("INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true"),
+            "Xcode's generated manifest allows several scenes"
+        )
     }
 
     /// The iOS target reads this file, opens documents in place, and has a
@@ -83,6 +94,12 @@ final class IOSInfoPlistTests: XCTestCase {
         let importedAs = try Self.matches(of: #"UTType\(importedAs: "([^"]+)""#, in: source)
         XCTAssertFalse(importedAs.isEmpty, "Found no UTType(importedAs:) in the import's source")
         XCTAssertEqual(importedAs.subtracting(iOSDeclared), [], "UTType(importedAs:) with no declaration")
+
+        // A UTType("com.textmouth...") is nil without its declaration, and drops
+        // out of the file picker in silence (F33).
+        let ownTypes = try Self.matches(of: #"UTType\("(com\.textmouth\.[^"]+)"\)"#, in: source)
+        XCTAssertFalse(ownTypes.isEmpty, "Found no UTType(\"com.textmouth...\") in the import's source")
+        XCTAssertEqual(ownTypes.subtracting(iOSDeclared), [], "UTType(\"com.textmouth...\") with no declaration")
 
         // The import's list itself, as this process builds it.
         let used = Set(FileImportService.supportedTypes.map(\.identifier)).intersection(macDeclared)
