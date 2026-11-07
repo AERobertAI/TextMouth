@@ -43,8 +43,8 @@ struct WordStyleSheet {
         let listIndex: Int?
         /// The level in its list a paragraph in the style is at (`sprmPIlvl`), or nil.
         let listLevel: Int?
-        /// For a Word 6 or Word 95 style, the font the style sets (`sprmCFtc`, an index into the
-        /// font table), or nil.
+        /// The font the style sets (`sprmCFtc` in Word 6 and Word 95, `sprmCRgFtc0` in Word 97: an index into
+        /// the font table), or nil.
         let fontIndex: Int?
         /// For a Word 6 or Word 95 paragraph style, the level in the document's numbering a
         /// paragraph in it is at (`sprmPNLvlAnm`), or nil.
@@ -107,8 +107,8 @@ struct WordStyleSheet {
     /// Each style as the chain it is based on makes it (`Resolved`); nil where `styles` is.
     private let resolvedStyles: [Resolved?]
 
-    /// For a Word 6 or Word 95 sheet, the font the sheet's default character formatting uses (an index
-    /// into the font table: the sheet's header names it); nil for any other.
+    /// The font the sheet's default character formatting uses (an index into the font table: the sheet's
+    /// header names it); nil for a document with no sheet.
     let defaultFontIndex: Int?
 
     /// A document with no style sheet: every paragraph is body text.
@@ -221,7 +221,7 @@ struct WordStyleSheet {
         while styles.count < styleCount { styles.append(nil) }
         self.styles = styles
         resolvedStyles = Self.resolve(styles)
-        defaultFontIndex = nil
+        defaultFontIndex = Self.defaultFont(ofSheetAt: range, table: table)
     }
 
     /// Reads the style sheet of a Word 6 or Word 95 document at `range` in
@@ -254,12 +254,14 @@ struct WordStyleSheet {
         while styles.count < styleCount { styles.append(nil) }
         self.styles = styles
         resolvedStyles = Self.resolve(styles)
-        // The header names the font of the sheet's default characters (`ftcStandardChpStsh`), 12 bytes in.
-        if headerSize >= 14, let font = try? table.u16(range.lowerBound + 2 + 12) {
-            defaultFontIndex = font
-        } else {
-            defaultFontIndex = nil
-        }
+        defaultFontIndex = Self.defaultFont(ofSheetAt: range, table: table)
+    }
+
+    /// The font of the sheet's default characters (`ftcStandardChpStsh`, the ASCII font of the sheet's
+    /// header, 12 bytes into it in every version of Word), or nil when the header is too short to name one.
+    private static func defaultFont(ofSheetAt range: Range<Int>, table: OLEBytes) -> Int? {
+        guard let headerSize = try? table.u16(range.lowerBound), headerSize >= 14 else { return nil }
+        return try? table.u16(range.lowerBound + 2 + 12)
     }
 
     /// The `count` property groups of the style whose bytes are `size` bytes at `position` in `table`, the first
@@ -359,7 +361,9 @@ struct WordStyleSheet {
                 if opcode == WordSprm.italic { italic = Int(value) }
                 if opcode == WordSprm.hidden { hidden = Int(value) }
                 if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = WordSprm.value(of: operand) }
-                if opcode == WordSprm.legacyFont, operand.count >= 2 { fontIndex = WordSprm.value(of: operand) }
+                if opcode == WordSprm.legacyFont || opcode == WordSprm.fontAscii, operand.count >= 2 {
+                    fontIndex = WordSprm.value(of: operand)
+                }
             }
         }
         return Style(
@@ -450,7 +454,7 @@ struct WordStyleSheet {
     /// The font (an index into the font table) of text with the paragraph style `paragraphStyle`, the
     /// character style `characterStyle` (or nil), and the direct font `direct` (or nil): the direct one,
     /// else the character style's, else the paragraph style's, each through the styles it is based on,
-    /// else the sheet's default; nil when none says (a Word 97 sheet).
+    /// else the sheet's default; nil when none says (a document with no sheet).
     func fontIndex(paragraphStyle: Int, characterStyle: Int?, direct: Int?) -> Int? {
         if let direct { return direct }
         if let characterStyle, let font = resolved(styleIndex: characterStyle).fontIndex { return font }

@@ -214,17 +214,13 @@ enum WordDocumentReader {
                 pieces: pieces, document: document
             )
         }
-        // The fonts, for the symbols: a symbol of the font named Symbol is a character with words to read, and
-        // one of any other font (a picture) is not. A table that does not fit gives none, and every symbol is white space.
-        var fonts = WordFontTable.none
-        if let range = try? fib.range(of: .fontTable, in: table) {
-            if fib.layout == .modern {
-                fonts = (try? WordFontTable.modern(range: range, in: table)) ?? .none
-            } else {
-                fonts = (try? WordFontTable.legacy(range: range, in: table)) ?? .none
-            }
+        // The fonts, for the symbols: the font says what a code means (`WordSymbolFontEncodings`). A Word 6 or
+        // Word 95 document's were read with its characters; a Word 97 table that does not fit gives none, and
+        // every symbol is white space.
+        var fonts = legacyCharacters?.fonts ?? .none
+        if legacyCharacters == nil, let range = try? fib.range(of: .fontTable, in: table) {
+            fonts = (try? WordFontTable.modern(range: range, in: table)) ?? .none
         }
-        let symbolFonts = fonts.symbolFonts
         // The lists, whose numbers Word does not store in the text. They are
         // a help to the listener and not the text: a list table that does
         // not fit loses the numbers, not the document.
@@ -274,7 +270,7 @@ enum WordDocumentReader {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
-                lists: lists, numbersAreWords: speaksListNumbers, symbolFonts: symbolFonts
+                lists: lists, numbersAreWords: speaksListNumbers, fonts: fonts
             )
             var charactersWritten = 0
             for segment in segments {

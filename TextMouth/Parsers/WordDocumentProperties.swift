@@ -279,7 +279,7 @@ enum WordDocumentProperties {
             format.style = nil
         case WordSprm.styleSeparator: format.isStyleSeparator = value == 1 || value == 0x81
         case WordSprm.special: format.isSpecial = value != 0
-        case WordSprm.legacyFont: format.fontIndex = value
+        case WordSprm.legacyFont, WordSprm.fontAscii: format.fontIndex = value
         case WordSprm.legacyCharacterSet:
             // A flag byte (non-zero when the run's set differs from the document's), then 16 bits.
             if operand.count >= 3, value & 0xFF != 0 { format.characterSet = (value >> 8) & 0xFFFF }
