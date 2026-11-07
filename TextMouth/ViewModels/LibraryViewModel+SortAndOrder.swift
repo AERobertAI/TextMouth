@@ -59,7 +59,8 @@ enum ManualBookOrder {
     }
 
     /// What VoiceOver says when Move Book Up or Move Book Down is used on a
-    /// feed's item, which has no place in an order the user arranges.
+    /// feed's item in a folder, where it has no place in the order the user
+    /// arranges. In the Reading List it moves like any book.
     static func feedItemCannotMoveAnnouncement(_ title: String) -> String {
         "\(title) is an item of a feed, and a feed's items can't be moved."
     }
@@ -371,7 +372,10 @@ extension LibraryViewModel {
         guard let bookID = selection.first else { return ManualBookOrder.noBookToMoveAnnouncement }
         guard selection.count == 1 else { return ManualBookOrder.severalBooksToMoveAnnouncement }
         let book = bookByID(bookID)
-        if let book, book.isFeedItem {
+        // A feed's item has no place in a folder's manual order, but the
+        // Reading List holds episodes and articles and orders them, as a
+        // row's own Move Up and Move Down do: only a folder refuses it.
+        if case .folder = target, let book, book.isFeedItem {
             return ManualBookOrder.feedItemCannotMoveAnnouncement(book.title)
         }
         if let result = moveBook(bookID, direction: direction, in: target) {

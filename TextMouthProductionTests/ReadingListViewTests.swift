@@ -373,8 +373,10 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(say(essays, manual), "Field Notes can't move down.")
     }
 
-    /// A feed's item has no place in an order the listener arranges, so the
-    /// command says that instead of "can't move up" and "can't move down".
+    /// A feed's item has no place in a folder's manual order, so the command
+    /// says that instead of "can't move up" and "can't move down". In the
+    /// Reading List, which holds episodes and articles and orders them, it
+    /// moves like any book, as a row's own Move Up and Move Down move it.
     @MainActor
     func testMoveCommandsSayAFeedItemCannotMove() {
         let shelf = Self.shelf()
@@ -392,6 +394,25 @@ final class ReadingListViewTests: XCTestCase {
             ManualBookOrder.feedItemCannotMoveAnnouncement("Episode Nine"),
             "Episode Nine is an item of a feed, and a feed's items can't be moved."
         )
+
+        // In the Reading List the same episode moves, for real, up and down.
+        shelf.model.addToReadingList(shelf.ids("Field Notes", "Loose Pages") + [episode.id])
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        let listSort = shelf.model.library.sortState(at: readingList)
+        let fieldNotes = shelf.id("Field Notes")
+        let loosePages = shelf.id("Loose Pages")
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages, episode.id])
+
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: -1, at: readingList, sortedBy: listSort),
+            "Moved Episode Nine above Loose Pages"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, episode.id, loosePages])
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: 1, at: readingList, sortedBy: listSort),
+            "Moved Episode Nine below Loose Pages"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages, episode.id])
     }
 
     // MARK: - The Edit-Mode Bar
