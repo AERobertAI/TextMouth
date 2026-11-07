@@ -727,7 +727,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let found = try AudioBookParser.audioFiles(in: folder).map(\.lastPathComponent)
 
         XCTAssertEqual(Set(found), Set(realNames.map { ($0 as NSString).lastPathComponent }))
-        XCTAssertEqual(found.count, realNames.count, "a link was listed as a track")
+        XCTAssertEqual(found.count, realNames.count, "every track is listed once, and no link is listed as one")
     }
 
     /// The import's two walks over a folder pass over links the same way:
