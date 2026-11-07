@@ -77,7 +77,7 @@ enum KF8Book {
             }
             places.insert(destination.position)
         }
-        let anchors = anchors(for: places, in: text, layout: layout)
+        let anchors = anchors(for: places, in: text)
         // A contents page that was made for the book (see `generatedContentsPart`)
         // is left out, unless the book's own contents names it.
         let generatedContents = try generatedContentsPart(of: layout, headers: headers, database: database)
@@ -138,26 +138,13 @@ enum KF8Book {
 
     /// The anchors to write for the contents' `places`, ascending: each at
     /// its place, moved back to the start of the tag the place lies in (an
-    /// anchor cannot go inside a tag), and no further back than the start of
-    /// the fragment that holds it.
-    private static func anchors(for places: Set<Int>, in text: [UInt8], layout: KF8Layout) -> [KF8Layout.Anchor] {
-        let snapped = MOBIMarkup.anchors(for: places.sorted(), in: text)
-        // Where each fragment starts, to keep an anchor from going back into
-        // the fragment before (or the skeleton) when a tag straddles them.
-        var fragmentStarts: [Int] = []
-        for part in layout.parts { fragmentStarts.append(contentsOf: part.fragments.map(\.range.lowerBound)) }
-        fragmentStarts.sort()
-        return snapped.map { anchor in
-            // The last fragment start at or before the place.
-            var low = 0
-            var high = fragmentStarts.count
-            while low < high {
-                let middle = (low + high) / 2
-                if fragmentStarts[middle] <= anchor.offset { low = middle + 1 } else { high = middle }
-            }
-            let start = low > 0 ? fragmentStarts[low - 1] : 0
-            return KF8Layout.Anchor(position: max(anchor.position, start), id: anchor.id)
-        }.sorted { $0.position < $1.position }
+    /// anchor cannot go inside a tag). An anchor lies in some piece of the
+    /// text or in none, and is written only where it does; a place that a
+    /// hostile book puts anywhere else costs nothing.
+    private static func anchors(for places: Set<Int>, in text: [UInt8]) -> [KF8Layout.Anchor] {
+        MOBIMarkup.anchors(for: places.sorted(), in: text)
+            .map { KF8Layout.Anchor(position: $0.position, id: $0.id) }
+            .sorted { $0.position < $1.position }
     }
 
     // MARK: A Contents Page Made for the Book

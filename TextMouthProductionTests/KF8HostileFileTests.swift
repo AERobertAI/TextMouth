@@ -188,6 +188,23 @@ final class KF8HostileFileTests: XCTestCase {
         XCTAssertNotNil(readQuickly(none, "a book that names no flow table"))
     }
 
+    func testAFlowTableThatEndsPastTheTextDoesNotLetAPartPastTheTextBeRead() {
+        // The markup flow's end is held to the text's: a skeleton past the end of the text is damaged
+        // whatever the flow table says, and is not read (which would trap).
+        // A document with no fragments, so that nothing else about it is wrong.
+        let sound = paragraphs(5, cut: 0)
+        let laid = sound.placed()
+        var fixture = sound
+        var rows = fixture.skeletonRows(laid)
+        rows[0].values[6] = [laid.text.count + 10, 20, laid.text.count + 10, 20]
+        fixture.skeletonRowsOverride = rows
+        var bytes = fixture.data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let flowRecord = (0..<4).reduce(0) { $0 << 8 | Int(bytes[offsets[0] + 192 + $1]) }
+        MOBIFixture.put32(&bytes, offsets[flowRecord] + 16, 0x0FFF_FFFF)
+        assertDamaged(bytes, "a skeleton past the text, under a flow table that ends far past it")
+    }
+
     // MARK: - Indexes
 
     func testAnIndexThatClaimsMoreRecordsOrEntriesThanItHoldsIsDamaged() {
@@ -229,6 +246,43 @@ final class KF8HostileFileTests: XCTestCase {
         let data = offsets[fragment + 1]
         empty[data + 192 + 1 + Int(bytes[data + 192])] = 0
         assertDamaged(empty, "a fragment with no values at all")
+    }
+
+    func testAnIndexWhoseEntriesAllClaimTheSameThousandsOfNumbersIsDamaged() throws {
+        // One entry that holds 20,000 numbers (its first tag's control bits say "a byte length follows"),
+        // which 150 places of the entry table all name: three million numbers from a record of 20 KB.
+        let numbers = 20_000
+        let tags: [[UInt8]] = [[1, 2, 3, 0], [6, 4, 12, 0], [0, 0, 0, 1]]
+        let tagx = Array("TAGX".utf8) + MOBIFixture.be32(12 + tags.count * 4) + MOBIFixture.be32(1) + tags.flatMap { $0 }
+        var header = [UInt8](repeating: 0, count: 192)
+        header.replaceSubrange(0..<4, with: Array("INDX".utf8))
+        MOBIFixture.put32(&header, 4, 192)
+        MOBIFixture.put32(&header, 24, 1)
+        MOBIFixture.put32(&header, 28, 65001)
+
+        var record = header
+        let entry = 192
+        record += [1, 0x41, 0x03] + MOBIFixture.variableNumber(numbers) + [UInt8](repeating: 0x81, count: numbers)
+        let tableOffset = record.count
+        record += Array("IDXT".utf8) + (0..<150).flatMap { _ in [UInt8(entry >> 8), UInt8(entry & 0xFF)] }
+        MOBIFixture.put32(&record, 20, tableOffset)
+        MOBIFixture.put32(&record, 24, 150)
+
+        let file = MOBIFixture.database(
+            named: "Hostile_Index", type: "BOOK", creator: "MOBI", records: [[0], header + tagx, record])
+        let database = try MOBIPalmDatabase(bytes: file)
+        let started = Date()
+        XCTAssertThrowsError(try MOBIIndex.table(startingAt: 1, in: database)) {
+            guard case .damaged(let detail)? = $0 as? MOBIError else { return XCTFail("\($0)") }
+            XCTAssertTrue(detail.contains("too many numbers"), detail)
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 1.0)
+        // The same entry named a hundred times is within the bound, and read.
+        var fewer = record
+        MOBIFixture.put32(&fewer, 24, 90)
+        let fewFile = MOBIFixture.database(
+            named: "Hostile_Index", type: "BOOK", creator: "MOBI", records: [[0], header + tagx, fewer])
+        XCTAssertEqual(try MOBIIndex.table(startingAt: 1, in: try MOBIPalmDatabase(bytes: fewFile)).rows.count, 90)
     }
 
     func testAnIndexRecordThatEndsInTheMiddleOfAnEntryIsDamaged() {
