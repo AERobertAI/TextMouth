@@ -2,11 +2,12 @@ import Combine
 import XCTest
 @testable import TextMouth
 
-/// `PhoneSession`, the iPhone's one owner of the open book's reader. It runs on
-/// the Mac's test host, since nothing can run on iOS tonight, over real readers
-/// of silent audiobooks in a private world: its own library, settings,
-/// notification center, and requests. Nothing is heard: the sounds go to a
-/// player that records them, and under test the media session installs nothing.
+/// `PhoneSession`, the iPhone's owner of its open readers, two at most. It runs
+/// on the Mac's test host, since nothing can run on iOS tonight, over real
+/// readers of silent audiobooks in a private world: its own library, settings,
+/// notification center, requests, and media session, which records what it
+/// would show the system. Nothing is heard: the sounds go to a player that
+/// records them, and the media session installs nothing.
 @MainActor
 final class PhoneSessionTests: XCTestCase {
     /// Subscriptions a test keeps until it ends.
@@ -14,9 +15,8 @@ final class PhoneSessionTests: XCTestCase {
 
     // MARK: - Opening
 
-    /// A book opens at once, with its reader held here, its sounds set before
-    /// anything can play, the book marked opened, and its ID kept for the next
-    /// launch. The reader is still loading, and nothing plays when it has.
+    /// A book opens at once, with its reader held here and its sounds set
+    /// before anything can play. The reader is loading, and nothing plays.
     func testOpeningMakesAReaderAndWaitsAtItsPlace() throws {
         let world = try makeIntegrationWorld("PhoneOpen")
         let book = try world.makeSilentAudioBook(
@@ -24,21 +24,17 @@ final class PhoneSessionTests: XCTestCase {
             trackDurations: [5, 5],
             savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: 10, globalCharacterOffset: 60)
         )
-        let sounds = makeSounds("PhoneOpen")
+        let sounds = makeSounds()
         let session = makeSession(in: world, sounds: sounds)
-        XCTAssertNil(world.library.bookByID(book.id)?.lastOpened, "The fixture starts unopened")
 
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
 
         XCTAssertTrue(session.reader === reader)
         XCTAssertTrue(reader.soundEffectService === sounds, "A Play from the AirPods could come before any view")
-        XCTAssertNotNil(world.library.bookByID(book.id)?.lastOpened, "Not marked opened")
-        XCTAssertEqual(session.bookToReopenAtLaunch?.id, book.id)
         XCTAssertEqual(session.snapshot?.bookID, book.id)
         XCTAssertEqual(session.snapshot?.title, "Tide Tables")
         XCTAssertEqual(session.snapshot?.isLoading, true)
-        XCTAssertEqual(session.snapshot?.isPlaying, false)
-
+        XCTAssertNil(session.listeningReader)
         waitForReaderToLoad(reader)
         XCTAssertTrue(eventually { session.snapshot?.isLoading == false }, "The snapshot never saw the load end")
         XCTAssertEqual(reader.currentChapterIndex, 1, "Not at its saved place")
@@ -46,22 +42,20 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertFalse(reader.isPlaybackUnderWay, "A book waits at its place until Play")
     }
 
-    /// Opening the book already open keeps its reader, playing or not.
+    /// Opening the book already on screen keeps its reader.
     func testOpeningTheOpenBookKeepsItsReader() throws {
         let world = try makeIntegrationWorld("PhoneOpenAgain")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
         let session = makeSession(in: world)
-
-        let first = session.open(book)
+        let first = try XCTUnwrap(session.open(book))
         waitForReaderToLoad(first)
-        let second = session.open(book)
 
-        XCTAssertTrue(first === second)
+        XCTAssertTrue(session.open(book) === first)
         XCTAssertFalse(first.hasClosed)
     }
 
-    /// The reader starts from the library's own row, not from whatever row a
-    /// view read a while ago, which could hold an older place.
+    /// The reader starts from the library's own row, not from a row a view read
+    /// a while ago, which could hold an older place.
     func testAStaleRowOpensAtTheLibrarysPlace() throws {
         let world = try makeIntegrationWorld("PhoneStaleRow")
         let stale = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
@@ -71,102 +65,145 @@ final class PhoneSessionTests: XCTestCase {
         )
         let session = makeSession(in: world)
 
-        let reader = session.open(stale)
+        let reader = try XCTUnwrap(session.open(stale))
         waitForReaderToLoad(reader)
 
         XCTAssertEqual(reader.currentChapterIndex, 1)
         XCTAssertEqual(reader.currentCharacterOffset, 20)
     }
 
-    // MARK: - Switching and Closing
-
-    /// Opening another book saves and closes the first, leaves one reader open
-    /// and playing nothing, and keeps the new book's ID for the next launch.
-    func testSwitchingClosesAndSavesTheOldReader() throws {
-        let world = try makeIntegrationWorld("PhoneSwitch")
-        let oldBook = try world.makeSilentAudioBook(title: "Old Volume", trackDurations: [5, 5])
-        let newBook = try world.makeSilentAudioBook(title: "New Volume", trackDurations: [5, 5])
+    /// A book no longer in the library is refused, never stood in for with a
+    /// placeholder, as the Mac's window does for a missing book.
+    func testABookNoLongerInTheLibraryIsRefused() throws {
+        let world = try makeIntegrationWorld("PhoneOpenMissing")
         let session = makeSession(in: world)
-        let old = session.open(oldBook)
-        waitForReaderToLoad(old)
-        old.currentCharacterOffset = 20
+        let missing = Book(title: "Missing Volume", format: .txt, filePath: "/nonexistent/missing.txt", md5Hash: "m")
 
-        let new = session.open(newBook)
-
-        XCTAssertTrue(old.hasClosed, "The old reader is still open")
-        XCTAssertFalse(new.hasClosed)
-        XCTAssertTrue(session.reader === new)
-        XCTAssertEqual(session.snapshot?.bookID, newBook.id)
-        XCTAssertEqual(world.library.openBookIDs, [newBook.id], "One reader at a time")
-        XCTAssertEqual(
-            world.library.bookByID(oldBook.id)?.readingPosition?.characterOffset, 20,
-            "The old book's place was not saved"
-        )
-        XCTAssertEqual(session.bookToReopenAtLaunch?.id, newBook.id)
-        waitForReaderToLoad(new)
-        XCTAssertFalse(new.isPlaybackUnderWay, "The new book waits at its place until Play")
-    }
-
-    /// Closing saves and closes the reader, and leaves nothing to open at the
-    /// next launch. Closing again does nothing.
-    func testClosingEndsTheReaderAndForgetsIt() throws {
-        let world = try makeIntegrationWorld("PhoneClose")
-        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
-        let session = makeSession(in: world)
-        let reader = session.open(book)
-        waitForReaderToLoad(reader)
-        reader.currentCharacterOffset = 20
-
-        session.closeReader()
-
-        XCTAssertTrue(reader.hasClosed)
+        XCTAssertNil(session.open(missing))
         XCTAssertNil(session.reader)
         XCTAssertNil(session.snapshot)
-        XCTAssertNil(session.bookToReopenAtLaunch)
-        XCTAssertTrue(world.library.openBookIDs.isEmpty)
-        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition?.characterOffset, 20)
-
-        session.closeReader()
-        XCTAssertNil(session.reader)
     }
 
-    /// A closed reader's later changes never reach the session.
-    func testAClosedReaderIsNoLongerFollowed() throws {
-        let world = try makeIntegrationWorld("PhoneClosedFollow")
-        let oldBook = try world.makeSilentAudioBook(title: "Old Volume", trackDurations: [5])
-        let newBook = try world.makeSilentAudioBook(title: "New Volume", trackDurations: [5])
+    // MARK: - Two Readers at Most
+
+    /// Opening another book leaves the first going on behind it, still playing,
+    /// and in the Continue row.
+    func testOpeningAnotherBookLeavesTheFirstPlaying() throws {
+        let pair = try makePlayingPair("PhonePairOpen")
+
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertTrue(pair.session.listeningReader === pair.first)
+        XCTAssertFalse(pair.first.hasClosed)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing, "Opening a book stopped the one playing")
+        XCTAssertEqual(pair.session.continueSnapshot?.bookID, pair.firstBook.id)
+        XCTAssertEqual(pair.session.listeningSnapshot?.isPlaying, true)
+    }
+
+    /// Play in the second book pauses the first, closes it, and leaves the
+    /// second the one reader.
+    func testPlayingTheSecondPausesAndClosesTheFirst() throws {
+        let pair = try makePlayingPair("PhonePairPlay")
+
+        pair.session.togglePlayPause()
+
+        XCTAssertTrue(eventually(within: 30) { pair.session.snapshot?.isPlaying == true }, "The second never played")
+        XCTAssertTrue(eventually { pair.first.hasClosed }, "The first is still open")
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertNil(pair.session.listeningSnapshot)
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertEqual(pair.session.continueSnapshot?.bookID, pair.secondBook.id)
+    }
+
+    /// Leaving the second book's screen before it plays closes it, and the
+    /// first is as it was, playing.
+    func testLeavingTheSecondUnplayedLeavesTheFirstAsItWas() throws {
+        let pair = try makePlayingPair("PhonePairLeave")
+
+        pair.session.leaveReader()
+
+        XCTAssertTrue(pair.second.hasClosed)
+        XCTAssertTrue(pair.session.reader === pair.first)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.firstBook.id)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing, "The first stopped")
+    }
+
+    /// Opening the book behind brings it forward, and the one on screen gives
+    /// way; a third book takes the place of the one on screen, and the book
+    /// behind stays.
+    func testOpeningTheBookBehindOrAThirdKeepsTwoAtMost() throws {
+        let pair = try makePlayingPair("PhonePairThird")
+        let third = try pair.world.makeSilentAudioBook(title: "Third Volume", trackDurations: [5])
+
+        let thirdReader = try XCTUnwrap(pair.session.open(third))
+        XCTAssertTrue(pair.second.hasClosed, "Three readers were open")
+        XCTAssertTrue(pair.session.reader === thirdReader)
+        XCTAssertTrue(pair.session.listeningReader === pair.first)
+
+        XCTAssertTrue(pair.session.open(pair.firstBook) === pair.first)
+        XCTAssertTrue(thirdReader.hasClosed)
+        XCTAssertTrue(pair.session.reader === pair.first)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertFalse(pair.first.hasClosed)
+    }
+
+    // MARK: - Engaging
+
+    /// A mistaken double-tap on a row leaves the book as it was: still "New",
+    /// unopened, and not the last opened, once its screen is left.
+    func testAMistakenOpenLeavesTheBookAsItWas() throws {
+        let world = try makeIntegrationWorld("PhoneMistake")
+        preserveLastOpenedBook()
+        let earlier = try world.makeSilentAudioBook(title: "Earlier Volume", trackDurations: [5])
+        let mistaken = try world.makeSilentAudioBook(title: "Mistaken Volume", trackDurations: [5])
+        ConfigService.shared.config.lastOpenedBookID = earlier.id.uuidString
         let session = makeSession(in: world)
-        let old = session.open(oldBook)
-        waitForReaderToLoad(old)
-        session.open(newBook)
 
-        old.book.title = "Renamed After Closing"
-        spinMainRunLoop(for: 0.1)
+        let reader = try XCTUnwrap(session.open(mistaken))
+        waitForReaderToLoad(reader)
+        session.leaveReader()
 
-        XCTAssertEqual(session.snapshot?.title, "New Volume")
+        XCTAssertTrue(reader.hasClosed, "A book opened by mistake stays in the Continue row")
+        XCTAssertNil(session.reader)
+        XCTAssertEqual(world.library.bookByID(mistaken.id)?.isUnopened, true, "The book lost New and Unopened")
+        XCTAssertEqual(ConfigService.shared.config.lastOpenedBookID, earlier.id.uuidString, "The last opened book changed")
+    }
+
+    /// A book counts as opened once engaged; one engaged and not played stays
+    /// open as its screen is left.
+    func testABookCountsAsOpenedWhenEngaged() throws {
+        let world = try makeIntegrationWorld("PhoneEngaged")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let session = makeSession(in: world)
+        let reader = try XCTUnwrap(session.open(book))
+        waitForReaderToLoad(reader)
+
+        session.noteBookEngaged()
+        session.leaveReader()
+
+        XCTAssertFalse(reader.hasClosed, "An engaged book closed as its screen was left")
+        XCTAssertEqual(world.library.bookByID(book.id)?.isUnopened, false)
     }
 
     // MARK: - The Magic Tap
 
-    /// With a reader open, the magic tap plays it, and again pauses it.
-    func testTheMagicTapPlaysAndPausesTheOpenBook() throws {
-        let world = try makeIntegrationWorld("PhoneTapOpen")
-        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
-        let session = makeSession(in: world)
-        let reader = session.open(book)
-        waitForReaderToLoad(reader)
+    /// With a book audible behind the one on screen, the magic tap pauses it;
+    /// from silence, the next plays the book on screen.
+    func testTheMagicTapPausesWhatIsAudibleThenPlaysTheBookOnScreen() throws {
+        let pair = try makePlayingPair("PhoneTapPair")
 
-        XCTAssertTrue(session.togglePlayPauseFromAnywhere())
-        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "Never played")
+        XCTAssertTrue(pair.session.togglePlayPauseFromAnywhere())
+        XCTAssertTrue(eventually(within: 30) { !pair.first.isPlaybackActivelyAdvancing }, "The audible book played on")
+        XCTAssertFalse(pair.second.isPlaybackUnderWay, "The tap played the book on screen")
 
-        XCTAssertTrue(session.togglePlayPauseFromAnywhere())
-        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == false }, "Never paused")
-        XCTAssertTrue(session.reader === reader, "It opened another reader")
+        XCTAssertTrue(pair.session.togglePlayPauseFromAnywhere())
+        XCTAssertTrue(eventually(within: 30) { pair.session.snapshot?.isPlaying == true }, "Never played")
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.secondBook.id)
     }
 
-    /// With no reader open, the magic tap opens the book last opened, and plays
-    /// it once it has loaded.
-    func testTheMagicTapOpensAndPlaysTheLastBook() throws {
+    /// With no reader open, the magic tap opens the book in reach, here the
+    /// last opened, and plays it once it has loaded.
+    func testTheMagicTapOpensAndPlaysTheBookInReach() throws {
         let world = try makeIntegrationWorld("PhoneTapLast")
         preserveLastOpenedBook()
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
@@ -177,32 +214,45 @@ final class PhoneSessionTests: XCTestCase {
 
         let reader = try XCTUnwrap(session.reader, "No reader opened")
         XCTAssertEqual(reader.book.id, book.id)
-        XCTAssertTrue(reader.isLoading, "The load should still be under way")
+        XCTAssertTrue(session.playWhenLoaded, "The press was not kept for the load's end")
         XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "Never played")
     }
 
-    /// With no book ever opened, the magic tap answers false, so that the
-    /// system's fallback runs, and opens nothing. So does a last book that has
-    /// left the library.
-    func testTheMagicTapAnswersFalseWithNoBookToPlay() throws {
+    /// With no book in reach, the magic tap answers false, so that the
+    /// system's fallback runs, and opens nothing.
+    func testTheMagicTapAnswersFalseWithNoBookInReach() throws {
         let world = try makeIntegrationWorld("PhoneTapNone")
         preserveLastOpenedBook()
+        _ = try world.makeSilentAudioBook(title: "Never Opened", trackDurations: [5])
         let session = makeSession(in: world)
-
-        ConfigService.shared.config.lastOpenedBookID = ""
-        XCTAssertFalse(session.togglePlayPauseFromAnywhere(), "No book was ever opened")
-        XCTAssertNil(session.reader)
-
         ConfigService.shared.config.lastOpenedBookID = UUID().uuidString
-        XCTAssertFalse(session.togglePlayPauseFromAnywhere(), "The last book left the library")
+
+        XCTAssertNil(session.bookInReach)
+        XCTAssertFalse(session.togglePlayPauseFromAnywhere())
         XCTAssertNil(session.reader)
-        XCTAssertNil(session.snapshot)
     }
 
-    /// The magic tap on a finished last book does what Play does there: says
+    /// With the last opened book gone, the book in reach is the row opened most
+    /// recently.
+    func testTheBookInReachFallsToTheNewestOpenedRow() throws {
+        let world = try makeIntegrationWorld("PhoneInReach")
+        preserveLastOpenedBook()
+        let older = try world.makeSilentAudioBook(title: "Older Volume", trackDurations: [5])
+        let newer = try world.makeSilentAudioBook(title: "Newer Volume", trackDurations: [5])
+        for (book, opened) in [(older, Date(timeIntervalSinceNow: -86_400)), (newer, Date(timeIntervalSinceNow: -60))] {
+            let index = try XCTUnwrap(world.library.library.books.firstIndex { $0.id == book.id })
+            world.library.library.books[index].lastOpened = opened
+        }
+        ConfigService.shared.config.lastOpenedBookID = UUID().uuidString
+        let session = makeSession(in: world)
+
+        XCTAssertEqual(session.bookInReach?.id, newer.id)
+    }
+
+    /// The magic tap on a finished book does what Play does there: says
     /// "Finished: <title>", as the user decided on October 10, 2026, and leaves
-    /// the book at its end. It is not a finished book's request to go on to the
-    /// next, which would start the book over without a word.
+    /// the book at its end. It is not a finished book's request to go on, which
+    /// would start the book over without a word.
     func testTheMagicTapOnAFinishedBookSaysWhatPlaySays() throws {
         let world = try makeIntegrationWorld("PhoneTapFinished")
         preserveLastOpenedBook()
@@ -217,8 +267,8 @@ final class PhoneSessionTests: XCTestCase {
 
         let recorder = recordingAnnouncements {
             XCTAssertTrue(session.togglePlayPauseFromAnywhere())
-            XCTAssertTrue(eventually(within: 30) { session.snapshot?.isLoading == false }, "Never loaded")
-            spinMainRunLoop(for: 0.1)
+            XCTAssertTrue(eventually(within: 30) { session.reader?.isLoading == false }, "Never loaded")
+            spinMainRunLoop(for: 0.2)
         }
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Finished: Harbour Soundings"])
@@ -229,28 +279,32 @@ final class PhoneSessionTests: XCTestCase {
 
     // MARK: - Play While Loading
 
-    /// A press while the book loads waits for the load to end, since a reader
-    /// ignores Play until then.
-    func testAPressWhileLoadingPlaysOnceLoaded() throws {
+    /// A press while the book loads waits for the load to end; a second takes
+    /// it back.
+    func testAPressWhileLoadingWaitsForTheLoad() throws {
         let world = try makeIntegrationWorld("PhonePressLoading")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
         XCTAssertTrue(reader.isLoading, "The load should still be under way")
 
         session.togglePlayPause()
+        XCTAssertTrue(session.playWhenLoaded)
+        session.togglePlayPause()
+        XCTAssertFalse(session.playWhenLoaded, "A second press did not take it back")
+        session.play()
+        XCTAssertTrue(session.playWhenLoaded, "A remote Play while loading was lost")
 
-        XCTAssertFalse(reader.isPlaybackUnderWay, "Nothing to play yet")
         XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The press was lost")
+        XCTAssertFalse(session.playWhenLoaded)
     }
 
-    /// A second press while the book loads takes the first back.
-    func testASecondPressWhileLoadingTakesItBack() throws {
+    /// Two presses while loading leave the book at rest.
+    func testTwoPressesWhileLoadingLeaveTheBookAtRest() throws {
         let world = try makeIntegrationWorld("PhonePressTwice")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
         let session = makeSession(in: world)
-        let reader = session.open(book)
-        XCTAssertTrue(reader.isLoading, "The load should still be under way")
+        let reader = try XCTUnwrap(session.open(book))
 
         session.togglePlayPause()
         session.togglePlayPause()
@@ -261,15 +315,14 @@ final class PhoneSessionTests: XCTestCase {
     }
 
     /// A press while a book loads that a finished book asked for means stop:
-    /// that book was about to play. A second press wants it played after all.
+    /// that book was about to play.
     func testAPressWhileLoadingStopsABookAboutToPlay() throws {
         let world = try makeIntegrationWorld("PhonePressRequest")
         let previous = try world.makeSilentAudioBook(title: "Previous Volume", trackDurations: [5])
         let book = try world.makeSilentAudioBook(title: "Next Volume", trackDurations: [5, 5])
         world.autoplayRequests.request(for: book.id, from: previous.id)
         let session = makeSession(in: world)
-        let reader = session.open(book)
-        XCTAssertTrue(reader.isLoading, "The load should still be under way")
+        let reader = try XCTUnwrap(session.open(book))
 
         session.togglePlayPause()
 
@@ -280,8 +333,8 @@ final class PhoneSessionTests: XCTestCase {
     }
 
     /// A book that could not load has nothing to play: the press that waited
-    /// for it does nothing, and no later change of the reader plays it.
-    func testAPressWaitingForABookThatCannotLoadDoesNothing() throws {
+    /// for it is dropped.
+    func testAPressWaitingForABookThatCannotLoadIsDropped() throws {
         let world = try makeIntegrationWorld("PhonePressFailure")
         let book = Book(
             title: "Missing Volume",
@@ -291,27 +344,33 @@ final class PhoneSessionTests: XCTestCase {
         )
         world.library.library.addBook(book)
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
 
         session.togglePlayPause()
         waitForReaderToLoad(reader)
         spinMainRunLoop(for: 0.2)
 
         XCTAssertNotNil(reader.loadErrorMessage, "The book should have failed to load")
+        XCTAssertFalse(session.playWhenLoaded)
         XCTAssertFalse(reader.isPlaybackUnderWay)
-        XCTAssertEqual(session.snapshot?.isPlaying, false)
     }
 
     // MARK: - Going On to the Next Book
 
-    /// A book's end asks for the next one by notification, and the session opens
-    /// it: the old reader closes, and the new one claims the request as it
-    /// loads, so it plays. Nothing asks the navigation to change.
+    /// A book's end asks for the next by notification: the new reader is made,
+    /// the old closed, and the new claims the request as it loads, so it plays.
+    /// Nothing asks the navigation to change, and the hold ends with the load.
     func testTheNextBookOpensAndPlaysThroughTheNotification() throws {
         let folder = try makeFolderWorld("PhoneNext")
         let session = makeSession(in: folder.world)
+        var holds: [String] = []
+        var ended = 0
+        session.beginHold = { name in
+            holds.append(name)
+            return { ended += 1 }
+        }
         let shown = recordScreenRequests(of: session)
-        let first = session.open(folder.first)
+        let first = try XCTUnwrap(session.open(folder.first))
         waitForReaderToLoad(first)
 
         first.handleEndOfBook()
@@ -322,28 +381,73 @@ final class PhoneSessionTests: XCTestCase {
         )
         XCTAssertTrue(first.hasClosed, "The finished book's reader is still open")
         XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The next book never played")
-        XCTAssertEqual(session.snapshot?.bookID, folder.second.id)
         XCTAssertFalse(folder.world.autoplayRequests.hasRequest(for: folder.second.id), "The request was not claimed")
         XCTAssertEqual(session.bookToReopenAtLaunch?.id, folder.second.id)
         XCTAssertTrue(shown().isEmpty, "A listener in the Library stays there")
+        XCTAssertEqual(holds.count, 1, "The hand-over was not held")
+        XCTAssertTrue(eventually { ended >= 1 }, "The hold never ended")
     }
 
-    /// A running sleep timer goes on with the next book, though the session
-    /// closes the old reader before it makes the new one.
+    /// TextMouth stays the Now Playing app through the hand-over (F1): as the
+    /// old reader closes, the new one's item is already there, paused, and the
+    /// system is left showing it, not nothing.
+    func testTheNextBookKeepsTextMouthTheNowPlayingApp() throws {
+        let folder = try makeFolderWorld("PhoneNextNowPlaying")
+        var shownItems: [NowPlayingItem?] = []
+        let media = NowPlayingService(
+            installsSystemIntegrations: false,
+            diagnosticSink: { _ in },
+            systemNowPlaying: { shownItems.append($0) }
+        )
+        let session = makeSession(in: folder.world, nowPlaying: media)
+        let first = try XCTUnwrap(session.open(folder.first))
+        waitForReaderToLoad(first)
+        session.togglePlayPause()
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The first never played")
+
+        first.handleEndOfBook()
+        XCTAssertTrue(eventually(within: 30) { first.hasClosed }, "The hand-over never happened")
+
+        let lastShown = try XCTUnwrap(shownItems.last, "Nothing was ever shown")
+        XCTAssertEqual(lastShown?.title, "B Volume", "The system was left showing nothing, or the old book")
+        let firstOfNext = try XCTUnwrap(shownItems.firstIndex { $0?.title == "B Volume" })
+        XCTAssertFalse(shownItems[firstOfNext...].contains { $0 == nil }, "The system showed nothing after the next book")
+    }
+
+    /// A book going on behind the one on screen goes on there: the next book
+    /// takes its place behind, and the book on screen stays.
+    func testTheNextBookOfTheBookBehindGoesOnBehind() throws {
+        let folder = try makeFolderWorld("PhoneNextBehind")
+        let session = makeSession(in: folder.world)
+        let first = try XCTUnwrap(session.open(folder.first))
+        waitForReaderToLoad(first)
+        session.togglePlayPause()
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The first never played")
+        let onScreen = try XCTUnwrap(session.open(folder.third))
+        waitForReaderToLoad(onScreen)
+
+        first.handleEndOfBook()
+
+        XCTAssertTrue(
+            eventually(within: 30) { session.listeningReader?.book.id == folder.second.id },
+            "The next book did not take the place behind"
+        )
+        XCTAssertTrue(session.reader === onScreen, "The book on screen was replaced")
+        XCTAssertTrue(first.hasClosed)
+    }
+
+    /// A running sleep timer goes on with the next book.
     func testASleepTimerGoesOnWithTheNextBook() throws {
         preserveSharedSleepTimer()
         let folder = try makeFolderWorld("PhoneNextTimer")
         let session = makeSession(in: folder.world)
-        let first = session.open(folder.first)
+        let first = try XCTUnwrap(session.open(folder.first))
         waitForReaderToLoad(first)
         let timer = SleepTimerService.shared
         timer.start(duration: .minutes(30), ownerID: first.readerID, onExpire: {})
 
         first.handleEndOfBook()
-        XCTAssertTrue(
-            eventually(within: 30) { session.reader?.book.id == folder.second.id },
-            "The next book never opened"
-        )
+        XCTAssertTrue(eventually(within: 30) { session.reader?.book.id == folder.second.id }, "The next book never opened")
         let second = try XCTUnwrap(session.reader)
         waitForReaderToLoad(second)
 
@@ -353,14 +457,13 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertEqual(timer.duration, .minutes(30))
     }
 
-    /// A request for the book already open leaves its reader in place, which
-    /// claims the request itself.
+    /// A request for the book already open leaves its reader to claim it.
     func testARequestForTheOpenBookLeavesItsReaderToClaimIt() throws {
         let world = try makeIntegrationWorld("PhoneNextOpen")
         let previous = try world.makeSilentAudioBook(title: "Previous Volume", trackDurations: [5])
         let book = try world.makeSilentAudioBook(title: "Next Volume", trackDurations: [5, 5])
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
         waitForReaderToLoad(reader)
 
         let request = world.autoplayRequests.request(for: book.id, from: previous.id)
@@ -368,17 +471,17 @@ final class PhoneSessionTests: XCTestCase {
 
         XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The reader did not claim it")
         XCTAssertTrue(session.reader === reader)
-        XCTAssertFalse(reader.hasClosed)
     }
 
-    /// Next in Folder's request opens the book and does not play it.
+    /// Next in Folder's request opens the book, a turn after the post, and does
+    /// not play it.
     func testARequestToOpenABookOpensItWithoutPlaying() throws {
         let world = try makeIntegrationWorld("PhoneOpenRequest")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
         let session = makeSession(in: world)
 
         world.notifications.post(name: .openBookWindow, object: book.id)
-        XCTAssertNil(session.reader, "Handled on a later turn of the main queue, never inside the post")
+        XCTAssertNil(session.reader, "Handled inside the post, not a turn later")
 
         XCTAssertTrue(eventually { session.reader?.book.id == book.id }, "The book never opened")
         let reader = try XCTUnwrap(session.reader)
@@ -403,29 +506,27 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertTrue(eventually { session.reader?.book.id == bookID }, "The book never opened")
     }
 
-    /// A book that has left the library opens nothing, keeps the book open now,
-    /// and leaves no request waiting.
+    /// A book that has left the library opens nothing, keeps the book open, and
+    /// leaves no request waiting.
     func testARequestForAMissingBookOpensNothing() throws {
         let world = try makeIntegrationWorld("PhoneMissing")
         let open = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
         let session = makeSession(in: world)
-        let reader = session.open(open)
+        let reader = try XCTUnwrap(session.open(open))
         waitForReaderToLoad(reader)
         let missing = UUID()
 
         let request = world.autoplayRequests.request(for: missing, from: open.id)
         world.notifications.post(name: .continueToNextBook, object: nil, userInfo: request.notificationUserInfo)
 
-        XCTAssertTrue(
-            eventually { !world.autoplayRequests.hasRequest(for: missing) },
-            "The request still waits for a book that is gone"
-        )
+        XCTAssertTrue(eventually { !world.autoplayRequests.hasRequest(for: missing) }, "The request still waits")
         XCTAssertTrue(session.reader === reader)
         XCTAssertFalse(reader.hasClosed)
     }
 
-    /// An import that opens its book goes through `readerOpener`: the book opens
-    /// and the navigation is told to show its screen.
+    /// An import that opens its book goes through `readerOpener`: the book
+    /// opens, and the navigation is asked to show its screen; a book that is
+    /// gone asks for nothing.
     func testTheLibrarysOpenerOpensTheBookAndAsksForItsScreen() throws {
         let world = try makeIntegrationWorld("PhoneOpener")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
@@ -433,13 +534,10 @@ final class PhoneSessionTests: XCTestCase {
         let shown = recordScreenRequests(of: session)
 
         world.library.readerOpener(book.id)
+        world.library.readerOpener(UUID())
 
         XCTAssertEqual(session.reader?.book.id, book.id)
         XCTAssertEqual(shown(), [book.id])
-
-        world.library.readerOpener(UUID())
-        XCTAssertEqual(session.reader?.book.id, book.id, "A book that is gone took the open book's place")
-        XCTAssertEqual(shown(), [book.id], "A book that is gone has no screen to show")
     }
 
     // MARK: - The Snapshot
@@ -451,7 +549,7 @@ final class PhoneSessionTests: XCTestCase {
         let world = try makeIntegrationWorld("PhoneSnapshotPlace")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
         waitForReaderToLoad(reader)
         XCTAssertTrue(eventually { session.snapshot?.isLoading == false })
         spinMainRunLoop(for: 0.1)
@@ -471,13 +569,12 @@ final class PhoneSessionTests: XCTestCase {
     }
 
     /// While a book plays, with its reader publishing as it goes, a snapshot is
-    /// published only when it differs from the last: half a second of a reader
-    /// at eight times a second would otherwise add four more.
+    /// published only when it differs from the last.
     func testTheSnapshotChangesOnlyAsPlayStartsAndStops() throws {
         let world = try makeIntegrationWorld("PhoneSnapshotPlay")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [30])
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
         waitForReaderToLoad(reader)
         XCTAssertTrue(eventually { session.snapshot?.isLoading == false })
         spinMainRunLoop(for: 0.1)
@@ -498,91 +595,186 @@ final class PhoneSessionTests: XCTestCase {
         }
     }
 
-    /// The title follows a rename, as the reader's own book does.
-    func testTheSnapshotFollowsARename() throws {
+    /// The title follows a rename; a closed reader's changes reach nothing.
+    func testTheSnapshotFollowsTheOpenReaderAlone() throws {
         let world = try makeIntegrationWorld("PhoneSnapshotRename")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
         let session = makeSession(in: world)
-        let reader = session.open(book)
+        let reader = try XCTUnwrap(session.open(book))
         waitForReaderToLoad(reader)
+        session.noteBookEngaged()
 
         reader.book.title = "Harbour Tide Tables"
-
         XCTAssertTrue(eventually { session.snapshot?.title == "Harbour Tide Tables" }, "The title never changed")
+
+        session.closeReader()
+        reader.book.title = "Renamed After Closing"
+        spinMainRunLoop(for: 0.1)
+        XCTAssertNil(session.snapshot)
     }
 
-    // MARK: - Coming Back
+    // MARK: - Reopening
 
-    /// A new launch, here a new session over the same preferences, finds the
-    /// book that was open. It finds none once the book is closed, once it has
-    /// left the library, or from a value that names no book.
-    func testTheOpenBookIsFoundAgainAtTheNextLaunch() throws {
+    /// The book open is kept for the next launch, with whether its screen was
+    /// showing, and a new session finds it there; closing keeps nothing.
+    func testTheOpenBookIsKeptForTheNextLaunch() throws {
         let world = try makeIntegrationWorld("PhoneReopen")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
         let preferences = makeSandboxedPreferences("PhoneReopen")
         let session = makeSession(in: world, preferences: preferences)
-        let nextLaunch = makeSession(in: world, preferences: preferences)
-        XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "A first launch has nothing to open")
+        let reader = try XCTUnwrap(session.open(book))
+        waitForReaderToLoad(reader)
+        XCTAssertTrue(eventually { preferences.string(forKey: PhoneSession.openingBookKey) == nil }, "Still opening")
+        session.noteAppLeavingForeground(readerScreenShowing: true)
 
-        session.open(book)
-        XCTAssertEqual(nextLaunch.bookToReopenAtLaunch?.id, book.id)
+        let nextLaunch = makeSession(in: world, preferences: preferences)
+        guard case let .reopen(reopening) = nextLaunch.takeReopeningAtLaunch(fileOpened: false) else {
+            return XCTFail("Nothing to reopen")
+        }
+        XCTAssertEqual(reopening.book.id, book.id)
+        XCTAssertTrue(reopening.showsReaderScreen)
+        XCTAssertFalse(reopening.readFromReadingList)
 
         session.closeReader()
         XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "A closed book opens again")
-
-        preferences.set(UUID().uuidString, forKey: PhoneSession.openBookPreferenceKey)
-        XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "A book no longer in the library")
-
-        preferences.set("not an identifier", forKey: PhoneSession.openBookPreferenceKey)
-        XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "A damaged preference")
     }
 
-    // MARK: - The Mac
+    /// A file opened at launch wins over reopening.
+    func testAFileOpenedAtLaunchWinsOverReopening() throws {
+        let world = try makeIntegrationWorld("PhoneReopenFile")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenFile")
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        let session = makeSession(in: world, preferences: preferences)
 
-    /// The Mac's app never makes a session or a model: only the iPhone's own
-    /// folders do, and these tests. So the Mac does what it did.
-    func testOnlyTheIPhonesOwnFoldersMakeASessionOrAModel() throws {
-        let inTheIPhonesFolders: (AppSourceFile) -> Bool = {
-            $0.path.hasPrefix("Phone/") || $0.path.hasPrefix("Platform/iOS/")
+        XCTAssertEqual(session.takeReopeningAtLaunch(fileOpened: true), .nothing)
+    }
+
+    /// A book the app closed while opening is not opened again: the marks are
+    /// cleared, and the sentence to say names it. Once its load ends, the mark
+    /// goes by itself.
+    func testABookThatClosedTheAppWhileOpeningIsNotReopened() throws {
+        let world = try makeIntegrationWorld("PhoneOpeningCrash")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneOpeningCrash")
+        let session = makeSession(in: world, preferences: preferences)
+
+        let reader = try XCTUnwrap(session.open(book))
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.openingBookKey), book.id.uuidString, "Not marked first")
+        waitForReaderToLoad(reader)
+        XCTAssertTrue(
+            eventually { preferences.string(forKey: PhoneSession.openingBookKey) == nil },
+            "The mark outlived the load"
+        )
+
+        // As a launch finds it after the app ended during the load.
+        preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
+        let nextLaunch = makeSession(in: world, preferences: preferences)
+        XCTAssertNil(nextLaunch.bookToReopenAtLaunch)
+        XCTAssertEqual(
+            nextLaunch.takeReopeningAtLaunch(fileOpened: false),
+            .closedWhileOpening("TextMouth closed while opening Tide Tables, so it wasn't reopened.")
+        )
+        XCTAssertNil(preferences.string(forKey: PhoneSession.openingBookKey))
+        XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey))
+    }
+
+    /// A book no longer in the library, or a damaged value, clears what is kept.
+    func testABookGoneFromTheLibraryClearsWhatIsKept() throws {
+        let world = try makeIntegrationWorld("PhoneReopenGone")
+        let preferences = makeSandboxedPreferences("PhoneReopenGone")
+        let session = makeSession(in: world, preferences: preferences)
+        for value in [UUID().uuidString, "not an identifier"] {
+            preferences.set(value, forKey: PhoneSession.reopenBookKey)
+            XCTAssertEqual(session.takeReopeningAtLaunch(fileOpened: false), .nothing)
+            XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey), value)
         }
-        for file in try AppSourceFile.all() where !inTheIPhonesFolders(file) {
-            XCTAssertFalse(file.text.contains("PhoneSession("), "\(file.path) makes a PhoneSession")
-            XCTAssertFalse(file.text.contains("PhoneAppModel("), "\(file.path) makes a PhoneAppModel")
-        }
+    }
+
+    /// With a book behind the one on screen, the book behind is kept, without
+    /// its screen: the one on screen has not been played.
+    func testTheBookBehindIsTheOneKept() throws {
+        let pair = try makePlayingPair("PhoneReopenPair")
+
+        pair.session.noteAppLeavingForeground(readerScreenShowing: true)
+
+        XCTAssertEqual(pair.session.bookToReopenAtLaunch?.id, pair.firstBook.id)
+        XCTAssertFalse(pair.preferences.bool(forKey: PhoneSession.reopenShowsReaderKey))
     }
 
     // MARK: - Support
 
+    /// A world with one book playing and a second opened over it, loaded.
+    private struct PlayingPair {
+        let world: IntegrationWorld
+        let session: PhoneSession
+        let preferences: UserDefaults
+        let firstBook: Book
+        let secondBook: Book
+        let first: ReaderViewModel
+        let second: ReaderViewModel
+    }
+
+    /// Makes a `PlayingPair`, failing the test when the first never plays.
+    private func makePlayingPair(_ label: String) throws -> PlayingPair {
+        let world = try makeIntegrationWorld(label)
+        let firstBook = try world.makeSilentAudioBook(title: "Playing Volume", trackDurations: [30])
+        let secondBook = try world.makeSilentAudioBook(title: "Looked-At Volume", trackDurations: [30])
+        let preferences = makeSandboxedPreferences(label)
+        let session = makeSession(in: world, preferences: preferences)
+        let first = try XCTUnwrap(session.open(firstBook))
+        waitForReaderToLoad(first)
+        session.togglePlayPause()
+        XCTAssertTrue(eventually(within: 30) { first.isPlaybackActivelyAdvancing }, "The first never played")
+        let second = try XCTUnwrap(session.open(secondBook))
+        waitForReaderToLoad(second)
+        XCTAssertTrue(eventually { preferences.string(forKey: PhoneSession.openingBookKey) == nil }, "Still opening")
+        return PlayingPair(
+            world: world,
+            session: session,
+            preferences: preferences,
+            firstBook: firstBook,
+            secondBook: secondBook,
+            first: first,
+            second: second
+        )
+    }
+
     /// A sound service whose sounds reach a player that records them and plays
     /// nothing aloud.
-    private func makeSounds(_ label: String) -> SoundEffectService {
+    private func makeSounds() -> SoundEffectService {
         SoundEffectService(
-            preferences: makeSandboxedPreferences("\(label) Sounds"),
+            preferences: makeSandboxedPreferences("Sounds"),
             player: HeldSoundEffectPlayer(holding: false)
         )
     }
 
-    /// A session over `world`, whose reader is closed when the test ends, before
-    /// the world is taken apart: tear-down blocks run last registered first.
+    /// A session over `world`, whose readers the world makes, over its own
+    /// notification center and a media session of the test's own, which shows
+    /// nothing to the system. Its readers close when the test ends, before the
+    /// world is taken apart: tear-down blocks run last registered first.
     private func makeSession(
         in world: IntegrationWorld,
         sounds: SoundEffectService? = nil,
-        preferences: UserDefaults? = nil
+        preferences: UserDefaults? = nil,
+        nowPlaying: NowPlayingService? = nil
     ) -> PhoneSession {
+        let media = nowPlaying ?? NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
         let session = PhoneSession(
             library: world.library,
             settings: world.settings,
-            soundEffects: sounds ?? makeSounds("Session"),
+            soundEffects: sounds ?? makeSounds(),
             notificationCenter: world.notifications,
             autoplayRequests: world.autoplayRequests,
-            preferences: preferences ?? makeSandboxedPreferences("Session")
+            preferences: preferences ?? makeSandboxedPreferences("Session"),
+            makeReader: { book in world.openReader(for: book, nowPlaying: media) }
         )
         addTeardownBlock { session.closeReader() }
         return session
     }
 
     /// Puts the app's last opened book back when the test ends: every reader
-    /// made in a test also records itself there.
+    /// made in a test records itself there.
     private func preserveLastOpenedBook() {
         let config = ConfigService.shared
         let saved = config.config.lastOpenedBookID
@@ -597,22 +789,27 @@ final class PhoneSessionTests: XCTestCase {
         return { requested }
     }
 
-    /// Three books in one folder of a world that continues to the next book at
+    /// Three books in one folder of a world that goes on to the next book at
     /// each one's end.
     private struct FolderWorld {
         let world: IntegrationWorld
         let first: Book
         let second: Book
+        let third: Book
     }
 
     /// Makes a `FolderWorld`. The titles order the books in their folder, and
     /// the tracks are longer than any test runs.
     private func makeFolderWorld(_ label: String) throws -> FolderWorld {
         let world = try makeIntegrationWorld(label)
-        let first = try world.makeSilentAudioBook(title: "A Volume", trackDurations: [5, 5], endOfBook: .continueNext)
-        let second = try world.makeSilentAudioBook(title: "B Volume", trackDurations: [5, 5], endOfBook: .continueNext)
+        let book: (String) throws -> Book = { title in
+            try world.makeSilentAudioBook(title: title, trackDurations: [5, 5], endOfBook: .continueNext)
+        }
+        let first = try book("A Volume")
+        let second = try book("B Volume")
+        let third = try book("C Volume")
         world.library.library.folders = [BookFolder(name: world.folder.path)]
         world.settings.endOfBookBehavior = .continueNext
-        return FolderWorld(world: world, first: first, second: second)
+        return FolderWorld(world: world, first: first, second: second, third: third)
     }
 }
