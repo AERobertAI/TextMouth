@@ -304,6 +304,15 @@ final class PlaybackMemoryGuard {
         /// Quits at once from the guard's queue, when the main thread has
         /// not quit in time.
         var quitFromAnyThread: @Sendable () -> Void = { PlaybackMemoryGuard.quitAtOnce() }
+        #if os(iOS)
+        /// Reads the bytes left to TextMouth before the system's limit on the
+        /// iPhone, which the iOS guard acts on in place of the footprint:
+        /// `os_proc_available_memory()`, which the SDK's `os/proc.h` says is
+        /// "equivalent to the task_vm_info.limit_bytes_remaining field" and
+        /// cheap enough to ask "whenever it is needed". Called on the guard's
+        /// queue.
+        var readAvailableMemory: @Sendable () -> UInt64 = { UInt64(os_proc_available_memory()) }
+        #endif
     }
 
     /// The guard the app's readers report to: one that watches nothing in
@@ -470,9 +479,91 @@ final class PlaybackMemoryGuard {
     nonisolated static func quitAtOnce() {
         WatchedProcess.terminateAll()
         TextMouthPaths.flushLogs()
+        #if os(iOS)
+        // Never on an iPhone, where the guard never quits: Apple's QA1561
+        // says "Do not call the exit function", and only the system ends an
+        // app. The phone's guard has no path here (its readings never ask to
+        // quit); this keeps any path not foreseen from ending the app.
+        DiagnosticLog.event(.app, "AUDIO_MEMORY_QUIT_REFUSED: an iPhone app never quits itself")
+        #else
         _exit(0)
+        #endif
     }
 }
+
+#if os(iOS)
+// MARK: - The iPhone's Guard
+
+/// The memory guard's iOS branch (spec: "Memory"): it reads the memory left to
+/// TextMouth (`os_proc_available_memory()`) in place of its footprint, and under
+/// about 150 MB while a book plays, stops the book, which says why, and saves
+/// (`PhoneMemoryPolicy`). It never quits. Nothing here has run on an iPhone.
+extension PlaybackMemoryGuard {
+    /// Stop playback in every open reader that plays, because only
+    /// `availableBytes` were left to TextMouth, its footprint then
+    /// `footprint` bytes; each reader says why, in the Mac's words, with the
+    /// footprint. Then every open reader's place is saved and every pending
+    /// write flushed, since the system may end the app soon after: Apple's
+    /// documentation on memory warnings says to "consider writing any unsaved
+    /// data to disk".
+    fileprivate func stopEveryReaderForLowMemory(footprint: UInt64, _ environment: Environment) {
+        stopEveryReader(footprint: footprint)
+        saveEveryOpenReaderPosition()
+        environment.savePendingWrites()
+    }
+
+    /// Whether a look-ahead render may start now on the iPhone: with enough
+    /// memory left, and the phone not too hot (`PhoneMemoryPolicy.mayRenderAhead`).
+    /// Read afresh at each ask, from any thread: both readings are cheap, and
+    /// the SDK's header says the memory left is "only a snapshot" that should
+    /// not be cached.
+    nonisolated static func mayRenderAhead() -> Bool {
+        PhoneMemoryPolicy.mayRenderAhead(
+            availableBytes: UInt64(os_proc_available_memory()),
+            thermalState: ProcessInfo.processInfo.thermalState
+        )
+    }
+}
+
+extension MemoryWatch {
+    /// The iPhone's reading: the memory left, decided by `PhoneMemoryPolicy`
+    /// against whether anything plays, and acted on. A guard whose first
+    /// reading is 0 can't measure this process, as in the Simulator, and reads
+    /// no more (`takeTheNextReading`); otherwise the next reading is scheduled
+    /// at the Mac's waits, every five seconds while anything plays.
+    fileprivate func readAvailableAndAct() {
+        let available = environment.readAvailableMemory()
+        let (action, mainGuard) = state.withLock { state -> (PhoneMemoryPolicy.Action, PlaybackMemoryGuard?) in
+            guard !state.isQuitting else { return (.none, nil) }
+            let action = state.phonePolicy.act(onAvailable: available, isAnythingPlaying: !state.playing.isEmpty)
+            return (action, state.mainGuard)
+        }
+        switch action {
+        case .none:
+            break
+        case .goIdle:
+            DiagnosticLog.event(
+                .playback,
+                "AUDIO_MEMORY_GUARD_IDLE: the memory left read 0 at the first reading; this process can't be measured"
+            )
+        case .stopPlayback(let availableBytes):
+            let footprint = environment.readFootprint() ?? 0
+            DiagnosticLog.event(
+                .playback,
+                "AUDIO_MEMORY_LOW: \(PhoneMemoryPolicy.megabytes(availableBytes)) MB left, "
+                    + "footprint=\(footprint) bytes, while audio played; stopping playback and saving"
+            )
+            let environment = environment
+            Task { @MainActor in
+                mainGuard?.stopEveryReaderForLowMemory(footprint: footprint, environment)
+            }
+        }
+        if let wait = state.withLock({ takeTheNextReading(&$0) }) {
+            scheduleReading(after: wait)
+        }
+    }
+}
+#endif
 
 // MARK: - The Guard's Queue
 
@@ -500,6 +591,11 @@ private final class MemoryWatch: Sendable {
         /// The main-thread guard the actions are taken through, held weakly:
         /// it owns this watch.
         weak var mainGuard: PlaybackMemoryGuard?
+        #if os(iOS)
+        /// What to do about each reading of the memory left, on the iPhone,
+        /// in place of `policy`, which acts on the footprint.
+        var phonePolicy = PhoneMemoryPolicy()
+        #endif
     }
 
     /// What the guard reads and does.
@@ -546,6 +642,11 @@ private final class MemoryWatch: Sendable {
     /// Read the footprint, decide, and act; then read again later, at the
     /// wait the policy gives, until the guard begins to quit.
     func readAndAct() {
+        #if os(iOS)
+        // The iPhone reads the memory left before the system's limit, and
+        // never quits (`readAvailableAndAct()`).
+        readAvailableAndAct()
+        #else
         let footprint = environment.readFootprint()
         let (action, title, wasNothingPlaying, mainGuard) = state.withLock { state -> (MemoryGuardPolicy.Action, String?, Bool, PlaybackMemoryGuard?) in
             guard let footprint, !state.isQuitting else { return (.none, nil, false, nil) }
@@ -582,6 +683,7 @@ private final class MemoryWatch: Sendable {
         if let wait = state.withLock({ takeTheNextReading(&$0) }) {
             scheduleReading(after: wait)
         }
+        #endif
     }
 
     /// Quit, the footprint having reached `footprint` bytes while `title`
@@ -616,6 +718,10 @@ private final class MemoryWatch: Sendable {
     /// scheduled one when it gives a wait.
     private func takeTheNextReading(_ state: inout State) -> TimeInterval? {
         guard !state.isScheduled, !state.isQuitting else { return nil }
+        #if os(iOS)
+        // A guard that can't measure this process reads no more.
+        guard !state.phonePolicy.isIdle else { return nil }
+        #endif
         state.isScheduled = true
         return state.policy.readWait(
             whileAnythingPlays: !state.playing.isEmpty,
