@@ -49,11 +49,11 @@ enum PhoneLibrarySections {
     static func letterRuns(of books: [Book], sortedBy field: LibrarySortField) -> [(letter: String, books: [Book])] {
         var runs: [(letter: String, books: [Book])] = []
         for book in books {
-            let letter = letter(of: field == .author ? book.author : book.title)
-            if let last = runs.indices.last, runs[last].letter == letter {
+            let filed = Self.letter(of: field == .author ? book.author : book.title)
+            if let last = runs.indices.last, runs[last].letter == filed {
                 runs[last].books.append(book)
             } else {
-                runs.append((letter: letter, books: [book]))
+                runs.append((letter: filed, books: [book]))
             }
         }
         return runs
