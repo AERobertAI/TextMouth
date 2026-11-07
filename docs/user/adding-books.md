@@ -4,48 +4,56 @@ Part of [TextMouth's documentation](../../README.md).
 
 ## The Add to Library sheet
 
-- Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library. On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
-  - VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed".
-    - When the window lists no books and has no Continue button, VoiceOver's focus starts on it, where it started on the Import button before.
-  - The sheet has a heading, "Add to Library"; a button for each way to add, in the order below, with what it does written under it, which VoiceOver speaks as the button's hint; and Cancel, which Escape presses. VoiceOver starts on the first button.
-    - Open Book…: "Opens a file picker to import books in any format TextMouth reads."
-    - Import Folder…: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book."
-    - New from Text…: "Makes a new book from text you paste or type."
-    - New Recording…: "Records from a microphone into a new audiobook."
-    - Add Feed…: "Opens a sheet where you type a feed's address and choose where its folder goes"
-  - Each button is named by its menu command, and VoiceOver adds the command's key in words when it has one, as in "Open Book…, Command + O". Choosing a button closes the sheet and then does what its menu command does, each described below. Cancel, or Escape, closes the sheet and does nothing.
-  - A button is dimmed when you have set its action to work only in reader windows, which you can for Open Book…, New from Text…, and New Recording…, under Works in in the Shortcuts tab of Settings. Its hint then ends "Not available in this window."
+- Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library.
+- On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
+- VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed".
+- When the window lists no books and has no Continue button, VoiceOver's focus starts on it, where it started on the Import button before.
+- The sheet has a heading, "Add to Library", a button for each way to add, and Cancel, which Escape presses. VoiceOver starts on the first button.
+- The buttons come in the order below, with what each does written under it, which VoiceOver speaks as the button's hint:
+  - Open Book…: "Opens a file picker to import books in any format TextMouth reads."
+  - Import Folder…: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book."
+  - New from Text…: "Makes a new book from text you paste or type."
+  - New Recording…: "Records from a microphone into a new audiobook."
+  - Add Feed…: "Opens a sheet where you type a feed's address and choose where its folder goes"
+- Each button is named by its menu command, and VoiceOver adds the command's key in words when it has one, as in "Open Book…, Command + O".
+- Choosing a button closes the sheet and then does what its menu command does, each described below.
+- Cancel, or Escape, closes the sheet and does nothing.
+- A button is dimmed when you have set its action to work only in reader windows, which you can for Open Book…, New from Text…, and New Recording…, under Works in in the Shortcuts tab of Settings. Its hint then ends "Not available in this window."
 
 ## Open Book… and Finder
 
-- File menu, Open Book… (Command-O) imports the files you choose. Opening a supported file from Finder imports it and opens it.
-  - TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, and .azw, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
-    - It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
-    - A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it: a photo is refused with the sentence for a PEF that cannot be read (below).
+- File menu, Open Book… (Command-O) imports the files you choose.
+- Opening a supported file from Finder imports it and opens it.
+- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, and .azw, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
+- It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
+- A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it.
+- A photo is refused with the sentence for a PEF that cannot be read (below).
 
 ## TextMouth packages
 
 - A TextMouth package, a folder ending in .tmb, chosen in Open Book… opens as the book it holds, as it does from Finder, instead of being refused as an unsupported format.
-  - A package for a book the library does not list lands in the folder the window shows and, when the window shows the Reading List, goes onto the Reading List there, as any file imported there does, with the announcement naming the folder; of several packages chosen at once, only the first opens a reader window.
-  - A package for a book the library lists opens that book, and a copy of the package, such as a Finder duplicate, or the old copy that Replace Existing left in the Trash and you put back, opens the listed book and never takes its place.
+- A package for a book the library does not list lands in the folder the window shows and, when the window shows the Reading List, goes onto the Reading List there, as any file imported there does, with the announcement naming the folder.
+- Of several packages chosen at once, only the first opens a reader window.
+- A package for a book the library lists opens that book, and a copy of the package, such as a Finder duplicate, or the old copy that Replace Existing left in the Trash and you put back, opens the listed book and never takes its place.
 
 ## New from Text…
 
 - File menu, New from Text… makes a book from text you type or paste.
-  - Its key, Shift-Command-T, works in Library windows, and with no window open, when it opens New from Text… in a new Library window.
-  - In a reader window the same key opens or closes the Sleep Timer sheet (Show Sleep Timer); there, and in Settings, the New Recording window, and an audio editor's window, File > New from Text… is dimmed and shows no key, so choose it from a Library window.
-  - Either action can have another key, or work in another kind of window, from the Shortcuts tab of Settings (see Works in, under the Shortcuts tab).
-  - The New Book from Text window has a Title and an Author field, a text area, Paste from Clipboard, Open in Editor (on the Mac), Reload from Editor once an editor has the text, Cancel, and Add to Library. A book whose title holds only spaces, or nothing, is called Untitled, and so is its file.
-  - When something in that window does not work, a sentence beside the buttons says so, which VoiceOver also says once, and it goes when you change the text:
-    - Paste from Clipboard with no text on the clipboard changes nothing: "The clipboard has no text to paste, so the text is unchanged. Copy some text, then paste again."
-    - Open in Editor writes the text to a file in the Mac's temporary folder and opens it in the app this Mac opens plain text with.
-      - If the file can't be written: "Could not open the text in an editor, because its file could not be written. Paste or type the text here instead, or try again."
-      - If no app opens it: "Could not open the text in an editor, because no app opened its file. Paste or type the text here instead, or try again."
-    - Reload from Editor reads the file back as an import reads a file: as UTF-8, in the encoding a byte-order mark names, or in the encoding its bytes look like, such as Windows-1251 Russian or Shift JIS Japanese, and as Windows-1252 only when nothing can be trusted.
-      - Line endings become line feeds.
-      - If the file can't be read, the text is left as it was: "Could not read the text back from the editor's file, so the text here is unchanged. Save the file in the editor, then choose Reload from Editor again, or choose Open in Editor to start again."
-      - If it was read as Windows-1252 only for want of a better guess and holds characters beyond ASCII: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong. Check the text, or save the file in the editor as UTF-8 and choose Reload from Editor again."
-      - That note stays only while the text is as it was reloaded.
+- Its key, Shift-Command-T, works in Library windows, and with no window open, when it opens New from Text… in a new Library window.
+- In a reader window the same key opens or closes the Sleep Timer sheet (Show Sleep Timer). There, and in Settings, the New Recording window, and an audio editor's window, File > New from Text… is dimmed and shows no key, so choose it from a Library window.
+- Either action can have another key, or work in another kind of window, from the Shortcuts tab of Settings (see Works in, under the Shortcuts tab).
+- The New Book from Text window has a Title and an Author field, a text area, Paste from Clipboard, Open in Editor (on the Mac), Reload from Editor once an editor has the text, Cancel, and Add to Library.
+- A book whose title holds only spaces, or nothing, is called Untitled, and so is its file.
+- When something in that window does not work, a sentence beside the buttons says so, which VoiceOver also says once, and it goes when you change the text:
+  - Paste from Clipboard with no text on the clipboard changes nothing: "The clipboard has no text to paste, so the text is unchanged. Copy some text, then paste again."
+  - Open in Editor writes the text to a file in the Mac's temporary folder and opens it in the app this Mac opens plain text with.
+    - If the file can't be written: "Could not open the text in an editor, because its file could not be written. Paste or type the text here instead, or try again."
+    - If no app opens it: "Could not open the text in an editor, because no app opened its file. Paste or type the text here instead, or try again."
+  - Reload from Editor reads the file back as an import reads a file: as UTF-8, in the encoding a byte-order mark names, or in the encoding its bytes look like, such as Windows-1251 Russian or Shift JIS Japanese, and as Windows-1252 only when nothing can be trusted.
+    - Line endings become line feeds.
+    - If the file can't be read, the text is left as it was: "Could not read the text back from the editor's file, so the text here is unchanged. Save the file in the editor, then choose Reload from Editor again, or choose Open in Editor to start again."
+    - If it was read as Windows-1252 only for want of a better guess and holds characters beyond ASCII: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong. Check the text, or save the file in the editor as UTF-8 and choose Reload from Editor again."
+    - That note stays only while the text is as it was reloaded.
 
 ## New Recording…
 
@@ -54,25 +62,28 @@ Part of [TextMouth's documentation](../../README.md).
 ## Import Folder…
 
 - Library menu, Import Folder… (Shift-Command-O, in a Library window) imports a DAISY book kept as loose files, by its folder, one folder per book, or a folder of audio tracks as one audiobook, as a ZIP of the same tracks imports.
-  - It was called Import DAISY Folder… before October 14, 2026, and a key you gave it keeps working.
-  - Opening such a folder from Finder imports it the same way.
-  - The folder's tracks, and its manifest, at its top level or inside its one folder, are copied into the book's package, and the folder is left as it was. The book takes the folder's name unless the manifest gives a title. A folder holding neither a DAISY book nor tracks is refused, and the alert says what it holds.
-  - A folder you import is never deleted or offered for deletion, whatever Storage settings say about originals, since it holds files that were not copied.
-    - Deleting an original also refuses a folder, or a link to one, whatever asked for it: nothing is deleted or sent to the Trash, and the debug log records ORIGINAL_KEPT with the folder's name.
-  - A folder holding DAISY books in folders inside it is not a book itself and is refused: choose the book folders instead, several at once.
-    - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
+- It was called Import DAISY Folder… before October 14, 2026, and a key you gave it keeps working.
+- Opening such a folder from Finder imports it the same way.
+- The folder's tracks, and its manifest, at its top level or inside its one folder, are copied into the book's package, and the folder is left as it was.
+- The book takes the folder's name unless the manifest gives a title.
+- A folder holding neither a DAISY book nor tracks is refused, and the alert says what it holds.
+- A folder you import is never deleted or offered for deletion, whatever Storage settings say about originals, since it holds files that were not copied.
+- Deleting an original also refuses a folder, or a link to one, whatever asked for it: nothing is deleted or sent to the Trash, and the debug log records ORIGINAL_KEPT with the folder's name.
+- A folder holding DAISY books in folders inside it is not a book itself and is refused: choose the book folders instead, several at once.
+  - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
 
 ## M3U and M3U8 playlists
 
 - An M3U or M3U8 playlist (.m3u, .m3u8), chosen with Open Book…, imports as one audiobook of the files it lists, as a folder of the same tracks imports.
-  - The book is named by the playlist's #PLAYLIST line, else by the playlist's file name without its extension, and has a heading for each entry, in the playlist's order, titled by its #EXTINF line, else by the file's name.
-    - The tracks are copied into the book's package, and those that need converting are converted (see [What TextMouth reads](what-textmouth-reads.md)).
-    - Importing the same playlist again finds a duplicate.
-  - Only ordinary files inside the playlist's own folder, or in folders beneath it, are used.
-    - Each other entry is skipped and named with its reason: "a web address", "outside the playlist's folder", "not found", "a folder", "not an audio file", "hidden", "not an ordinary file", or "listed before".
-    - Once the book is in the library, an alert titled Book Imported lists them, as in "TextMouth skipped 2 entries of “mix.m3u”: “https://example.com/a.mp3” (a web address) and “More/c.mp3” (not found).", and the book is not opened.
-    - At most ten entries are named, fewer when the list would pass 600 characters, then "and N more", and an entry of more than 60 characters is shortened with "…", keeping its start and its file name.
-  - A playlist and its tracks are never changed, deleted, or offered for deletion, whatever After Importing a Book says. TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
+- The book is named by the playlist's #PLAYLIST line, else by the playlist's file name without its extension, and has a heading for each entry, in the playlist's order, titled by its #EXTINF line, else by the file's name.
+- The tracks are copied into the book's package, and those that need converting are converted (see [What TextMouth reads](what-textmouth-reads.md)).
+- Importing the same playlist again finds a duplicate.
+- Only ordinary files inside the playlist's own folder, or in folders beneath it, are used:
+  - Each other entry is skipped and named with its reason: "a web address", "outside the playlist's folder", "not found", "a folder", "not an audio file", "hidden", "not an ordinary file", or "listed before".
+  - Once the book is in the library, an alert titled Book Imported lists them, as in "TextMouth skipped 2 entries of “mix.m3u”: “https://example.com/a.mp3” (a web address) and “More/c.mp3” (not found).", and the book is not opened.
+  - At most ten entries are named, fewer when the list would pass 600 characters, then "and N more", and an entry of more than 60 characters is shortened with "…", keeping its start and its file name.
+- A playlist and its tracks are never changed, deleted, or offered for deletion, whatever After Importing a Book says.
+- TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
 
 ## Add Feed…
 
@@ -81,50 +92,74 @@ Part of [TextMouth's documentation](../../README.md).
 ## ZIP archives
 
 - A ZIP of several books imports each of them (an .rtfd folder inside is one book, not its separate files), and TextMouth offers to create a folder for them.
-  - The progress overlay's Cancel button stops a ZIP import after the book in progress, or at once when that book is, on the Mac, a Word document older than Word 6 that textutil is converting, or a braille file that the braille helper is translating: textutil or the helper is stopped, that book is not imported, and the alert says after how many books the import stopped.
-  - A single file's import that Cancel stops that way ends with no alert.
+- The progress overlay's Cancel button stops a ZIP import after the book in progress, or at once when that book is, on the Mac, a Word document older than Word 6 that textutil is converting, or a braille file that the braille helper is translating.
+- In that case textutil or the helper is stopped, that book is not imported, and the alert says after how many books the import stopped.
+- A single file's import that Cancel stops that way ends with no alert.
 
 ## A TextMouth package inside a ZIP
 
-- A TextMouth package inside a ZIP, as one mailed or compressed in Finder, imports as one book, with its places, bookmarks, and settings, not as its book file and its text cache apart; a package whose book the library lists is skipped as a duplicate, and one that cannot be identified is a failure, so the archive is kept.
+- A TextMouth package inside a ZIP, as one mailed or compressed in Finder, imports as one book, with its places, bookmarks, and settings, not as its book file and its text cache apart.
+- A package whose book the library lists is skipped as a duplicate, and one that cannot be identified is a failure, so the archive is kept.
 
 ## The import overlay
 
 - While books import, the import overlay in the Library window shows how far the import has got, and VoiceOver reads all of it there.
-  - For a ZIP archive it first counts the items and bytes extracted, as in "Extracting “Library Export.zip”: 120 of 300 items, 1.2 GB of 3.4 GB...", then the books processed, as in "2 of 100 books processed", with the book under way, by its name in the archive, and the step it is at, as in "Book 3 of 100: “Moby Dick.epub”, reading its text";
-    - a single file, or a ZIP holding one book, shows its name and its step the same way, as do a TextMouth package opened from the Finder, from "checking the package" on, and a book made with New from Text, by the title you typed.
-  - A package's line says "copying it into the library" while it copies, and a recording saved from the New Recording window is named by its title the same way, its line going quietly once the save ends, since its window says how the save ended.
-  - The count's noun agrees with the total, as in "0 of 1 book processed", as it does in the overlay of a text cache update or of Redo Text Extraction, as in "0 of 1 book extracted".
-  - A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB".
-  - Once a book of several is done, the overlay gives the time left, as in "About 4 minutes left" or "Less than a minute left": it weighs each book still to come by its size where that tells its time, as an EPUB's, PDF's, Word document's, or text file's does, so a large book still to come counts for more, while an audiobook's file, a DAISY book, or an .rtfd folder counts at the average time such books took.
-  - When more imports wait behind the one shown, the overlay says how many, as in "2 more imports waiting", until Cancel is pressed.
-  - Once a book has taken 10 seconds, the overlay says for how long, as in "1 minute, 5 seconds on this book", in steps of 5 seconds, so a stuck book shows as a time growing on one step.
-  - For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left.", and how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
-  - A ZIP import that brings no new book, and in which nothing failed, says what it found in the Library window's alert, titled Nothing Imported, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library." ("both" for two, and "its one book" for one), or, for an archive holding no book TextMouth reads, what it holds instead, most files first, as in "No books were found in “Radio.zip”. It holds 176 .wma files, which TextMouth does not import."
-  - Up to three kinds are named, the rest counted as other files.
-  - The alert waits on screen, and VoiceOver reads it as it appears, so it is never missed as an announcement made while you were in another app could be.
-  - One with a failure says so in its alert instead.
-  - Cancel says at once "Cancelling after this book...", or "Cancelling..." before the first book, and the alert of a cancelled import says where it stopped.
-  - Library menu, Speak Import Progress has VoiceOver speak the overlay's lines on request, or say "No import is under way."; give it a key in the Shortcuts tab of Settings, under Information, to use it in every window but an audio editor's, a reader's included (see Works in, under the Shortcuts tab).
+
+### What the overlay says
+
+- For a ZIP archive the overlay first counts the items and bytes extracted, as in "Extracting “Library Export.zip”: 120 of 300 items, 1.2 GB of 3.4 GB...".
+- It then counts the books processed, as in "2 of 100 books processed", with the book under way, by its name in the archive, and the step it is at, as in "Book 3 of 100: “Moby Dick.epub”, reading its text".
+- A single file, or a ZIP holding one book, shows its name and its step the same way, as do a TextMouth package opened from the Finder, from "checking the package" on, and a book made with New from Text, by the title you typed.
+- A package's line says "copying it into the library" while it copies.
+- A recording saved from the New Recording window is named by its title the same way, its line going quietly once the save ends, since its window says how the save ended.
+- The count's noun agrees with the total, as in "0 of 1 book processed", as it does in the overlay of a text cache update or of Redo Text Extraction, as in "0 of 1 book extracted".
+- A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB".
+
+### Time and waiting imports
+
+- Once a book of several is done, the overlay gives the time left, as in "About 4 minutes left" or "Less than a minute left".
+- It weighs each book still to come by its size where that tells its time, as an EPUB's, PDF's, Word document's, or text file's does, so a large book still to come counts for more, while an audiobook's file, a DAISY book, or an .rtfd folder counts at the average time such books took.
+- When more imports wait behind the one shown, the overlay says how many, as in "2 more imports waiting", until Cancel is pressed.
+- Once a book has taken 10 seconds, the overlay says for how long, as in "1 minute, 5 seconds on this book", in steps of 5 seconds, so a stuck book shows as a time growing on one step.
+
+### What VoiceOver hears
+
+- For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left.", and how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
+
+### The Nothing Imported alert
+
+- A ZIP import that brings no new book, and in which nothing failed, says what it found in the Library window's alert, titled Nothing Imported, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library." ("both" for two, and "its one book" for one).
+- For an archive holding no book TextMouth reads, the alert says what the archive holds instead, most files first, as in "No books were found in “Radio.zip”. It holds 176 .wma files, which TextMouth does not import."
+- Up to three kinds are named, the rest counted as other files.
+- The alert waits on screen, and VoiceOver reads it as it appears, so it is never missed as an announcement made while you were in another app could be.
+- One with a failure says so in its alert instead.
+
+### Cancel and speaking the overlay
+
+- Cancel says at once "Cancelling after this book...", or "Cancelling..." before the first book.
+- The alert of a cancelled import says where it stopped.
+- Library menu, Speak Import Progress has VoiceOver speak the overlay's lines on request, or say "No import is under way."
+- Give it a key in the Shortcuts tab of Settings, under Information, to use it in every window but an audio editor's, a reader's included (see Works in, under the Shortcuts tab).
 
 ## When an import fails
 
 - When an import fails, an alert names the file, the step that failed, and why, as in "Could not import “notes.md”. Reading its text failed: This file has no text to read."
-  - Nothing is added to the library, and the original file stays where it was, whatever Storage settings say about originals.
-  - A ZIP batch lists each failed file by name with the same reason after it, while the batch's other books import, and the debug log records the same words in an IMPORT_FAILED line.
-  - These reasons have plain words of their own:
+- Nothing is added to the library, and the original file stays where it was, whatever Storage settings say about originals.
+- A ZIP batch lists each failed file by name with the same reason after it, while the batch's other books import, and the debug log records the same words in an IMPORT_FAILED line.
+- These reasons have plain words of their own:
 
 ### A file with no text to read
 
 - A plain text, Markdown, HTML, web archive, SSML, rich text, Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
-  - That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
-  - A Markdown file that is only a heading still imports.
-  - An .xml file of no bytes or only white space is refused the same way, but at the step "Checking its format", as in "Could not import “empty.xml”. Checking its format failed: This file has no text to read."
-  - Open Book…, Finder, and the files inside a ZIP are checked; New from Text… and the rebuilding of a book already in the library are not.
+- That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
+- A Markdown file that is only a heading still imports.
+- An .xml file of no bytes or only white space is refused the same way, but at the step "Checking its format", as in "Could not import “empty.xml”. Checking its format failed: This file has no text to read."
+- Open Book…, Finder, and the files inside a ZIP are checked. New from Text… and the rebuilding of a book already in the library are not.
 
 ### A disk without room
 
-- A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”. Copying it into the library failed: There isn’t enough free space on the disk." The words never name the hidden package the import was building.
+- A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”. Copying it into the library failed: There isn’t enough free space on the disk."
+- The words never name the hidden package the import was building.
 
 ### Documents TextMouth's own readers can't read
 
