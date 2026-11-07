@@ -58,7 +58,7 @@ enum PhoneBackgroundWork {
                 lifeCycle?.beginHold(name) ?? {}
             },
             isInBackground: { PhoneBackgroundWork.isInBackground },
-            flush: { PhoneLifeCycle.flushPendingWrites(because: "book-stopped-in-background") }
+            flush: { _ = PhoneLifeCycle.flushPendingWrites(because: "book-stopped-in-background") }
         )
         self.hold = hold
         // `$reader` tells of each reader as it is about to be set, on the main

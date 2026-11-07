@@ -179,7 +179,7 @@ final class SleepTimerService: ObservableObject {
     /// last audio, and iOS may suspend an app with no audio almost at once,
     /// before the book's place is saved and flushed. Nil holds nothing, as in
     /// tests.
-    var phoneExpiryHold: (@MainActor () -> @MainActor () -> Void)?
+    var phoneExpiryHold: (@MainActor () -> (@MainActor () -> Void))?
     /// What ends the hold begun as the timer ran out, until it has ended.
     private var endPhoneExpiryHold: (@MainActor () -> Void)?
     #endif
