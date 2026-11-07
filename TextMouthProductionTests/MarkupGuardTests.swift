@@ -260,8 +260,9 @@ final class MarkupGuardTests: XCTestCase {
     // MARK: - The Pass Against the Parser
 
     /// The pass counts what SwiftSoup's HTML parser builds, tag by tag, rule by
-    /// rule: each document's expected count is its real tree's depth, less the
-    /// document's own level. `html` and `body` count as the pass says they do.
+    /// rule: each document's expected count is how deep the deepest element of
+    /// its tree will be, `html` at 1, an element that closes itself included,
+    /// and the real tree is never deeper than the count.
     func testThePassCountsWhatTheHTMLParserBuilds() throws {
         let cases: [(String, Int)] = [
             ("words", 2),
@@ -279,8 +280,8 @@ final class MarkupGuardTests: XCTestCase {
             ("<dd><dt><dd>", 3),
             ("<h1><h2><h3>", 3),
             ("<h1><p><h2>", 4),
-            ("<br><hr><img><input><wbr>", 2),
-            ("<div/><span/><p/><x/>", 2),
+            ("<br><hr><img><input><wbr>", 3),
+            ("<div/><span/><p/><x/>", 3),
             ("<b><b><b><b><b>", 7),
             ("<b></b><b></b>", 3),
             ("<div><b></div><div>x", 4),
@@ -306,11 +307,11 @@ final class MarkupGuardTests: XCTestCase {
             ("<rt>", 2),
             ("<form><form><form>", 3),
             ("<form><div></form>", 4),
-            ("<title><div><div></title>", 2),
+            ("<title><div><div></title>", 3),
             ("<title><div>", 3),
             ("<title/><div>", 3),
             ("<style><div></style><div>", 3),
-            ("<style></style</style><div>", 2),
+            ("<style></style</style><div>", 3),
             ("<script><div></script><div>", 3),
             ("<script><!--<script></script><div></script><div>", 3),
             ("<script><!--</script><div>", 3),
@@ -334,9 +335,9 @@ final class MarkupGuardTests: XCTestCase {
         for (markup, expected) in cases {
             let pass = try inspected(markup, as: .html).deepest
             XCTAssertEqual(pass, expected, markup.debugDescription)
-            // The real tree goes no deeper than the pass said; the document itself is one level.
+            // The real tree goes no deeper than the pass counts.
             let real = try depth(of: SwiftSoup.parseHTML(markup, ""))
-            XCTAssertLessThanOrEqual(real, pass + 1, "the real tree of \(markup.debugDescription)")
+            XCTAssertLessThanOrEqual(real, pass, "the real tree of \(markup.debugDescription)")
         }
     }
 
