@@ -47,6 +47,11 @@ enum SpeechExportProgress: Equatable, Sendable {
     /// The file's `chapters` spoken chapters are being encoded into it,
     /// `fraction` of the way, from 0 to 1.
     case encoding(chapters: Int, fraction: Double)
+    /// The export has ended, however it ended, with `kept` of its `total`
+    /// chapters kept for the next export of the same speech to go on from:
+    /// none once its file is in place, and any finished so far after a Stop
+    /// or a failure. Told once, last of all.
+    case ended(kept: Int, total: Int)
 }
 
 // MARK: - What an Export Reaches
@@ -140,12 +145,15 @@ enum SpeechExportJob {
     /// keeping the chapters an earlier export of the same speech finished;
     /// and checks that the disks have room. Then, keeping the Mac awake, it
     /// speaks each chapter not kept into a file of its own, encodes them all
-    /// into the file, and only then lets the kept chapters go. A Stop or a
-    /// failure leaves every chapter finished so far kept, for the next export
-    /// of the same speech to go on from, in any format.
+    /// into the file, has `deliver` put the file where it belongs, and only
+    /// then lets the kept chapters go. A Stop or a failure, of `deliver` too,
+    /// leaves every chapter finished so far kept, for the next export of the
+    /// same speech to go on from, in any format: speaking a book can take
+    /// hours, and a file that could not be moved in costs none of them.
     ///
     /// However it ends, it writes one line in the debug log, which tells how
-    /// it ended, its chapters, and its seconds, and nothing else.
+    /// it ended, its chapters, and its seconds, and nothing else, and tells
+    /// `context.progress` how many chapters it left kept (`.ended`).
     ///
     /// - Parameters:
     ///   - request: What to export, and how.
@@ -156,18 +164,23 @@ enum SpeechExportJob {
     ///     replaced.
     ///   - context: What the export reaches, and where its progress goes.
     ///   - cancellation: The export's Stop.
+    ///   - deliver: Runs once the file is whole at `destination`, before the
+    ///     kept chapters go, while the store and the Mac are still held: what
+    ///     moves a file made in a scratch folder to where it belongs. By
+    ///     default nothing, `destination` being that place.
     /// - Throws: A `SpeechExportError` for an export refused before anything
     ///   is spoken; `CancellationError` at Stop; a `SpeechRenderFailure` for a
     ///   chapter that could not be spoken; an `AudioEditError` for chapters
-    ///   that could not be encoded; or the file system's error, each as it
-    ///   is.
+    ///   that could not be encoded; what `deliver` throws; or the file
+    ///   system's error, each as it is.
     static func run(
         _ request: SpeechExportRequest,
         markdown: Data,
         source: URL,
         to destination: URL,
         context: SpeechExportContext,
-        cancellation: BookExportCancellation
+        cancellation: BookExportCancellation,
+        deliver: () throws -> Void = {}
     ) throws {
         let started = ContinuousClock.now
         // What the export has counted so far, which its log line tells.
@@ -215,12 +228,15 @@ enum SpeechExportJob {
                     reporter.report(shares.progress(finished: counts.done), urgent: true)
                 }
                 try plan.encode(to: destination, reporter: reporter)
-                // Only a finished file lets the kept chapters go.
+                try deliver()
+                // Only a file in its place lets the kept chapters go.
                 plan.store.removeAll()
             }
             log(.finished, counts, since: started)
+            context.progress(.ended(kept: 0, total: counts.total))
         } catch {
             log(error is CancellationError ? .stopped : .failed, counts, since: started)
+            context.progress(.ended(kept: counts.done, total: counts.total))
             throw error
         }
     }

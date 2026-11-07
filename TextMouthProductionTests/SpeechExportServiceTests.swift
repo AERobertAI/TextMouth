@@ -248,7 +248,8 @@ final class SpeechExportServiceTests: XCTestCase {
     /// Exporting spoken audio with its speech conversion speaks the book's
     /// words into one M4B in the folder, with a chapter for each heading,
     /// the level-2 one included; the context's progress hears the speaking,
-    /// then the encoding, to its end; and the outcome lists the file.
+    /// then the encoding, to its end, then that nothing is kept; and the
+    /// outcome lists the file.
     func testExportingSpeaksTheTextIntoOneFileWithAChapterPerHeading() async throws {
         let world = try makeIntegrationWorld("Speech Export Run")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
@@ -282,11 +283,63 @@ final class SpeechExportServiceTests: XCTestCase {
         let reports = progress.reports
         XCTAssertEqual(reports.first, .speaking(done: 0, total: 3, fraction: 0), "\(reports)")
         XCTAssertTrue(reports.contains(where: \.isEncoding), "the encoding was not heard: \(reports)")
+        XCTAssertEqual(reports.last, .ended(kept: 0, total: 3), "\(reports)")
+        let reportsBeforeTheEnd = reports.dropLast()
         XCTAssertTrue(
-            reports.drop(while: { !$0.isEncoding }).allSatisfy(\.isEncoding),
+            reportsBeforeTheEnd.drop(while: { !$0.isEncoding }).allSatisfy(\.isEncoding),
             "the speaking was heard after the encoding began: \(reports)"
         )
-        XCTAssertEqual(reports.last, .encoding(chapters: 3, fraction: 1), "\(reports)")
+        XCTAssertEqual(reportsBeforeTheEnd.last, .encoding(chapters: 3, fraction: 1), "\(reports)")
+    }
+
+    /// A file that takes the planned name while the book is spoken is never
+    /// replaced: the export fails, naming the file, and every spoken chapter
+    /// is kept, since nothing is lost but the name. The export asked again
+    /// speaks nothing, makes the file under the next name free, and only then
+    /// lets the chapters go.
+    func testANameTakenWhileSpeakingKeepsTheChaptersForTheNextExport() async throws {
+        let world = try makeIntegrationWorld("Speech Export Name Taken")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let folder = try makeSandboxDirectory("Speech Export Name Taken Folder")
+        let taken = folder.appendingPathComponent("\(stem) - Audio.m4b")
+        let theirBytes = Data("Another app's file.".utf8)
+        // The other app's file arrives as the last chapter is spoken.
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") {
+                try? theirBytes.write(to: taken, options: .withoutOverwriting)
+            }
+        })
+        let progress = ProgressRecord()
+        let context = try speechContext(synthesizer: synthesizer, progress: progress)
+        let storeRoot = context.environment.storeRoot
+        let offer = BookExportService.offer(for: book)
+        let conversions: [BookExportKind: BookExportConversion] = [.spokenAudio: .speech(Self.request(for: book))]
+
+        let first = await OffMainWork.run {
+            BookExportService.export([offer], kinds: [.spokenAudio], conversions: conversions, to: folder, speech: context)
+        }
+
+        XCTAssertEqual(first.exported, [])
+        XCTAssertFalse(first.wasCancelled)
+        XCTAssertEqual(first.failures.map(\.name), ["\(stem) - Audio.m4b"])
+        XCTAssertEqual(try Data(contentsOf: taken), theirBytes, "the other app's file was replaced")
+        XCTAssertEqual(progress.reports.last, .ended(kept: 3, total: 3))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: storeRoot.path), "the spoken chapters were let go")
+        let spokenFirst = synthesizer.written.count
+
+        let second = await OffMainWork.run {
+            BookExportService.export([offer], kinds: [.spokenAudio], conversions: conversions, to: folder, speech: context)
+        }
+
+        let renamed = folder.appendingPathComponent("\(stem) - Audio 2.m4b")
+        XCTAssertEqual(second.failures, [])
+        XCTAssertEqual(second.exported, [renamed])
+        XCTAssertEqual(synthesizer.written.count, spokenFirst, "the second export spoke again")
+        XCTAssertEqual(progress.reports.last, .ended(kept: 0, total: 3))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: storeRoot.path), "the chapters were kept after the file was made")
+        let chapters = await AudioPlaybackService.extractChapters(from: renamed)
+        XCTAssertEqual(chapters.map(\.title), ["First", "Second", "Later"])
     }
 
     /// Stop pressed while the book is spoken (the fake presses it as the
@@ -325,6 +378,7 @@ final class SpeechExportServiceTests: XCTestCase {
         XCTAssertEqual(outcome.failures, [], "Stop was a failure")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
         XCTAssertEqual(BookExportWording.finished(outcome, folderName: "Exports"), "Export stopped. Nothing was exported.")
+        XCTAssertEqual(progress.reports.last, .ended(kept: 1, total: 3), "the first chapter was finished before Stop")
         XCTAssertFalse(synthesizer.written.contains { $0.text.contains("Six") }, "the speaking went on after Stop")
         XCTAssertFalse(progress.reports.contains(where: \.isEncoding), "the encoding began after Stop")
     }

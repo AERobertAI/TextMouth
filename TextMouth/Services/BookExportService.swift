@@ -1055,15 +1055,18 @@ enum BookExportService {
             // dialog read them, so `book` is not needed. The job checks for
             // room where it writes: the scratch folder, which
             // `makeScratchFolder` keeps on the target's volume whenever the
-            // system makes one there.
-            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+            // system makes one there. The file is moved in as the job's last
+            // step, so a move that fails, say to a name taken during the hours
+            // the book was spoken, leaves every spoken chapter kept.
+            try withScratchFile(for: target) { scratch in
                 try SpeechExportJob.run(
                     request,
                     markdown: bytes,
                     source: source,
                     to: scratch,
                     context: speech,
-                    cancellation: cancellation
+                    cancellation: cancellation,
+                    deliver: { try moveScratchFile(scratch, to: target, cancellation: cancellation) }
                 )
             }
         }
@@ -1080,16 +1083,30 @@ enum BookExportService {
     /// nothing is ever removed from the folder chosen. Every source kind goes
     /// through it: a copy and the reading text as well as a conversion, a
     /// speech export's (FMT43), whose job speaks and encodes its one audio
-    /// file into the scratch URL, as well as a text one's.
+    /// file into the scratch URL and moves in itself, as well as a text one's.
     private static func writeThroughScratchFile(
         to target: URL,
         cancellation: BookExportCancellation,
         write: (_ scratch: URL) throws -> Void
     ) throws {
+        try withScratchFile(for: target) { scratch in
+            try write(scratch)
+            try moveScratchFile(scratch, to: target, cancellation: cancellation)
+        }
+    }
+
+    /// Runs `body` with where to make the file that will become `target`: a
+    /// URL of the same name in a new scratch folder, which is removed however
+    /// `body` ends.
+    private static func withScratchFile(for target: URL, _ body: (_ scratch: URL) throws -> Void) throws {
         let scratchFolder = try makeScratchFolder(near: target)
         defer { try? FileManager.default.removeItem(at: scratchFolder) }
-        let scratch = scratchFolder.appendingPathComponent(target.lastPathComponent)
-        try write(scratch)
+        try body(scratchFolder.appendingPathComponent(target.lastPathComponent))
+    }
+
+    /// Moves the whole file `scratch` to `target`, unless Stop was pressed,
+    /// making the folder of `target` only now.
+    private static func moveScratchFile(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
         try cancellation.checkCancelled()
         try makeFolder(of: target)
         try moveExclusively(scratch, to: target)

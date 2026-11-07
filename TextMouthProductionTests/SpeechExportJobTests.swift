@@ -28,9 +28,10 @@ final class SpeechExportJobTests: XCTestCase {
     /// of silence end, and tagged with the request's title and author. Every
     /// chapter is spoken once, in the request's voice, at its speed and
     /// pitch. The progress starts at no chapter done, tells each chapter's
-    /// end at its share of the speech, never goes back, and ends with the
-    /// encode at 1; the Mac is kept awake once and let go once; the kept
-    /// chapters are let go; and the log has one line, for a finished export.
+    /// end at its share of the speech, never goes back, reaches the encode at
+    /// 1, and ends with no chapter kept; the Mac is kept awake once and let go
+    /// once; the kept chapters are let go; and the log has one line, for a
+    /// finished export.
     func testAWholeBookBecomesAnM4BWithAChapterForEachHeading() async throws {
         let sandbox = try makeSandbox()
         let fake = Self.makeFake()
@@ -58,7 +59,9 @@ final class SpeechExportJobTests: XCTestCase {
 
         // The progress: every chapter's end at its share, speaking before
         // encoding, and neither going back.
-        let values = progress.values
+        let told = progress.values
+        XCTAssertEqual(told.last, SpeechExportProgress.ended(kept: 0, total: 4))
+        let values = Array(told.dropLast())
         XCTAssertEqual(values.first, SpeechExportProgress.speaking(done: 0, total: 4, fraction: 0))
         XCTAssertEqual(values.last, SpeechExportProgress.encoding(chapters: 4, fraction: 1))
         let speakingCount = values.prefix { $0.whileSpeaking != nil }.count
@@ -123,9 +126,9 @@ final class SpeechExportJobTests: XCTestCase {
 
     /// The renderer tells the frames written for every buffer, but the
     /// export tells its listener at most once every `progressInterval`,
-    /// besides its start, each chapter's end, and the encode's start and end:
-    /// a voice that delivers hundreds of buffers is told in a handful of
-    /// reports.
+    /// besides its start, each chapter's end, the encode's start and end, and
+    /// its own end: a voice that delivers hundreds of buffers is told in a
+    /// handful of reports.
     func testProgressIsToldAtMostOnceEveryInterval() async throws {
         let sandbox = try makeSandbox()
         let fake = Self.makeFake(pieceFrameCount: 8)
@@ -139,10 +142,10 @@ final class SpeechExportJobTests: XCTestCase {
         let seconds: Double = started.duration(to: ContinuousClock.now) / .seconds(1)
         let buffers = fake.written.reduce(0) { $0 + ($1.text.utf16.count * Self.framesPerUnit + 7) / 8 }
         XCTAssertGreaterThan(buffers, 500, "too few buffers for the test to tell anything")
-        // Seven reports come at once: the start, the four chapters' ends,
-        // and the encode's start and end. Every other report waited out the
-        // interval after the one before it.
-        let most = 7 + Int(seconds / SpeechExportJob.progressInterval) + 1
+        // Eight reports come at once: the start, the four chapters' ends, the
+        // encode's start and end, and the export's end. Every other report
+        // waited out the interval after the one before it.
+        let most = 8 + Int(seconds / SpeechExportJob.progressInterval) + 1
         XCTAssertLessThanOrEqual(progress.values.count, most, "\(progress.values.count) reports in \(seconds) s")
     }
 
@@ -228,18 +231,21 @@ final class SpeechExportJobTests: XCTestCase {
     /// chapters finished are kept, and the Mac is let go. The same export
     /// asked again goes on from them: it speaks only the chapters after
     /// them, starts its progress at their share, and makes the whole file
-    /// with every chapter. Each run writes its own log line.
+    /// with every chapter. Each run writes its own log line, and tells how
+    /// many chapters it left kept.
     func testAStoppedExportKeepsItsChaptersAndTheNextGoesOnFromThem() async throws {
         let sandbox = try makeSandbox()
         let destination = sandbox.destination()
 
+        let stoppedProgress = RecordedProgress()
         let stoppedLines = try await speechExportLogLines {
-            let stop = await stopAtTheThirdChapter(Self.request(), in: sandbox, to: destination)
+            let stop = await stopAtTheThirdChapter(Self.request(), in: sandbox, to: destination, progress: stoppedProgress)
             XCTAssertTrue(stop is CancellationError, "\(String(describing: stop))")
         }
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "a stopped export left a file")
         XCTAssertEqual(try keptChapterNames(in: sandbox), ["0001.caf", "0002.caf"])
+        XCTAssertEqual(stoppedProgress.values.last, SpeechExportProgress.ended(kept: 2, total: 4))
         XCTAssertEqual(sandbox.power.entries, [Self.holdEntry, Self.releaseEntry])
         XCTAssertEqual(stoppedLines, ["SPEECH_EXPORT: stopped after 2 of 4 chapters (0 kept from an earlier export) in # s"])
 
@@ -258,6 +264,7 @@ final class SpeechExportJobTests: XCTestCase {
         XCTAssertEqual(first.done, 2)
         XCTAssertEqual(first.total, 4)
         XCTAssertEqual(first.fraction, keptShare, accuracy: 1e-12)
+        XCTAssertEqual(progress.values.last, SpeechExportProgress.ended(kept: 0, total: 4))
         let chapters = await AudioPlaybackService.extractChapters(from: destination)
         XCTAssertEqual(chapters.map(\.title), Self.chapterTitles)
         XCTAssertEqual(sandbox.power.entries, [Self.holdEntry, Self.releaseEntry, Self.holdEntry, Self.releaseEntry])
@@ -312,21 +319,23 @@ final class SpeechExportJobTests: XCTestCase {
         XCTAssertEqual(chapters.map(\.title), Self.chapterTitles)
     }
 
-    /// Stop pressed as the encode begins leaves every chapter kept and
-    /// nothing at the destination. The export asked again speaks nothing,
-    /// starts its progress with every chapter done, and only encodes them
-    /// into the whole file.
+    /// Stop pressed as the encode begins leaves every chapter kept, and says
+    /// so, and nothing at the destination. The export asked again speaks
+    /// nothing, starts its progress with every chapter done, and only encodes
+    /// them into the whole file.
     func testAnExportStoppedWhileEncodingGoesOnWithoutSpeakingAgain() async throws {
         let sandbox = try makeSandbox()
         let destination = sandbox.destination()
         let cancellation = BookExportCancellation()
         let first = Self.makeFake()
+        let firstProgress = RecordedProgress()
 
         let stop = await failure(
             exporting: Self.request(),
             in: sandbox,
             to: destination,
             context: context(sandbox, synthesizer: first) { progress in
+                firstProgress.add(progress)
                 if progress.whileEncoding != nil {
                     cancellation.cancel()
                 }
@@ -337,6 +346,7 @@ final class SpeechExportJobTests: XCTestCase {
         XCTAssertTrue(stop is CancellationError, "\(String(describing: stop))")
         XCTAssertEqual(first.written.map(Self.chapterIndex(of:)), [0, 1, 2, 3])
         XCTAssertEqual(try keptChapterNames(in: sandbox), ["0001.caf", "0002.caf", "0003.caf", "0004.caf"])
+        XCTAssertEqual(firstProgress.values.last, SpeechExportProgress.ended(kept: 4, total: 4))
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "a stopped encode left a file")
 
         let second = Self.makeFake()
@@ -347,20 +357,75 @@ final class SpeechExportJobTests: XCTestCase {
 
         XCTAssertEqual(second.written, [])
         XCTAssertEqual(progress.values.first, SpeechExportProgress.speaking(done: 4, total: 4, fraction: 1))
-        XCTAssertEqual(progress.values.last, SpeechExportProgress.encoding(chapters: 4, fraction: 1))
+        XCTAssertEqual(progress.values.last, SpeechExportProgress.ended(kept: 0, total: 4))
         let chapters = await AudioPlaybackService.extractChapters(from: destination)
+        XCTAssertEqual(chapters.map(\.title), Self.chapterTitles)
+    }
+
+    /// The kept chapters wait for the file to reach its place: the delivery
+    /// runs once the file is whole, with every chapter still kept and the Mac
+    /// still held. A delivery that fails is the export's failure, and leaves
+    /// every chapter kept, as the export says; the export asked again speaks
+    /// nothing, and once its delivery has worked lets the chapters go.
+    func testTheKeptChaptersWaitForTheFileToReachItsPlace() async throws {
+        let sandbox = try makeSandbox()
+        let destination = sandbox.destination()
+        let delivered = sandbox.exports.appendingPathComponent("Delivered.m4b", isDirectory: false)
+        let storeRoot = sandbox.storeRoot
+        let power = sandbox.power
+        let first = Self.makeFake()
+        let firstProgress = RecordedProgress()
+
+        let failed = await failure(
+            exporting: Self.request(),
+            in: sandbox,
+            to: destination,
+            context: context(sandbox, synthesizer: first) { firstProgress.add($0) },
+            deliver: {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path), "the file was not whole yet")
+                throw CocoaError(.fileWriteFileExists)
+            }
+        )
+
+        XCTAssertEqual((failed as? CocoaError)?.code, .fileWriteFileExists, "\(String(describing: failed))")
+        XCTAssertEqual(try keptChapterNames(in: sandbox), ["0001.caf", "0002.caf", "0003.caf", "0004.caf"])
+        XCTAssertEqual(firstProgress.values.last, SpeechExportProgress.ended(kept: 4, total: 4))
+        XCTAssertEqual(sandbox.power.entries, [Self.holdEntry, Self.releaseEntry])
+
+        let second = Self.makeFake()
+        // What the delivery found, for the test to read once the export ends.
+        let foundOnDelivery = OSAllocatedUnfairLock<(chapters: Bool, powerEntries: Int)?>(initialState: nil)
+        try await export(
+            Self.request(),
+            in: sandbox,
+            to: destination,
+            context: context(sandbox, synthesizer: second),
+            deliver: {
+                let found = (chapters: FileManager.default.fileExists(atPath: storeRoot.path), powerEntries: power.entries.count)
+                foundOnDelivery.withLock { $0 = found }
+                try FileManager.default.moveItem(at: destination, to: delivered)
+            }
+        )
+
+        XCTAssertEqual(second.written, [], "the second export spoke")
+        let found = try XCTUnwrap(foundOnDelivery.withLock { $0 }, "the delivery never ran")
+        XCTAssertTrue(found.chapters, "the kept chapters went before the file reached its place")
+        XCTAssertEqual(found.powerEntries, 3, "the Mac was let go before the file reached its place")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: storeRoot.path), "the kept chapters were not let go")
+        let chapters = await AudioPlaybackService.extractChapters(from: delivered)
         XCTAssertEqual(chapters.map(\.title), Self.chapterTitles)
     }
 
     /// An export whose Stop was pressed before it began reads the book but
     /// holds nothing: it throws `CancellationError` before its store is
-    /// opened, speaking nothing and never keeping the Mac awake, and its log
-    /// line counts the chapters it would have had.
+    /// opened, speaking nothing and never keeping the Mac awake; it says it
+    /// kept nothing; and its log line counts the chapters it would have had.
     func testAnExportStoppedBeforeItBeginsHoldsNothing() async throws {
         let sandbox = try makeSandbox()
         let fake = Self.makeFake()
         let cancellation = BookExportCancellation()
         cancellation.cancel()
+        let progress = RecordedProgress()
 
         var error: Error?
         let lines = try await speechExportLogLines {
@@ -368,12 +433,13 @@ final class SpeechExportJobTests: XCTestCase {
                 exporting: Self.request(),
                 in: sandbox,
                 to: sandbox.destination(),
-                context: context(sandbox, synthesizer: fake),
+                context: context(sandbox, synthesizer: fake) { progress.add($0) },
                 cancellation: cancellation
             )
         }
 
         XCTAssertTrue(error is CancellationError, "\(String(describing: error))")
+        XCTAssertEqual(progress.values, [.ended(kept: 0, total: 4)])
         XCTAssertEqual(fake.written, [])
         XCTAssertEqual(sandbox.power.entries, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.storeRoot.path), "the store was opened")
@@ -519,12 +585,13 @@ final class SpeechExportJobTests: XCTestCase {
     /// A chapter whose text the speech engine refuses, guarded as every
     /// render begins and again with every bracket silent, fails the export
     /// with `refused`, naming the chapter: the two chapters before it are
-    /// kept, nothing is left at the destination, the Mac is let go, and the
-    /// log's line counts the two chapters done.
+    /// kept, as the export says, nothing is left at the destination, the Mac
+    /// is let go, and the log's line counts the two chapters done.
     func testAChapterTheSpeechEngineRefusesFailsTheExportKeepingTheChaptersBeforeIt() async throws {
         let sandbox = try makeSandbox()
         let refusedPhrase = Self.stopPhrase
         let fake = Self.makeFake(refuses: { $0.text.contains(refusedPhrase) })
+        let progress = RecordedProgress()
 
         var error: Error?
         let lines = try await speechExportLogLines {
@@ -532,11 +599,12 @@ final class SpeechExportJobTests: XCTestCase {
                 exporting: Self.request(),
                 in: sandbox,
                 to: sandbox.destination(),
-                context: context(sandbox, synthesizer: fake)
+                context: context(sandbox, synthesizer: fake) { progress.add($0) }
             )
         }
 
         XCTAssertEqual(error as? SpeechRenderFailure, .refused("Tides"))
+        XCTAssertEqual(progress.values.last, SpeechExportProgress.ended(kept: 2, total: 4))
         XCTAssertEqual(fake.written.map(Self.chapterIndex(of:)), [0, 1, 2, 2], "the refused text was not tried twice")
         XCTAssertEqual(try keptChapterNames(in: sandbox), ["0001.caf", "0002.caf"])
         XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.destination().path), "a failed export left a file")
@@ -768,7 +836,8 @@ final class SpeechExportJobTests: XCTestCase {
         in sandbox: Sandbox,
         to destination: URL,
         context: SpeechExportContext,
-        cancellation: BookExportCancellation = BookExportCancellation()
+        cancellation: BookExportCancellation = BookExportCancellation(),
+        deliver: @escaping @Sendable () throws -> Void = {}
     ) async throws {
         let markdown = Data(Self.markdown.utf8)
         let source = sandbox.source
@@ -781,7 +850,8 @@ final class SpeechExportJobTests: XCTestCase {
                         source: source,
                         to: destination,
                         context: context,
-                        cancellation: cancellation
+                        cancellation: cancellation,
+                        deliver: deliver
                     )
                 })
             }
@@ -794,10 +864,11 @@ final class SpeechExportJobTests: XCTestCase {
         in sandbox: Sandbox,
         to destination: URL,
         context: SpeechExportContext,
-        cancellation: BookExportCancellation = BookExportCancellation()
+        cancellation: BookExportCancellation = BookExportCancellation(),
+        deliver: @escaping @Sendable () throws -> Void = {}
     ) async -> Error? {
         do {
-            try await export(request, in: sandbox, to: destination, context: context, cancellation: cancellation)
+            try await export(request, in: sandbox, to: destination, context: context, cancellation: cancellation, deliver: deliver)
             return nil
         } catch {
             return error
@@ -806,8 +877,13 @@ final class SpeechExportJobTests: XCTestCase {
 
     /// Runs `request` with a fake that presses Stop as the third chapter's
     /// text is handed to it, once the first two chapters are spoken and
-    /// kept, and gives what the run threw.
-    private func stopAtTheThirdChapter(_ request: SpeechExportRequest, in sandbox: Sandbox, to destination: URL) async -> Error? {
+    /// kept, and gives what the run threw; `progress` hears what it told.
+    private func stopAtTheThirdChapter(
+        _ request: SpeechExportRequest,
+        in sandbox: Sandbox,
+        to destination: URL,
+        progress: RecordedProgress? = nil
+    ) async -> Error? {
         let cancellation = BookExportCancellation()
         let stopPhrase = Self.stopPhrase
         let fake = Self.makeFake(beforeWrite: { utterance in
@@ -819,7 +895,7 @@ final class SpeechExportJobTests: XCTestCase {
             exporting: request,
             in: sandbox,
             to: destination,
-            context: context(sandbox, synthesizer: fake),
+            context: context(sandbox, synthesizer: fake) { progress?.add($0) },
             cancellation: cancellation
         )
     }
