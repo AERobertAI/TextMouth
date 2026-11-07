@@ -401,16 +401,49 @@ final class SpeechChapterRendererTests: XCTestCase {
     }
 
     /// A voice that makes no sound for any utterance fails the chapter, once
-    /// every utterance was tried.
+    /// every utterance was tried. That is how the Mac's voices make no sound:
+    /// for text they can't speak they hand back one buffer of 256 frames of
+    /// silence, never nothing, so frames alone are not sound. A voice that
+    /// hands back nothing at all fails it too.
     func testAVoiceThatMakesNoSoundFailsTheChapter() throws {
-        let fake = FakeSpeechBufferSynthesizer(framesPerUnit: 0)
+        let silent = FakeSpeechBufferSynthesizer(isSilent: { _ in true })
         let url = try makeChapterURL()
 
-        XCTAssertThrowsError(try Self.render(["Gulls circle.", "The tide turns."], with: fake, to: url)) { error in
+        XCTAssertThrowsError(try Self.render(["\u{65E5}\u{672C}", "\u{2042}"], with: silent, to: url)) { error in
             XCTAssertEqual(error as? SpeechRenderFailure, .noSound(Self.title))
         }
-        XCTAssertEqual(fake.written.count, 2)
+        XCTAssertEqual(silent.written.count, 2)
         assertNoFile(at: url)
+
+        let nothing = FakeSpeechBufferSynthesizer(framesPerUnit: 0)
+        XCTAssertThrowsError(try Self.render(["Gulls circle.", "The tide turns."], with: nothing, to: url)) { error in
+            XCTAssertEqual(error as? SpeechRenderFailure, .noSound(Self.title))
+        }
+        assertNoFile(at: url)
+    }
+
+    /// Sound is speech louder than -60 dBFS: a quiet voice at -40 dBFS is
+    /// kept, while a hiss at -74 dBFS, quieter than the dither of the Mac's
+    /// silent buffer, is no sound. A chapter with one utterance of sound
+    /// among silent ones is kept whole, its silence included.
+    func testSoundIsSpeechLouderThanSixtyDecibelsBelowFullScale() throws {
+        let quiet = FakeSpeechBufferSynthesizer(amplitude: 0.01)
+        let quietURL = try makeChapterURL()
+        let kept = try Self.render(["Gulls circle."], with: quiet, to: quietURL)
+        XCTAssertGreaterThan(kept.frameCount, 0)
+
+        let hiss = FakeSpeechBufferSynthesizer(amplitude: 0.000_2)
+        let hissURL = try makeChapterURL()
+        XCTAssertThrowsError(try Self.render(["Gulls circle."], with: hiss, to: hissURL)) { error in
+            XCTAssertEqual(error as? SpeechRenderFailure, .noSound(Self.title))
+        }
+        assertNoFile(at: hissURL)
+
+        let mixed = FakeSpeechBufferSynthesizer(isSilent: { $0.text.contains("\u{2042}") })
+        let mixedURL = try makeChapterURL()
+        let whole = try Self.render(["\u{2042}", "Gulls circle."], with: mixed, to: mixedURL)
+        let toneFrames = Int64("Gulls circle.".utf16.count * 40)
+        XCTAssertEqual(whole.frameCount, Int64(FakeSpeechBufferSynthesizer.silentBufferFrameCount) + toneFrames)
     }
 
     /// A second utterance at 24,000 Hz after one at 22,050 fails the chapter,

@@ -10,7 +10,10 @@ import os
 /// utterance's text, mono, in buffers of `pieceFrameCount` frames, on the
 /// calling thread, and returns `.finished`; or, for an utterance it
 /// `refuses`, hands over nothing and returns `.refused`, as the speech
-/// engine does with a text it will not speak.
+/// engine does with a text it will not speak. For an utterance that `isSilent`,
+/// it hands over one buffer of 256 frames of silence and returns `.finished`,
+/// as the Mac's voices do with text they can't speak (a script they don't
+/// read, a line of symbols).
 ///
 /// Sendable without `@unchecked`: its configuration is constants of Sendable
 /// types, and its record of utterances is kept in a lock.
@@ -25,12 +28,16 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
 
     /// The tone's frequency, in hertz.
     private static let toneFrequency = 440.0
-    /// The tone's amplitude, a tenth of full scale: quiet, should anyone
-    /// ever play a file a test made.
-    private static let toneAmplitude = 0.1
+    /// The frames of the one buffer of silence a voice hands back for text
+    /// it can't speak, as the Mac's voices were measured to.
+    static let silentBufferFrameCount = 256
 
     /// Frames of tone for each UTF-16 unit of an utterance's text.
     private let framesPerUnit: Int
+    /// The tone's amplitude, as a fraction of full scale.
+    private let amplitude: Double
+    /// Whether the voice hands back silence for an utterance.
+    private let isSilent: @Sendable (SpeechExportUtterance) -> Bool
     /// Frames in each buffer of a write but its last, which holds the rest.
     private let pieceFrameCount: Int
     /// The kind of samples every buffer holds.
@@ -47,7 +54,11 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
 
     /// - Parameters:
     ///   - framesPerUnit: Frames of tone for each UTF-16 unit of an
-    ///     utterance's text; 0 for a voice that makes no sound.
+    ///     utterance's text; 0 for a voice that hands back no audio at all.
+    ///   - amplitude: The tone's amplitude, as a fraction of full scale: a
+    ///     tenth by default, quiet should anyone ever play a file a test made.
+    ///   - isSilent: Whether the voice hands back one buffer of silence for
+    ///     an utterance, as for text it can't speak.
     ///   - pieceFrameCount: Frames in each buffer but the last; at least 1.
     ///   - commonFormat: The kind of samples: `.pcmFormatFloat32`, as most
     ///     voices write, or `.pcmFormatInt16`.
@@ -56,6 +67,8 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
     ///   - beforeWrite: Called as each write begins.
     init(
         framesPerUnit: Int = 40,
+        amplitude: Double = 0.1,
+        isSilent: @escaping @Sendable (SpeechExportUtterance) -> Bool = { _ in false },
         pieceFrameCount: Int = 2_205,
         commonFormat: AVAudioCommonFormat = .pcmFormatFloat32,
         sampleRate: @escaping @Sendable (SpeechExportUtterance) -> Double = { _ in 22_050 },
@@ -63,6 +76,8 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
         beforeWrite: @escaping @Sendable (SpeechExportUtterance) -> Void = { _ in }
     ) {
         self.framesPerUnit = framesPerUnit
+        self.amplitude = amplitude
+        self.isSilent = isSilent
         // A buffer of no frames would never move the write on.
         self.pieceFrameCount = max(1, pieceFrameCount)
         self.commonFormat = commonFormat
@@ -94,6 +109,10 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
               let format = AVAudioFormat(commonFormat: commonFormat, sampleRate: rate, channels: 1, interleaved: false) else {
             throw Failure.cannotMakeBuffer
         }
+        if isSilent(utterance) {
+            try onBuffer(Self.silence(frames: Self.silentBufferFrameCount, format: format))
+            return .finished
+        }
         let frameCount = utterance.text.utf16.count * framesPerUnit
         var made = 0
         while made < frameCount {
@@ -101,16 +120,29 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
             // it between buffers.
             try cancellation.checkCancelled()
             let count = min(pieceFrameCount, frameCount - made)
-            try onBuffer(Self.tone(frames: made..<(made + count), format: format))
+            try onBuffer(Self.tone(frames: made..<(made + count), format: format, amplitude: amplitude))
             made += count
         }
         return .finished
     }
 
-    /// A buffer of `format` holding the tone's frames `frames`, counted from
-    /// the first frame of the write, so the tone runs on unbroken from one
-    /// buffer to the next.
-    private static func tone(frames: Range<Int>, format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+    /// A buffer of `format` holding `frames` frames of silence, every byte
+    /// zeroed, since a new buffer's memory is not.
+    private static func silence(frames: Int, format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)) else {
+            throw Failure.cannotMakeBuffer
+        }
+        buffer.frameLength = AVAudioFrameCount(frames)
+        for channel in UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList) {
+            channel.mData?.initializeMemory(as: UInt8.self, repeating: 0, count: Int(channel.mDataByteSize))
+        }
+        return buffer
+    }
+
+    /// A buffer of `format` holding the tone's frames `frames`, at
+    /// `amplitude`, counted from the first frame of the write, so the tone
+    /// runs on unbroken from one buffer to the next.
+    private static func tone(frames: Range<Int>, format: AVAudioFormat, amplitude: Double) throws -> AVAudioPCMBuffer {
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames.count)) else {
             throw Failure.cannotMakeBuffer
         }
@@ -118,11 +150,11 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
         let rate = format.sampleRate
         if let samples = buffer.floatChannelData?.pointee {
             for (index, frame) in frames.enumerated() {
-                samples[index] = Float(toneSample(at: frame, rate: rate))
+                samples[index] = Float(toneSample(at: frame, rate: rate, amplitude: amplitude))
             }
         } else if let samples = buffer.int16ChannelData?.pointee {
             for (index, frame) in frames.enumerated() {
-                samples[index] = Int16((toneSample(at: frame, rate: rate) * Double(Int16.max)).rounded())
+                samples[index] = Int16((toneSample(at: frame, rate: rate, amplitude: amplitude) * Double(Int16.max)).rounded())
             }
         } else {
             throw Failure.cannotMakeBuffer
@@ -131,8 +163,8 @@ final class FakeSpeechBufferSynthesizer: SpeechBufferSynthesizing {
     }
 
     /// The tone's value at `frame` of a write at `rate` frames a second,
-    /// from -0.1 to 0.1 of full scale.
-    private static func toneSample(at frame: Int, rate: Double) -> Double {
-        toneAmplitude * sin(2 * Double.pi * toneFrequency * Double(frame) / rate)
+    /// from minus `amplitude` to `amplitude` of full scale.
+    private static func toneSample(at frame: Int, rate: Double, amplitude: Double) -> Double {
+        amplitude * sin(2 * Double.pi * toneFrequency * Double(frame) / rate)
     }
 }

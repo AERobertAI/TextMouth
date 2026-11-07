@@ -11,7 +11,10 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
     /// render begins and again with every bracket silent; or refused it
     /// after part of its audio was written, which cannot be taken back.
     case refused(String)
-    /// The voice wrote no audio for any of the chapter's text.
+    /// The voice wrote no sound for any of the chapter's text: no audio at
+    /// all, or only silence, which is what the Mac's voices hand back for
+    /// text they can't speak, such as a script they don't read or a line of
+    /// symbols (`SpeechChapterRenderer.silenceCeiling`).
     case noSound(String)
     /// The voice wrote nothing for the synthesizer's stall limit.
     case stalled(String)
@@ -61,6 +64,17 @@ enum SpeechChapterRenderer {
     /// between chapters is a few seconds long, and the cap keeps a wrong
     /// length from filling the disk.
     static let maximumTrailingSilence: TimeInterval = 3_600
+
+    /// The loudest a chapter's speech can be, as a fraction of full scale,
+    /// and still count as no sound: 0.001, which is -60 dBFS.
+    ///
+    /// For text a voice can't speak, the Mac's voices never hand back
+    /// nothing. They hand back one buffer of 256 frames of silence, measured
+    /// with Samantha, Eddy, Flo, and Alex for Japanese, "⁂", "❦", "—", and
+    /// "* * *". Its loudest sample was 0.00024 (-72 dBFS) of dither, while
+    /// speech peaks far above -20 dBFS. So a chapter that never rises above
+    /// this is one the voice couldn't speak, however many frames it holds.
+    static let silenceCeiling = 0.001
 
     /// Speak the chapter `title`, whose texts are `texts`, into a new CAF at
     /// `url`, followed by `trailingSilence` seconds of silence, and close it.
@@ -138,7 +152,7 @@ enum SpeechChapterRenderer {
                     try speaker.speak(words)
                 }
             }
-            guard file.speechFrameCount > 0 else {
+            guard file.hasSound else {
                 throw SpeechRenderFailure.noSound(title)
             }
             return try file.finish(trailingSilence: trailingSilence)
@@ -287,6 +301,16 @@ private final class ChapterAudioFile {
     private var state = State.awaitingFirstBuffer
     /// Frames of speech written so far.
     private(set) var speechFrameCount: Int64 = 0
+    /// The loudest sample of the speech written so far, as a fraction of
+    /// full scale, from 0 to 1.
+    private(set) var loudestSample = 0.0
+
+    /// Whether the speech written so far has sound in it: a frame louder
+    /// than `SpeechChapterRenderer.silenceCeiling`. Frames alone are not
+    /// enough, since a voice hands back silence for text it can't speak.
+    var hasSound: Bool {
+        loudestSample > SpeechChapterRenderer.silenceCeiling
+    }
 
     /// A file at `url` for the chapter `title`, made at its first buffer.
     init(url: URL, title: String) {
@@ -323,15 +347,49 @@ private final class ChapterAudioFile {
         }
         try file.write(from: buffer)
         speechFrameCount += Int64(buffer.frameLength)
+        loudestSample = max(loudestSample, Self.loudestSample(of: buffer))
+    }
+
+    /// The loudest sample of `buffer`'s frames, in any of its channels, as a
+    /// fraction of full scale: for 32-bit float samples their magnitude, and
+    /// for 16-bit and 32-bit integers their magnitude over the largest. A
+    /// kind of sample this doesn't read counts as full scale, so it is never
+    /// taken for silence and refused.
+    private static func loudestSample(of buffer: AVAudioPCMBuffer) -> Double {
+        let format = buffer.format
+        // Interleaved samples sit one after another behind one pointer.
+        let pointers = format.isInterleaved ? 1 : Int(format.channelCount)
+        let samples = Int(buffer.frameLength) * (format.isInterleaved ? Int(format.channelCount) : 1)
+        /// The loudest of the samples behind `channels`, each read by `magnitude`.
+        func loudest<Sample>(_ channels: UnsafePointer<UnsafeMutablePointer<Sample>>, _ magnitude: (Sample) -> Double) -> Double {
+            var loudest = 0.0
+            for pointer in 0..<pointers {
+                let channel = channels[pointer]
+                for index in 0..<samples {
+                    loudest = max(loudest, magnitude(channel[index]))
+                }
+            }
+            return loudest
+        }
+        if let channels = buffer.floatChannelData {
+            return loudest(channels) { Double(abs($0)) }
+        }
+        if let channels = buffer.int16ChannelData {
+            return loudest(channels) { Double(abs(Int32($0))) / Double(Int16.max) }
+        }
+        if let channels = buffer.int32ChannelData {
+            return loudest(channels) { Double(abs(Int64($0))) / Double(Int32.max) }
+        }
+        return 1
     }
 
     /// Write `seconds` of silence after the speech, close the file, and say
     /// what it holds.
     ///
-    /// - Throws: `SpeechRenderFailure.noSound` when no speech was written,
-    ///   or the file's error.
+    /// - Throws: `SpeechRenderFailure.noSound` when no speech with sound in
+    ///   it was written, or the file's error.
     func finish(trailingSilence seconds: TimeInterval) throws -> RenderedSpeechChapter {
-        guard case .open(let file, _) = state, speechFrameCount > 0 else {
+        guard case .open(let file, _) = state, hasSound else {
             throw SpeechRenderFailure.noSound(title)
         }
         let format = file.processingFormat

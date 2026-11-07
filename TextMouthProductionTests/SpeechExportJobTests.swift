@@ -612,6 +612,52 @@ final class SpeechExportJobTests: XCTestCase {
         XCTAssertEqual(lines, ["SPEECH_EXPORT: failed after 2 of 4 chapters (0 kept from an earlier export) in # s"])
     }
 
+    /// A chapter the voice can't speak, which the Mac's voices hand back as
+    /// one buffer of silence, fails the export with `noSound`, naming the
+    /// chapter, as the dialog then says. The chapters before it are kept,
+    /// nothing is left at the destination, and the export says what it kept.
+    func testAChapterTheVoiceCanNotSpeakFailsTheExportKeepingTheChaptersBeforeIt() async throws {
+        let sandbox = try makeSandbox()
+        let silentPhrase = Self.stopPhrase
+        let fake = FakeSpeechBufferSynthesizer(
+            framesPerUnit: Self.framesPerUnit,
+            isSilent: { $0.text.contains(silentPhrase) }
+        )
+        let progress = RecordedProgress()
+
+        let error = await failure(
+            exporting: Self.request(),
+            in: sandbox,
+            to: sandbox.destination(),
+            context: context(sandbox, synthesizer: fake) { progress.add($0) }
+        )
+
+        XCTAssertEqual(error as? SpeechRenderFailure, .noSound("Tides"))
+        XCTAssertEqual(fake.written.map(Self.chapterIndex(of:)), [0, 1, 2])
+        XCTAssertEqual(try keptChapterNames(in: sandbox), ["0001.caf", "0002.caf"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.destination().path), "a silent chapter's export left a file")
+        XCTAssertEqual(progress.values.last, SpeechExportProgress.ended(kept: 2, total: 4))
+    }
+
+    /// A book the voice can speak none of, as one in a script it doesn't
+    /// read, is never exported as silence: its first chapter fails with
+    /// `noSound`, naming the book's opening, and no file is made.
+    func testABookTheVoiceCanNotSpeakIsNeverExportedAsSilence() async throws {
+        let sandbox = try makeSandbox()
+        let fake = FakeSpeechBufferSynthesizer(isSilent: { _ in true })
+
+        let error = await failure(
+            exporting: Self.request(),
+            in: sandbox,
+            to: sandbox.destination(),
+            context: context(sandbox, synthesizer: fake)
+        )
+
+        XCTAssertEqual(error as? SpeechRenderFailure, .noSound(Self.bookTitle))
+        XCTAssertEqual(fake.written.map(Self.chapterIndex(of:)), [0], "the export went on past a chapter of silence")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.destination().path), "a book of silence was exported")
+    }
+
     // MARK: - The Book
 
     /// The book's title, which names the chapter of its text before its
