@@ -38,7 +38,9 @@ struct PhoneReaderSheetContent: View {
             PhoneGoToSheet(reader: reader, farewell: farewell)
         case .bookmarks:
             PhoneBookmarksSheet(reader: reader, farewell: farewell)
-        case .sleepTimer, .voice, .bookInfo, .navigationUnit:
+        case .sleepTimer:
+            PhoneSleepTimerSheet(reader: reader, farewell: farewell)
+        case .voice, .bookInfo, .navigationUnit:
             // Each shows its name until it's built. The Navigation unit's
             // list is the reader's slice's.
             PhoneUnbuiltSheet(title: sheet.rawValue)
