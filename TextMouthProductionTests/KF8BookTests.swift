@@ -200,6 +200,8 @@ final class KF8BookTests: XCTestCase {
             return KF8Fixture.Document(html: html, cutting: [String(html[start..<end])])
         }
         var fixture = KF8Fixture(documents: [try document(real), try document(contents)])
+        // The contents names the chapter, and the page's one link has the chapter's label: a page made for the book.
+        fixture.entries = [KF8Fixture.Entry(label: "Chapter", document: 0)]
         fixture.guide = [(type: "toc", document: 1)]
         XCTAssertEqual(try opened(fixture.data()).sections.count, 1)
         // The same page in the middle of the book is the author's, and is read.
@@ -211,14 +213,14 @@ final class KF8BookTests: XCTestCase {
         XCTAssertEqual(try opened(fixture.data()).sections.count, 2)
     }
 
-    func testAContentsPageThatTheBooksOwnContentsNamesIsKept() throws {
+    func testAContentsPageWithWordsOfItsOwnIsKeptWhetherOrNotTheContentsNamesIt() throws {
         let page = "<html><body><h2>Contents</h2><p>A list.</p></body></html>"
         var fixture = KF8Fixture(documents: [
             KF8Fixture.Document(html: "<html><body><p>Real words.</p></body></html>", cutting: ["<p>Real words.</p>"]),
             KF8Fixture.Document(html: page, cutting: ["<h2>Contents</h2><p>A list.</p>"]),
         ])
         fixture.guide = [(type: "toc", document: 1)]
-        XCTAssertEqual(try opened(fixture.data()).sections.count, 1, "the guide alone leaves the page out")
+        XCTAssertEqual(try opened(fixture.data()).sections.count, 2, "the page has words that are not a title, so it is the author's")
         fixture.entries = [KF8Fixture.Entry(label: "Contents", document: 1)]
         XCTAssertEqual(try opened(fixture.data()).sections.count, 2, "the book's own contents names it, so it is read")
     }

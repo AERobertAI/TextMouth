@@ -6,10 +6,12 @@ import XCTest
 /// an import reads them and compared with the same book as an EPUB through
 /// TextMouth's EPUB reader, the yardstick: the same words in the same order,
 /// the same headings at the same levels, and the same pages. Two come from
-/// outside (Standard Ebooks' The Time Machine, made by Amazon's kindlegen,
-/// and Project Gutenberg's The Yellow Wallpaper, made by calibre), one is a
-/// hybrid kindlegen file, and the others were made here from an EPUB that is
-/// kept beside them (`Scripts/make-kf8-samples.py`).
+/// outside (Standard Ebooks' The Time Machine and Project Gutenberg's The
+/// Yellow Wallpaper, both made by calibre: their EXTH 535 says so), one is a
+/// hybrid file from Amazon's kindlegen (libmobi's), and the others were made
+/// here from EPUBs that are kept beside them (`Scripts/make-kf8-samples.py`
+/// and the edge books of `Scripts/make-kf8-edge-samples.py`, converted by
+/// calibre and by kindlegen as black boxes).
 final class KF8RealBookTests: XCTestCase {
 
     // MARK: - Helpers
@@ -59,7 +61,7 @@ final class KF8RealBookTests: XCTestCase {
         chapters.flatMap { $0.pages.map(\.label) }
     }
 
-    // MARK: - Standard Ebooks' The Time Machine, from kindlegen
+    // MARK: - Standard Ebooks' The Time Machine, from calibre
 
     func testTheTimeMachineReadsAsItsChaptersWithItsNames() throws {
         let book = try prepared("azw3/se-the-time-machine.azw3")
@@ -168,7 +170,7 @@ final class KF8RealBookTests: XCTestCase {
         XCTAssertEqual(words(older).count, words(newer).count + 10, "ten words of a contents page, which only the MOBI 6 half has")
     }
 
-    // MARK: - Hybrids from kindlegen
+    // MARK: - Hybrids
 
     func testTheKindlegenHybridsReadWithTheSameWordsFromEitherHalfAndAtLeastTheHeadingsFromTheKF8Half() throws {
         for (sample, wordCount) in [("mobi/pg8121-ghosts-hybrid.mobi", 27_276), ("mobi/libmobi-unicode-huffdic.mobi", 3_580)] {
@@ -190,6 +192,79 @@ final class KF8RealBookTests: XCTestCase {
         XCTAssertEqual(book.chapters.count, 5)
         XCTAssertEqual(book.chapters.map(\.chapter.title)[1...3], ["GHOSTS", "ACT SECOND.", "ACT THIRD."])
         XCTAssertTrue(words(book.chapters.map(\.chapter)).joined(separator: " ").contains("Théâtre Libre"))
+    }
+
+    // MARK: - The review's edge books
+
+    /// The edge book `name` read four ways: from calibre's AZW3, from the KF8 half of calibre's hybrid (nil when it
+    /// has none), and from the KF8 half of kindlegen's hybrid; and the EPUB it was made from.
+    private func edge(_ name: String) throws -> (epub: [Chapter], readings: [String: [Chapter]]) {
+        let source = try epub("azw3/edge/\(name).epub").chapters.map(\.chapter)
+        var readings: [String: [Chapter]] = [
+            "calibre AZW3": try prepared("azw3/edge/\(name).azw3").chapters.map(\.chapter),
+            "kindlegen hybrid": try hybrid("mobi/edge/\(name)-kindlegen-hybrid.mobi", .kf8).chapters.map(\.chapter),
+        ]
+        if let url = try? formatSampleURL("mobi/edge/\(name)-calibre-hybrid.mobi"), FileManager.default.fileExists(atPath: url.path) {
+            readings["calibre hybrid"] = try hybrid("mobi/edge/\(name)-calibre-hybrid.mobi", .kf8).chapters.map(\.chapter)
+        }
+        return (source, readings)
+    }
+
+    func testALastPageWithWordsOfItsOwnIsReadInEveryKindOfFile() throws {
+        // toc-last: an author's contents page and a note, last in the book, which the guide names as the contents.
+        // toc-mixed: the last chapter, with its list at its end. toc-epilogue: a guide entry that names the epilogue.
+        // The review found 38, 401, and 300 words lost; every word must be read now, in every file.
+        for name in ["toc-last", "toc-mixed", "toc-epilogue"] {
+            let (source, readings) = try edge(name)
+            for (what, chapters) in readings {
+                XCTAssertEqual(words(chapters), words(source), "\(name) as \(what)")
+            }
+        }
+    }
+
+    func testABookOfOneDocumentWhoseGuideNamesItIsNotRefusedInEveryKindOfFile() throws {
+        let (source, readings) = try edge("toc-single")
+        XCTAssertGreaterThan(words(source).count, 50)
+        for (what, chapters) in readings {
+            XCTAssertEqual(words(chapters), words(source), "toc-single as \(what)")
+        }
+    }
+
+    func testWordsInAnSVGPictureAreRead() throws {
+        // svg-words: the SVG's visible text, title, and description (the EPUB reader reads them), which calibre
+        // and kindlegen move out of the markup into a flow.
+        let (source, readings) = try edge("svg-words")
+        XCTAssertTrue(words(source).contains(where: { $0.hasPrefix("w5") }))
+        for (what, chapters) in readings {
+            XCTAssertEqual(words(chapters), words(source), "svg-words as \(what)")
+        }
+    }
+
+    func testNavigationListsAreNotReadAloudInRealFiles() throws {
+        // nav-in-spine has an EPUB 3 navigation document in its spine; page-list has a page list. calibre strips the
+        // prefix from their epub:type, and the words must still be the EPUB reader's.
+        for name in ["nav-in-spine", "page-list"] {
+            let (source, readings) = try edge(name)
+            for (what, chapters) in readings {
+                XCTAssertEqual(words(chapters), words(source), "\(name) as \(what)")
+                XCTAssertEqual(headings(chapters), headings(source), "\(name) as \(what)")
+                XCTAssertEqual(pageLabels(chapters), pageLabels(source), "\(name) as \(what)")
+            }
+        }
+    }
+
+    func testPagesCalibreCutAtPageBreakStylesAreOneChapterWithNoFalseHeadings() throws {
+        // page-break-style: calibre cut one document in four places, one in the middle of a paragraph. Its pieces
+        // go on with the chapter before them, whose heading is the document's own.
+        let (source, readings) = try edge("page-break-style")
+        for (what, chapters) in readings {
+            XCTAssertEqual(words(chapters), words(source), "page-break-style as \(what)")
+            XCTAssertEqual(headings(chapters), headings(source), "page-break-style as \(what)")
+            XCTAssertEqual(chapters.map(\.title), source.map(\.title), "page-break-style as \(what)")
+        }
+        // The cut in the middle of a paragraph does not break it: the EPUB reads that paragraph whole.
+        let calibre = try XCTUnwrap(readings["calibre AZW3"])
+        XCTAssertEqual(calibre.map(\.text), source.map(\.text), "text, paragraph by paragraph")
     }
 
     // MARK: - Whatever the file is named

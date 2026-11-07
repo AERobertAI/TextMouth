@@ -218,6 +218,37 @@ final class PagesUpgradeTests: XCTestCase {
     /// content.md is kept as content.md.edited-<time>, and the book is read
     /// again with its pages, its places following their words. The log says
     /// so once, and a second pass picks nothing.
+    func testAHybridKindleBookStoredFromItsMOBI6HalfIsReadAgainWithoutACopyAndItsPlacesFollow() async throws {
+        // A Kindle book stored before .mobi had a page reader holds the MOBI 6 half's reading of a hybrid file. Read
+        // from its KF8 half now, the same words are in other chapters with other headings: that is TextMouth's own
+        // earlier text, not an edit, so no copy of it is kept (S6), and the places follow their words across the
+        // two halves' different chapters.
+        let world = try makeIntegrationWorld("Pages Upgrade Hybrid")
+        let fixture = try makeBookBeforePages(
+            sample: "mobi/pg8121-ghosts-hybrid.mobi", places: Self.ghostsPlaces, kindleHalf: .mobi6, in: world)
+        XCTAssertEqual(fixture.oldText.chapters.count, 9, "the fixture holds the MOBI 6 half's chapters")
+        XCTAssertEqual(try LibraryViewModel.pageUpgradeCheck(of: fixture.book, access: .live), .readAgain)
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertTrue(keptCopies(of: row).isEmpty, "a copy of text nobody edited was kept")
+        XCTAssertTrue(debugLogLines(containing: "PAGES_REPLACED_TEXT: \(row.title)").isEmpty)
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .mobi))
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertEqual(content.chapters.count, 5, "the book is read from its KF8 half now")
+        assertPlaces(of: row, areAt: Self.ghostsPlaces, in: content)
+    }
+
+    func testAHybridKindleBookWhoseTextWasEditedIsStillCopied() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Hybrid Edited")
+        let fixture = try makeBookBeforePages(
+            sample: "mobi/pg8121-ghosts-hybrid.mobi", places: Self.ghostsPlaces,
+            changingText: { $0.replacingOccurrences(of: "Th\u{E9}\u{E2}tre Libre", with: "Th\u{E9}\u{E2}tre Libre!") },
+            kindleHalf: .mobi6, in: world)
+        XCTAssertNotEqual(try LibraryViewModel.pageUpgradeCheck(of: fixture.book, access: .live), .readAgain)
+    }
+
     func testChangedTextIsReadAgainWithPagesKeepingACopyOnce() async throws {
         let replaced = try await assertReplacedKeepingACopy("Pages Upgrade Changed") {
             $0.replacingOccurrences(of: "crate", with: "carton")
@@ -986,6 +1017,10 @@ final class PagesUpgradeTests: XCTestCase {
     /// that number from the text.
     private static let epubPlaces = FixturePlaces(position: "somebody signed", bookmark: "coil of cable", skippedHeading: "Opening the Crate")
 
+    /// The places the Ghosts fixture saves, which are in the MOBI 6 half's chapters (nine) and in the KF8 half's (five).
+    private static let ghostsPlaces = FixturePlaces(
+        position: "The mist still lies heavy over the landscape", bookmark: "Th\u{E9}\u{E2}tre Libre", skippedHeading: "ACT THIRD.")
+
     /// The places the PDF fixture saves.
     private static let pdfPlaces = FixturePlaces(position: "This is page four.", bookmark: "This is page five.", skippedHeading: nil)
 
@@ -1077,6 +1112,7 @@ final class PagesUpgradeTests: XCTestCase {
         damagingSource: Bool = false,
         stamp: String? = nil,
         adjustingBook: ((inout Book) -> Void)? = nil,
+        kindleHalf: MOBIBook.HybridChoice? = nil,
         in world: IntegrationWorld
     ) throws -> BookBeforePages {
         let places = places ?? Self.epubPlaces
@@ -1085,7 +1121,8 @@ final class PagesUpgradeTests: XCTestCase {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
 
         // The text as it was written before pages, or with them.
-        var markdown = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: withPages))
+        var markdown = try XCTUnwrap(
+            MarkdownCacheService.extractedText(for: book, includesPages: withPages, kindleHalf: kindleHalf)?.markdown)
         if let changingText {
             let changed = changingText(markdown)
             XCTAssertNotEqual(changed, markdown, "the change should alter the text")

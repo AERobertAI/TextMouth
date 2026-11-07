@@ -52,8 +52,11 @@ struct KF8Fixture {
     var entries: [Entry] = []
     /// Guide entries: a type ("toc") and the document whose first fragment it names.
     var guide: [(type: String, document: Int)] = []
-    /// Text that follows the markup flow, such as a style sheet.
-    var otherFlows = "p { margin: 0 }"
+    /// The flows that follow the markup flow, each a flow of its own in the
+    /// flow table: flow 1 is a style sheet, and an SVG picture is a flow
+    /// that markup names (`kindle:flow:0002?mime=image/svg+xml`). A book with
+    /// no flows after the markup has no text after it.
+    var flows = ["p { margin: 0 }"]
     var title: String? = "Fixture KF8 Book"
     var authors = ["Imre Falk"]
     var language: String? = "en"
@@ -67,6 +70,11 @@ struct KF8Fixture {
     /// Rows to write in place of the sound ones, for a test that damages an index.
     var skeletonRowsOverride: [Row]?
     var fragmentRowsOverride: [Row]?
+    /// Rows and label strings to write as the contents in place of the entries', for a test that makes
+    /// the contents lie (one label shared by a thousand rows, a depth past six).
+    var contentsOverride: (rows: [Row], strings: [String])?
+    /// The place in its fragment that a guide entry names (0 for the start of a document).
+    var guideOffset = 0
 
     // MARK: Layout
 
@@ -164,7 +172,13 @@ struct KF8Fixture {
     func records() -> [[UInt8]] {
         let laid = placed()
         let markupEnd = laid.text.count
-        let text = laid.text + Array(otherFlows.utf8)
+        var text = laid.text
+        var flowRanges = [0..<markupEnd]
+        for flow in flows {
+            let start = text.count
+            text += Array(flow.utf8)
+            flowRanges.append(start..<text.count)
+        }
         var records: [[UInt8]] = []
 
         // The text, cut into records and compressed.
@@ -178,7 +192,7 @@ struct KF8Fixture {
 
         // The tables after the text.
         var tables: [[UInt8]] = []
-        let flowTable = Self.flowTable([0..<markupEnd, markupEnd..<text.count])
+        let flowTable = Self.flowTable(flowRanges)
         let first = 1 + textRecords.count
         tables.append(flowTable)
         let skeletonRecord = first + tables.count
@@ -186,7 +200,7 @@ struct KF8Fixture {
         let fragmentRecord = first + tables.count
         tables += fragmentIndex(laid)
         var ncxRecord: Int?
-        if !entries.isEmpty {
+        if !entries.isEmpty || contentsOverride != nil {
             ncxRecord = first + tables.count
             tables += contentsIndex(laid)
         }
@@ -222,7 +236,7 @@ struct KF8Fixture {
         MOBIFixture.put32(&record, 112, 0xFFFF_FFFF)
         MOBIFixture.put32(&record, 168, drmOffset)
         MOBIFixture.put32(&record, 192, flowTable)
-        MOBIFixture.put32(&record, 196, 2)
+        MOBIFixture.put32(&record, 196, 1 + flows.count)
         MOBIFixture.put32(&record, 240, 0)
         MOBIFixture.put32(&record, 244, ncx ?? 0xFFFF_FFFF)
         MOBIFixture.put32(&record, 248, fragment)
@@ -326,6 +340,10 @@ struct KF8Fixture {
     /// The contents: for each entry, an offset, a size, its label, its depth,
     /// and the fragment and place it names.
     func contentsIndex(_ laid: Placed) -> [[UInt8]] {
+        let tags = [Tag(number: 1, valuesPerCount: 1, mask: 1), Tag(number: 2, valuesPerCount: 1, mask: 2),
+                    Tag(number: 3, valuesPerCount: 1, mask: 4), Tag(number: 4, valuesPerCount: 1, mask: 8),
+                    Tag(number: 6, valuesPerCount: 2, mask: 16)]
+        if let contentsOverride { return Self.index(tags: tags, rows: contentsOverride.rows, strings: contentsOverride.strings) }
         var labels: [String] = []
         var rows: [Row] = []
         var place = 0
@@ -339,12 +357,7 @@ struct KF8Fixture {
                 values: [1: [0], 2: [0], 3: [labelPlace], 4: [entry.depth], 6: [fragment, entry.offset]]
             ))
         }
-        return Self.index(
-            tags: [Tag(number: 1, valuesPerCount: 1, mask: 1), Tag(number: 2, valuesPerCount: 1, mask: 2),
-                   Tag(number: 3, valuesPerCount: 1, mask: 4), Tag(number: 4, valuesPerCount: 1, mask: 8),
-                   Tag(number: 6, valuesPerCount: 2, mask: 16)],
-            rows: rows, strings: labels
-        )
+        return Self.index(tags: tags, rows: rows, strings: labels)
     }
 
     /// The guide: for each entry, a type for its name, a label, and the
@@ -358,7 +371,7 @@ struct KF8Fixture {
             place += MOBIFixture.variableNumber(entry.type.utf8.count).count + entry.type.utf8.count
             return Row(
                 name: Array(entry.type.utf8),
-                values: [1: [labelPlace], 6: [fid(document: entry.document, fragment: 0), 0]]
+                values: [1: [labelPlace], 6: [fid(document: entry.document, fragment: 0), guideOffset]]
             )
         }
         return Self.index(

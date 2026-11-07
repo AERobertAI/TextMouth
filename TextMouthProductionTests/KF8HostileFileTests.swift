@@ -163,10 +163,11 @@ final class KF8HostileFileTests: XCTestCase {
         assertDamaged(repeated.data(), "2,000 fragments that are one range")
     }
 
-    func testTheFlowTableIsOnlyAnAid() {
-        // A flow table that is missing or has no magic leaves the book read all the same; one that says the
-        // markup ends before the documents do is a lie that is refused.
-        let bytes = paragraphs(5, cut: 2).data()
+    func testTheFlowTableIsOnlyAnAidWhereTheMarkupIsTheWholeText() {
+        // A book with nothing after its markup needs no flow table: documents that fill the text are the markup.
+        var sound = paragraphs(5, cut: 2)
+        sound.flows = []
+        let bytes = sound.data()
         let offsets = MOBIFixture.recordOffsets(of: bytes)
         let record0 = offsets[0]
         let flowRecord = (0..<4).reduce(0) { $0 << 8 | Int(bytes[record0 + 192 + $1]) }
@@ -179,13 +180,25 @@ final class KF8HostileFileTests: XCTestCase {
         MOBIFixture.put32(&farEnd, offsets[flowRecord] + 16, 0xFFFF_FFFF)
         XCTAssertNotNil(readQuickly(farEnd, "a flow table whose markup flow ends past the text"))
 
-        var shortEnd = bytes
-        MOBIFixture.put32(&shortEnd, offsets[flowRecord] + 16, 3)
-        assertDamaged(shortEnd, "a flow table whose markup flow ends at byte 3")
-
         var none = bytes
         MOBIFixture.put32(&none, record0 + 192, 0xFFFF_FFFF)
         XCTAssertNotNil(readQuickly(none, "a book that names no flow table"))
+
+        // A flow table that says the markup ends before the documents do is a lie that is refused.
+        var shortEnd = bytes
+        MOBIFixture.put32(&shortEnd, offsets[flowRecord] + 16, 3)
+        assertDamaged(shortEnd, "a flow table whose markup flow ends at byte 3")
+    }
+
+    func testAFlowTableThatIsLostLeavesTheStyleSheetAfterTheMarkupToBeCalledDamage() {
+        // With a style sheet after the markup, a flow table that does not read leaves the whole text as
+        // the markup, and the documents do not fill it: the book is damaged, not read in part.
+        let bytes = paragraphs(5, cut: 2).data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let flowRecord = (0..<4).reduce(0) { $0 << 8 | Int(bytes[offsets[0] + 192 + $1]) }
+        var noMagic = bytes
+        noMagic[offsets[flowRecord]] = 0x58
+        assertDamaged(noMagic, "a flow table with no magic, with a style sheet after the markup")
     }
 
     func testAFlowTableThatEndsPastTheTextDoesNotLetAPartPastTheTextBeRead() {
