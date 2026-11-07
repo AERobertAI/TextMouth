@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The HTML Writer
 
-/// Writes the body of the HTML document that stands for a Word 97-2003
+/// Writes the body of the HTML document that stands for a Word 6 to 2003
 /// document (the contract is the comment on `OwnDocumentReaders`), one
 /// character at a time, in the order the characters are in the text.
 ///
@@ -59,8 +59,8 @@ struct WordHTMLWriter {
     /// Whether a number is written as words before its paragraph, rather than
     /// the paragraph being an item of an `ol` whose number is not heard.
     private let numbersAreWords: Bool
-    /// The indexes of the fonts named Symbol: a symbol in one is a character of the Symbol encoding.
-    private let symbolFonts: Set<Int>
+    /// The document's fonts, which say what a symbol's code means.
+    private let fonts: WordFontTable
 
     /// A document with more page breaks than this reader numbers has no
     /// pages (`TextutilPageBreaks.maximumPages`); the writer says so by
@@ -163,13 +163,13 @@ struct WordHTMLWriter {
     ///   - lists: the document's lists, for the paragraphs that are in one.
     ///   - numbersAreWords: whether a list's numbers are written as words
     ///     (`WordDocumentReader.speaksListNumbers`).
-    ///   - symbolFonts: the indexes of the document's fonts named Symbol.
+    ///   - fonts: the document's fonts, for its symbols.
     init(
         styles: WordStyleSheet, sections: WordSections, includesPages: Bool, outputLimit: Int,
         paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>,
-        lists: WordListTables = .none, numbersAreWords: Bool = false, symbolFonts: Set<Int> = []
+        lists: WordListTables = .none, numbersAreWords: Bool = false, fonts: WordFontTable = .none
     ) {
-        self.symbolFonts = symbolFonts
+        self.fonts = fonts
         self.lists = WordListNumbering(tables: lists)
         self.numbersAreWords = numbersAreWords
         self.styles = styles
@@ -270,11 +270,11 @@ struct WordHTMLWriter {
     /// Writes the scalar `scalar` of the text at `position`.
     private mutating func addText(_ original: Unicode.Scalar, at position: Int) throws {
         let format = characters.format(at: position) ?? WordCharacterFormat()
+        let paragraphFormat = currentParagraphFormat(at: position)
         // A symbol from Insert Symbol is a placeholder ("(") with the font and the code of the character.
-        let scalar = symbol(replacing: original, in: format)
+        let scalar = symbol(replacing: original, in: format, paragraph: paragraphFormat)
         // Text a tracked change deleted is not in the document any more.
         if format.isDeleted { return }
-        let paragraphFormat = currentParagraphFormat(at: position)
         let appearance = appearance(of: format, in: paragraphFormat)
         // Hidden text is not shown in the ordinary view, so it is not read;
         // its white space goes with it.
@@ -331,18 +331,25 @@ struct WordHTMLWriter {
         previousWasSpace = false
     }
 
-    /// What the placeholder `scalar` of a run `format` stands for. A symbol (`sprmCSymbol`) is stored as
-    /// the text "(" with the font and the code of the character it shows; what is read there is:
-    /// - the character of the Symbol encoding, for a font named Symbol (`AdobeSymbolEncoding.wordScalar(forCode:)`:
-    ///   the code 190, an arrow's extender, is a long dash there, with the reason), where the encoding gives a
-    ///   character a voice can speak;
-    /// - a space for a symbol of any other font (Wingdings and the like: pictures with no words, between
-    ///   which the words on either side must not run together) and for a code Symbol has no character for.
-    /// A "(" with no symbol, or any other text with one, is left as it is.
-    private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat) -> Unicode.Scalar {
-        guard scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter else { return scalar }
-        guard symbolFonts.contains(font) else { return " " }
-        return AdobeSymbolEncoding.wordScalar(forCode: code) ?? " "
+    /// What the character `scalar` of a run `format` in a paragraph `paragraph` stands for. A symbol
+    /// (`sprmCSymbol`) is stored as the text "(" with the font and the code of the character it shows; what is
+    /// read there is the character the font's own layout gives that code (`WordSymbolFontEncodings`: the
+    /// Symbol encoding, a small table for a WordPerfect font, the code page for an ordinary text font), and a
+    /// space where it gives none (a font of pictures, a code no table settles: the words on either side
+    /// must not run together). Word 97 stores text typed in a symbol font as the code plus 0xF000, which is
+    /// read through the run's font in the same way (a font that the table does not hold leaves it as it is).
+    /// A "(" with no symbol, or any other text, is left as it is.
+    private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat, paragraph: WordParagraphFormat) -> Unicode.Scalar {
+        if scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter {
+            return fonts.symbolScalar(forCode: code, inFont: font) ?? " "
+        }
+        // Word 97 stores text typed in a symbol font as its code plus 0xF000: the run's font reads it.
+        if (0xF020...0xF0FF).contains(scalar.value),
+           let font = styles.fontIndex(paragraphStyle: paragraph.style, characterStyle: format.style, direct: format.fontIndex),
+           fonts.reading(ofFont: font) != nil {
+            return fonts.symbolScalar(forCode: Int(scalar.value & 0xFF), inFont: font) ?? " "
+        }
+        return scalar
     }
 
     /// Notes white space, written when the next character that is not white

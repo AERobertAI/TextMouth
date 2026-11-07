@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The File Information Block
 
-/// The File Information Block (FIB) at the start of a Word 97-2003
+/// The File Information Block (FIB) at the start of a Word 6 to 2003
 /// document's `WordDocument` stream ([MS-DOC] 2.5.1): the version, the flags,
 /// the length of the main text, and a table of (offset, length) pairs that
 /// say where each structure lives in the table stream (`0Table` or
@@ -341,6 +341,10 @@ enum WordSprm {
     static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).
     static let fontSize = 0x4A43
+    /// A Word 97 run's font for the ASCII range (`sprmCRgFtc0`, an index into the font table). The real
+    /// documents' runs of Word 97 text typed in a symbol font (U+F020 to U+F0FF) have this and `sprmCRgFtc2` (the
+    /// font for other characters) the same font, always; this one decides.
+    static let fontAscii = 0x4A4F
     /// The character style (`sprmCIstd`); it takes its properties from the
     /// style, so the direct ones before it do not stay.
     static let characterStyle = 0x4A30

@@ -127,6 +127,13 @@ final class WordDocumentLegacyTests: XCTestCase {
         XCTAssertTrue(silent.contains("<ol>"), silent)
         XCTAssertTrue(silent.contains("<li>This is 1</li>") || silent.contains("<li>This is 1<"), silent)
         XCTAssertNotEqual(silent, words)
+        // The words form says the numbers the text itself says ("This is 2.1"): the outline's second level, which
+        // has no first level in the document, counts after the simple list's number above it ("1." to "4."),
+        // and begins again after each.
+        for number in ["1. This is 1", "2. This is 2.", "2.1 This is 2.1", "2.2 This is 2.2", "2.3 This is 2.3",
+                       "3. This is 3", "4. This is 4", "4.1 This is 4.1", "4.2 This is 4.2"] {
+            XCTAssertTrue(words.contains("<p>\(number)</p>"), "\(number): \(words)")
+        }
     }
 
     // MARK: - Text and Structure
