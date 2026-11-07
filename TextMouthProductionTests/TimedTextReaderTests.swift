@@ -76,7 +76,8 @@ final class TimedTextReaderTests: XCTestCase {
     /// Asserts what every document read promises: its format, at least one
     /// cue, in the order they begin, each ending at or after its start and
     /// no later than `Transcript.maximumMilliseconds`, with plain text that
-    /// is never blank and a voice that is nil or never blank.
+    /// is never blank and a voice that is nil or never blank, and whose
+    /// sentences make a transcript `Transcript.validationFailure()` accepts.
     private func assertKeepsItsPromises(
         _ document: TimedTextDocument, format: TimedTextFormat, _ label: String,
         file: StaticString = #filePath, line: UInt = #line
@@ -90,7 +91,11 @@ final class TimedTextReaderTests: XCTestCase {
             XCTAssertFalse(cue.text.isEmpty, label, file: file, line: line)
             XCTAssertEqual(cue.text, TimedTextCue.plainText(cue.text), label, file: file, line: line)
             XCTAssertNotEqual(cue.voice, "", label, file: file, line: line)
+            XCTAssertNotEqual(cue.lastVoice, "", label, file: file, line: line)
         }
+        // The promise that matters to a listener: the sentences made of the
+        // cues, voices named, are ones a transcript trusts.
+        assertSentencesAreTrusted(document, label, file: file, line: line)
     }
 
     /// A linear congruential generator (Knuth's MMIX constants) with a fixed
@@ -888,6 +893,22 @@ final class TimedTextReaderTests: XCTestCase {
         }
     }
 
+    /// Each sample, damaged at random from a fixed seed (up to six bytes
+    /// changed, added, or removed; 300 times each), either reads into a
+    /// document whose sentences a transcript trusts or is refused with a
+    /// `TimedTextError`, by either reader: the damage a truncated download
+    /// or a bad disk does inside a tag, a time, a reference, or a
+    /// multi-byte character.
+    func testRandomlyDamagedSamplesReadOrAreRefused() throws {
+        var generator = SeededGenerator(state: 0xD43A6E)
+        for samplePath in ["vtt/tone4.vtt", "srt/tone4.srt"] {
+            let bytes = try Data(contentsOf: copyOfFormatSample(samplePath))
+            for round in 0..<300 {
+                assertReadsOrRefuses(damaged(bytes, using: &generator), "\(samplePath), damage round \(round)")
+            }
+        }
+    }
+
     /// The lines of a text (`TimedTextMarkup.Lines`, held as offsets into
     /// the text's bytes) are exactly the lines splitting it at each line
     /// feed gives, empty ones at the start, the end, and between two line
@@ -939,5 +960,51 @@ final class TimedTextReaderTests: XCTestCase {
 
         XCTAssertEqual(texts.map { $0 == hostile }, [true, true], "each cue keeps its characters as text")
         XCTAssertLessThan(elapsed, .seconds(10))
+    }
+}
+
+// MARK: - What the Reader Tests Share
+
+extension XCTestCase {
+    /// Asserts that the sentences of `document` make a transcript TextMouth
+    /// trusts (`Transcript.validationFailure()`), and that each word of a
+    /// cue still lies over the characters it lay over in the cue's text
+    /// after a voice is named before it. `label` names the case.
+    func assertSentencesAreTrusted(
+        _ document: TimedTextDocument, _ label: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let transcript = TranscriptFixtures.transcript([(path: "a.mp3", duration: 0, sentences: document.sentences)])
+        XCTAssertNil(transcript.validationFailure(), label, file: file, line: line)
+        for (cue, sentence) in zip(document.cues, document.sentences) {
+            let before = Array(cue.text.utf16)
+            let after = Array(sentence.text.utf16)
+            for (original, moved) in zip(cue.words, sentence.words) {
+                guard original.characterOffset + original.characterCount <= before.count,
+                      moved.characterOffset + moved.characterCount <= after.count else {
+                    XCTFail("\(label): a word lies outside its text", file: file, line: line)
+                    continue
+                }
+                XCTAssertEqual(
+                    Array(before[original.characterOffset..<(original.characterOffset + original.characterCount)]),
+                    Array(after[moved.characterOffset..<(moved.characterOffset + moved.characterCount)]),
+                    "\(label): a word moved onto other characters", file: file, line: line
+                )
+            }
+        }
+    }
+
+    /// `data` with between one and six bytes changed, added, or removed at
+    /// places `generator` picks, so a run is the same each time.
+    func damaged(_ data: Data, using generator: inout SeededGenerator) -> Data {
+        var bytes = [UInt8](data)
+        for _ in 0..<Int(1 + generator.next() % 6) where !bytes.isEmpty {
+            let position = Int(generator.next() % UInt64(bytes.count))
+            switch generator.next() % 3 {
+            case 0: bytes[position] = UInt8(truncatingIfNeeded: generator.next())
+            case 1: bytes.insert(UInt8(truncatingIfNeeded: generator.next()), at: position)
+            default: bytes.remove(at: position)
+            }
+        }
+        return Data(bytes)
     }
 }

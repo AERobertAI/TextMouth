@@ -423,6 +423,62 @@ final class PodcastTranscriptReaderTests: XCTestCase {
         )
     }
 
+    // MARK: - Hostile Files
+
+    /// Asserts that `data` is refused with a `TimedTextError`, or read into
+    /// a document whose sentences a transcript trusts; `label` names the case.
+    private func assertReadsOrRefuses(_ data: Data, _ label: String, file: StaticString = #filePath, line: UInt = #line) {
+        do {
+            let document = try PodcastTranscriptReader.read(data)
+            assertSentencesAreTrusted(document, label, file: file, line: line)
+        } catch is TimedTextError {
+            // A refusal in the reader's own words is an answer too.
+        } catch {
+            XCTFail("\(label): \(error)", file: file, line: line)
+        }
+    }
+
+    /// Files made to cost or to trap (lists nested 20,000 deep, numbers
+    /// beyond a Double, times written as hexadecimal, "-0", or "nan", a
+    /// body of 5 MB) are read or refused in a moment, and what is read is
+    /// trusted: no time overflows, and none passes the latest moment.
+    func testHostileFilesReadOrAreRefusedInAMoment() {
+        let deep = String(repeating: "[", count: 20_000) + String(repeating: "]", count: 20_000)
+        let bigBody = String(repeating: "word ", count: 1_000_000)
+        let times = ["1e308", "1e999", "-0", "-0.0", "0x10", "1e-400", "nan", "Infinity", "360000", "360000.0004", "360000.001"]
+        var files: [String: String] = [
+            "nested list": "{\"segments\": \(deep)}",
+            "nested element": "{\"segments\": [{\"startTime\": 0, \"endTime\": 1, \"body\": \(deep)}]}",
+            "a body of 5 MB": "{\"segments\": [{\"startTime\": 0, \"endTime\": 1, \"body\": \"\(bigBody)\"}]}",
+        ]
+        for time in times {
+            files["time \(time) as text"] = "{\"segments\": [{\"startTime\": \"\(time)\", \"endTime\": \"\(time)\", \"body\": \"a b\"}]}"
+            files["time \(time) as a number"] = "{\"segments\": [{\"startTime\": \(time), \"endTime\": \(time), \"body\": \"a b\"}]}"
+        }
+
+        let elapsed = ContinuousClock().measure {
+            for (label, json) in files {
+                assertReadsOrRefuses(Data(json.utf8), label)
+            }
+        }
+
+        XCTAssertLessThan(elapsed, .seconds(20))
+    }
+
+    /// The sample, damaged at random from a fixed seed (up to six bytes
+    /// changed, added, or removed; 400 times), and cut at every length,
+    /// is read into trusted sentences or refused with a `TimedTextError`.
+    func testTheDamagedSampleReadsOrIsRefused() throws {
+        let bytes = try Data(contentsOf: copyOfFormatSample("podcast-transcript-json/transcript.json"))
+        var generator = SeededGenerator(state: 0x50D_CA57)
+        for length in 0...bytes.count {
+            assertReadsOrRefuses(bytes.prefix(length), "cut at \(length)")
+        }
+        for round in 0..<400 {
+            assertReadsOrRefuses(damaged(bytes, using: &generator), "damage round \(round)")
+        }
+    }
+
     // MARK: - The Limit
 
     /// More cues than the limit refuses the file, naming the limit, and as
