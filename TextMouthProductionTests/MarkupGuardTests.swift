@@ -522,9 +522,12 @@ final class MarkupGuardTests: XCTestCase {
                 + String(repeating: "<div>", count: levels) + "words" + String(repeating: "</div>", count: levels) + "</body></html>"
         }
         XCTAssertGreaterThan(200, MarkupGuard.Limits.standard.deepestNesting)
-        let deep = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: nested(200), pageURL: page).map(\.url.absoluteString) }
+        // The pages are made here, outside the closures the worker runs, which may hold only what can be sent.
+        let deepPage = nested(200)
+        let pastPage = nested(FeedDiscovery.deepestNesting)
+        let deep = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: deepPage, pageURL: page).map(\.url.absoluteString) }
         XCTAssertEqual(deep, ["https://example.com/show/feed.xml"])
-        let past = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: nested(FeedDiscovery.deepestNesting), pageURL: page).count }
+        let past = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: pastPage, pageURL: page).count }
         XCTAssertEqual(past, 0)
     }
 
