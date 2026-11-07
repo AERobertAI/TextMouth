@@ -110,8 +110,9 @@ struct SpeechExportContext: Sendable {
     /// What the export reaches.
     var environment: SpeechExportEnvironment
     /// Hears the export's progress, on the thread the export runs on, the
-    /// synthesizer's, or the encoder's: it must be quick, and must never wait
-    /// for the thread that runs the export.
+    /// one the synthesizer delivers its buffers on (the main thread, for the
+    /// Mac's synthesizer), or the encoder's: it must be quick, and must never
+    /// wait for the thread that runs the export, nor for the main thread.
     var progress: @Sendable (SpeechExportProgress) -> Void
 
     /// The live environment, its progress heard by no one.
@@ -231,7 +232,9 @@ enum SpeechExportJob {
                 reporter.report(shares.progress(finished: counts.done), urgent: true)
                 for index in counts.kept..<sections.count {
                     // The chapter's own progress, between its start and its
-                    // end, comes with its buffers, on the synthesizer's thread.
+                    // end, comes with its buffers, on the thread the
+                    // synthesizer delivers them on: the main thread, for the
+                    // Mac's synthesizer.
                     try plan.speakChapter(index) { frames in
                         reporter.report(shares.progress(speaking: index, framesWritten: frames), urgent: false)
                     }
@@ -437,8 +440,8 @@ extension SpeechExportJob {
         /// chapter's name: its title and texts, in the plan's voice, at the
         /// request's speed and pitch, closed by `chapterGap` of silence unless
         /// it is the file's last chapter. `framesWritten` hears the chapter's
-        /// frames of speech so far after each buffer, on the synthesizer's
-        /// thread.
+        /// frames of speech so far after each buffer, on the thread the
+        /// synthesizer delivers it on: the main thread, for the Mac's.
         /// - Throws: What the renderer throws, which leaves no part file: a
         ///   `SpeechRenderFailure`, `CancellationError` at Stop, or the file
         ///   system's error; or the file system's error keeping the chapter.
@@ -556,7 +559,8 @@ extension SpeechExportJob {
     ///
     /// Sendable without `@unchecked`: its listener is a Sendable closure, and
     /// its last report is kept in a lock, since the renderer's callback runs
-    /// on the synthesizer's thread and the encoder's on its own.
+    /// on the thread the synthesizer delivers on (the main thread, for the
+    /// Mac's synthesizer) and the encoder's on its own.
     fileprivate final class ProgressReporter: Sendable {
         /// The progress last handed on, and when.
         private struct LastReport {

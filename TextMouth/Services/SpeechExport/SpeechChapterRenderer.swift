@@ -116,10 +116,11 @@ enum SpeechChapterRenderer {
     ///     before the word that limit would cut; at least 1.
     ///   - cancellation: The export's Stop.
     ///   - framesWritten: Hears the chapter's frames of speech so far after
-    ///     each buffer is written, on the synthesizer's thread, while the
-    ///     write waits for it: it must be quick and must not wait for the
-    ///     thread that called `render`. It is escaping because the
-    ///     synthesizer's buffer handler, which calls it, is.
+    ///     each buffer is written, on the thread the synthesizer delivers it
+    ///     on, the main thread for the Mac's synthesizer, while the write
+    ///     waits for it: it must be quick and must not wait for the thread
+    ///     that called `render`. It is escaping because the synthesizer's
+    ///     buffer handler, which calls it, is.
     /// - Returns: The frames written, speech and silence, and the file's
     ///   sample rate and channel count.
     /// - Throws: A `SpeechRenderFailure`; `CancellationError` at Stop; or the
@@ -275,9 +276,10 @@ private struct ChapterSpeaker {
 /// 16-bit linear PCM, made at the first buffer in that buffer's sample rate
 /// and channel count.
 ///
-/// Used on one thread at a time: while a write runs, the synthesizer's
-/// thread appends its buffers; between writes, the renderer's thread reads
-/// the count, and finishes or closes the file. `SpeechBufferSynthesizing`
+/// Used on one thread at a time: while a write runs, the thread the
+/// synthesizer delivers on, the main thread for the Mac's synthesizer,
+/// appends its buffers; between writes, the renderer's thread reads the
+/// count, and finishes or closes the file. `SpeechBufferSynthesizing`
 /// promises that no buffer is handed on once a write has returned or
 /// thrown, so the two never overlap.
 private final class ChapterAudioFile {
