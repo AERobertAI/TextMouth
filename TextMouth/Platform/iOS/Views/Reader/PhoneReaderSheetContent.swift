@@ -42,10 +42,16 @@ struct PhoneReaderSheetContent: View {
             PhoneSleepTimerSheet(reader: reader, farewell: farewell)
         case .voice:
             PhoneVoiceSheet(reader: reader, farewell: farewell)
-        case .bookInfo, .navigationUnit:
-            // Each shows its name until it's built. The Navigation unit's
-            // list is the reader's slice's.
-            PhoneUnbuiltSheet(title: sheet.rawValue)
+        case .bookInfo:
+            // The Library's slice has built the phone's Book Info sheet
+            // (`PhoneBookInfoSheet`, on its branch); once the branches meet,
+            // this shows it. Until then, the sheet's title, in the spec's
+            // words.
+            PhoneUnbuiltSheet(title: "Book Information")
+        case .navigationUnit:
+            // The Navigation unit's list is the reader's slice's, through
+            // `PhoneChoiceSheet`; this shows its name, the Mac's, until then.
+            PhoneUnbuiltSheet(title: "Navigation unit")
         }
     }
 }
