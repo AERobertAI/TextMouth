@@ -25,11 +25,12 @@ final class SpeechExportDialogTests: XCTestCase {
     // MARK: - Listing
 
     /// One text book lists spoken audio last of its kinds, unchecked, with no
-    /// size. Its options start at the speed and pitch the library holds for
-    /// the book, not those of the copy chosen, name the book's voice, and list
-    /// its headings; their view shows only while the kind is checked.
+    /// size, and no options yet. Checked, it has its options made: they start
+    /// at the speed and pitch the library holds for the book, not those of the
+    /// copy chosen, name the book's voice, and list its headings; their view
+    /// shows only while the kind is checked.
     func testOneTextBookListsSpokenAudioUncheckedWithItsOptions() async throws {
-        let dialog = try await makeDialog("Speech Dialog Listing")
+        let dialog = try await makeDialog("Speech Dialog Listing", makesSpeechOptions: false)
         let model = dialog.model
 
         XCTAssertEqual(model.choices.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
@@ -37,7 +38,12 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertEqual(model.label(for: spoken), "Text as spoken audio")
         XCTAssertTrue(spoken.isAvailable)
         XCTAssertEqual(model.checked, [.originalFile], "spoken audio was checked at the start")
+        XCTAssertNil(model.speechOptions, "the options were made before the kind was checked")
 
+        model.setChecked(true, for: .spokenAudio)
+        let made = await eventually { model.speechOptions != nil }
+        XCTAssertTrue(made, "the options were not made when the kind was checked")
+        model.setChecked(false, for: .spokenAudio)
         let options = try XCTUnwrap(model.speechOptions)
         XCTAssertEqual(options.wordsPerMinute, Self.bookSpeed)
         XCTAssertEqual(options.pitch, Self.bookPitch, accuracy: 0.000_1)
@@ -119,12 +125,20 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertFalse(spoken.isAvailable)
         XCTAssertEqual(model.label(for: spoken), "Text as spoken audio, in the cloud")
         XCTAssertNil(model.speechOptions)
+        model.setChecked(true, for: .spokenAudio)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertNil(model.speechOptions)
+        if case .notMade = model.speechOptionsMaking {} else {
+            XCTFail("options were made for spoken audio in the cloud")
+        }
         XCTAssertEqual(cloud.refusedReads, [], "the text in the cloud was read")
     }
 
-    /// A text cache that cannot be read as text takes the kind away, and
-    /// leaves the book's other kinds as they were.
-    func testATextCacheThatCannotBeReadTakesTheKindAway() async throws {
+    /// A text cache that cannot be read as text says so under the kind once
+    /// it is checked, in place of the options: there is nothing to speak, so
+    /// Export can't be pressed for it alone, and it makes no conversion. The
+    /// book's other kinds are as they were.
+    func testATextCacheThatCanNotBeReadSaysSoWhenTheKindIsChecked() async throws {
         let world = try makeIntegrationWorld("Speech Dialog Unreadable")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
         try Data([0xFF, 0xFE, 0xFF, 0x00, 0xC0]).write(to: MarkdownCacheService.cacheURL(for: book))
@@ -136,10 +150,50 @@ final class SpeechExportDialogTests: XCTestCase {
         )
 
         await model.load()
+        XCTAssertEqual(model.choices.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
+        checkOnlySpokenAudio(model)
+        let decided = await eventually {
+            if case .unreadable = model.speechOptionsMaking { return true }
+            return false
+        }
 
-        XCTAssertEqual(model.choices.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertTrue(decided, "the unreadable text was not found out")
         XCTAssertNil(model.speechOptions)
+        XCTAssertNotNil(model.optionsView(for: .spokenAudio), "the dialog said nothing of the unreadable text")
+        XCTAssertFalse(model.canExport, "Export could be pressed for a text that can't be spoken")
+        XCTAssertNil(model.conversions[.spokenAudio])
+        model.setChecked(true, for: .plainText)
+        XCTAssertTrue(model.canExport, "the other kinds could not be exported")
+    }
+
+    /// Opening the dialog reads no book's text, however large: the options'
+    /// headings are read the first time spoken audio is checked, and only
+    /// then. A text cache whose every read is refused shows it: nothing reads
+    /// it as the dialog opens, and checking the kind does.
+    func testOpeningTheDialogReadsNoBooksText() async throws {
+        let world = try makeIntegrationWorld("Speech Dialog Open")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let cloud = FakeCloudFiles()
+        cloud.refuseReads(of: cache)
+        let model = BookExportModel(
+            books: [book],
+            library: world.library,
+            destination: try makeSandboxDirectory("Speech Dialog Open Folder"),
+            access: cloud.access,
+            speechEnvironment: try makeEnvironment(synthesizer: FakeSpeechBufferSynthesizer())
+        )
+
+        await model.load()
+
         XCTAssertEqual(model.phase, .ready)
+        XCTAssertTrue(model.choices.contains { $0.kind == .spokenAudio && $0.isAvailable })
+        XCTAssertEqual(cloud.refusedReads, [], "opening the dialog read the book's text")
+
+        model.setChecked(true, for: .spokenAudio)
+        let read = await eventually { !cloud.refusedReads.isEmpty }
+        XCTAssertTrue(read, "checking spoken audio did not read the book's text")
+        XCTAssertEqual(cloud.refusedReads, [FakeCloudFiles.key(cache)])
     }
 
     // MARK: - The Conversion
@@ -598,7 +652,6 @@ final class SpeechExportDialogTests: XCTestCase {
 
         // Hosting the sheet runs its own `load()`, which lists the book.
         try withHostedView(sheet, size: size, until: { self.checkboxes(in: $0).count == 4 && model.phase == .ready }) { hosting in
-            let options = try XCTUnwrap(model.speechOptions)
             XCTAssertTrue(self.popUps(in: hosting).isEmpty, "the options were drawn before the kind was checked")
             XCTAssertTrue(self.sliders(in: hosting).isEmpty, "the options were drawn before the kind was checked")
 
@@ -610,7 +663,7 @@ final class SpeechExportDialogTests: XCTestCase {
             }, "the options were not drawn when the kind was checked")
             XCTAssertEqual(
                 self.popUps(in: hosting).first?.itemTitles,
-                options.formats.map(\.title)
+                SpeechExportFormat.available.map(\.title)
             )
 
             model.setChecked(false, for: .spokenAudio)
@@ -796,6 +849,8 @@ final class SpeechExportDialogTests: XCTestCase {
     /// Imports a book from `markdown`, gives it in the library the voice,
     /// speed, and pitch given, and lists a dialog on the copy chosen before
     /// that, speaking through `synthesizer` with the voices `knownVoices`.
+    /// Unless told not to, it then makes the spoken audio options, as
+    /// checking the kind first does, and unchecks it again.
     private func makeDialog(
         _ label: String,
         markdown: String = SpeechExportDialogTests.threeHeadings,
@@ -806,7 +861,8 @@ final class SpeechExportDialogTests: XCTestCase {
         knownVoices: Set<String> = [SpeechExportDialogTests.ordinaryVoice, SpeechExportDialogTests.personalVoice],
         defaults: UserDefaults? = nil,
         substitutions: TextSubstitutionService = TextSubstitutionService(rules: []),
-        speechExportsUnderWay: SpeechExportsUnderWay = SpeechExportsUnderWay()
+        speechExportsUnderWay: SpeechExportsUnderWay = SpeechExportsUnderWay(),
+        makesSpeechOptions: Bool = true
     ) async throws -> Dialog {
         let dialog = try makeUnlistedDialog(
             label,
@@ -821,6 +877,14 @@ final class SpeechExportDialogTests: XCTestCase {
             speechExportsUnderWay: speechExportsUnderWay
         )
         await dialog.model.load()
+        if makesSpeechOptions {
+            // The options are made the first time the kind is checked; the
+            // kind is then left unchecked, as the dialog opens.
+            dialog.model.setChecked(true, for: .spokenAudio)
+            let made = await eventually { dialog.model.speechOptions != nil }
+            XCTAssertTrue(made, "the spoken audio options were not made")
+            dialog.model.setChecked(false, for: .spokenAudio)
+        }
         return dialog
     }
 

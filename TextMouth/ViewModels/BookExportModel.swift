@@ -108,9 +108,11 @@ struct BookExportConversionChoice: Identifiable, Equatable {
 /// anything that could not be exported, in the cloud included.
 ///
 /// For one text book the dialog also offers its text as spoken audio (FMT43):
-/// the options are made as the book is listed (`speechOptions`), and an export
-/// that takes the kind runs `SpeechExportJob` with them, showing which chapter
-/// is being spoken, and saying at its end what it kept for the next export.
+/// the options are made the first time the kind is checked (`speechOptions`),
+/// since that reads the book's whole text for its headings, which no other
+/// kind needs; an export that takes the kind runs `SpeechExportJob` with them,
+/// showing which chapter is being spoken, and saying at its end what it kept
+/// for the next export.
 @MainActor
 final class BookExportModel: ObservableObject, Identifiable {
     /// Where the dialog is.
@@ -146,9 +148,28 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
     /// exports as it always has.
     @Published private(set) var conversionIDs: [BookExportKind: String] = [:]
-    /// The spoken audio options, once the books have been listed: nil unless
-    /// the dialog exports one text book whose text can be read here.
-    @Published private(set) var speechOptions: SpeechExportOptionsState?
+    /// How far spoken audio's options are made.
+    enum SpeechOptionsMaking {
+        /// Not yet: the kind has not been checked.
+        case notMade
+        /// The book's text is being read for its headings.
+        case making
+        /// Made, as they stand now.
+        case made(SpeechExportOptionsState)
+        /// The book's text can't be read, so it can't be spoken.
+        case unreadable
+    }
+
+    /// How far spoken audio's options are made: they are made the first time
+    /// the kind is checked (`setChecked(_:for:)`).
+    @Published private(set) var speechOptionsMaking = SpeechOptionsMaking.notMade
+
+    /// The spoken audio options, once made: nil until the kind is first
+    /// checked, and for a book whose text can't be read.
+    var speechOptions: SpeechExportOptionsState? {
+        if case .made(let options) = speechOptionsMaking { return options }
+        return nil
+    }
     /// How far a speech export has come while it speaks or encodes; nil before
     /// and after it.
     @Published private(set) var speechProgress: SpeechExportProgress?
@@ -239,21 +260,15 @@ final class BookExportModel: ObservableObject, Identifiable {
     // MARK: Listing
 
     /// Lists what the books hold, off the main thread, and shows the
-    /// checkboxes, the first kind that can be exported checked. Spoken audio
-    /// that can be exported gets its options first; a book whose text cannot
-    /// be read has none, and is not offered the kind.
+    /// checkboxes, the first kind that can be exported checked. Nothing reads
+    /// a book's text here: spoken audio's options are made once the kind is
+    /// checked.
     func load() async {
         phase = .listing
         let listed = await Self.offers(for: books, access: access)
         offers = listed
-        var listedChoices = BookExportChoice.choices(for: listed)
-        if listedChoices.contains(where: { $0.kind == .spokenAudio && $0.isAvailable }) {
-            speechOptions = await makeSpeechOptions(from: listed)
-            if speechOptions == nil {
-                listedChoices.removeAll { $0.kind == .spokenAudio }
-            }
-        }
-        choices = listedChoices
+        speechOptionsMaking = .notMade
+        choices = BookExportChoice.choices(for: listed)
         if let first = choices.first(where: \.isAvailable) {
             checked = [first.kind]
         }
@@ -311,12 +326,33 @@ final class BookExportModel: ObservableObject, Identifiable {
         checked.contains(kind)
     }
 
-    /// Checks or unchecks the checkbox of `kind`.
+    /// Checks or unchecks the checkbox of `kind`. Spoken audio checked for
+    /// the first time, and on this Mac, has its options made.
     func setChecked(_ isChecked: Bool, for kind: BookExportKind) {
         if isChecked {
             checked.insert(kind)
+            if kind == .spokenAudio {
+                makeSpeechOptionsOnce()
+            }
         } else {
             checked.remove(kind)
+        }
+    }
+
+    /// Makes spoken audio's options, off the main thread, unless they are
+    /// made or being made, or the kind is not on this Mac: reading the book's
+    /// whole text for its headings takes up to a second for a large book,
+    /// which only someone who wants spoken audio waits for.
+    private func makeSpeechOptionsOnce() {
+        guard case .notMade = speechOptionsMaking,
+              choices.contains(where: { $0.kind == .spokenAudio && $0.isAvailable }) else { return }
+        speechOptionsMaking = .making
+        let listed = offers
+        Task {
+            let made = await makeSpeechOptions(from: listed)
+            // A dialog listed again meanwhile makes them afresh.
+            guard case .making = speechOptionsMaking else { return }
+            speechOptionsMaking = made.map(SpeechOptionsMaking.made) ?? .unreadable
         }
     }
 
@@ -327,13 +363,16 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// Whether Export can be pressed: the books are listed, nothing is
-    /// being exported, and a checked kind has something on this Mac.
+    /// being exported, and a checked kind has something on this Mac, spoken
+    /// audio only once its options are made.
     var canExport: Bool {
         switch phase {
         case .listing, .exporting:
             return false
         case .ready, .finished:
-            return choices.contains { checked.contains($0.kind) && $0.isAvailable }
+            return choices.contains { choice in
+                checked.contains(choice.kind) && choice.isAvailable && (choice.kind != .spokenAudio || speechOptions != nil)
+            }
         }
     }
 
@@ -448,8 +487,17 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// options.
     func optionsView(for kind: BookExportKind) -> AnyView? {
         if kind == .spokenAudio {
-            guard isChecked(kind), let speechOptions else { return nil }
-            return AnyView(SpeechExportOptionsView(state: speechOptions))
+            guard isChecked(kind) else { return nil }
+            switch speechOptionsMaking {
+            case .notMade:
+                return nil
+            case .making:
+                return AnyView(ProgressView(SpeechExportWording.readingHeadings).progressViewStyle(.linear))
+            case .made(let options):
+                return AnyView(SpeechExportOptionsView(state: options))
+            case .unreadable:
+                return AnyView(Text(SpeechExportWording.unreadableText).fixedSize(horizontal: false, vertical: true))
+            }
         }
         guard isChecked(kind), let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
             return nil

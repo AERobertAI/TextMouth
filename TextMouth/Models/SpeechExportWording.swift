@@ -69,6 +69,14 @@ enum SpeechExportWording {
     /// book has no headings to choose.
     static let noHeadings = "This book has no headings, so all of it is exported."
 
+    /// What the dialog says under the checkbox, the first time it is checked,
+    /// while the book's text is read for its headings.
+    static let readingHeadings = "Reading the book's headings…"
+
+    /// What the dialog says under the checkbox when the book's text can't be
+    /// read, so there is nothing to speak.
+    static let unreadableText = "This book's text can't be read, so it can't be spoken into an audio file."
+
     // MARK: The Speed and the Pitch
 
     /// The label of the slider that sets how fast the voice speaks: "Speed",
