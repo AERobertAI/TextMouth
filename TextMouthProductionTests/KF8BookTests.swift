@@ -152,6 +152,16 @@ final class KF8BookTests: XCTestCase {
         XCTAssertEqual(try opened(bytes).sections.count, 2)
     }
 
+    func testALabelIsReadWithItsCharacterReferencesAndSingleSpaces() throws {
+        var fixture = contentsBook()
+        fixture.entries[0].label = "  Part &lt;A&gt; "
+        fixture.entries[1].label = "Tom &amp;  Jerry\n"
+        fixture.entries.append(KF8Fixture.Entry(label: " \n ", document: 0, fragment: 1, offset: 2, depth: 1))
+        let book = try opened(fixture.data())
+        XCTAssertEqual(book.sections[0].title, "Part <A>")
+        XCTAssertEqual(book.sections[0].headingTargets.values.map(\.text), ["Tom & Jerry"])
+    }
+
     func testTheFirstEntryToNameADestinationNamesIt() throws {
         var fixture = contentsBook()
         fixture.entries.append(KF8Fixture.Entry(label: "Second name for Beta", document: 0, fragment: 1, offset: 0, depth: 0))

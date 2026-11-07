@@ -118,7 +118,8 @@ enum KF8Book {
         for row in index.rows {
             // Tag 3 is the label's place among the strings, tag 4 the depth,
             // and tag 6 the destination: a fragment's number and a place in it.
-            guard let label = row.values[3]?.first.flatMap({ index.labels[$0] }), !label.isEmpty,
+            guard let raw = row.values[3]?.first.flatMap({ index.labels[$0] }),
+                  case let label = readableLabel(raw), !label.isEmpty,
                   let target = row.values[6], target.count >= 2,
                   let location = layout.locations[target[0]] else { continue }
             let part = layout.parts[location.part]
@@ -126,7 +127,7 @@ enum KF8Book {
             // The place must be inside the fragment it names.
             guard target[1] < fragment.range.count else { continue }
             destinations.append(Destination(
-                label: label.trimmingCharacters(in: .whitespacesAndNewlines),
+                label: label,
                 depth: row.values[4]?.first ?? 0,
                 position: fragment.range.lowerBound + target[1],
                 part: location.part,
@@ -134,6 +135,15 @@ enum KF8Book {
             ))
         }
         return destinations
+    }
+
+    /// A contents label as it is read: its character references (`Tom &amp; Jerry`,
+    /// which a KF8 book's labels keep) read as characters and its white space
+    /// made single spaces, as the EPUB reader makes its labels. Empty when it
+    /// holds nothing to read.
+    private static func readableLabel(_ label: String) -> String {
+        let unescaped = (try? Entities.unescape(label)) ?? label
+        return unescaped.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     /// The anchors to write for the contents' `places`, ascending: each at
