@@ -30,4 +30,13 @@ enum PhoneAppWording {
 
     /// The Play button's value while the book loads (the spec's).
     static let loading = "Loading"
+
+    // MARK: Reopening at Launch
+
+    /// Said with low priority at a launch after the app ended while opening the
+    /// book `title`, which is therefore not opened again (the engineering
+    /// review's F4, in its words).
+    static func closedWhileOpening(_ title: String) -> String {
+        "TextMouth closed while opening \(title), so it wasn't reopened."
+    }
 }
