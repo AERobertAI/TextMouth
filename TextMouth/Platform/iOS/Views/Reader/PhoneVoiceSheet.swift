@@ -151,7 +151,7 @@ struct PhoneVoiceSheet: View {
     private var sliders: some View {
         Section {
             Slider(
-                value: Binding(get: { shown.wordsPerMinute }, set: setSpeed),
+                value: Binding(get: { shown.wordsPerMinute }, set: { setSpeed($0) }),
                 in: PhoneVoiceModel.speedRange,
                 step: PhoneVoiceModel.speedStep
             ) {
@@ -162,7 +162,7 @@ struct PhoneVoiceSheet: View {
         }
         Section {
             Slider(
-                value: Binding(get: { shown.pitch }, set: setPitch),
+                value: Binding(get: { shown.pitch }, set: { setPitch($0) }),
                 in: PhoneVoiceModel.pitchRange,
                 step: PhoneVoiceModel.pitchStep
             ) {
@@ -179,7 +179,7 @@ struct PhoneVoiceSheet: View {
     private var audioSpeedSection: some View {
         Section {
             Slider(
-                value: Binding(get: { shown.audioSpeed }, set: setAudioSpeed),
+                value: Binding(get: { shown.audioSpeed }, set: { setAudioSpeed($0) }),
                 in: AudioSpeed.range,
                 step: AudioSpeed.fineStep
             ) {
