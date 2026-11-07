@@ -156,6 +156,51 @@ final class TranscriptPairingTests: XCTestCase {
         )
     }
 
+    /// Two tracks named alike but for their extension (01.wav and 01.m4a)
+    /// both look for 01.vtt: the file times the track that plays first and
+    /// no other, so the book's text never reads the same passage twice, and
+    /// the debug log counts one track's transcript attached.
+    func testTwoTracksOfOneNameShareNoTranscriptFile() throws {
+        let tracks = try makeTracks(["01.wav"], inFolderNamed: "Ferry Talks")
+        try AudioTestFixtures.writeAACSilence(to: tracks.appendingPathComponent("01.m4a"), duration: 2)
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("01.vtt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path)
+
+        let transcript = try storedTranscript(of: imported.book)
+        XCTAssertEqual(transcript.files.count, 2, "the book's two tracks were not both listed")
+        XCTAssertEqual(
+            transcript.files.map(\.sentences.count).reduce(0, +),
+            1,
+            "the file's sentences were laid over both tracks: \(sentences(in: transcript))"
+        )
+        XCTAssertEqual(transcript.files.first?.sentences, [Self.ferrySentence], "the track playing first did not take the file")
+        XCTAssertNil(imported.notice)
+        XCTAssertEqual(
+            debugLogLines(containing: "TRANSCRIPT_FOUND_AT_IMPORT: \(imported.book.title): 1 of 2 tracks' transcripts attached").count,
+            1
+        )
+    }
+
+    /// Without a second track taking a file an earlier one has, the files
+    /// found keep their order; a file found beside two tracks is kept for
+    /// the first only.
+    func testADistinctFileIsKeptForTheFirstTrackThatFoundIt() {
+        func found(_ track: String, _ file: String) -> TranscriptPairing.FoundFile {
+            TranscriptPairing.FoundFile(
+                trackPath: track,
+                url: URL(fileURLWithPath: "/Talks/\(file)"),
+                format: .webVTT,
+                name: file
+            )
+        }
+        let files = [found("01.flac", "01.vtt"), found("01.mp3", "01.vtt"), found("02.mp3", "02.vtt")]
+
+        XCTAssertEqual(TranscriptPairing.distinctFiles(files).map(\.trackPath), ["01.flac", "02.mp3"])
+        XCTAssertEqual(TranscriptPairing.distinctFiles([]), [])
+    }
+
     /// An audio ZIP made as Finder's Compress makes one, its tracks and
     /// 02.srt inside one folder, imports with 02.srt timing 02.wav.
     func testASubRipFileInAnAudioZIPTimesItsTrack() throws {
