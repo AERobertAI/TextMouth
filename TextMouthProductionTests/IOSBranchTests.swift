@@ -115,7 +115,109 @@ final class IOSBranchTests: XCTestCase {
         XCTAssertEqual(TextMouthPaths.dataDirectoryName, ".TextMouth") // lint-ok: compares a constant, and reaches no folder
     }
 
+    // MARK: - The Boundary
+
+    /// No file outside the iPhone's folders names one of the iPhone's types
+    /// outside an iOS branch: the Mac compiles TextMouth/Phone/ but must never
+    /// reach it, which is what lets the Mac projection pass over that folder.
+    func testOnlyTheIPhonesFoldersNameItsTypesOutsideAnIOSBranch() throws {
+        let name = try NSRegularExpression(pattern: #"\bPhone[A-Z]\w*"#)
+        let files = try AppSourceFile.all().filter {
+            !$0.path.hasPrefix("Phone/") && !$0.path.hasPrefix("Platform/iOS/")
+        }
+        for file in files {
+            for (number, line) in Self.codeOutsideIOSBranches(of: file.text) {
+                let range = NSRange(line.startIndex..., in: line)
+                guard let match = name.firstMatch(in: line, range: range), let found = Range(match.range, in: line) else {
+                    continue
+                }
+                XCTFail("\(file.path):\(number) names \(line[found]) outside #if os(iOS)")
+            }
+        }
+    }
+
+    /// The scanner itself: the iOS branch of `#if os(iOS)` and the `#else` of
+    /// `#if os(macOS)` are left out, comments are taken off, and everything
+    /// else is kept, numbered from one.
+    func testTheBoundaryScannerReadsBranchesAndComments() {
+        let sample = """
+        let a = PhoneSession()
+        #if os(iOS)
+        let b = PhoneSession()
+        #else
+        let c = 1 // PhoneSession
+        #endif
+        #if os(macOS)
+        let d = 2
+        #else
+        let e = PhoneAppModel()
+        #endif
+        """
+        let kept = Self.codeOutsideIOSBranches(of: sample)
+        XCTAssertEqual(kept.map { $0.number }, [1, 5, 8])
+        XCTAssertEqual(kept.map { $0.line.trimmingCharacters(in: .whitespaces) }, ["let a = PhoneSession()", "let c = 1", "let d = 2"])
+    }
+
+    // MARK: - The Reader's Hooks
+
+    /// On iOS the reader's skips call the phone's moves when set, and otherwise
+    /// the reader's own; the Mac runs `skipForward()` and `skipBackward()` as
+    /// before.
+    func testTheReadersSkipsCallThePhonesMovesWhenSet() throws {
+        let source = try Self.source("ViewModels/ReaderViewModel.swift")
+        for (callback, hook, own) in [
+            ("onSkipForward: { [weak self] in", "self?.phoneHooks.moveForward", "self?.skipForward()"),
+            ("onSkipBackward: { [weak self] in", "self?.phoneHooks.moveBackward", "self?.skipBackward()"),
+        ] {
+            let body = try Self.text(from: callback, upTo: "},", in: source)
+            let iOSBranch = try XCTUnwrap(body.range(of: "#if os(iOS)"), "\(callback) has no iOS branch")
+            let branchEnd = try XCTUnwrap(body.range(of: "#endif"), "\(callback) has no #endif")
+            XCTAssertTrue(body[iOSBranch.upperBound..<branchEnd.lowerBound].contains(hook))
+            XCTAssertTrue(body[branchEnd.upperBound...].contains(own), "\(callback) lost its own skip")
+        }
+        XCTAssertTrue(source.contains("#if os(iOS)\n    /// The iPhone's hooks into this reader"), "phoneHooks is not iOS's alone")
+    }
+
     // MARK: - Reading the Source
+
+    /// The lines of `text` the Mac's code holds outside every iOS branch, each
+    /// with its number, comments taken off: the branch of `#if os(iOS)` and
+    /// the `#else` of `#if os(macOS)` are left out, and a branch of any other
+    /// condition is kept.
+    static func codeOutsideIOSBranches(of text: String) -> [(number: Int, line: String)] {
+        // For each open #if: whether its branch now is iOS's alone, and
+        // whether its #else would be.
+        var frames: [(isIOS: Bool, elseIsIOS: Bool)] = []
+        var kept: [(number: Int, line: String)] = []
+        for (index, raw) in text.components(separatedBy: "\n").enumerated() {
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("#if ") {
+                let condition = trimmed.dropFirst(4).trimmingCharacters(in: .whitespaces)
+                frames.append((condition == "os(iOS)", condition == "os(macOS)" || condition == "!os(iOS)"))
+                continue
+            }
+            if trimmed.hasPrefix("#elseif ") {
+                _ = frames.popLast()
+                frames.append((trimmed.dropFirst(8).trimmingCharacters(in: .whitespaces) == "os(iOS)", false))
+                continue
+            }
+            if trimmed == "#else", let last = frames.popLast() {
+                frames.append((last.elseIsIOS, false))
+                continue
+            }
+            if trimmed == "#endif" {
+                _ = frames.popLast()
+                continue
+            }
+            guard !frames.contains(where: { $0.isIOS }) else { continue }
+            let code = raw.components(separatedBy: "//").first ?? raw
+            if !code.trimmingCharacters(in: .whitespaces).isEmpty {
+                kept.append((index + 1, code))
+            }
+        }
+        return kept
+    }
+
 
     /// The text of the source file at `path` in the app's source folder.
     private static func source(_ path: String) throws -> String {

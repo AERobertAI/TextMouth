@@ -31,8 +31,14 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
 
     var body: some View {
         NavigationStack {
-            List(choices) { choice in
-                choiceRow(choice)
+            ScrollViewReader { proxy in
+                List(choices) { choice in
+                    choiceRow(choice)
+                        .id(choice.id)
+                }
+                .task {
+                    await focusCurrentChoice(scrollingWith: proxy)
+                }
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -41,13 +47,23 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
                     Button("Cancel") { dismiss() }
                 }
             }
-            .task {
-                // VoiceOver lands somewhere by itself as a sheet appears, so
-                // ask a moment later, or the request is lost.
-                try? await Task.sleep(for: .milliseconds(350))
-                focusedChoice = selected
-            }
         }
+    }
+
+    /// Puts VoiceOver's focus on the current choice, once, on arrival.
+    ///
+    /// A `List` makes its rows lazily, and a row not yet made has no element:
+    /// asking for its focus then does nothing and reports nothing. So the
+    /// list first scrolls the row into being, and focus is asked for a moment
+    /// later, after VoiceOver has landed somewhere by itself, as it does when
+    /// a sheet appears (the engineering review's F12). Setting the state to
+    /// nil first makes the request a change even if it held the value before.
+    private func focusCurrentChoice(scrollingWith proxy: ScrollViewProxy) async {
+        guard let selected, choices.contains(where: { $0.id == selected }) else { return }
+        proxy.scrollTo(selected, anchor: .center)
+        try? await Task.sleep(for: .milliseconds(350))
+        focusedChoice = nil
+        focusedChoice = selected
     }
 
     /// One choice's row: a button whose checkmark is for sight alone, since
