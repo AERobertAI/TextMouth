@@ -212,7 +212,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateCancel
         }
         let reply = terminationGuard.reply()
-        let heldWork = [FeedQuitHold.work(FeedCenter.shared.downloads), TextRereads.shared.quitWork()]
+        let heldWork = [
+            FeedQuitHold.work(FeedCenter.shared.downloads),
+            TextRereads.shared.quitWork(),
+            SpeechExportsUnderWay.shared.quitWork(),
+        ]
         if reply == .terminateNow, QuitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
             return .terminateLater
         }

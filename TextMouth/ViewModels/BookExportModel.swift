@@ -175,6 +175,8 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// The substitution rules and repeated-symbol settings speech is prepared
     /// with.
     private let substitutionService: TextSubstitutionService
+    /// The speech exports under way, which a quit stops cleanly first.
+    private let speechExportsUnderWay: SpeechExportsUnderWay
 
     /// The folder an export went to last this session, which the next
     /// dialog starts in.
@@ -207,6 +209,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///     pitch, and pause level; the sandbox's under hosted tests.
     ///   - substitutionService: The substitution rules speech is prepared
     ///     with.
+    ///   - speechExportsUnderWay: Where a speech export says it begins and
+    ///     ends, so that a quit stops it cleanly first; the app's own unless a
+    ///     test gives one.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
@@ -215,7 +220,8 @@ final class BookExportModel: ObservableObject, Identifiable {
         writers: [any TextExportWriter] = TextExportWriters.all,
         speechEnvironment: SpeechExportEnvironment = .live,
         speechDefaults: UserDefaults = TextMouthRuntime.current.preferences,
-        substitutionService: TextSubstitutionService = .shared
+        substitutionService: TextSubstitutionService = .shared,
+        speechExportsUnderWay: SpeechExportsUnderWay = .shared
     ) {
         self.books = books
         self.destination = destination ?? Self.defaultDestination
@@ -224,6 +230,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         self.speechEnvironment = speechEnvironment
         self.speechDefaults = speechDefaults
         self.substitutionService = substitutionService
+        self.speechExportsUnderWay = speechExportsUnderWay
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
@@ -566,6 +573,9 @@ final class BookExportModel: ObservableObject, Identifiable {
                 self?.showSpeechProgress(speechRecord.latest)
             }
         })
+        // While spoken audio is made, a quit stops it cleanly first, with its
+        // chapters kept, rather than cutting a chapter off midway.
+        let underWay = speechFormat == nil ? nil : speechExportsUnderWay.begin(cancellation)
         let outcome = await OffMainWork.run {
             let offers = books.map { BookExportService.offer(for: $0, access: access) }
             return BookExportService.export(
@@ -578,6 +588,9 @@ final class BookExportModel: ObservableObject, Identifiable {
                 progress: report,
                 speech: speech
             )
+        }
+        if let underWay {
+            speechExportsUnderWay.ended(underWay)
         }
         self.cancellation = nil
         speechProgress = nil

@@ -492,6 +492,93 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertEqual(announcements.messages.last, "Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)).")
     }
 
+    // MARK: - Quitting
+
+    /// The record of speech exports under way holds a quit while one runs,
+    /// and only then: stopping them stops each as Stop does, and the quit is
+    /// answered once every one has ended.
+    func testTheRecordOfExportsHoldsAQuitWhileOneRuns() async throws {
+        let underWay = SpeechExportsUnderWay()
+        var replies: [Bool] = []
+        XCTAssertFalse(QuitHold.hold([underWay.quitWork()]) { _ in XCTFail("no export under way held the quit") })
+
+        let first = BookExportCancellation()
+        let second = BookExportCancellation()
+        let firstID = underWay.begin(first)
+        let secondID = underWay.begin(second)
+        XCTAssertTrue(underWay.isRunning)
+        XCTAssertTrue(QuitHold.hold([underWay.quitWork()]) { replies.append($0) }, "the quit was not held")
+        let stopped = await eventually { first.isCancelled && second.isCancelled }
+        XCTAssertTrue(stopped, "the quit did not stop the exports")
+        underWay.ended(firstID)
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(replies, [], "the quit went ahead while an export was still ending")
+
+        underWay.ended(secondID)
+        let answered = await eventually { !replies.isEmpty }
+        XCTAssertTrue(answered, "the quit was not answered once the exports had ended")
+        XCTAssertEqual(replies, [true])
+        XCTAssertFalse(underWay.isRunning)
+    }
+
+    /// A quit while a dialog speaks a book waits for its export to stop as
+    /// Stop stops it: the two chapters spoken are kept, and the dialog says
+    /// so, and the quit goes ahead once the export has ended.
+    func testAQuitStopsASpeechExportCleanlyKeepingItsChapters() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") {
+                gate.pass()
+            }
+        })
+        let underWay = SpeechExportsUnderWay()
+        let dialog = try await makeDialog("Speech Dialog Quit", synthesizer: synthesizer, speechExportsUnderWay: underWay)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        var replies: [Bool] = []
+
+        let run = ExportRun(of: model)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached, "the progress says \(String(describing: model.progressText))")
+        XCTAssertTrue(underWay.isRunning, "the export did not say it was under way")
+        XCTAssertTrue(QuitHold.hold([underWay.quitWork()]) { replies.append($0) }, "the quit was not held")
+        gate.open()
+        let outcome = try await end(of: run)
+
+        XCTAssertTrue(outcome.wasCancelled, "the quit did not stop the export")
+        XCTAssertEqual(outcome.exported, [])
+        XCTAssertTrue(
+            model.summary?.hasSuffix(SpeechExportWording.kept(done: 2, total: 3) ?? "-") == true,
+            "\(String(describing: model.summary))"
+        )
+        let answered = await eventually { !replies.isEmpty }
+        XCTAssertTrue(answered, "the quit was not answered once the export had ended")
+        XCTAssertEqual(replies, [true])
+        XCTAssertFalse(underWay.isRunning)
+    }
+
+    /// An export of other kinds alone holds no quit.
+    func testAnExportWithoutSpokenAudioHoldsNoQuit() async throws {
+        let underWay = SpeechExportsUnderWay()
+        let dialog = try await makeDialog("Speech Dialog Quit Other", speechExportsUnderWay: underWay)
+        let model = dialog.model
+        model.setChecked(true, for: .plainText)
+        model.setChecked(false, for: .originalFile)
+        var seenRunning = false
+
+        let run = ExportRun(of: model)
+        let ended = await eventually {
+            seenRunning = seenRunning || underWay.isRunning
+            return run.hasEnded
+        }
+
+        XCTAssertTrue(ended)
+        XCTAssertFalse(seenRunning, "an export without spoken audio said it was making some")
+    }
+
     // MARK: - Drawn
 
     /// Checking the kind draws its options' three pop-ups and two sliders
@@ -718,7 +805,8 @@ final class SpeechExportDialogTests: XCTestCase {
         bookPitch: Double? = SpeechExportDialogTests.bookPitch,
         knownVoices: Set<String> = [SpeechExportDialogTests.ordinaryVoice, SpeechExportDialogTests.personalVoice],
         defaults: UserDefaults? = nil,
-        substitutions: TextSubstitutionService = TextSubstitutionService(rules: [])
+        substitutions: TextSubstitutionService = TextSubstitutionService(rules: []),
+        speechExportsUnderWay: SpeechExportsUnderWay = SpeechExportsUnderWay()
     ) async throws -> Dialog {
         let dialog = try makeUnlistedDialog(
             label,
@@ -729,7 +817,8 @@ final class SpeechExportDialogTests: XCTestCase {
             bookPitch: bookPitch,
             knownVoices: knownVoices,
             defaults: defaults,
-            substitutions: substitutions
+            substitutions: substitutions,
+            speechExportsUnderWay: speechExportsUnderWay
         )
         await dialog.model.load()
         return dialog
@@ -746,7 +835,8 @@ final class SpeechExportDialogTests: XCTestCase {
         bookPitch: Double? = SpeechExportDialogTests.bookPitch,
         knownVoices: Set<String> = [SpeechExportDialogTests.ordinaryVoice, SpeechExportDialogTests.personalVoice],
         defaults: UserDefaults? = nil,
-        substitutions: TextSubstitutionService = TextSubstitutionService(rules: [])
+        substitutions: TextSubstitutionService = TextSubstitutionService(rules: []),
+        speechExportsUnderWay: SpeechExportsUnderWay = SpeechExportsUnderWay()
     ) throws -> Dialog {
         let world = try makeIntegrationWorld(label)
         let chosen = try world.importBook(from: writeSource(named: "Harbour Pilots.md", markdown: markdown))
@@ -758,7 +848,8 @@ final class SpeechExportDialogTests: XCTestCase {
             destination: folder,
             speechEnvironment: try makeEnvironment(synthesizer: synthesizer, knownVoices: knownVoices),
             speechDefaults: defaults ?? makeSandboxedPreferences(label),
-            substitutionService: substitutions
+            substitutionService: substitutions,
+            speechExportsUnderWay: speechExportsUnderWay
         )
         return Dialog(world: world, book: chosen, folder: folder, model: model, synthesizer: synthesizer)
     }
