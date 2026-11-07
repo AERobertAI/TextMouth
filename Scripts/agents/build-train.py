@@ -283,9 +283,20 @@ def tests_have_ended(log):
     return re.search(r"Test Suite '(Selected tests|All tests)' (passed|failed) at", tail) is not None
 
 
-def watch_for_a_hung_run(log, finished):
-    """Ends a run whose log has stopped growing, until `finished` is set. Runs on a
-    thread of its own. There are two ways a run hangs, and neither ends by itself:
+def tests_all_passed(log):
+    """Whether a run's log says its last test suite passed, for a run whose
+    xcodebuild was stopped before it could print its own verdict."""
+    with open(log, "rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        handle.seek(max(0, handle.tell() - 4096))
+        tail = handle.read().decode("utf-8", "replace")
+    return re.search(r"Test Suite '(Selected tests|All tests)' passed at", tail) is not None
+
+
+def watch_for_a_hung_run(log, finished, stopped):
+    """Ends a run whose log has stopped growing, until `finished` is set, and sets
+    `stopped` if it ended xcodebuild itself. Runs on a thread of its own. There are
+    two ways a run hangs, and neither ends by itself:
 
     - A test that waits forever never fails, so xcodebuild waits with it, and every
       agent's request waits behind the heavy-work lock: on November 6, 2026 one
@@ -310,6 +321,7 @@ def watch_for_a_hung_run(log, finished):
         if ended and idle >= HUNG_AFTER_TESTS_MINUTES * 60:
             # SIGTERM, as xcodebuild then says so in the log and exits by itself.
             if subprocess.run(["pkill", "-f", runner], check=False).returncode == 0:
+                stopped.set()
                 post("orchestrator", f"build-train: xcodebuild was silent for {HUNG_AFTER_TESTS_MINUTES} minutes "
                                      f"after its last test ended, so it was stopped; its results stand: {log}",
                      tag="notice")
@@ -339,14 +351,18 @@ def run_tests(merged, train_dir):
     command += ["--jobs", "2", "--no-slot", "--derived-data", str(DERIVED), "--log", str(train_dir / "run.log")]
     (train_dir / "command.txt").write_text(" ".join(command) + "\n")
     # A test that hangs must not hold the train, and every agent behind it, for ever.
-    finished = threading.Event()
-    threading.Thread(target=watch_for_a_hung_run, args=(train_dir / "run.log", finished), daemon=True).start()
+    finished, stopped = threading.Event(), threading.Event()
+    threading.Thread(target=watch_for_a_hung_run, args=(train_dir / "run.log", finished, stopped), daemon=True).start()
     try:
         result = subprocess.run(command, cwd=WORKTREE, capture_output=True, text=True,
                                 env={**os.environ, "BBS_AGENT": "build-train"})
     finally:
         finished.set()
     output = result.stdout + result.stderr
+    # xcodebuild stopped by the watchdog says BUILD INTERRUPTED, which would read as
+    # a failure of tests that passed: the verdict follows the tests instead.
+    if stopped.is_set() and tests_all_passed(train_dir / "run.log"):
+        output += "\nPASSED, though xcodebuild had to be stopped after its tests ended\n"
     (train_dir / "run-summary.txt").write_text(output)
     return output
 
