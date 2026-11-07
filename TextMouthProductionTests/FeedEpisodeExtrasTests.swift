@@ -963,6 +963,37 @@ FEED_DOWNLOAD_FINISHED: x"
         XCTAssertTrue(FileManager.default.fileExists(atPath: path.path), "asking moved a file that does not read aside")
     }
 
+    /// A transcript.json that names its edit or its cleanup at all, even as
+    /// null, is the listener's: it is the key that counts, not what it holds,
+    /// so a file another version of TextMouth wrote with the key present and
+    /// empty is never taken for untouched.
+    func testAnEditOrCleanupKeyHoldingNullStillCountsAsTheListeners() throws {
+        let package = try makeSandboxDirectory("FeedExtrasWhoseNull")
+        let path = TextMouthPaths.transcriptPath(in: package)
+        let podcasts = Transcript(
+            version: Transcript.currentVersion,
+            locale: OutsideTranscript.undeterminedLocale,
+            model: OutsideTranscript.noRecognizer,
+            app: .current,
+            createdAt: TranscriptFixtures.date,
+            files: [],
+            source: TranscriptSource(origin: .podcast, format: .webVTT)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let written = try encoder.encode(podcasts)
+        try written.write(to: path)
+        XCTAssertTrue(TranscriptStore.holdsUntouchedPodcastTranscript(in: package), "the control was not untouched")
+
+        for key in ["editedAt", "cleanedUp"] {
+            var object = try XCTUnwrap(JSONSerialization.jsonObject(with: written) as? [String: Any])
+            object[key] = NSNull()
+            try JSONSerialization.data(withJSONObject: object).write(to: path)
+            XCTAssertFalse(TranscriptStore.holdsUntouchedPodcastTranscript(in: package), "a null \(key) was taken for untouched")
+            XCTAssertTrue(FeedItemPackage.holdsListenersFiles(package), "a null \(key) did not keep the package")
+        }
+    }
+
     /// A transcript only in the cloud is taken for the listener's: reading it
     /// would download it, and a guess must not delete it.
     func testATranscriptOnlyInTheCloudIsTakenForTheListeners() throws {
