@@ -544,6 +544,7 @@
 		44437546303AAB742695E5D6 /* BrailleDocumentWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0CB63A1C1F76424511C7A0 /* BrailleDocumentWriter.swift */; };
 		44641D8F8A8C8D972DCC7966 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */; };
 		44728B0F439F3F0B1C6F40AA /* KFXMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B0F01AEF81DECDDA67579C /* KFXMetadata.swift */; };
+		4478C4242C5CF2CEF18B1D2A /* PhoneSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0544CC2E1BEACAF11F15DF72 /* PhoneSettingsView.swift */; };
 		447B849A6089F4CEB477B0D1 /* ParserUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E83A14FDCA3AC9ABF583C2C /* ParserUtilities.swift */; };
 		44C19AACFF47283CB25D3036 /* FeedParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2ACCF1B07F1FB0DBA0D38B /* FeedParserTests.swift */; };
 		44E3798DC67E6681A411DCAD /* LibraryViewModel+MoveToLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 039E931C00AEF0ABB7F93C6B /* LibraryViewModel+MoveToLibrary.swift */; };
@@ -2147,6 +2148,7 @@
 		04AE513A59A7BF9107B5E1A6 /* AudioEditorWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWording.swift; sourceTree = "<group>"; };
 		04B569C8B164C39F2683207F /* TextutilSourceCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilSourceCheckTests.swift; sourceTree = "<group>"; };
 		050A9912D3B83783C358308B /* FeedDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDownloadManager.swift; sourceTree = "<group>"; };
+		0544CC2E1BEACAF11F15DF72 /* PhoneSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSettingsView.swift; sourceTree = "<group>"; };
 		055322F1064D97064D704A1F /* commonTranslationFunctions.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = commonTranslationFunctions.c; sourceTree = "<group>"; };
 		05761311914DF3989C757991 /* M3UPlaylist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = M3UPlaylist.swift; sourceTree = "<group>"; };
 		0576492C0095D3946CC47B64 /* AudioEditorSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorSettingsTests.swift; sourceTree = "<group>"; };
@@ -4480,6 +4482,7 @@
 			isa = PBXGroup;
 			children = (
 				941498F44F26906704569AD2 /* PhoneLogShareSheet.swift */,
+				0544CC2E1BEACAF11F15DF72 /* PhoneSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -7534,6 +7537,7 @@
 				417CE9A59F20E32A55E2F0DB /* PhoneLogShareSheet.swift in Sources */,
 				FE4C8688DE3B76FB49EBC28E /* PhoneSettingsDefaults.swift in Sources */,
 				5EFFD9DC9ED4DA4E28358864 /* PhoneSettingsModel.swift in Sources */,
+				4478C4242C5CF2CEF18B1D2A /* PhoneSettingsView.swift in Sources */,
 				BB89281515A03D281254E537 /* PhoneSettingsVocabulary.swift in Sources */,
 				A1AB5E5D4E63A0E334762625 /* PhoneSettingsVoicePreview.swift in Sources */,
 				E8B64B05583440F3652874C2 /* PhoneSettingsWording.swift in Sources */,
