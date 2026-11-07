@@ -196,7 +196,9 @@ final class IOSInfoPlistTests: XCTestCase {
         for block in project.components(separatedBy: "isa = XCBuildConfiguration;").dropFirst() {
             // The settings of this configuration, up to the end of its block.
             let settings = block.components(separatedBy: "\n\t\t};").first ?? ""
-            guard let line = settings.components(separatedBy: "\n").first(where: { $0.contains("INFOPLIST_FILE = ") }) else { continue }
+            // (GENERATE_INFOPLIST_FILE is another setting, whose name ends the same.)
+            guard let line = settings.components(separatedBy: "\n")
+                .first(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("INFOPLIST_FILE = ") }) else { continue }
             let plist = line.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "INFOPLIST_FILE = ", with: "")
                 .replacingOccurrences(of: ";", with: "")
             let isIOS = settings.contains("SDKROOT = iphoneos;")

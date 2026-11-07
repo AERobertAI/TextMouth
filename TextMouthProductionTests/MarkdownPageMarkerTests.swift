@@ -779,7 +779,9 @@ final class MarkdownPageMarkerTests: XCTestCase {
             written += 1
         }
         XCTAssertEqual(written, 20_000, "\(written) markers were written in \(limit)")
-        XCTAssertTrue(markdown.hasSuffix("<!-- page: 20000 -->  \n"))
+        // The markers stand together at the end of the line's words, before the three spaces
+        // (the one that ended "word " and the hard break's two) that end the line.
+        XCTAssertTrue(markdown.hasSuffix("word<!-- page: 19999 --><!-- page: 20000 -->   \n"), String(markdown.suffix(80)))
         XCTAssertEqual(markdown.filter { $0 == "\n" }.count, 1)
     }
 

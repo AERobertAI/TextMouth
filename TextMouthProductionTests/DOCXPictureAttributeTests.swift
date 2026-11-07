@@ -119,9 +119,10 @@ final class DOCXPictureAttributeTests: XCTestCase {
     func testWordsThatQuoteTheAttributeAreKept() throws {
         let body = docxParagraph(docxRun("Word keeps pictures in o:gfxdata=\"abc\" attributes."))
         let docx = try makeDOCXPackage(document: docxDocumentXML(body))
+        // (The Markdown escapes the colon, the equals sign, and the quotes; what is heard is the words.)
         let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false)
-        XCTAssertTrue(markdown.contains("o:gfxdata"), markdown)
-        XCTAssertTrue(markdown.contains("abc"), markdown)
-        XCTAssertTrue(markdown.contains("attributes."), markdown)
+        let heard = try MarkdownDocParser.parseChapter(markdown: markdown).text
+        XCTAssertEqual(heard.split(whereSeparator: \.isWhitespace).joined(separator: " "),
+                       "Word keeps pictures in o:gfxdata=\"abc\" attributes.")
     }
 }
