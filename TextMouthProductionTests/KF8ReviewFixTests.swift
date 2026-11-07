@@ -560,7 +560,7 @@ final class KF8ReviewFixTests: XCTestCase {
     }
 
     func testAnIndexOfMoreRowsThanAnyBookHasIsRefused() throws {
-        let rows = (0...100_000).map { KF8Fixture.Row(name: [0x30], values: [1: [0]]) }
+        let rows = (0...100_000).map { _ in KF8Fixture.Row(name: [0x30], values: [1: [0]]) }
         let records = KF8Fixture.index(tags: [KF8Fixture.Tag(number: 1, valuesPerCount: 1, mask: 1)], rows: rows, strings: [])
         let file = MOBIFixture.database(named: "Many_Rows", type: "BOOK", creator: "MOBI", records: [[0]] + records)
         let started = Date()
