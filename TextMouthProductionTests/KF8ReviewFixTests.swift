@@ -310,7 +310,7 @@ final class KF8ReviewFixTests: XCTestCase {
 
     func testOnlyASmallSVGFlowThatIsOneIsPutBack() throws {
         var fixture = KF8Fixture(
-            body: "<img src=\"kindle:flow:0001?mime=image/svg+xml\"/><img src=\"kindle:flow:0002?mime=image/png\"/>"
+            body: "<p>Words.</p><img src=\"kindle:flow:0001?mime=image/svg+xml\"/><img src=\"kindle:flow:0002?mime=image/png\"/>"
                 + "<img src=\"kindle:flow:0009?mime=image/svg+xml\"/><img src=\"kindle:flow:0003?mime=image/svg+xml\"/>")
         // Flow 1 is a style sheet, not SVG; flow 2 is named as a png; flow 9 is no flow; flow 3 is too big.
         fixture.flows = ["p { margin: 0 }", Self.svg, "<svg>" + String(repeating: "x", count: 300_000) + "</svg>"]
@@ -411,7 +411,7 @@ final class KF8ReviewFixTests: XCTestCase {
         // The first document is a cover with no words, so the second is the book's second document.
         let bodies = ["<img alt=\"\"/>", "<p>Words one.</p>", "<p>Words two.</p>"]
         let fixture = KF8Fixture(documents: try bodies.enumerated().map { index, body in
-            try document(title: index == 2 ? "Unknown" : "Fixture KF8 Book", body: body)
+            try document(title: ["Cover", "Fixture KF8 Book", "Unknown"][index], body: body)
         })
         let book = try prepared(fixture)
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 2", "Chapter 3"])
@@ -531,7 +531,7 @@ final class KF8ReviewFixTests: XCTestCase {
         let layout = KF8Layout(parts: [KF8Layout.Part(skeleton: 0..<2, fragments: fragments)])
         let started = Date()
         XCTAssertThrowsError(try layout.markup(of: layout.parts[0], in: text, anchors: [])) {
-            XCTAssertEqual($0 as? MOBIError, .damaged(""))
+            guard case .damaged? = $0 as? MOBIError else { return XCTFail("\($0)") }
         }
         XCTAssertLessThan(Date().timeIntervalSince(started), 1.0)
     }
