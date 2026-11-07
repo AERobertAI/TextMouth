@@ -26,4 +26,11 @@ struct ReaderPhoneHooks {
     /// phone can let go of what it held for it. The places that tell are the
     /// audio slice's to add. Nil tells no one.
     var audioEnded: (@MainActor () -> Void)?
+
+    /// Told when the book goes silent for a moment while it still plays: the
+    /// pause between chapters, the wait before the next book, a wait for a
+    /// chapter's speech. The phone holds the app running through it, until
+    /// audio may start again or ends. The places that tell are the audio
+    /// slice's to add. Nil tells no one.
+    var silentGapBegan: (@MainActor () -> Void)?
 }
