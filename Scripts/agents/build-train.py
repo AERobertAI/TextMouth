@@ -371,6 +371,17 @@ def run_tests(merged, train_dir):
     return output
 
 
+def keep_aside(path, stem, suffix):
+    """Renames a run's file to `stem` plus `suffix`, or to `stem-2` and on when an
+    earlier retry of the same train already took that name, so every run's log is kept."""
+    target = path.with_name(stem + suffix)
+    number = 2
+    while target.exists():
+        target = path.with_name(f"{stem}-{number}{suffix}")
+        number += 1
+    path.rename(target)
+
+
 def without_broken_branches(base, train_id, train_dir, merged, conflicts, output):
     """Builds the train again without the branches that broke its build.
 
@@ -397,8 +408,8 @@ def without_broken_branches(base, train_id, train_dir, merged, conflicts, output
     explained = {error for _, mine in broken for error in mine}
     if not broken or not kept or explained != set(errors):
         return merged, conflicts, output, []
-    (train_dir / "run.log").rename(train_dir / "run-with-all.log")
-    (train_dir / "run-summary.txt").rename(train_dir / "run-summary-with-all.txt")
+    keep_aside(train_dir / "run.log", "run-with-all", ".log")
+    keep_aside(train_dir / "run-summary.txt", "run-summary-with-all", ".txt")
     prepare_worktree(base, train_id)
     with open(train_dir / "merge.log", "a") as log:
         log.write("\n# The build failed to compile in the files of "
@@ -555,8 +566,17 @@ def command_run(args):
             # The train is the priority: after 20 minutes it goes on without the lock.
             with heavy_lock.held("build-train", 1200, waiting):
                 output = run_tests(merged, train_dir)
-                merged, conflicts, output, broken = without_broken_branches(
-                    args.base, train_id, train_dir, merged, conflicts, output)
+                # The compiler stops at the first files it can't build, so a second
+                # broken branch shows only once the first is out: on November 7 one
+                # such branch kept every agent's tests from running. So retry, up
+                # to three times, while each pass finds branches to leave out.
+                broken = []
+                for _ in range(3):
+                    merged, conflicts, output, more = without_broken_branches(
+                        args.base, train_id, train_dir, merged, conflicts, output)
+                    if not more:
+                        break
+                    broken += more
                 census = ios_census(train_dir)
         report(train_id, args.base, merged, conflicts, output, train_dir, census, broken)
     finally:
