@@ -4,6 +4,155 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.0 (November 6, 2026)
+### Kindle books in the KFX format
+- TextMouth reads Kindle books in the KFX format that are not copy-protected: .kfx, .kfx-zip, and .azw8 files, and an .azw file that holds KFX, as Kindle's apps name their KFX books. Each becomes a text book like any other, shown in the Library window as Kindle Book (KFX), so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+- A book's chapters come from its own table of contents, and its headings keep the levels the book gives them. A book with a print page list has pages, so Page, Skip Forward, Skip Backward, and Go to Page… work as they do in an EPUB (see [Reader windows](reader-windows.md)). A page list that a machine made to approximate pages is not read as pages.
+- A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book with no flowing text, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, or a notebook, is refused with "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." A Kindle Create package (.kpf) is refused with "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+
+### OpenDocument text and Word 2003 XML
+- TextMouth reads OpenDocument text (.odt, .ott) and Word 2003 XML with code of its own, on the Mac as on iPhone, where Apple's textutil does not exist. On the Mac, textutil now reads only Word 6 and Word 95 documents, which iPhone still refuses.
+- Headings are the document's own, where textutil lost them and guessed from font sizes. A document that names even one heading keeps exactly the ones it names, and a document that names none still gets the guess.
+- Pages are found from the document's page breaks, the pages its styles and master pages begin, and, in OpenDocument text, the soft page breaks its program recorded.
+- An .odt's author is read, where textutil lost it. A book added before this version keeps its author Unknown until you import the file again with Replace Existing (see [Adding books](adding-books.md)).
+- A picture, formula, or chart in an OpenDocument text is read as its description. Hidden text, tracked deletions, comments, headers, and footers are not read, and footnotes and endnotes follow the text.
+
+### Every document reader reads the same
+- Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents now follow one rule: TextMouth reads what a person reading the document sees in its ordinary view. Hidden text is not read, and text hidden only on the web is. A tracked deletion is not read and an insertion is. Text a tracked change moved is read once, in its new place. A field's code is never read, and its result is.
+- Footnotes and endnotes follow the main text, in the order the file keeps them, with no reference marks (a Word 97-2003 document's custom mark, the symbol an author typed in place of a number, is still read). A note is read only if a person would see its reference. Comments, headers, and footers are not read.
+- A text box is read right after the paragraph that holds its anchor, so a sentence stays whole. A Word 97-2003 document keeps its text boxes apart, and they follow its notes. A Word text box that the file writes twice is read once.
+- Rich text: text a tracked change deleted is no longer read aloud, footnotes and endnotes are read after the text, and a list inside a table cell is a list in an export.
+- Word documents: hidden text is no longer read, notes follow the text, and the marks of bold, italic, and strikethrough are never spoken. Some Word documents spoke an asterisk or a tilde where bold or italic text began or ended beside punctuation.
+- Word 97-2003: hidden text and tracked deletions are left out, and the formatting a fast-saved document keeps is read. A paragraph that Word numbers or bullets through its own lists is a real list item, with its number in the book's stored text, so an export shows it. The number is not read aloud, and a numbered heading reads its words alone, as in every format. A note whose reference is hidden or deleted is left out, and a few documents that were refused are read.
+- Cancel in the import overlay now stops the reading of a rich text, Word, OpenDocument text, or Word 2003 XML document, or a Kindle book, partway through it, where it waited for the whole document before. A Word 97-2003 document ends at the next step after it is read.
+
+### Older versions
+- Caution: TextMouth 0.2.1 to 0.3.2 opens a library that holds a KFX book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version. TextMouth 0.2.0 and earlier can't open such a library at all.
+- The first time this version opens, every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once, for what the readers now find. Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
+
+## 0.3.2 (November 6, 2026)
+### A library in the cloud
+- A library in Google Drive, iCloud Drive, or Dropbox now opens by itself when some of its files aren't on this Mac. TextMouth gets them from the sync service, shows Getting Your Library while it does, and opens the library when they arrive. It used to stop on Library Not Available until you chose Try Again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- If it can't get them, TextMouth says so and says what to check, after trying again for a little while. Books you opened from Finder while waiting open with the library, or are named if they couldn't.
+- TextMouth also gets your settings, statistics, substitutions, and feed records in the background when a library in the cloud opens, and never saves over a copy still in the cloud.
+- TextMouth can no longer freeze at launch waiting for a folder that is only in the cloud.
+### Commands
+- The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-windows.md)). A key you gave either of those commands is dropped the next time TextMouth opens, and your other shortcuts are kept.
+
+## 0.3.1 (November 5, 2026)
+### Rich text and Word documents
+- TextMouth reads rich text (.rtf), rich text with attachments (.rtfd), and Word 97-2003 documents and templates (.doc, .dot) with code of its own, on the Mac as on iOS. Apple's textutil tool read them on the Mac before, and does not exist on iOS (see [What TextMouth reads](what-textmouth-reads.md)).
+- A document's headings are the ones its author set: a paragraph in a heading style, or with an outline level, is a heading at that level, where textutil lost the styles and guessed from font sizes. A document that names no heading still gets the guess from font sizes and bold.
+- Pages that textutil lost are found. In rich text, a paragraph set to start a page and a section that starts a page begin pages, as a page break does. In a Word 97-2003 document, a paragraph set to start a page, directly or by its style, and a section that starts a page begin pages, as the author's page breaks do (see [Reader windows](reader-windows.md)).
+- A Word field's code, which textutil sometimes read aloud as words such as TITLE and MERGEFORMAT, is never read, only the field's result. A Word document's headers are no longer read at the end of the book. Text a tracked change deleted is left out, and the footnotes and endnotes follow the main text.
+- Hidden text in a rich text document is not read, and neither are its headers, footers, and footnotes. The words in a drawing's text box are read.
+- A rich text file that textutil refused as damaged, such as one that begins {\rtf with no version number, is read.
+- Rich text in a code page of two-byte characters, such as Japanese, Chinese, or Korean, is read whole.
+- An .rtfd package is held to the 64 MB limit by its text file, TXT.rtf, alone, and its attachments no longer count.
+- Rich text, rich text with attachments, and Word 97-2003 documents read the same on iOS as on the Mac. OpenDocument text, Word 2003 XML, and Word 6 and Word 95 documents are still read by textutil on the Mac, and on iOS are refused (see [Adding books](adding-books.md)).
+- The first time this version opens, every rich text, rich text with attachments, and Word 97-2003 book is read again once, for its headings and its pages. Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
+
+## 0.3.0 (November 4, 2026)
+### Kindle books
+- TextMouth reads Kindle books that are not copy-protected, in the MOBI format: .mobi, .prc, and .azw files in the older MOBI 6 format, and the MOBI 6 part of a .mobi made for both formats, as many Kindle books are. Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+- A book's chapters come from its own table of contents, the entries under a chapter being its headings, and a book with no table of contents is a chapter for each page break its maker wrote. What a book's head says about it is never read aloud.
+- Open Book… offers Kindle books, and Finder offers TextMouth in the Open With menu for them.
+- A copy-protected book is refused, never read: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book only in the newer KF8 format, as an .azw3 is, is refused for now, with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+- Kindle books have no pages yet.
+
+### Older versions
+- Caution: TextMouth 0.2.1 to 0.2.6 opens a library that holds a Kindle book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version. TextMouth 0.2.0 and earlier can't open such a library at all.
+
+## 0.2.6 (November 4, 2026)
+### Reading
+- A book whose EPUB gives its pages no numbers no longer has a page named by its markup: a page list whose one entry was named "pagenum_000000" made the page button say "Page pagenum_000000 of 1". A page list that gives none of its pages a number now counts as none, and a page break named only "Page" is no page. Such a book shows no page button, and Next Page says "This book has no pages."
+- The hint of Go to Page…'s field says how many pages the book has, from its first page to its last, as in "This book has 300 pages, from i to 300. Type a page as the book numbers it, such as 12 or xii." A book of one page names it: "This book's only page is 1."
+- A page a book names "Page 12" is now page 12, where the page button said "Page Page 12 of 300".
+- A book of one page shows no page button, which said "Page 1 of 1" wherever you were.
+- In a book of one page, Next Page, Previous Page, Go to Page…, and a skip by Page say "This book has only one page." and do nothing. The Navigate menu dims the three commands, the playback bar's pickers leave Page out, and Where Am I? leaves the page out.
+- The first time this version opens, every EPUB and HTML book is read again once, for its pages. In the books these changes mend, a page number printed at a page break now names its page, and is no longer read aloud, as page numbers never are.
+
+## 0.2.5 (November 1, 2026)
+### The next book in this window
+- When listening goes on from one book to another, at the end of a book or with Next in Reading List and Previous in Reading List, the next book now shows in the window you are in, in place of the book there, instead of opening a new window. The window keeps its place and size on the screen, and the book you leave is saved as closing its window saves it (see [Reader windows](reader-windows.md)).
+- A book already open in another window comes forward, and the window you moved from closes, so no two windows show one book. A sheet or an alert open over the window, a field being typed in, Edit Text in use for the book, or a library that is moving or not available still opens a new window.
+- The Playback tab of Settings has a pop-up button, "Open the next book in", with "This Window", the default, and "A New Window", which keeps the way earlier versions went. config.json holds it as nextBookWindow (see [Settings](settings.md) and [Editing settings in config.json](config-json.md)).
+- Feed Info has a pop-up button of its own, "Open the next episode in", "Open the next article in", or "Open the next item in", and Folder Settings has "Open the next book in", each with "Use the global setting" first, then "This Window" and "A New Window". It is dimmed, with a hint that says when it is available, while the feed's or folder's items do not go on to another item when one ends (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)).
+
+### Next and Previous in a folder
+- The Navigate menu has Next in Folder and Previous in Folder, in a reader window, with no keys until you give them some in the Shortcuts tab. They go to the next or the previous item of the book's folder or feed: Next goes the way the end of the book would go on, up in a feed or folder that plays the one above and down in every other case, and Previous goes the other way. A book that was playing plays the item, after "Starting: <title>", and any other only opens it, after "Opening: <title>".
+- An episode that is not on this Mac is downloaded first, with "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", and goes on when it arrives. With no item that way, they say why, as in "No more books in folder." A failed or cancelled download says so, as in "The previous episode could not be downloaded. <reason>" and "Download of the previous episode cancelled."
+
+### The sleep timer
+- A running sleep timer now goes on with listening to the next book, in this window or a new one, and stops that book when it runs out, where before it kept the next book from starting, as in "Opening: Dune. Not started because of the sleep timer." Going on to another book never starts its countdown again, the timer waits for a book that is still opening, and a timer set for the end of the heading or of the book that runs out at a book's end still ends listening there.
+- Restart Sleep Timer, from its shortcut or the AirPods gesture, while the timer is on its way to the next book, starts it again and it still goes on with the book.
+- The timer can say two new sentences: "Sleep timer cancelled, because the next book could not be opened." when the book failed to open, and "Sleep timer cancelled, because you moved to another book while it faded out." when Next or Previous ended a fade.
+
+### Older versions
+- Caution: an older TextMouth ignores the new setting, opening every next book in a new window, and drops a feed's or folder's own choice the next time it saves that feed or folder.
+
+## 0.2.4 (November 1, 2026)
+### Library
+- The Library window's View pop-up, which VoiceOver calls "Library view", replaces the row of categories, and offers the views you choose, in the order you choose: Folders, All Items, Unopened, Recently Opened, Reading List, Feeds, and views of your own (see [The Library window](library-window.md)).
+- A new Feeds view lists the feeds alone, each by title, and the pop-up offers it only while there is a feed, until you set it to Always.
+- The Library tab of Settings, between Stats and Feeds, lists the views in order, and sets each one to Always, When Applicable, or Hidden, with Move Up and Move Down (see [Settings](settings.md)).
+- New View…, Edit…, Duplicate, Delete…, and Restore Default… make and change views, with what each lists, All Conditions or Any Condition, nine kinds of condition, one item for each feed, a sort, and a limit, and a count of what the draft lists; the built-in views are changed the same way, and Restore Default… gives one back.
+- A view you hide, or that lists nothing, stays in a window that shows it until you choose another, and a view deleted while a window shows it moves that window to the first view offered and says so.
+- Go to View 1 to Go to View 9, Command-1 to Command-9, go to the first nine views the pop-up offers, and say the view's name and what it lists; the Library menu has a Go to View submenu.
+- The libraryViews key of config.json holds the views, and every view's sort stays in library.json (see [Editing settings in config.json](config-json.md)). A TextMouth older than 0.2.4 drops the key from config.json, but the Mac keeps the views.
+
+### Braille
+- A BRF or BRL file is read in the braille file characters it is written in: North American Braille ASCII, Eurobraille, six-dot (German-speaking countries), or Unicode braille patterns, which TextMouth recognizes by the file's bytes (see [What TextMouth reads](what-textmouth-reads.md)).
+- The Braille tab has a "Braille file characters" pop-up for the books you add from then on, and the Export dialog has one for a BRF, which starts from it.
+- Book Information has a "Braille File Characters" pop-up that reads a BRF or BRL book again in other characters, asking first, and Speak Full Info says "Braille characters: North American Braille ASCII".
+- A file in eight-bit computer braille or in UTF-16 is refused by name, with a sentence that says so (see [Adding books](adding-books.md)).
+- Replace Existing keeps a braille book's characters.
+- Stop in the Export dialog ends a braille export at once, even while its translation runs.
+- Caution: a library holding books set to Eurobraille or Unicode braille patterns should not be opened in a TextMouth older than 0.2.4. An older TextMouth reads such a book as North American Braille ASCII when it reads its file again, which gives wrong numbers and punctuation, or refuses a Unicode book and keeps its old text, and it drops the setting at its next save (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+
+### Reading and playing
+- Quitting while a book plays keeps its place to the second, not up to 30 seconds back, and a book at rest writes nothing at quit, so a Mac left idle never undoes another Mac's newer places in a shared library.
+- The time the Mac sleeps with a book playing no longer counts as listening.
+- A one-file audiobook with chapter markers plays its last seconds before it is announced finished.
+- Next Bookmark and Previous Bookmark go in the order the bookmarks lie in the book.
+- A sleep timer of minutes stops counting while nothing plays after a stop, as after a pause.
+- Stop, or Release Media Controls, while a chapter downloads from the cloud no longer leaves Play doing nothing.
+- A voice that reports a word past the end of its text no longer ends TextMouth.
+
+### Podcasts and feeds
+- Cancel Download chosen while the episode is already being added says "“Ep. 368” is already being added to the library.", and the episode stays as it was asked for.
+- Download or Open chosen right after Cancel Download now downloads the episode.
+- A feed download or check stopped just as it began no longer stays stuck until TextMouth restarts.
+- An episode you deleted stays deleted when its feed briefly lists nothing, or less.
+- New episodes a check found are not lost when the library could not be saved before quitting.
+
+### Importing
+- Open Book… opens a TextMouth package, a folder ending in .tmb, instead of refusing it, and puts it in the folder the window shows; of several chosen, only the first opens.
+- A TextMouth package inside a ZIP imports as one book, with its places and bookmarks.
+- Opening a copy of a book's package no longer points the book at the copy.
+- A ZIP holding a DAISY book with audio is kept after import, since it can be the only copy of the book's text, and an alert says so.
+- Delete After Import never deletes a file inside another book's package or inside the TextMouth library folder.
+- A Markdown book whose file is named content.md keeps its own file.
+- A duplicate's new copy left by quitting before its question was answered is moved to the Trash at the next launch, with an alert titled "Duplicate Copies Moved to the Trash" that says how to Put Back, unless its question is less than a day old.
+- Keep Both and Replace Existing say, naming the book, when the library can't be reached, when the copy's files are gone, or when TextMouth could not keep the copy.
+- An import from a disk or network share that drops partway reports the failure instead of ending TextMouth.
+- An EPUB can no longer bring the text of a file on your Mac into its title, author, or headings.
+- EPUB, DAISY, and PDF books whose contents, page list, or outline nest thousands of levels deep import without crashing.
+- An audio file whose header claims an absurd length or sample rate is refused instead of ending the import.
+- An Ogg file named .mp3 or .m4a is no longer opened by Apple's audio code during import.
+
+### Your files
+- Adding back a book removed with Remove from Library Only keeps your Edit Text changes, and a package of an edited book imports; text that could not be kept is saved beside the new reading as content.md.edited-, and a book that could not be kept stops being added back and says so.
+- Reading positions saved while the library index could not be read are kept once it is restored.
+- Rebuild Library Index no longer replaces an index that can be read again, and says "The library index was not rebuilt. It can be read again now. Choose Try Again to use it."
+- A Reading List change made while a folder is renamed or moved, or the library is moved, is no longer undone.
+- A library opened without its index keeps its folders, and a book in a folder with no row gets one at launch.
+- A move of the data directory from a folder that is not there says "The current data directory does not exist."
+
+### Audio editing
+- The equalizer, and every filter, says which option it needs when it is given none, as in "The equalizer filter needs its frequency: give a number from 0.0001 to 999999.", and a width that makes no usable filter is refused, where it ruined the audio it was applied to.
+- An exported MP3 chapter's title is no longer cut short at a Windows line break.
+
 ## 0.2.3 (October 25, 2026)
 ### Reading
 - You can choose the encoding a plain text, Markdown, or HTML book's file is read in, which mends a guess that was wrong or missed, and the book is read again in it with its places moving to their words (see [The Library window](library-window.md)).

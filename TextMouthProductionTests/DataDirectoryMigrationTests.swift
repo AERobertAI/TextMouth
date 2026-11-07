@@ -194,6 +194,89 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    // MARK: - Integrity Checks (U08)
+
+    /// A move whose data directory is gone when it starts is refused before
+    /// anything is made, in words that say so. The data directory in use,
+    /// its setting, and the library stay as they were, nothing is made at
+    /// the new location or staged beside it, and the data directory is not
+    /// made again.
+    @MainActor
+    func testAMoveFromADataDirectoryThatIsGoneIsRefused() throws {
+        let move = try makeMoveOfTheCurrentDataDirectory("GoneDataDirectory")
+        try FileManager.default.removeItem(at: move.current)
+
+        assertRefusedAsMissing(move)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: move.current.path), "the refused move made the data directory again")
+    }
+
+    /// A file where the data directory was is no data directory: the move
+    /// is refused the same way, and the file is left as it was.
+    @MainActor
+    func testAMoveFromAFileWhereTheDataDirectoryWasIsRefused() throws {
+        let move = try makeMoveOfTheCurrentDataDirectory("FileForDataDirectory")
+        try FileManager.default.removeItem(at: move.current)
+        let note = Data("Not a data directory.".utf8)
+        try note.write(to: move.current)
+
+        assertRefusedAsMissing(move)
+        XCTAssertEqual(try Data(contentsOf: move.current), note, "the file was changed")
+    }
+
+    /// The refusal for a book whose content is missing from the copy names
+    /// the book by its title, in whatever script the title is written in;
+    /// nothing is published or left staged, and the data directory is left
+    /// as it was.
+    func testAMissingBookIsNamedInTheRefusal() throws {
+        let (source, destination) = try makeMoveLocations()
+        var library = try makeLibrary(at: source)
+        var book = try XCTUnwrap(library.books.first, "the library has no book")
+        book.title = "Ἰλιάς"
+        library.books = [book]
+        try FileManager.default.removeItem(atPath: book.filePath)
+        let sourceBefore = try snapshot(of: source)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+        ) { error in
+            guard case DataDirectoryMigrationError.missingBook(let title) = error else {
+                return XCTFail("Expected the missing-book refusal, received \(error)")
+            }
+            XCTAssertEqual(title, "Ἰλιάς")
+            XCTAssertEqual(error.localizedDescription, "The migrated copy is missing the content for Ἰλιάς.")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "the copy was published")
+        XCTAssertEqual(stagingLeft(in: destination.deletingLastPathComponent()), [], "the copy was left staged")
+        XCTAssertEqual(try snapshot(of: source), sourceBefore, "the data directory changed")
+    }
+
+    /// A staged index that does not read back as the library it was written
+    /// from fails its check, and the copy is never published: the refusal
+    /// says so, the copy is deleted, and the data directory is left as it
+    /// was. Here the library keeps, among the rows it could not read (V03),
+    /// one that this version reads as a book after all, so the staged
+    /// library.json reads back with one book more than the library counts.
+    /// No library loaded from disk holds such a row; it is the one way to
+    /// fail the check without changing the app.
+    func testAStagedIndexThatFailsItsCheckIsNeverPublished() throws {
+        let (source, destination) = try makeMoveLocations()
+        var library = try makeLibrary(at: source)
+        library.unreadableRows = [try keptRowThatReadsAsABook()]
+        let sourceBefore = try snapshot(of: source)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+        ) { error in
+            guard case DataDirectoryMigrationError.invalidLibrary = error else {
+                return XCTFail("Expected the invalid-library refusal, received \(error)")
+            }
+            XCTAssertEqual(error.localizedDescription, "The migrated library index could not be validated.")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "the copy was published")
+        XCTAssertEqual(stagingLeft(in: destination.deletingLastPathComponent()), [], "the copy was left staged")
+        XCTAssertEqual(try snapshot(of: source), sourceBefore, "the data directory changed")
+    }
+
     // MARK: - Package Records (PERF15)
 
     /// A move copies each package's contentIndex.json as it is, byte for
@@ -810,6 +893,98 @@ final class DataDirectoryMigrationTests: XCTestCase {
             XCTFail("Expected the destination change, received \(error)", file: file, line: line)
         }
         return nil
+    }
+
+    /// A move of the current data directory to a new location: the data
+    /// directory, a folder of the test's own made the current one until the
+    /// test ends (`makeCurrentDataDirectory`), holding one book; the new
+    /// location, in another folder of the test's own; and what a refused
+    /// move must leave as it was.
+    private struct MoveOfTheCurrentDataDirectory {
+        /// The data directory in use.
+        let current: URL
+        /// The library naming its book.
+        let library: Library
+        /// The folder the new location is in, which holds nothing else.
+        let base: URL
+        /// The new location, which does not exist.
+        let destination: URL
+        /// The data-directory setting in the preferences before the move.
+        let settingBefore: NSDictionary
+    }
+
+    /// Lays out a move of the current data directory; `label` names its
+    /// scratch folder. Writes and log lines still queued are made first, in
+    /// the data directory, so none lands there while the test changes it.
+    @MainActor
+    private func makeMoveOfTheCurrentDataDirectory(_ label: String) throws -> MoveOfTheCurrentDataDirectory {
+        let current = try makeCurrentDataDirectory(label)
+        let library = try makeLibrary(at: current)
+        let base = try makeMigrationBase()
+        LibraryPersistenceService.flushPendingSave()
+        TextMouthPaths.flushLogs()
+        return MoveOfTheCurrentDataDirectory(
+            current: current,
+            library: library,
+            base: base,
+            destination: base.appendingPathComponent("Destination", isDirectory: true),
+            settingBefore: dataDirectorySetting()
+        )
+    }
+
+    /// Asserts that `move`, run as the app runs a move, is refused because
+    /// its data directory does not exist, in the refusal's exact words, and
+    /// that nothing changed: the data directory in use, its setting, and the
+    /// library stay as they were, and nothing is made at the new location
+    /// or staged beside it.
+    private func assertRefusedAsMissing(
+        _ move: MoveOfTheCurrentDataDirectory,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        var library = move.library
+        XCTAssertThrowsError(
+            try TextMouthPaths.moveDataDirectory(to: move.destination, library: &library),
+            file: file,
+            line: line
+        ) { error in
+            guard case DataDirectoryMigrationError.missingSource = error else {
+                return XCTFail("Expected the missing-data-directory refusal, received \(error)", file: file, line: line)
+            }
+            XCTAssertEqual(error.localizedDescription, "The current data directory does not exist.", file: file, line: line)
+        }
+        XCTAssertEqual(TextMouthPaths.root.path, move.current.path, "the data directory in use changed", file: file, line: line)
+        XCTAssertEqual(dataDirectorySetting(), move.settingBefore, "the data-directory setting changed", file: file, line: line)
+        XCTAssertEqual(library.books, move.library.books, "the library changed", file: file, line: line)
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: move.base.path),
+            [],
+            "something was made at the new location or staged beside it",
+            file: file,
+            line: line
+        )
+    }
+
+    /// The data-directory setting as this process's preferences hold it:
+    /// the custom location, its bookmark, and the identity of the library
+    /// expected there, each only when it is set.
+    private func dataDirectorySetting() -> NSDictionary {
+        let preferences = TextMouthRuntime.current.preferences
+        var setting: [String: Any] = [:]
+        for key in DataDirectoryPreferences.keys {
+            setting[key] = preferences.object(forKey: key)
+        }
+        return setting as NSDictionary
+    }
+
+    /// A row kept unread (V03) that this version reads as a book after all,
+    /// as no library loaded from disk holds: a book's own row, as an index
+    /// writes it.
+    private func keptRowThatReadsAsABook() throws -> UnreadableLibraryRow {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let book = Book(title: "Kept Row", format: .txt, filePath: "/nonexistent/kept-row.txt", md5Hash: "kept-row")
+        return UnreadableLibraryRow(json: try JSONDecoder().decode(JSONValue.self, from: encoder.encode(book)))
     }
 
     /// The names of the hidden staging folders a migration left in `folder`.

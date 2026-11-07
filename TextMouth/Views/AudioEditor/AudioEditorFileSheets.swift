@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -86,6 +90,7 @@ struct AudioEditorExportSheet: View {
     /// Asks where to export to, in a save panel named for the book, then
     /// closes the sheet and exports there.
     private func chooseDestination() {
+        #if os(macOS)
         let panel = NSSavePanel()
         panel.title = AudioEditorWording.exportTitle
         panel.nameFieldStringValue = model.exportFileName(for: format)
@@ -95,6 +100,10 @@ struct AudioEditorExportSheet: View {
         let chosen = format
         model.sheet = nil
         Task { await model.export(as: chosen, to: url) }
+        #else
+        // Phase 1 asks where to export with a file exporter; until then the
+        // button does nothing on iOS.
+        #endif
     }
 }
 

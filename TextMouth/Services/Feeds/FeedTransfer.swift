@@ -66,8 +66,9 @@ extension FeedNetwork {
     /// stopped. `progress` hears the bytes written and the bytes expected (or
     /// -1), on the session's queue, as they arrive. Redirects are followed
     /// to http and https addresses only, and an answer other than a success
-    /// fails. Cancelling the task that awaits this stops the download;
-    /// `handle`, when given, can stop it keeping its resume data instead.
+    /// fails. Cancelling the task that awaits this stops the download, even
+    /// before it begins; `handle`, when given, can stop it keeping its
+    /// resume data instead.
     /// - Throws: `FeedTransferFailure`.
     func download(
         _ url: URL,
@@ -77,6 +78,18 @@ extension FeedNetwork {
         handle: FeedTransferHandle? = nil,
         progress: @escaping @Sendable (_ written: Int64, _ expected: Int64) -> Void
     ) async throws -> FeedDownloadedFile {
+        // A download whose task is cancelled already, as Cancel Download can
+        // cancel one before its task first runs, ends here as cancelled,
+        // whatever else would stop it, before any URLSession task exists.
+        // Below, `onCancel` would run at once for such a task, cancelling
+        // the URLSession task before the operation gives it its delegate,
+        // and URLSession can then report the task's end to no one: the
+        // download would wait for good, and no download after it would
+        // start (board #4438). The resume data goes back with the failure,
+        // so the partial file it names goes, as with any download cancelled.
+        if Task.isCancelled {
+            throw FeedTransferFailure(error: .cancelled, resumeData: resumeData)
+        }
         let host = FeedHost.of(url)
         guard FeedTransport.isWebAddress(url) else {
             throw FeedTransferFailure(error: .notAWebAddress, resumeData: nil)
@@ -90,13 +103,16 @@ extension FeedNetwork {
         defer { handle?.detach() }
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<FeedDownloadedFile, Error>) in
-                task.delegate = FeedDownloadTaskDelegate(
+                let delegate = FeedDownloadTaskDelegate(
                     destination: destination,
                     host: host,
                     progress: progress,
                     continuation: continuation
                 )
-                task.resume()
+                task.delegate = delegate
+                // Cancelled since the check above, the download ends here as
+                // cancelled, its URLSession task never resumed.
+                task.resumeUnlessCancelled { delegate.finishCancelled(resumeData: resumeData) }
             }
         } onCancel: {
             task.cancel()
@@ -108,7 +124,9 @@ extension FeedNetwork {
 /// file to its destination before the session deletes it, follows
 /// redirects only to http and https addresses, and resumes the download
 /// that waits for it once, when the task completes, with the file or why it
-/// failed and the resume data to go on from.
+/// failed and the resume data to go on from, or as cancelled when the
+/// download was cancelled before the task could report to it
+/// (`finishCancelled(resumeData:)`), whichever comes first.
 ///
 /// Every stored property is a constant: what the task reports is kept in
 /// `state`, behind an unfair lock, since URLSession calls the delegate on a
@@ -128,8 +146,8 @@ private final class FeedDownloadTaskDelegate: NSObject, URLSessionDownloadDelega
     private let host: String
     /// Hears the bytes written and expected.
     private let progress: @Sendable (Int64, Int64) -> Void
-    /// The download waiting for the task.
-    private let continuation: CheckedContinuation<FeedDownloadedFile, Error>
+    /// The download waiting for the task, resumed once at most.
+    private let continuation: FeedOnceContinuation<FeedDownloadedFile>
     /// What the task has reported, guarded by its lock.
     private let state = OSAllocatedUnfairLock(initialState: State())
 
@@ -143,7 +161,7 @@ private final class FeedDownloadTaskDelegate: NSObject, URLSessionDownloadDelega
         self.destination = destination
         self.host = host
         self.progress = progress
-        self.continuation = continuation
+        self.continuation = FeedOnceContinuation(continuation)
     }
 
     /// Passes the bytes written so far on.
@@ -220,5 +238,14 @@ private final class FeedDownloadTaskDelegate: NSObject, URLSessionDownloadDelega
                 resumeData: nil
             ))
         }
+    }
+
+    /// Ends the download as cancelled, unless the task's end has already
+    /// ended it: for a download cancelled before its URLSession task had
+    /// this delegate, whose end may then reach no one
+    /// (`URLSessionTask.resumeUnlessCancelled(otherwise:)`). `resumeData` is
+    /// what the download went on from, which goes back with the failure.
+    func finishCancelled(resumeData: Data?) {
+        continuation.resume(throwing: FeedTransferFailure(error: .cancelled, resumeData: resumeData))
     }
 }

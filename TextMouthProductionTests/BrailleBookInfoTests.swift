@@ -166,6 +166,7 @@ final class BrailleBookInfoTests: XCTestCase {
     /// is not exposed either, the check is skipped, as the sheet's other
     /// hosted checks are.
     func testTheSheetHasABrailleCodeRowForABrailleBookOnly() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let braille = try texts(of: brailleBook(table: "en-ueb-g2.ctb"))
         guard braille.contains(where: { $0.contains("Format") }) else {
             throw XCTSkip("SwiftUI exposed no row of the sheet to accessibility in this run")

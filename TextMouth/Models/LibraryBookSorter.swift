@@ -7,27 +7,70 @@ import Foundation
 /// because equality then returns true in both directions. This helper compares
 /// values explicitly and adds stable title/UUID tie-breakers.
 enum LibraryBookSorter {
+    /// How many rows Recently Opened lists: the ten opened last, which its
+    /// shipped Library view keeps too (`LibraryViewDefinition.shipped`).
+    static let recentlyOpenedCount = 10
+
     /// Recent-library policy: omit unopened books, newest first, and cap the
     /// quick-access list to a small stable count. Of each feed's items, only
     /// the one opened last is listed, within the same count (FR11), so a
     /// week of one podcast takes one place, and resuming it stays one step.
-    static func recent(_ books: [Book], limit: Int = 10) -> [Book] {
-        guard limit > 0 else { return [] }
-        let opened = books
-            .filter { !$0.isUnopened }
-            .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
+    /// A limit below 1 lists nothing. The shipped Recently Opened view
+    /// chooses its rows through the same `latestOpened(_:limit:onePerFeed:)`
+    /// (`LibraryViewFilterEvaluator`), so the two cannot drift apart.
+    static func recent(_ books: [Book], limit: Int = recentlyOpenedCount) -> [Book] {
+        latestOpened(books.filter { !$0.isUnopened }, limit: limit, onePerFeed: true)
+    }
+
+    /// The rows of `books` opened last first (`openedLastFirst`: by last
+    /// opened, newest first, then the rows never opened, newest added
+    /// first), with, when `onePerFeed`, only the first of each feed's items,
+    /// and at most `limit` (nil: all; a limit below 1 lists nothing).
+    static func latestOpened(_ books: [Book], limit: Int?, onePerFeed: Bool) -> [Book] {
+        if let limit, limit < 1 {
+            return []
+        }
+        // Each row's keys are read once, not at every comparison (TODO
+        // PERF10), and positions are sorted rather than whole rows.
+        let keys = books.map { SortKeys($0) }
+        let byLastOpened = keys.indices.sorted { openedLastFirst(keys[$0], keys[$1]) }.map { books[$0] }
         var listedFeeds = Set<UUID>()
         var listed: [Book] = []
-        for book in opened {
-            if let feedID = book.feedLink?.feedID, !listedFeeds.insert(feedID).inserted {
+        for book in byLastOpened {
+            // A feed's later items in this order were opened before the one
+            // listed already.
+            if onePerFeed, let feedID = book.feedLink?.feedID, !listedFeeds.insert(feedID).inserted {
                 continue
             }
             listed.append(book)
+            // Never true with no limit.
             if listed.count == limit {
                 break
             }
         }
         return listed
+    }
+
+    /// Whether the row whose keys are `first` comes before the one whose
+    /// keys are `second` in `latestOpened`'s order: opened later first, and
+    /// every row opened before every row never opened. Rows never opened
+    /// fall as a list sorted by Date Added, newest first, puts them, its
+    /// title and identity breaking ties, so "the latest" of a feed's
+    /// unplayed episodes is the newest, never one picked by the library's
+    /// order (review of October 31, 2026, finding 7). Rows opened at one
+    /// instant keep the order they came in, as they always have, so Recently
+    /// Opened lists what it always did.
+    private static func openedLastFirst(_ first: SortKeys, _ second: SortKeys) -> Bool {
+        switch (first.wasOpened, second.wasOpened) {
+        case (true, true):
+            return first.lastOpened > second.lastOpened
+        case (true, false):
+            return true
+        case (false, true):
+            return false
+        case (false, false):
+            return areInIncreasingOrder(first, second, by: .dateAdded, ascending: false)
+        }
     }
 
     /// Return the logical size of a file or all regular files contained in a
@@ -67,6 +110,9 @@ enum LibraryBookSorter {
         let dateAdded: Date
         /// When the book was last opened; the distant past if never.
         let lastOpened: Date
+        /// Whether the book was ever opened, which `lastOpened` alone cannot
+        /// tell from a book opened at the distant past.
+        let wasOpened: Bool
         /// Its place in its folder's manual order; after every placed book
         /// (`Int.max`) if it has none.
         let manualOrder: Int
@@ -81,6 +127,7 @@ enum LibraryBookSorter {
             author = book.author
             dateAdded = book.dateAdded
             lastOpened = book.lastOpened ?? .distantPast
+            wasOpened = book.lastOpened != nil
             manualOrder = book.manualSortOrder ?? Int.max
             idString = book.id.uuidString
             self.fileSize = fileSize

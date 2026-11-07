@@ -184,9 +184,10 @@ enum TextutilSourceCheck {
 
     // MARK: - An OpenDocument package with a password
 
-    /// The package's manifest, and the most bytes of it that are read.
+    /// The package's manifest. It is found without regard to the case of its
+    /// path, and read up to the most TextMouth reads from one document
+    /// (`DocumentByteLimit`): a manifest of a package of many files can be large.
     private static let manifestPath = "META-INF/manifest.xml"
-    private static let manifestByteLimit: Int64 = 1_000_000
 
     /// Whether the OpenDocument package at `url` (.odt or .ott) has an
     /// encrypted part: its `META-INF/manifest.xml` holds a
@@ -194,8 +195,8 @@ enum TextutilSourceCheck {
     /// is no ZIP, the manifest is missing, too large, or unreadable.
     static func isEncryptedOpenDocument(_ url: URL) -> Bool {
         guard let archive = Archive.openedForReading(at: url),
-              let entry = archive[manifestPath], entry.type == .file,
-              let manifest = try? ArchiveEntryReader.read(entry, in: archive, limit: manifestByteLimit).data
+              let entry = archive.file(at: manifestPath),
+              let manifest = try? ArchiveEntryReader.read(entry, in: archive, limit: DocumentByteLimit.current).data
         else { return false }
 
         let finder = EncryptionDataFinder()

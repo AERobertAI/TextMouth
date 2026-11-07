@@ -559,6 +559,65 @@ final class DAISYMalformedXMLTests: XCTestCase {
         ])
     }
 
+    /// An NCC's headings and pages come in document order however deeply
+    /// each is nested, and a heading's destination is the first link inside
+    /// it in document order that has one: here a link deep in its first
+    /// words, past an empty one, rather than a later link beside them.
+    func testNCCEntriesKeepDocumentOrderHoweverTheyNest() throws {
+        let html = """
+        <html><head><meta name="dc:title" content="Harbor Soundings"/></head><body>
+        <div><h1><a href="part1.smil#p1">Leadline Readings</a></h1>
+          <div><span class="page-normal"><a href="part1.smil#pg1">1</a></span>
+            <div><h2><span><span><a href="">Dawn</a> <a href="part1.smil#p2">soundings</a></span></span>
+              <a href="part1.smil#later">at the jetty</a></h2></div>
+          </div>
+          <h3><span><span><a href="part1.smil#p3">Gravel Bars</a></span></span></h3>
+        </div>
+        <div><div><h1><a href="part2.smil#p4">Breakwater Survey</a></h1></div>
+          <span class="page-front"><a href="part2.smil#pg2">ii</a></span></div>
+        </body></html>
+        """
+        let result = try DAISY202NCCParser(html: html, file: "ncc.html").parse()
+
+        XCTAssertEqual(result.title, "Harbor Soundings")
+        XCTAssertEqual(Self.outline(result), [
+            "h1 Leadline Readings → part1.smil#p1",
+            "h2 Dawn soundings at the jetty → part1.smil#p2",
+            "h3 Gravel Bars → part1.smil#p3",
+            "h1 Breakwater Survey → part2.smil#p4"
+        ])
+        XCTAssertEqual(result.pages.map { "\($0.label) → \($0.href)" }, ["1 → part1.smil#pg1", "ii → part2.smil#pg2"])
+    }
+
+    /// An NCC nesting 20,000 divisions around a heading is read on a worker
+    /// thread's 512 KiB stack, where an import reads it, and gives that
+    /// heading. The walk once called itself for every element, which
+    /// overflowed that stack and ended TextMouth during the import.
+    ///
+    /// `</body>` closes the heading and the divisions: SwiftSoup itself calls
+    /// itself once for every level above an `</h1>` or `</span>` it reads,
+    /// which would overflow the stack in SwiftSoup before TextMouth's walk.
+    func testNCCNestedThousandsDeepIsReadOnAWorkerStack() {
+        let html = "<html><head><meta name=\"dc:title\" content=\"Harbor Soundings\"/></head><body>"
+            + String(repeating: "<div>", count: 20_000)
+            + "<h1><a href=\"part1.smil#p1\">Leadline Readings</a></body></html>"
+        let outline = onWorkerSizedStack { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        XCTAssertEqual(outline, ["h1 Leadline Readings → part1.smil#p1"])
+    }
+
+    /// A heading whose link lies inside 20,000 nested spans is read on a
+    /// worker thread's 512 KiB stack and keeps that link as its destination.
+    /// The search for a heading's first link once called itself for every
+    /// element, which overflowed that stack. `</body>` closes the spans, as
+    /// in `testNCCNestedThousandsDeepIsReadOnAWorkerStack`.
+    func testAHeadingsLinkNestedThousandsDeepIsFoundOnAWorkerStack() {
+        let html = "<html><head></head><body><h1>"
+            + String(repeating: "<span>", count: 20_000)
+            + "<a href=\"part1.smil#p1\">Leadline Readings</a></body></html>"
+        let outline = onWorkerSizedStack { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        XCTAssertEqual(outline, ["h1 Leadline Readings → part1.smil#p1"])
+    }
+
     /// An NCC cut off partway, in XHTML or in HTML, fails by name instead of
     /// becoming a table of contents that silently ends early.
     func testTruncatedNCCThrowsErrorNamingTheFile() {
@@ -610,6 +669,12 @@ final class DAISYMalformedXMLTests: XCTestCase {
     /// compare and read clearly in a failure message.
     private static func outline(_ result: DAISY202NCCResult) -> [String] {
         result.headings.map { "h\($0.level) \($0.text) → \($0.href)" }
+    }
+
+    /// The outline (`outline(_:)`) of the NCC `html`; none when it cannot
+    /// be parsed.
+    private static func outlineOfNCC(_ html: String) -> [String] {
+        (try? DAISY202NCCParser(html: html, file: "ncc.html").parse()).map(outline) ?? []
     }
 
     /// Parse the NCC at `path` inside the bundled test fixture `name`.

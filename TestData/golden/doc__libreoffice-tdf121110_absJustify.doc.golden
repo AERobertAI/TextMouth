@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf121110_absJustify.doc
+macOS: 26.3
+format: doc
+title: עברית ( )
+author: Uri David Akavia
+chapters: 1
+words: 30
+text length: 172
+text checksum: f7c564f226c85b49
+first 300: עברית ( )\n\nעברית (english)\n\nenglish ( )\n\nenglish (עברית)\n\nעברית { }\n\nעברית {english}\n\nenglish { }\n\nenglish {עברית}\n\nעברית [ ]\n\nעברית [english]\n\nenglish [ ]\n\nenglish [עברית]
+last 300: עברית ( )\n\nעברית (english)\n\nenglish ( )\n\nenglish (עברית)\n\nעברית { }\n\nעברית {english}\n\nenglish { }\n\nenglish {עברית}\n\nעברית [ ]\n\nעברית [english]\n\nenglish [ ]\n\nenglish [עברית]
+page: 1 | 0:0 | עברית ( )\n\nעברית (englis

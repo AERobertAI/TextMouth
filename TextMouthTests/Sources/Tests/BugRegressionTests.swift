@@ -261,11 +261,10 @@ test("normalizeMarkdownWhitespace collapses excessive blank lines") {
 test("normalizeMarkdownWhitespace trims trailing whitespace from lines") {
     let input = "Hello   \nWorld  \n"
     let result = ParserUtilities.normalizeMarkdownWhitespace(input)
-    // Each line should have trailing whitespace removed
-    let lines = result.components(separatedBy: "\n")
-    for line in lines {
-        try assertTrue(!line.hasSuffix(" "), "Line should not have trailing spaces: '\(line)'")
-    }
+    // Each line loses its trailing whitespace, and the whole result its
+    // final line feed; the words themselves stay. Comparing the whole result
+    // fails on an empty one too, which a check of each line would pass.
+    try assertEqual(result, "Hello\nWorld")
 }
 
 test("normalizeMarkdownWhitespace handles empty input") {

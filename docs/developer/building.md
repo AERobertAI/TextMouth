@@ -7,6 +7,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A Mac with macOS 14 or later runs TextMouth. Development uses macOS 26 and Xcode 26.0.1, the version the continuous-integration job selects.
 - XcodeGen generates TextMouth.xcodeproj from project.yml. Install it with `brew install xcodegen`; the development Mac and CI use version 2.45.3.
 - `make check` reads the package pins with jq, which macOS 15 and later include as /usr/bin/jq.
+- Xcode builds the iOS app, TextMouthiOS, only once its iOS platform is downloaded: about 10 GB, from Xcode > Settings > Components, or with `xcodebuild -downloadPlatform iOS`. Until then `make typecheck-ios` compiles and links the iOS app without it (see The iOS app, below). Nothing else on this page needs the iOS platform.
 - Recording needs macOS's microphone permission, which macOS keeps from one build to the next only while the builds are signed with the same certificate: run `make signing-identity` once on each Mac you build on (see Make targets).
 
 ## Make targets
@@ -26,9 +27,31 @@ Run these from the repository root:
 - `make bump-patch` raises the app's PATCH version by one (0.2.0 to 0.2.1), and `make bump-minor` raises its MINOR version by one and sets PATCH to 0 (0.2.3 to 0.3.0); each changes the version in project.yml, regenerates the project, and commits nothing (see Versions, below).
 - `make set-version VERSION=0.2.0` sets a version you name, in the same way (see Versions, below).
 - `make resolve-packages` resolves the Swift packages exactly as Package.resolved pins them, and `make update-packages` resolves them again after a deliberate version change.
+- `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them. `make typecheck-mac` does the same for the Mac. `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes. Each is described under The iOS app, below.
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
+
+## The iOS app
+
+project.yml defines two apps over one source folder. `TextMouth` is the Mac app, which every other target and command on this page builds. `TextMouthiOS` is the iOS app, added in phase 0 of the iOS port (see [The two apps and the platform folders](../architecture/platforms.md)):
+
+- It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
+- It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has the Mac app's bundle identifier. It takes the same three Swift packages (ZIPFoundation, SwiftSoup, and swift-markdown's Markdown) and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`. project.yml defines each library once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
+- It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
+- It shows one placeholder screen, which says the iPhone app is still being built. Phase 0 makes the shared code compile for iOS; it builds nothing for an iPhone's user.
+- No shared scheme is committed, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
+- Xcode builds it only once its iOS platform is downloaded (see What you need, above). Until then, `make typecheck-ios` is how its code is checked.
+
+The three make targets run the scripts in `Scripts/ios`. They read a commit, so run them on committed work.
+
+- **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking the two C libraries. It never changes the repository. A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings. It takes about two minutes once it has the lock. `CENSUS=1` reads each `import AppKit` as `import UIKit` in the copy, so that a file does not stop at "no such module 'AppKit'" and every AppKit name left in it is reported; it counts what is left, and is not what the app must pass. The run without it is the strict one.
+- **`make typecheck-mac`** does the same for the Mac: the sources the Mac app compiles, built and linked in about two minutes, without xcodebuild or the hosted tests. It ends BUILD SUCCEEDED when the Mac app's code compiles and links.
+- **`make mac-projection BASE=main`** compares, for each Swift file the Mac compiles that HEAD changes since BASE (`HEAD=` names another ref), what the Mac compiles of the old text and of the new. A file moved into `Platform/macOS`, Mac code wrapped in `#if os(macOS)`, and a platform alias or helper that is exactly the old type or expression on the Mac all count as unchanged. It prints the number of files changed, the number unchanged for the Mac, and the number with a real change, and with `DIFF=1` the lines that remain in each of those. It changes nothing and writes no file. It is for a change that must leave the Mac's behavior as it was: the aim is no real change, or only lines a reviewer can defend one by one.
+
+The two type-checks print their result and write it to `build/typecheck/results/` in the main checkout, which git ignores, in a folder for each run, named by who ran it, the platform, the mode, the commit, and the time. The folder holds `summary.md` (the result, the errors and warnings in the app, the link, the errors by file, and the kinds of error), `errors.txt`, `warnings.txt`, and `build.log`, and the last line of the output names it. A run exits with status 0 when the build succeeded, 1 when it found errors, 2 when it could not set up, and 3 when the lock stayed busy for the whole wait.
+
+**The heavy-work lock.** The Mac has 8 GB of memory, and on October 31, 2026 it froze under several builds at once, so one heavy job runs on it at a time. The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time. A job that finds it held says whom it waits for and since when, and waits, by default up to 60 minutes. A lock whose owner has ended, from a crash or a killed agent, is taken over. So a type-check started while the train builds waits for the train, and the reverse.
 
 ## Versions
 
@@ -48,7 +71,7 @@ TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PA
 
 The script, Scripts/set-version.sh:
 
-- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`. Change it with the script, never by hand.
+- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`. It sits, with `CURRENT_PROJECT_VERSION`, in the `appVersion` setting group, which the Mac app and the iOS app both take, so one number versions both apps; it is still one line, and the script changes that line. Change it with the script, never by hand.
 - `make bump-patch` (`Scripts/set-version.sh --patch`) raises PATCH by one, 0.2.0 to 0.2.1. `make bump-minor` (`Scripts/set-version.sh --minor`) raises MINOR by one and sets PATCH to 0, 0.2.3 to 0.3.0. Each works the new version out of project.yml, adding one to a number digit by digit so that none can overflow, and neither changes MAJOR.
 - `make set-version VERSION=0.2.0` (`Scripts/set-version.sh 0.2.0`) sets a version you give, for a deliberate jump such as 1.0.0 when the user calls TextMouth released. The script accepts only MAJOR.MINOR.PATCH, three whole numbers without leading zeros, and refuses a version that is not later than the current one, comparing each number as a number, so 0.10.0 is later than 0.9.0. A bump goes the same way once its version is worked out, so it meets the same checks.
 - It changes nothing in project.yml but the value of that one setting, runs `xcodegen generate` so that TextMouth.xcodeproj follows, and prints the old and new versions. If xcodegen fails, it puts project.yml back as it was. It commits nothing: commit project.yml with the regenerated project, in a commit that does nothing else. It ends by reminding you to add the dated section to the changelog, which it does not write.

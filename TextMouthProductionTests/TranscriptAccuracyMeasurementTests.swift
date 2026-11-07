@@ -8,8 +8,9 @@ import XCTest
 ///
 /// It runs only when `TEXTMOUTH_TRANSCRIPT_MEASUREMENT` (through xcodebuild,
 /// `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT`) names a folder, and takes
-/// minutes. It measures the DAISY fixtures this checkout keeps, a person
-/// reading Fire Safety and a synthetic voice reading Are You Ready, against
+/// minutes. It measures the DAISY fixtures this checkout keeps, or a linked
+/// worktree's main checkout keeps, a person reading Fire Safety and a
+/// synthetic voice reading Are You Ready, against
 /// their books' text; and each audio file in the folder's `audio` folder
 /// named `<text>--<voice>.<extension>` against `texts/<text>.txt`, the text
 /// it was synthesized from (with AVSpeechSynthesizer.write, never played,
@@ -83,9 +84,11 @@ final class TranscriptAccuracyMeasurementTests: XCTestCase {
 
     // MARK: - The Sources
 
-    /// The DAISY fixtures this checkout keeps, each imported as the library
-    /// imports an audio DAISY book, its files transcribed in the order the
-    /// book plays them, and scored against the book's own text.
+    /// The DAISY fixtures this checkout keeps, or a linked worktree's main
+    /// checkout keeps (`testDataArchiveIfPresent(_:)`), each imported as
+    /// the library imports an audio DAISY book, its files transcribed in
+    /// the order the book plays them, and scored against the book's own
+    /// text.
     private func measureDAISYFixtures(locale: Locale, transcripts: URL) async throws -> [MeasuredSource] {
         let fixtures = [
             (archive: TranscriptionFixtureTests.fireSafety, name: "Fire Safety", group: MeasuredSource.Group.person),
@@ -94,8 +97,7 @@ final class TranscriptAccuracyMeasurementTests: XCTestCase {
         var measured: [MeasuredSource] = []
         let world = try makeIntegrationWorld("Transcript Measurement")
         for fixture in fixtures {
-            let archive = URL(fileURLWithPath: testFilePath(fixture.archive))
-            guard FileManager.default.fileExists(atPath: archive.path) else {
+            guard let archive = testDataArchiveIfPresent(fixture.archive) else {
                 print("MEASUREMENT: \(fixture.archive) is not in this checkout's TestData; left out")
                 continue
             }

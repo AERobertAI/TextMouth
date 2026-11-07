@@ -200,6 +200,7 @@ final class RemovalOutcomeTests: XCTestCase {
     /// app; when it exposes none here, the test is skipped, and the labels
     /// are still covered by the wording tests.
     func testRemovalButtonLabelsReachAccessibility() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let buttons = VStack {
             DuplicateRemovalButton(wording: RemovalWording(.moveToTrash, count: 2), action: {})
             EditModeBar(

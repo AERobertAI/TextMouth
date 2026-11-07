@@ -85,6 +85,7 @@ protocol RecordingCaptureBackend: Sendable {
     func snapshot() async -> RecordingCaptureSnapshot
 }
 
+#if os(macOS)
 // MARK: - AVFoundation's Capture Session
 
 /// Records through AVFoundation: an `AVCaptureSession` holding the chosen
@@ -473,3 +474,50 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         return .failed("\(nsError.domain) \(nsError.code)")
     }
 }
+#else
+
+// MARK: - iOS Stand-In
+
+// Phase 0 stand-in: the Mac's `CaptureSessionRecordingBackend` records through
+// an `AVCaptureSession` and `AVCaptureAudioFileOutput`, which iOS does not
+// have. On iOS this backend records nothing: `start` throws
+// `IOSUnavailable`, and the other members report an idle capture. Phase 1
+// replaces it with a backend built on `AVAudioEngine`.
+
+/// The iOS stand-in for the Mac's capture-session backend, so that shared code
+/// naming `CaptureSessionRecordingBackend` compiles. It never records.
+actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
+    /// A backend that records nothing.
+    init() {}
+
+    /// Always throws: recording is not available on iPhone yet.
+    func start(
+        deviceID: String,
+        writingTo url: URL,
+        events: @escaping @Sendable (RecordingCaptureEvent) -> Void
+    ) async throws {
+        throw IOSUnavailable.feature("Recording")
+    }
+
+    /// Nothing is recording, so there is nothing to pause.
+    func pause() async {}
+
+    /// Nothing is recording, so there is nothing to resume.
+    func resume() async {}
+
+    /// Nothing is recording, so there is nothing to finish.
+    func stop() async throws {}
+
+    /// An idle capture: nothing recorded and no levels.
+    func snapshot() async -> RecordingCaptureSnapshot {
+        RecordingCaptureSnapshot(recordedDuration: 0, levels: nil)
+    }
+
+    /// An error as the debug log names it: its domain and code, never its
+    /// description, which can hold a path. Shared code calls this by name.
+    static func describe(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)"
+    }
+}
+#endif

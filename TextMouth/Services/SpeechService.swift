@@ -2386,6 +2386,22 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         capturedGeneration == currentGeneration
     }
 
+    /// Whether `range`, which the synthesizer reports it will speak, lies
+    /// within its utterance's text of `length` UTF-16 units, so the word
+    /// can be read from it: `NSString.substring(with:)` raises an
+    /// Objective-C exception, ending TextMouth, for a range past the end.
+    /// The synthesizer reports ranges by its own accounting, so none is
+    /// trusted. An empty range at the very end lies within the text; a
+    /// location of `NSNotFound`, or a negative location or length, does not.
+    ///
+    /// The comparison subtracts rather than adding the location to the
+    /// length (`NSMaxRange`), which would overflow, and trap, for a location
+    /// as large as `NSNotFound`.
+    nonisolated static func isUsableSpokenRange(_ range: NSRange, inTextOfLength length: Int) -> Bool {
+        range.location >= 0 && range.length >= 0
+            && range.location <= length && range.length <= length - range.location
+    }
+
     /// Decide whether the system synthesizer is unexpectedly idle while the
     /// app still considers direct speech active. Kept as a pure policy method
     /// so every safety condition can be regression-tested without producing
@@ -2448,6 +2464,14 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     /// from the start of the old utterance, and combining it with the offset
     /// of the new one would put the cursor somewhere unrelated, which made
     /// seeks seem to jump to a random place.
+    ///
+    /// Nor does a word whose range does not lie within its utterance's text
+    /// (`isUsableSpokenRange(_:inTextOfLength:)`): the synthesizer reports
+    /// ranges by its own accounting, and reading the word of one past the
+    /// end raised an exception that ended TextMouth. Such a report leaves
+    /// the cursor where it was, with one trace line naming the range and
+    /// the text's length; a live utterance it names still counts as
+    /// started, since the synthesizer is speaking it.
     private func placeSpokenWord(at characterRange: NSRange, of spoken: ReportedUtterance) {
         guard usingDirectMode else { return }
         let baseOffset: Int
@@ -2464,7 +2488,17 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         } else {
             return
         }
-        let word = (spoken.utterance.speechString as NSString).substring(with: characterRange)
+        let spokenText = spoken.utterance.speechString as NSString
+        let spokenTextLength = spokenText.length
+        guard Self.isUsableSpokenRange(characterRange, inTextOfLength: spokenTextLength) else {
+            transitionLog(
+                .trace,
+                "SPOKEN_RANGE_IGNORED: location=\(characterRange.location) length=\(characterRange.length) "
+                    + "utteranceLength=\(spokenTextLength)"
+            )
+            return
+        }
+        let word = spokenText.substring(with: characterRange)
         // The range counts from the start of its utterance; the cursor counts
         // from the start of the whole chapter text.
         let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)

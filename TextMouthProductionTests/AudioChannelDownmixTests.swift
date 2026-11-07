@@ -663,6 +663,35 @@ final class AudioChannelDownmixTests: XCTestCase {
         }
     }
 
+    /// A lossless target keeps its source's rate as the header states it,
+    /// so an absurd one, 1e19 a second, reaches the free space a downmix
+    /// needs; it counts as the cap, ten million a second, and nothing
+    /// overflows. (Before the cap, this trapped.)
+    func testTheFreeSpaceForAnAbsurdSampleRateIsCountedAtTheCap() {
+        let reserve = Int64(512 * 1_048_576)
+        let absurd = ImportAudioConverter.Target(channels: 2, sampleRate: 1e19, bitRate: nil, appleLosslessBitDepth: 16)
+        XCTAssertEqual(
+            ImportAudioConverter.downmixBytesNeeded(duration: 0.99, target: absurd),
+            9_900_000 * 2 * 2 + reserve
+        )
+    }
+
+    /// A rate above the cap that overflows nothing counts as the cap too,
+    /// as it does in the output caps. This changes at the cap without
+    /// trapping either way.
+    func testTheFreeSpaceCountsARateAboveTheCapAsTheCap() {
+        let reserve = Int64(512 * 1_048_576)
+        let fast = ImportAudioConverter.Target(channels: 2, sampleRate: 20_000_000, bitRate: nil, appleLosslessBitDepth: 16)
+        XCTAssertEqual(
+            ImportAudioConverter.downmixBytesNeeded(duration: 1, target: fast),
+            10_000_000 * 2 * 2 + reserve
+        )
+        XCTAssertEqual(
+            ImportAudioConverter.expectedOutputBytes(of: .downmix, duration: 1, target: fast) + reserve,
+            ImportAudioConverter.downmixBytesNeeded(duration: 1, target: fast)
+        )
+    }
+
     /// The refusal reads as a whole sentence with the size in figures.
     func testTheWordsOfTheNotEnoughSpaceFailure() {
         XCTAssertEqual(
@@ -713,5 +742,70 @@ final class AudioChannelDownmixTests: XCTestCase {
         let conversion = try await ImportAudioConverter.convert(source, using: noSpace)
 
         XCTAssertEqual(conversion.converted.lastPathComponent, "plain.m4a")
+    }
+
+    // MARK: - A Header's Absurd Sample Rate
+
+    /// An afinfo stand-in (`/bin/cat`) printing the facts a lying header
+    /// states: three labelled channels of 16-bit linear PCM at
+    /// `sampleRate` a second, lasting 0.99 seconds, a length any file of
+    /// linear PCM at so high a rate can hold.
+    private func afinfo(statingSampleRate sampleRate: String) throws -> AudioFileInfo.Tool {
+        let xml = """
+            <audio_info><audio_file><file_type>'caff'</file_type><tracks><track>\
+            <num_channels>3</num_channels><channel_layout>L R C</channel_layout>\
+            <sample_rate>\(sampleRate)</sample_rate><format_type>lpcm</format_type>\
+            <bit_depth>16</bit_depth><duration>0.99</duration></track></tracks></audio_file></audio_info>
+            """
+        let facts = folder.appendingPathComponent("afinfo-\(UUID().uuidString).xml")
+        try Data(xml.utf8).write(to: facts)
+        let path = facts.path
+        return AudioFileInfo.Tool(
+            command: { _ in (URL(fileURLWithPath: "/bin/cat"), [path]) },
+            limits: AudioFileInfo.Tool.afinfo.limits,
+            residentMemory: AudioFileInfo.Tool.afinfo.residentMemory
+        )
+    }
+
+    /// What converting a source whose header states `sampleRate` throws,
+    /// and whether any child ran: afinfo is the stand-in above, step 1
+    /// touches a marker, step 2 fails, and the volume's free space is
+    /// unknown, so no refusal for space comes first.
+    private func conversion(
+        statingSampleRate sampleRate: String
+    ) async throws -> (failure: ImportAudioConverter.Failure?, childRan: Bool) {
+        let source = folder.appendingPathComponent("surround.caf")
+        try Data(count: 4_096).write(to: source)
+        let marker = folder.appendingPathComponent("a-child-ran")
+        var lying = tool(downmix: ("/usr/bin/touch", [marker.path]), convert: ("/usr/bin/false", []))
+        lying.info = try afinfo(statingSampleRate: sampleRate)
+        lying.availableBytes = { _ in nil }
+        var failure: ImportAudioConverter.Failure?
+        do {
+            _ = try await ImportAudioConverter.convert(source, using: lying)
+        } catch let thrown as ImportAudioConverter.Failure {
+            failure = thrown
+        }
+        return (failure, FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    /// A header stating 1e19 samples a second is refused as unreadable
+    /// before any child runs, so the rate reaches neither the free space a
+    /// downmix needs nor the downmix's arguments. (Before the refusal, the
+    /// free space trapped.)
+    func testAnAbsurdSampleRateIsRefusedAsUnreadableBeforeAnyChildRuns() async throws {
+        let outcome = try await conversion(statingSampleRate: "1e19")
+        XCTAssertEqual(outcome.failure, .unreadable(fileName: "surround.caf"))
+        XCTAssertFalse(outcome.childRan)
+    }
+
+    /// A rate past the most a cap counts, ten million a second, is refused
+    /// the same way, though it overflows nothing. This changes at the
+    /// refusal without trapping either way: before it, the downmix ran and
+    /// the stand-in's step 2 failed.
+    func testASampleRateAboveTheCapIsRefusedAsUnreadableBeforeAnyChildRuns() async throws {
+        let outcome = try await conversion(statingSampleRate: "20000000")
+        XCTAssertEqual(outcome.failure, .unreadable(fileName: "surround.caf"))
+        XCTAssertFalse(outcome.childRan)
     }
 }

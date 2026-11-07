@@ -14,7 +14,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, which orders, titles, groups, and paces a ZIP or folder of audio tracks, and Edit Manifest, which changes it after import.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder… for DAISY books and folders of tracks, New from Text.
-- [The Library window](docs/user/library-window.md): categories, folders, sorting, searching, and the commands on books.
+- [The Library window](docs/user/library-window.md): the View pop-up and the views you arrange and make, folders, sorting, searching, and the commands on books.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies out of the library, and the Convert to menu that makes a text book's text HTML, RTF, a Word 97-2003 document, or a braille file (BRF or PEF).
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
@@ -30,9 +30,9 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 
 ## For people building TextMouth
 
-- [Building TextMouth](docs/developer/building.md): what you need, the make targets (`make build`, then `make install` to put the app in Applications), the version policy and how the version number is raised (`make bump-patch`, `make bump-minor`) or set (`make set-version`), and the make check gate.
+- [Building TextMouth](docs/developer/building.md): what you need, the make targets (`make build`, then `make install` to put the app in Applications), the version policy and how the version number is raised (`make bump-patch`, `make bump-minor`) or set (`make set-version`), the make check gate, and the iOS app (`TextMouthiOS`), which `make typecheck-ios` compiles and links without Xcode's iOS platform, with `make typecheck-mac` and `make mac-projection`.
 - [Testing TextMouth](docs/developer/testing.md): the hosted test suite, the performance baselines, and the tests on real cloud drives. It also covers the reusable test tools in `Scripts/test/`: run only some tests (`make test-area AREAS="feeds bookmarks"`), check the lines a branch adds (`make lint-tests`, `make lint-a11y`, `make lint-ogg`), record and compare document goldens (`Scripts/test/update-goldens.sh`), report on a folder of documents (`Scripts/test/corpus-report.sh`), and the opt-in sweeps for voices, damaged imports, and storage failures.
-- [Architecture](ARCHITECTURE.md): who owns each kind of state, how a book is read, the shared helpers, and the duplication left in place.
+- [Architecture](ARCHITECTURE.md): who owns each kind of state, how a book is read, the shared helpers, and the duplication left in place. [The two apps and the platform folders](docs/architecture/platforms.md) says how one source folder builds the Mac app and the iOS app: `TextMouth/Platform/macOS`, `TextMouth/Platform/iOS`, and the files they share.
 - [Third-party code](docs/developer/third-party-code.md): the libraries TextMouth includes, and their licences.
 
 ## For coding agents

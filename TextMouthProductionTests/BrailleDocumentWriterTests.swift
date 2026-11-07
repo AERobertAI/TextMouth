@@ -217,6 +217,35 @@ final class BrailleDocumentWriterTests: XCTestCase {
         }
     }
 
+    /// A BRF is written in the options' braille file code (braillecodes):
+    /// North American Braille ASCII by default, as every BRF was before, and
+    /// Eurobraille when it is chosen, whose letters are lowercase. The two
+    /// files hold the same cells; only the characters differ.
+    func testABRFIsWrittenInTheOptionsBrailleFileCode() throws {
+        let blocks = [BrailleBlock.paragraph(text: "Hello.")]
+        var options = options("en-ueb-g1.ctb")
+        XCTAssertEqual(options.fileCode, .northAmerican)
+        let northAmerican = try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: work)
+        options.fileCode = .eurobraille
+        let eurobraille = try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: work)
+        assertWorkFolderEmpty()
+
+        // The letters of "hello", which Grade 1 never contracts, and page 1's
+        // number, ⠼⠁, at the end of the page's last line.
+        let northAmericanText = String(decoding: northAmerican, as: UTF8.self)
+        XCTAssertTrue(northAmericanText.contains("HELLO"), northAmericanText)
+        XCTAssertTrue(northAmericanText.hasSuffix("#A\r\n"), northAmericanText)
+        let eurobrailleText = String(decoding: eurobraille, as: UTF8.self)
+        XCTAssertTrue(eurobrailleText.contains("hello"), eurobrailleText)
+        XCTAssertTrue(eurobrailleText.hasSuffix("#a\r\n"), eurobrailleText)
+
+        // The same cells: the default file, read in North American Braille
+        // ASCII and written again in each code, gives each file exactly.
+        let pages = try BrailleFileReader.pages(fromText: northAmerican, kind: .brf, code: .northAmerican).pages
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, code: .northAmerican), northAmerican)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, code: .eurobraille), eurobraille)
+    }
+
     // MARK: - Kinds, Errors, and No Blocks
 
     /// A block keeps its kind through the translation: a paragraph starts in

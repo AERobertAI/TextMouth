@@ -21,6 +21,20 @@ struct DOCXStyles {
     /// (`w:basedOn`) does and it does not turn that off with a `w:val` of
     /// "0", "false", or "off".
     var pageBreakBeforeStyles: Set<String> = []
+
+    /// Paragraph style IDs whose text is hidden (`w:vanish` in the style's
+    /// run properties, or in the style it is based on and not turned off),
+    /// before the run's own character style and direct formatting weigh in
+    /// (ECMA-376 17.7.3: `w:vanish` is a toggle property).
+    var hiddenParagraphStyles: Set<String> = []
+
+    /// Character style IDs whose text is hidden, resolved the same way.
+    var hiddenCharacterStyles: Set<String> = []
+
+    /// The ID of the default paragraph style (`w:default` on a paragraph
+    /// style): the style a paragraph that names none takes. Nil when the
+    /// part names none.
+    var defaultParagraphStyle: String?
 }
 
 /// Whether the `w:val` of an on/off property (`w:pageBreakBefore`) turns it
@@ -85,6 +99,13 @@ class DOCXStylesParser: DOCXSAXParser {
         /// (`w:pageBreakBefore`); nil when they say nothing, so the style it
         /// is based on decides.
         var ownPageBreakBefore: Bool?
+        /// What the style's own run properties say about hiding its text
+        /// (`w:vanish`); nil when they say nothing, so the style it is based
+        /// on decides.
+        var ownHidden: Bool?
+        /// The style's kind (`w:type`): "paragraph", "character", "table",
+        /// or "numbering".
+        var type: String
     }
 
     /// Every style declared in the part, by style ID.
@@ -97,6 +118,13 @@ class DOCXStylesParser: DOCXSAXParser {
     private var inStyle = false
     private var currentOutlineLevel: DOCXOutlineLevel?
     private var currentPageBreakBefore: Bool?
+    private var currentHidden: Bool?
+    private var currentStyleType = "paragraph"
+
+    /// The names of the elements being read, outermost first: `w:vanish`
+    /// counts only as a child of the style's own `w:rPr`, not of a table
+    /// style's conditional formatting or of a record of a change.
+    private var elementStack: [String] = []
 
     /// How many records of tracked formatting changes (`w:pPrChange` and the
     /// like) enclose the element being read. Their properties are those from
@@ -111,6 +139,9 @@ class DOCXStylesParser: DOCXSAXParser {
         try parseDocument()
         styles.headingLevels = Self.headingLevels(of: declarations)
         styles.pageBreakBeforeStyles = Self.pageBreakBeforeStyles(of: declarations)
+        let hidden = Self.inherited(through: declarations, own: \.ownHidden).filter(\.value).keys
+        styles.hiddenParagraphStyles = Set(hidden.filter { declarations[$0]?.type == "paragraph" })
+        styles.hiddenCharacterStyles = Set(hidden.filter { declarations[$0]?.type == "character" })
         return styles
     }
 
@@ -118,6 +149,7 @@ class DOCXStylesParser: DOCXSAXParser {
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
+        elementStack.append(localName)
         if localName.hasSuffix("Change") {
             trackedChangeDepth += 1
         }
@@ -130,7 +162,19 @@ class DOCXStylesParser: DOCXSAXParser {
             currentBasedOn = nil
             currentOutlineLevel = nil
             currentPageBreakBefore = nil
+            currentHidden = nil
+            // A style that names no type is a paragraph style (ST_StyleType).
+            currentStyleType = attributes["w:type"] ?? "paragraph"
             inStyle = true
+            // The default paragraph style is the one a paragraph with no
+            // style takes.
+            if currentStyleType == "paragraph", let flag = attributes["w:default"], DOCXOnOff.isOn(flag),
+               !currentStyleId.isEmpty {
+                styles.defaultParagraphStyle = currentStyleId
+            }
+        case "vanish" where inStyle && trackedChangeDepth == 0 && Self.isStyleRunProperty(elementStack):
+            // The style's text is hidden, unless turned off
+            currentHidden = DOCXOnOff.isOn(attributes["w:val"])
         case "pageBreakBefore" where inStyle && trackedChangeDepth == 0:
             // The style's paragraphs begin a page (PG07), unless turned off
             currentPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
@@ -156,6 +200,7 @@ class DOCXStylesParser: DOCXSAXParser {
         if localName.hasSuffix("Change") {
             trackedChangeDepth = max(0, trackedChangeDepth - 1)
         }
+        if !elementStack.isEmpty { elementStack.removeLast() }
 
         // A style without an ID cannot be named by any paragraph. Recorded
         // under the empty ID, it would give its role to every paragraph
@@ -164,7 +209,9 @@ class DOCXStylesParser: DOCXSAXParser {
             declarations[currentStyleId] = Declaration(
                 ownHeading: ownHeading(),
                 basedOn: currentBasedOn,
-                ownPageBreakBefore: currentPageBreakBefore
+                ownPageBreakBefore: currentPageBreakBefore,
+                ownHidden: currentHidden,
+                type: currentStyleType
             )
 
             // Detect list styles by name pattern (e.g. "ListBullet", "List Number")
@@ -179,6 +226,14 @@ class DOCXStylesParser: DOCXSAXParser {
         if localName == "style" {
             inStyle = false
         }
+    }
+
+    /// Whether the element at the top of `stack` is a direct child of the
+    /// run properties (`w:rPr`) that are a direct child of a style
+    /// (`w:style`): the style's own character formatting, as opposed to a
+    /// table style's conditional formatting (`w:tblStylePr`).
+    private static func isStyleRunProperty(_ stack: [String]) -> Bool {
+        stack.count >= 3 && stack[stack.count - 2] == "rPr" && stack[stack.count - 3] == "style"
     }
 
     /// What the style being read says about being a heading by itself: its

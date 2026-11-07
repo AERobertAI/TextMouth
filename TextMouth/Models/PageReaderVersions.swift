@@ -30,18 +30,65 @@ enum PageReaderVersions {
     /// theirs later, each with a case of its own and its own version, which
     /// reads again only its own books (V07).
     ///
-    /// EPUB and HTML are at "1.0.1": the HTML converter they share no longer
-    /// leaves a page-break element's number in the label of a heading that
-    /// holds one ("Part 9Two" is "Part Two"), which changes the reading text
-    /// of the books that have such a heading and of no others.
+    /// EPUB and HTML are at "1.0.3". At "1.0.1" the HTML converter they
+    /// share stopped leaving a page-break element's number in the label of a
+    /// heading that holds one ("Part 9Two" is "Part Two"), which changed the
+    /// reading text of the books that have such a heading and of no others.
+    /// At "1.0.2" a label that is only the word "Page" names no page
+    /// (`MarkdownPageMarker.namesNoPage`), and an EPUB page list that labels
+    /// none of its pages, such as one whose only entry is the id it links
+    /// to, is passed over (`EPUBParser.readPageList`). That changes the
+    /// pages of the books that have either, and their reading text only
+    /// where such a book's page-break element holds its page's number,
+    /// which is then the page's label and no longer read (ST02). At "1.0.3"
+    /// a label's leading word "Page" is taken off ("Page 12" is the page
+    /// "12", MarkdownPageMarker's normalization), so a number a page-break
+    /// element holds under such a label is its page's own and no longer
+    /// read. Every format's labels lose the word whenever their content.md
+    /// is read, so only these two formats are read again: only their text
+    /// can change.
     static func current(for format: BookFormat) -> String? {
         switch format {
         case .epub, .html:
-            return "1.0.1"
-        case .pdf, .docx, .daisy:
+            return "1.0.3"
+        case .pdf, .daisy:
             return "1.0.0"
-        case .rtf, .rtfd, .doc, .odt, .wordml:
-            return "1.0.0"
+        case .docx:
+            // The DOCX reader follows the policy every document reader of
+            // TextMouth follows: hidden text (w:vanish) is not read, a
+            // text box written twice is read once, and the footnotes and
+            // endnotes are read after the text. Every .docx book is read
+            // again once.
+            return "1.1.0"
+        case .rtf, .rtfd:
+            // TextMouth's own reader reads rich text (FMT47) instead of
+            // textutil: headings from the style sheet, bold and italic, and
+            // pages at every \page, \pagebb, and page-starting \sect, so the
+            // books of these two formats are read again once ("1.1.0"). At
+            // "1.2.0" text a tracked change deleted or moved away is not
+            // read, a list item inside a table cell is a list in the Markdown
+            // (the reading text leaves every list's number out), footnotes
+            // and endnotes are read after the text, and a shape's text box
+            // right after the paragraph that holds it.
+            return "1.2.0"
+        case .doc:
+            // Word 97-2003 is read by TextMouth's own reader (FMT47) from
+            // "1.1.0", which finds the pages and the headings by the
+            // document's own structure, so every .doc book is read again once.
+            // At "1.2.0" it leaves hidden text out, reads the formatting
+            // that a fast-saved document keeps in its pieces, makes Word's own
+            // numbered and bulleted paragraphs list items (their numbers are
+            // not heard while `WordDocumentReader.speaksListNumbers` is off),
+            // and reads the main document's text boxes after the notes, so
+            // every .doc book is read again once more.
+            return "1.2.0"
+        case .odt, .wordml:
+            // OpenDocument text (FMT27) and Word 2003 XML (FMT53) are read by
+            // TextMouth's own readers from "1.1.0": the documents' own
+            // headings, the pages of their style breaks, master pages, and
+            // soft page breaks (OpenDocument), hidden text left out, and
+            // notes after the text, so every such book is read again once.
+            return "1.1.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or
             // a PEF (PG12), so its own case reads again only braille books
@@ -54,6 +101,11 @@ enum PageReaderVersions {
             // reads again only plain text books (V07). Most hold no form
             // feed between words: each is read again once, its content.md
             // byte for byte as before, and then stamped.
+            return "1.0.0"
+        case .kfx:
+            // A KFX book (FMT52) has pages when it carries a print page
+            // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and
+            // is not read as pages. The format has its own case and version.
             return "1.0.0"
         default:
             return nil

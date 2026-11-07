@@ -9,13 +9,25 @@ struct LibraryWindowView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var currentFolderPath = ""
-    @State private var category: LibraryCategory = .folders
+    /// The view this window shows (October 30, 2026): nil until the window
+    /// first appears, when it takes the first view the View pop-up offers
+    /// and keeps it, however the list of views changes, until the listener
+    /// chooses another (or it is deleted).
+    @State private var viewID: LibraryViewID?
+    /// The Library's views, observed so the title and the view shown follow
+    /// a change made in Settings or config.json.
+    @ObservedObject private var views = LibraryViewDefinitionStore.shared
     @State private var showFileImporter = false
     /// Presents the New from Text sheet, from the toolbar or through the
     /// router for File > New from Text....
     @State private var showTextInput = false
     /// The NSWindow hosting this library view, captured via WindowAccessor
-    @State private var hostWindow: NSWindow?
+    @State private var hostWindow: PlatformWindow?
+    /// The app-wide actions that reached this window while the library's
+    /// files were on their way from the cloud, such as books opened from
+    /// Finder, in order: all taken once the library opens, all refused, with
+    /// the books named, if it does not.
+    @State private var heldGlobalActions: [GlobalAction] = []
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
@@ -36,18 +48,24 @@ struct LibraryWindowView: View {
                     notice: libraryViewModel.dataDirectoryRefusalNotice,
                     onAnnounce: { libraryViewModel.announceDataDirectoryUnavailability(from: hostWindow) },
                     onTryAgain: { libraryViewModel.retryDataDirectory() },
-                    onQuit: { NSApplication.shared.terminate(nil) }
+                    onQuit: {
+                        // Quitting is the Mac's; an iPhone app closes from
+                        // the system, so the button does nothing there.
+                        #if os(macOS)
+                        NSApplication.shared.terminate(nil)
+                        #endif
+                    }
                 )
             } else {
                 LibraryView(
                     currentFolderPath: $currentFolderPath,
-                    category: $category,
+                    shownViewID: shownViewID,
                     showFileImporter: $showFileImporter,
                     showTextInput: $showTextInput,
                     onOpenBook: { book in
                         // No book opens while the library moves (FR02).
                         guard !refuseWhileTheLibraryMoves(.openBookWindow(book.id)) else { return }
-                        openWindow(id: "book-reader", value: book.id)
+                        openWindow(id: BookReaderWindowView.windowID, value: book.id)
                     }
                 )
                 // The feed downloads section, below the list while feed
@@ -114,6 +132,10 @@ struct LibraryWindowView: View {
         .handlesExternalEvents(preferring: [], allowing: ["*"])
         .focusedValue(\.activeWindowType, .library)
         .onAppear {
+            // A new window keeps the view it opens at, the first one offered.
+            if viewID == nil {
+                viewID = shownView.id
+            }
             // SwiftUI shows a closed Library window again, rather than open
             // a new one, for a book opened from Finder; the window takes
             // app-wide actions again from then on. A window appearing for
@@ -124,11 +146,23 @@ struct LibraryWindowView: View {
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }
         .onDisappear {
+            refuseHeldGlobalActions()
             if let hostWindow {
                 libraryWindowRouter.unregister(hostWindow)
             }
         }
         .navigationTitle(windowTitle)
+        // A held action is taken when the library opens, or refused when the
+        // fetch ends without it.
+        .onChange(of: libraryViewModel.dataDirectoryUnavailability) {
+            releaseHeldGlobalActions(openingReadersWith: openReaderWindow)
+        }
+        // Nor can they open when another library was chosen.
+        .onChange(of: libraryViewModel.librarySwitchPending) {
+            if libraryViewModel.librarySwitchPending {
+                refuseHeldGlobalActions()
+            }
+        }
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
             isPresented: $showFileImporter,
@@ -143,7 +177,7 @@ struct LibraryWindowView: View {
                     urls: urls,
                     toFolder: currentFolderPath,
                     from: ImportOrigin(window: hostWindow),
-                    addingToReadingList: category == .readingList
+                    addingToReadingList: shownView.kind == .readingList
                 )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
@@ -245,11 +279,27 @@ struct LibraryWindowView: View {
     private var windowTitle: String {
         // VoiceOver names the window by its title when moving between
         // windows, so it says why the library isn't shown (FR02).
-        guard libraryViewModel.dataDirectoryUnavailability == nil else {
-            return DataDirectoryUnavailableText.title
+        if let reason = libraryViewModel.dataDirectoryUnavailability {
+            return DataDirectoryUnavailableText.title(for: reason)
         }
-        let location = LibraryLocation(category: category, folderPath: currentFolderPath)
+        let location = LibraryLocation(view: shownView, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
+    }
+
+    /// The view this window shows: the one it keeps, or, before it first
+    /// appears, or once the one it kept is deleted, the first view its
+    /// pop-up offers (`LibraryViewModel.shownView`).
+    private var shownView: LibraryViewDefinition {
+        libraryViewModel.shownView(viewID, in: views.list, center: LibraryFeedFolders.shared.center).view
+    }
+
+    /// The binding the window's list shows its view through, set by the View
+    /// pop-up and a feed row's open: the view this window keeps, even once
+    /// it is deleted, so the list notices, moves to the first view offered,
+    /// and says so (`LibraryView.followDeletedView`); before the window first
+    /// appears, the first view offered.
+    private var shownViewID: Binding<LibraryViewID> {
+        Binding(get: { viewID ?? shownView.id }, set: { viewID = $0 })
     }
 
     /// Announce the new folder name and book count to VoiceOver when
@@ -261,16 +311,10 @@ struct LibraryWindowView: View {
             library: libraryViewModel.library,
             feedFolders: .shared
         )
-
-        guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
-        NSAccessibility.post(
-            element: window,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.high.rawValue
-            ]
-        )
+        // Through the announcer, which picks the window when this one isn't
+        // known yet and records rather than posts under hosted tests (TODO
+        // 3645).
+        VoiceOverAnnouncer.announce(message, from: hostWindow)
     }
 
     /// True when this library window is the current key (focused) window.
@@ -293,9 +337,51 @@ struct LibraryWindowView: View {
     ///   - window: This view's hosting window.
     ///   - openReaderWindow: This window's `openWindow` action, read while
     ///     the view was installed, which opens a book's reader window.
-    private func registerForGlobalActions(_ window: NSWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
+    private func registerForGlobalActions(_ window: PlatformWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
         libraryWindowRouter.register(window) { action in
             takeGlobalAction(action, openingReadersWith: openReaderWindow)
+        }
+    }
+
+    /// Refuses `actions` because the library can't be used: the window says
+    /// so, and the requests the actions carried are dropped with them. Actions
+    /// that were held while the files were on their way (`wasHeld`) are
+    /// refused together in one sentence that names the books not opened.
+    private func refuse(_ actions: [GlobalAction], wasHeld: Bool) {
+        let message = wasHeld
+            ? DataDirectoryUnavailableText.heldRefusal(of: actions)
+            : actions.first.flatMap(DataDirectoryUnavailableText.refusal(of:))
+        for action in actions {
+            ReaderOpenRefusal.dropRequests(for: action)
+        }
+        guard let message else { return }
+        libraryViewModel.refuseWhileDataDirectoryUnavailable(message, from: hostWindow)
+    }
+
+    /// Refuses every held action: the fetch failed, the window is closing, or
+    /// another library was chosen. Does nothing when none is held.
+    private func refuseHeldGlobalActions() {
+        guard !heldGlobalActions.isEmpty else { return }
+        let held = heldGlobalActions
+        heldGlobalActions = []
+        refuse(held, wasHeld: true)
+    }
+
+    /// Takes every held action, in order, once the library is open, or
+    /// refuses them all when the library is unavailable and no longer on its
+    /// way. Nothing happens while the files are still arriving.
+    private func releaseHeldGlobalActions(openingReadersWith openReaderWindow: OpenWindowAction) {
+        guard !heldGlobalActions.isEmpty else { return }
+        let reason = libraryViewModel.dataDirectoryUnavailability
+        guard reason?.isGettingFromCloud != true else { return }
+        if reason == nil {
+            let held = heldGlobalActions
+            heldGlobalActions = []
+            for action in held {
+                takeGlobalAction(action, openingReadersWith: openReaderWindow)
+            }
+        } else {
+            refuseHeldGlobalActions()
         }
     }
 
@@ -307,11 +393,16 @@ struct LibraryWindowView: View {
         // Nothing is added to the library or opened from it while it can't
         // be used (FR02): the window comes forward and says so instead, and
         // a refused open's requests are dropped with it.
-        if libraryViewModel.dataDirectoryUnavailability != nil,
-           let refusal = DataDirectoryUnavailableText.refusal(of: action) {
+        // While the library's files are on their way, the action waits for
+        // the library, which opens by itself, instead of being refused.
+        if let reason = libraryViewModel.dataDirectoryUnavailability,
+           DataDirectoryUnavailableText.refusal(of: action) != nil {
             bringToFront()
-            libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
-            ReaderOpenRefusal.dropRequests(for: action)
+            if reason.isGettingFromCloud {
+                heldGlobalActions.append(action)
+            } else {
+                refuse([action], wasHeld: false)
+            }
             return
         }
         // Nor while it moves (FR02).
@@ -347,11 +438,13 @@ struct LibraryWindowView: View {
     /// Brings this Library window to the front as the key window, out of
     /// the Dock first when it was minimized.
     private func bringToFront() {
+        #if os(macOS)
         guard let hostWindow else { return }
         if hostWindow.isMiniaturized {
             hostWindow.deminiaturize(nil)
         }
         hostWindow.makeKeyAndOrderFront(nil)
+        #endif
     }
 
     // MARK: - While the Library Moves (FR02)
@@ -383,10 +476,11 @@ struct LibraryWindowView: View {
     /// (TODO I02), or, at the Reading List, into the folder viewed last, the
     /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
+        #if os(macOS)
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
-        let addsToReadingList = category == .readingList
+        let addsToReadingList = shownView.kind == .readingList
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }
@@ -402,6 +496,11 @@ struct LibraryWindowView: View {
         } else {
             panel.begin(completionHandler: importChosenFolders)
         }
+        #else
+        // Importing folders on iPhone is phase 1's: there is no folder
+        // panel here, so the command does nothing.
+        return
+        #endif
     }
 }
 

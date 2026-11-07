@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - Feed Info (FR03)
@@ -108,6 +112,19 @@ final class FeedInfoModel: ObservableObject, Identifiable {
     var predownloadsNextEpisode: Bool {
         get { listeningOptions.predownloadsNext }
         set { listeningOptions.predownloadsNext = newValue }
+    }
+
+    /// Where the next episode opens when listening goes on from one of the
+    /// feed's episodes to another; nil is "Use the global setting" (0.2.5).
+    var nextEpisodeWindow: NextBookWindow? {
+        get { listeningOptions.nextBookWindow }
+        set { listeningOptions.nextBookWindow = newValue }
+    }
+
+    /// The global "Open the next book in" setting, which "Use the global
+    /// setting" follows and names.
+    var globalNextBookWindow: NextBookWindow {
+        SettingsPolicy.nextBookWindow.storedValue(in: defaults)
     }
 
     /// The global "When book ends" setting, which "Use the global setting"
@@ -425,10 +442,19 @@ struct FeedInfoSheet: View {
         .accessibilityLabel(endLabel)
         .accessibilityHint(endHint)
 
+        // Where the next item opens (0.2.5), dimmed while listening does not
+        // go on from one item to another.
+        NextBookWindowPicker(
+            noun: noun,
+            selection: Binding(get: { model.nextEpisodeWindow }, set: { model.nextEpisodeWindow = $0 }),
+            global: model.globalNextBookWindow,
+            isAvailable: model.continuesToAnotherEpisode
+        )
+
         let skipLabel = ListeningOptionsWording.skipFinishedLabel(noun)
         let skipHint = ListeningOptionsWording.skipFinishedHint(noun)
         Toggle(skipLabel, isOn: Binding(get: { model.skipsFinishedEpisodes }, set: { model.skipsFinishedEpisodes = $0 }))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .help(skipHint)
             .accessibilityLabel(skipLabel)
             .accessibilityHint(skipHint)
@@ -440,7 +466,7 @@ struct FeedInfoSheet: View {
         let downloadLabel = ListeningOptionsWording.predownloadLabel(noun)
         let downloadHint = ListeningOptionsWording.predownloadHint(noun, enabled: goesOn)
         Toggle(downloadLabel, isOn: Binding(get: { model.predownloadsNextEpisode }, set: { model.predownloadsNextEpisode = $0 }))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .disabled(!goesOn)
             .help(downloadHint)
             .accessibilityLabel(downloadLabel)

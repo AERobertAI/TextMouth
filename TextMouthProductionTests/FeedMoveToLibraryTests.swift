@@ -493,6 +493,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
     /// that says it again (REV13 feeds 8). SwiftUI exposes no buttons to a
     /// test on some Macs, where this skips.
     func testTheSheetSaysWhatMovingDoesOnce() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let book = Book(
             title: "Ep. 368",
             format: .audio,

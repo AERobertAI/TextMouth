@@ -147,16 +147,23 @@ final class PerformanceBaselineRulesTests: XCTestCase {
     }
 
     /// A recording run measures on any Mac: recording is how a Mac gets
-    /// baselines of its own.
+    /// baselines of its own. A skip here would be reported as skipped, never
+    /// failed, so it is caught and failed, and no line says it skipped.
     func testARecordingRunMeasuresOnAnotherMac() async throws {
+        let lines = ReportedLines()
         var otherMac = MachineIdentity.current
         otherMac.model = "VirtualMac2,1"
         let run = try makeRun(
             settings: [PerformanceRunSettings.strictVariable: "1", PerformanceRunSettings.recordVariable: "1"],
             baselines: Self.baselineFile(values: [:], machine: otherMac),
-            reportingTo: ReportedLines()
+            reportingTo: lines
         )
-        try await run.prepareToMeasure()
+        do {
+            try await run.prepareToMeasure()
+        } catch is XCTSkip {
+            XCTFail("a recording run skipped on another Mac: \(lines.all)")
+        }
+        XCTAssertFalse(lines.all.contains { $0.hasPrefix("PERFORMANCE SKIPPED") }, lines.all.joined(separator: "\n"))
     }
 
     /// Baselines that cannot be read fail the test rather than skip it:

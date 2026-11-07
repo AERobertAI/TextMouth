@@ -52,8 +52,10 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
 ///    asset". The reader plays every file through `AVPlayer`.
 /// 3. At least one audio track is `isDecodable`: the track "can be decoded"
 ///    in this environment, so the Mac has a decoder for its format.
-/// 4. `duration` is a finite number of seconds above zero. A WAVE file cut
-///    off after its header opens, plays, and decodes, with no samples.
+/// 4. `duration` is a finite number of seconds above zero and at most a
+///    year (`isPlayableLength(_:)`). A WAVE file cut off after its header
+///    opens, plays, and decodes, with no samples; an MPEG-4 file's movie
+///    header (`mvhd`) can claim 1e18 seconds over an audio track of two.
 /// 5. When `isReadable` ("whether an AVAssetReader can be used" to extract
 ///    its samples), the first half second and the final second of that
 ///    track decode, measured over the track's own time range, so another
@@ -112,7 +114,7 @@ enum AudioMediaProbe {
             return .failure(.noAudio)
         }
         let seconds = CMTimeGetSeconds(duration)
-        guard seconds.isFinite, seconds > 0 else { return .failure(.noAudio) }
+        guard isPlayableLength(seconds) else { return .failure(.noAudio) }
 
         if isReadable {
             // The span the track's samples cover, by its index; the whole
@@ -125,6 +127,16 @@ enum AudioMediaProbe {
             }
         }
         return .success(seconds)
+    }
+
+    /// Whether `seconds`, the length a file's header states, is one audio
+    /// can play for: a finite number above zero and at most
+    /// `OggHeaderReader.maximumDuration` (a year), the longest length any
+    /// of TextMouth's readers believes. A header can state anything; a
+    /// longer length is a damaged header, not audio, and believed it would
+    /// become the length of a book's section.
+    static func isPlayableLength(_ seconds: TimeInterval) -> Bool {
+        seconds.isFinite && seconds > 0 && seconds <= OggHeaderReader.maximumDuration
     }
 
     /// The first audio track of `asset` that the Mac can decode, with the

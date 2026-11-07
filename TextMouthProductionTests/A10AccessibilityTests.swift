@@ -46,6 +46,7 @@ final class EditModeBarExitTests: XCTestCase {
     /// mode" among them; skipped where SwiftUI exposes no buttons to a
     /// hosted window, as the edit bar's other tests are.
     func testTheEditBarHasNoExitButtonOfItsOwn() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let bar = EditModeBar(
             selectedCount: 1,
             totalCount: 3,

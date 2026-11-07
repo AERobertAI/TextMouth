@@ -473,6 +473,55 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertEqual(book.title, "Mending Cloth Spines")
     }
 
+    // MARK: - Missing Parts
+
+    /// A package without its text part has nothing to read (audit U20). The
+    /// conversion and the direct reader name the missing part, and an import
+    /// fails while reading the text with that sentence, leaving no package
+    /// or row and the original as it was.
+    @MainActor
+    func testPackageWithoutItsTextPartNamesTheMissingPart() throws {
+        let docx = try makeDOCX(removing: [DOCXParser.Part.document])
+        let sentence = "The DOCX file is missing required entry: word/document.xml"
+
+        XCTAssertThrowsError(try DOCXParser.extractMarkdown(from: docx)) { error in
+            guard case .missingEntry(let path)? = error as? DOCXParserError else {
+                return XCTFail("Expected a missing-entry error, got \(error)")
+            }
+            XCTAssertEqual(path, DOCXParser.Part.document)
+            XCTAssertEqual(error.localizedDescription, sentence)
+        }
+        XCTAssertThrowsError(try DOCXParser.parse(url: docx)) { error in
+            XCTAssertEqual(error.localizedDescription, sentence)
+        }
+        try assertImportRefused(docx, saying: sentence)
+    }
+
+    /// Relationships naming a part the package does not hold are no damage
+    /// today (audit U20): the styles part they name reads as absent, so the
+    /// headings read as plain paragraphs while every word, list number, and
+    /// link target stays, nothing is reported, and an import adds the book
+    /// with that text.
+    func testRelationshipsNamingAMissingPartReadAsThoughItWereAbsent() throws {
+        XCTAssertTrue(Self.relationshipsXML.contains(#"Target="styles.xml""#), "the relationships must name the styles part")
+        let docx = try makeDOCX(removing: [DOCXParser.Part.styles])
+
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false) {
+            XCTFail("Unexpected damage report: \($0)")
+        }
+
+        XCTAssertEqual(try Self.spokenText(of: markdown), Self.spokenDocument)
+        XCTAssertFalse(markdown.contains("#"), "Without its styles part no paragraph is a heading: \(markdown)")
+        XCTAssertTrue(markdown.contains("\n1. Cut new cloth"), markdown)
+        XCTAssertTrue(markdown.contains("[**paste chart**](https://example.org/paste-chart)"), markdown)
+
+        let book = try FileImportService.importFile(from: docx)
+        let package = book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let cached = try String(contentsOf: TextMouthPaths.contentMarkdownPath(in: package), encoding: .utf8)
+        XCTAssertEqual(try Self.spokenText(of: cached), Self.spokenDocument)
+    }
+
     // MARK: - Core Properties
 
     /// Intact core properties give the document its title and author.

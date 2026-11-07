@@ -48,10 +48,9 @@ extension FocusedValues {
 }
 
 /// Whether the book of the reader whose window is key has pages (PG02),
-/// which Navigate > Next Page, Previous Page, and Go to Page… need. The
-/// reader's window publishes it as a scene value (`BookReaderWindowView`),
-/// so the commands stay available while VoiceOver reads the window's text,
-/// which holds no keyboard focus.
+/// which Navigate > Go to Page… needs. The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the command stays available while
+/// VoiceOver reads the window's text, which holds no keyboard focus.
 struct ReaderHasPagesKey: FocusedValueKey {
     typealias Value = Bool
 }
@@ -60,6 +59,24 @@ extension FocusedValues {
     var readerHasPages: Bool? {
         get { self[ReaderHasPagesKey.self] }
         set { self[ReaderHasPagesKey.self] = newValue }
+    }
+}
+
+/// Whether the key window is a reader, which Navigate > Next in Folder and
+/// Previous in Folder need (0.2.5). The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the commands stay available while
+/// VoiceOver reads the window's text, which holds no keyboard focus, and
+/// after a window switches to another book, which takes the focused view
+/// away. (`activeWindowType` is a plain focused value, which leaves a menu
+/// command dimmed then.)
+struct IsReaderWindowKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var isReaderWindow: Bool? {
+        get { self[IsReaderWindowKey.self] }
+        set { self[IsReaderWindowKey.self] = newValue }
     }
 }
 
@@ -76,6 +93,24 @@ extension FocusedValues {
     var libraryRemovalSelection: LibraryRemovalSelection? {
         get { self[LibraryRemovalSelectionKey.self] }
         set { self[LibraryRemovalSelectionKey.self] = newValue }
+    }
+}
+
+/// The names of the views the key Library window's View pop-up offers to a
+/// window showing none, in order (design section 6 of
+/// LIBRARY-VIEWS-RESEARCH-2026-10-30.md): the Library menu's Go to View
+/// submenu lists them, the first nine with Go to View 1 to Go to View 9's
+/// keys. Each Library window publishes its own as a scene value
+/// (`LibraryView`), so the submenu follows the window in front while
+/// VoiceOver reads the list, which holds no keyboard focus.
+struct LibraryOfferedViewNamesKey: FocusedValueKey {
+    typealias Value = [String]
+}
+
+extension FocusedValues {
+    var libraryOfferedViewNames: [String]? {
+        get { self[LibraryOfferedViewNamesKey.self] }
+        set { self[LibraryOfferedViewNamesKey.self] = newValue }
     }
 }
 
@@ -216,9 +251,12 @@ struct PlaybackCommands: Commands {
 struct NavigationCommands: Commands {
     /// Whether the key reader reads its book from the reading list (FR09).
     @FocusedValue(\.readsFromReadingList) var readsFromReadingList
-    /// Whether the key reader's book has pages (PG02), which Next Page,
-    /// Previous Page, and Go to Page… need.
+    /// Whether the key reader's book has pages (PG02), which Go to Page…
+    /// needs.
     @FocusedValue(\.readerHasPages) var readerHasPages
+    /// Whether the key window is a reader, so Next in Folder and Previous in
+    /// Folder are offered in a reader window alone.
+    @FocusedValue(\.isReaderWindow) var isReaderWindow
 
     var body: some Commands {
         CommandMenu("Navigate") {
@@ -244,18 +282,10 @@ struct NavigationCommands: Commands {
                 NotificationCenter.default.post(name: .previousHeading, object: nil)
             }
 
-            // Pages (PG02, PG03): available while the key reader's book has
-            // pages. Their keys are the manager's, as the headings' are.
-            Button(ShortcutAction.nextPage.title) {
-                NotificationCenter.default.post(name: .nextPage, object: nil)
-            }
-            .disabled(readerHasPages != true)
-
-            Button(ShortcutAction.previousPage.title) {
-                NotificationCenter.default.post(name: .previousPage, object: nil)
-            }
-            .disabled(readerHasPages != true)
-
+            // Go to Page… (PG03): available while the key reader's book has
+            // more than one page. Its key is the manager's, as the headings'
+            // are, and in any other book it says why it opens nothing. Moving
+            // from page to page is the Page navigation unit's (PG02).
             Button(ShortcutAction.goToPage.title) {
                 NotificationCenter.default.post(name: .goToPage, object: nil)
             }
@@ -276,6 +306,19 @@ struct NavigationCommands: Commands {
                 NotificationCenter.default.post(name: .previousInReadingList, object: nil)
             }
             .disabled(readsFromReadingList != true)
+
+            // The item below or above this book in its folder or feed
+            // (0.2.5), available in a reader window. They have no keys until
+            // the user gives them some, as the reading list's commands.
+            Button(ShortcutAction.nextInFolder.title) {
+                NotificationCenter.default.post(name: .nextInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
+
+            Button(ShortcutAction.previousInFolder.title) {
+                NotificationCenter.default.post(name: .previousInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
 
             Divider()
 
@@ -306,6 +349,9 @@ struct LibraryCommands: Commands {
     /// The key Library window's selection, which the Remove command's title
     /// names as Delete Download for feed items alone (REV11 F2).
     @FocusedValue(\.libraryRemovalSelection) private var removalSelection
+    /// The names of the views the key Library window offers, which the Go
+    /// to View submenu lists; nil while no Library window is in front.
+    @FocusedValue(\.libraryOfferedViewNames) private var offeredViewNames
     /// The shortcuts, observed so Import Folder's and Add Feed's key
     /// equivalents follow a change at once (FR12's branch D).
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -316,6 +362,13 @@ struct LibraryCommands: Commands {
     /// The Library menu, its keys in force those of `shortcuts`.
     init(shortcuts: KeyboardShortcutManager) {
         _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
+
+    /// Whether a Library window can take a command this menu posts: one is
+    /// in front, or no window is open at all, as a menu's items must act
+    /// then (`ShortcutScope.admitsMenuCommand(in:)`).
+    private var libraryWindowCanTakeCommands: Bool {
+        ShortcutScope.library.admitsMenuCommand(in: front.kind)
     }
 
     var body: some Commands {
@@ -419,14 +472,19 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Only a Library window takes these two, and says what it did or
+            // why it could not, so they are dimmed in any other window,
+            // where nothing would answer.
             Button("Move Book Up") {
                 NotificationCenter.default.post(name: .moveBookUp, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Up handled by KeyboardShortcutManager
 
             Button("Move Book Down") {
                 NotificationCenter.default.post(name: .moveBookDown, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Down handled by KeyboardShortcutManager
 
             Divider()
@@ -449,6 +507,14 @@ struct LibraryCommands: Commands {
             // user gives it one in Settings.
             Button(ShortcutAction.folderOrFeedSettings.title) {
                 NotificationCenter.default.post(name: .showFolderOrFeedSettings, object: nil)
+            }
+
+            // Shows one of the views the key Library window offers (design
+            // section 6), each item titled by its view's name, the first
+            // nine with Go to View 1 to Go to View 9's keys; while no
+            // Library window is in front, one dimmed item says so.
+            Menu(LibraryViewPickerWording.goToViewMenuTitle) {
+                goToViewItems
             }
 
             Divider()
@@ -474,6 +540,28 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
             // Cmd+Delete handled by KeyboardShortcutManager for window targeting
+        }
+    }
+
+    /// The Go to View submenu's items (design section 6): one for each view
+    /// the key Library window offers, titled by its name, asking the window
+    /// for the view by its number (`ShortcutAction.goToViewUserInfo(number:)`),
+    /// the first nine showing Go to View 1 to Go to View 9's keys; or, while
+    /// no Library window is in front, one dimmed item saying so.
+    @ViewBuilder
+    private var goToViewItems: some View {
+        if let names = offeredViewNames {
+            ForEach(Array(names.enumerated()), id: \.offset) { index, viewName in
+                Button(viewName) {
+                    NotificationCenter.default.post(name: .goToLibraryView, object: nil, userInfo: ShortcutAction.goToViewUserInfo(number: index + 1))
+                }
+                .goToViewKey(number: index + 1, shortcuts: shortcuts, frontKind: front.kind)
+            }
+        } else {
+            Button(LibraryViewPickerWording.noLibraryWindow) {
+                // Dimmed: there is no Library window whose view to change.
+            }
+            .disabled(true)
         }
     }
 }
@@ -675,63 +763,6 @@ extension FocusedValues {
     }
 }
 
-// MARK: - The Window in Front (FR12's Branch E)
-
-/// The kind of window in front, which the menus act on: the main window's,
-/// or the key window's while no window is main, as the menu bar's own
-/// menus go by (`MenuVisibilityManager`); nil with no window at all. A menu
-/// command working in one kind of window shows its key and acts only while
-/// a window of that kind is in front (`menuCommandKey(_:shortcuts:frontKind:)`).
-@MainActor
-final class FrontWindowKind: ObservableObject {
-    /// The app's one.
-    static let shared = FrontWindowKind()
-
-    /// The kind of window in front, or nil with none.
-    @Published private(set) var kind: ShortcutWindowKind?
-
-    /// The notification observers, kept for the app's life.
-    private var observers: [NSObjectProtocol] = []
-
-    /// Follows the window in front from now on.
-    private init() {
-        kind = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
-        let center = NotificationCenter.default
-        // A window that becomes main or key is in front at once; one that
-        // resigns, or the app going away or coming back, leaves the next
-        // window to settle first, as the menu bar's own update does.
-        for name in [NSWindow.didBecomeMainNotification, NSWindow.didBecomeKeyNotification] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.refresh() }
-            })
-        }
-        for name in [
-            NSWindow.didResignMainNotification, NSWindow.didResignKeyNotification,
-            NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification,
-        ] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                DispatchQueue.main.async {
-                    MainActor.assumeIsolated { self?.refresh() }
-                }
-            })
-        }
-    }
-
-    /// Takes the kind of the window now in front, published when it changed.
-    private func refresh() {
-        let current = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
-        if current != kind {
-            kind = current
-        }
-    }
-
-    /// The kind of `window`, as the shortcut manager tells kinds of window
-    /// apart, or nil for no window.
-    static func kind(of window: NSWindow?) -> ShortcutWindowKind? {
-        window.flatMap(KeyboardShortcutManager.windowKind(ofKeyWindow:))
-    }
-}
-
 extension View {
     /// A menu item for `action`, whose key the user may change (FR12's
     /// branches D and E): it shows `action`'s key in force and acts while
@@ -745,6 +776,18 @@ extension View {
         return keyboardShortcut(acts ? shortcuts.keyboardShortcut(for: action) : nil)
             .disabled(!acts)
     }
+
+    /// The Go to View submenu's item for the `number`th view (design
+    /// section 6 of LIBRARY-VIEWS-RESEARCH-2026-10-30.md): it shows the key
+    /// of the action going to that view, Go to View 1 to Go to View 9, as
+    /// `shortcuts` has it in force (`menuShownKey(for:frontKind:)`), so
+    /// VoiceOver says the key beside the view's name; an item past the ninth
+    /// shows none. The shortcut manager takes these keys itself, for the
+    /// window they are pressed in, and meets a key before the menus do, so
+    /// the item never acts on its key a second time: only choosing it acts.
+    func goToViewKey(number: Int, shortcuts: KeyboardShortcutManager, frontKind: ShortcutWindowKind?) -> some View {
+        keyboardShortcut(ShortcutAction.goToView(number: number).flatMap { shortcuts.menuShownKey(for: $0, frontKind: frontKind) })
+    }
 }
 
 // MARK: - Key Equivalents in Force (FR12's Branch D)
@@ -755,6 +798,17 @@ extension KeyboardShortcutManager {
     /// shows no key rather than one that does something else.
     func keyboardShortcut(for action: ShortcutAction) -> KeyboardShortcut? {
         keyEquivalent(for: action)?.keyboardShortcut
+    }
+
+    /// The key a menu item shows for `action`, whose keys this manager
+    /// takes rather than a menu item (design section 6, Go to View): its
+    /// first key in force that a menu item can show
+    /// (`KeyBinding.keyboardShortcut`), while its keys work in windows of
+    /// `frontKind`; nil otherwise, as with no window in front, so the item
+    /// never shows a key that does something else there.
+    func menuShownKey(for action: ShortcutAction, frontKind: ShortcutWindowKind?) -> KeyboardShortcut? {
+        guard let frontKind, scope(of: action).reaches(frontKind) else { return nil }
+        return bindingsFor(action).lazy.compactMap(\.keyboardShortcut).first
     }
 }
 
@@ -802,12 +856,6 @@ extension Notification.Name {
     static let decreaseSpeed = Notification.Name("decreaseSpeed")
     static let nextHeading = Notification.Name("nextHeading")
     static let previousHeading = Notification.Name("previousHeading")
-    /// Posted by Navigate > Next Page, and by its key (PG02): the key reader
-    /// moves to the start of the next page.
-    static let nextPage = Notification.Name("nextPage")
-    /// Posted by Navigate > Previous Page, and by its key (PG02): the key
-    /// reader moves to the start of the page being read, or the one before.
-    static let previousPage = Notification.Name("previousPage")
     /// Posted by Navigate > Go to Page…, and by its key (PG03): the key
     /// reader opens its page field.
     static let goToPage = Notification.Name("goToPage")
@@ -819,6 +867,8 @@ extension Notification.Name {
     /// the user gave it one (FR09): the key reader, reading its book from
     /// the reading list, opens the book above it there.
     static let previousInReadingList = Notification.Name("previousInReadingList")
+    static let nextInFolder = Notification.Name("nextInFolder")
+    static let previousInFolder = Notification.Name("previousInFolder")
     static let addBookmark = Notification.Name("addBookmark")
     static let nextBookmark = Notification.Name("nextBookmark")
     static let previousBookmark = Notification.Name("previousBookmark")

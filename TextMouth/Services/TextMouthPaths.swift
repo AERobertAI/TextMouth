@@ -41,7 +41,9 @@ enum TextMouthPaths {
         guard let customPath = customRootPath(for: runtime) else {
             return defaultRoot(in: runtime.homeDirectory)
         }
-        let named = URL(fileURLWithPath: customPath)
+        // Named as a folder, so no lstat(2) decides it: a folder above the library
+        // may be dataless, and a stat on the main thread would download it.
+        let named = URL(fileURLWithPath: customPath, isDirectory: true)
         let check = DataDirectoryCheck.of(root: named, preferences: runtime.preferences, runtime: runtime)
         guard let relocated = check.relocatedLibrary()?.folder else { return named }
         let line = recordRelocation(from: named, to: relocated, in: runtime.preferences)

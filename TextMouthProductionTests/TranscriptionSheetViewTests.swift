@@ -60,6 +60,7 @@ final class TranscriptionSheetViewTests: XCTestCase {
     /// The ready sheet's buttons are Cancel and Transcribe, each labelled
     /// and hinted, in that order.
     func testTheReadySheetLabelsItsButtons() async throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let model = TranscriptionSheetModel(
             request: .book(TranscriptionSheetTests.audiobook("Harbour Bells", seconds: 3_060)),
             library: nil,

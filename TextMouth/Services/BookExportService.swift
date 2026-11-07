@@ -176,19 +176,32 @@ struct BookExportOutcome: Equatable, Sendable {
 }
 
 /// The Cancel of an export under way: set on the main actor, read by the
-/// export between files on its background thread.
+/// export between files on its background thread, and, through
+/// `childProcesses`, by a child process the export is waiting for.
 final class BookExportCancellation: Sendable {
     /// Whether the export is to stop, guarded by the lock itself.
     private let cancelled = OSAllocatedUnfairLock(initialState: false)
+
+    /// What a child process the export runs listens to, so that Stop kills
+    /// it at once rather than waiting for it to end (TODO 3985): the braille
+    /// helper, which a BRF or PEF export's translation runs for up to a
+    /// minute on a long book (`BrailleExportWriting.write(_:to:cancellation:makeData:)`
+    /// binds it). It is the token every wait for a child process in
+    /// TextMouth stops on (`BrailleTranslator`, `AsyncBridge.waitForResult(cancelledBy:of:)`),
+    /// named for the import, whose Cancel it was made for.
+    let childProcesses = ImportCancellation()
 
     /// Whether the export is to stop at its next file.
     var isCancelled: Bool {
         cancelled.withLock { $0 }
     }
 
-    /// Stops the export before its next file.
+    /// Stops the export before its next file, and kills the child process
+    /// it is waiting for, if any. The flag is set first, so work that finds
+    /// its child killed finds the export stopped too.
     func cancel() {
         cancelled.withLock { $0 = true }
+        childProcesses.cancel()
     }
 
     /// Throws `CancellationError` once the export is to stop: what a

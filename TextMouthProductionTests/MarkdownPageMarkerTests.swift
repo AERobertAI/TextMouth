@@ -57,6 +57,67 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(marker("", ordinal: 7).markdown, "<!-- page: 7 -->")
     }
 
+    /// A label that is only the word "Page", which a generator writes when
+    /// it has no number for the page (`aria-label="Page "`), names no page,
+    /// so the marker takes the ordinal, and the reader never says "Page Page
+    /// of 1". A label holding anything besides the word is a name.
+    func testALabelOfOnlyTheWordPageIsTheOrdinal() {
+        for label in ["Page", "Page ", "PAGE", " page. ", "Page\n", "Page:", "Page page"] {
+            XCTAssertEqual(marker(label, ordinal: 3).label, "3", label)
+        }
+        for label in ["Pages", "Pg", "Page-1"] {
+            XCTAssertEqual(marker(label, ordinal: 3).label, label, label)
+        }
+    }
+
+    /// A label that begins with the word "Page" names the page after it, as
+    /// the reader says "Page" itself (the user's choice, November 4, 2026):
+    /// "Page 12" is the page "12", not one the reader shows as "Page Page 12
+    /// of 300". The word may end in a period or a colon, and the name follows
+    /// a space or begins with a digit. A word that only begins with the
+    /// letters stays a name of its own.
+    func testALeadingWordPageIsTakenOff() {
+        let expected = [
+            ("Page 12", "12"), ("page xii", "xii"), ("PAGE: 3", "3"), ("Page. 4", "4"), ("Page12", "12"),
+            ("Page:12", "12"), ("  Page   A-3 ", "A-3"), ("Page iv.", "iv."), ("Pages 4", "Pages 4"),
+            ("Pageant", "Pageant"), ("Page-1", "Page-1"), ("page_12", "page_12"),
+        ]
+        for (label, page) in expected {
+            XCTAssertEqual(marker(label).label, page, "\"\(label)\"")
+        }
+        // A content.md written before reads its "Page 12" as the page "12".
+        XCTAssertEqual(MarkdownPageMarker.decode("<!-- page: Page 12 -->")?.label, "12")
+        XCTAssertEqual(marker("Page 12").markdown, "<!-- page: 12 -->")
+        // A name longer than a label is cut after the word is taken off.
+        let long = "Page " + String(repeating: "x", count: 40)
+        XCTAssertEqual(marker(long).label, String(repeating: "x", count: MarkdownPageMarker.maximumLabelLength))
+    }
+
+    /// Which labels name no page (`namesNoPage`): blank ones, a lone period,
+    /// and the word "Page" alone in any capitals, with a period or a colon,
+    /// even before another "page"; any other text names one.
+    func testWhichLabelsNameNoPage() {
+        for label in ["", "  ", "\n\t", ".", "Page", "page ", " PAGE.", "Page\n", "Page:", "Page page", "Page ."] {
+            XCTAssertTrue(MarkdownPageMarker.namesNoPage(label), "\"\(label)\"")
+        }
+        for label in ["1", "xii", "A-3", "Page 1", "Pages", "Pg", "-", "pagenum_000000"] {
+            XCTAssertFalse(MarkdownPageMarker.namesNoPage(label), "\"\(label)\"")
+        }
+    }
+
+    /// Which labels are page numbers (`isPageNumber`), by the rule
+    /// `isNoMoreThanLabel` reads them with: ASCII digits, or a canonical
+    /// Roman numeral, with case, white space, one trailing period, and a
+    /// leading word "Page" set aside.
+    func testWhichLabelsArePageNumbers() {
+        for label in ["1", "12", " 300 ", "xii", "XIV", "iv.", "MCMLXXXIV", "Page 12", "page xii"] {
+            XCTAssertTrue(MarkdownPageMarker.isPageNumber(label), "\"\(label)\"")
+        }
+        for label in ["", "A-3", "pagenum_000000", "p12", "IIII", "Page A-3", "1.5", "12a", "\u{0661}\u{0662}"] {
+            XCTAssertFalse(MarkdownPageMarker.isPageNumber(label), "\"\(label)\"")
+        }
+    }
+
     // MARK: - Escaping
 
     func testTheCharactersThatBreakACommentAreEscaped() {

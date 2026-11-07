@@ -22,7 +22,9 @@ final class FinishedBookReaderTests: XCTestCase {
         case filePerChapter
         /// One file, one chapter: the file's natural end.
         case oneFile
-        /// One file with chapter marks, an m4b: the last chapter's clip end.
+        /// One file with chapter marks, an m4b: the file's natural end, since
+        /// the last chapter, unlike the others, has no clip end
+        /// (`testAChapteredBookEndsAtItsFilesEndNotBefore`).
         case chapterMarks
         /// A DAISY audiobook's clips: the last clip of the last chapter's
         /// chain.
@@ -76,6 +78,58 @@ final class FinishedBookReaderTests: XCTestCase {
             reader.close()
             assertSavedAtItsEnd(book, end: end, total: total, in: world, "\(layout): closed")
         }
+    }
+
+    /// A one-file audiobook with chapter marks plays its last chapter to the
+    /// file's own end, which ends the book, however far the chapters'
+    /// summed lengths fall short of the file
+    /// (`ReaderViewModel.AudioLayout.clipEnd(ofChapter:chapterUTF16Lengths:)`).
+    /// A chapter's length is its duration in whole tenths of a second, so
+    /// the ten chapters of 1.09 seconds here add up to 10 seconds in a file
+    /// of 10.9. The last chapter once stopped at that sum, a clip end 0.9
+    /// seconds before the file's end, and the book was told finished, and
+    /// counted, with its last seconds unplayed.
+    func testAChapteredBookEndsAtItsFilesEndNotBefore() throws {
+        let world = try makeIntegrationWorld("Finished End Chapter Drift")
+        let chapterSeconds = 1.09
+        let markers = (0..<10).map { index in
+            AudioTestFixtures.ChapterMarker(
+                title: "Reach \(index + 1)",
+                start: Double(index) * chapterSeconds,
+                duration: chapterSeconds
+            )
+        }
+        let fileSeconds = Double(markers.count) * chapterSeconds
+        let book = try makeChapteredAudioBook(
+            title: "Dredging Survey",
+            in: world,
+            duration: fileSeconds,
+            markers: markers,
+            savedPosition: ReadingPosition(chapterIndex: markers.count - 1, characterOffset: 0)
+        )
+        let reader = world.openReader(for: book, nowPlaying: privateMediaSession())
+        waitForReaderToLoad(reader)
+        XCTAssertEqual(reader.audioLayout, .chaptersInOneFile, "The book opened in another layout")
+        // Where the chapters' summed lengths end: 10 seconds, well short of
+        // the file's end, which the test needs.
+        let summedEnd = Double(try XCTUnwrap(reader.content?.totalCharacterCount)) / ReaderViewModel.audioCharsPerSecond
+        XCTAssertLessThanOrEqual(summedEnd, fileSeconds - 0.8, "The chapters' lengths do not fall short of the file")
+
+        let service = reader.audioPlaybackService
+        let reports = PlayerReportLog(observing: service)
+        // The log's hook holds the log unowned, so the hook goes first.
+        defer { service._reportHandledForTesting = nil }
+        let recorder = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(service.isPlaying, "The book did not play")
+            XCTAssertTrue(eventually(within: 10) { reader.lastAnnouncement != nil }, "The book never finished")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Finished: Dredging Survey"])
+        XCTAssertTrue(reader.hasFinishedBook, "The book does not rest finished")
+        XCTAssertFalse(reports.finishedAClipOnATick, "The last chapter stopped at a clip end, short of the file's end")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.endedPlay], "The file's own end did not end the book")
+        XCTAssertTrue(reports.handledTick(atOrAfter: summedEnd + 0.5), "The file's last seconds did not play")
     }
 
     // MARK: - What a Finished Book Says

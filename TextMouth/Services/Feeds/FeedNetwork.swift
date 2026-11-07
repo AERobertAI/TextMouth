@@ -296,7 +296,8 @@ extension FeedNetwork {
     /// Fetches the document at `url` with `feedSession`, sending the
     /// validators given, so an unchanged document comes back as
     /// `.notModified`. The body is read up to `limit` bytes; redirects are
-    /// followed to http and https addresses only.
+    /// followed to http and https addresses only. Cancelling the task that
+    /// awaits this stops the fetch, even before it begins.
     /// - Throws: `FeedFetchError`.
     func fetch(
         _ url: URL,
@@ -305,6 +306,16 @@ extension FeedNetwork {
         discretionary: Bool,
         limit: Int = FeedParser.maximumBytes
     ) async throws -> FeedFetchResult {
+        // A fetch whose task is cancelled already ends here as cancelled,
+        // before any URLSession task exists, as a download does
+        // (`download(_:resumingFrom:to:discretionary:handle:progress:)`):
+        // below, `onCancel` would run at once, cancelling the data task
+        // before it has its delegate, whose end could then reach no one,
+        // and the fetch, with the refresh awaiting it, would wait for good
+        // (board #4438).
+        if Task.isCancelled {
+            throw FeedFetchError.cancelled
+        }
         let host = FeedHost.of(url)
         guard FeedTransport.isWebAddress(url) else { throw FeedFetchError.notAWebAddress }
         guard reachability.isOnline() else { throw FeedFetchError.offline }
@@ -321,8 +332,11 @@ extension FeedNetwork {
         do {
             outcome = try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<FeedDataTaskOutcome, Error>) in
-                    task.delegate = FeedDataTaskDelegate(limit: limit, continuation: continuation)
-                    task.resume()
+                    let delegate = FeedDataTaskDelegate(limit: limit, continuation: continuation)
+                    task.delegate = delegate
+                    // Cancelled since the check above, the fetch ends here as
+                    // cancelled, its data task never resumed.
+                    task.resumeUnlessCancelled { delegate.finishCancelled() }
                 }
             } onCancel: {
                 task.cancel()
@@ -368,7 +382,8 @@ struct FeedDataTaskOutcome: Sendable {
 /// One data task's delegate: it collects the body up to a limit, follows
 /// redirects only to http and https addresses, notes each redirect's
 /// status, and resumes the fetch that waits for it once, when the task
-/// completes.
+/// completes, or as cancelled when the fetch was cancelled before the task
+/// could report to it (`finishCancelled()`), whichever comes first.
 ///
 /// Every stored property is a constant: what the task reports is kept in
 /// `state`, behind an unfair lock, since URLSession calls the delegate on a
@@ -383,15 +398,15 @@ private final class FeedDataTaskDelegate: NSObject, URLSessionDataDelegate {
 
     /// The most bytes of body read.
     private let limit: Int
-    /// The fetch waiting for the task.
-    private let continuation: CheckedContinuation<FeedDataTaskOutcome, Error>
+    /// The fetch waiting for the task, resumed once at most.
+    private let continuation: FeedOnceContinuation<FeedDataTaskOutcome>
     /// What the task has reported, guarded by its lock.
     private let state = OSAllocatedUnfairLock(initialState: State())
 
     /// A delegate reading at most `limit` bytes, resuming `continuation`.
     init(limit: Int, continuation: CheckedContinuation<FeedDataTaskOutcome, Error>) {
         self.limit = limit
-        self.continuation = continuation
+        self.continuation = FeedOnceContinuation(continuation)
     }
 
     /// Refuses a body declared larger than the limit before any of it comes.
@@ -454,6 +469,75 @@ private final class FeedDataTaskDelegate: NSObject, URLSessionDataDelegate {
                 data: finished.data,
                 redirects: finished.redirects
             ))
+        }
+    }
+
+    /// Ends the fetch as cancelled, unless the task's end has already ended
+    /// it: for a fetch cancelled before its URLSession task had this
+    /// delegate, whose end may then reach no one
+    /// (`URLSessionTask.resumeUnlessCancelled(otherwise:)`).
+    func finishCancelled() {
+        continuation.resume(throwing: FeedFetchError.cancelled)
+    }
+}
+
+// MARK: - Starting a Task Whose Awaiter May Be Cancelled (board #4438)
+
+/// The wait for a URLSession task, resumed once at most, by whichever
+/// resumes it first: the task's delegate, as the task ends, or the transfer
+/// awaiting it, ending itself as cancelled before the task could report to
+/// that delegate (`URLSessionTask.resumeUnlessCancelled(otherwise:)`). A
+/// `CheckedContinuation` resumed twice traps, so every later resume is
+/// dropped.
+final class FeedOnceContinuation<Value: Sendable>: Sendable {
+    /// The wait.
+    private let continuation: CheckedContinuation<Value, Error>
+    /// Whether the wait was resumed, guarded by its lock, since a task's
+    /// delegate hears it end on URLSession's queue.
+    private let isResumed = OSAllocatedUnfairLock(initialState: false)
+
+    /// The wait `continuation`, resumed once at most.
+    init(_ continuation: CheckedContinuation<Value, Error>) {
+        self.continuation = continuation
+    }
+
+    /// Resumes the wait returning `value`, unless it was resumed already.
+    func resume(returning value: Value) {
+        resume(with: .success(value))
+    }
+
+    /// Resumes the wait throwing `error`, unless it was resumed already.
+    func resume(throwing error: Error) {
+        resume(with: .failure(error))
+    }
+
+    /// Resumes the wait with `outcome`, unless it was resumed already.
+    private func resume(with outcome: Result<Value, Error>) {
+        let isFirst = isResumed.withLock { isResumed -> Bool in
+            defer { isResumed = true }
+            return !isResumed
+        }
+        if isFirst {
+            continuation.resume(with: outcome)
+        }
+    }
+}
+
+extension URLSessionTask {
+    /// Resumes this task, once it has its delegate, unless the Swift task
+    /// awaiting it was cancelled meanwhile. That task's cancellation handler
+    /// may then have cancelled this one before it had its delegate, and
+    /// URLSession can report such a task's end to no one, leaving the wait
+    /// for good. So this task is cancelled instead, never resumed, and
+    /// `endCancelled` ends the wait as cancelled in its delegate's place;
+    /// should its end reach its delegate too, the wait is resumed once
+    /// (`FeedOnceContinuation`).
+    func resumeUnlessCancelled(otherwise endCancelled: () -> Void) {
+        if Task.isCancelled {
+            cancel()
+            endCancelled()
+        } else {
+            resume()
         }
     }
 }

@@ -216,6 +216,7 @@ private struct TextExportOptionsHost<Writer: TextExportWriter>: View {
 /// picker's order. Adding a writer: write its file, and add one line here.
 enum TextExportWriters {
     /// Every writer, in the picker's order.
+    #if os(macOS)
     static let all: [any TextExportWriter] = [
         HTMLExportWriter(),
         RTFExportWriter(),
@@ -223,6 +224,15 @@ enum TextExportWriters {
         BRFExportWriter(),
         PEFExportWriter(),
     ]
+    #else
+    // The Word 97-2003 writer needs AppKit's .docFormat, so iOS never offers it.
+    static let all: [any TextExportWriter] = [
+        HTMLExportWriter(),
+        RTFExportWriter(),
+        BRFExportWriter(),
+        PEFExportWriter(),
+    ]
+    #endif
 
     /// The picker's tag for Markdown, the book's text written by
     /// `MarkdownExportWriter` (the picker's default and the export without a

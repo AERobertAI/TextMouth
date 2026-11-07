@@ -18,6 +18,12 @@ private func parsePlainText(text: String, title: String = "Untitled") -> Documen
     PlainTextParser.parse(text: text, title: title)
 }
 
+/// How many headings TestData/sample.md parses to: its seven ATX headings
+/// (lines 1, 5, 11, 25, 29, 33, and 37), the title's among them. The sample.md
+/// scenarios check it before looping over the headings, so a parser that
+/// dropped them fails instead of passing over an empty list.
+private let sampleMarkdownHeadingCount = 7
+
 @MainActor
 func runIntegrationTests() {
 
@@ -113,6 +119,7 @@ test("Markdown parse → headings are in document order with correct offsets") {
     let url = try requireFile("sample.md")
     let md = try String(contentsOf: url, encoding: .utf8)
     let content = try parseMarkdown(markdown: md, title: "Sample")
+    try assertEqual(content.allHeadings.count, sampleMarkdownHeadingCount, "sample.md should keep exactly its headings")
 
     // Headings should be in order of characterOffset within each chapter
     for chapter in content.chapters {
@@ -335,7 +342,7 @@ test("Audio book: time estimation uses duration and speed multiplier") {
 print("\n--- Integration: Substitution + Offset Mapping ---")
 
 test("Substitution: offset mapping preserves position tracking through multiple rules") {
-    // Simulate the full pipeline: text → substitutions → offset mapping → original position
+    // The full pipeline: text → substitutions → offset mapping → original position
     let originalText = "Dr. Smith went to St. Paul's for the e.g. meeting vs. the other one."
 
     let rules: [SubstitutionRule] = [
@@ -345,7 +352,10 @@ test("Substitution: offset mapping preserves position tracking through multiple 
         SubstitutionRule(name: "vs.", pattern: "\\bvs\\.", replacement: "versus", isRegex: true),
     ]
 
-    let transformed = applyRules(rules, to: originalText)
+    // The service's whole transformation: the spoken text and its offset map.
+    // (Scenarios run on the main actor, the service's, so it is called directly.)
+    let transformation = TextSubstitutionService(rules: rules).transform(originalText)
+    let transformed = transformation.modifiedText
 
     // Verify all substitutions happened
     try assertTrue(transformed.contains("Doctor"), "Should replace Dr. with Doctor")
@@ -354,6 +364,20 @@ test("Substitution: offset mapping preserves position tracking through multiple 
     try assertTrue(transformed.contains("versus"), "Should replace vs. with versus")
     try assertTrue(!transformed.contains("Dr."), "Dr. should be gone")
     try assertTrue(!transformed.contains("St."), "St. should be gone")
+
+    // Map a position back through the rules, as position tracking does: three
+    // longer replacements come before "meeting", so it starts later in the
+    // spoken text than in the book's, and the map must undo that shift.
+    // Offsets are UTF-16, as the app keeps them.
+    guard let spokenMeeting = transformed.range(of: "meeting"),
+          let bookMeeting = originalText.range(of: "meeting") else {
+        throw TestError.assertionFailed("\"meeting\" should be in the text before and after the substitutions")
+    }
+    let spokenOffset = transformed.utf16Offset(of: spokenMeeting.lowerBound)
+    let bookOffset = originalText.utf16Offset(of: bookMeeting.lowerBound)
+    try assertTrue(spokenOffset > bookOffset, "The longer replacements should move \"meeting\" later")
+    try assertEqual(transformation.offsetMap.toOriginal(spokenOffset), bookOffset,
+        "The offset map should take \"meeting\" back to where it starts in the original text")
 }
 
 test("Substitution: disabled rules are skipped in pipeline") {
@@ -605,23 +629,23 @@ test("EPUB parse → heading lookup finds correct heading for position") {
     let url = try requireFile("alice.epub")
     let content = try parseEPUB(url: url)
 
+    // A parser that lost the book's headings must fail here, not pass by skipping.
     let allHeadings = content.allHeadings
-    guard allHeadings.count >= 2 else {
-        print("    SKIP: not enough headings in test EPUB")
-        return
-    }
+    try assertGreater(allHeadings.count, 1, "alice.epub lost its headings")
 
-    // Simulate "where am I" — find heading for a given chapter+offset
-    let targetChapter = allHeadings[1].chapterIndex
-    let targetOffset = allHeadings[1].characterOffset + 10 // slightly past second heading
+    // Ask the app's own "where am I" lookup, which the headings panel, the
+    // reader header, and Where Am I share, about a position slightly past the
+    // second heading's start: still inside that heading's section, since the
+    // third heading starts later.
+    let secondHeading = allHeadings[1]
+    let currentHeading = ReaderViewModel.currentHeading(
+        in: allHeadings,
+        chapterIndex: secondHeading.chapterIndex,
+        characterOffset: secondHeading.characterOffset + 10
+    )
 
-    // Find the current heading (last heading at or before the offset in the same chapter)
-    let chapterHeadings = allHeadings.filter { $0.chapterIndex == targetChapter }
-    let currentHeading = chapterHeadings.last { $0.characterOffset <= targetOffset }
-
-    try assertTrue(currentHeading != nil, "Should find a heading")
-    try assertEqual(currentHeading!.text, allHeadings[1].text,
-        "Should be at the second heading")
+    // Compare IDs, not labels: an ID names one heading even where two share a label.
+    try assertEqual(currentHeading?.id, secondHeading.id, "Should be at the second heading")
 }
 
 test("Where Am I: percent complete matches global offset") {
@@ -685,7 +709,7 @@ test("Reading time remaining decreases as position advances") {
 // ---- Cross-Chapter Navigation + Bookmarks ----
 print("\n--- Integration: Cross-Chapter Navigation + Bookmarks ---")
 
-test("Bookmarks across chapters sort and navigate correctly") {
+test("Bookmarks across chapters are numbered in the order added") {
     var library = Library()
     let bookID = UUID()
     let book = Book(id: bookID, title: "Multi-Chapter", format: .txt,
@@ -697,17 +721,12 @@ test("Bookmarks across chapters sort and navigate correctly") {
     library.addBookmark(bookID: bookID, chapterIndex: 0, characterOffset: 50, label: "Early chapter")
     library.addBookmark(bookID: bookID, chapterIndex: 1, characterOffset: 200, label: "Middle chapter")
 
-    let bookmarks = library.books.first!.bookmarks
-
-    // Sort by chapter then offset (as a reader would navigate)
-    let sorted = bookmarks.sorted {
-        if $0.chapterIndex != $1.chapterIndex { return $0.chapterIndex < $1.chapterIndex }
-        return $0.characterOffset < $1.characterOffset
+    // A library that lost the book, or one of its bookmarks, fails here
+    // instead of stopping the test host at a subscript below.
+    guard let bookmarks = library.books.first?.bookmarks else {
+        throw TestError.assertionFailed("The library should keep the book it was given")
     }
-
-    try assertEqual(sorted[0].label, "Early chapter")
-    try assertEqual(sorted[1].label, "Middle chapter")
-    try assertEqual(sorted[2].label, "Late chapter")
+    try assertEqual(bookmarks.count, 3, "addBookmark should keep every bookmark added")
 
     // Verify numbering is based on insertion order, not chapter order
     try assertEqual(bookmarks[0].number, 1)
@@ -738,32 +757,6 @@ test("Navigation: chapter skip respects chapter boundaries") {
     // Backward skip from first chapter: stays at first
     prevChapter = max(0 - 1, 0)
     try assertEqual(prevChapter, 0, "Should clamp to first chapter")
-}
-
-
-// ---- Skipped Headings Filter ----
-print("\n--- Integration: Skipped Headings Filtering ---")
-
-test("Skipped headings: chapter text excludes skipped heading content") {
-    // Build a document with headings
-    let chapters = [
-        Chapter(title: "Chapter 1", text: "Introduction text here.\n\nSection A\nContent of section A.\n\nSection B\nContent of section B.",
-                headings: [
-                    Heading(level: 1, text: "Introduction", chapterIndex: 0, characterOffset: 0),
-                    Heading(level: 2, text: "Section A", chapterIndex: 0, characterOffset: 23),
-                    Heading(level: 2, text: "Section B", chapterIndex: 0, characterOffset: 56),
-                ])
-    ]
-    let content = DocumentContent(title: "Test", author: "Author", chapters: chapters)
-
-    // Simulate skipping "Section B"
-    let skippedIDs: Set<String> = ["0-56-2-Section B"]
-    let allHeadings = content.allHeadings
-
-    // Filter to non-skipped headings
-    let activeHeadings = allHeadings.filter { !skippedIDs.contains($0.id) }
-    try assertEqual(activeHeadings.count, 2, "Should have 2 active headings")
-    try assertTrue(activeHeadings.allSatisfy { $0.text != "Section B" }, "Section B should be excluded")
 }
 
 
@@ -827,38 +820,8 @@ test("Sleep timer: formatted output matches duration state") {
 }
 
 
-// ---- Reading Stats Session Tracking ----
-print("\n--- Integration: Reading Stats Session Tracking ---")
-
-test("Reading stats: session tracking accumulates per-book and daily time") {
-    // Simulate ReadingStatsService session logic without singletons
-    var stats = ReadingStats()
-    let bookID1 = UUID()
-    let bookID2 = UUID()
-
-    // Simulate a 5-minute session for book 1
-    let today = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
-    }()
-    let sessionDuration1: TimeInterval = 300.0
-    stats.dailyListeningSeconds[today, default: 0] += sessionDuration1
-    stats.totalListeningSeconds += sessionDuration1
-    stats.bookListeningSeconds[bookID1.uuidString, default: 0] += sessionDuration1
-
-    // Simulate a 10-minute session for book 2
-    let sessionDuration2: TimeInterval = 600.0
-    stats.dailyListeningSeconds[today, default: 0] += sessionDuration2
-    stats.totalListeningSeconds += sessionDuration2
-    stats.bookListeningSeconds[bookID2.uuidString, default: 0] += sessionDuration2
-
-    // Verify aggregation
-    try assertEqual(stats.totalListeningSeconds, 900.0)
-    try assertEqual(stats.dailyListeningSeconds[today], 900.0)
-    try assertEqual(stats.bookListeningSeconds[bookID1.uuidString], 300.0)
-    try assertEqual(stats.bookListeningSeconds[bookID2.uuidString], 600.0)
-}
+// ---- Reading Stats: Finished Books ----
+print("\n--- Integration: Reading Stats Finished Books ---")
 
 test("Reading stats: finished books tracked with metadata") {
     var stats = ReadingStats()
@@ -937,6 +900,7 @@ test("Full pipeline: Markdown → parse → heading hierarchy → global offsets
 
     // Verify headings are accessible globally
     let globalHeadings = content.allHeadings
+    try assertEqual(globalHeadings.count, sampleMarkdownHeadingCount, "sample.md should keep exactly its headings")
     for heading in globalHeadings {
         // Each heading's global offset should be within document bounds
         let globalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)

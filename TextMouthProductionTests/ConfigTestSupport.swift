@@ -27,6 +27,7 @@ extension ConfigService.AppConfig {
         config.sleepFadeOutDuration = 6
         config.sleepTimerAutoClose = false
         config.endOfBookBehavior = EndOfBookBehavior.continueNext.rawValue
+        config.nextBookWindow = NextBookWindow.newWindow.rawValue
         config.punctuationPauseLevel = 2
         config.lastOpenedBookID = "8E4C2D71-5B0A-4F6B-9C3E-2A7D1F9B6E05"
         config.autoPlayOnNavigate = true
@@ -87,8 +88,37 @@ extension ConfigService.AppConfig {
         config.logLocation = LogLocation.machine.rawValue
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true
+        config.libraryViews = customizedLibraryViews
         config.brailleTable = "en-us-g1.ctb"
+        // The braille file characters (braillecodes), unlike the default,
+        // North American Braille ASCII.
+        config.brailleFileCode = "ascii-eurobraille"
         return config
+    }
+
+    /// The Library window's views (October 30, 2026) unlike the shipped
+    /// ones: Feeds hidden, and a view of the listener's own after the rest,
+    /// its identity fixed, so every use of the fixture holds the same list.
+    static var customizedLibraryViews: [JSONValue] {
+        var list = LibraryViewDefinitionList.shipped
+        list.setVisibility(.hidden, of: .feeds)
+        let id = UUID(uuid: (0x6F, 0x96, 0x19, 0xFF, 0x8B, 0x86, 0xD0, 0x11, 0xB4, 0x2D, 0x00, 0xC0, 0x4F, 0xC9, 0x64, 0xFF))
+        list.add(
+            LibraryViewDefinition(
+                id: .custom(id),
+                name: "Unread EPUBs",
+                visibility: .always,
+                filter: LibraryViewFilter(
+                    lists: [.books],
+                    conditions: [
+                        LibraryViewCondition(test: .format(.epub)),
+                        LibraryViewCondition(test: .readingState(.unopened)),
+                    ]
+                )
+            ),
+            after: nil
+        )
+        return list.fileEntries
     }
 }
 
@@ -140,18 +170,6 @@ extension XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
         return directory.appendingPathComponent("config.json")
-    }
-
-    /// Lets a save that `ConfigService.scheduleSave()` left waiting happen
-    /// (PERF17), as it does a moment after a settings change: the main run
-    /// loop turns for twice the default save delay, which is all the test
-    /// waits for, since nothing is expected meanwhile.
-    func waitPastConfigSaveDelay() {
-        let quiet = expectation(description: "nothing is expected while a config.json save waits")
-        quiet.isInverted = true
-        let delay = ConfigService.defaultSaveDelay.components
-        let seconds = Double(delay.seconds) + Double(delay.attoseconds) / 1e18
-        wait(for: [quiet], timeout: seconds * 2)
     }
 
     /// The debug log's lines that contain `text`, waiting first for every

@@ -73,7 +73,10 @@ enum XMLEscaping {
                 continue
             }
             if let replacement = replacements[scalar] {
-                result.append(contentsOf: replacement.unicodeScalars)
+                // One scalar at a time: `append(contentsOf:)` on a scalar view
+                // copies the whole result for each call, so a text of many
+                // ampersands took time that grew with the square of its length.
+                for part in replacement.unicodeScalars { result.append(part) }
             } else {
                 result.append(scalar)
             }

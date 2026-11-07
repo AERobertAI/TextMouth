@@ -58,6 +58,13 @@ extension LibraryViewModel {
         defer { skips.log() }
         var needsSave = false
 
+        // Whether the library began the repair with nothing in it, as when
+        // library.json was missing or held an empty library: no book of its
+        // own, no folder, and no row kept unshown (V03). Read before any
+        // repair below changes the library: it decides which folders the
+        // folder rows' adoption counts.
+        let beganEmpty = library.libraryBookCount == 0 && library.folders.isEmpty && library.unreadableRows.isEmpty
+
         // A feed item's row meets none of the repairs below, which reconcile
         // the library's own books with the Library folder: its package is in
         // its feed's folder (FR11). Every feed item's row waits on the shelf
@@ -99,9 +106,14 @@ extension LibraryViewModel {
         if relocated > 0 { needsSave = true }
 
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
-        // This recovers books left behind by interrupted imports or crashes.
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
+        // This recovers books left behind by interrupted imports or crashes,
+        // and discards the duplicates' copies whose questions went unanswered.
+        let adopted = adoptOrphanedPackages(access: access, skips: skips)
         if adopted > 0 { needsSave = true }
+
+        // Every folder a book lies in gets a row, and, in a library that
+        // began with nothing, every folder on disk too (`adoptFolderRows`).
+        if adoptFolderRows(includingFoldersOnDisk: beganEmpty) { needsSave = true }
 
         // The feed items whose files are here join the books, before anything
         // can edit the reading list or open a reader (FR11).
@@ -349,8 +361,8 @@ extension LibraryViewModel {
     /// with the reason. A migration with nothing to report shows nothing.
     private func showLegacyMigrationIssues(_ report: LegacyMigrationReport) {
         guard let summary = report.userSummary else { return }
-        errorMessage = summary
-        showError = true
+        // After the adoption's alert, if it raised one: both are heard.
+        presentLaunchNotice(titled: nil, summary)
     }
 
     /// Merges folder rows that older versions let share one directory
@@ -386,6 +398,43 @@ extension LibraryViewModel {
     /// and the console.
     private func logFolderRepair(_ message: String) {
         DiagnosticLog.event(.storage, "FOLDER_REPAIR: \(message)")
+    }
+
+    /// Gives a row to every folder a book lies in, with its ancestors, and,
+    /// when `includingFoldersOnDisk`, to every folder directory in the
+    /// Library folder as well (`FileImportService.adoptLibraryFolders`), then
+    /// logs how many rows that added and why. Returns whether it added any.
+    ///
+    /// The startup repair counts the folders on disk only for a library that
+    /// began with nothing, its library.json missing or empty, as recovery's
+    /// provisional library does: the books just adopted from their packages
+    /// keep the folders they lie in, which would otherwise show in All Items
+    /// and never in the Folders view, and the empty folders would be lost for
+    /// good once the index is saved. Any other library's index records the
+    /// user's folders, so only the folders its books name are added, and a
+    /// directory with no row, such as one a deleted folder left behind,
+    /// stays out.
+    ///
+    /// It runs at every launch, since a race can leave a book in a folder
+    /// with no row: an import into a folder renamed or deleted while the
+    /// import ran, or a move into such a folder, which is not refused. This
+    /// repair is what mends such a book.
+    private func adoptFolderRows(includingFoldersOnDisk: Bool) -> Bool {
+        // A copy, so a launch that adds no row leaves the library, and the
+        // lists derived from it, untouched.
+        var repaired = library
+        let added = FileImportService.adoptLibraryFolders(
+            library: &repaired,
+            includingFoldersOnDisk: includingFoldersOnDisk
+        )
+        guard added > 0 else { return false }
+        library = repaired
+        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows")
+        let source = includingFoldersOnDisk
+            ? "the folders on disk and the folders books are in, since the library began with no books or folders"
+            : "folders books are in that had none"
+        logFolderRepair("added \(rows) for \(source)")
+        return true
     }
 
     /// Copies the data directory a sandboxed release of TextMouth left in its
@@ -1672,6 +1721,18 @@ extension LibraryViewModel {
         }
     }
 
+    /// Waits until the listening statistics' saves queued so far are
+    /// written, as an operation holding the storage work does before it
+    /// changes anything (`withStorageWorkHeld`), so a move's copy holds
+    /// them, and no save is still writing its temporary file beside
+    /// reading_stats.json while the copy lists the data directory. In the
+    /// app it waits for the statistics service's save queue
+    /// (`ReadingStatsService.waitForQueuedSaves()`); a test binds a queue of
+    /// its own, holding a save the move must wait for.
+    @TaskLocal static var waitForQueuedStatisticsSaves: @Sendable () -> Void = {
+        ReadingStatsService.waitForQueuedSaves()
+    }
+
     /// Runs a data-directory operation with no other storage work under way
     /// (TODO S04): first, when `move` asks for one, the move of the data
     /// directory, then `body`, and returns what `body` returns.
@@ -1685,8 +1746,12 @@ extension LibraryViewModel {
     /// move's progress and `waiting` each kind it waits for, an import
     /// first, and `waiting` nil once it waits for nothing more. The writes
     /// still queued are then made, in the data directory about to be
-    /// copied, so the copy holds them and none is written after the
-    /// publication. The move copies and publishes off the main actor
+    /// copied: the library's and its books' records, config.json, the
+    /// listening statistics (`waitForQueuedStatisticsSaves`), and the logs.
+    /// So the copy holds them, none is written after the publication, and
+    /// none is still writing its temporary file as the copy lists the data
+    /// directory, which would vanish before the copy reached it and fail
+    /// the move. The move copies and publishes off the main actor
     /// (`copyAndPublish`). The held work goes on once `body` returns or
     /// throws, under whichever generation is current then.
     ///
@@ -1730,6 +1795,7 @@ extension LibraryViewModel {
         }
         LibraryPersistenceService.flushPendingSave()
         configService.flushScheduledSave()
+        Self.waitForQueuedStatisticsSaves()
         TextMouthPaths.flushLogs()
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)
@@ -1803,11 +1869,15 @@ extension LibraryViewModel {
     /// was copied, which nothing should do; then the library as it is now,
     /// with its books' paths moved into the new data directory as the
     /// copy's were, so no change is lost, and a log line saying so.
-    private static func library(afterMoving migrated: Library, from snapshot: Library, current: Library) -> Library {
-        let unchanged = current.books == snapshot.books
-            && current.folders == snapshot.folders
-            && current.folderSortSettings == snapshot.folderSortSettings
-        guard !unchanged else { return migrated }
+    ///
+    /// Internal rather than private only so that tests can call it.
+    static func library(afterMoving migrated: Library, from snapshot: Library, current: Library) -> Library {
+        // `migrated` holds every part of the library as `snapshot` had it,
+        // only its books' and feed rows' paths moved, so it stands in only
+        // for a library unchanged in every stored field (`Library`'s
+        // synthesized `==`): a book added to the reading list meanwhile, or
+        // a feed's rows changed, is kept below, as a changed book is.
+        guard current != snapshot else { return migrated }
         var kept = current
         let moved = StorageBoundary.shared.rebaseToCurrent(&kept)
         // The feed shelf's rows move with the books' (FR11).
@@ -1974,6 +2044,11 @@ extension LibraryViewModel {
             return .failure(message.joined(separator: " "))
         }
 
+        // A fetch of the old library's files is dropped first: its passes
+        // would otherwise check the old folder against the new library's
+        // expectations, while TextMouth waits to open again.
+        let droppedFetch = cancelLibraryFetch()
+        librarySwitchPending = true
         TextMouthPaths.setCustomRoot(
             TextMouthPaths.isDefaultLocation(folder) ? nil : folder,
             in: dataDirectoryEnvironment.preferences
@@ -1986,6 +2061,10 @@ extension LibraryViewModel {
             try await relauncher.openNewInstance()
         } catch {
             DiagnosticLog.event(.storage, "DATA_DIRECTORY_SWITCH: TextMouth couldn't open again: \(error.localizedDescription)")
+            librarySwitchPending = false
+            if droppedFetch {
+                recheckAfterDroppedLibraryFetch()
+            }
             return .failure(
                 "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again "
                     + "by itself: \(error.localizedDescription) Quit TextMouth and open it again."
@@ -2416,6 +2495,7 @@ struct TextMouthRelauncher {
                 quit: {}
             )
         }
+        #if os(macOS)
         return TextMouthRelauncher(
             openNewInstance: {
                 let configuration = NSWorkspace.OpenConfiguration()
@@ -2433,5 +2513,14 @@ struct TextMouthRelauncher {
             },
             quit: { NSApplication.shared.terminate(nil) }
         )
+        #else
+        // iOS cannot open a second instance of the app, nor quit this one
+        // (phase 0): opening throws, so Use This Library reports it, and
+        // quitting does nothing, so this instance carries on.
+        return TextMouthRelauncher(
+            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") },
+            quit: {}
+        )
+        #endif
     }
 }

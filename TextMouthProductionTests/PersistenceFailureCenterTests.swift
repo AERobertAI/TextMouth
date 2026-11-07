@@ -331,6 +331,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
     /// app; when it exposes none here, the test is skipped, and the labels
     /// are still covered by the wording tests.
     func testTheBannersButtonsNameTheirSubsystem() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused()) { _ in }
         center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
         recordingAnnouncements { center.publish() }

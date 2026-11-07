@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-changes-in-footnote.doc
+macOS: 26.3
+format: doc
+title: slezkinepusty
+author: Grzegorz Kulesza
+chapters: 1
+words: 42
+text length: 277
+text checksum: 876db15edf8ad3bc
+first 300: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam consectetur ut dolor ut accumsan. Nullam rutrum lectus eget est maximus.\n\nLorem ipsum , consectetur adipiscing elit. Pellentesque elit newly added text here tortor, auctor eu viverra sit amet, iaculis et leo. Duis.
+last 300: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam consectetur ut dolor ut accumsan. Nullam rutrum lectus eget est maximus.\n\nLorem ipsum , consectetur adipiscing elit. Pellentesque elit newly added text here tortor, auctor eu viverra sit amet, iaculis et leo. Duis.
+page: 1 | 0:0 | Lorem ipsum dolor sit am

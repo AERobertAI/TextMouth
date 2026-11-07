@@ -531,13 +531,16 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
         try book.saveBookInfoThrowing()
         XCTAssertEqual(try revision(of: book), 1)
-        try book.saveBookInfoThrowing(contentIndex: Self.index(of: "one two"))
+        // One index, made once: an index made again a moment later can carry
+        // the next second as its date, and then is not the one saved.
+        let index = Self.index(of: "one two")
+        try book.saveBookInfoThrowing(contentIndex: index)
         XCTAssertEqual(try revision(of: book), 2)
         try book.saveBookInfoThrowing()
         XCTAssertEqual(try revision(of: book), 3)
         XCTAssertEqual(
             try BookInfo.load(from: book.tmbDirectory).contentIndex,
-            Self.index(of: "one two"),
+            index,
             "a save without an index keeps the stored one"
         )
     }
@@ -849,6 +852,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)"),
             brailleTable: "table-\(seed).ctb",
             brailleTableVersion: "liblouis-\(seed)",
+            brailleFileCode: "code-\(seed)",
             textEncoding: "encoding-\(seed)",
             // Two values only, so books of two seeds differ when one is odd and one even.
             textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen

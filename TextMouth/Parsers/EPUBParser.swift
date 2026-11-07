@@ -131,50 +131,50 @@ enum EPUBParser {
     }
 
     private static func parseMetadata(_ xml: String) throws -> EPUBMetadata {
-        let doc = try XMLDocument(xmlString: xml)
+        try readingXML(xml) { doc in
+            let title = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first?.stringValue ?? ""
+            let author = authorName(in: doc) ?? ""
+            let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
+            let date = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first?.stringValue ?? ""
+            let language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
 
-        let title = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first?.stringValue ?? ""
-        let author = authorName(in: doc) ?? ""
-        let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
-        let date = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first?.stringValue ?? ""
-        let language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
-
-        // Extract identifier (often ISBN)
-        let identifiers = (try? doc.nodes(forXPath: "//*[local-name()='identifier']")) ?? []
-        var isbn = ""
-        var mainIdentifier = ""
-        for node in identifiers {
-            let val = node.stringValue ?? ""
-            mainIdentifier = val
-            // Check for ISBN pattern or opf:scheme="ISBN"
-            if let elem = node as? XMLElement {
-                let scheme = elem.attribute(forName: "scheme")?.stringValue ?? ""
-                let opfScheme = elem.attribute(forName: "opf:scheme")?.stringValue ?? ""
-                if scheme.uppercased().contains("ISBN") || opfScheme.uppercased().contains("ISBN") {
+            // Extract identifier (often ISBN)
+            let identifiers = (try? doc.nodes(forXPath: "//*[local-name()='identifier']")) ?? []
+            var isbn = ""
+            var mainIdentifier = ""
+            for node in identifiers {
+                let val = node.stringValue ?? ""
+                mainIdentifier = val
+                // Check for ISBN pattern or opf:scheme="ISBN"
+                if let elem = node as? XMLElement {
+                    let scheme = elem.attribute(forName: "scheme")?.stringValue ?? ""
+                    let opfScheme = elem.attribute(forName: "opf:scheme")?.stringValue ?? ""
+                    if scheme.uppercased().contains("ISBN") || opfScheme.uppercased().contains("ISBN") {
+                        isbn = val
+                    }
+                }
+                // Heuristic: if it looks like an ISBN
+                let stripped = val.replacingOccurrences(of: "-", with: "")
+                if stripped.count == 10 || stripped.count == 13, stripped.allSatisfy({ $0.isNumber || $0 == "X" }) {
                     isbn = val
                 }
             }
-            // Heuristic: if it looks like an ISBN
-            let stripped = val.replacingOccurrences(of: "-", with: "")
-            if stripped.count == 10 || stripped.count == 13, stripped.allSatisfy({ $0.isNumber || $0 == "X" }) {
-                isbn = val
-            }
+
+            // EPUB version from package element
+            let packageNodes = try doc.nodes(forXPath: "//*[local-name()='package']")
+            let version = (packageNodes.first as? XMLElement)?.attribute(forName: "version")?.stringValue ?? ""
+
+            return EPUBMetadata(
+                title: title,
+                author: author,
+                publisher: publisher,
+                publicationDate: date,
+                isbn: isbn,
+                language: language,
+                identifier: mainIdentifier,
+                epubVersion: version
+            )
         }
-
-        // EPUB version from package element
-        let packageNodes = try doc.nodes(forXPath: "//*[local-name()='package']")
-        let version = (packageNodes.first as? XMLElement)?.attribute(forName: "version")?.stringValue ?? ""
-
-        return EPUBMetadata(
-            title: title,
-            author: author,
-            publisher: publisher,
-            publicationDate: date,
-            isbn: isbn,
-            language: language,
-            identifier: mainIdentifier,
-            epubVersion: version
-        )
     }
 
     /// Write updated metadata back to the EPUB file in place.
@@ -191,12 +191,9 @@ enum EPUBParser {
         to url: URL,
         replacingWith replacement: ((URL, URL) throws -> Void)? = nil
     ) throws -> String {
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
-        }
+        // A file that is not there is said to be missing, not to be a damaged
+        // archive, as reading the metadata says it.
+        let archive = try openArchive(at: url)
 
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
         let opfPath = try parseContainerForOPFPath(containerXML)
@@ -261,45 +258,53 @@ enum EPUBParser {
     }
 
     private static func updateOPFMetadata(opfXML: String, metadata: EPUBMetadata) throws -> String {
-        let doc = try XMLDocument(xmlString: opfXML)
+#if os(macOS)
+        try readingXML(opfXML) { doc in
+            // Update title
+            if let titleNode = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first {
+                titleNode.stringValue = metadata.title
+            }
 
-        // Update title
-        if let titleNode = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first {
-            titleNode.stringValue = metadata.title
+            // The author goes into the creator that names the author, or else
+            // into the first creator, which named no one. A package without any
+            // creator gets one, unless the author is the placeholder, which
+            // names no one and is not worth an element.
+            if let creator = creatorElement(in: doc) ?? elements(in: doc, matching: creatorPath).first {
+                creator.stringValue = metadata.author
+            } else if !Book.isUnknownAuthor(metadata.author), let metadataNode = metadataElement(in: doc) {
+                let creator = XMLElement(name: "dc:creator")
+                creator.stringValue = metadata.author
+                metadataNode.addChild(creator)
+            }
+
+            // Update publisher
+            if let pubNode = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first {
+                pubNode.stringValue = metadata.publisher
+            } else if !metadata.publisher.isEmpty, let metadataNode = metadataElement(in: doc) {
+                // Add publisher if it doesn't exist
+                let pubElem = XMLElement(name: "dc:publisher")
+                pubElem.stringValue = metadata.publisher
+                metadataNode.addChild(pubElem)
+            }
+
+            // Update date
+            if let dateNode = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first {
+                dateNode.stringValue = metadata.publicationDate
+            } else if !metadata.publicationDate.isEmpty, let metadataNode = metadataElement(in: doc) {
+                let dateElem = XMLElement(name: "dc:date")
+                dateElem.stringValue = metadata.publicationDate
+                metadataNode.addChild(dateElem)
+            }
+
+            return doc.xmlString(options: [.nodePrettyPrint])
         }
-
-        // The author goes into the creator that names the author, or else
-        // into the first creator, which named no one. A package without any
-        // creator gets one, unless the author is the placeholder, which
-        // names no one and is not worth an element.
-        if let creator = creatorElement(in: doc) ?? elements(in: doc, matching: creatorPath).first {
-            creator.stringValue = metadata.author
-        } else if !Book.isUnknownAuthor(metadata.author), let metadataNode = metadataElement(in: doc) {
-            let creator = XMLElement(name: "dc:creator")
-            creator.stringValue = metadata.author
-            metadataNode.addChild(creator)
-        }
-
-        // Update publisher
-        if let pubNode = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first {
-            pubNode.stringValue = metadata.publisher
-        } else if !metadata.publisher.isEmpty, let metadataNode = metadataElement(in: doc) {
-            // Add publisher if it doesn't exist
-            let pubElem = XMLElement(name: "dc:publisher")
-            pubElem.stringValue = metadata.publisher
-            metadataNode.addChild(pubElem)
-        }
-
-        // Update date
-        if let dateNode = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first {
-            dateNode.stringValue = metadata.publicationDate
-        } else if !metadata.publicationDate.isEmpty, let metadataNode = metadataElement(in: doc) {
-            let dateElem = XMLElement(name: "dc:date")
-            dateElem.stringValue = metadata.publicationDate
-            metadataNode.addChild(dateElem)
-        }
-
-        return doc.xmlString(options: [.nodePrettyPrint])
+#else
+        // Phase 0 of the iOS port: the portable XML tree (PortableXML.swift) only reads. It
+        // cannot change a package document and write it back as Foundation's tree does, and
+        // nothing less faithful should rewrite a book's own file, so iOS does not save a
+        // book's details into its EPUB yet.
+        throw IOSUnavailable.feature("Saving a book's details into its EPUB file")
+#endif
     }
 
     // MARK: - The Author a Package Names
@@ -397,17 +402,66 @@ enum EPUBParser {
         ((try? doc.nodes(forXPath: path)) ?? []).compactMap { $0 as? XMLElement }
     }
 
+    // MARK: - Reading XML
+
+    /// Read `xml`, one of the book's XML files (its container, package
+    /// document, or NCX), as an XML document, and return what `body` makes
+    /// of it. Every XML file of an EPUB is read here.
+    ///
+    /// External entities are never loaded (U01). By default XMLDocument
+    /// loads every entity a `SYSTEM "file:///…"` declaration names on this
+    /// Mac, so a crafted EPUB could put a local file's text into its title,
+    /// author, or headings, from there into the library, and on Edit
+    /// Metadata into the EPUB itself. Such an entity reads as nothing, as
+    /// in the app's other XML readers (the feed and OPML readers).
+    ///
+    /// The document lasts only while `body` runs: then its tree is taken
+    /// apart (`takeApart(_:)`), so `body` finishes all its work with the
+    /// document, a write of it back into the book included, and returns
+    /// none of its nodes.
+    /// - Throws: XMLDocument's error when `xml` is not well-formed, or what
+    ///   `body` throws.
+    static func readingXML<Result>(_ xml: String, _ body: (XMLDocument) throws -> Result) throws -> Result {
+        let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
+        defer { takeApart(document) }
+        return try body(document)
+    }
+
+    /// Take `document`'s tree apart, deepest nodes first, so that releasing
+    /// it never recurses. Foundation releases a tree one nested call per
+    /// level, about 280 bytes of stack each: an XML file nested 2,000 levels
+    /// deep, which XMLDocument reads without complaint, overflowed the
+    /// 512 KiB stack of the worker thread an import runs on when it was
+    /// released, ending TextMouth.
+    ///
+    /// Every node is gathered with an explicit stack, parents before their
+    /// children; in the reverse of that order each element comes after all
+    /// of its descendants, so emptying the elements in that order leaves
+    /// none holding another by the time the nodes are released.
+    private static func takeApart(_ document: XMLDocument) {
+        var nodes: [XMLNode] = []
+        var stack: [XMLNode] = [document]
+        while let node = stack.popLast() {
+            nodes.append(node)
+            stack += node.children ?? []
+        }
+        for node in nodes.reversed() {
+            (node as? XMLElement)?.setChildren(nil)
+        }
+    }
+
     // MARK: - Container Parsing (shared with MarkdownCacheService)
 
     static func parseContainerForOPFPath(_ xml: String) throws -> String {
-        let doc = try XMLDocument(xmlString: xml)
-        let rootfiles = try doc.nodes(forXPath: "//*[local-name()='rootfile']")
-        guard let rootfile = rootfiles.first,
-              let element = rootfile as? XMLElement,
-              let fullPath = element.attribute(forName: "full-path")?.stringValue else {
-            throw EPUBParserError.missingOPF
+        try readingXML(xml) { doc in
+            let rootfiles = try doc.nodes(forXPath: "//*[local-name()='rootfile']")
+            guard let rootfile = rootfiles.first,
+                  let element = rootfile as? XMLElement,
+                  let fullPath = element.attribute(forName: "full-path")?.stringValue else {
+                throw EPUBParserError.missingOPF
+            }
+            return fullPath
         }
-        return fullPath
     }
 
     // MARK: - OPF Parsing (shared with MarkdownCacheService)
@@ -428,57 +482,57 @@ enum EPUBParser {
     }
 
     static func parseOPF(_ xml: String) throws -> OPFData {
-        let doc = try XMLDocument(xmlString: xml)
+        try readingXML(xml) { doc in
+            // Metadata
+            let titles = try doc.nodes(forXPath: "//*[local-name()='title']")
+            let title = titles.first?.stringValue ?? "Untitled"
 
-        // Metadata
-        let titles = try doc.nodes(forXPath: "//*[local-name()='title']")
-        let title = titles.first?.stringValue ?? "Untitled"
+            let author = authorName(in: doc) ?? Book.unknownAuthor
 
-        let author = authorName(in: doc) ?? Book.unknownAuthor
-
-        // Manifest
-        let manifestNodes = try doc.nodes(forXPath: "//*[local-name()='item']")
-        var manifest: [String: ManifestItem] = [:]
-        for node in manifestNodes {
-            guard let element = node as? XMLElement,
-                  let id = element.attribute(forName: "id")?.stringValue,
-                  let href = element.attribute(forName: "href")?.stringValue,
-                  let mediaType = element.attribute(forName: "media-type")?.stringValue else {
-                continue
+            // Manifest
+            let manifestNodes = try doc.nodes(forXPath: "//*[local-name()='item']")
+            var manifest: [String: ManifestItem] = [:]
+            for node in manifestNodes {
+                guard let element = node as? XMLElement,
+                      let id = element.attribute(forName: "id")?.stringValue,
+                      let href = element.attribute(forName: "href")?.stringValue,
+                      let mediaType = element.attribute(forName: "media-type")?.stringValue else {
+                    continue
+                }
+                manifest[id] = ManifestItem(
+                    href: href, mediaType: mediaType,
+                    properties: element.attribute(forName: "properties")?.stringValue ?? ""
+                )
             }
-            manifest[id] = ManifestItem(
-                href: href, mediaType: mediaType,
-                properties: element.attribute(forName: "properties")?.stringValue ?? ""
+
+            // Spine
+            let spineNodes = try doc.nodes(forXPath: "//*[local-name()='itemref']")
+            let spineItemRefs = spineNodes.compactMap { node -> String? in
+                (node as? XMLElement)?.attribute(forName: "idref")?.stringValue
+            }
+
+            guard !spineItemRefs.isEmpty else {
+                throw EPUBParserError.missingSpine
+            }
+
+            // Preserve the declared NCX and legacy visible-TOC references rather
+            // than choosing navigation files by dictionary iteration order.
+            let spine = (try doc.nodes(forXPath: "//*[local-name()='spine']")).first as? XMLElement
+            let guideReferences = try doc.nodes(forXPath: "//*[local-name()='guide']/*[local-name()='reference']")
+            let guideTOCHrefs = guideReferences.compactMap { node -> String? in
+                guard let element = node as? XMLElement,
+                      element.attribute(forName: "type")?.stringValue == "toc" else { return nil }
+                return element.attribute(forName: "href")?.stringValue
+            }
+            return OPFData(
+                title: title,
+                author: author,
+                manifest: manifest,
+                spineItemRefs: spineItemRefs,
+                spineTOCID: spine?.attribute(forName: "toc")?.stringValue,
+                guideTOCHrefs: guideTOCHrefs
             )
         }
-
-        // Spine
-        let spineNodes = try doc.nodes(forXPath: "//*[local-name()='itemref']")
-        let spineItemRefs = spineNodes.compactMap { node -> String? in
-            (node as? XMLElement)?.attribute(forName: "idref")?.stringValue
-        }
-
-        guard !spineItemRefs.isEmpty else {
-            throw EPUBParserError.missingSpine
-        }
-
-        // Preserve the declared NCX and legacy visible-TOC references rather
-        // than choosing navigation files by dictionary iteration order.
-        let spine = (try doc.nodes(forXPath: "//*[local-name()='spine']")).first as? XMLElement
-        let guideReferences = try doc.nodes(forXPath: "//*[local-name()='guide']/*[local-name()='reference']")
-        let guideTOCHrefs = guideReferences.compactMap { node -> String? in
-            guard let element = node as? XMLElement,
-                  element.attribute(forName: "type")?.stringValue == "toc" else { return nil }
-            return element.attribute(forName: "href")?.stringValue
-        }
-        return OPFData(
-            title: title,
-            author: author,
-            manifest: manifest,
-            spineItemRefs: spineItemRefs,
-            spineTOCID: spine?.attribute(forName: "toc")?.stringValue,
-            guideTOCHrefs: guideTOCHrefs
-        )
     }
 
     // MARK: - Chapter HTML Parsing

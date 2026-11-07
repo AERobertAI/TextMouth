@@ -44,6 +44,11 @@ final class TextPipelineGoldenTests: XCTestCase {
     /// that only some checkouts hold, at 6cef1d0 with them present. The
     /// books that gained pages (PG05 to PG08) were recorded again with their
     /// pages; the two audio books last, in a checkout that holds them.
+    ///
+    /// test_book.docx was recorded again when the DOCX reader's emphasis went
+    /// through MarkdownEmphasis (its struck sentence is plain text now, and the
+    /// quotation marks around two italic phrases stand outside the marks:
+    /// the reading text did not change).
     private static let recordedCaches: [String: String] = [
         "alice.docx": "1a06c9f538a8d627",
         "alice.epub": "7693c954870e8e27",
@@ -62,7 +67,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k-plain.html": "f96a6fae58fbd3bf",
         "synthetic-256k.md": "c16d170995d4e3ea",
         "synthetic-256k.txt": "806aeb6f5aae9ae1",
-        "test_book.docx": "e0bf2ec6c616ae28",
+        "test_book.docx": "8e775b2745f139cb",
         "wipo-treaty-d202-text-only.zip": "ed5780d1c2b47e85",
     ]
 
@@ -103,7 +108,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "fire-safety-d202-audio.zip": "38d5759450e06358",
         "lathe_of_heaven_daisy.zip": "c64cfa237817b844",
         "navigation.epub": "7fb5af1466eab9ab",
-        "test_book.docx": "03acb604568b522c",
+        "test_book.docx": "6527183089c8c32c",
         "wipo-treaty-d202-text-only.zip": "8dda044877b014a8",
     ]
 

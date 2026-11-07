@@ -143,9 +143,11 @@ extension FeedFetchError {
 /// its text, or from its web page when the feed gives only a summary.
 ///
 /// A failure is kept with its item, with its reason, until it is tried
-/// again; cancelling forgets the download and any part of it. An item asked
-/// for while it waits or downloads is not asked for twice, and opening an
-/// item downloads it first and opens its book once it is in the library.
+/// again; cancelling forgets the download and any part of it, unless its
+/// book is already being added to the library, which finishes. An item asked
+/// for while it waits or downloads is not asked for twice, unless its
+/// download is stopping, when it is asked for afresh; and opening an item
+/// downloads it first and opens its book once it is in the library.
 ///
 /// Quitting stops every download keeping its place (`stopForQuit()`, which
 /// `FeedQuitHold` holds the quit for): the one under way keeps what it
@@ -263,8 +265,10 @@ final class FeedDownloadManager {
     /// is in the library, opens at once when asked. Asking again for an item
     /// that waits or downloads only adds what the new request adds, and the
     /// request keeps its place in the queue unless the new ask opens it or
-    /// starts it next; asking for one a network with data limits put off
-    /// takes the place of that request. Nothing is asked for while
+    /// starts it next; asking again for one whose download is stopping,
+    /// cancelled but not yet ended, asks for it afresh, as for an item not
+    /// under way; asking for one a network with data limits put off takes
+    /// the place of that request. Nothing is asked for while
     /// TextMouth quits, nor of a feed being deleted (FR14).
     func download(
         _ itemID: FeedItem.ID,
@@ -284,7 +288,13 @@ final class FeedDownloadManager {
             }
             return
         }
-        if var running = current, running.feedID == feedID, running.itemID == itemID {
+        // Asked for again while it runs, the download under way takes what
+        // the new ask adds; but not one stopping, its task cancelled (by
+        // Cancel Download or the feed downloads section's Cancel) and not yet
+        // ended, which would lose the new ask as it ends: that ask is queued
+        // afresh below, as for an item not under way, and the stopped
+        // download, ending, leaves the item to it (`run(_:)`).
+        if var running = current, running.feedID == feedID, running.itemID == itemID, currentTask?.isCancelled != true {
             running.opensWhenDone = running.opensWhenDone || opening
             if origin == .listener {
                 running.origin = .listener
@@ -316,11 +326,33 @@ final class FeedDownloadManager {
         startNext()
     }
 
+    /// What Cancel Download did to an item's download (`cancel(_:of:)`), for
+    /// the words VoiceOver hears and for who the item is then.
+    enum CancelOutcome: Equatable, Sendable {
+        /// It stopped, whether under way, waiting to start, or put off, or
+        /// there was none to stop.
+        case stopped
+        /// It finishes all the same: it is the download under way, and its
+        /// book is already being added to the library, which an import never
+        /// stops partway, as the feed downloads section's Cancel lets such a
+        /// download finish (`cancelEveryDownload()`).
+        case finishing
+    }
+
     /// Stops the download of the item `itemID`, or takes it out of the
     /// queue, or out of the downloads put off, forgetting any part
     /// downloaded, the partial file its resume data names included (FR14);
-    /// the item is not downloaded, nor waiting (FR11).
-    func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
+    /// the item is not downloaded, nor waiting (FR11). The download under
+    /// way whose book is already being added to the library comes too late
+    /// to stop, an import never being stopped partway: it finishes, and
+    /// nothing of it changes, as the feed downloads section's Cancel leaves
+    /// it (`cancelTargets`).
+    /// - Returns: Whether the download stopped, or finishes all the same.
+    @discardableResult
+    func cancel(_ itemID: FeedItem.ID, of feedID: UUID) -> CancelOutcome {
+        if isAddingToLibrary, current?.feedID == feedID, current?.itemID == itemID {
+            return .finishing
+        }
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
@@ -328,7 +360,8 @@ final class FeedDownloadManager {
             store.updateItem(itemID, of: feedID) { $0.state = .notDownloaded }
             announceCancelled([request])
         } else if current?.feedID == feedID, current?.itemID == itemID {
-            // Announced where its task ends (`run(_:)`).
+            // Announced where its task ends (`run(_:)`), unless its item is
+            // asked for again before then.
             currentTask?.cancel()
         } else {
             // Put off by itself, for a network or for room: no longer.
@@ -339,6 +372,7 @@ final class FeedDownloadManager {
             }
         }
         FeedPartialDownloads.discard(resumeDataAt: resumeDataFile(for: itemID, of: feedID))
+        return .stopped
     }
 
     /// What the feed downloads section's Cancel stopped
@@ -438,7 +472,7 @@ final class FeedDownloadManager {
     /// the last only their items' states say. Each is stopped once, by its
     /// feed, item, and title; one whose item is gone is no download.
     private var cancelTargets: (underWay: Request?, finishing: Request?, stopping: [Cancellation.Stopped]) {
-        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
+        let finishing = isAddingToLibrary ? current : nil
         let underWay = finishing == nil ? current : nil
         var asked = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
         for record in store.records.values {
@@ -455,11 +489,21 @@ final class FeedDownloadManager {
         return (underWay, finishing, stopping)
     }
 
+    /// Whether the book of the download under way is already being added to
+    /// the library, as the downloads' progress says (FR10). An import is
+    /// never stopped partway, so such a download finishes: Cancel Download
+    /// (`cancel(_:of:)`) and the feed downloads section's Cancel
+    /// (`cancelTargets`) both let it.
+    private var isAddingToLibrary: Bool {
+        progress.state.download?.isAddingToLibrary == true
+    }
+
     /// Announces that each of `requests` was cancelled before it finished,
     /// so a reader waiting for its episode can say so (REV18a finding 6).
     /// Called once an item reads not downloaded, so a listener of the event
     /// finds a consistent record; never for the rule's put-off requests, a
-    /// download stopped for quitting, or one that fails or finishes.
+    /// download stopped for quitting, one whose item was asked for again as
+    /// it stopped, or one that fails or finishes.
     private func announceCancelled(_ requests: [Request]) {
         for request in requests {
             announce(.downloadCancelled(feedID: request.feedID, itemID: request.itemID))
@@ -654,6 +698,16 @@ final class FeedDownloadManager {
                 // Quitting stopped it: it keeps its place, which
                 // `stopForQuit()` saves, and its item stays as it was.
                 DiagnosticLog.trace(.feeds, "a download under way stopped for quitting, keeping its place")
+                return .stopped
+            }
+            if queue.contains(where: { $0.feedID == request.feedID && $0.itemID == request.itemID }) {
+                // Asked for again while it stopped, its task cancelled
+                // (`download(_:of:origin:opening:startingNext:)`): the new
+                // request waits in the queue and speaks for itself, so this
+                // one, however it ended, cancelled or else, leaves the item
+                // as it is, downloading, neither failed, waiting, nor put
+                // off, and says nothing.
+                DiagnosticLog.trace(.feeds, "a stopped download's item was asked for again; the new request waits in the queue")
                 return .stopped
             }
             let failure = Self.downloadError(error)

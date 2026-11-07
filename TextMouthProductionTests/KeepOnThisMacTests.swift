@@ -452,6 +452,9 @@ final class KeepOnThisMacTests: XCTestCase {
         let row = BookRow(book: book, cloudState: .downloaded, isKeptOnThisMac: true, cloudCommands: commands)
         let label = row.rowAccessibilityLabel
         XCTAssertEqual(label, "Moby-Dick, by Herman Melville, Downloaded, Kept on this Mac, 42 percent, EPUB")
+        // The label above is checked without a window; what follows reads
+        // SwiftUI's own elements in-process.
+        try skipUnlessSwiftUIExposesItsOwnElements()
 
         try withHostedView(row, until: { !self.accessibilityElements(labelled: label, in: $0).isEmpty }) { hostingView in
             let found = accessibilityElements(labelled: label, in: hostingView)

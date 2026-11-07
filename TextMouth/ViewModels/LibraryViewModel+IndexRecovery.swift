@@ -399,7 +399,12 @@ extension LibraryViewModel {
     /// Quit: exits without writing library.json. Index writes stay suspended
     /// while recovering, so the termination flush saves only package metadata.
     func quitWithoutWritingLibraryIndex() {
+        #if os(macOS)
         NSApplication.shared.terminate(nil)
+        #else
+        // iOS apps do not quit themselves (phase 0): nothing happens, and the
+        // recovery screen stays up for another choice.
+        #endif
     }
 
     /// Throws while the index cannot be read. Data-directory maintenance

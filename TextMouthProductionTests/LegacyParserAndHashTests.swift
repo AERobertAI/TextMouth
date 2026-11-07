@@ -211,6 +211,14 @@ final class LegacyHTMLToMarkdownTests: XCTestCase {
     }
 }
 
+/// The digest TextMouth stores as each book's identity (`md5Hash` in
+/// bookInfo.json and library.json), the duplicate check at import, and the
+/// text cache's fingerprint. Every digest pinned here was computed outside
+/// the app (`md5 -q`, and Python's `hashlib` for the generated file), so a
+/// change of algorithm, of formatting, or of the read loop fails here, and
+/// a book's identity can never change silently under the hashes already on
+/// disk. Comparing the function with itself, as two of these tests once
+/// did, could not fail.
 final class LegacyMD5Tests: XCTestCase {
     func testHashIsA32CharacterHexString() throws {
         let hash = try FileImportService.md5Hash(of: requireFile("alice.epub"))
@@ -218,12 +226,9 @@ final class LegacyMD5Tests: XCTestCase {
         XCTAssertTrue(hash.allSatisfy(\.isHexDigit))
     }
 
+    /// The same bytes always give the same, known digest: alice.epub's.
     func testHashIsDeterministic() throws {
-        let url = try requireFile("alice.epub")
-        XCTAssertEqual(
-            try FileImportService.md5Hash(of: url),
-            try FileImportService.md5Hash(of: url)
-        )
+        XCTAssertEqual(try FileImportService.md5Hash(of: requireFile("alice.epub")), "a96b5829861c1e9a579d66dedf4ae51e")
     }
 
     func testDifferentFilesProduceDifferentHashes() throws {
@@ -239,11 +244,30 @@ final class LegacyMD5Tests: XCTestCase {
         XCTAssertTrue(hash.allSatisfy(\.isHexDigit))
     }
 
+    /// A text file read in one go, under one read's size, has its known digest.
     func testTextFileHashMatchesAcrossReads() throws {
-        let url = try requireFile("pride.txt")
-        XCTAssertEqual(
-            try FileImportService.md5Hash(of: url),
-            try FileImportService.md5Hash(of: url)
-        )
+        XCTAssertEqual(try FileImportService.md5Hash(of: requireFile("pride.txt")), "f61a708aabe9df087601a5d85b859526")
+    }
+
+    /// A file far smaller than one read has its known digest.
+    func testASmallFileHasItsKnownDigest() throws {
+        XCTAssertEqual(try FileImportService.md5Hash(of: requireFile("sample.md")), "1686307c1c2ecb9675d7613e8f9217ce")
+    }
+
+    /// An empty file has MD5's digest of nothing.
+    func testAnEmptyFileHasTheDigestOfNothing() throws {
+        let file = try makeSandboxDirectory("MD5Empty").appendingPathComponent("empty.txt")
+        try Data().write(to: file)
+        XCTAssertEqual(try FileImportService.md5Hash(of: file), "d41d8cd98f00b204e9800998ecf8427e")
+    }
+
+    /// A file of three full 1 MiB reads and 17 bytes more is hashed whole,
+    /// every read in order. Byte i is i modulo 251, so no two reads hold the
+    /// same bytes, and a loop that stopped early, skipped a read, or read
+    /// one twice would give another digest.
+    func testAFileOfSeveralReadsIsHashedWhole() throws {
+        let file = try makeSandboxDirectory("MD5Reads").appendingPathComponent("reads.bin")
+        try Data((0..<3_145_745).map { UInt8($0 % 251) }).write(to: file)
+        XCTAssertEqual(try FileImportService.md5Hash(of: file), "7114d559ffda7029526064baa992a30d")
     }
 }

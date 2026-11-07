@@ -716,10 +716,10 @@ final class FeedCenter: ObservableObject {
             record.feed.folderID = try folderID(for: record.feed, choice: choice)
             store.add(record)
             fetchStates.update(record.feed.id) { state in
-                state.etag = body.etag
-                state.lastModified = body.lastModified
-                state.bodyDigest = body.digest
-                state.keptEntriesOfLastBody = keepEntries
+                // The body with the record's date, as a refresh notes them,
+                // so the next refresh skips this body as unchanged only
+                // while the record it loads holds this merge.
+                state.noteBodyMerged(body, keptEntries: keepEntries, into: record)
                 state.lastCheck = now
                 state.lastSuccess = now
             }
@@ -1021,10 +1021,19 @@ final class FeedCenter: ObservableObject {
     /// Stops the download of the item `itemID` of the feed `feedID`, or takes
     /// it out of the queue, as Cancel Download does: the item is the
     /// listener's from then on, so the newest-N rule never downloads it again
-    /// by itself (FR11).
-    func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) {
-        downloads.cancel(itemID, of: feedID)
-        store.updateItem(itemID, of: feedID) { $0.downloadOrigin = .listener }
+    /// by itself (FR11). A download whose book is already being added to the
+    /// library comes too late to stop, and finishes
+    /// (`FeedDownloadManager.cancel(_:of:)`): it stays whoever's it was, so
+    /// one the rule asked for stays the rule's, to remove once it is no
+    /// longer among the newest.
+    /// - Returns: Whether the download stopped, or finishes all the same.
+    @discardableResult
+    func cancelDownload(_ itemID: FeedItem.ID, of feedID: UUID) -> FeedDownloadManager.CancelOutcome {
+        let outcome = downloads.cancel(itemID, of: feedID)
+        if outcome == .stopped {
+            store.updateItem(itemID, of: feedID) { $0.downloadOrigin = .listener }
+        }
+        return outcome
     }
 
     /// The items of the feed `feedID` whose packages were kept with the

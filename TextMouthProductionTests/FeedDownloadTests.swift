@@ -162,18 +162,31 @@ final class FeedDownloadTests: XCTestCase {
 
     /// A download that stops partway keeps its resume data in this Mac's
     /// folder and fails with its reason; the next download goes on from where
-    /// it stopped, asking only for the rest, and the resume data goes.
+    /// it stopped, asking only for the rest, and the resume data goes. The
+    /// stub drops the connection only once the first half is written, as a
+    /// real connection's bytes arrive before it drops.
     func testADownloadThatStopsPartwayGoesOnFromWhereItStopped() async throws {
         let world = try FeedTestWorld(self, label: "FeedResume")
         let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        let dropsTheConnection = WorkGate()
+        dropsTheConnection.arm()
+        // Never leave the stub's thread waiting at the gate, whatever fails below.
+        addTeardownBlock { dropsTheConnection.release() }
         var broken = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
         broken.chunkSize = audio.count / 2
         broken.failAfterBytes = audio.count / 2
+        broken.failureGate = dropsTheConnection
         world.server.serve("/audio/1.m4a", broken, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
         let resumeFile = world.center.downloads.resumeDataFile(for: "guid:ep-1", of: feed.id)
 
         world.center.download("guid:ep-1", of: feed.id)
+        // The bytes the session reports written are in its file, so the
+        // resume data the failure leaves holds them.
+        await waitFor("the first half was written") {
+            (world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) >= Int64(audio.count / 2)
+        }
+        dropsTheConnection.release()
         await waitFor("the download fails") {
             world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state.failureReason != nil
         }
@@ -526,6 +539,194 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: world.center.downloads.resumeDataFile(for: "guid:ep-1", of: feed.id).path
         ))
+    }
+
+    // MARK: - Cancel Download Too Late
+
+    /// Cancel Download of the newest-N rule's download while its file is
+    /// still arriving stops it, and leaves the item to the listener, so the
+    /// rule never downloads it again by itself (FR11).
+    func testCancellingADownloadStillArrivingStopsItForTheListener() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelArriving")
+        let feed = try await subscribeSlowly(world)
+
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        await waitFor("the download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+        let outcome = world.center.cancelDownload("guid:ep-1", of: feed.id)
+        await waitFor("the download stops") { world.center.downloads.current == nil }
+
+        XCTAssertEqual(outcome, .stopped)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .notDownloaded)
+        XCTAssertEqual(item.downloadOrigin, .listener)
+        XCTAssertEqual(world.library.library.books, [])
+    }
+
+    /// Cancel Download chosen once the episode's book is already being
+    /// added to the library comes too late, as an import is never stopped
+    /// partway: it finishes, its book in the library, and a download the
+    /// newest-N rule asked for stays the rule's, to remove once it is no
+    /// longer among the newest, rather than becoming the listener's for
+    /// good.
+    func testCancellingADownloadBeingAddedLetsItFinishAsTheRules() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelFinishing")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
+        let downloads = world.center.downloads
+        var outcomes: [FeedDownloadManager.CancelOutcome] = []
+        downloads.beforeCommit = { [weak world] request in
+            guard let world else { return }
+            outcomes.append(world.center.cancelDownload(request.itemID, of: request.feedID))
+        }
+        defer { downloads.beforeCommit = nil }
+
+        downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(outcomes, [.finishing])
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .downloaded(bookID: book.id))
+        XCTAssertEqual(item.downloadOrigin, .window, "Cancel Download that came too late made the download the listener's")
+    }
+
+    /// Cancel Download that comes too late says so in the words the feed
+    /// downloads section's Cancel says of a download it lets finish.
+    func testCancelDownloadTooLateIsWordedAsTheSectionsCancelSaysIt() {
+        XCTAssertEqual(FeedWording.alreadyBeingAdded(title: "Ep. 3"), "“Ep. 3” is already being added to the library.")
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 3", comingBack: FeedCancelReturn()),
+            FeedWording.alreadyBeingAdded(title: "Ep. 3")
+        )
+    }
+
+    // MARK: - Asked For Again As It Stops
+
+    /// Opening an episode whose download Cancel Download has just stopped,
+    /// before the stopped download has ended, downloads it again and opens
+    /// it: the new ask is not lost as the stopped download ends, which
+    /// leaves the item downloading and says nothing of itself.
+    func testOpeningAnEpisodeAsItsDownloadStopsDownloadsAndOpensIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenOpen")
+        var opened: [UUID] = []
+        world.library.readerOpener = { opened.append($0) }
+
+        let heard = try await cancelAndAskAgain(in: world) { world.center.open("guid:ep-1", of: $0.id) }
+        await waitFor("the book opens") { !opened.isEmpty }
+
+        XCTAssertEqual(opened, [heard.book.id])
+        XCTAssertEqual(heard.states, [.downloading, .downloaded(bookID: heard.book.id)], "the item read otherwise meanwhile")
+        XCTAssertEqual(heard.cancelled, [], "the stopped download said it was cancelled")
+    }
+
+    /// Choosing Download for an episode whose download Cancel Download has
+    /// just stopped, before the stopped download has ended, downloads it
+    /// again.
+    func testDownloadingAnEpisodeAsItsDownloadStopsDownloadsIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenDownload")
+
+        let heard = try await cancelAndAskAgain(in: world) { world.center.download("guid:ep-1", of: $0.id) }
+
+        XCTAssertEqual(heard.states, [.downloading, .downloaded(bookID: heard.book.id)], "the item read otherwise meanwhile")
+        XCTAssertEqual(heard.cancelled, [], "the stopped download said it was cancelled")
+    }
+
+    /// A download Cancel Download stopped that ends otherwise than as
+    /// cancelled, as the newest-N rule's that finds too little room for its
+    /// file before it heeds the cancel, leaves its item to the ask that came
+    /// meanwhile: the item is never said to wait, and ends as the new ask
+    /// does, here failing for want of room.
+    func testADownloadAskedForAgainAsItStopsLeavesTheItemToTheNewAsk() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenNoRoom")
+        world.freeSpace.value = 1_500_000_000
+        let big = FeedXML.Item(guid: "big", title: "Big", published: world.day(-1),
+                               enclosure: world.server.url("/audio/big.mp3").absoluteString, enclosureLength: 600_000_000)
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [big])))
+        let feed = try await world.subscribe("/feed.xml")
+        let log = StateLog()
+        let watcher = watchStates(of: "guid:big", in: feed, of: world, into: log)
+        defer { watcher.cancel() }
+
+        // Asked for, stopped, and asked for again, all before the stopped
+        // download has even begun.
+        world.center.downloads.download("guid:big", of: feed.id, origin: .window)
+        world.center.cancelDownload("guid:big", of: feed.id)
+        world.center.download("guid:big", of: feed.id)
+        await waitFor("both downloads end") {
+            world.center.downloads.current == nil && world.center.downloads.queue.isEmpty
+        }
+
+        let noRoom = FeedDownloadError.notEnoughSpace(bytes: 600_000_000).message(about: "Big")
+        XCTAssertEqual(log.states, [.notDownloaded, .downloading, .failed(noRoom)], "the item read otherwise meanwhile")
+        XCTAssertEqual(world.server.requests(to: "/audio/big.mp3"), [])
+    }
+
+    // MARK: - A Transfer Cancelled Before It Begins (board #4438)
+
+    /// A transfer whose task is cancelled before it first suspends, as
+    /// Cancel Download can cancel a download's task before it first runs,
+    /// fails as cancelled at once, never waiting for good, and fetches
+    /// nothing; being cancelled comes first, so it does so offline too.
+    func testATransferCancelledBeforeItBeginsFailsAsCancelledAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedTransferCancelledFirst")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let transfer = downloading("/audio/1.m4a", in: world, through: world.environment.network)
+
+        let online = await ending(of: transfer, cancelledFirst: true)
+        world.online.value = false
+        let offline = await ending(of: transfer, cancelledFirst: true)
+
+        XCTAssertEqual(online, .cancelled)
+        XCTAssertEqual(offline, .cancelled, "a transfer cancelled before it began failed for this Mac being offline")
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a cancelled transfer was fetched")
+    }
+
+    /// A transfer whose task is cancelled once it has begun but before its
+    /// URLSession task has a delegate, as Cancel Download on the main
+    /// thread can cancel it while it begins on another, fails as cancelled
+    /// at once too: the transfer ends itself as cancelled, once, however
+    /// URLSession then reports the end of the task cancelled meanwhile.
+    func testATransferCancelledAsItBeginsFailsAsCancelledOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedTransferCancelledAsItBegins")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let transfer = downloading("/audio/1.m4a", in: world, through: networkCancellingAsItBegins())
+
+        let ended = await ending(of: transfer, cancelledFirst: false)
+
+        XCTAssertEqual(ended, .cancelled)
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a cancelled transfer was fetched")
+    }
+
+    /// A fetch whose task is cancelled before it first suspends, as a feed's
+    /// refresh or an article's page can be cancelled before its task first
+    /// runs, fails as cancelled at once too, never waiting for good, and
+    /// asks for nothing, offline as well.
+    func testAFetchCancelledBeforeItBeginsFailsAsCancelledAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFetchCancelledFirst")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [])))
+        let fetch = fetching("/feed.xml", in: world, through: world.environment.network)
+
+        let online = await ending(of: fetch, cancelledFirst: true)
+        world.online.value = false
+        let offline = await ending(of: fetch, cancelledFirst: true)
+
+        XCTAssertEqual(online, .cancelled)
+        XCTAssertEqual(offline, .cancelled, "a fetch cancelled before it began failed for this Mac being offline")
+        XCTAssertEqual(world.server.requests(to: "/feed.xml"), [], "a cancelled fetch asked for the feed")
+    }
+
+    /// A fetch whose task is cancelled once it has begun but before its
+    /// URLSession task has a delegate fails as cancelled at once too, once,
+    /// however URLSession then reports the end of the task cancelled
+    /// meanwhile.
+    func testAFetchCancelledAsItBeginsFailsAsCancelledOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFetchCancelledAsItBegins")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [])))
+        let fetch = fetching("/feed.xml", in: world, through: networkCancellingAsItBegins())
+
+        let ended = await ending(of: fetch, cancelledFirst: false)
+
+        XCTAssertEqual(ended, .cancelled)
+        XCTAssertEqual(world.server.requests(to: "/feed.xml"), [], "a cancelled fetch asked for the feed")
     }
 
     // MARK: - The Cancelled Event (REV18a finding 6)
@@ -982,5 +1183,131 @@ final class FeedDownloadTests: XCTestCase {
                                 enclosure: world.server.url(enclosure).absoluteString, enclosureType: type)
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
         return try await world.subscribe("/feed.xml")
+    }
+
+    /// Starts `world`'s engine and subscribes it to a feed of one episode,
+    /// "Episode One", whose file arrives at first in ten parts a tenth of a
+    /// second apart, so its download is still under way a moment after it
+    /// starts, and whole when asked for again.
+    private func subscribeSlowly(_ world: FeedTestWorld) async throws -> Feed {
+        let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 10)
+        slow.pause = 0.1
+        world.server.serve("/audio/1.m4a", slow, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        return try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
+    }
+
+    /// The states an item read, in turn, each once, as a test watched them
+    /// (`watchStates(of:in:of:into:)`).
+    private final class StateLog {
+        var states: [FeedItemState] = []
+    }
+
+    /// Watches the item `itemID` of `feed` in `world` from now on, noting in
+    /// `log` each state its record reads, in turn, each once.
+    private func watchStates(of itemID: FeedItem.ID, in feed: Feed, of world: FeedTestWorld, into log: StateLog) -> AnyCancellable {
+        world.center.store.$records.sink { records in
+            guard let state = records[feed.id]?.item(itemID)?.state, log.states.last != state else { return }
+            log.states.append(state)
+        }
+    }
+
+    /// What a test of an episode asked for again as its download stopped
+    /// heard (`cancelAndAskAgain(in:_:)`).
+    private struct AskedAgain {
+        /// The book the episode downloaded as.
+        let book: Book
+        /// Each state its item read from the cancel on, in turn, each once.
+        let states: [FeedItemState]
+        /// The items of the `.downloadCancelled` events sent meanwhile.
+        let cancelled: [FeedItem.ID]
+    }
+
+    /// Starts the download of "Episode One" in `world`, whose file arrives
+    /// slowly (`subscribeSlowly(_:)`), and once the file is arriving chooses
+    /// Cancel Download and, at once, before the stopped download has ended,
+    /// asks for the episode again as `askAgain` does; returns what was heard
+    /// until the episode had downloaded.
+    private func cancelAndAskAgain(
+        in world: FeedTestWorld,
+        _ askAgain: @MainActor (Feed) -> Void
+    ) async throws -> AskedAgain {
+        let feed = try await subscribeSlowly(world)
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+        let states = StateLog()
+        let cancelled = CancelledLog()
+        let watchers = [
+            watchStates(of: "guid:ep-1", in: feed, of: world, into: states),
+            listenForCancelled(in: world, into: cancelled),
+        ]
+        defer { watchers.forEach { $0.cancel() } }
+
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        askAgain(feed)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        return AskedAgain(book: book, states: states.states, cancelled: cancelled.itemIDs)
+    }
+
+    /// A download's transfer of `path` from `world`'s server through
+    /// `network`, into a file of its own, for `ending(of:cancelledFirst:)`.
+    private func downloading(_ path: String, in world: FeedTestWorld, through network: FeedNetwork) -> @Sendable () async throws -> Void {
+        let url = world.server.url(path)
+        let destination = world.downloadsFolder.appendingPathComponent("\(UUID().uuidString).download")
+        return {
+            _ = try await network.download(url, resumingFrom: nil, to: destination, discretionary: false) { _, _ in }
+        }
+    }
+
+    /// A fetch of `path` from `world`'s server through `network`, as a
+    /// refresh or an article's page makes one, for
+    /// `ending(of:cancelledFirst:)`.
+    private func fetching(_ path: String, in world: FeedTestWorld, through network: FeedNetwork) -> @Sendable () async throws -> Void {
+        let url = world.server.url(path)
+        return {
+            _ = try await network.fetch(url, discretionary: false)
+        }
+    }
+
+    /// A network answering from the stub servers that cancels the task
+    /// asking it whether this Mac is online: a transfer's own task, after
+    /// the transfer's first check of being cancelled, before its URLSession
+    /// task exists.
+    private func networkCancellingAsItBegins() -> FeedNetwork {
+        FeedNetwork.stubbed(protocolClasses: [FeedStubProtocol.self], reachability: NetworkReachability {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return true
+        })
+    }
+
+    /// How `transfer` ended, run in a task of its own, cancelled before it
+    /// first suspends when `cancelledFirst`: nil when it went through,
+    /// otherwise why it failed, whether it threw a download's
+    /// `FeedTransferFailure` or a fetch's `FeedFetchError`. Waits a few
+    /// seconds at most, failing the test rather than waiting for good for a
+    /// transfer that never ends (board #4438).
+    private func ending(of transfer: @escaping @Sendable () async throws -> Void, cancelledFirst: Bool) async -> FeedFetchError? {
+        let ended = LockedValue(false)
+        let failure = LockedValue<FeedFetchError?>(nil)
+        let running = Task { @MainActor in
+            defer { ended.value = true }
+            do {
+                try await transfer()
+            } catch let stopped as FeedTransferFailure {
+                failure.value = stopped.error
+            } catch let stopped as FeedFetchError {
+                failure.value = stopped
+            } catch {
+                XCTFail("the transfer threw \(error), neither a FeedTransferFailure nor a FeedFetchError")
+            }
+        }
+        if cancelledFirst {
+            // Before the task first runs: it begins on the main actor, which
+            // this test holds until it waits below.
+            running.cancel()
+        }
+        await waitFor("the transfer ends", timeout: 5) { ended.value }
+        return failure.value
     }
 }

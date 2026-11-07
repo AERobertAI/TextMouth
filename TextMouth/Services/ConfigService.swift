@@ -251,6 +251,9 @@ final class ConfigService: ObservableObject {
         var sleepTimerAutoClose: Bool = true
         /// End-of-book behavior (stop, loop, continueNext)
         var endOfBookBehavior: String = ""
+        /// Where the next book opens when listening goes on (this window, or
+        /// a new window); empty until chosen, as `endOfBookBehavior` is
+        var nextBookWindow: String = ""
         /// Punctuation pause level (0 = none, 1 = subtle, 2 = moderate, 3 = heavy)
         var punctuationPauseLevel: Double = SettingsPolicy.punctuationPauseLevel.configDefault
         /// UUID of the last book that was opened/played (for quick-resume)
@@ -419,6 +422,14 @@ final class ConfigService: ObservableObject {
         /// Whether TextMouth offers to transcribe each audiobook just
         /// imported (`TranscriptionPreferences.offerAfterImport`).
         var offerTranscriptionAfterImport: Bool?
+        /// The Library window's views, in order (October 30, 2026,
+        /// `LibraryViewDefinitionList`): an array of objects, one per view,
+        /// each with its "id" and "visibility", and, for a view the listener
+        /// made or a built-in view they changed, its "name" and "filter".
+        /// Each entry is read on its own: one this TextMouth cannot read is
+        /// kept as it is and never offered, and a value out of range is
+        /// repaired. Nil, or an empty array, leaves the views as they are.
+        var libraryViews: [JSONValue]?
         /// The braille table TextMouth reads and writes braille with
         /// (`BraillePreferences`), by its stored value: a bundled table's
         /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
@@ -429,6 +440,13 @@ final class ConfigService: ObservableObject {
         /// checked before its first use, as one chosen in Settings is
         /// (`MacBrailleTableCheck`), or refused by name if this Mac lacks it.
         var brailleTable: String = ""
+        /// The braille file characters TextMouth imports a BRF or BRL file
+        /// with (`BraillePreferences.fileCode`), by the code's id:
+        /// "ascii-na" (North American Braille ASCII) or "ascii-eurobraille".
+        /// Empty keeps the current choice, as does an id this TextMouth
+        /// lacks, and "unicode", which an import recognizes by a file's bytes
+        /// and never takes from the setting (`BrailleFileCode.importChoices`).
+        var brailleFileCode: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -462,6 +480,7 @@ final class ConfigService: ObservableObject {
             sleepFadeOutDuration = fields.number(.sleepFadeOutDuration, rule: SettingsPolicy.sleepFadeOutDuration)
             sleepTimerAutoClose = fields.value(.sleepTimerAutoClose, default: fallback.sleepTimerAutoClose)
             endOfBookBehavior = fields.rawChoice(.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior)
+            nextBookWindow = fields.rawChoice(.nextBookWindow, rule: SettingsPolicy.nextBookWindow)
             punctuationPauseLevel = fields.number(.punctuationPauseLevel, rule: SettingsPolicy.punctuationPauseLevel)
             lastOpenedBookID = fields.value(.lastOpenedBookID, default: fallback.lastOpenedBookID)
             autoPlayOnNavigate = fields.value(.autoPlayOnNavigate, default: fallback.autoPlayOnNavigate)
@@ -557,10 +576,21 @@ final class ConfigService: ObservableObject {
                 TranscriptionLanguage.validated($0) ?? ""
             }
             offerTranscriptionAfterImport = fields.optionalFlag(.offerTranscriptionAfterImport)
+            // Any array of values: the list reads each entry on its own, with
+            // its own bounds, when the settings model applies the file. An
+            // empty array is no request, as an empty text is.
+            libraryViews = fields.optionalValue(.libraryViews) { (entries: [JSONValue]) in
+                entries.isEmpty ? nil : entries
+            }
             // Without reading this Mac's tables (review R3): decoding runs on
             // the main thread at every launch.
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
                 BrailleTableCatalog.storableValue($0) ?? ""
+            }
+            // An id this TextMouth lacks is repaired to empty, and logged, so
+            // it leaves the current braille file characters alone.
+            brailleFileCode = fields.value(.brailleFileCode, default: fallback.brailleFileCode) {
+                BrailleFileCode.importChoice(withID: $0) == nil ? "" : $0
             }
         }
 
@@ -601,7 +631,7 @@ final class ConfigService: ObservableObject {
                 mirrored += sameNames([
                     "skipForwardUnit", "skipBackwardUnit", "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
                     "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
-                    "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
+                    "autoPlayOnNavigate", "endOfBookBehavior", "nextBookWindow", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar", "includeSpeedWithTimes",
                     "showsPageInReader", "saysPageInWhereAmI",
@@ -645,8 +675,12 @@ final class ConfigService: ObservableObject {
                 // TranscriptionLanguage keeps, and whether it is offered
                 // after an import (FR05).
                 mirrored += sameNames(["transcriptionLocale", "offerTranscriptionAfterImport"])
+                // Library (October 30, 2026): the Library window's views,
+                // which the views store keeps (`LibraryViewDefinitionStore`).
+                mirrored += sameNames([LibraryViewDefinitionList.fileKey])
                 // Braille (FMT21): the table braille files are read and written with.
-                mirrored += sameNames(["brailleTable"])
+                // And the braille file characters a BRF or BRL file is imported in (braillecodes).
+                mirrored += sameNames(["brailleTable", "brailleFileCode"])
                 return mirrored
             }()
 
@@ -944,6 +978,17 @@ final class ConfigService: ObservableObject {
         return contents
     }
 
+    /// Takes up config.json once it is on this Mac, after it was found only in
+    /// the cloud (`noteFileInCloud()`): the file is merged with the settings
+    /// in use as the first save that finds it would, so a setting changed
+    /// here meanwhile keeps its new value and every other one takes the
+    /// file's, without a restart. Does nothing unless the file was waiting
+    /// in the cloud; while it still is, nothing is read or written.
+    func fileMayHaveArrived() {
+        guard isFileInCloud else { return }
+        saveToDisk()
+    }
+
     /// Notes that config.json is only in the cloud, so it is neither read
     /// nor written now (FR02), which the debug log says once.
     private func noteFileInCloud() {
@@ -997,8 +1042,14 @@ final class ConfigService: ObservableObject {
             loadedFile = .decoded
         } catch where DatalessFiles.isDownloadRefusal(error) {
             // Not loaded: the preferences stand until the file is on this
-            // Mac, and the saves until then leave it as it is.
+            // Mac, and the saves until then leave it as it is. The settings
+            // in use now stand for what the file last held, so a setting
+            // changed from here on, the first one included, is kept when
+            // the file arrives and is merged.
             loadedFile = .missing
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
             noteFileInCloud()
         } catch {
             loadedFile = .unreadable

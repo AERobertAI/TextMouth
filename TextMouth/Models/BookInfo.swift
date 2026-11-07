@@ -134,6 +134,15 @@ struct BookMetadata: Codable {
     /// (`Book.brailleTableVersion`, review R2); nil for a bundled table and
     /// for a record written before it was kept.
     var brailleTableVersion: String? = nil
+    /// The braille file characters a BRF or BRL book's file writes its cells
+    /// in (braillecodes): the row's field (`Book.brailleFileCode`), by the
+    /// code's id, kept here too, where it stands over a row that lags behind
+    /// it (`BrailleFileCodeRecord.standing(row:recorded:)`). Nil for every
+    /// book that records none and for a record written before it was kept;
+    /// an id this TextMouth does not know is kept exactly as it is stored. A
+    /// value that cannot be read is nil, as the row's is, and does not fail
+    /// the record.
+    @LenientOptional var brailleFileCode: String? = nil
 
     /// The encoding a text book's file was guessed to be in (FMT16): the
     /// row's field (`Book.textEncoding`), by its identifier in

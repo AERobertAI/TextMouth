@@ -1167,6 +1167,7 @@ final class ConfigSyncTests: XCTestCase {
             "punctuationPauseLevel": 2.0,
             "autoPlayOnNavigate": true,
             "endOfBookBehavior": EndOfBookBehavior.continueNext.rawValue,
+            "nextBookWindow": NextBookWindow.newWindow.rawValue,
             "sleepFadeOutDuration": 6.0,
             "sleepTimerAutoClose": false,
             "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,
@@ -1219,8 +1220,14 @@ final class ConfigSyncTests: XCTestCase {
             // import.
             "transcriptionLocale": TranscriptFixtures.languageOtherThanTheDefault,
             "offerTranscriptionAfterImport": true,
-            // Braille: the table braille files are read and written with.
+            // Library: the Library window's views, as the views store keeps
+            // them, a JSON array in data.
+            LibraryViewDefinitionList.fileKey: try JSONEncoder().encode(ConfigService.AppConfig.customizedLibraryViews),
+            // Braille: the table braille files are read and written with, and
+            // the braille file characters an import reads a BRF or BRL file
+            // with (braillecodes).
             "brailleTable": "en-us-g1.ctb",
+            "brailleFileCode": "ascii-eurobraille",
         ]
     }
 

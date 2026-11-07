@@ -531,7 +531,7 @@ struct BookSearchView: View {
 
                 HStack {
                     Toggle("Use Regex", isOn: $model.useRegex)
-                        .toggleStyle(.checkbox)
+                        .checkboxToggleStyle()
                         .accessibilityLabel("Use regular expression")
                         .accessibilityHint("When enabled, search text is treated as a regular expression")
 

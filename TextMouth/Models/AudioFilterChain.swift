@@ -49,7 +49,8 @@ struct AudioFilterChain: Equatable, Sendable {
 
     /// The filters TextMouth runs itself, each with its options checked.
     /// - Throws: `AudioFilterError` naming the first filter or option it
-    ///   doesn't support, or a value it can't use.
+    ///   doesn't support, a value it can't use, or one it needs that isn't
+    ///   given.
     func builtInFilters() throws -> [AudioBuiltInFilter] {
         try filters.map(AudioBuiltInFilter.init)
     }
@@ -165,6 +166,8 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
     /// A value an option can't take: the filter, the option, the value, and
     /// what it takes.
     case badValue(filter: String, option: String, value: String, expected: String)
+    /// An option a filter needs that wasn't given: the filter, the option, and what it takes.
+    case missingValue(filter: String, option: String, expected: String)
     /// ffmpeg ran and refused the chain or the audio, as its own words say.
     case ffmpegFailed(String)
     /// ffmpeg couldn't be started at all.
@@ -188,6 +191,8 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
             return "The \(filter) filter was given more values than it has options; give them as key=value."
         case .badValue(let filter, let option, let value, let expected):
             return "The \(filter) filter's \(option) can't be “\(value)”: \(expected)."
+        case .missingValue(let filter, let option, let expected):
+            return "The \(filter) filter needs its \(option): \(expected)."
         case .ffmpegFailed(let words):
             return "ffmpeg couldn't run the filters: \(words)"
         case .ffmpegMissing:

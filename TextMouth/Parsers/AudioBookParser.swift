@@ -5,8 +5,19 @@ import Foundation
 /// For multi-file audio books (from ZIP): each file becomes a chapter.
 enum AudioBookParser {
 
+    /// How many placeholder characters stand for `duration` seconds of
+    /// audio: `ReaderViewModel.audioCharsPerSecond` a second, at least 1,
+    /// and at most `BookContentIndex.maximumCharacterCount`, the most the
+    /// index accepts on every reopen. A file's header can claim any length,
+    /// so the count is worked out and bounded as a `Double` before it
+    /// becomes an `Int`: no length traps (`Int(_:)` does on infinity, NaN,
+    /// and from about 9.2e17 seconds on), and none builds a placeholder
+    /// gigabytes long. A length that is not a finite number above zero
+    /// gets 1.
     static func placeholderLength(for duration: TimeInterval) -> Int {
-        max(1, Int(duration * ReaderViewModel.audioCharsPerSecond))
+        guard duration.isFinite, duration > 0 else { return 1 }
+        let characters = duration * ReaderViewModel.audioCharsPerSecond
+        return max(1, Int(min(characters, Double(BookContentIndex.maximumCharacterCount))))
     }
 
     static func time(forCharacterOffset offset: Int) -> TimeInterval {
@@ -88,7 +99,7 @@ enum AudioBookParser {
     ///   this function always did, and is only what older callers (and
     ///   tests) that name no scan rely on.
     static func audioFiles(in directory: URL, scan: TrackScan = .importing) throws -> [URL] {
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
             at: directory,
@@ -105,10 +116,10 @@ enum AudioBookParser {
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
-            if file.lastPathComponent == "__MACOSX" || values.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            // A link is neither a regular file nor entered as a folder, so
+            // the guard below passes it over. The skip is for Finder's
+            // metadata folder alone (`skipFinderMetadataFolder`).
+            if enumerator.skipFinderMetadataFolder(file, isDirectory: values.isDirectory) { continue }
             guard values.isRegularFile == true else { continue }
             let fileExtension = file.pathExtension.lowercased()
             switch scan {

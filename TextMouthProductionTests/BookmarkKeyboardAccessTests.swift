@@ -55,6 +55,87 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertNil(added)
     }
 
+    /// The announcement names the number of the bookmark added, not how
+    /// many bookmarks there are: with bookmarks numbered 1 and 4, the new
+    /// one is 5, though the book then holds three (the bookmark work's
+    /// follow-up). The toggle and the panel's Add say it the same way.
+    func testAddingABookmarkAnnouncesItsOwnNumber() {
+        let gapped = [
+            Bookmark(number: 1, chapterIndex: 0, characterOffset: 10),
+            Bookmark(number: 4, chapterIndex: 1, characterOffset: 10),
+        ]
+        let reader = makeReader(bookmarks: gapped)
+        defer { reader.close() }
+
+        let panelAdd = recordingAnnouncements {
+            reader.addBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(panelAdd.announcements.map(\.message), ["Bookmark 5 added"])
+
+        // A position well away from the others toggles a new one in.
+        reader.currentChapterIndex = 3
+        reader.currentCharacterOffset = 900
+        let toggled = recordingAnnouncements {
+            reader.toggleBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(toggled.announcements.map(\.message), ["Bookmark 6 added"])
+    }
+
+    /// A command that adds nothing, because the library holds no record of
+    /// the book, says so in a full sentence rather than claiming a bookmark,
+    /// and says it after the panel's focus move has settled, which would
+    /// otherwise cut it off (REV11 F6): nothing is said at once.
+    func testAddingABookmarkForAnUnknownBookSaysNothingWasAdded() {
+        let reader = makeReader(isInLibrary: false)
+        defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        reader.addBookmarkAtCurrentPosition()
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        // A later wait of the same length runs after the two before it.
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
+
+        let expected = ReaderViewModel.bookmarkNotAddedAnnouncement(bookTitle: "Bookmark Focus")
+        XCTAssertEqual(messages, [expected, expected])
+        XCTAssertTrue(expected.contains("no longer in the library"))
+        XCTAssertFalse(expected.contains("Nothing was changed"), "the reader's own list is emptied too")
+    }
+
+    /// Toggling a bookmark that is near the reading position, after the book
+    /// left the library, removes nothing: it says the book is gone, after
+    /// the focus has settled, as the add paths do, and never that a
+    /// bookmark was removed.
+    func testTogglingABookmarkForAnUnknownBookSaysItCouldNotBeRemoved() {
+        let nearby = [Bookmark(number: 7, chapterIndex: 0, characterOffset: 0)]
+        let reader = makeReader(bookmarks: nearby, isInLibrary: false)
+        defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
+
+        XCTAssertEqual(messages, [ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus")])
+        XCTAssertEqual(
+            ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus"),
+            "Could not remove the bookmark: \u{201C}Bookmark Focus\u{201D} is no longer in the library."
+        )
+        XCTAssertFalse(messages.contains { $0.contains("removed") && $0.hasPrefix("Bookmark") })
+    }
+
     // MARK: - Where focus goes
 
     /// The panel lists bookmarks by number, the order they were added in.
@@ -247,8 +328,12 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     /// assistive app such as VoiceOver. Without one the test is skipped;
     /// the wording tests above still cover every label.
     func testRenderedRowsExposeGoToEditNoteAndDeleteToAccessibility() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let reader = makeReader(bookmarks: makeBookmarks(count: 3))
         defer { reader.close() }
+        // The loop below checks one row per bookmark, so without all three
+        // it would pass having checked fewer, or none (V14).
+        XCTAssertEqual(reader.bookmarks.count, 3)
 
         try withRenderedPanel(for: reader) { hostingView in
             let buttonLabels = accessibleControls(in: hostingView)
@@ -415,10 +500,10 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
             defer { reader.close() }
 
             try withRenderedPanel(for: reader) { hostingView in
-                letKeyboardFocusSettle(in: hostingView)
+                guard waitForKeyboardFocus(in: hostingView) else { return }
                 press(key, in: hostingView)
 
-                let wentThere = waitUntil {
+                let wentThere = waitUntil(timeout: 30) {
                     reader.currentChapterIndex == 1 && reader.currentCharacterOffset == 10
                 }
                 XCTAssertTrue(wentThere, "\(key == .return ? "Return" : "Space") goes to bookmark 2")
@@ -446,16 +531,16 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
             defer { reader.close() }
 
             try withRenderedPanel(for: reader) { hostingView in
-                letKeyboardFocusSettle(in: hostingView)
+                guard waitForKeyboardFocus(in: hostingView) else { return }
                 for arrow in step.arrows {
                     press(arrow, in: hostingView)
                     // SwiftUI moves focus on a later turn of the run loop,
                     // as it would between two real key presses.
-                    letKeyboardFocusSettle(in: hostingView, seconds: 0.2)
+                    waitForPanelToSettle(in: hostingView)
                 }
                 press(.return, in: hostingView)
 
-                let arrived = waitUntil {
+                let arrived = waitUntil(timeout: 30) {
                     reader.currentChapterIndex == step.arrivesIn && reader.currentCharacterOffset == 10
                 }
                 XCTAssertTrue(
@@ -476,18 +561,27 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         defer { reader.close() }
 
         try withRenderedPanel(for: reader) { hostingView in
-            letKeyboardFocusSettle(in: hostingView)
+            // The opening's own request has moved keyboard focus, so only
+            // Delete's is left waiting.
+            guard waitForKeyboardFocus(in: hostingView) else { return }
             // Delete asks for focus on the next row; Edit Note follows at
             // once, before that request has moved keyboard focus.
             try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView)).performClick(nil)
             try XCTUnwrap(renderedButton(.editNote, row: 0, in: hostingView)).performClick(nil)
 
-            let editing = waitUntil {
+            let editing = waitUntil(timeout: 30) {
                 hostingView.layoutSubtreeIfNeeded()
                 return noteFields(in: hostingView).first?.currentEditor() != nil
             }
             try XCTSkipUnless(editing, "The offscreen note field never took keyboard focus")
-            letKeyboardFocusSettle(in: hostingView)
+            // Delete's request moves focus `BookmarkPanelView.keyboardFocusDelay`
+            // after it was made, unless the user has left the list: give it
+            // that time, and more, so a request that took focus from the
+            // field would have taken it by the check below.
+            _ = waitUntil(timeout: 0.6) {
+                hostingView.layoutSubtreeIfNeeded()
+                return false
+            }
 
             XCTAssertNotNil(noteFields(in: hostingView).first?.currentEditor(), "The note field keeps keyboard focus")
         }
@@ -501,13 +595,21 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         defer { reader.close() }
 
         try withRenderedPanel(for: reader) { hostingView in
+            // The panel starts with no control holding keyboard focus, so
+            // the focus Delete asks for is seen to arrive: the opening's
+            // request moves focus first, and the window then takes it back,
+            // as when the user is elsewhere.
+            guard waitForKeyboardFocus(in: hostingView) else { return }
+            let window = try XCTUnwrap(hostingView.window)
+            XCTAssertTrue(window.makeFirstResponder(nil), "The panel would not give keyboard focus up")
+
             try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView)).performClick(nil)
             XCTAssertTrue(waitUntil { reader.bookmarks.count == 2 })
-            letKeyboardFocusSettle(in: hostingView)
+            guard waitForKeyboardFocus(in: hostingView) else { return }
 
             press(.return, in: hostingView)
 
-            let wentThere = waitUntil {
+            let wentThere = waitUntil(timeout: 30) {
                 reader.currentChapterIndex == 2 && reader.currentCharacterOffset == 10
             }
             XCTAssertTrue(wentThere, "Return goes to the bookmark that followed the deleted one")
@@ -665,7 +767,12 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
 
             reader.updateBookmarkLabel(bookmarks[2], label: "Revised")
             reader.currentChapterIndex = 2
-            // Let SwiftUI apply both updates.
+            // The panel takes both updates from its snapshot of the reader on
+            // the main queue's next turn (`ReaderSnapshot`): once the main
+            // queue has run what was queued so far, the panel has them.
+            handleQueuedCallbacks()
+            // SwiftUI then draws the list again, and a row it re-created would
+            // ask for VoiceOver focus again: give that the moment it takes.
             _ = waitUntil(timeout: 0.5) {
                 hostingView.layoutSubtreeIfNeeded()
                 return false
@@ -689,7 +796,17 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         withHostedView(target, until: { _ in true }) { hostingView in
             let window = hostingView.window
             XCTAssertEqual(window?.title.isEmpty, false, "An untitled window is taken for a sheet")
-            // Give the request time to run.
+            // The request is made as its trigger view joins the window, which
+            // a busy Mac can put off: wait for that, up to thirty seconds.
+            XCTAssertTrue(
+                waitUntil(timeout: 30) {
+                    hostingView.layoutSubtreeIfNeeded()
+                    return focusTriggers(in: hostingView).contains { $0.window === window }
+                },
+                "The view never asked for VoiceOver focus"
+            )
+            // The request runs its delay, 0.05 seconds, later: give it time
+            // to run, and to show the window had it taken it for a sheet.
             _ = waitUntil(timeout: 0.5) { false }
             XCTAssertEqual(window?.isVisible, false)
             XCTAssertEqual(window?.isKeyWindow, false)
@@ -805,15 +922,52 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         window.sendEvent(event)
     }
 
-    /// Wait `seconds` for the panel to move keyboard focus. After a focus
-    /// request it waits `BookmarkPanelView.keyboardFocusDelay` for SwiftUI to
-    /// draw the target, so the default waits comfortably longer; after a key
-    /// press, focus moves on SwiftUI's next update, so far less will do.
-    private func letKeyboardFocusSettle(in hostingView: NSView, seconds: TimeInterval = 0.6) {
-        _ = waitUntil(timeout: seconds) {
+    /// Waits until keyboard focus is on a control of the panel, as a focus
+    /// request puts it there `BookmarkPanelView.keyboardFocusDelay` after it
+    /// is made, so the keys pressed next reach that control. Until then the
+    /// window itself is its first responder, and keys reach nothing; then
+    /// SwiftUI makes the panel's hosting view the first responder, and the
+    /// panel settles (`waitForPanelToSettle`). Fails, at the caller's line,
+    /// when no control has taken focus in thirty seconds.
+    ///
+    /// - Returns: Whether a control took focus. When none did, the caller
+    ///   goes no further: a key that reaches no control makes the Mac beep,
+    ///   and no test may make a sound.
+    private func waitForKeyboardFocus(in hostingView: NSView, file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let focused = waitUntil(timeout: 30) {
             hostingView.layoutSubtreeIfNeeded()
-            return false
+            return hostingView.window?.firstResponder === hostingView
         }
+        XCTAssertTrue(
+            focused,
+            "No control of the panel took keyboard focus: \(String(describing: hostingView.window?.firstResponder)) has it",
+            file: file,
+            line: line
+        )
+        guard focused else { return false }
+        waitForPanelToSettle(in: hostingView, file: file, line: line)
+        return true
+    }
+
+    /// Waits until SwiftUI has applied every update the panel has waiting:
+    /// until two turns of the main queue in a row, each with a layout pass,
+    /// draw the panel no more (`ViewBodyCounter`). A key press moves
+    /// keyboard focus in an update on a later turn of the run loop, which
+    /// draws the panel again, since the control with focus is part of its
+    /// state; an arrow at either end of the list moves nothing, and draws
+    /// nothing. A focus request's delay is a timer, which this does not wait
+    /// for (`waitForKeyboardFocus` does). Fails, at the caller's line, when
+    /// the panel is still being drawn after thirty seconds.
+    private func waitForPanelToSettle(in hostingView: NSView, file: StaticString = #filePath, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(30)
+        var quietTurns = 0
+        while quietTurns < 2, Date() < deadline {
+            let draws = ViewBodyCounter.count(of: "BookmarkPanelView")
+            handleQueuedCallbacks(file: file, line: line)
+            hostingView.layoutSubtreeIfNeeded()
+            quietTurns = ViewBodyCounter.count(of: "BookmarkPanelView") == draws ? quietTurns + 1 : 0
+        }
+        XCTAssertEqual(quietTurns, 2, "The panel was still being drawn", file: file, line: line)
     }
 
     /// The editable text fields AppKit drew: the note field while adding or

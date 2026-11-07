@@ -112,13 +112,23 @@ final class LegacyVoiceSettingsTests: XCTestCase {
         }
     }
 
+    /// A book's own speed and pitch are read apart, through what uses them:
+    /// the speed its remaining time is counted at (`effectiveWPM`), and the
+    /// overrides the reader copies to the global settings
+    /// (`localVoiceSettings`; the reader applies a book's own pitch as it is,
+    /// with no resolver of its own). Changing one leaves the other as it was.
     func testSpeedAndPitchOverridesRemainIndependent() {
         var book = makeBook(localWPM: 200, localPitch: 1.0)
         book.localWPM = 225
-        XCTAssertEqual(book.localPitch, 1.0)
+        XCTAssertEqual(book.effectiveWPM(fallback: 180), 225)
+        XCTAssertEqual(book.localVoiceSettings, Book.LocalVoiceSettings(wordsPerMinute: 225, pitch: 1.0))
 
         book.localPitch = 1.1
-        XCTAssertEqual(book.localWPM, 225)
+        XCTAssertEqual(book.effectiveWPM(fallback: 180), 225)
+        XCTAssertEqual(book.localVoiceSettings, Book.LocalVoiceSettings(wordsPerMinute: 225, pitch: 1.1))
+        // Without a speed of its own, the book takes the one it is given.
+        book.localWPM = nil
+        XCTAssertEqual(book.effectiveWPM(fallback: 180), 180)
     }
 
     func testWPMRateCalculationIsIndependentOfPitch() {

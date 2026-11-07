@@ -171,6 +171,9 @@ final class FeedDownloadProgressViewTests: XCTestCase {
             status,
             "Feed Downloads: 0 of 2 done. Download 1 of 2: “Ep. 368” from Finish It!, 40% of 63 MB. 2 waiting until this Mac is on a network without data limits."
         )
+        // The status above is checked without a window; what follows reads
+        // SwiftUI's own elements in-process.
+        try skipUnlessSwiftUIExposesItsOwnElements()
 
         try withHostedView(section, until: { !self.accessibilityElements(labelled: status, in: $0).isEmpty }) { hostingView in
             let containers = accessibilityElements(labelled: status, in: hostingView)

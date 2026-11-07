@@ -283,6 +283,23 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(try RemovedFromLibraryMarker.read(in: external.url).bookID, external.bookID)
     }
 
+    /// A copy of a duplicate's package, sent to the Trash by Cancel or by
+    /// the launch's discard while its question waited, still holds the
+    /// marker saying it waits for an answer (`DuplicateQuestionMarker`).
+    /// Imported again, the published package holds no marker, so no
+    /// adoption passes it over and no launch discards it; the source keeps
+    /// its own.
+    func testDuplicateQuestionMarkerTheSourceCarriesIsClearedBeforePublishing() throws {
+        let external = try makeStatefulPackage()
+        try DuplicateQuestionMarker.write(into: external.url)
+
+        let book = try FileImportService.importTMBPackageWithReport(from: external.url).book
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: book.tmbDirectory))
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: external.url))
+    }
+
     /// A package whose document cannot be read fails while reading its
     /// text: nothing is published or left staged, and the source package is
     /// exactly as it was.
@@ -375,6 +392,90 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertFalse(model.showError)
     }
 
+    // MARK: - Choosing a Package in Open Book…
+
+    /// A package chosen in the Open Book… panel, which offers packages, is
+    /// opened as the book it holds, as from Finder, instead of refused as
+    /// an unsupported format ("Unsupported file format: .tmb"): the library
+    /// lists its book, no error is set, and the book opens (recorded here in
+    /// place of a reader window).
+    @MainActor
+    func testAPackageChosenInOpenBookIsOpenedAsItsBook() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let package = try makeStatefulPackage()
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [package.url], toFolder: "")
+        drainImports(of: model)
+
+        let book = try XCTUnwrap(model.library.books.first, model.errorMessage ?? "no book was added")
+        // The copy the import made in the library goes when the test ends.
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        XCTAssertEqual(model.library.books.map(\.id), [package.bookID])
+        XCTAssertNil(model.errorMessage)
+        XCTAssertFalse(model.showError)
+        XCTAssertEqual(opened.ids, [package.bookID])
+    }
+
+    /// A package chosen in Open Book… in a folder, at the Reading List, for a
+    /// book the library does not list takes the folder and the reading-list
+    /// request, as a file imported there does: the book lands in the folder,
+    /// joins the end of the list, and opens (data review, finding 7). Until
+    /// then it landed at the top level, off the list, with nothing said.
+    @MainActor
+    func testAPackageChosenInAFolderAtTheReadingListTakesTheFolderAndTheList() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let shelf = makeIntegrationLibraryFolder("Open Book Shelf")
+        try FileManager.default.createDirectory(at: shelf.url, withIntermediateDirectories: true)
+        let package = try makeStatefulPackage()
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(folders: [BookFolder(name: shelf.path)])
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [package.url], toFolder: shelf.path, addingToReadingList: true)
+        drainImports(of: model)
+
+        // The move into the folder runs off the main actor, then the book
+        // joins the list and opens.
+        XCTAssertTrue(
+            waitUntil(timeout: 20) { !opened.ids.isEmpty || model.showError },
+            model.errorMessage ?? "the book never opened"
+        )
+        let book = try XCTUnwrap(model.bookByID(package.bookID), model.errorMessage ?? "no book was added")
+        XCTAssertEqual(book.folderPath, shelf.path, "the book landed at the top level")
+        XCTAssertEqual(model.library.readingList.bookIDs, [package.bookID], "the book is not on the reading list")
+        XCTAssertEqual(opened.ids, [package.bookID])
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+    }
+
+    /// Several packages chosen in Open Book… at once open one reader, for
+    /// the first; all of them are imported (data review, finding 7).
+    @MainActor
+    func testSeveralPackagesChosenAtOnceOpenOneReader() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let first = try makeStatefulPackage(content: Data("Roughen the rubber first.".utf8))
+        let second = try makeStatefulPackage(content: Data("Then spread the cement thin.".utf8))
+        let third = try makeStatefulPackage(content: Data("Wait until the cement loses its shine.".utf8))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [first.url, second.url, third.url], toFolder: "")
+        drainImports(of: model)
+
+        XCTAssertEqual(Set(model.library.books.map(\.id)), [first.bookID, second.bookID, third.bookID])
+        for book in model.library.books {
+            // The copies the imports made in the library go when the test ends.
+            addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        }
+        XCTAssertEqual(opened.ids, [first.bookID], "more than the first package opened a reader")
+    }
+
     // MARK: - The Book a Package Record Describes
 
     /// A book built from a package's record keeps every field the record
@@ -426,7 +527,106 @@ final class TMBPackageImportTests: XCTestCase {
         ))
     }
 
+    // MARK: - Text Changed with Edit Text (B12)
+
+    /// A package whose content.md holds an edit the user took with Edit Text,
+    /// opened from Finder while the library holds nothing of its book (a
+    /// backup, another Mac's copy, a book deleted since), imports with the
+    /// edit: the published content.md is the edited text byte for byte, and
+    /// the book and its record keep the record of the edit with the
+    /// fingerprints that describe it, so later re-reads keep it too. Until
+    /// October 30, 2026 such an import failed while reading the text, with
+    /// the sentence an automatic re-read says when it keeps an edit
+    /// (`EditedTextKept`).
+    func testAPackageHoldingATakenEditImportsWithTheEdit() throws {
+        let external = try makeEditedPackageOutsideTheLibrary()
+
+        let imported = try FileImportService.importTMBPackageWithReport(from: external.url)
+        let book = imported.book
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+
+        XCTAssertEqual(book.id, external.book.id)
+        XCTAssertEqual(book.tmbDirectory.deletingLastPathComponent().path, TextMouthPaths.libraryDir.path)
+        XCTAssertEqual(
+            try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)),
+            external.edited,
+            "the book's file was read over the edit"
+        )
+        let digest = FingerprintHasher.md5.digestOfData(external.edited)
+        XCTAssertEqual(book.editedText?.cacheDigest, digest)
+        XCTAssertEqual(book.textCacheFingerprint?.cache.digest, digest)
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.state.editedText?.cacheDigest, digest)
+        XCTAssertEqual(record.state.textCacheFingerprint?.cache.digest, digest)
+        XCTAssertTrue(BookTextEditSessions.holdsTakenEdit(book, access: .live), "a later re-read would not keep the edit")
+        XCTAssertTrue(imported.report.isComplete)
+        XCTAssertEqual(try stagedNamesInLibrary(), [])
+    }
+
+    /// A fresh file's import never meets the path that keeps an edit (B12):
+    /// its book records no edit, and its newly staged package holds no
+    /// record and no content.md, so its text is read from its file.
+    /// content.md is exactly what reading the file writes, the cache is
+    /// stamped current with the fingerprints of the file and of that text,
+    /// no edit is recorded, and no TEXT_EDIT_KEPT line is logged for it.
+    func testAFreshFilesImportReadsItsTextFromItsFile() throws {
+        let file = try makeSandboxDirectory("Fresh Import")
+            .appendingPathComponent("Valve Cores \(UUID().uuidString.prefix(8)).md")
+        try Data("Unscrew the core with the tool on the valve cap.\n".utf8).write(to: file)
+
+        let imported = try FileImportService.importFileWithReport(from: file)
+        let book = imported.book
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+
+        let cache = try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
+        XCTAssertEqual(cache, try MarkdownCacheService.extractedText(for: book, includesPages: true)?.bytes)
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(book.textCacheFingerprint?.cache.digest, FingerprintHasher.md5.digestOfData(cache))
+        XCTAssertEqual(book.textCacheFingerprint?.source.digest, try FileImportService.md5Hash(of: book.bookFileURL))
+        XCTAssertNil(book.editedText)
+        XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText)
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_KEPT: \(book.title)"), [])
+    }
+
     // MARK: - Fixtures
+
+    /// A package outside the library holding a Markdown book whose text the
+    /// user changed with Edit Text, as a backup or another Mac keeps one:
+    /// the book is made in a folder of the test root's library, where its
+    /// text is cached and edited (`takingTextEdit(of:changing:)`), and its
+    /// package is copied out before that folder is removed, as when the book
+    /// is deleted, so the library holds nothing of it. The text names a new
+    /// UUID, so no other package anywhere holds the same content.
+    private func makeEditedPackageOutsideTheLibrary() throws -> (url: URL, book: Book, edited: Data) {
+        let folder = "Edited Text \(UUID().uuidString.prefix(8))"
+        try TextMouthPaths.ensureLibrarySubfolder(folder)
+        let folderURL = TextMouthPaths.libraryDir.appendingPathComponent(folder, isDirectory: true)
+        // The folder goes once the package is copied out, or when making it
+        // fails partway.
+        defer { try? FileManager.default.removeItem(at: folderURL) }
+        let packageName = "Spoke Tension-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("Spoke Tension.md")
+        try Data("# Truing\n\nPluck each spoke and tune it by ear. Notes \(UUID().uuidString).\n".utf8).write(to: file)
+        let book = Book(
+            title: "Spoke Tension",
+            author: "Workshop Notes",
+            format: .markdown,
+            filePath: file.path,
+            md5Hash: try FileImportService.md5Hash(of: file),
+            folderPath: folder,
+            dateAdded: Date(timeIntervalSince1970: 1_790_000_000),
+            tmbDirectoryName: packageName
+        )
+        try book.saveBookInfoThrowing()
+        let taken = try takingTextEdit(of: book) { $0.replacingOccurrences(of: "by ear", with: "with a gauge") }
+
+        let copy = try makeSandboxDirectory("Edited Package Backup")
+            .appendingPathComponent(packageName, isDirectory: true)
+        try FileManager.default.copyItem(at: package, to: copy)
+        return (copy, taken.book, taken.edited)
+    }
 
     /// A package outside the library holding one document and a record that
     /// describes it, with `position` and `bookmarks`, removed after the test.
@@ -467,6 +667,22 @@ final class TMBPackageImportTests: XCTestCase {
             files[name] = try Data(contentsOf: package.appendingPathComponent(name))
         }
         return files
+    }
+
+    /// Waits until every import `model` has queued so far has run, then
+    /// until the main queue has run the work those imports sent it. Each
+    /// expectation is fulfilled once; a second fulfilment, were one ever to
+    /// come, is let pass rather than abort the test host.
+    @MainActor
+    private func drainImports(of model: LibraryViewModel) {
+        let imported = expectation(description: "the import queue ran everything queued before")
+        imported.assertForOverFulfill = false
+        model.importOperationQueue.enqueue { imported.fulfill() }
+        wait(for: [imported], timeout: 60)
+        let mainQueue = expectation(description: "the main queue ran what the imports sent it")
+        mainQueue.assertForOverFulfill = false
+        DispatchQueue.main.async { mainQueue.fulfill() }
+        wait(for: [mainQueue], timeout: 10)
     }
 
     /// The staged package names in the library's top level.
@@ -511,5 +727,41 @@ final class TMBPackageImportTests: XCTestCase {
         )
         try info.save(to: package)
         return package
+    }
+}
+
+// MARK: - A Text Edit Taken (B12)
+
+extension XCTestCase {
+    /// Edits the text of `book`, a text book in the test root's library whose
+    /// package holds its file and its record, as the user does with Edit
+    /// Text: its text cache is written as an import writes it, content.md is
+    /// changed by `change`, and the change is taken as the book's text as an
+    /// Edit Text session takes a save (`BookTextEditSessions.check`), which
+    /// records the edit (B12).
+    /// - Returns: The book as its record then holds it, with the edit
+    ///   recorded (`Book.editedText`) and fingerprinted, and the edited
+    ///   bytes content.md holds.
+    func takingTextEdit(of book: Book, changing change: (String) -> String) throws -> (book: Book, edited: Data) {
+        var cached = book
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &cached))
+        let committed = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: cached, index: index, cacheFormatVersion: cached.cacheFormatVersion
+        ))
+        let cache = MarkdownCacheService.cacheURL(for: committed)
+        let extracted = try Data(contentsOf: cache)
+        let edited = Data(change(String(decoding: extracted, as: UTF8.self)).utf8)
+        XCTAssertNotEqual(edited, extracted, "the edit changed nothing")
+
+        // The text as the session opened it, then the user's save.
+        let baseline = try BookTextEditSessions.baseline(of: committed, access: .live).get()
+        try edited.write(to: cache, options: .atomic)
+        let readingTexts = ReadingTextCache(folder: try makeSandboxDirectory("Taken Edit Reading Texts"))
+        let checked = BookTextEditSessions.check(committed, against: baseline, access: .live, readingTexts: readingTexts)
+        var taken: Book?
+        if case .adopted(let edit) = checked.found {
+            taken = edit.committed
+        }
+        return (try XCTUnwrap(taken, "Edit Text did not take the edit: \(checked.found)"), edited)
     }
 }

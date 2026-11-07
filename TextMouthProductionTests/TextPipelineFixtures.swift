@@ -70,8 +70,9 @@ enum TextPipelineFixtures {
 
     /// The large DAISY audio books some checkouts keep in TestData beside
     /// its own books, downloaded separately and ignored by git, so most
-    /// checkouts lack them. Their output is recorded too, and compared
-    /// wherever they are present.
+    /// checkouts lack them; a linked worktree finds them in the main
+    /// checkout's TestData. Their output is recorded too, and compared
+    /// wherever they are found.
     static let optionalTestDataBookNames = ["are-you-ready-d3-audio.zip", "fire-safety-d202-audio.zip"]
 
     // MARK: Format Samples
@@ -89,11 +90,42 @@ enum TextPipelineFixtures {
     /// sample (an RTFD, a NIMAS package) is named as the folder.
     static let formatSampleNames = [
         "format-samples/doc/headings.doc",
+        "format-samples/doc/libreoffice-changes-in-footnote.doc",
+        "format-samples/doc/libreoffice-fdo77844.doc",
+        "format-samples/doc/libreoffice-list-nolevel.doc",
+        "format-samples/doc/libreoffice-nonInlinePageBreakFirstLine.doc",
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
         "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf106799.doc",
+        "format-samples/doc/libreoffice-tdf112535.doc",
+        "format-samples/doc/libreoffice-tdf116194.doc",
+        "format-samples/doc/libreoffice-tdf121110_absJustify.doc",
+        "format-samples/doc/libreoffice-tdf139495_tinyHeader.doc",
+        "format-samples/doc/libreoffice-tdf150197_anlv2ListFormat.doc",
+        "format-samples/doc/libreoffice-tdf73056_cellMargins.doc",
+        "format-samples/doc/libreoffice-tdf76349_textboxMargins.doc",
         "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
+        "format-samples/doc/libreoffice-tdf89377_tableWithBreakBeforeParaStyle.doc",
+        "format-samples/doc/libreoffice-tdf95576.doc",
+        "format-samples/doc/libreoffice-tdf98284_softLockedFields.doc",
         "format-samples/doc/page-breaks.doc",
+        "format-samples/doc/poi-61911.doc",
+        "format-samples/doc/poi-Bug51944.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
+        "format-samples/docx/libreoffice-footnote.docx",
+        "format-samples/docx/libreoffice-nestedAlternateContent.docx",
+        "format-samples/docx/libreoffice-tdf109310_endnoteStyleForMSO.docx",
+        "format-samples/docx/libreoffice-tdf119800.docx",
+        "format-samples/docx/libreoffice-tdf123262_textFootnoteSeparators.docx",
+        "format-samples/docx/libreoffice-tdf138771.docx",
+        "format-samples/docx/libreoffice-tdf154370.docx",
+        "format-samples/docx/libreoffice-tdf32363.docx",
+        "format-samples/docx/libreoffice-tdf92470_footnoteRestart.docx",
         "format-samples/docx/page-breaks.docx",
         "format-samples/dot/headings-synthetic.dot",
         "format-samples/dot/libreoffice-tdf120761_zOrder.dot",
@@ -109,9 +141,36 @@ enum TextPipelineFixtures {
         "format-samples/epub3-pages/pagebreaks-only.epub",
         "format-samples/odt/handwritten.odt",
         "format-samples/odt/headings.odt",
+        "format-samples/odt/libreoffice-DUMMY2.odt",
+        "format-samples/odt/libreoffice-fdo66811-1.odt",
+        "format-samples/odt/libreoffice-fdo69862.odt",
+        "format-samples/odt/libreoffice-ooo32780-1.odt",
+        "format-samples/odt/libreoffice-ooo77837-1.odt",
+        "format-samples/odt/libreoffice-referencelanguage.odt",
+        "format-samples/odt/libreoffice-space.odt",
+        "format-samples/odt/libreoffice-spellmenu-redline.odt",
+        "format-samples/odt/libreoffice-tdf103025.odt",
+        "format-samples/odt/libreoffice-tdf128737.odt",
+        "format-samples/odt/libreoffice-tdf152015.odt",
+        "format-samples/odt/libreoffice-tdf152710.odt",
+        "format-samples/odt/libreoffice-tdf156905.odt",
+        "format-samples/odt/libreoffice-tdf169882.odt",
+        "format-samples/odt/libreoffice-whitespace.odt",
         "format-samples/ott/handwritten.ott",
         "format-samples/pdf/labelled-pages.pdf",
         "format-samples/rtf/headings.rtf",
+        "format-samples/rtf/libreoffice-cp950listleveltext2.rtf",
+        "format-samples/rtf/libreoffice-fdo44715.rtf",
+        "format-samples/rtf/libreoffice-fdo53556.rtf",
+        "format-samples/rtf/libreoffice-fdo74709.rtf",
+        "format-samples/rtf/libreoffice-rhbz1065629.rtf",
+        "format-samples/rtf/libreoffice-tdf108055.rtf",
+        "format-samples/rtf/libreoffice-tdf108123.rtf",
+        "format-samples/rtf/libreoffice-tdf121623.rtf",
+        "format-samples/rtf/libreoffice-tdf128428_dntblnsbdb.rtf",
+        "format-samples/rtf/libreoffice-tdf130817.rtf",
+        "format-samples/rtf/libreoffice-tdf146489.rtf",
+        "format-samples/rtf/libreoffice-tdf95706.rtf",
         "format-samples/rtf/page-breaks.rtf",
         "format-samples/rtf/word-list-table.rtf",
         "format-samples/rtf/word-styles.rtf",
@@ -135,7 +194,47 @@ enum TextPipelineFixtures {
     /// bug. Their goldens are not recorded or compared until the reader is
     /// fixed: then the entry goes and the golden is recorded in the same
     /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
-    static let formatSamplesHeldBack: [String: String] = [:]
+    ///
+    /// The real RTF files from LibreOffice are held back for another
+    /// reason: their reading is compared with textutil's word for word in
+    /// `RTFTextutilComparisonTests`, which names every difference, and a
+    /// golden of textutil's reading would pin what the own reader replaces
+    /// (textutil refuses three of them outright).
+    ///
+    /// The real DOCX files from LibreOffice are held back because the
+    /// questions they answer (hidden text, notes, text boxes) are asked of
+    /// them in `DOCXRealFileTests`, by name, where a failure says what changed.
+    /// Real Word 97-2003 files added with that reader's follow-ups (hidden
+    /// text, a fast-saved file's piece modifiers, list numbers, and text
+    /// boxes) are held back the same way: `WordDocumentReaderTests` pins what
+    /// each reads as, and `WordDocumentComparisonTests` compares their words
+    /// with textutil's and names every difference.
+    static let formatSamplesHeldBack: [String: String] = {
+        var heldBack: [String: String] = [:]
+        for name in formatSampleNames where name.hasPrefix("format-samples/rtf/libreoffice-") {
+            heldBack[name] = "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden"
+        }
+        for name in formatSampleNames where name.hasPrefix("format-samples/docx/libreoffice-") {
+            heldBack[name] = "read by name in DOCXRealFileTests instead of a golden"
+        }
+        for name in wordFollowUpSamples {
+            heldBack[name] = "pinned by WordDocumentReaderTests and compared with textutil's reading in WordDocumentComparisonTests instead of a golden"
+        }
+        return heldBack
+    }()
+
+    /// The Word 97-2003 samples added with the reader's follow-ups; see `formatSamplesHeldBack`.
+    private static let wordFollowUpSamples = [
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf112535.doc",
+        "format-samples/doc/libreoffice-tdf73056_cellMargins.doc",
+        "format-samples/doc/poi-61911.doc",
+        "format-samples/doc/poi-Bug51944.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
+    ]
 
     /// The folders of the format samples that macOS's own readers read
     /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can
@@ -176,14 +275,14 @@ enum TextPipelineFixtures {
 
     /// TestData's recorded books with their files: every one of
     /// `testDataBookNames`, and those of `optionalTestDataBookNames` that
-    /// this checkout holds.
+    /// this checkout holds or, from a linked worktree, the main checkout
+    /// holds (`testDataArchiveIfPresent(_:)`).
     /// - Throws: `TestError.fileNotFound` when one of `testDataBookNames`
     ///   is missing.
     static func testDataBooks() throws -> [(name: String, url: URL)] {
         let required = try testDataBookNames.map { (name: $0, url: try requireFile($0)) }
         let optional = optionalTestDataBookNames.compactMap { name -> (name: String, url: URL)? in
-            let url = URL(fileURLWithPath: testFilePath(name))
-            return FileManager.default.fileExists(atPath: url.path) ? (name, url) : nil
+            testDataArchiveIfPresent(name).map { (name, $0) }
         }
         return required + optional
     }

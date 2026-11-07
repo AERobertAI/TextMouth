@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -474,7 +478,7 @@ final class TextSubstitutionService: ObservableObject {
             .publisher(for: .dataDirectoryDidBecomeAvailable)
             .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
         activationSubscription = NotificationCenter.default
-            .publisher(for: NSApplication.didBecomeActiveNotification)
+            .publisher(for: PlatformApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
                 self?.readFileWaitingInTheCloud()
                 self?.readFileThatArrived()
@@ -875,8 +879,18 @@ final class TextSubstitutionService: ObservableObject {
     /// still in the cloud, nothing changes.
     func readFileWaitingInTheCloud() {
         guard rulesAwaitFileInCloud else { return }
+        // A change made to the stand-ins is reported unsaved (never the
+        // rules themselves): the file's rules replace them, so say so.
+        let hadChanges = PersistenceFailureCenter.shared.outstandingFailures().contains { $0.subject == .substitutions }
         loadRules()
         guard !rulesAwaitFileInCloud else { return }
+        if hadChanges {
+            DiagnosticLog.event(
+                .storage,
+                "SUBSTITUTIONS_FILE: changes made to the standard rules while the file was in the cloud "
+                    + "were dropped for the file's own rules"
+            )
+        }
         clearCompiledRules()
         PersistenceFailureCenter.shared.withdraw(.substitutions)
         DiagnosticLog.event(

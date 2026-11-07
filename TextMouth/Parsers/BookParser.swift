@@ -16,6 +16,13 @@ enum BookParser {
     ///   Mac's tables, the Mac's liblouis version it was read with
     ///   (`Book.brailleTableVersion`); another version refuses the reading
     ///   (review R2).
+    /// - Parameter brailleFileCode: For a braille book that is a BRF or BRL
+    ///   file, the braille file characters its file is read in, by the id
+    ///   the book records (`Book.recordedBrailleFileCode()`, braillecodes).
+    ///   Nil reads North American Braille ASCII, as every book that records
+    ///   none was read; an id this TextMouth does not know refuses the
+    ///   reading by name (`BrailleFileError.unknownFileCode`). A PEF, and
+    ///   every other format, ignores it.
     /// - Parameter encodingPolicy: For a plain-text, Markdown, or HTML book,
     ///   how its file is read, as the Markdown cache reads it: the policy of
     ///   the encoding the book records (`Book.recordedTextEncodingRecord()`),
@@ -28,6 +35,7 @@ enum BookParser {
         format: BookFormat,
         brailleTable: String? = nil,
         brailleTableVersion: String? = nil,
+        brailleFileCode: String? = nil,
         encodingPolicy: TextFileDecoder.EncodingPolicy = .fallback
     ) throws -> DocumentContent {
         switch format {
@@ -63,12 +71,19 @@ enum BookParser {
                 url: url,
                 title: url.deletingPathExtension().lastPathComponent,
                 table: brailleTable ?? BrailleTableCatalog.defaultTableID,
-                recordedVersion: brailleTableVersion
+                recordedVersion: brailleTableVersion,
+                fileCode: brailleFileCode
             )
         case .daisy:
             return try DAISYParser.parse(url: url)
         case .pdf:
             return try PDFTextParser.parse(url: url)
+        case .mobi:
+            // A Kindle book, read by TextMouth's own reader (FMT42).
+            return try MOBIParser.parse(url: url)
+        case .kfx:
+            // A DRM-free Kindle KFX book, read by TextMouth's own reader (FMT52).
+            return try KFXParser.parse(url: url)
         case .audio:
             // Audio parsing is async, so wait for it through the shared bridge.
             return try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {

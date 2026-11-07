@@ -244,7 +244,15 @@ final class ShortcutConfigFileTests: XCTestCase {
         file.keyboardShortcuts["Where Am I?"] = ["w", "shift+r"]
         try ConfigService.fileData(for: file).write(to: url, options: .atomic)
         service.handleFileEvent(.write)
-        waitPastConfigSaveDelay()
+        // Waited for, not a fixed window: the file is saved again once the
+        // save delay passes, which a busy Mac can stretch well past it. The
+        // edit gave Release Media Controls Shift-R, so the save is seen when
+        // the file gives it no keys.
+        let savedReleaseKeys = { (try? ConfigService.decode(Data(contentsOf: url)))?.keyboardShortcuts["Release Media Controls"] }
+        XCTAssertTrue(
+            waitUntil(timeout: 30) { savedReleaseKeys() == [] },
+            "config.json was never saved with the keys in force: Release Media Controls is \(String(describing: savedReleaseKeys()))"
+        )
 
         XCTAssertEqual(
             KeyboardShortcutManager.editsPreference.read(from: store),

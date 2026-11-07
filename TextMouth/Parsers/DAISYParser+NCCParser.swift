@@ -96,9 +96,15 @@ struct DAISY202NCCParser {
     /// Gather metadata, headings, and page entries from `node`'s descendants
     /// in document order. A direct walk keeps SwiftSoup's selector cache, whose cached
     /// results retain the document, out of a one-shot parse.
+    ///
+    /// The walk keeps its own stack of the elements still to visit rather
+    /// than calling itself for every element: SwiftSoup reads an NCC nested
+    /// thousands deep, and imports run on a worker thread's 512 KiB stack,
+    /// which such a call chain overflowed. Children are pushed last first,
+    /// so they are visited in document order.
     private static func collect(from node: Node, into result: inout DAISY202NCCResult) {
-        for child in node.getChildNodes() {
-            guard let element = child as? Element else { continue }
+        var stack = childElementsLastFirst(of: node)
+        while let element = stack.popLast() {
             let tag = element.tagName().lowercased()
             if tag == "meta" {
                 recordMetadata(from: element, into: &result)
@@ -112,9 +118,16 @@ struct DAISY202NCCParser {
                 // inside it is another entry.
                 result.pages.append(page(from: element))
             } else {
-                collect(from: element, into: &result)
+                stack += childElementsLastFirst(of: element)
             }
         }
+    }
+
+    /// The elements among `node`'s children, last first: pushed onto a
+    /// walk's stack of the elements still to visit, they are visited in
+    /// document order.
+    private static func childElementsLastFirst(of node: Node) -> [Element] {
+        node.getChildNodes().reversed().compactMap { $0 as? Element }
     }
 
     /// Whether `element`'s `class` attribute lists a page class. The
@@ -160,17 +173,18 @@ struct DAISY202NCCParser {
         return NCCHeading(level: level, text: text, href: firstLinkDestination(in: element) ?? "")
     }
 
-    /// The `href` of the first link inside `node` that has one.
+    /// The `href` of the first link inside `node` that has one, in document
+    /// order. Like `collect(from:into:)`, the search keeps its own stack of
+    /// the elements still to visit, so a heading nested thousands deep
+    /// cannot overflow a worker thread's stack.
     private static func firstLinkDestination(in node: Node) -> String? {
-        for child in node.getChildNodes() {
-            guard let element = child as? Element else { continue }
+        var stack = childElementsLastFirst(of: node)
+        while let element = stack.popLast() {
             if element.tagName().lowercased() == "a",
                let href = try? element.attr("href"), !href.isEmpty {
                 return href
             }
-            if let nested = firstLinkDestination(in: element) {
-                return nested
-            }
+            stack += childElementsLastFirst(of: element)
         }
         return nil
     }

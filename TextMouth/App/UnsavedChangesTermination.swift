@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// What to do with a request to quit (TODO S09).
 enum TerminationDecision: Equatable {
@@ -44,6 +48,7 @@ enum UnsavedChangesPrompt {
     static let choices = "Choose Retry to try saving them again, Quit Anyway to quit without them, "
         + "or Cancel to keep TextMouth open."
 
+#if os(macOS)
     /// Shows the prompt as an app-modal alert, bringing TextMouth forward,
     /// and returns the choice. Retry is the default button, so Return
     /// chooses it; Escape chooses Cancel.
@@ -64,6 +69,7 @@ enum UnsavedChangesPrompt {
         default: return .cancel
         }
     }
+#endif
 }
 
 /// Holds a request to quit while changes are unsaved (TODO S09). The
@@ -85,6 +91,7 @@ final class UnsavedChangesTerminationGuard {
     /// Whether the prompt is on its way or showing.
     private var isPrompting = false
 
+#if os(macOS)
     /// A guard over `failureCenter`. Tests replace the flush, the prompt,
     /// and the request to quit, so nothing is shown and nothing quits.
     init(
@@ -98,7 +105,23 @@ final class UnsavedChangesTerminationGuard {
         self.prompt = prompt
         self.requestTermination = requestTermination
     }
+#else
+    /// A guard over `failureCenter`. The iPhone has no quit to hold: the
+    /// prompt defaults to Cancel and the request to quit to nothing.
+    init(
+        failureCenter: PersistenceFailureCenter = .shared,
+        flush: @escaping @MainActor () -> Void = UnsavedChangesTerminationGuard.flushPendingWrites,
+        prompt: @escaping @MainActor ([PersistenceFailure]) -> UnsavedChangesChoice = { _ in .cancel },
+        requestTermination: @escaping @MainActor () -> Void = {}
+    ) {
+        self.failureCenter = failureCenter
+        self.flush = flush
+        self.prompt = prompt
+        self.requestTermination = requestTermination
+    }
+#endif
 
+#if os(macOS)
     /// Answers a request to quit: flushes, then quits unless changes are
     /// left unsaved. If they are, this request is cancelled and the prompt
     /// is shown once AppKit has the answer, since a modal alert run inside
@@ -125,6 +148,7 @@ final class UnsavedChangesTerminationGuard {
             return .terminateCancel
         }
     }
+#endif
 
     /// Shows the prompt and carries out the choice. Changes saved since the
     /// request leave nothing to ask about: TextMouth asks to quit again at
@@ -149,14 +173,20 @@ final class UnsavedChangesTerminationGuard {
     }
 
     /// Writes what the termination path writes, without ending anything:
-    /// the library index and every queued book record, then the statistics,
-    /// whose open listening session is credited so far but stays open in
-    /// case the user stays, then the settings changed in the last moment,
-    /// whose config.json save waits for changes to pause (PERF17).
-    /// Substitution rules are written as they change, so nothing of theirs
-    /// is pending. Each write's failure reaches the failure center before
-    /// this returns.
+    /// first every open reader's place, saved now, since a playing reader
+    /// saves it only every thirty seconds and no reader window closes as
+    /// TextMouth quits (`PlaybackMemoryGuard.saveEveryOpenReaderPosition()`);
+    /// then the library index and every queued book record, those places
+    /// among them; then the statistics, whose open listening session is
+    /// credited so far but stays open in case the user stays; then the
+    /// settings changed in the last moment, whose config.json save waits for
+    /// changes to pause (PERF17). Substitution rules are written as they
+    /// change, so nothing of theirs is pending. Each write's failure reaches
+    /// the failure center before this returns. A quit then cancelled has
+    /// only saved the places sooner than their next checkpoints would have.
     static func flushPendingWrites() {
+        // Before the library's flush, so that flush writes the places.
+        PlaybackMemoryGuard.shared.saveEveryOpenReaderPosition()
         LibraryPersistenceService.flushPendingSave()
         ReadingStatsService.shared.flushPendingSaves()
         ConfigService.shared.flushScheduledSave()

@@ -727,12 +727,10 @@ final class MenuKeyShortcutTests: XCTestCase {
             ShortcutsSettingsWording.refused(.systemCommand(commandQ, command: "Quit TextMouth"), for: .togglePlayback),
             "Command + Q not recorded for Play / Pause: Quit TextMouth has it in the menus, and no shortcut may take it."
         )
-        // Every default key of a system command's is its own action's.
-        for (action, keys) in ShortcutAction.defaultBindings {
-            for key in keys {
-                XCTAssertNil(action.refusal(of: key), "\(action.rawValue)'s default \(key.configText)")
-            }
-        }
+        // No default key is checked here: refusal(of:) never refuses an
+        // action's own default, so KeyboardReachabilityTests checks them
+        // without it (testNoDefaultTakesASystemCommandsKey and
+        // testAKeyEquivalentActionHasOneDefaultItsMenuCanTake).
         // Through the manager and config.json alike, the key stays macOS's.
         let manager = makeManager("system-commands")
         XCTAssertEqual(manager.addBinding(commandQ, to: .togglePlayback), .systemCommand(commandQ, command: "Quit TextMouth"))

@@ -124,6 +124,7 @@ final class LogsSettingsSectionTests: XCTestCase {
     /// without one this is skipped and the words are checked on their own
     /// (`testShowLogsInFindersWordsNameTheFolder`).
     func testShowLogsInFinderIsLabelledWithTheFolderItOpens() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         try TextMouthPaths.ensureDirectoryStructure()
 
         try withHostedControls(makeGroup(makeSettings())) { controls in

@@ -55,7 +55,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// The library a confirmed deletion acts in.
     private weak var deletionLibrary: LibraryViewModel?
     /// The window a confirmed deletion is announced from.
-    private weak var deletionWindow: NSWindow?
+    private weak var deletionWindow: PlatformWindow?
 
     /// A presenter whose dialogs reach `services`, and whose Clean Up sheet
     /// reaches `cleanupServices`.
@@ -73,7 +73,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// is not an audiobook, the sheet saying why, unless a sheet is open
     /// already. With `startsAtOnce`, the sheet presses Transcribe for the
     /// user as soon as it can.
-    func transcribe(_ books: [Book], library: LibraryViewModel, window: NSWindow?, startsAtOnce: Bool = false) {
+    func transcribe(_ books: [Book], library: LibraryViewModel, window: PlatformWindow?, startsAtOnce: Bool = false) {
         guard sheet == nil else { return }
         let model = TranscriptionSheetModel(
             request: TranscriptionRequest(books: books),
@@ -94,7 +94,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// Runs a library row's audio command, from its context menu or its
     /// VoiceOver actions: Edit Audio… opens the audio editor (FR04); the
     /// rest are transcription's.
-    func perform(_ command: LibraryAudioCommand, library: LibraryViewModel, window: NSWindow?) {
+    func perform(_ command: LibraryAudioCommand, library: LibraryViewModel, window: PlatformWindow?) {
         switch command {
         case .editAudio(let book):
             AudioEditorLauncher.edit(book, in: library, from: window)
@@ -121,7 +121,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// (`LibraryAudioCommand.isTranscribable(_:)`), such as a book without a
     /// package of its own, and says nothing aloud: nothing offers the command
     /// for such a book, so no listener can ask.
-    func cleanUp(_ book: Book, library: LibraryViewModel, window: NSWindow?) {
+    func cleanUp(_ book: Book, library: LibraryViewModel, window: PlatformWindow?) {
         // The menus' own rule, so every path through here agrees with them.
         guard cleanup == nil, LibraryAudioCommand.isTranscribable(book) else { return }
         let model = TranscriptCleanupSheetModel(book: book, library: library, services: cleanupServices())
@@ -142,7 +142,7 @@ final class TranscriptionPresenter: ObservableObject {
     /// edits go too, as the transcript, read off the main thread, records.
     /// While the same book is being transcribed, a notice says to wait
     /// instead.
-    func confirmDeletion(of book: Book, library: LibraryViewModel, window: NSWindow?) async {
+    func confirmDeletion(of book: Book, library: LibraryViewModel, window: PlatformWindow?) async {
         guard deletion == nil else { return }
         let services = services()
         if services.center.current?.bookID == book.id {
@@ -266,7 +266,7 @@ struct LibraryTranscriptionSupport: ViewModifier {
     let library: LibraryViewModel
     /// The Library window, which asks the questions of the imports started
     /// in it, and which announcements come from.
-    let hostWindow: NSWindow?
+    let hostWindow: PlatformWindow?
 
     func body(content: Content) -> some View {
         content
@@ -284,7 +284,7 @@ struct LibraryTranscriptionSupport: ViewModifier {
                 await TranscribedBooks.shared.refresh(library.library.books)
                 await TrackFolderBooks.shared.refresh(library.library.books)
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: PlatformApplication.didBecomeActiveNotification)) { _ in
                 Task {
                     await TranscribedBooks.shared.refresh(library.library.books)
                     await TrackFolderBooks.shared.refresh(library.library.books)
@@ -299,7 +299,7 @@ struct LibraryTranscriptionSupport: ViewModifier {
     @MainActor
     static func asks(
         _ acceptance: TranscriptionOfferAcceptance,
-        in window: NSWindow?,
+        in window: PlatformWindow?,
         router: LibraryWindowRouter = .shared
     ) -> Bool {
         guard let thisWindow = ImportOrigin(window: window) else { return false }

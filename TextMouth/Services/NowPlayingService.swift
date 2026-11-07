@@ -33,8 +33,14 @@ enum RemoteMediaCommandPolicy {
     }
 
     static func isBluetoothTransport(_ transportType: UInt32) -> Bool {
+        #if os(macOS)
         transportType == kAudioDeviceTransportTypeBluetooth
             || transportType == kAudioDeviceTransportTypeBluetoothLE
+        #else
+        // iOS has no Core Audio transport types; phase 1 reads the route type
+        // from the audio session instead. Until then nothing counts as Bluetooth.
+        false
+        #endif
     }
 }
 
@@ -1338,6 +1344,7 @@ final class NowPlayingService {
         // change notification has a meaningful baseline to compare against.
         refreshPreviousDeviceInfo()
 
+        #if os(macOS)
         var defaultOutputAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -1396,6 +1403,11 @@ final class NowPlayingService {
                 + "defaultActive=\(deviceChangeListenerBlock != nil) "
                 + "devicesActive=\(deviceListListenerBlock != nil)"
         )
+        #else
+        // iOS watches no devices yet (phase 1 will listen for the audio
+        // session's route changes), so there is nothing to register.
+        diagnostic("listener start ignored reason=device-watching-not-built-on-ios")
+        #endif
     }
 
     /// Handler for the default-output-device-changed notification.
@@ -1563,6 +1575,7 @@ final class NowPlayingService {
         if let defaultOutputDeviceProvider {
             return defaultOutputDeviceProvider()
         }
+        #if os(macOS)
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
         var address = AudioObjectPropertyAddress(
@@ -1579,6 +1592,10 @@ final class NowPlayingService {
             &deviceID
         )
         return status == noErr ? deviceID : nil
+        #else
+        // No device query on iOS yet: report no default output device.
+        return nil
+        #endif
     }
 
     /// Whether the given device reports itself as Bluetooth (classic or LE).
@@ -1590,6 +1607,7 @@ final class NowPlayingService {
         if let bluetoothDeviceProvider {
             return bluetoothDeviceProvider(deviceID)
         }
+        #if os(macOS)
         var transportType: UInt32 = 0
         var size = UInt32(MemoryLayout<UInt32>.size)
         var address = AudioObjectPropertyAddress(
@@ -1607,6 +1625,10 @@ final class NowPlayingService {
         )
         guard status == noErr else { return true }
         return RemoteMediaCommandPolicy.isBluetoothTransport(transportType)
+        #else
+        // No transport query on iOS yet: no device is known to be Bluetooth.
+        return false
+        #endif
     }
 
     /// Refresh the cached `previousDeviceWasBluetooth` flag and
@@ -1663,6 +1685,7 @@ final class NowPlayingService {
         if let audioDeviceIDsProvider {
             return audioDeviceIDsProvider()
         }
+        #if os(macOS)
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -1697,6 +1720,10 @@ final class NowPlayingService {
 
         let actualCount = Int(size) / MemoryLayout<AudioDeviceID>.size
         return Array(deviceIDs.prefix(actualCount))
+        #else
+        // No device list on iOS yet: report none, as a failed query does.
+        return []
+        #endif
     }
 
     private func stopDeviceChangeListener() {
@@ -1705,6 +1732,7 @@ final class NowPlayingService {
             return
         }
 
+        #if os(macOS)
         // The dispatch queue must match the one used in
         // startDeviceChangeListener(), otherwise the unregistration fails.
         if let block = deviceChangeListenerBlock {
@@ -1736,6 +1764,8 @@ final class NowPlayingService {
             )
             deviceListListenerBlock = nil
         }
+        #endif
+        // On iOS no listener is ever installed, so there is none to remove.
 
         isListeningForDeviceChanges = false
         diagnostic("listeners stopped")

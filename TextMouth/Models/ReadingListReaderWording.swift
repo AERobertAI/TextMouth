@@ -53,13 +53,11 @@ enum ReadingListReaderWording {
 
     /// What VoiceOver hears as Next in Reading List or Previous in Reading
     /// List opens `title` without starting it, as when this book was not
-    /// playing: "Opening: <title>"; and, when this reader's sleep timer kept
-    /// it from starting, why: "Opening: <title>. Not started because of the
-    /// sleep timer." A book that starts is announced as a book that
-    /// continues is (`EndOfBookWording.starting(_:)`).
-    static func opening(_ title: String, sleepTimerKeptItFromStarting: Bool) -> String {
-        let opening = "Opening: \(title)"
-        return sleepTimerKeptItFromStarting ? opening + ". Not started because of the sleep timer." : opening
+    /// playing: "Opening: <title>". A book that starts is announced as a book
+    /// that continues is (`EndOfBookWording.starting(_:)`). A running sleep
+    /// timer keeps nothing from starting: it goes on with the next book.
+    static func opening(_ title: String) -> String {
+        "Opening: \(title)"
     }
 
     /// What Next in Reading List (going down) or Previous in Reading List

@@ -5,9 +5,10 @@ import XCTest
 
 /// Page as a navigation unit (PG02): the Page skip unit and its place in the
 /// unit cycle, the pickers that offer it (the playback bar's leave it out
-/// for a book without pages), Next Page and Previous Page over a book's
-/// pages, the pages a skipped section is passed over for, the words
-/// VoiceOver hears, and the three actions that carry the commands.
+/// for a book without pages), `nextPage()` and `previousPage()`, which the
+/// Page unit moves with, called "Next Page" and "Previous Page" below, over a
+/// book's pages, the pages a skipped section is passed over for, the words
+/// VoiceOver hears, and Go to Page…'s action.
 @MainActor
 final class PageNavigationTests: XCTestCase {
 
@@ -378,6 +379,36 @@ final class PageNavigationTests: XCTestCase {
         XCTAssertFalse(reader.hasPages)
     }
 
+    /// In a book of one page every page command says so and moves nothing,
+    /// as in a book without pages, since there is no other page to go to
+    /// (the user's request, November 4, 2026), and the pickers leave Page
+    /// out unless it is the unit in force.
+    func testABookOfOnePageSaysSoAndMovesNothing() {
+        let reader = makePagedReader(pages: [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)])
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 50
+
+        reader.performSkip(unit: .page, forward: true)
+        XCTAssertEqual(reader.lastAnnouncement, "This book has only one page.")
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+
+        reader.lastAnnouncement = nil
+        reader.previousPage()
+        XCTAssertEqual(reader.lastAnnouncement, ReaderPageWording.onlyOnePage)
+        XCTAssertEqual(pagedPlace(of: reader), "0:50", "Previous Page moved to the page's start")
+
+        reader.lastAnnouncement = nil
+        reader.requestGoToPage()
+        XCTAssertEqual(reader.lastAnnouncement, "This book has only one page.")
+        XCTAssertEqual(reader.goToPageRequests, 0, "Go to Page… opened its panel")
+
+        XCTAssertTrue(reader.hasPages)
+        XCTAssertFalse(reader.hasSeveralPages)
+        XCTAssertFalse(reader.navigationUnitChoices(keeping: .seconds15).contains(.page))
+        XCTAssertTrue(reader.navigationUnitChoices(keeping: .page).contains(.page), "the unit in force stays")
+    }
+
     /// While the book loads every page command does nothing and says
     /// nothing, as Next Heading does: the reader has no book to ask yet, and
     /// "This book has no pages." for the moments a book with pages takes to
@@ -439,21 +470,42 @@ final class PageNavigationTests: XCTestCase {
 
     // MARK: - The Actions
 
-    /// The three actions: their titles, group, notifications, keys, and the
-    /// scope they work in.
-    func testThePageActions() {
-        let expected: [(ShortcutAction, String, Notification.Name, KeyBinding)] = [
-            (.nextPage, "Next Page", .nextPage, KeyBinding(key: "rightArrow", command: true, option: true)),
-            (.previousPage, "Previous Page", .previousPage, KeyBinding(key: "leftArrow", command: true, option: true)),
-            (.goToPage, "Go to Page…", .goToPage, KeyBinding(key: "g", command: true, option: true)),
-        ]
-        for (action, title, notification, binding) in expected {
-            XCTAssertEqual(action.title, title)
-            XCTAssertEqual(action.category, "Navigation")
-            XCTAssertEqual(action.notificationName, notification)
-            XCTAssertEqual(ShortcutAction.defaultBindings[action], [binding], title)
-            XCTAssertEqual(action.defaultScope, .app, title)
-        }
+    /// The one page action: its title, group, notification, key, and the
+    /// scope it works in. Moving from page to page is the Page unit's: the
+    /// separate Next Page and Previous Page commands were removed at the
+    /// user's request (November 5, 2026), and their names are no action's.
+    func testThePageAction() {
+        let action = ShortcutAction.goToPage
+        XCTAssertEqual(action.title, "Go to Page…")
+        XCTAssertEqual(action.category, "Navigation")
+        XCTAssertEqual(action.notificationName, .goToPage)
+        XCTAssertEqual(
+            ShortcutAction.defaultBindings[action],
+            [KeyBinding(key: "g", command: true, option: true)]
+        )
+        XCTAssertEqual(action.defaultScope, .app)
+        XCTAssertNil(ShortcutAction.named("Next Page"))
+        XCTAssertNil(ShortcutAction.named("Previous Page"))
+    }
+
+    /// A key the user gave one of the removed commands is left out of the
+    /// record of their edits, with a line saying why, and every other edit
+    /// in the record is kept. The record is in the store's own form, where
+    /// each key is an object; only `config.json` writes keys as "control+g".
+    func testAKeyGivenToARemovedPageCommandIsLeftOut() throws {
+        let record = #"""
+            {
+              "Next Page": [{"key": "n", "command": false, "option": false, "shift": false, "control": true}],
+              "Go to Page…": [{"key": "g", "command": false, "option": false, "shift": false, "control": true}]
+            }
+            """#
+        let reading = ShortcutEdits.reading(try XCTUnwrap(record.data(using: .utf8)))
+        XCTAssertEqual(reading.skipped.map(\.name), ["Next Page"])
+        XCTAssertEqual(reading.skipped.first?.reason, "names nothing TextMouth knows; leaving it out")
+        XCTAssertEqual(
+            reading.edits.keys(of: .goToPage),
+            [KeyBinding(key: "g", control: true)]
+        )
     }
 
     /// The playback bar's menus name the unit "Page", as they name the others.

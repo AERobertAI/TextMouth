@@ -322,12 +322,15 @@ extension FileImportService {
     ///
     /// 1. The original's size and MD5 hash are read first. A book whose
     ///    original cannot be read this way stays where it is.
-    /// 2. The copy goes into the book's usual package. A package already at
-    ///    that name is used only when it is this book's own and holds either
-    ///    no file under the original's name or an identical copy. Anything
-    ///    else there (another book's package, a different or partial file)
-    ///    is left untouched, and the book moves into a new package named by
-    ///    the same scheme with a fresh identifier.
+    /// 2. The copy goes into the book's usual package, under the name an
+    ///    import stages the original under (`stagedFileName(for:)`): its
+    ///    own, unless that is the text cache's, which the cache built in
+    ///    step 6 would otherwise replace. A package already at that name is
+    ///    used only when it is this book's own and holds either no file
+    ///    under the copy's name or an identical copy. Anything else there
+    ///    (another book's package, a different or partial file) is left
+    ///    untouched, and the book moves into a new package named by the
+    ///    same scheme with a fresh identifier.
     /// 3. A copy is written under a hidden name and renamed into place only
     ///    once it matches the original, so an interruption never leaves a
     ///    partial file where a copy is expected.
@@ -438,12 +441,12 @@ extension FileImportService {
     /// recorded the package. Only the usual package can hold such a move,
     /// because a move into a new package keeps its original. The package is
     /// accepted only on proof: its bookInfo.json names this book, and its
-    /// copy has the hash the library recorded for the original. Nil
-    /// otherwise.
+    /// copy, under the name the move gives it (`stagedFileName(for:)`), has
+    /// the hash the library recorded for the original. Nil otherwise.
     private static func finishedMigration(of book: Book) -> LegacyBookMigration? {
         let name = packageName(for: book, identifier: book.id)
         let package = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: name)
-        let content = package.appendingPathComponent(book.bookFileURL.lastPathComponent)
+        let content = package.appendingPathComponent(stagedFileName(for: book.bookFileURL))
         guard !book.md5Hash.isEmpty,
               (try? BookInfo.load(from: package))?.metadata.bookID == book.id,
               (try? ContentFingerprint(of: content))?.md5Hash == book.md5Hash else {
@@ -505,13 +508,13 @@ extension FileImportService {
     private enum UsualPackageState {
         /// Nothing: the package can be created there.
         case absent
-        /// The book's own package, without a file under the original's name.
+        /// The book's own package, without a file under the copy's name.
         case ownWithoutCopy
         /// The book's own package, holding an identical copy.
         case ownWithIdenticalCopy
         /// Anything else: another book's package, metadata that cannot be
         /// read, something other than a directory, or a different or partial
-        /// file under the original's name. It is left untouched.
+        /// file under the copy's name. It is left untouched.
         case occupied
     }
 
@@ -523,14 +526,16 @@ extension FileImportService {
         for book: Book,
         copyItem: (URL, URL) throws -> Void
     ) throws -> PlacedCopy {
-        let contentName = original.lastPathComponent
+        // The name an import stages the original under, so the text cache
+        // the migration builds beside the copy never replaces it.
+        let contentName = stagedFileName(for: original)
         let usualName = packageName(for: book, identifier: book.id)
         let usualPackage = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: usualName)
 
         switch stateOfUsualPackage(usualPackage, contentName: contentName, bookID: book.id, fingerprint: fingerprint) {
         case .absent:
             return try copyIntoNewPackage(
-                named: usualName, in: book.folderPath, original: original, matching: fingerprint,
+                named: usualName, in: book.folderPath, original: original, as: contentName, matching: fingerprint,
                 occupiedPackage: nil, copyItem: copyItem
             )
         case .ownWithoutCopy:
@@ -557,7 +562,7 @@ extension FileImportService {
                     continue
                 }
                 return try copyIntoNewPackage(
-                    named: name, in: book.folderPath, original: original, matching: fingerprint,
+                    named: name, in: book.folderPath, original: original, as: contentName, matching: fingerprint,
                     occupiedPackage: usualPackage, copyItem: copyItem
                 )
             }
@@ -589,17 +594,19 @@ extension FileImportService {
     }
 
     /// Creates the package `name` in `folderPath` and puts a verified copy
-    /// of `original` in it. When the copy fails, the package is removed.
+    /// of `original` in it, named `contentName`. When the copy fails, the
+    /// package is removed.
     private static func copyIntoNewPackage(
         named name: String,
         in folderPath: String,
         original: URL,
+        as contentName: String,
         matching fingerprint: ContentFingerprint,
         occupiedPackage: URL?,
         copyItem: (URL, URL) throws -> Void
     ) throws -> PlacedCopy {
         let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: name)
-        let content = package.appendingPathComponent(original.lastPathComponent)
+        let content = package.appendingPathComponent(contentName)
         do {
             // Without intermediate directories this refuses a package that
             // appeared since the name was checked, instead of writing into it.

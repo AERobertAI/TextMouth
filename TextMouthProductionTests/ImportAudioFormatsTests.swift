@@ -389,4 +389,26 @@ final class ImportAudioFormatsTests: XCTestCase {
             XCTAssertNil(AudioPlaybackService.metadataAsset(for: URL(fileURLWithPath: "/a/track.\(ext)")), ext)
         }
     }
+
+    /// An Ogg file named like a format TextMouth plays, .mp3 or .m4a, is
+    /// refused by its content: no metadata asset is made for it, and the
+    /// import's reading of its tags gives none, so the book is named after
+    /// its file. The files are "OggS" and a few bytes more, never played or
+    /// decoded: their tags are read only once the asset is refused, so not
+    /// even a test of a broken guard hands them to AVFoundation.
+    func testNoMetadataAssetIsMadeForOggUnderAnotherName() throws {
+        for name in ["track.mp3", "track.m4a"] {
+            let file = folder.appendingPathComponent(name)
+            try (Data("OggS".utf8) + Data(count: 23)).write(to: file)
+            guard AudioPlaybackService.metadataAsset(for: file) == nil else {
+                XCTFail("\(name) was opened as an asset")
+                continue
+            }
+
+            let metadata = ImportedFileMetadata.read(from: file, format: .audio)
+
+            XCTAssertEqual(metadata.title, "track", name)
+            XCTAssertEqual(metadata.author, Book.unknownAuthor, name)
+        }
+    }
 }
