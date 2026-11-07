@@ -50,7 +50,7 @@ enum SubRipReader {
     /// of digits followed by anything else is: "We counted to" and "3".
     /// The lines after a timing line whose times do not read end the same
     /// way, so one broken cue never takes the next cue's lines with it.
-    private static func endOfText(after timingLine: Int, in lines: [TimedTextMarkup.Line]) -> Int {
+    private static func endOfText(after timingLine: Int, in lines: TimedTextMarkup.Lines) -> Int {
         var index = timingLine + 1
         while index < lines.count {
             let line = lines[index]

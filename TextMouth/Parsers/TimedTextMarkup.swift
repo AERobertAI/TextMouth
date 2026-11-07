@@ -133,6 +133,48 @@ enum TimedTextMarkup {
 
     // MARK: Lines
 
+    /// The lines of a file: its text as UTF-8 bytes, held once, and where
+    /// each line begins, four bytes to a line.
+    ///
+    /// An array of one `ArraySlice` per line would take 32 bytes for each
+    /// line, so a 20 MB file of nothing but line feeds (20 million empty
+    /// lines) would take some 640 MB; this takes 80 MB, and a line is made
+    /// only when the reader asks for it. It splits the text exactly as
+    /// `split(separator: lineFeed, omittingEmptySubsequences: false)` does:
+    /// a text holding n line feeds has n + 1 lines, the first and last
+    /// possibly empty.
+    struct Lines: RandomAccessCollection {
+        /// The whole text, as UTF-8 bytes.
+        private let bytes: [UInt8]
+        /// Where each line begins in `bytes`: the first at 0, each other
+        /// just after a line feed.
+        private let starts: [UInt32]
+
+        /// The lines of `bytes`; nil when they number more than a
+        /// four-byte offset reaches (4 GB), far beyond a file TextMouth reads.
+        init?(bytes: [UInt8]) {
+            guard bytes.count < Int(UInt32.max) else { return nil }
+            var starts: [UInt32] = [0]
+            for (offset, byte) in bytes.enumerated() where byte == Byte.lineFeed {
+                starts.append(UInt32(offset + 1))
+            }
+            self.bytes = bytes
+            self.starts = starts
+        }
+
+        var startIndex: Int { 0 }
+        var endIndex: Int { starts.count }
+
+        /// The line at `index`, without its line feed.
+        subscript(index: Int) -> Line {
+            let start = Int(starts[index])
+            // A line ends just before the next one begins, less the line
+            // feed between them; the last ends with the text.
+            let end = index + 1 < starts.count ? Int(starts[index + 1]) - 1 : bytes.count
+            return bytes[start..<end]
+        }
+    }
+
     /// The lines of the timed-text file whose bytes are `data`, a file of
     /// `format`. The bytes are read by `TextFileDecoder` as a new text file
     /// is: leading byte-order marks dropped, UTF-8 and UTF-16 recognized, a
@@ -141,7 +183,7 @@ enum TimedTextMarkup {
     /// - Throws: `TimedTextError.notTimedText(format)` when the bytes cannot
     ///   be read as text: a UTF-16 or UTF-32 byte-order mark before bytes
     ///   that are not in its encoding.
-    static func lines(of data: Data, format: TimedTextFormat) throws -> [Line] {
+    static func lines(of data: Data, format: TimedTextFormat) throws -> Lines {
         let decoded: DecodedText
         do {
             decoded = try TextFileDecoder.decode(
@@ -152,7 +194,10 @@ enum TimedTextMarkup {
             // the file; a timed-text reader throws its own kind alone.
             throw TimedTextError.notTimedText(format)
         }
-        return Array(decoded.text.utf8).split(separator: Byte.lineFeed, omittingEmptySubsequences: false)
+        guard let lines = Lines(bytes: Array(decoded.text.utf8)) else {
+            throw TimedTextError.notTimedText(format)
+        }
+        return lines
     }
 
     /// Whether `line` is blank: empty, or nothing but spaces and tabs.
@@ -233,14 +278,16 @@ enum TimedTextMarkup {
         guard let timing = timing(of: timingLine),
               let start = timing.start, let end = timing.end,
               start <= end, end <= Transcript.maximumMilliseconds else { return nil }
-        let (text, voice) = cueText(of: textLines, removingOverrides: removingOverrides)
+        let (text, voice, lastVoice) = cueText(of: textLines, removingOverrides: removingOverrides)
         guard !text.isEmpty else { return nil }
-        return TimedTextCue(startMilliseconds: start, endMilliseconds: end, text: text, voice: voice)
+        return TimedTextCue(
+            startMilliseconds: start, endMilliseconds: end, text: text, voice: voice, lastVoice: lastVoice
+        )
     }
 
     // MARK: Markup
 
-    /// The text and voice of a cue whose lines of text are `lines`, joined
+    /// The text, voice, and last voice of a cue whose lines of text are `lines`, joined
     /// by line feeds and read once from start to end.
     ///
     /// - Every tag, from a "<" to the next ">", is removed, and its text
@@ -258,7 +305,7 @@ enum TimedTextMarkup {
     /// - Last, the text is finished with `TimedTextCue.plainText`.
     private static func cueText(
         of lines: some Collection<Line>, removingOverrides: Bool
-    ) -> (text: String, voice: String?) {
+    ) -> (text: String, voice: String?, lastVoice: String?) {
         var raw: [UInt8] = []
         for (number, line) in lines.enumerated() {
             if number > 0 { raw.append(Byte.lineFeed) }
@@ -435,10 +482,17 @@ private struct CueTextBuilder {
         namedLast = name
     }
 
-    /// The cue's text, finished with `TimedTextCue.plainText`, and its voice.
-    mutating func finished() -> (text: String, voice: String?) {
+    /// The cue's text, finished with `TimedTextCue.plainText`, its voice, and
+    /// the voice speaking at its end when that is another.
+    mutating func finished() -> (text: String, voice: String?, lastVoice: String?) {
         decodeUndecoded()
-        return (TimedTextCue.plainText(String(decoding: decoded, as: UTF8.self)), voice)
+        // The voice speaking last is told apart only when it is not the
+        // cue's own (`TimedTextCue.lastVoice`).
+        return (
+            TimedTextCue.plainText(String(decoding: decoded, as: UTF8.self)),
+            voice,
+            namedLast == voice ? nil : namedLast
+        )
     }
 
     /// Moves the text not yet decoded to the decoded text, its character

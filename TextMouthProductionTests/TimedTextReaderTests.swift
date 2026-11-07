@@ -76,7 +76,8 @@ final class TimedTextReaderTests: XCTestCase {
     /// Asserts what every document read promises: its format, at least one
     /// cue, in the order they begin, each ending at or after its start and
     /// no later than `Transcript.maximumMilliseconds`, with plain text that
-    /// is never blank and a voice that is nil or never blank.
+    /// is never blank and a voice that is nil or never blank, and whose
+    /// sentences make a transcript `Transcript.validationFailure()` accepts.
     private func assertKeepsItsPromises(
         _ document: TimedTextDocument, format: TimedTextFormat, _ label: String,
         file: StaticString = #filePath, line: UInt = #line
@@ -90,7 +91,11 @@ final class TimedTextReaderTests: XCTestCase {
             XCTAssertFalse(cue.text.isEmpty, label, file: file, line: line)
             XCTAssertEqual(cue.text, TimedTextCue.plainText(cue.text), label, file: file, line: line)
             XCTAssertNotEqual(cue.voice, "", label, file: file, line: line)
+            XCTAssertNotEqual(cue.lastVoice, "", label, file: file, line: line)
         }
+        // The promise that matters to a listener: the sentences made of the
+        // cues, voices named, are ones a transcript trusts.
+        assertSentencesAreTrusted(document, label, file: file, line: line)
     }
 
     /// A linear congruential generator (Knuth's MMIX constants) with a fixed
@@ -404,6 +409,25 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(try SubRipReader.read(data).cues, [cue(1_000, 2_000, "A café at the corner.")])
     }
 
+    /// A SubRip file in Shift JIS, as Japanese subtitle tools write one,
+    /// reads as its Japanese text and not as a string of accented
+    /// letters: eight lines are enough for the encoding to be known.
+    func testAShiftJISSubRipFileReadsInItsEncoding() throws {
+        let sentences = [
+            "こんにちは、今日はいい天気ですね。", "はい、散歩に行きましょう。", "駅の近くに新しい喫茶店ができました。",
+            "コーヒーが大好きなので、楽しみです。", "それでは、三時に会いましょう。", "遅れないように気をつけてください。",
+            "雨が降るかもしれないので、傘を持って行きます。", "では、後でまたお会いしましょう。",
+        ]
+        let text = sentences.enumerated().map { number, sentence in
+            "\(number + 1)\r\n00:00:\(String(format: "%02d", number * 2)),000 --> 00:00:\(String(format: "%02d", number * 2 + 1)),500\r\n\(sentence)\r\n"
+        }.joined(separator: "\r\n")
+        let data = try XCTUnwrap(text.data(using: .shiftJIS))
+
+        let document = try SubRipReader.read(data)
+
+        XCTAssertEqual(document.cues.map(\.text), sentences)
+    }
+
     /// A file whose byte-order mark names UTF-16, but whose bytes are not
     /// UTF-16, is not timed text, and each reader says so in its own words.
     func testBytesNotInTheEncodingTheirMarkNamesAreNotTimedText() {
@@ -528,6 +552,40 @@ final class TimedTextReaderTests: XCTestCase {
             try webVTTCue("<v Ana>One.\n<v Ben>Two.\n<v Ben>Three.\n<v Ana>Four.").text,
             "One. Ben: Two. Three. Ana: Four."
         )
+    }
+
+    /// A cue in which another voice takes over ends in that voice, and the
+    /// sentences name speakers by it: the next cue in the first voice names
+    /// her again (else a listener hears her words as Ben's), and one in the
+    /// second voice names nobody, since Ben spoke last. A cue that ends in
+    /// its own voice has no last voice.
+    func testTheVoiceThatSpeaksLastInACueIsTheOneNamedLast() throws {
+        let handedOver = try webVTT("""
+            WEBVTT
+
+            00:01.000 --> 00:02.000
+            <v Ana>Hi.<v Ben>Hello.
+
+            00:03.000 --> 00:04.000
+            <v Ana>Bye.
+
+            00:05.000 --> 00:06.000
+            <v Ana>Again.
+            """)
+        XCTAssertEqual(handedOver.cues.map(\.lastVoice), ["Ben", nil, nil])
+        XCTAssertEqual(handedOver.sentences.map(\.text), ["Ana: Hi. Ben: Hello.", "Ana: Bye.", "Again."])
+
+        let continued = try webVTT("""
+            WEBVTT
+
+            00:01.000 --> 00:02.000
+            <v Ana>Hi.<v Ben>Hello.<v Ana>Yes.<v Ben>No.
+
+            00:03.000 --> 00:04.000
+            <v Ben>Right.
+            """)
+        XCTAssertEqual(continued.cues.map(\.lastVoice), ["Ben", nil])
+        XCTAssertEqual(continued.sentences.map(\.text), ["Ana: Hi. Ben: Hello. Ana: Yes. Ben: No.", "Right."])
     }
 
     /// A voice's classes are not its name (`<v.loud.first Ben>` is "Ben"),
@@ -854,6 +912,59 @@ final class TimedTextReaderTests: XCTestCase {
         }
     }
 
+    /// Each sample, damaged at random from a fixed seed (up to six bytes
+    /// changed, added, or removed; 300 times each), either reads into a
+    /// document whose sentences a transcript trusts or is refused with a
+    /// `TimedTextError`, by either reader: the damage a truncated download
+    /// or a bad disk does inside a tag, a time, a reference, or a
+    /// multi-byte character.
+    func testRandomlyDamagedSamplesReadOrAreRefused() throws {
+        var generator = SeededGenerator(state: 0xD43A6E)
+        for samplePath in ["vtt/tone4.vtt", "srt/tone4.srt"] {
+            let bytes = try Data(contentsOf: copyOfFormatSample(samplePath))
+            for round in 0..<300 {
+                assertReadsOrRefuses(damaged(bytes, using: &generator), "\(samplePath), damage round \(round)")
+            }
+        }
+    }
+
+    /// The lines of a text (`TimedTextMarkup.Lines`, held as offsets into
+    /// the text's bytes) are exactly the lines splitting it at each line
+    /// feed gives, empty ones at the start, the end, and between two line
+    /// feeds included, and an empty text is one empty line.
+    func testTheLinesOfATextAreWhatSplittingItAtLineFeedsGives() throws {
+        var generator = SeededBytes(seed: 0x11E5)
+        let alphabet: [UInt8] = [10, 97, 98]
+        var texts: [[UInt8]] = [[], [10], [97], [10, 10], [97, 10], [10, 97], [97, 10, 98, 10, 10, 99]]
+        for _ in 0..<60 {
+            texts.append((0..<Int(generator.next() % 48)).map { _ in alphabet[Int(generator.next()) % alphabet.count] })
+        }
+
+        for bytes in texts {
+            let lines = try XCTUnwrap(TimedTextMarkup.Lines(bytes: bytes))
+            let expected = bytes.split(separator: 10, omittingEmptySubsequences: false)
+            XCTAssertEqual(lines.count, expected.count, "\(bytes)")
+            XCTAssertEqual(lines.map { Array($0) }, expected.map { Array($0) }, "\(bytes)")
+        }
+    }
+
+    /// A file of millions of blank lines is held as offsets, not as a
+    /// slice of bytes for each (some 640 MB for 20 million lines on a Mac
+    /// with 8 GB), and is read by either reader in a moment.
+    func testAFileOfNothingButBlankLinesReadsInAMoment() throws {
+        let blank = [UInt8](repeating: 10, count: 4_000_000)
+        let webVTTFile = Data("WEBVTT\n\n00:01.000 --> 00:02.000\nHello.\n".utf8) + blank
+        let subRipFile = Data("1\n00:00:01,000 --> 00:00:02,000\nHello.\n".utf8) + blank
+
+        var texts: [String] = []
+        let elapsed = try ContinuousClock().measure {
+            texts = [try WebVTTReader.read(webVTTFile).cues[0].text, try SubRipReader.read(subRipFile).cues[0].text]
+        }
+
+        XCTAssertEqual(texts, ["Hello.", "Hello."])
+        XCTAssertLessThan(elapsed, .seconds(10))
+    }
+
     /// A hostile cue of 150,000 "<" and "{\" with no ">" or "}" after them
     /// stays as text and reads in a moment, in either format: each is known
     /// at once to have no closer, rather than by reading the rest of the cue
@@ -868,5 +979,51 @@ final class TimedTextReaderTests: XCTestCase {
 
         XCTAssertEqual(texts.map { $0 == hostile }, [true, true], "each cue keeps its characters as text")
         XCTAssertLessThan(elapsed, .seconds(10))
+    }
+}
+
+// MARK: - What the Reader Tests Share
+
+extension XCTestCase {
+    /// Asserts that the sentences of `document` make a transcript TextMouth
+    /// trusts (`Transcript.validationFailure()`), and that each word of a
+    /// cue still lies over the characters it lay over in the cue's text
+    /// after a voice is named before it. `label` names the case.
+    func assertSentencesAreTrusted(
+        _ document: TimedTextDocument, _ label: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let transcript = TranscriptFixtures.transcript([(path: "a.mp3", duration: 0, sentences: document.sentences)])
+        XCTAssertNil(transcript.validationFailure(), label, file: file, line: line)
+        for (cue, sentence) in zip(document.cues, document.sentences) {
+            let before = Array(cue.text.utf16)
+            let after = Array(sentence.text.utf16)
+            for (original, moved) in zip(cue.words, sentence.words) {
+                guard original.characterOffset + original.characterCount <= before.count,
+                      moved.characterOffset + moved.characterCount <= after.count else {
+                    XCTFail("\(label): a word lies outside its text", file: file, line: line)
+                    continue
+                }
+                XCTAssertEqual(
+                    Array(before[original.characterOffset..<(original.characterOffset + original.characterCount)]),
+                    Array(after[moved.characterOffset..<(moved.characterOffset + moved.characterCount)]),
+                    "\(label): a word moved onto other characters", file: file, line: line
+                )
+            }
+        }
+    }
+
+    /// `data` with between one and six bytes changed, added, or removed at
+    /// places `generator` picks, so a run is the same each time.
+    func damaged(_ data: Data, using generator: inout SeededGenerator) -> Data {
+        var bytes = [UInt8](data)
+        for _ in 0..<Int(1 + generator.next() % 6) where !bytes.isEmpty {
+            let position = Int(generator.next() % UInt64(bytes.count))
+            switch generator.next() % 3 {
+            case 0: bytes[position] = UInt8(truncatingIfNeeded: generator.next())
+            case 1: bytes.insert(UInt8(truncatingIfNeeded: generator.next()), at: position)
+            default: bytes.remove(at: position)
+            }
+        }
+        return Data(bytes)
     }
 }
