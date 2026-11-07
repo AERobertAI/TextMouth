@@ -282,6 +282,22 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertEqual(FeedEpisodeExtras.logReason(of: secret), "error 4 in NSCocoaErrorDomain")
     }
 
+    /// The version a file names for itself is the file's own text, and never
+    /// reaches the log, whatever it holds: a line break in it would make a
+    /// line of the log of its own.
+    func testTheVersionAFileNamesNeverReachesTheLog() {
+        let hostile = "9
+FEED_DOWNLOAD_FINISHED: x"
+        let transcript = FeedEpisodeExtras.logReason(of: TimedTextError.unsupportedVersion(.podcastJSON, hostile))
+        XCTAssertEqual(transcript, "it is a Podcasting 2.0 JSON transcript of a version TextMouth doesn't read")
+        let chapters = FeedEpisodeExtras.logReason(of: PodcastChaptersError.unsupportedVersion(hostile))
+        XCTAssertEqual(chapters, "its version is not one TextMouth reads")
+        for reason in [transcript, chapters] {
+            XCTAssertFalse(reason.contains("FEED_DOWNLOAD_FINISHED") || reason.contains("
+"), reason)
+        }
+    }
+
     /// A WebVTT link answering "not found" goes on to the JSON link after it,
     /// whose transcript the episode then takes, with its format recorded.
     func testTheNextTranscriptLinkIsTriedWhenOneFails() async throws {

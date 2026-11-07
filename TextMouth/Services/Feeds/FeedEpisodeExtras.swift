@@ -363,7 +363,8 @@ enum FeedEpisodeExtras {
 
     /// Why reading a fetched file, or attaching the transcript read from
     /// one, failed with `error`, for the debug log: TextMouth's own words
-    /// for its own errors, which never quote the file or name a path (a
+    /// for its own errors, which never quote the file (not even the version
+    /// it names) or name a path (a
     /// chapters file's reason, a timed-text file's, a transcript's that
     /// does not fit, a transcription's, or a transcript text's), and any
     /// other error by its code and domain, since its own words can name a
@@ -371,10 +372,20 @@ enum FeedEpisodeExtras {
     static func logReason(of error: any Error) -> String {
         switch error {
         case let error as PodcastChaptersError:
+            // The version a file gives is the file's own text, which can hold
+            // a line break and so a line of its own in the log: it is never
+            // quoted, though the error cuts it short.
+            if case .unsupportedVersion = error {
+                return "its version is not one TextMouth reads"
+            }
             return error.description
         case let error as TranscriptTextError:
             return error.logDescription
         case let error as TimedTextError:
+            // Likewise the version of a transcript.
+            if case .unsupportedVersion(let format, _) = error {
+                return "it is a \(format.name) transcript of a version TextMouth doesn't read"
+            }
             return error.localizedDescription
         case let error as OutsideTranscriptError:
             return error.localizedDescription
