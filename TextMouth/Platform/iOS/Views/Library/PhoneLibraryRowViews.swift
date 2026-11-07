@@ -114,9 +114,11 @@ struct PhoneContinueRowView: View, Equatable {
                     .frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(.borderless)
+            // The Mac's Play button's words, for whatever reads it by name.
+            .accessibilityLabel(PhoneAppWording.playButton(isPlaying: value.isPlaying))
             // Not in VoiceOver's order: the magic tap plays and pauses from
             // here (principle 9's named exception).
-            .accessibilityHidden(true)
+            .accessibilityHidden(true) // lint-ok: the spec's Continue row keeps Play out of VoiceOver's order
         }
     }
 
