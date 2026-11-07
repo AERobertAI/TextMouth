@@ -34,13 +34,19 @@ enum MarkupGuard {
         var deepestNesting: Int
         /// The most tags read in one document, by `Inspection.tags`.
         var mostTags: Int
+        /// The most attributes read in one document, by `Inspection.attributes`.
+        var mostAttributes: Int
         /// The most attributes read on one tag.
         var mostAttributesOnATag: Int
+        /// The most work the parser may be set, by `Inspection.work`.
+        var mostWork: Int
 
         /// The limits every reading has.
         ///
         /// REAL_LIMITS
-        static let standard = Limits(deepestNesting: 256, mostTags: 4_000_000, mostAttributesOnATag: 10_000)
+        static let standard = Limits(
+            deepestNesting: 256, mostTags: 1_000_000, mostAttributes: 2_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
+        )
     }
 
     /// The limits in force: `Limits.standard`, unless a test binds others with
@@ -106,8 +112,13 @@ enum MarkupGuard {
         /// What takes a node in the tree: start tags, comments, and declarations
         /// read, and the elements the parser makes beyond them. An end tag takes none.
         var tags = 0
+        /// The attributes those nodes hold.
+        var attributes = 0
         /// The most attributes on any one tag.
-        var mostAttributes = 0
+        var mostAttributesOnATag = 0
+        /// What SwiftSoup spends where its time grows with the square of the
+        /// markup, in about a nanosecond each; next to nothing in a real book.
+        var work = 0
         /// Declarations that would trap SwiftSoup's XML parser, whole, in order.
         var brokenDeclarations: [Range<Int>] = []
     }
@@ -143,17 +154,20 @@ enum MarkupGuard {
                     break
                 case let .startTag(tag):
                     try countNode()
-                    try noteAttributes(of: tag)
+                    try noteAttributes(of: tag, holdsThem: true)
                     open.start(tag)
-                    try noteDepth(open.depth)
+                    // A self-closed element stands a level below what is open.
+                    try noteDepth(tag.isSelfClosing ? open.depth + 1 : open.depth)
                 case let .endTag(tag):
-                    try noteAttributes(of: tag)
+                    try noteAttributes(of: tag, holdsThem: false)
                     open.end(tag)
                 case .comment, .doctype:
                     try countNode()
                 case let .declaration(data, whole):
                     try countNode()
-                    if MarkupDeclaration.wouldTrap(scanner.bytes[data]) {
+                    if let tag = MarkupDeclaration.tagOfTakenApartDeclaration(scanner.bytes[data]) {
+                        try noteAttributes(of: tag, holdsThem: true)
+                    } else if MarkupDeclaration.isTakenApart(scanner.bytes[data]) {
                         inspection.brokenDeclarations.append(whole)
                     }
                 case .finished:
@@ -167,14 +181,15 @@ enum MarkupGuard {
             var open = HTMLOpenElements(bytes: scanner.bytes)
             // The elements the parser has that the count leaves out: `html` and `body`.
             let unseen = 2
-            var madeCounted = 0
+            inspection.deepest = unseen
+            var counted = HTMLOpenElements.Costs()
             while true {
                 switch scanner.next() {
                 case let .text(range):
                     open.text(range)
                 case let .startTag(tag):
                     try countNode()
-                    try noteAttributes(of: tag)
+                    try noteAttributes(of: tag, holdsThem: true)
                     let change = open.start(tag, name: scanner.lowercasedName(tag.name))
                     guard open.tagsAreCertain else {
                         try countEverythingAhead(from: open.depth + unseen)
@@ -186,11 +201,12 @@ enum MarkupGuard {
                     case let .rawText(kind):
                         // A raw text element comes off the stack with its text.
                         _ = scanner.skipRawText(kind, name: scanner.lowercasedName(tag.name))
+                        try addWork(scanner.takeWork())
                     case .rest:
                         scanner.skipToEnd()
                     }
                 case let .endTag(tag):
-                    try noteAttributes(of: tag)
+                    try noteAttributes(of: tag, holdsThem: false)
                     open.end(tag, name: scanner.lowercasedName(tag.name))
                 case .comment, .doctype, .declaration:
                     try countNode()
@@ -199,8 +215,11 @@ enum MarkupGuard {
                 }
                 try noteDepth(open.depth + unseen)
                 // Elements made again, or made by a stray end tag, cost what any other does.
-                try countMade(open.madeElements - madeCounted)
-                madeCounted = open.madeElements
+                let costs = open.costs
+                try countMade(costs.elements - counted.elements)
+                try countAttributes(costs.attributes - counted.attributes)
+                try addWork(costs.work - counted.work)
+                counted = costs
             }
         }
 
@@ -213,12 +232,25 @@ enum MarkupGuard {
             scanner.skipToEnd()
         }
 
-        /// Records how many attributes a tag names.
-        private mutating func noteAttributes(of tag: MarkupScanner.Tag) throws {
-            inspection.mostAttributes = max(inspection.mostAttributes, tag.attributeCount)
+        /// Records how many attributes a tag names, which it keeps unless it is an end tag.
+        private mutating func noteAttributes(of tag: MarkupScanner.Tag, holdsThem: Bool) throws {
+            inspection.mostAttributesOnATag = max(inspection.mostAttributesOnATag, tag.attributeCount)
             guard tag.attributeCount <= limits.mostAttributesOnATag else {
                 throw MarkupRefusal.tooManyAttributes(limit: limits.mostAttributesOnATag)
             }
+            if holdsThem { try countAttributes(tag.attributeCount) }
+        }
+
+        /// Counts `made` more attributes.
+        private mutating func countAttributes(_ made: Int) throws {
+            inspection.attributes += made
+            guard inspection.attributes <= limits.mostAttributes else { throw MarkupRefusal.tooManyAttributes(limit: limits.mostAttributes) }
+        }
+
+        /// Counts `made` more of what SwiftSoup's time grows with the square of.
+        private mutating func addWork(_ made: Int) throws {
+            inspection.work += made
+            guard inspection.work <= limits.mostWork else { throw MarkupRefusal.tooMuchWork }
         }
 
         /// Counts one more thing that takes memory.
@@ -270,23 +302,34 @@ enum MarkupGuard {
 /// What SwiftSoup's XML parser does with a declaration
 /// (`XmlTreeBuilder.insert(_:)` for a comment token).
 enum MarkupDeclaration {
-    /// Whether the declaration whose text is `data` stops the process. The text
-    /// is taken apart when it has two or more characters and begins `?` or `!`:
-    /// `<` and everything but its first and last character and `>` is parsed
-    /// again, and the result must hold an element.
-    ///
-    /// A tag whose name begins with a letter does, unless an open quotation
-    /// mark runs through the `>` so that the tag never ends. Whatever begins
-    /// another way is taken to trap, without looking further: a real declaration
-    /// never does, and what such a one is rewritten as reads the same.
-    static func wouldTrap(_ data: ArraySlice<UInt8>) -> Bool {
+    /// Whether SwiftSoup takes the declaration whose text is `data` apart: it
+    /// has two or more characters and begins `?` or `!`. Any other is a comment to it.
+    static func isTakenApart(_ data: ArraySlice<UInt8>) -> Bool {
         let text = String(decoding: data, as: UTF8.self)
-        guard text.count > 1, text.hasPrefix("?") || text.hasPrefix("!") else { return false }
-        let inner = Array(text.dropFirst().dropLast().utf8)
-        guard let first = inner.first, Ascii.isLetter(first) else { return true }
+        return text.count > 1 && (text.hasPrefix("?") || text.hasPrefix("!"))
+    }
+
+    /// The start tag the declaration whose text is `data` makes when it is taken
+    /// apart, or nil when it makes none: `<` and everything but its first and last
+    /// character and `>` is parsed again.
+    ///
+    /// Text whose name begins with a letter makes a tag, unless an open quotation
+    /// mark runs through the `>` so that the tag never ends. What begins another
+    /// way is taken to make none, without looking further: a real declaration
+    /// never does, and what such a one is rewritten as reads the same.
+    static func tagOfTakenApartDeclaration(_ data: ArraySlice<UInt8>) -> MarkupScanner.Tag? {
+        guard isTakenApart(data) else { return nil }
+        let inner = Array(String(decoding: data, as: UTF8.self).dropFirst().dropLast().utf8)
+        guard let first = inner.first, Ascii.isLetter(first) else { return nil }
         var scanner = MarkupScanner(bytes: [Ascii.lessThan] + inner + [Ascii.greaterThan])
-        guard case .startTag = scanner.next() else { return true }
-        return false
+        guard case let .startTag(tag) = scanner.next() else { return nil }
+        return tag
+    }
+
+    /// Whether the declaration whose text is `data` stops the process: SwiftSoup
+    /// takes it apart, and asks the result for an element it does not hold.
+    static func wouldTrap(_ data: ArraySlice<UInt8>) -> Bool {
+        isTakenApart(data) && tagOfTakenApartDeclaration(data) == nil
     }
 }
 
@@ -299,8 +342,10 @@ enum MarkupRefusal: LocalizedError, Equatable {
     case nestedTooDeeply(limit: Int)
     /// One document holds more than `limit` tags.
     case tooManyTags(limit: Int)
-    /// One tag has more than `limit` attributes.
+    /// One tag, or one document, has more than `limit` attributes.
     case tooManyAttributes(limit: Int)
+    /// The markup would take the parser far longer than its size warrants.
+    case tooMuchWork
 
     var errorDescription: String? {
         switch self {
@@ -311,7 +356,10 @@ enum MarkupRefusal: LocalizedError, Equatable {
             return "One document in this file holds more than \(limit.formatted()) tags, too many for TextMouth to read without "
                 + "running out of memory. Divide the document into smaller files, then import them."
         case let .tooManyAttributes(limit):
-            return "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely. "
+            return "Part of this file's markup has more than \(limit.formatted()) attributes, too many for TextMouth to read safely. "
+                + "Get another copy of the file, or save it in another format, then import it again."
+        case .tooMuchWork:
+            return "This file's markup is built in a way that would take TextMouth far too long to read. "
                 + "Get another copy of the file, or save it in another format, then import it again."
         }
     }

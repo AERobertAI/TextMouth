@@ -69,6 +69,11 @@ struct MarkupScanner {
     let bytes: [UInt8]
     /// How far the pass has come.
     private(set) var position = 0
+    /// What SwiftSoup has spent on `<title>`s since `takeWork()`: at each tag
+    /// in one, it searches on for an end tag, a byte a nanosecond.
+    private var work = 0
+    /// Where the next `</title` from the pass's place is, once searched for.
+    private var nextTitleEnd = -1
 
     /// Where the last `</title` is (and `</TITLE`, since SwiftSoup looks for
     /// those two spellings alone), found once for the whole markup: a `<title>`
@@ -556,10 +561,14 @@ struct MarkupScanner {
                     return readRawEndTag(name: nameStart..<position)
                 }
                 // Anything else after the name is text, and is read as text.
-            } else if Ascii.isLetter(byte), position > lastTitleEnd {
-                // No end tag lies ahead: SwiftSoup makes one up, and the "<" is read again as a tag's.
-                position -= 1
-                return .endTag(Tag(name: position..<position, attributes: position..<position, attributeCount: 0, isSelfClosing: false))
+            } else if Ascii.isLetter(byte) {
+                if nextTitleEnd < position { nextTitleEnd = indexOf("</title", from: position) }
+                work += nextTitleEnd - position
+                if position > lastTitleEnd {
+                    // No end tag lies ahead: SwiftSoup makes one up, and the "<" is read again as a tag's.
+                    position -= 1
+                    return .endTag(Tag(name: position..<position, attributes: position..<position, attributeCount: 0, isSelfClosing: false))
+                }
             }
         }
     }
@@ -817,6 +826,12 @@ struct MarkupScanner {
     /// letters alone changed, as SwiftSoup's HTML parser normalizes a name.
     func lowercasedName(_ range: Range<Int>) -> String {
         String(decoding: bytes[range].map(Ascii.lowercased), as: UTF8.self)
+    }
+
+    /// What SwiftSoup has spent on `<title>`s since this was last asked.
+    mutating func takeWork() -> Int {
+        defer { work = 0 }
+        return work
     }
 
     /// Passes over everything left, once the rest of the markup can hold no tag.

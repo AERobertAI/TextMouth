@@ -79,6 +79,9 @@ struct HTMLOpenElements {
         var name: String
         /// Which active formatting entry this element is, if any.
         var activeID: Int?
+        /// How many elements had been made when this one opened: more than
+        /// the children it holds now, whatever has happened since.
+        var madeBefore = 0
     }
 
     /// An entry of the active formatting elements: an element to make again
@@ -89,6 +92,8 @@ struct HTMLOpenElements {
         /// Its attributes' bytes: entries with the same name and the same
         /// bytes are the same to the three-of-a-kind rule.
         var attributes: Range<Int>
+        /// How many attributes a copy of it holds.
+        var attributeCount = 0
         var isOnStack: Bool
         var isMarker: Bool
     }
@@ -200,9 +205,23 @@ struct HTMLOpenElements {
     private var active: [Active] = []
     /// The next ID for an active entry.
     private var nextActiveID = 0
-    /// How many elements have been made, beyond each start tag's own: made
-    /// again, or made by a stray end tag.
-    private(set) var madeElements = 0
+    /// What SwiftSoup spends beyond each tag's own node.
+    struct Costs: Equatable {
+        /// Elements made again, or made by a stray end tag.
+        var elements = 0
+        /// The attributes copied onto them.
+        var attributes = 0
+        /// Time that grows with the square of the markup, in about a nanosecond each.
+        var work = 0
+    }
+
+    /// What has been spent so far.
+    private(set) var costs = Costs()
+    /// How many start tags have been read, which with the elements made gives
+    /// how many nodes any element can hold at most.
+    private var startTags = 0
+    /// The attributes `html` and `body` tags have added to the one of each.
+    private var rootAttributes = 0
     /// A `form` element is current: another start tag of one is then ignored.
     private var formIsCurrent = false
     /// The parser is in its mode for `select`: nearly every tag is ignored.
@@ -264,6 +283,7 @@ struct HTMLOpenElements {
 
     /// A start tag has been read; what the tokeniser does next.
     mutating func start(_ tag: MarkupScanner.Tag, name: String) -> TokeniserChange {
+        startTags += 1
         if inSelect { return startInSelect(tag, name: name) }
         trackBodyStart(name: name)
         let role = Self.roles[name] ?? .plain
@@ -288,7 +308,7 @@ struct HTMLOpenElements {
             push(name)
         case .formatting:
             reconstructFormatting()
-            push(name, attributes: tag.attributes)
+            push(name, formatting: tag)
         case .anchor:
             startAnchor(tag)
         case .marker:
@@ -298,7 +318,13 @@ struct HTMLOpenElements {
         case .voidReconstructing:
             reconstructFormatting()
             isInserted = false
-        case .void, .ignored, .root:
+        case .void, .ignored:
+            isInserted = false
+        case .root:
+            // Each attribute that goes onto the one `html` or `body` is first
+            // looked for among those there: 100 nanoseconds each.
+            rootAttributes += tag.attributeCount
+            costs.work += tag.attributeCount * rootAttributes * 100
             isInserted = false
         case .form:
             // `insertForm` stays open whether the tag closes itself or not.
@@ -385,7 +411,7 @@ struct HTMLOpenElements {
             }
         }
         reconstructFormatting()
-        push("a", attributes: tag.attributes)
+        push("a", formatting: tag)
     }
 
     /// `table`: directly in a table it closes that table first; in a cell or
@@ -424,7 +450,7 @@ struct HTMLOpenElements {
             } else {
                 popToRowContext(above: table)
                 push("tr")
-                madeElements += 1
+                costs.elements += 1
             }
             push(name)
             addMarker()
@@ -439,7 +465,7 @@ struct HTMLOpenElements {
         } else {
             popAll(above: table)
             push("tbody")
-            madeElements += 1
+            costs.elements += 1
         }
     }
 
@@ -512,7 +538,7 @@ struct HTMLOpenElements {
                     popAll(from: index)
                 } else {
                     // No p to close: an empty one is made.
-                    madeElements += 1
+                    costs.elements += 1
                 }
             case "body", "html", "head":
                 break
@@ -526,7 +552,7 @@ struct HTMLOpenElements {
                 }
             case "br":
                 reconstructFormatting()
-                madeElements += 1
+                costs.elements += 1
             case "table":
                 endTable()
             case "caption", "td", "th":
@@ -621,6 +647,10 @@ struct HTMLOpenElements {
                 removeActive(id: entry.id)
                 return
             }
+            // The block's children move to a copy of the formatting element, one
+            // at a time, each shifting those after it: 2 nanoseconds a pair.
+            let children = startTags + costs.elements - stack[furthest].madeBefore
+            costs.work += 2 * children * children
             // Between the two, the parser takes one element that is not
             // active off the stack, and copies up to three that are.
             var above = furthest
@@ -633,11 +663,12 @@ struct HTMLOpenElements {
                     block -= 1
                     break
                 }
-                madeElements += 1
+                costs.elements += 1
             }
             // The copy of the formatting element, which is not active.
-            madeElements += 1
-            stack.insert(Open(name: name, activeID: nil), at: block + 1)
+            costs.elements += 1
+            costs.attributes += entry.attributeCount
+            stack.insert(Open(name: name, activeID: nil, madeBefore: startTags + costs.elements), at: block + 1)
             stack.remove(at: format)
             removeActive(id: entry.id)
         }
@@ -695,12 +726,14 @@ struct HTMLOpenElements {
 
     // MARK: The Stack
 
-    /// Pushes an element, with `attributes` when it is a formatting element.
-    private mutating func push(_ name: String, attributes: Range<Int>? = nil) {
-        guard let attributes else {
-            stack.append(Open(name: name, activeID: nil))
+    /// Pushes an element, with its tag when it is a formatting element.
+    private mutating func push(_ name: String, formatting tag: MarkupScanner.Tag? = nil) {
+        let madeBefore = startTags + costs.elements
+        guard let tag else {
+            stack.append(Open(name: name, activeID: nil, madeBefore: madeBefore))
             return
         }
+        let attributes = tag.attributes
         // `pushActiveFormattingElements`: since the last marker, a fourth of
         // the same kind pushes the first out of the list, not off the stack.
         var seen = 0
@@ -714,8 +747,8 @@ struct HTMLOpenElements {
         }
         let id = nextActiveID
         nextActiveID += 1
-        active.append(Active(id: id, name: name, attributes: attributes, isOnStack: true, isMarker: false))
-        stack.append(Open(name: name, activeID: id))
+        active.append(Active(id: id, name: name, attributes: attributes, attributeCount: tag.attributeCount, isOnStack: true, isMarker: false))
+        stack.append(Open(name: name, activeID: id, madeBefore: madeBefore))
     }
 
     /// Whether an entry is the same to the three-of-a-kind rule as `name` with `attributes`.
@@ -818,8 +851,9 @@ struct HTMLOpenElements {
         while index > 0, !active[index - 1].isMarker, !active[index - 1].isOnStack { index -= 1 }
         for position in index..<active.count {
             active[position].isOnStack = true
-            stack.append(Open(name: active[position].name, activeID: active[position].id))
-            madeElements += 1
+            stack.append(Open(name: active[position].name, activeID: active[position].id, madeBefore: startTags + costs.elements))
+            costs.elements += 1
+            costs.attributes += active[position].attributeCount
         }
     }
 }
