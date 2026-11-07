@@ -203,8 +203,8 @@ struct PhoneVoiceModel {
     /// then "Use Global Default", which the Mac offers as a button of its
     /// own, as a choice here (the spec). Nil stands for the global default.
     static let endOfBookChoices: [PhoneChoice<EndOfBookBehavior?>] =
-        EndOfBookBehavior.allCases.map { PhoneChoice(id: $0, label: $0.rawValue) }
-            + [PhoneChoice(id: nil, label: PhoneVoiceVocabulary.useGlobalDefault)]
+        EndOfBookBehavior.allCases.map { PhoneChoice<EndOfBookBehavior?>(id: $0, label: $0.rawValue) }
+            + [PhoneChoice<EndOfBookBehavior?>(id: nil, label: PhoneVoiceVocabulary.useGlobalDefault)]
 
     /// The When this book ends row's value: the behavior in force, as the
     /// Mac's picker shows it.
