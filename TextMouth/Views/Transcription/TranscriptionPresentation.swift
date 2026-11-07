@@ -467,6 +467,13 @@ final class TranscriptionPresenter: ObservableObject {
             notice = busy
             return
         }
+        // What follows reads every audio file whole, which takes seconds for
+        // a long book: VoiceOver hears it begin, as a transcription's start
+        // is heard, so the wait is never silent (follow-up 6).
+        services.announce(
+            TranscriptionWording.attaching(fileName: url.lastPathComponent, bookTitle: requested.title),
+            window
+        )
         let book = library.bookByID(requested.id) ?? requested
         let sentences = document.sentences
         let source = TranscriptSource(origin: .attached, format: document.format, fileName: url.lastPathComponent)

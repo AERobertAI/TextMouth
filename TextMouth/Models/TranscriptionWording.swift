@@ -503,6 +503,14 @@ enum TranscriptionWording {
     /// The confirmation's replacing button.
     static let replaceButtonTitle = "Replace Transcript"
 
+    /// What VoiceOver hears as the file's transcript begins to be saved,
+    /// the book's audio measured and fingerprinted, which takes seconds for
+    /// a long book: "Attaching “lecture.vtt” to Moby-Dick.", in the words a
+    /// transcription's start is said in ("Transcribing Moby-Dick.").
+    static func attaching(fileName: String, bookTitle: String) -> String {
+        "Attaching “\(fileName)” to \(bookTitle)."
+    }
+
     /// What VoiceOver hears once the file is attached: "Attached
     /// “lecture.vtt” to Moby-Dick: 7,077 words.", the count written with the
     /// user's grouping, as a finished transcription says it; then, when

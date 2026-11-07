@@ -73,6 +73,11 @@ final class TranscriptAttachTests: XCTestCase {
     /// the user's grouping, one word as "1 word", then the timed passages
     /// left out, one or several, only when there are any.
     func testWhatVoiceOverHearsOnceAFileIsAttached() {
+        // As the saving begins (follow-up 6).
+        XCTAssertEqual(
+            TranscriptionWording.attaching(fileName: "tone4.vtt", bookTitle: "Four Tones"),
+            "Attaching “tone4.vtt” to Four Tones."
+        )
         XCTAssertEqual(
             TranscriptionWording.attached(fileName: "tone4.vtt", bookTitle: "Four Tones", wordCount: 30, skipped: 0),
             "Attached “tone4.vtt” to Four Tones: 30 words."
@@ -208,7 +213,10 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(transcript.source, TranscriptSource(origin: .attached, format: .webVTT, fileName: "tone4.vtt"))
         XCTAssertEqual(transcript.files.first?.sentences.first?.text, "Ana: First tone, 440 hertz.")
         XCTAssertEqual(transcript.files.first?.sentences.map(\.startMilliseconds), [0, 1_000, 2_000, 3_000])
-        XCTAssertEqual(announcements.messages, ["Attached “tone4.vtt” to Four Tones: 30 words."])
+        XCTAssertEqual(
+            announcements.messages,
+            ["Attaching “tone4.vtt” to Four Tones.", "Attached “tone4.vtt” to Four Tones: 30 words."]
+        )
         XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book is still being attached to")
         XCTAssertTrue(transcribedBooks.contains(book.id), "the row does not say the book is transcribed")
     }
@@ -235,7 +243,10 @@ final class TranscriptAttachTests: XCTestCase {
             file.sentences.map { [$0.startMilliseconds, $0.endMilliseconds] }
         }
         XCTAssertEqual(times, [[[0, 900], [1_000, 1_900]], [[0, 900], [1_000, 1_900]]])
-        XCTAssertEqual(announcements.messages, ["Attached “tone4.srt” to Two Tones: 34 words."])
+        XCTAssertEqual(
+            announcements.messages,
+            ["Attaching “tone4.srt” to Two Tones.", "Attached “tone4.srt” to Two Tones: 34 words."]
+        )
     }
 
     // MARK: - Replacing a Transcript
@@ -298,7 +309,10 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(replaced.source, TranscriptSource(origin: .attached, format: .webVTT, fileName: "tone4.vtt"))
         XCTAssertNil(replaced.editedAt, "the replaced transcript's edits stayed")
         XCTAssertEqual(replaced.files.first?.sentences.first?.text, "Ana: First tone, 440 hertz.")
-        XCTAssertEqual(announcements.messages, ["Attached “tone4.vtt” to Four Tones: 30 words."])
+        XCTAssertEqual(
+            announcements.messages,
+            ["Attaching “tone4.vtt” to Four Tones.", "Attached “tone4.vtt” to Four Tones: 30 words."]
+        )
         XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book is still being attached to")
 
         // Attached again, and cancelled as the alert's dismissal does.
@@ -311,7 +325,7 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertFalse(presenter.isShowingAny, "a dialog still counts once the confirmation was cancelled")
         XCTAssertEqual(try Data(contentsOf: transcriptFile), replacedBytes, "a cancelled replacement changed the transcript")
         XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "a cancelled replacement left the book being attached to")
-        XCTAssertEqual(announcements.messages.count, 1, "a cancelled replacement was announced")
+        XCTAssertEqual(announcements.messages.count, 2, "a cancelled replacement was announced")
     }
 
     /// A transcript of a later layout, which this TextMouth cannot read, is
