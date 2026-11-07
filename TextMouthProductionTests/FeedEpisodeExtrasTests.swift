@@ -526,6 +526,73 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertNil(over.chapters, "a file past the limit was read")
     }
 
+    /// Each kind of file is held to its own limit, never the other's (S3):
+    /// with room for a transcript but not for chapters, the transcript is
+    /// read and the chapters refused, and the other way around.
+    func testEachKindOfFileIsHeldToItsOwnLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasOwnLimits")
+        let feed = try await subscribe(world, title: uniqueTitle(), transcripts: [("/t.vtt", "text/vtt")], chapters: "/c.json")
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+        world.server.serve("/c.json", try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json"))
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        let network = world.environment.network
+
+        let roomForTheTranscript = await FeedEpisodeExtras.fetch(
+            for: item, of: feed, network: network, discretionary: false, transcriptLimit: 10_000, chaptersLimit: 100
+        )
+        let roomForTheChapters = await FeedEpisodeExtras.fetch(
+            for: item, of: feed, network: network, discretionary: false, transcriptLimit: 100, chaptersLimit: 10_000
+        )
+
+        XCTAssertEqual(roomForTheTranscript.transcript?.format, .webVTT)
+        XCTAssertNil(roomForTheTranscript.chapters, "chapters were read under the transcript's limit")
+        XCTAssertNil(roomForTheChapters.transcript, "a transcript was read under the chapters' limit")
+        XCTAssertEqual(roomForTheChapters.chapters?.chapters.map(\.title), Self.sampleChapterTitles)
+    }
+
+    /// Without limits given, a transcript of one byte over the 5 MB the
+    /// charter allows is refused, and one of exactly that size is read (S3).
+    func testATranscriptIsHeldToFiveMegabytesWhenNoLimitIsGiven() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasFiveMegabytes")
+        let feed = try await subscribe(world, title: uniqueTitle(), transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        let limit = TimedTextLimits.podcastTranscriptBytes
+        world.server.serve(
+            "/t.vtt",
+            StubResponse(headers: ["Content-Type": "text/vtt"], body: paddedWebVTTFile(ofBytes: limit)),
+            StubResponse(headers: ["Content-Type": "text/vtt"], body: paddedWebVTTFile(ofBytes: limit + 1))
+        )
+
+        let exact = await FeedEpisodeExtras.fetch(for: item, of: feed, network: world.environment.network, discretionary: false)
+        let over = await FeedEpisodeExtras.fetch(for: item, of: feed, network: world.environment.network, discretionary: false)
+
+        XCTAssertEqual(exact.transcript?.cues.map(\.text), ["Only."], "a transcript of exactly the limit was refused")
+        XCTAssertNil(over.transcript, "a transcript past the limit was read")
+    }
+
+    /// A server that declares a short body and sends a long one is held to
+    /// the limit as the body comes, not only by what it declared (S3): a
+    /// transcript declared as 10 bytes and sent as 6 MB is refused.
+    func testABodyLongerThanItsDeclaredLengthIsHeldToTheLimit() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasLyingLength")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        world.server.serve("/t.vtt", StubResponse(
+            headers: ["Content-Type": "text/vtt", "Content-Length": "10"],
+            body: paddedWebVTTFile(ofBytes: 6 * 1_048_576)
+        ))
+
+        let fetched = await FeedEpisodeExtras.fetch(for: item, of: feed, network: world.environment.network, discretionary: false)
+
+        XCTAssertNil(fetched.transcript, "a body past the limit was read because it was declared short")
+        XCTAssertEqual(
+            debugLogLines(containing: "FEED_TRANSCRIPT_REFUSED: \(title) (The Tactile Atlas): WebVTT from \(world.server.host): "
+                + "larger than the 5120 KB TextMouth fetches").count,
+            1
+        )
+    }
+
     // MARK: - The Download's Rules
 
     /// The rule's download fetches its files under the rule's own limits, as
@@ -1103,6 +1170,14 @@ final class FeedEpisodeExtrasTests: XCTestCase {
     private func serveAudio(in world: FeedTestWorld, duration: TimeInterval) throws {
         let audio = try FeedMediaFixtures.silentAAC(duration: duration)
         world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+    }
+
+    /// A WebVTT file of exactly `count` bytes, one cue saying "Only.", its
+    /// length made up by a comment block, which no reader takes as text.
+    private func paddedWebVTTFile(ofBytes count: Int) -> Data {
+        let start = "WEBVTT\n\n00:00.000 --> 00:01.000\nOnly.\n\nNOTE "
+        let end = "\n"
+        return Data((start + String(repeating: "x", count: count - start.utf8.count - end.utf8.count) + end).utf8)
     }
 
     /// A chapters file of exactly `count` bytes, one chapter titled "Only",
