@@ -29,6 +29,10 @@ import SwiftSoup
 /// parsed tree's real depth is measured by a walk with a stack of its own, and
 /// refused past the limit with the same sentence, before any reader that calls
 /// itself for each level, the converter first among them, sees the tree.
+///
+/// Even a wrong count cannot overflow SwiftSoup's own recursion, because the
+/// parse, that walk, and the release of a refused tree all run on a thread
+/// whose stack holds the deepest tree the memory limit allows (`onLargeStack`).
 enum MarkupGuard {
 
     // MARK: Limits
@@ -43,6 +47,13 @@ enum MarkupGuard {
         var mostAttributesOnATag: Int
         /// The most work the parser may be set, by `Inspection.work`.
         var mostWork: Int
+        /// The deepest tree the second layer lets pass, by `requireDepth(of:atMost:)`;
+        /// `deepestNesting` when nil. Only a test sets it, to lift the first
+        /// layer's count and still see the second refuse.
+        var deepestTree: Int? = nil
+
+        /// The depth the second layer holds a parsed tree to.
+        var deepestParsedTree: Int { deepestTree ?? deepestNesting }
 
         /// The limits every reading has, set on November 7, 2026 from 3,236 documents
         /// of 327 real files (EPUB, HTML, Kindle, Word, OpenDocument, and rich text,
@@ -99,7 +110,8 @@ enum MarkupGuard {
         var limits = limits
         if let deepestNesting { limits.deepestNesting = deepestNesting }
         _ = try inspect(Array(markup.utf8), as: .html, limits: limits)
-        return try requireDepth(of: SwiftSoup.parseHTML(markup, baseURI), atMost: limits.deepestNesting)
+        let treeLimit = limits.deepestParsedTree
+        return try onLargeStack { try requireDepth(of: SwiftSoup.parseHTML(markup, baseURI), atMost: treeLimit) }
     }
 
     /// `markup` parsed by SwiftSoup's XML parser, whatever it opens with, with
@@ -109,8 +121,11 @@ enum MarkupGuard {
     static func parseXML(_ markup: String, baseURI: String = "", deepestNesting: Int? = nil) throws -> Document {
         var limits = limits
         if let deepestNesting { limits.deepestNesting = deepestNesting }
-        let document = try SwiftSoup.parse(neutralized(markup, limits: limits), baseURI, Parser.xmlParser())
-        return try requireDepth(of: document, atMost: limits.deepestNesting)
+        let neutral = try neutralized(markup, limits: limits)
+        let treeLimit = limits.deepestParsedTree
+        return try onLargeStack {
+            try requireDepth(of: SwiftSoup.parse(neutral, baseURI, Parser.xmlParser()), atMost: treeLimit)
+        }
     }
 
     /// The fragment `markup` in the body of an empty document, as
@@ -119,7 +134,8 @@ enum MarkupGuard {
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parseBodyFragment(_ markup: String) throws -> Document {
         _ = try inspect(Array(markup.utf8), as: .bodyFragment, limits: limits)
-        return try requireDepth(of: SwiftSoup.parseBodyFragment(markup), atMost: limits.deepestNesting)
+        let treeLimit = limits.deepestParsedTree
+        return try onLargeStack { try requireDepth(of: SwiftSoup.parseBodyFragment(markup), atMost: treeLimit) }
     }
 
     /// `document`, once its deepest element is found no deeper than `limit`
@@ -141,6 +157,109 @@ enum MarkupGuard {
         }
         return document
     }
+
+    // MARK: The Big Stack
+
+    /// The deepest tree the memory limit lets through. The pass counts every
+    /// node as at least one unit, and refuses a document past
+    /// `Limits.standard.mostMemoryUnits` (1,000,000), so no tree that is parsed
+    /// is deeper.
+    static let deepestTreeParsed = 1_000_000
+
+    /// The stack SwiftSoup is given for each level of the tree, in bytes.
+    ///
+    /// Measured on November 7, 2026, on a thread with a 4 GiB stack of which
+    /// the pages touched were counted: SwiftSoup's parse of a plain deep
+    /// document touches 0 bytes a level in most shapes, and in the worst shapes
+    /// found (an inline element or a list closed again, where an end tag walks
+    /// up the whole chain of parents with `ownerDocument()`) about 200 bytes a
+    /// level in a debug build (197 for spans, 195 for nested lists) and 160 to
+    /// 190 in a Release build (161 and 160). The release of the tree touches
+    /// none, since SwiftSoup 2.13.9's `Node.deinit` takes a deep tree apart
+    /// with a loop. 512 is two and a half times the worst, and the old limit
+    /// of an import thread's 512 KiB stack is 1,000 levels of it.
+    static let stackBytesPerLevel = 512
+
+    /// The stack for a tree `levels` deep: `stackBytesPerLevel` for each, and
+    /// a megabyte for the parser's own frames and what is below them, which a
+    /// whole number of megabytes keeps a multiple of the page size, as
+    /// `pthread_attr_setstacksize` asks (16 KiB on Apple silicon).
+    static func stackBytes(forTreeDepth levels: Int) -> Int {
+        let megabyte = 1 << 20
+        let needed = levels * stackBytesPerLevel + megabyte
+        return (needed + megabyte - 1) / megabyte * megabyte
+    }
+
+    /// What a thread started by `onLargeStack` runs, held in a class so that
+    /// its address can be handed through the C interface of `pthread_create`.
+    private final class StackJob {
+        let run: () -> Void
+        init(run: @escaping () -> Void) { self.run = run }
+    }
+
+    /// The thread's start routine: runs the job it was handed.
+    private static let startStackJob: @convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? = { context in
+        Unmanaged<StackJob>.fromOpaque(context).takeUnretainedValue().run()
+        return nil
+    }
+
+    /// Runs `body`, and returns what it returns or throws, on a thread whose
+    /// stack holds the deepest tree that can be parsed (`deepestTreeParsed`
+    /// levels), so that SwiftSoup's own recursion up a tree's parents cannot
+    /// overflow it, whatever the first layer counted. The caller's stack, which
+    /// is 512 KiB on every thread but the main thread, is never asked for it.
+    ///
+    /// The parse, the depth check after it, and the release of a tree the
+    /// check refuses all run inside `body`, so a tree deeper than the limit
+    /// never outlives this thread; one that passes is at most `deepestNesting`
+    /// levels deep, and is safe to release anywhere.
+    ///
+    /// - Waiting. The caller blocks in `pthread_join` until the thread has
+    ///   ended, as it was blocked by the parse when it ran on its own stack, so
+    ///   no thread is blocked that was not already. The thread takes no lock
+    ///   and waits for nothing the caller holds (SwiftSoup's parse is plain
+    ///   code), so the join cannot deadlock, and it makes the thread's writes
+    ///   to `outcome` visible to the caller. A bounded wait would have to give
+    ///   up on a thread still running, which is worse.
+    /// - Concurrency. The job and its result cross the C interface of `pthread`
+    ///   as an address, which Swift 6's checking does not follow, so it holds
+    ///   by construction: `outcome` is written by the thread alone, before it
+    ///   ends, and read by the caller alone, after it has joined; the caller
+    ///   does not touch the job meanwhile.
+    /// - Priority. The thread has the caller's quality of service, so a caller
+    ///   of high priority does not wait on a thread of low.
+    /// - No thread. If the system refuses the stack asked for (no thread was
+    ///   started), a stack a quarter the size is tried, and so on while it is
+    ///   at least `smallestStack`, which holds a tree 16,000 levels deep; only
+    ///   then does the body run on the caller's own thread, as it did before,
+    ///   with the first layer's count as the only guard.
+    static func onLargeStack<Value>(_ body: @escaping () throws -> Value) throws -> Value {
+        var outcome: Result<Value, any Error>?
+        let job = StackJob { outcome = Result { try body() } }
+        var attributes = pthread_attr_t()
+        pthread_attr_init(&attributes)
+        defer { pthread_attr_destroy(&attributes) }
+        pthread_attr_set_qos_class_np(&attributes, qos_class_self(), 0)
+
+        var bytes = stackBytes(forTreeDepth: deepestTreeParsed)
+        while bytes >= smallestStack {
+            var thread: pthread_t?
+            if pthread_attr_setstacksize(&attributes, bytes) == 0,
+               pthread_create(&thread, &attributes, startStackJob, Unmanaged.passUnretained(job).toOpaque()) == 0,
+               let thread {
+                pthread_join(thread, nil)
+                break
+            }
+            bytes /= 4
+            bytes -= bytes % (1 << 20)
+        }
+        // A thread that ran has set `outcome`; if none could be made, the body runs here.
+        return try (outcome ?? Result { try body() }).get()
+    }
+
+    /// The smallest stack `onLargeStack` tries before it runs the body on the
+    /// caller's thread.
+    private static let smallestStack = 8 << 20
 
     // MARK: Which Parser
 
