@@ -294,21 +294,28 @@ enum FeedEpisodeExtras {
     /// name (`TranscriptSource`), and saved in the book's package with its
     /// text (`TranscriptStore.install`).
     ///
-    /// A transcript the book has already is kept, never replaced: an episode
-    /// downloaded again into the package kept for it keeps the transcript
-    /// kept with it, which may be the listener's own or an edited one.
+    /// A transcript the book has already is kept: an episode downloaded again
+    /// into the package kept for it keeps the transcript kept with it, which
+    /// may be the listener's own or an edited one. Only the podcast's own,
+    /// as an earlier download brought it, gives way, the listener having
+    /// made and changed nothing in it
+    /// (`TranscriptStore.holdsUntouchedPodcastTranscript(in:)`): a host that
+    /// inserts other advertisements into each download makes a new file of
+    /// each, for which the earlier transcript is stale, and shows no text,
+    /// while the one just fetched was made for it.
     ///
     /// Measures, fingerprints, and writes the book's files, so it blocks:
     /// the download runs it on the import queue
     /// (`FeedDownloadManager.runBesideImports`), off the main thread.
     /// - Throws: `OutsideTranscriptError.alreadyTranscribed` for a book with
-    ///   a transcript, `.runsPastTheEnd` for a transcript made for longer
-    ///   audio, and whatever else `TranscriptionPlan.make(for:)`,
+    ///   a transcript to keep, `.runsPastTheEnd` for a transcript made for
+    ///   longer audio, and whatever else `TranscriptionPlan.make(for:)`,
     ///   `OutsideTranscript`, and `TranscriptStore.install` throw.
     static func attach(_ document: TimedTextDocument, to book: Book) throws -> Attached {
+        let replacesItsOwn = TranscriptStore.holdsUntouchedPodcastTranscript(in: book.tmbDirectory)
         // Before the audio is measured and fingerprinted, which reads the
         // whole of it, for a transcript that would only be turned away.
-        guard !TranscriptStore.hasTranscript(of: book) else {
+        guard replacesItsOwn || !TranscriptStore.hasTranscript(of: book) else {
             throw OutsideTranscriptError.alreadyTranscribed
         }
         let plan = try TranscriptionPlan.make(for: book)
@@ -317,7 +324,7 @@ enum FeedEpisodeExtras {
             plan: plan,
             source: TranscriptSource(origin: .podcast, format: document.format)
         )
-        let installation = try TranscriptStore.install(transcript, for: book, keepingExisting: true)
+        let installation = try TranscriptStore.install(transcript, for: book, keepingExisting: !replacesItsOwn)
         return Attached(installation: installation, wordCount: transcript.wordCount)
     }
 

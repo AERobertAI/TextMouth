@@ -57,8 +57,9 @@ extension TranscriptStore {
     ///   iCloud (`hasTranscript(of:)`, a look that never downloads), nothing
     ///   is read or written, and `OutsideTranscriptError.alreadyTranscribed`
     ///   is thrown. The podcast fetch (FMT25) passes true, so a transcript
-    ///   the listener has, such as an earlier download's kept with the
-    ///   episode, is never replaced. The look is made inside the storage
+    ///   the listener has, one they made or changed, is never replaced;
+    ///   only the podcast's own, untouched, gives way to the one fetched
+    ///   (`FeedEpisodeExtras.attach(_:to:)`). The look is made inside the storage
     ///   work, at the book's package as it is now, before anything is read,
     ///   so no data-directory move comes between it and the install's write;
     ///   installs are not made one at a time, though, so another install of

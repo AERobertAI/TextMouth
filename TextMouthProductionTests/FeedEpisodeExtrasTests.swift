@@ -689,6 +689,42 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         XCTAssertEqual(try BookContentAnalysisService.load(book: restored).index.allHeadings.map(\.text), Self.sampleChapterTitles)
     }
 
+    /// The podcast's own transcript kept with an episode, which the listener
+    /// never touched, gives way to the one fetched with a new download. A
+    /// host inserting other advertisements makes a new file of each download,
+    /// which the earlier transcript no longer fits, and the episode would
+    /// show no text; with the new one, it does.
+    func testThePodcastsOwnTranscriptGivesWayToTheOneFetchedWithANewDownload() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasRefresh")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        try serveAudio(in: world, duration: 4)
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        world.library.persistReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 5))
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+        XCTAssertEqual(world.library.library.feedShelf.rows.map(\.id), [book.id], "the package of a book with a place was not kept")
+
+        // A new file, and the transcript made for it.
+        try serveAudio(in: world, duration: 5)
+        world.server.serve("/t.vtt", StubResponse(
+            headers: ["Content-Type": "text/vtt"],
+            body: Data("WEBVTT\n\n00:00.000 --> 00:01.000\nOther words.\n".utf8)
+        ))
+        world.center.download("guid:ep-1", of: feed.id)
+        let restored = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(restored.id, book.id)
+        let transcript = try foundTranscript(of: restored)
+        XCTAssertEqual(transcript.files.first?.sentences.map(\.text), ["Other words."])
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .podcast, format: .webVTT))
+        let index = try XCTUnwrap(BookInfo.load(from: restored.tmbDirectory).contentIndex)
+        XCTAssertNotNil(TranscriptTextLoader.load(for: restored, audioIndex: index).text, "the new file's transcript shows no text")
+        XCTAssertEqual(debugLogLines(containing: "FEED_TRANSCRIPT_ATTACHED: \(title) (The Tactile Atlas): ").count, 2)
+        XCTAssertEqual(debugLogLines(containing: "FEED_TRANSCRIPT_NOT_ATTACHED: \(title)").count, 0)
+    }
+
     /// A chapters file that no longer comes when an episode is downloaded
     /// again leaves it none: nothing of the earlier file's is laid over the
     /// new audio. A kept package with no transcript takes the one fetched,
