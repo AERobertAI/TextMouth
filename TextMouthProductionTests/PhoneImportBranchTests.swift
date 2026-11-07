@@ -18,8 +18,9 @@ final class PhoneImportBranchTests: XCTestCase {
         XCTAssertTrue(reason.contains("refusal.sentence(naming: PhoneImportWording.displayName(ofFileNamed: fileName))"))
         let description = try Self.iOSBranch(after: "var errorDescription: String? {", in: source)
         XCTAssertTrue(description.contains("if underlying is PhoneImportRefusal { return reason }"))
-        XCTAssertTrue(source.contains("return \"\\(step.activity) failed: \\(Self.description(of: underlying))\""))
-        XCTAssertTrue(source.contains("return \"Could not import “\\(fileName)”. \\(reason)\""))
+        // The Mac's two sentences, in the #else branches, as they were.
+        XCTAssertTrue(source.contains("#else\n        \"\\(step.activity) failed: \\(Self.description(of: underlying))\"\n        #endif"))
+        XCTAssertTrue(source.contains("#else\n        \"Could not import “\\(fileName)”. \\(reason)\"\n        #endif"))
     }
 
     /// Audio the import would convert is refused on iOS in both of the
@@ -72,13 +73,13 @@ final class PhoneImportBranchTests: XCTestCase {
         XCTAssertTrue(source.contains("static let unaskedPriority = NSAccessibilityPriorityLevel.low"))
         let quarter = try Self.iOSBranch(after: "guard quarter < 4, !state.isCancelling, hasRunLong(at: date), let subject else { return }", in: source)
         XCTAssertTrue(quarter.contains("guard !isBookPlaying() else { return }"))
-        XCTAssertTrue(quarter.contains("let priority = Self.unaskedPriority"))
+        XCTAssertTrue(quarter.contains("priority: Self.unaskedPriority"))
         let end = try Self.iOSBranch(after: "if let words = endAnnouncement(for: ending) {", in: source)
         XCTAssertTrue(end.contains("VoiceOverAnnouncer.announce(words, priority: Self.unaskedPriority)"))
         let book = try Self.iOSBranch(after: "case .book:", in: source)
         XCTAssertTrue(book.contains("return ImportProgressWording.finished(book: subject)"))
         // The Mac's lines, in their #else branches.
-        XCTAssertTrue(source.contains("let priority = NSAccessibilityPriorityLevel.medium"))
+        XCTAssertTrue(source.contains("            priority: .medium\n        )\n        #endif"))
         XCTAssertTrue(source.contains("return ranLong ? ImportProgressWording.finished(book: subject) : nil"))
     }
 

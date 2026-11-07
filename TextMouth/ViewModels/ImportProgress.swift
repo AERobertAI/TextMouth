@@ -352,14 +352,16 @@ final class ImportProgress: ObservableObject {
         #if os(iOS)
         // On the phone a quarter is said only while no book plays, softly.
         guard !isBookPlaying() else { return }
-        let priority = Self.unaskedPriority
-        #else
-        let priority = NSAccessibilityPriorityLevel.medium
-        #endif
         VoiceOverAnnouncer.announce(
             ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
-            priority: priority
+            priority: Self.unaskedPriority
         )
+        #else
+        VoiceOverAnnouncer.announce(
+            ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
+            priority: .medium
+        )
+        #endif
     }
 
     /// Notes that Cancel was pressed while this import runs, which the

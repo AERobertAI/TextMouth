@@ -80,8 +80,10 @@ struct ImportFailure: LocalizedError {
         if let refusal = underlying as? PhoneImportRefusal {
             return refusal.sentence(naming: PhoneImportWording.displayName(ofFileNamed: fileName))
         }
-        #endif
         return "\(step.activity) failed: \(Self.description(of: underlying))"
+        #else
+        "\(step.activity) failed: \(Self.description(of: underlying))"
+        #endif
     }
 
     /// The whole sentence an alert reads: the file, then the reason.
@@ -89,8 +91,10 @@ struct ImportFailure: LocalizedError {
         #if os(iOS)
         // The refusal's sentence names the file itself.
         if underlying is PhoneImportRefusal { return reason }
-        #endif
         return "Could not import “\(fileName)”. \(reason)"
+        #else
+        "Could not import “\(fileName)”. \(reason)"
+        #endif
     }
 
     /// The single debug-log line recording this failure:
