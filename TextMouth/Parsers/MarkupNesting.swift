@@ -105,7 +105,9 @@ struct HTMLTreeModel {
         case afterBody, inFrameset, afterFrameset, afterAfterBody, afterAfterFrameset
     }
 
-    /// A token, as the tree builder receives it.
+    /// A token, as the tree builder receives it. The end of the markup is kept
+    /// among them as the parser has it, though the pass sends none: nothing
+    /// the parser does at the end makes an element deeper than one already made.
     private enum Token {
         case start(StartTag)
         case end(String)
@@ -1441,14 +1443,6 @@ struct HTMLTreeModel {
         var replacement = element
         replacement.reach = max(replacement.reach, stack[index].reach)
         stack[index] = replacement
-    }
-
-    /// Sets an element's depth on the stack, which only rises.
-    private mutating func setDepth(of id: Int, to depth: Int) {
-        guard let index = stack.lastIndex(where: { $0.id == id }) else { return }
-        stack[index].depth = max(stack[index].depth, depth)
-        stack[index].reach = max(stack[index].reach, depth)
-        note(depth: depth)
     }
 
     /// `popStackToClose(name)`: from the last element of the name, if there is one.
