@@ -1403,8 +1403,8 @@ final class WordDocumentReaderTests: XCTestCase {
         // MUST be 0xA5EC; Word installs an empty document of nFib 0xC0), so this one reads.
         builder.version = 0x0068
         XCTAssertNotNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
-        // One with the identifier of Word 6 (0xA5DC) is the older layout; asked not to read it (the Mac's choice
-        // until the switch), the reader leaves it to textutil, and `WordDocumentLegacyTests` reads these documents.
+        // One with the identifier of Word 6 (0xA5DC) is the older layout; asked not to read it
+        // (`readsOldLayout: false`, as a test of the router does), the reader leaves it to textutil, and `WordDocumentLegacyTests` reads these documents.
         builder.version = 0x0065
         builder.identifier = 0xA5DC
         XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
