@@ -70,6 +70,9 @@ DERIVED = TRAIN_DIR / "DerivedData.noindex"
 # How long a run may write nothing to its log before its test host counts as
 # hung and is killed: longer than any one test has ever taken.
 HUNG_RUN_MINUTES = 15
+# How long xcodebuild may stay silent after its last test ends. It normally ends
+# within half a minute, so this is ample.
+HUNG_AFTER_TESTS_MINUTES = 3
 BBS = ROOT / ".claude" / "skills" / "agent-bbs" / "scripts" / "bbs.py"
 XCODEGEN = "/opt/homebrew/bin/xcodegen"
 DEFAULT_BASE = "train/base"
@@ -270,23 +273,47 @@ def errors_in_branch(errors, base, branch):
     return [error for error in errors if any(name in error for name in names)]
 
 
-def watch_for_a_hung_run(log, finished):
-    """Kills the train's test host when the run's log has stopped growing, until
-    `finished` is set. Runs on a thread of its own.
+def tests_have_ended(log):
+    """Whether a run's log ends with its last test suite's summary, so that all
+    its results are already written and only xcodebuild's own wrapping up is left."""
+    with open(log, "rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        handle.seek(max(0, handle.tell() - 4096))
+        tail = handle.read().decode("utf-8", "replace")
+    return re.search(r"Test Suite '(Selected tests|All tests)' (passed|failed) at", tail) is not None
 
-    A test that waits forever never fails, so xcodebuild waits with it, and every
-    agent's request waits behind the heavy-work lock: on November 6, 2026 one
-    unbounded `await` held a train for 90 minutes. Killing the host fails that test
-    as a crash, and xcodebuild goes on with the tests after it. The pattern is the
-    host under the train's own derived data, so it never matches the user's
-    installed app. A quiet compile has no host to kill, so it is left alone."""
+
+def watch_for_a_hung_run(log, finished):
+    """Ends a run whose log has stopped growing, until `finished` is set. Runs on a
+    thread of its own. There are two ways a run hangs, and neither ends by itself:
+
+    - A test that waits forever never fails, so xcodebuild waits with it, and every
+      agent's request waits behind the heavy-work lock: on November 6, 2026 one
+      unbounded `await` held a train for 90 minutes. Killing the host fails that test
+      as a crash, and xcodebuild goes on with the tests after it. The pattern is the
+      host under the train's own derived data, so it never matches the user's
+      installed app.
+    - xcodebuild can outlive its tests: the same evening one sat silent for 14 minutes
+      after its last test had ended. Its results are in the log by then, so stopping
+      it loses nothing. The pattern names the train's derived data, so it never
+      matches an xcodebuild of anyone else's.
+
+    A quiet compile has no host and no finished tests, so it is left alone."""
     host = str(DERIVED / "Build" / "Products" / "Debug" / "TextMouth.app" / "Contents" / "MacOS" / "TextMouth")
+    runner = f"xcodebuild test .*{re.escape(str(DERIVED))}"
     while not finished.wait(60):
         try:
             idle = time.time() - log.stat().st_mtime
+            ended = tests_have_ended(log)
         except OSError:
             continue  # The run has not written its log yet.
-        if idle >= HUNG_RUN_MINUTES * 60 and subprocess.run(["pkill", "-9", "-f", host], check=False).returncode == 0:
+        if ended and idle >= HUNG_AFTER_TESTS_MINUTES * 60:
+            # SIGTERM, as xcodebuild then says so in the log and exits by itself.
+            if subprocess.run(["pkill", "-f", runner], check=False).returncode == 0:
+                post("orchestrator", f"build-train: xcodebuild was silent for {HUNG_AFTER_TESTS_MINUTES} minutes "
+                                     f"after its last test ended, so it was stopped; its results stand: {log}",
+                     tag="notice")
+        elif idle >= HUNG_RUN_MINUTES * 60 and subprocess.run(["pkill", "-9", "-f", host], check=False).returncode == 0:
             post("orchestrator", f"build-train: a test wrote nothing for {HUNG_RUN_MINUTES} minutes, "
                                  f"so its test host was killed; see the end of {log}", tag="notice")
 
