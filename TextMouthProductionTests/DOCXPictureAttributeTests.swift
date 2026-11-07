@@ -46,6 +46,7 @@ final class DOCXPictureAttributeTests: XCTestCase {
             "<r><!-- <v o:gfxdata=\"abc\"/> --></r>",
             "<r><![CDATA[<v o:gfxdata=\"abc\"/>]]></r>",
             "<?pi o:gfxdata=\"abc\"?><r/>",
+            "<?pi <v o:gfxdata=\"abc\"/> ?><r/>",
             "<r a=\"<v o:gfxdata='abc'>\"/>",
             "<v xo:gfxdata=\"abc\"/>",
             "<v x:o:gfxdata=\"abc\"/>",

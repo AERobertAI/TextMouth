@@ -55,6 +55,8 @@ final class XMLInputGuardTests: XCTestCase {
         XCTAssertNil(problem("<r><!-- \(tags) --></r>"))
         XCTAssertNil(problem("<r><![CDATA[\(tags)]]></r>"))
         XCTAssertNil(problem("<?pi \(attributes(2_000))?><r/>"))
+        // Tags inside a processing instruction are not tags.
+        XCTAssertNil(problem("<?pi <x \(attributes(2_000))> ?><r/>"))
         XCTAssertNil(problem("<r>\(attributes(2_000))</r>"))
         XCTAssertNil(problem("<r></r \(attributes(2_000))>"))
         // But after them, tags are counted again.
@@ -67,6 +69,17 @@ final class XMLInputGuardTests: XCTestCase {
         let doctype = "<!DOCTYPE dtbook PUBLIC \"-//NISO//DTD dtbook 2005-3//EN\" \"http://example.org/a>b[c.dtd\">"
         XCTAssertNil(problem("<?xml version=\"1.0\"?>\(doctype)<dtbook><p>words</p></dtbook>"))
         XCTAssertEqual(problem("\(doctype)<dtbook><p \(attributes(1_025))/></dtbook>"), XMLInputGuard.tooManyAttributesProblem)
+    }
+
+    /// A declaration is skipped by its quotes and brackets, so what is inside
+    /// an identifier or a subset is not read as a tag: a `>` in a quoted
+    /// identifier, with a tag of many attributes after it in the same quotes,
+    /// is part of the declaration, and so is a tag-like text in brackets (which
+    /// `hasTag` is given alone, since a part with a subset is refused first).
+    func testADeclarationIsSkippedByItsQuotesAndBrackets() {
+        XCTAssertNil(problem("<!DOCTYPE d PUBLIC \"a>\" \"b<x \(attributes(1_100))>\"><d/>"))
+        let bracketed = Data("<!DOCTYPE d [<!ENTITY e \"x\"> <x \(attributes(1_100))>]><d/>".utf8)
+        XCTAssertFalse(XMLInputGuard.hasTag(withMoreAttributesThan: XMLInputGuard.mostAttributesInATag, in: bracketed))
     }
 
     // MARK: - Internal subsets
