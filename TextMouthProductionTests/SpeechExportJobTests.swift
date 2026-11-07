@@ -922,13 +922,14 @@ final class SpeechExportJobTests: XCTestCase {
     private static let logTag = "SPEECH_EXPORT: "
 
     /// The speech export lines the debug log gains while `body` runs, each
-    /// from its tag on, with its seconds, which vary, written "#".
+    /// from its tag on, with its seconds, which vary, written "#". They are
+    /// the lines written meanwhile (`debugLogLines(writtenWhile:)`), not the
+    /// lines missing before: an earlier test's export that ended alike within
+    /// the same second wrote the very same line, which the train's speed made
+    /// common (train 1107-0800).
     private func speechExportLogLines(during body: () async throws -> Void) async throws -> [String] {
         try TextMouthPaths.ensureDirectoryStructure()
-        let before = Set(debugLogLines(containing: Self.logTag))
-        try await body()
-        return debugLogLines(containing: Self.logTag)
-            .filter { !before.contains($0) }
+        return try await debugLogLines(writtenWhile: body)
             .compactMap { line in
                 line.range(of: Self.logTag).map { tag in
                     String(line[tag.lowerBound...])
