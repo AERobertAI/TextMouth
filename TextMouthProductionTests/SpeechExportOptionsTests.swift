@@ -453,6 +453,37 @@ final class SpeechExportOptionsTests: XCTestCase {
         }
     }
 
+    /// A step of a slider draws the options anew, but not the From and To
+    /// pop-ups, whose menus can hold thousands of headings; choosing in one
+    /// of them draws them.
+    func testASliderStepLeavesTheRangePopUpsAsTheyAre() throws {
+        let state = makeState()
+        try withOptionsView(state, popUps: 3) { hosting in
+            let name = "SpeechExportRangePicker"
+            XCTAssertGreaterThan(ViewBodyCounter.count(of: name), 0, "the pop-ups never drew")
+            settle(hosting)
+            let before = ViewBodyCounter.count(of: name)
+            let valueBefore = descendants(of: hosting, as: NSSlider.self).first?.doubleValue
+
+            state.wordsPerMinute += ReaderViewModel.speechSpeedStep
+            state.pitch += 0.1
+            settle(hosting)
+
+            XCTAssertNotEqual(
+                descendants(of: hosting, as: NSSlider.self).first?.doubleValue,
+                valueBefore,
+                "the options were not drawn anew, so this shows nothing"
+            )
+            XCTAssertEqual(ViewBodyCounter.count(of: name), before, "a slider's step drew the pop-ups")
+
+            choose(item: 3, inPopUp: 1, of: hosting)
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                return ViewBodyCounter.count(of: name) > before
+            }, "choosing in a pop-up did not draw it")
+        }
+    }
+
     /// Without headings, the options draw the Format pop-up alone, a line
     /// saying the whole book is exported standing in for From and To, and
     /// both sliders.
@@ -545,6 +576,15 @@ final class SpeechExportOptionsTests: XCTestCase {
                 && self.descendants(of: $0, as: NSSlider.self).count == 2
         }) { hosting in
             try body(hosting)
+        }
+    }
+
+    /// Lets whatever drawing is queued in `hosting` finish: half a second of
+    /// the main run loop, laying the view out as it goes.
+    private func settle(_ hosting: NSView) {
+        _ = waitUntil(timeout: 0.5) {
+            hosting.layoutSubtreeIfNeeded()
+            return false
         }
     }
 

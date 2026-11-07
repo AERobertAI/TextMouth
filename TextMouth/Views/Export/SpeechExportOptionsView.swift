@@ -37,18 +37,24 @@ struct SpeechExportOptionsView: View {
         VStack(alignment: .leading, spacing: 8) {
             formatPicker
             if state.hasHeadings {
-                rangePicker(
-                    SpeechExportWording.fromLabel,
+                RangePicker(
+                    options: state,
+                    label: SpeechExportWording.fromLabel,
                     hint: SpeechExportWording.fromHint,
                     items: state.fromItems,
-                    selection: fromSelection
+                    chosenTag: state.fromTag,
+                    choose: state.setFrom
                 )
-                rangePicker(
-                    SpeechExportWording.throughLabel,
+                .equatable()
+                RangePicker(
+                    options: state,
+                    label: SpeechExportWording.throughLabel,
                     hint: SpeechExportWording.throughHint,
                     items: state.throughItems,
-                    selection: throughSelection
+                    chosenTag: state.throughTag,
+                    choose: state.setThrough
                 )
+                .equatable()
             } else {
                 Text(SpeechExportWording.noHeadings)
                     .fixedSize(horizontal: false, vertical: true)
@@ -96,28 +102,6 @@ struct SpeechExportOptionsView: View {
         .accessibilityHint(SpeechExportWording.formatHint)
     }
 
-    /// The pop-up choosing one end of the range, From or To: labelled
-    /// `label`, offering `items`, with `selection` holding the chosen item's
-    /// tag. It grows no wider than `rangePickerMaxWidth`; VoiceOver hears
-    /// the chosen item whole, as its value, however the pop-up shortens it.
-    private func rangePicker(
-        _ label: String,
-        hint: String,
-        items: [SpeechExportOptionsState.Item],
-        selection: Binding<String>
-    ) -> some View {
-        Picker(label, selection: selection) {
-            ForEach(items) { item in
-                Text(item.title).tag(item.tag)
-            }
-        }
-        .pickerStyle(.menu)
-        .frame(maxWidth: Self.rangePickerMaxWidth, alignment: .leading)
-        .accessibilityLabel(label)
-        .accessibilityValue(items.first { $0.tag == selection.wrappedValue }?.title ?? "")
-        .accessibilityHint(hint)
-    }
-
     /// A slider labelled `label`, setting `value` within `range` by `step`,
     /// with its value in words, `spoken`, shown after it. VoiceOver hears the
     /// label, `spoken` as the slider's value, and `hint`; the words shown
@@ -144,23 +128,56 @@ struct SpeechExportOptionsView: View {
         }
     }
 
-    // MARK: Selections
+}
 
-    /// The From pop-up's selection: read from the options, and set through
-    /// `setFrom(_:)`, which keeps the range in reading order.
-    private var fromSelection: Binding<String> {
-        Binding(
-            get: { state.fromTag },
-            set: { state.setFrom($0) }
-        )
+// MARK: - One End of the Range
+
+/// The pop-up choosing one end of the range, From or To: it grows no wider than
+/// `SpeechExportOptionsView.rangePickerMaxWidth`, and VoiceOver hears the chosen
+/// item whole, as its value, however the pop-up shortens it.
+///
+/// Equatable on what it shows, never on its action: a book can have thousands
+/// of headings, and SwiftUI builds a pop-up's whole menu whenever it draws one,
+/// so a step of the Rate or Pitch slider, which draws the options anew, leaves
+/// the two pop-ups as they are.
+private struct RangePicker: View, Equatable {
+    /// The options it sets: another's would need its own pop-up, even over the
+    /// same headings.
+    let options: SpeechExportOptionsState
+    /// What it is called, which VoiceOver speaks and the pop-up shows.
+    let label: String
+    /// What it chooses, which VoiceOver speaks after its label and value.
+    let hint: String
+    /// What it offers: the beginning or the end, and every heading.
+    let items: [SpeechExportOptionsState.Item]
+    /// The tag of the item chosen now. A value, not a binding: comparing two
+    /// bindings would read the options as they are now, twice, and find no
+    /// change for ever.
+    let chosenTag: String
+    /// Chooses an item by its tag, as `setFrom(_:)` or `setThrough(_:)`, which
+    /// keep the range in reading order.
+    let choose: @MainActor (String) -> Void
+
+    /// Whether two pop-ups show the same thing: everything but the action.
+    nonisolated static func == (lhs: RangePicker, rhs: RangePicker) -> Bool {
+        lhs.options === rhs.options
+            && lhs.label == rhs.label
+            && lhs.hint == rhs.hint
+            && lhs.chosenTag == rhs.chosenTag
+            && lhs.items == rhs.items
     }
 
-    /// The To pop-up's selection: read from the options, and set through
-    /// `setThrough(_:)`, which keeps the range in reading order.
-    private var throughSelection: Binding<String> {
-        Binding(
-            get: { state.throughTag },
-            set: { state.setThrough($0) }
-        )
+    var body: some View {
+        let _ = ViewBodyCounter.record("SpeechExportRangePicker")
+        Picker(label, selection: Binding(get: { chosenTag }, set: { choose($0) })) {
+            ForEach(items) { item in
+                Text(item.title).tag(item.tag)
+            }
+        }
+        .pickerStyle(.menu)
+        .frame(maxWidth: SpeechExportOptionsView.rangePickerMaxWidth, alignment: .leading)
+        .accessibilityLabel(label)
+        .accessibilityValue(items.first { $0.tag == chosenTag }?.title ?? "")
+        .accessibilityHint(hint)
     }
 }
