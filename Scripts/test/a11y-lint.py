@@ -38,8 +38,10 @@ from difflint import ERROR, REVIEW, Rule  # noqa: E402
 
 # The SwiftUI the app shows: its views, the menus, and, since the iOS port's
 # phase 0 (November 3, 2026), the platform folders, where views only one app
-# compiles now live (TextMouth/Platform/macOS/Views/, TextMouth/Platform/iOS/).
-DEFAULT_PATHS = ["TextMouth/Views", "TextMouth/App/MenuCommands.swift", "TextMouth/Platform"]
+# compiles now live (TextMouth/Platform/macOS/Views/, TextMouth/Platform/iOS/);
+# and, since the iPhone's interface began (November 7, 2026), the iPhone's own
+# shared folder, TextMouth/Phone/, whose plain types hold its words.
+DEFAULT_PATHS = ["TextMouth/Views", "TextMouth/App/MenuCommands.swift", "TextMouth/Platform", "TextMouth/Phone"]
 
 
 # ---------------------------------------------------------------------------
@@ -441,8 +443,9 @@ RULES = [
          view="code_with_strings"),
 ]
 
-# VoiceOverAnnouncer.swift and VoiceOverFocus.swift ARE the places that post.
-ANNOUNCER_FILES = {"VoiceOverAnnouncer.swift", "VoiceOverFocus.swift"}
+# VoiceOverAnnouncer.swift and VoiceOverFocus.swift ARE the places that post,
+# and so is the iPhone's announcer, PhoneAnnouncer.swift.
+ANNOUNCER_FILES = {"VoiceOverAnnouncer.swift", "VoiceOverFocus.swift", "PhoneAnnouncer.swift"}
 
 
 # ---------------------------------------------------------------------------
