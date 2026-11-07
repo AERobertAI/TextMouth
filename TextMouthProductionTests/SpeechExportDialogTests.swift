@@ -546,6 +546,32 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertEqual(announcements.messages.last, "Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)).")
     }
 
+    // MARK: - The Folder
+
+    /// Export refuses the folder speech exports keep their chapters in, and
+    /// any folder inside it, which TextMouth empties: it says why, once, and
+    /// writes nothing there.
+    func testExportRefusesTheFolderOfKeptChapters() async throws {
+        let dialog = try await makeDialog("Speech Dialog Kept Folder")
+        let model = dialog.model
+        let inside = dialog.storeRoot.appendingPathComponent("Inside", isDirectory: true)
+        try FileManager.default.createDirectory(at: inside, withIntermediateDirectories: true)
+        model.setChecked(true, for: .plainText)
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        for folder in [inside, dialog.storeRoot] {
+            model.destination = folder
+            let run = ExportRun(of: model)
+            let ended = await eventually { run.hasEnded }
+            XCTAssertTrue(ended, "the export did not end")
+            XCTAssertNil(run.outcome, "an export began into \(folder.lastPathComponent)")
+            XCTAssertEqual(model.summary, SpeechExportWording.destinationInKeptChapters)
+        }
+        XCTAssertEqual(announcements.messages, Array(repeating: SpeechExportWording.destinationInKeptChapters, count: 2))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: inside.path), [], "a file was written there")
+    }
+
     // MARK: - Quitting
 
     /// The record of speech exports under way holds a quit while one runs,
@@ -786,6 +812,16 @@ final class SpeechExportDialogTests: XCTestCase {
     /// own, held to the bar's ends, and none once it has ended.
     func testTheFractionOfEachProgress() {
         XCTAssertEqual(SpeechExportProgress.speaking(done: 1, total: 3, fraction: 0.25).fraction, 0.25)
+        XCTAssertEqual(
+            SpeechExportWording.destinationInKeptChapters,
+            "Export can't write into the folder where TextMouth keeps spoken chapters, since TextMouth empties it. "
+                + "Choose another folder."
+        )
+        XCTAssertEqual(SpeechExportWording.readingHeadings, "Reading the book's headings…")
+        XCTAssertEqual(
+            SpeechExportWording.unreadableText,
+            "This book's text can't be read, so it can't be spoken into an audio file."
+        )
         XCTAssertEqual(SpeechExportProgress.encoding(chapters: 3, fraction: 0.75).fraction, 0.75)
         XCTAssertEqual(SpeechExportProgress.encoding(chapters: 3, fraction: 1.2).fraction, 1)
         XCTAssertEqual(SpeechExportProgress.speaking(done: 0, total: 3, fraction: -0.2).fraction, 0)
@@ -844,6 +880,8 @@ final class SpeechExportDialogTests: XCTestCase {
         let model: BookExportModel
         /// What speaks.
         let synthesizer: FakeSpeechBufferSynthesizer
+        /// The folder the dialog's speech exports keep their chapters in.
+        let storeRoot: URL
     }
 
     /// Imports a book from `markdown`, gives it in the library the voice,
@@ -906,16 +944,17 @@ final class SpeechExportDialogTests: XCTestCase {
         let chosen = try world.importBook(from: writeSource(named: "Harbour Pilots.md", markdown: markdown))
         world.library.updateLocalVoiceAndSpeed(bookID: chosen.id, voiceID: bookVoice, wpm: bookSpeed, pitch: bookPitch)
         let folder = try makeSandboxDirectory("\(label) Folder")
+        let environment = try makeEnvironment(synthesizer: synthesizer, knownVoices: knownVoices)
         let model = BookExportModel(
             books: [chosen],
             library: world.library,
             destination: folder,
-            speechEnvironment: try makeEnvironment(synthesizer: synthesizer, knownVoices: knownVoices),
+            speechEnvironment: environment,
             speechDefaults: defaults ?? makeSandboxedPreferences(label),
             substitutionService: substitutions,
             speechExportsUnderWay: speechExportsUnderWay
         )
-        return Dialog(world: world, book: chosen, folder: folder, model: model, synthesizer: synthesizer)
+        return Dialog(world: world, book: chosen, folder: folder, model: model, synthesizer: synthesizer, storeRoot: environment.storeRoot)
     }
 
     /// Writes `markdown`, by default the three-heading book, as a file named

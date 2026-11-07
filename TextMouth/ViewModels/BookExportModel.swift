@@ -595,6 +595,16 @@ final class BookExportModel: ObservableObject, Identifiable {
             VoiceOverAnnouncer.announce(BookExportWording.destinationInLibrary, from: window)
             return nil
         }
+        // The folder speech exports keep their chapters in is emptied when a
+        // speech export finishes, and at the next launch, so nothing is
+        // exported into it.
+        guard !Self.isFolder(folder, inside: speechEnvironment.storeRoot) else {
+            self.cancellation = nil
+            phase = earlier.phase
+            summary = SpeechExportWording.destinationInKeptChapters
+            VoiceOverAnnouncer.announce(SpeechExportWording.destinationInKeptChapters, from: window)
+            return nil
+        }
         let access = self.access
         Self.lastDestination = folder
 
@@ -717,8 +727,12 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Whether `folder` is TextMouth's data directory or inside it, where
     /// exported files would sit among the library's own folders and files.
     static func isInsideDataDirectory(_ folder: URL) -> Bool {
-        let root = TextMouthPaths.root
-        return folder.standardizedFileURL.path == root.standardizedFileURL.path
+        isFolder(folder, inside: TextMouthPaths.root)
+    }
+
+    /// Whether `folder` is `root` or inside it.
+    private static func isFolder(_ folder: URL, inside root: URL) -> Bool {
+        folder.standardizedFileURL.path == root.standardizedFileURL.path
             || MaintenanceFileAccess.isItem(folder, inside: root)
     }
 

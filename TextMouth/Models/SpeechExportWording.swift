@@ -69,6 +69,11 @@ enum SpeechExportWording {
     /// book has no headings to choose.
     static let noHeadings = "This book has no headings, so all of it is exported."
 
+    /// Why Export refuses the folder chosen: it is the folder speech exports
+    /// keep their spoken chapters in, or inside it, which TextMouth empties.
+    static let destinationInKeptChapters = "Export can't write into the folder where TextMouth keeps spoken chapters, "
+        + "since TextMouth empties it. Choose another folder."
+
     /// What the dialog says under the checkbox, the first time it is checked,
     /// while the book's text is read for its headings.
     static let readingHeadings = "Reading the book's headings…"
