@@ -84,12 +84,19 @@ struct MOBIBook {
     // MARK: Opening
 
     /// Reads the book in `bytes`.
-    /// - Parameter hybrid: Which half of a hybrid file is read.
+    /// - Parameters:
+    ///   - hybrid: Which half of a hybrid file is read.
+    ///   - checkCancellation: Asked between the documents of a KF8 book; the
+    ///     read stops when it throws. By default it hears the import running
+    ///     on this thread being cancelled.
     /// - Throws: `MOBIError` for a file that is not a readable Kindle book
     ///   (see the type's comment for the refusals), `DocumentTooLargeError`
-    ///   for a text past `DocumentByteLimit`, and `FileImportError.noTextToRead`
-    ///   for a book without text.
-    init(bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice) throws {
+    ///   for a text past `DocumentByteLimit`, `FileImportError.noTextToRead`
+    ///   for a book without text, and what `checkCancellation` throws.
+    init(
+        bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
+    ) throws {
         let database = try MOBIPalmDatabase(bytes: bytes)
         let headers = try MOBIHeaders(
             record0: try database.record(0, "Record 0"),
@@ -105,7 +112,9 @@ struct MOBIBook {
 
         if let second, hybrid == .kf8 {
             do {
-                self = try Self.kf8Book(database: second.database, headers: second.headers, firstHeaders: headers)
+                self = try Self.kf8Book(
+                    database: second.database, headers: second.headers, firstHeaders: headers,
+                    checkCancellation: checkCancellation)
                 return
             } catch MOBIError.damaged {
                 // A KF8 half that does not read leaves the MOBI 6 half,
@@ -114,11 +123,12 @@ struct MOBIBook {
             }
         }
         if headers.version >= 8 {
-            self = try Self.kf8Book(database: database, headers: headers, firstHeaders: nil)
+            self = try Self.kf8Book(
+                database: database, headers: headers, firstHeaders: nil, checkCancellation: checkCancellation)
             return
         }
 
-        metadata = Self.metadata(of: headers, database: database)
+        metadata = Self.metadata(of: [headers], database: database)
         let text = try MOBIText.bytes(of: database, headers: headers)
         // A plain PalmDOC book is plain text, unless the text is HTML.
         if headers.hasMOBIHeader || MOBIMarkup.looksLikeHTML(text) {
@@ -132,19 +142,17 @@ struct MOBIBook {
     /// hybrid, `firstHeaders` holds the MOBI 6 half's, which names the book
     /// where the KF8 half does not.
     private static func kf8Book(
-        database: MOBIPalmDatabase, headers: MOBIHeaders, firstHeaders: MOBIHeaders?
+        database: MOBIPalmDatabase, headers: MOBIHeaders, firstHeaders: MOBIHeaders?,
+        checkCancellation: () throws -> Void
     ) throws -> MOBIBook {
-        var metadata = Self.metadata(of: headers, database: database)
-        if let firstHeaders {
-            let first = Self.metadata(of: firstHeaders, database: database)
-            if metadata.title.isEmpty { metadata.title = first.title }
-            if metadata.author.isEmpty { metadata.author = first.author }
-            if metadata.language == nil { metadata.language = first.language }
-        }
+        // The KF8 half names the book; where it names nothing, the MOBI 6 half does.
+        let metadata = Self.metadata(of: [headers] + (firstHeaders.map { [$0] } ?? []), database: database)
         let text = try MOBIText.bytes(of: database, headers: headers)
         return MOBIBook(
             metadata: metadata,
-            sections: try KF8Book.sections(of: text, headers: headers, database: database, bookTitle: metadata.title),
+            sections: try KF8Book.sections(
+                of: text, headers: headers, database: database, bookTitle: metadata.title,
+                checkCancellation: checkCancellation),
             includesPages: true
         )
     }
@@ -166,7 +174,7 @@ struct MOBIBook {
             record0: try database.record(0, "Record 0"),
             requiresMOBIHeader: database.type == MOBIPalmDatabase.mobiSignature.type
         )
-        return metadata(of: headers, database: database)
+        return metadata(of: [headers], database: database)
     }
 
     // MARK: Refusals
@@ -200,17 +208,23 @@ struct MOBIBook {
 
     // MARK: Metadata
 
-    /// The metadata `headers` hold, with the database name as the last
-    /// resort for a title.
-    private static func metadata(of headers: MOBIHeaders, database: MOBIPalmDatabase) -> Metadata {
-        let title = firstNonEmpty([
-            headers.exthText(MOBIHeaders.EXTHType.title),
-            headers.fullName,
-            // The database name spells spaces as underscores.
-            database.name.replacingOccurrences(of: "_", with: " "),
-        ])
-        let authors = headers.exthTexts(MOBIHeaders.EXTHType.author).map(cleaned).filter { !$0.isEmpty }
-        let language = cleaned(headers.exthText(MOBIHeaders.EXTHType.language) ?? "")
+    /// The metadata the headers hold, those first in `headersInOrder` first
+    /// (a hybrid's KF8 half before its MOBI 6 half), with the database name
+    /// as the last resort for a title. Each field is the first header's that
+    /// names it.
+    private static func metadata(of headersInOrder: [MOBIHeaders], database: MOBIPalmDatabase) -> Metadata {
+        let title = firstNonEmpty(
+            headersInOrder.map { $0.exthText(MOBIHeaders.EXTHType.title) }
+                + headersInOrder.map { $0.fullName }
+                // The database name spells spaces as underscores.
+                + [database.name.replacingOccurrences(of: "_", with: " ")]
+        )
+        let authors = headersInOrder.lazy
+            .map { $0.exthTexts(MOBIHeaders.EXTHType.author).map(cleaned).filter { !$0.isEmpty } }
+            .first { !$0.isEmpty } ?? []
+        let language = headersInOrder.lazy
+            .map { cleaned($0.exthText(MOBIHeaders.EXTHType.language) ?? "") }
+            .first { !$0.isEmpty } ?? ""
         return Metadata(
             title: title,
             author: authors.joined(separator: ", "),

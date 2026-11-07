@@ -84,7 +84,6 @@ struct KF8Layout {
         let fragmentTable = try MOBIIndex.table(startingAt: fragmentRecord, in: database).rows
 
         var parts: [Part] = []
-        var locations: [Int: (part: Int, fragment: Int)] = [:]
         // The next row of the fragment index: each skeleton takes the next
         // `fragmentCount` of them.
         var nextFragment = 0
@@ -124,10 +123,18 @@ struct KF8Layout {
                 throw MOBIError.damaged("its documents hold more than the text does")
             }
 
-            for (position, fragment) in fragments.enumerated() where locations[fragment.identifier] == nil {
-                locations[fragment.identifier] = (part: parts.count, fragment: position)
-            }
             parts.append(Part(skeleton: skeletonRange, fragments: fragments))
+        }
+        self.init(parts: parts)
+    }
+
+    /// The layout of `parts` that are already read, and have been checked.
+    init(parts: [Part]) {
+        var locations: [Int: (part: Int, fragment: Int)] = [:]
+        for (partIndex, part) in parts.enumerated() {
+            for (position, fragment) in part.fragments.enumerated() where locations[fragment.identifier] == nil {
+                locations[fragment.identifier] = (part: partIndex, fragment: position)
+            }
         }
         self.parts = parts
         self.locations = locations

@@ -43,13 +43,18 @@ enum KF8Book {
 
     /// The sections of the KF8 book in `database`, whose record 0 `headers`
     /// was read from and whose decompressed text is `text`.
-    /// - Parameter bookTitle: The book's title, which a document's own
-    ///   `<title>` is not taken as the document's title when it repeats.
+    /// - Parameters:
+    ///   - bookTitle: The book's title, which a document's own `<title>` is
+    ///     not taken as the document's title when it repeats.
+    ///   - checkCancellation: Asked before each document is joined; throws
+    ///     to stop the read. A test passes its own to prove the read stops
+    ///     partway.
     /// - Throws: `MOBIError.damaged` for a book whose tables, contents, or
     ///   markup do not read (see `KF8Layout`), and `ImportCancelled` when the
     ///   import running this was cancelled, which is heard between documents.
     static func sections(
-        of text: [UInt8], headers: MOBIHeaders, database: MOBIPalmDatabase, bookTitle: String
+        of text: [UInt8], headers: MOBIHeaders, database: MOBIPalmDatabase, bookTitle: String,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> [MOBIBook.Section] {
         let layout = try KF8Layout(database: database, headers: headers, textLength: text.count)
         let destinations = try self.destinations(of: layout, headers: headers, database: database)
@@ -82,7 +87,7 @@ enum KF8Book {
         sections.reserveCapacity(layout.parts.count)
         for (index, part) in layout.parts.enumerated() where index != generatedContents {
             // A very large book is cancelled between its documents.
-            try ImportCancellation.throwIfCancelled()
+            try checkCancellation()
             let joined = try layout.markup(of: part, in: text, anchors: anchors)
             try MOBIMarkup.requireShallowNesting(of: joined)
             let markup = restoringPageBreakTypes(in: joined)
