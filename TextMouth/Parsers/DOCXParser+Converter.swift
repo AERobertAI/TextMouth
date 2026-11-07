@@ -1045,41 +1045,29 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runIsHidden || deletionDepth > 0
     }
 
-    /// Settle whether the run being read is hidden, by its own toggle alone.
-    /// A row marked hidden (`w:trPr/w:hidden`) hides nothing of its own:
-    /// ECMA-376 Part 1 §17.4.20 (Hidden Table Row Marker) hides the glyph of the row's
-    /// end marker, "to ensure that the entire table row is hidden and not displayed in
-    /// the document, as if any part of the row is visible, the row is displayed". So a
-    /// row marked hidden whose runs are visible shows them, and a row that Word hides
-    /// has its runs and marks hidden, which the runs' own `w:vanish` already says. The
-    /// clause's example says the row is not displayed, so the clause is not clean, and
-    /// nothing here has been checked in Word itself.
-    /// The toggle rule of ECMA-376 17.7.3 for `w:vanish` holds: the
-    /// run's own properties, when they say anything, decide; otherwise, when
-    /// the document defaults hide all text, it is hidden; otherwise the table
-    /// style, the paragraph style, and the character style each hide the run
-    /// or not (each through the styles of its kind it is based on), and the
-    /// run is hidden when an odd number of them do, so a hidden character
-    /// style in a hidden paragraph shows the text again. Called at the start
-    /// of the run and again as its style and `w:vanish` are read, which come
-    /// before any of its text.
+    /// Settle whether the run being read is hidden, by its own toggle alone:
+    /// a run's levels (its table style, paragraph style, and character style),
+    /// the document defaults, and its own `w:vanish`, by the rule of
+    /// `DOCXHiding`. A row marked hidden (`w:trPr/w:hidden`) hides nothing of
+    /// its own: ECMA-376 section 17.4.20 hides the glyph of the row's end
+    /// marker, "to ensure that the entire table row is hidden and not
+    /// displayed in the document, as if any part of the row is visible, the
+    /// row is displayed". The clause's example says the row is not displayed,
+    /// so it is not clean, and nothing here has been checked in Word itself.
+    /// Called at the start of the run and again as its style and `w:vanish`
+    /// are read, which come before any of its text.
     private func updateRunHidden() {
-        if let explicit = paragraph.runExplicitlyHidden {
-            paragraph.runIsHidden = explicit
-            return
-        }
-        if styles.documentDefaultsHide {
-            paragraph.runIsHidden = true
-            return
-        }
         // A paragraph that names no style takes the default paragraph style,
         // and a table that names none the default table style.
         let paragraphStyle = paragraph.style.isEmpty ? (styles.defaultParagraphStyle ?? "") : paragraph.style
         let tableStyle = tables.last.map { $0.style.isEmpty ? (styles.defaultTableStyle ?? "") : $0.style } ?? ""
-        let tableHides = styles.hiddenTableStyles.contains(tableStyle)
-        let paragraphHides = styles.hiddenParagraphStyles.contains(paragraphStyle)
-        let characterHides = styles.hiddenCharacterStyles.contains(paragraph.runStyle)
-        paragraph.runIsHidden = (tableHides != paragraphHides) != characterHides
+        paragraph.runIsHidden = DOCXHiding.isHidden(
+            documentDefaults: styles.documentDefaultsHiding,
+            table: styles.tableHiding[tableStyle],
+            paragraph: styles.paragraphHiding[paragraphStyle],
+            character: styles.characterHiding[paragraph.runStyle],
+            direct: paragraph.runExplicitlyHidden
+        )
     }
 
     /// Apply formatting to the run text and append to paragraph

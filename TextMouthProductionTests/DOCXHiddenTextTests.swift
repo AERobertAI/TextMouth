@@ -168,7 +168,13 @@ final class DOCXHiddenTextTests: XCTestCase {
         <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
         <w:style w:type="paragraph" w:styleId="Secret"><w:name w:val="Secret"/><w:rPr><w:vanish/></w:rPr></w:style>
+        <w:style w:type="paragraph" w:styleId="Shown"><w:name w:val="Shown"/><w:rPr><w:vanish w:val="0"/></w:rPr></w:style>
+        <w:style w:type="paragraph" w:styleId="SecretChild"><w:name w:val="SecretChild"/><w:basedOn w:val="Secret"/></w:style>
+        <w:style w:type="paragraph" w:styleId="ParaOnTable"><w:name w:val="ParaOnTable"/><w:basedOn w:val="Ghost"/></w:style>
+        <w:style w:type="paragraph" w:styleId="ParaOnChar"><w:name w:val="ParaOnChar"/><w:basedOn w:val="Hide"/></w:style>
         <w:style w:type="character" w:styleId="Hide"><w:name w:val="Hide"/><w:rPr><w:vanish/></w:rPr></w:style>
+        <w:style w:type="table" w:styleId="TableOnChar"><w:name w:val="TableOnChar"/><w:basedOn w:val="Hide"/></w:style>
+        <w:style w:type="table" w:styleId="TableOnPara"><w:name w:val="TableOnPara"/><w:basedOn w:val="Secret"/></w:style>
         <w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/></w:style>
         <w:style w:type="table" w:styleId="Ghost"><w:name w:val="Ghost"/><w:rPr><w:vanish/></w:rPr></w:style>
         <w:style w:type="table" w:styleId="GhostChild"><w:name w:val="GhostChild"/><w:basedOn w:val="Ghost"/></w:style>
@@ -206,18 +212,27 @@ final class DOCXHiddenTextTests: XCTestCase {
         }
     }
 
-    /// The table style, the paragraph style, and the character style are
-    /// toggled together (ECMA-376 17.7.3): the text is hidden when an odd
-    /// number of them hide it, and a run's own `w:vanish` decides alone.
-    func testATableStyleTogglesWithTheParagraphAndCharacterStyles() throws {
+    /// Word's rule for the table style, the paragraph style, and the character
+    /// style (`DOCXHiding`, MS-OI29500 17.7.6(b) and 17.7.8(a)): a table style
+    /// or a paragraph style that states a value resets the state to it, a
+    /// character style that hides flips it, and a run's own `w:vanish` decides
+    /// alone. A hidden table style and a hidden paragraph style hide the text
+    /// (they did not, by the standard's XOR), and a paragraph style that shows
+    /// it (`w:val="0"`) shows the text of a table that hides it.
+    func testATableStyleAndAParagraphStyleResetAndACharacterStyleToggles() throws {
         let rStyle = "<w:rStyle w:val=\"Hide\"/>"
         let cases: [(String?, String, String?, String)] = [
             // (table style, run properties, paragraph style, what is heard)
-            ("Ghost", "", "Secret", "Before Cell After"),
+            ("Ghost", "", "Secret", "Before After"),
+            ("Ghost", "", "Shown", "Before Cell After"),
+            ("Ghost", "", nil, "Before After"),
             ("Ghost", rStyle, nil, "Before Cell After"),
-            ("Ghost", rStyle, "Secret", "Before After"),
+            ("Ghost", rStyle, "Secret", "Before Cell After"),
+            ("Ghost", rStyle, "Shown", "Before After"),
             (nil, rStyle, "Secret", "Before Cell After"),
             (nil, "", "Secret", "Before After"),
+            (nil, "", "Shown", "Before Cell After"),
+            ("GhostOff", "", "Secret", "Before After"),
             ("Ghost", "<w:vanish w:val=\"0\"/>", nil, "Before Cell After"),
             (nil, "<w:vanish/>", nil, "Before After"),
             ("Ghost", rStyle + "<w:vanish/>", nil, "Before After"),
@@ -226,6 +241,122 @@ final class DOCXHiddenTextTests: XCTestCase {
             let body = table(style: tableStyle, runProperties: runProperties, paragraphStyle: paragraphStyle)
             XCTAssertEqual(try spoken(body, styles: tableStyles), expected, "\(tableStyle ?? "-") \(runProperties) \(paragraphStyle ?? "-")")
         }
+    }
+
+    /// Every combination of what the document defaults, the table style, the
+    /// paragraph style, the character style, and the run state (nothing, true,
+    /// or false), 243, against a table built from the clauses by
+    /// `toggle_table.py` and not from the rule's code: ECMA-376 17.7.3 (the
+    /// run's own value is absolute), MS-OI29500 17.7.3(a) and (b) (with
+    /// defaults true, a level with no value takes true, and the text is hidden
+    /// if and only if an even number of the three levels are false), 17.7.6(b)
+    /// and 17.7.8(a) (a table or paragraph style that states a value resets
+    /// the state), and ECMA-376 17.7.3 for a character style (true flips,
+    /// false leaves). Nothing is checked in Word itself.
+    func testTheRuleGivesWordsAnswerInEveryCombination() {
+        let value: [Character: Bool?] = ["n": .none, "T": true, "F": false]
+        let rows = Self.toggleTable.split(whereSeparator: \.isWhitespace)
+        XCTAssertEqual(rows.count, 243)
+        for row in rows {
+            let letters = Array(row)
+            guard letters.count == 6, let defaults = value[letters[0]], let table = value[letters[1]],
+                  let paragraph = value[letters[2]], let character = value[letters[3]], let direct = value[letters[4]] else {
+                return XCTFail("Not a row of the table: \(row)")
+            }
+            let hidden = DOCXHiding.isHidden(
+                documentDefaults: defaults, table: table, paragraph: paragraph, character: character, direct: direct)
+            XCTAssertEqual(hidden ? "H" : "S", String(letters[5]), "defaults table paragraph character direct = \(row.prefix(5))")
+        }
+    }
+
+    /// The 243 rows: defaults, table, paragraph, character, and the run's own
+    /// state (n nothing, T true, F false), then H hidden or S shown.
+    private static let toggleTable = """
+        nnnnnS nnnnTH nnnnFS nnnTnH nnnTTH nnnTFS nnnFnS nnnFTH nnnFFS
+        nnTnnH nnTnTH nnTnFS nnTTnS nnTTTH nnTTFS nnTFnH nnTFTH nnTFFS
+        nnFnnS nnFnTH nnFnFS nnFTnH nnFTTH nnFTFS nnFFnS nnFFTH nnFFFS
+        nTnnnH nTnnTH nTnnFS nTnTnS nTnTTH nTnTFS nTnFnH nTnFTH nTnFFS
+        nTTnnH nTTnTH nTTnFS nTTTnS nTTTTH nTTTFS nTTFnH nTTFTH nTTFFS
+        nTFnnS nTFnTH nTFnFS nTFTnH nTFTTH nTFTFS nTFFnS nTFFTH nTFFFS
+        nFnnnS nFnnTH nFnnFS nFnTnH nFnTTH nFnTFS nFnFnS nFnFTH nFnFFS
+        nFTnnH nFTnTH nFTnFS nFTTnS nFTTTH nFTTFS nFTFnH nFTFTH nFTFFS
+        nFFnnS nFFnTH nFFnFS nFFTnH nFFTTH nFFTFS nFFFnS nFFFTH nFFFFS
+        TnnnnH TnnnTH TnnnFS TnnTnH TnnTTH TnnTFS TnnFnS TnnFTH TnnFFS
+        TnTnnH TnTnTH TnTnFS TnTTnH TnTTTH TnTTFS TnTFnS TnTFTH TnTFFS
+        TnFnnS TnFnTH TnFnFS TnFTnS TnFTTH TnFTFS TnFFnH TnFFTH TnFFFS
+        TTnnnH TTnnTH TTnnFS TTnTnH TTnTTH TTnTFS TTnFnS TTnFTH TTnFFS
+        TTTnnH TTTnTH TTTnFS TTTTnH TTTTTH TTTTFS TTTFnS TTTFTH TTTFFS
+        TTFnnS TTFnTH TTFnFS TTFTnS TTFTTH TTFTFS TTFFnH TTFFTH TTFFFS
+        TFnnnS TFnnTH TFnnFS TFnTnS TFnTTH TFnTFS TFnFnH TFnFTH TFnFFS
+        TFTnnS TFTnTH TFTnFS TFTTnS TFTTTH TFTTFS TFTFnH TFTFTH TFTFFS
+        TFFnnH TFFnTH TFFnFS TFFTnH TFFTTH TFFTFS TFFFnS TFFFTH TFFFFS
+        FnnnnS FnnnTH FnnnFS FnnTnH FnnTTH FnnTFS FnnFnS FnnFTH FnnFFS
+        FnTnnH FnTnTH FnTnFS FnTTnS FnTTTH FnTTFS FnTFnH FnTFTH FnTFFS
+        FnFnnS FnFnTH FnFnFS FnFTnH FnFTTH FnFTFS FnFFnS FnFFTH FnFFFS
+        FTnnnH FTnnTH FTnnFS FTnTnS FTnTTH FTnTFS FTnFnH FTnFTH FTnFFS
+        FTTnnH FTTnTH FTTnFS FTTTnS FTTTTH FTTTFS FTTFnH FTTFTH FTTFFS
+        FTFnnS FTFnTH FTFnFS FTFTnH FTFTTH FTFTFS FTFFnS FTFFTH FTFFFS
+        FFnnnS FFnnTH FFnnFS FFnTnH FFnTTH FFnTFS FFnFnS FFnFTH FFnFFS
+        FFTnnH FFTnTH FFTnFS FFTTnS FFTTTH FFTTFS FFTFnH FFTFTH FFTFFS
+        FFFnnS FFFnTH FFFnFS FFFTnH FFFTTH FFFTFS FFFFnS FFFFTH FFFFFS
+        """
+
+    /// A `w:basedOn` naming a style of another kind is ignored (ECMA-376
+    /// 17.7.4.3): a table or paragraph style based on a character, paragraph,
+    /// or table style that hides does not hide, while one based on a style of
+    /// its own kind does.
+    func testABasedOnOfAnotherKindIsIgnored() throws {
+        let docx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: tableStyles)
+        let parsed = try DOCXParser.readStyles(from: docx)
+        XCTAssertEqual(parsed.hiddenParagraphStyles, ["Secret", "SecretChild"])
+        XCTAssertEqual(parsed.hiddenCharacterStyles, ["Hide"])
+        XCTAssertEqual(parsed.hiddenTableStyles, ["Ghost", "GhostChild"])
+        XCTAssertNil(parsed.tableHiding["TableOnChar"])
+        XCTAssertNil(parsed.tableHiding["TableOnPara"])
+        XCTAssertNil(parsed.paragraphHiding["ParaOnTable"])
+        XCTAssertNil(parsed.paragraphHiding["ParaOnChar"])
+        // What a style states is kept, false included.
+        XCTAssertEqual(parsed.paragraphHiding["Shown"], false)
+        XCTAssertEqual(parsed.tableHiding["GhostOff"], false)
+        XCTAssertEqual(parsed.tableHiding["Ghost"], true)
+        XCTAssertNil(parsed.tableHiding["Banded"])
+        // And in a document, text in such a table or paragraph is read.
+        XCTAssertEqual(try spoken(table(style: "TableOnChar"), styles: tableStyles), "Before Cell After")
+        XCTAssertEqual(try spoken(table(style: "TableOnPara"), styles: tableStyles), "Before Cell After")
+        XCTAssertEqual(try spoken(table(style: nil, paragraphStyle: "ParaOnTable"), styles: tableStyles), "Before Cell After")
+        XCTAssertEqual(try spoken(table(style: nil, paragraphStyle: "ParaOnChar"), styles: tableStyles), "Before Cell After")
+        XCTAssertEqual(try spoken(table(style: nil, paragraphStyle: "SecretChild"), styles: tableStyles), "Before After")
+    }
+
+    /// Only a table style with `w:default` on sets the default table style: a
+    /// paragraph or character style with it does not (it sets its own default),
+    /// and `w:default="0"` is not on.
+    func testOnlyATableStyleWithDefaultOnIsTheDefaultTableStyle() throws {
+        let styles = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:style w:type="table" w:default="1" w:styleId="First"><w:name w:val="First"/></w:style>
+            <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+            <w:style w:type="character" w:default="1" w:styleId="DefaultChar"><w:name w:val="DefaultChar"/></w:style>
+            <w:style w:type="table" w:default="0" w:styleId="NotDefault"><w:name w:val="NotDefault"/></w:style>
+            <w:style w:type="table" w:default="false" w:styleId="NotDefaultEither"><w:name w:val="NotDefaultEither"/></w:style>
+            <w:style w:type="paragraph" w:default="0" w:styleId="NotNormal"><w:name w:val="NotNormal"/></w:style>
+            </w:styles>
+            """
+        let docx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: styles)
+        let parsed = try DOCXParser.readStyles(from: docx)
+        XCTAssertEqual(parsed.defaultTableStyle, "First")
+        XCTAssertEqual(parsed.defaultParagraphStyle, "Normal")
+    }
+
+    /// The innermost table's style is the one that counts for a table inside
+    /// a cell, and the outer table's does not reach into it: the outer text
+    /// of a table that hides is hidden and the inner table's is read.
+    func testAnOuterTableStyleDoesNotHideANestedTable() throws {
+        let inner = table(style: "TableNormal")
+        let outer = "<w:tbl><w:tblPr><w:tblStyle w:val=\"Ghost\"/></w:tblPr><w:tr><w:tc>"
+            + docxParagraph(docxRun("Outer")) + inner + "</w:tc></w:tr></w:tbl>"
+        XCTAssertEqual(try spoken(outer, styles: tableStyles), "Before Cell After")
     }
 
     /// A table that names no style takes the default table style, as a
@@ -247,9 +378,13 @@ final class DOCXHiddenTextTests: XCTestCase {
         XCTAssertEqual(try spoken(outer, styles: tableStyles), "Before Outer Tail After")
     }
 
-    /// The document defaults can hide all text (`w:docDefaults`): a style
-    /// cannot show it again, only a run's own `w:vanish` can. Defaults that
-    /// say nothing, or turn it off, hide nothing.
+    /// The document defaults can hide all text (`w:docDefaults`): then a level
+    /// with no value takes the defaults' true, and the text is hidden if and
+    /// only if an even number of the table, paragraph, and character styles
+    /// state false (MS-OI29500 17.7.3(a) and (b)). So a style that states
+    /// false, one of three, shows the text again, and a style that states true
+    /// changes nothing. Defaults that say nothing, or turn it off, hide
+    /// nothing.
     func testDocumentDefaultsCanHideAllText() throws {
         func styles(_ defaultProperties: String) -> String {
             """
@@ -260,14 +395,18 @@ final class DOCXHiddenTextTests: XCTestCase {
             <w:style w:type="paragraph" w:styleId="Secret"><w:name w:val="Secret"/><w:rPr><w:vanish/></w:rPr></w:style>
             <w:style w:type="character" w:styleId="Hide"><w:name w:val="Hide"/><w:rPr><w:vanish/></w:rPr></w:style>
             <w:style w:type="character" w:styleId="Show"><w:name w:val="Show"/><w:rPr><w:vanish w:val="0"/></w:rPr></w:style>
+            <w:style w:type="paragraph" w:styleId="Shown"><w:name w:val="Shown"/><w:rPr><w:vanish w:val="0"/></w:rPr></w:style>
             </w:styles>
             """
         }
         let paragraph = docxParagraph(docxRun("Words"))
         let hidden = styles("<w:vanish/>")
         XCTAssertEqual(try spoken(paragraph, styles: hidden), "")
-        // Nothing but a run's own properties shows the text again.
-        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Show\"/>")), styles: hidden), "")
+        // One level that states false makes the count of false levels odd.
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Show\"/>")), styles: hidden), "Words")
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words"), style: "Shown"), styles: hidden), "Words")
+        // Two of them make it even again.
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Show\"/>"), style: "Shown"), styles: hidden), "")
         XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Hide\"/>")), styles: hidden), "")
         XCTAssertEqual(try spoken(docxParagraph(docxRun("Words"), style: "Secret"), styles: hidden), "")
         XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:vanish w:val=\"0\"/>")), styles: hidden), "Words")
@@ -341,7 +480,8 @@ final class DOCXHiddenTextTests: XCTestCase {
         XCTAssertEqual(parsed.hiddenTableStyles, ["Ghost", "GhostChild"])
         XCTAssertEqual(parsed.defaultTableStyle, "TableNormal")
         XCTAssertFalse(parsed.documentDefaultsHide)
-        XCTAssertEqual(parsed.hiddenParagraphStyles, ["Secret"])
+        XCTAssertNil(parsed.documentDefaultsHiding)
+        XCTAssertEqual(parsed.hiddenParagraphStyles, ["Secret", "SecretChild"])
 
         let hiding = tableStyles.replacingOccurrences(
             of: "<w:style w:type=\"paragraph\" w:default",

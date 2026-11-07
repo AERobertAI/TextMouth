@@ -22,24 +22,38 @@ struct DOCXStyles {
     /// "0", "false", or "off".
     var pageBreakBeforeStyles: Set<String> = []
 
-    /// Paragraph style IDs whose text is hidden (`w:vanish` in the style's
-    /// run properties, or in the style it is based on and not turned off),
-    /// before the run's own character style and direct formatting weigh in
-    /// (ECMA-376 17.7.3: `w:vanish` is a toggle property).
-    var hiddenParagraphStyles: Set<String> = []
+    /// What each paragraph style says about hiding its text: `w:vanish` in the
+    /// style's own run properties (true, or false for a `w:val` of "0"), or
+    /// else in the first style it is based on that says anything, through
+    /// styles of the same kind (ECMA-376 17.7.4.3: a `w:basedOn` naming a style
+    /// of another kind is ignored). A style that says nothing is absent. The
+    /// value is kept, false included, because Word resets to it
+    /// (`DOCXHiding`).
+    var paragraphHiding: [String: Bool] = [:]
 
-    /// Character style IDs whose text is hidden, resolved the same way.
-    var hiddenCharacterStyles: Set<String> = []
+    /// What each character style says about hiding its text, resolved the same way.
+    var characterHiding: [String: Bool] = [:]
 
-    /// Table style IDs whose text is hidden (`w:vanish` in the style's own
-    /// run properties, not in its conditional formatting), resolved the same
-    /// way through the table styles they are based on.
-    var hiddenTableStyles: Set<String> = []
+    /// What each table style says about hiding its text (`w:vanish` in the
+    /// style's own run properties, not in its conditional formatting),
+    /// resolved the same way.
+    var tableHiding: [String: Bool] = [:]
 
-    /// Whether the document defaults hide all text (`w:vanish` in
-    /// `w:docDefaults`). By ECMA-376 17.7.3 no style then shows it again;
-    /// only a run's own properties can.
-    var documentDefaultsHide = false
+    /// What the document defaults say about hiding text (`w:vanish` in
+    /// `w:docDefaults`): nil when they say nothing.
+    var documentDefaultsHiding: Bool?
+
+    /// Paragraph style IDs that hide their text.
+    var hiddenParagraphStyles: Set<String> { Set(paragraphHiding.filter(\.value).keys) }
+
+    /// Character style IDs that hide their text.
+    var hiddenCharacterStyles: Set<String> { Set(characterHiding.filter(\.value).keys) }
+
+    /// Table style IDs that hide their text.
+    var hiddenTableStyles: Set<String> { Set(tableHiding.filter(\.value).keys) }
+
+    /// Whether the document defaults hide all text.
+    var documentDefaultsHide: Bool { documentDefaultsHiding == true }
 
     /// The ID of the default paragraph style (`w:default` on a paragraph
     /// style): the style a paragraph that names none takes. Nil when the
@@ -153,10 +167,10 @@ class DOCXStylesParser: DOCXSAXParser {
         try parseDocument()
         styles.headingLevels = Self.headingLevels(of: declarations)
         styles.pageBreakBeforeStyles = Self.pageBreakBeforeStyles(of: declarations)
-        let hidden = Self.inherited(through: declarations, own: \.ownHidden).filter(\.value).keys
-        styles.hiddenParagraphStyles = Set(hidden.filter { declarations[$0]?.type == "paragraph" })
-        styles.hiddenCharacterStyles = Set(hidden.filter { declarations[$0]?.type == "character" })
-        styles.hiddenTableStyles = Set(hidden.filter { declarations[$0]?.type == "table" })
+        let hiding = Self.inherited(through: declarations, own: \.ownHidden)
+        styles.paragraphHiding = hiding.filter { declarations[$0.key]?.type == "paragraph" }
+        styles.characterHiding = hiding.filter { declarations[$0.key]?.type == "character" }
+        styles.tableHiding = hiding.filter { declarations[$0.key]?.type == "table" }
         return styles
     }
 
@@ -195,7 +209,7 @@ class DOCXStylesParser: DOCXSAXParser {
             currentHidden = DOCXOnOff.isOn(attributes["w:val"])
         case "vanish" where !inStyle && trackedChangeDepth == 0 && Self.isDocumentDefaultRunProperty(elementStack):
             // Every run is hidden by default, unless turned off
-            styles.documentDefaultsHide = DOCXOnOff.isOn(attributes["w:val"])
+            styles.documentDefaultsHiding = DOCXOnOff.isOn(attributes["w:val"])
         case "pageBreakBefore" where inStyle && trackedChangeDepth == 0:
             // The style's paragraphs begin a page (PG07), unless turned off
             currentPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
@@ -331,7 +345,10 @@ class DOCXStylesParser: DOCXSAXParser {
     /// says nothing) and otherwise takes from the style it is based on,
     /// followed up the `w:basedOn` chain to the first style that states it.
     /// A style whose chain states nothing, loops back on itself, or reaches
-    /// a style the part does not define is left out of the result.
+    /// a style the part does not define is left out of the result. A
+    /// `w:basedOn` that names a style of another kind (a paragraph style
+    /// based on a character or table style) "shall be ignored" (ECMA-376
+    /// 17.7.4.3): the chain ends there.
     ///
     /// Each chain is walked once, in a loop rather than by recursion, and
     /// every style it passes is resolved with it, so a chain thousands of
@@ -361,12 +378,54 @@ class DOCXStylesParser: DOCXSAXParser {
                     answer = stated
                     break
                 }
-                next = declaration.basedOn
+                // A base of another kind is ignored.
+                next = declaration.basedOn.flatMap { declarations[$0]?.type == declaration.type ? $0 : nil }
             }
             for passed in chain {
                 resolved[passed] = answer
             }
         }
         return resolved.compactMapValues { $0 }
+    }
+}
+
+// MARK: - Hidden Text
+
+/// How Word settles whether a run's text is hidden (`w:vanish`), a toggle
+/// property: the document defaults, the run's table style, paragraph style, and
+/// character style, and the run's own properties. Each level's stated value is
+/// kept (true, or false for a `w:val` of "0"), not only whether it hides.
+///
+/// - ECMA-376 17.7.3: a value in the run's own (direct) formatting is the
+///   absolute state.
+/// - MS-OI29500 17.7.3(a) and (b): when the document defaults say true, a level
+///   with no value takes the defaults' value (true), and the text is hidden
+///   if and only if its effective value is false for an even number of the
+///   three levels (none, or two, are false).
+/// - MS-OI29500 17.7.6(b) and 17.7.8(a): otherwise Word does not toggle the
+///   state for a table style or a paragraph style, it resets it to the value
+///   the style states ("a value of 1 resets the property's state to True
+///   instead of toggling it"), in the order table, then paragraph.
+/// - A character style toggles, as the standard says (ECMA-376 17.7.3, with no
+///   Word note): true flips the state, false leaves it.
+///
+/// The notes come from Microsoft's document alone; nothing here has been
+/// checked in Word itself.
+enum DOCXHiding {
+    /// Whether the text is hidden, given what each level states (nil for a
+    /// level that states nothing).
+    static func isHidden(documentDefaults: Bool?, table: Bool?, paragraph: Bool?, character: Bool?, direct: Bool?) -> Bool {
+        if let direct { return direct }
+        if documentDefaults == true {
+            // A level with no value takes the defaults' value, true.
+            let falseLevels = [table, paragraph, character].filter { ($0 ?? true) == false }.count
+            return falseLevels % 2 == 0
+        }
+        // The defaults say false or nothing: the state starts false.
+        var hidden = false
+        if let table { hidden = table }
+        if let paragraph { hidden = paragraph }
+        if character == true { hidden.toggle() }
+        return hidden
     }
 }
