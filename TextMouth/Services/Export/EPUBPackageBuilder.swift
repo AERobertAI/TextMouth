@@ -26,16 +26,47 @@ struct EPUBPackageBuilder {
     /// The language of the words this file writes itself (the contents'
     /// headings), whatever the book's.
     static let ownLanguage = "en"
-    /// The first subtags of the languages written from right to left.
+    /// The languages written from right to left when their tag names no
+    /// script. Kurdish, Sindhi, Kashmiri, and Uyghur are not among them: each
+    /// is written in more than one script, so only a script (or "ckb", Central
+    /// Kurdish, which is Arabic) says.
     static let rightToLeftLanguages: Set<String> = [
-        "ar", "arc", "ckb", "dv", "fa", "he", "iw", "ks", "ku", "ps", "sd", "ug", "ur", "yi",
+        "ar", "arc", "ckb", "dv", "fa", "he", "iw", "nqo", "ps", "syr", "ur", "yi",
     ]
+    /// The scripts written from right to left, in the lower case of their
+    /// four-letter subtags: a tag with one of them is right to left whatever
+    /// its language, and a tag with any other script is not.
+    static let rightToLeftScripts: Set<String> = [
+        "adlm", "arab", "hebr", "mand", "mend", "nkoo", "rohg", "samr", "syrc", "thaa",
+    ]
+    /// The attribute that lets each block take its direction from its words:
+    /// written on a book whose language is unknown.
+    static let automaticDirection = " dir=\"auto\""
 
+    /// Whether the language tag `tag` is written from right to left: by its
+    /// script when it has one (`ar-Latn` is not, `pa-Arab` is), else by its
+    /// language (`ar` is, `ku` is not).
+    static func isWrittenRightToLeft(_ tag: String) -> Bool {
+        let subtags = tag.lowercased().split(separator: "-").map(String.init)
+        guard let primary = subtags.first else { return false }
+        // The script is the first four-letter subtag, before any extension
+        // (a singleton) or private use.
+        let script = subtags.dropFirst().prefix { $0.count > 1 }.first { $0.count == 4 && $0.allSatisfy(\.isLetter) }
+        if let script {
+            return rightToLeftScripts.contains(script)
+        }
+        return rightToLeftLanguages.contains(primary)
+    }
+
+    /// The archive the package is added to.
     let archive: Archive
+    /// The book being written.
     let document: ExportDocument
     /// The export's date, and the date of every file in the ZIP.
     let date: Date
+    /// How many bytes of markup a chapter's file holds before it goes on in another.
     let maximumFileBytes: Int
+    /// Whether the export is to stop, checked between files and blocks.
     let cancellation: BookExportCancellation
     /// The writer's `afterEachFile`.
     let afterEachFile: (@Sendable (String) throws -> Void)?
@@ -61,6 +92,7 @@ struct EPUBPackageBuilder {
     /// Whether any chapter holds a heading of the book's own.
     private var hasHeadings = false
 
+    /// A builder that adds `document`'s package to `archive`, dated `date`.
     init(
         archive: Archive,
         document: ExportDocument,
@@ -75,13 +107,15 @@ struct EPUBPackageBuilder {
         self.maximumFileBytes = maximumFileBytes
         self.cancellation = cancellation
         self.afterEachFile = afterEachFile
+        // A language that is not well-formed, or is "und" (undetermined, which
+        // is what an export of a book with no language says), is no language.
         let language = document.book.language.flatMap(ExportBookDetails.languageTag)
+            .flatMap { $0.lowercased() == "und" ? nil : $0 }
         self.language = language
-        let primary = language?.split(separator: "-").first.map { String($0).lowercased() }
-        isRightToLeft = primary.map(Self.rightToLeftLanguages.contains) ?? false
+        isRightToLeft = language.map(Self.isWrittenRightToLeft) ?? false
         markup = XHTMLMarkup(
             usesEPUBTypes: true,
-            blockAttributes: language == nil ? " dir=\"auto\"" : "",
+            blockAttributes: language == nil ? Self.automaticDirection : "",
             writesEmptyHeadingsAsTargets: true,
             linkAddress: { EPUBLinkAddress.url(from: $0) }
         )
@@ -371,7 +405,7 @@ struct EPUBPackageBuilder {
     /// page. The headings of the two lists are English (this file's own
     /// words, marked as such); their entries are the book's.
     private func navigationDocument() -> String {
-        let direction = language == nil ? " dir=\"auto\"" : ""
+        let direction = language == nil ? Self.automaticDirection : ""
         let own = "lang=\"\(Self.ownLanguage)\" xml:lang=\"\(Self.ownLanguage)\""
         var body = [
             "<nav epub:type=\"toc\" role=\"doc-toc\" id=\"toc\"\(direction)>",
@@ -482,8 +516,9 @@ struct EPUBPackageBuilder {
     /// forbidden white space character is a space), each run of white space,
     /// line feeds included, one space, and none at either end; nil when no
     /// word is left, so a name that has no words in the file is never
-    /// written empty.
+    /// written empty (nor one of only zero-width characters).
     private static func name(_ text: String) -> String? {
+        guard XMLEscaping.hasVisibleText(text) else { return nil }
         let words = XMLEscaping.cleaned(text).split(whereSeparator: { $0.isWhitespace || $0.isNewline })
         return words.isEmpty ? nil : words.joined(separator: " ")
     }

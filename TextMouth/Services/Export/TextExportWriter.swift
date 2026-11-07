@@ -83,6 +83,7 @@ protocol TextExportWriter: Sendable {
     ) throws
 }
 
+/// What a writer gets without saying so.
 extension TextExportWriter {
     /// A writer of the words alone asks the walk for nothing more.
     var walkOptions: ExportWalkOptions { .plain }

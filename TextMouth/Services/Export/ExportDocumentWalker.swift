@@ -197,6 +197,8 @@ private struct Walk {
     /// so a crafted line cannot be re-parsed once per level).
     var isReadingRestOfMarkerLine = false
 
+    /// A walk that keeps what `options` ask for, with no id claimed and no
+    /// page or target met.
     init(options: ExportWalkOptions) {
         self.options = options
     }
@@ -344,7 +346,7 @@ private struct Walk {
         switch marker {
         case .page(let page):
             pageCount += 1
-            let hasWords = XMLEscaping.cleaned(page.label).contains { !$0.isWhitespace }
+            let hasWords = XMLEscaping.hasVisibleText(page.label)
             run.pageBreak = ExportPageBreak(label: hasWords ? page.label : String(pageCount), id: "page_\(pageCount)")
         case .heading(let annotation):
             targetCount += 1

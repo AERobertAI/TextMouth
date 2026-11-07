@@ -178,9 +178,11 @@ struct ExportBookDetails: Equatable, Sendable {
               primary.allSatisfy({ $0.isASCII && $0.isLetter })
         else { return nil }
 
+        /// Whether every character of `subtag` is an ASCII letter or digit.
         func isAlphanumeric(_ subtag: Substring) -> Bool {
             subtag.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
         }
+        /// Whether every character of `subtag` is an ASCII letter.
         func isLetters(_ subtag: Substring) -> Bool {
             subtag.allSatisfy { $0.isASCII && $0.isLetter }
         }
@@ -327,6 +329,7 @@ enum ExportBlock: Equatable, Sendable {
     /// the targets that are none (as blocks or inside a paragraph as runs),
     /// in reading order.
     static func contentsItems(in blocks: [ExportBlock]) -> [ExportContentsItem] {
+        /// The entry of the contents that `target` makes.
         func item(_ target: ExportNavigationTarget) -> ExportContentsItem {
             ExportContentsItem(level: target.level, text: target.text, id: target.id, isHeading: false)
         }

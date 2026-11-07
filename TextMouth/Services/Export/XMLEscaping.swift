@@ -34,6 +34,17 @@ enum XMLEscaping {
         escape(text, replacing: [:])
     }
 
+    /// Whether `text` has a character a person can see or hear: one that is
+    /// neither white space nor a format character (a zero-width space, joiner,
+    /// non-joiner, or byte order mark, which take no room), once the
+    /// characters XML forbids are gone. A heading or a name with none is
+    /// nothing to a screen reader, and is written as if empty.
+    static func hasVisibleText(_ text: String) -> Bool {
+        cleaned(text).unicodeScalars.contains { scalar in
+            !scalar.properties.isWhitespace && scalar.properties.generalCategory != .format
+        }
+    }
+
     // MARK: Private
 
     /// What `text(_:)` writes in place of the characters it escapes.

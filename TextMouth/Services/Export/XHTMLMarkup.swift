@@ -75,7 +75,7 @@ struct XHTMLMarkup {
     /// word to show is, where asked, an empty target of its id instead.
     private func headingLine(_ heading: ExportHeading) -> String {
         let id = XMLEscaping.attribute(heading.id)
-        if writesEmptyHeadingsAsTargets, !XMLEscaping.cleaned(heading.plainText).contains(where: { !$0.isWhitespace }) {
+        if writesEmptyHeadingsAsTargets, !XMLEscaping.hasVisibleText(heading.plainText) {
             return "<span id=\"\(id)\"></span>"
         }
         let level = min(max(heading.level, 1), 6)
