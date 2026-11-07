@@ -335,12 +335,16 @@ private final class PhoneReaderArrival {
 
     /// Runs the arrival to its end: at most 3 seconds.
     func run() async {
+        // Told on the main queue, then claims the main actor. Only the
+        // element's identity crosses, which is Sendable. The observer holds
+        // the arrival until the defer below removes it, as the run ends.
         observer = NotificationCenter.default.addObserver(
             forName: UIAccessibility.elementFocusedNotification, object: nil, queue: .main
-        ) { [weak self] notification in
-            let element = notification.userInfo?[UIAccessibility.focusedElementUserInfoKey]
+        ) { notification in
+            let landed = (notification.userInfo?[UIAccessibility.focusedElementUserInfoKey] as? NSObject)
+                .map(ObjectIdentifier.init)
             MainActor.assumeIsolated {
-                self?.landed(on: element)
+                self.landed(onElementWithID: landed)
             }
         }
         defer {
@@ -361,9 +365,14 @@ private final class PhoneReaderArrival {
         }
     }
 
-    /// VoiceOver's focus landed on `element`: once on any reader control, the
-    /// arrival is over.
-    private func landed(on element: Any?) {
-        policy.focusLanded(on: PhoneFocusRegistry.shared.kind(of: element))
+    /// VoiceOver's focus landed on the element with identity `id`: once on
+    /// any reader control, the arrival is over.
+    private func landed(onElementWithID id: ObjectIdentifier?) {
+        let kind = id.flatMap { id in
+            PhoneControlKind.allCases.first { kind in
+                PhoneFocusRegistry.shared.view(for: kind).map(ObjectIdentifier.init) == id
+            }
+        }
+        policy.focusLanded(on: kind)
     }
 }
