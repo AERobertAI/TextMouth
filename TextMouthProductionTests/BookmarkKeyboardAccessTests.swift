@@ -82,19 +82,30 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     }
 
     /// A command that adds nothing, because the library holds no record of
-    /// the book, says so in a full sentence rather than claiming a bookmark.
+    /// the book, says so in a full sentence rather than claiming a bookmark,
+    /// and says it after the panel's focus move has settled, which would
+    /// otherwise cut it off (REV11 F6): nothing is said at once.
     func testAddingABookmarkForAnUnknownBookSaysNothingWasAdded() {
         let reader = makeReader(isInLibrary: false)
         defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
 
-        let recorded = recordingAnnouncements {
-            reader.addBookmarkAtCurrentPosition()
-            reader.toggleBookmarkAtCurrentPosition()
-        }
+        reader.addBookmarkAtCurrentPosition()
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        // A later wait of the same length runs after the two before it.
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
 
         let expected = ReaderViewModel.bookmarkNotAddedAnnouncement(bookTitle: "Bookmark Focus")
-        XCTAssertEqual(recorded.announcements.map(\.message), [expected, expected])
+        XCTAssertEqual(messages, [expected, expected])
         XCTAssertTrue(expected.contains("no longer in the library"))
+        XCTAssertFalse(expected.contains("Nothing was changed"), "the reader's own list is emptied too")
     }
 
     // MARK: - Where focus goes

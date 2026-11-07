@@ -84,16 +84,7 @@ extension ReaderViewModel {
                 threshold: bookmarkProximityThreshold,
                 chapterLength: chapterLength
             )
-            let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
-            libraryViewModel.addBookmark(
-                bookID: book.id,
-                chapterIndex: currentChapterIndex,
-                characterOffset: adjustedOffset,
-                label: "",
-                anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: adjustedOffset))
-            )
-            bookmarks = libraryViewModel.bookmarksForBook(book.id)
-            announceBookmarkAdded(bookmarks.first { !existingIDs.contains($0.id) })
+            addBookmark(atOffset: adjustedOffset, label: "")
         }
     }
 
@@ -150,15 +141,27 @@ extension ReaderViewModel {
     ///   so added nothing.
     @discardableResult
     func addBookmarkAtCurrentPosition(label: String = "") -> Bookmark? {
+        addBookmark(atOffset: currentCharacterOffset, label: label)
+    }
+
+    /// Adds a bookmark at `offset` in the current chapter, keeping the words
+    /// around it (T06, `anchorToSave(at:)`), tells VoiceOver which bookmark
+    /// it made or that it made none, and returns it. The toggle and the
+    /// panel's Add share it.
+    ///
+    /// - Returns: The bookmark added; nil when the library holds no record
+    ///   of this book and so added nothing.
+    @discardableResult
+    private func addBookmark(atOffset offset: Int, label: String) -> Bookmark? {
         // The bookmarks saved before this one. Whichever bookmark is new
         // afterwards is the one added here, wherever the library placed it.
         let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
         libraryViewModel.addBookmark(
             bookID: book.id,
             chapterIndex: currentChapterIndex,
-            characterOffset: currentCharacterOffset,
+            characterOffset: offset,
             label: label,
-            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: offset))
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
         let added = bookmarks.first { !existingIDs.contains($0.id) }
@@ -168,20 +171,28 @@ extension ReaderViewModel {
 
     /// What VoiceOver says when no bookmark could be added because the
     /// library holds no record of the book, as when the book was removed
-    /// while its reader was open.
+    /// while its reader was open. It does not say that nothing was changed:
+    /// the reader's own list of bookmarks is emptied too.
     static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
-        "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library. Nothing was changed."
+        "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
     }
 
     /// Says which bookmark was added, by the number it was given, or that
     /// none was when `added` is nil. The number is the new bookmark's own,
     /// never a count of the bookmarks, so it names the bookmark that was
-    /// made, and a command that added nothing never claims a bookmark.
+    /// made, and a command that added nothing never claims a bookmark. The
+    /// sentence for none is long and the bookmarks panel moves VoiceOver's
+    /// focus a moment after an add, which cuts off words posted with the
+    /// move, so it waits until the focus has settled (REV11 F6,
+    /// `VoiceOverAnnouncer.afterSheetCloses`).
     private func announceBookmarkAdded(_ added: Bookmark?) {
         if let added {
             announceToVoiceOver("Bookmark \(added.number) added")
         } else {
-            announceToVoiceOver(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
+            let sentence = Self.bookmarkNotAddedAnnouncement(bookTitle: book.title)
+            VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+                self?.announceToVoiceOver(sentence)
+            }
         }
     }
 
