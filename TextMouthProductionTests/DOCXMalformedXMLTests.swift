@@ -454,6 +454,31 @@ final class DOCXMalformedXMLTests: XCTestCase {
         }
     }
 
+    /// A part with a document type that has definitions of its own, or in an
+    /// encoding the guard cannot see through (UTF-7 here), is refused as
+    /// damage naming the part, in the sentences of `XMLInputGuard`: the review
+    /// found that a declaration skipped to its first `>` hid a hostile tag, which
+    /// took 21.9 s to parse.
+    func testAPartWithOwnDefinitionsOrAStatefulEncodingIsRefusedAsDamage() throws {
+        let intact = try XCTUnwrap(Self.intactParts[DOCXParser.Part.document])
+        let range = try XCTUnwrap(intact.range(of: "<w:document"))
+        let subset = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document [<!ENTITY e \"x>y<!--\">]><w:document")
+        let docx = try makeDOCX(replacing: [DOCXParser.Part.document: Data(subset.utf8)])
+        let reason = malformedXMLReason(naming: DOCXParser.Part.document) { try DOCXParser.extractMarkdown(from: docx) }
+        XCTAssertEqual(reason, XMLInputGuard.ownDefinitionsProblem)
+
+        let utf7 = intact.replacingOccurrences(of: "encoding=\"UTF-8\"", with: "encoding=\"UTF-7\"")
+        XCTAssertNotEqual(utf7, intact)
+        let docx7 = try makeDOCX(replacing: [DOCXParser.Part.document: Data(utf7.utf8)])
+        let reason7 = malformedXMLReason(naming: DOCXParser.Part.document) { try DOCXParser.extractMarkdown(from: docx7) }
+        XCTAssertEqual(reason7, XMLInputGuard.unreadableEncodingProblem)
+
+        // An external type, which a DTBook or NCX has, is no definition of its own.
+        let external = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><w:document")
+        let docxExternal = try makeDOCX(replacing: [DOCXParser.Part.document: Data(external.utf8)])
+        XCTAssertNoThrow(try DOCXParser.extractMarkdown(from: docxExternal))
+    }
+
     /// The refusal reads as the other damage does: it names the part, says
     /// what is wrong in words a listener can use, and says what to do.
     func testTheRefusalOfATagWithTooManyAttributesIsInTheSentenceOfAnyDamagedPart() {

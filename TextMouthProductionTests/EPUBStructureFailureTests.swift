@@ -103,6 +103,25 @@ final class EPUBStructureFailureTests: XCTestCase {
         }
     }
 
+    /// A container or package document with definitions of its own is refused
+    /// as damage naming the file, and one that names an external type is read.
+    @MainActor
+    func testAnEPUBFileWithOwnDefinitionsIsRefusedAsDamage() throws {
+        let subset = Self.container().replacingOccurrences(
+            of: "<container", with: "<!DOCTYPE container [<!ENTITY e \"x>y<!--\">]><container")
+        let epub = try makeEPUB(container: subset, packageDocument: Self.packageDocument())
+        try assertRefused(
+            epub,
+            throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
+                file: "META-INF/container.xml", reason: XMLInputGuard.ownDefinitionsProblem))),
+            saying: "The file \u{201C}META-INF/container.xml\u{201D} in this EPUB book is damaged or incomplete: "
+                + "it defines entities or attributes of its own, which TextMouth cannot read safely. "
+                + "Get a fresh copy of the book, then import it again.")
+        let external = Self.packageDocument().replacingOccurrences(
+            of: "<package", with: "<!DOCTYPE package PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><package")
+        XCTAssertNoThrow(try EPUBParser.parseOPF(external))
+    }
+
     // MARK: - The Reading Order
 
     /// A package document whose spine names nothing says the book has no
