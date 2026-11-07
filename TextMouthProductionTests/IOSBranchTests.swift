@@ -12,7 +12,9 @@ final class IOSBranchTests: XCTestCase {
     /// What an M4B, M4A, or MP4 does on iOS, where afinfo cannot start: `read`
     /// has no answer, so the file is not listed for conversion, and imports as
     /// it is. Run here with a tool whose program does not exist, which on the
-    /// Mac too comes back as `.couldNotStart`.
+    /// Mac too comes back as `.couldNotStart`. On the main actor only so that
+    /// the sandbox folder's tear-down block is added there.
+    @MainActor
     func testAnMPEG4FileIsLeftAsItIsWhenItsHelperCannotStart() async throws {
         let folder = try makeSandboxDirectory("IOSBranchMPEG4")
         for (name, brand) in [("book.m4b", "M4B "), ("track.m4a", "M4A "), ("film.mp4", "isom")] {
