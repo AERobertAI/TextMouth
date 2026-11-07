@@ -47,6 +47,11 @@ extension ReaderViewModel {
             replaceWhereAmISynthesizer()
             speakWhereAmISummary(replacement)
         case .speak(let summary):
+            #if os(iOS)
+            // The announcement speaks through the app's audio session, which
+            // must be the app's first (the engineer's review, F7).
+            guard phoneHooks.audioMayStart() else { return }
+            #endif
             pauseBookForWhereAmI()
             speakWhereAmISummary(summary)
         }
