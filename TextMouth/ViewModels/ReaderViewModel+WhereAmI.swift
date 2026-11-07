@@ -305,8 +305,9 @@ extension ReaderViewModel {
     }
 
     /// Time left in `heading` from the live cursor at the current speed, or
-    /// nil when the heading spans no text to measure.
-    private func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
+    /// nil when the heading spans no text to measure. The iPhone's Where Am
+    /// I? value reads it too.
+    func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
         let totalHeadingChars = estimatedCharsInHeading(heading)
         guard totalHeadingChars > 0 else { return nil }
         let headingStart = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
