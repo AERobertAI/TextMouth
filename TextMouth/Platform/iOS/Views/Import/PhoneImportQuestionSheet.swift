@@ -1,0 +1,71 @@
+import SwiftUI
+
+/// The import question an import waits on, rebuilt for the phone (the spec's
+/// "Import questions"): the Mac's title in the navigation bar, the Mac's
+/// question, where focus lands, the folder name field for a ZIP archive's
+/// books, then the Mac's choices as a vertical list, each with its hint.
+///
+/// It can't be swiped away: only an answer settles it, and its Cancel is the
+/// question's own (`interactiveDismissDisabled`). What it shows is decided by
+/// `PhoneImportQuestion`; this view only lays it out and passes the answer.
+struct PhoneImportQuestionSheet: View {
+    /// What the sheet shows.
+    let question: PhoneImportQuestion
+    /// Answers the question, and says what happened.
+    let onAnswer: (ImportDecisionAnswer) -> OperationOutcome
+
+    /// The folder name field's text, at first the archive's name.
+    @State private var folderName: String
+    /// Why the last answer failed, shown above the choices.
+    @State private var failureMessage: String?
+    /// Whether VoiceOver's focus is on the question's text, where it lands.
+    @AccessibilityFocusState private var isMessageFocused: Bool
+
+    /// The sheet for `question`, answered through `onAnswer`.
+    init(question: PhoneImportQuestion, onAnswer: @escaping (ImportDecisionAnswer) -> OperationOutcome) {
+        self.question = question
+        self.onAnswer = onAnswer
+        _folderName = State(initialValue: question.suggestedFolderName ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text(question.message)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityFocused($isMessageFocused)
+                }
+                if question.suggestedFolderName != nil {
+                    Section {
+                        TextField(ImportDecisionChoiceWording.folderNameLabel, text: $folderName)
+                            .accessibilityLabel(ImportDecisionChoiceWording.folderNameLabel)
+                    }
+                }
+                Section {
+                    OperationFailureNotice(message: failureMessage)
+                    ForEach(question.choices) { choice in
+                        Button(choice.words.title) {
+                            failureMessage = OperationFailureNotice.message(after: onAnswer(choice.answer(folderName: folderName)))
+                        }
+                        .disabled(!question.isEnabled(choice, folderName: folderName))
+                        .accessibilityLabel(choice.words.title)
+                        .accessibilityHint(choice.words.hint)
+                    }
+                }
+            }
+            .navigationTitle(question.title)
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .interactiveDismissDisabled(true)
+        // A failure is for the name it was given: a new name clears it.
+        .onChange(of: folderName) { failureMessage = nil }
+        .task(id: question.decisionID) {
+            // A moment for the sheet to slide in, then VoiceOver reads the
+            // question itself rather than the sheet's first element.
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            isMessageFocused = true
+        }
+    }
+}
