@@ -36,6 +36,10 @@ enum MOBIIndex {
     /// entries (all at one offset in a record) claim thousands, so the work
     /// is bounded by the sum, not by each entry.
     private static let maximumValues = 2_000_000
+    /// Most bytes of a label that are read. A real label is a title, under a
+    /// hundred bytes; the cap is generous (about 1 KB) and a longer label is
+    /// cut there, which at worst ends it in a replacement character.
+    static let maximumLabelBytes = 1_024
 
     /// One tag of the tag table: which value it is, how many numbers make
     /// one value, the mask that picks its bits from the entry's control
@@ -255,10 +259,18 @@ enum MOBIIndex {
                 let start = position
                 guard let (length, size) = try? variableNumber(in: record, at: position) else { break }
                 position += size
-                guard let bytes = try? record.slice(position, length, "A label") else { break }
+                // Only the first `maximumLabelBytes` of a label are copied and
+                // decoded: a heading is a line, and a hostile book that names
+                // one label of a megabyte in every row would otherwise have it
+                // copied for each. Each label is decoded here, once, however
+                // many rows name it.
+                guard (try? record.require(position, length, "A label")) != nil,
+                      let bytes = try? record.slice(position, min(length, maximumLabelBytes), "A label") else { break }
                 position += length
                 // Zero padding reads as empty strings, which name nothing.
-                if length > 0 { labels[number * 0x10000 + start] = MOBIText.decode(bytes, encoding: encoding) }
+                if length > 0 {
+                    labels[number * 0x10000 + start] = MOBIText.decode(bytes, encoding: encoding)
+                }
             }
         }
         return labels

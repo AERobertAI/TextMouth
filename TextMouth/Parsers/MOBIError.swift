@@ -28,6 +28,11 @@ enum MOBIError: LocalizedError, Equatable {
         case .notAKindleBook:
             return "This file is not a Kindle book that TextMouth can read."
         case .damaged(let detail):
+            // A fault only a programmer can name (a table's place, a count)
+            // is left out of what a listener hears: the sentence says what to do.
+            guard !detail.isEmpty else {
+                return "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again."
+            }
             return "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again."
         case .copyProtected:
             return "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
