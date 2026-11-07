@@ -247,6 +247,141 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         }).bookChapters(fileDuration: fileDuration)
     }
 
+    /// The margin is decision 6's 5 seconds: a last chapter that begins
+    /// exactly that far past the end of the audio is still the audio's (its
+    /// own chapter is past the end, so Nero's rules drop it), and one
+    /// millisecond further was made for other audio and gives none.
+    func testTheLastChapterMayBeginFiveSecondsPastTheEndButNotMore() {
+        let atTheMargin = twoChapters(lastBeginningAt: 9_000).bookChapters(fileDuration: 4)
+        XCTAssertEqual(atTheMargin.map(\.title), ["Opening"])
+        XCTAssertEqual(atTheMargin.map(\.duration), [4])
+
+        XCTAssertEqual(twoChapters(lastBeginningAt: 9_001).bookChapters(fileDuration: 4).count, 0)
+    }
+
+    /// A length that is no usable number gives no chapters, and never traps.
+    func testALengthThatIsNoUsableNumberGivesNoChapters() {
+        for duration in [0, -1, TimeInterval.nan, .infinity, -.infinity] as [TimeInterval] {
+            XCTAssertEqual(twoChapters(lastBeginningAt: 1_000).bookChapters(fileDuration: duration).count, 0, "\(duration)")
+        }
+    }
+
+    /// Nero's rules, as they bear on a podcast's chapters: the first chapter
+    /// begins at 0 whatever its time, a repeated start keeps the first, a
+    /// chapter at or past the end is dropped, each lasts until the next, and
+    /// a title that is nothing is named by its place among those kept.
+    func testNerosRulesShapeThePodcastsChapters() {
+        let chapters = PodcastChapters(chapters: [
+            PodcastChapter(startMilliseconds: 30_000, title: "Interview"),
+            PodcastChapter(startMilliseconds: 30_000, title: "Repeated"),
+            PodcastChapter(startMilliseconds: 60_000, title: " \u{200B} "),
+            PodcastChapter(startMilliseconds: 90_000, title: "Closing"),
+            PodcastChapter(startMilliseconds: 100_000, title: "At the end"),
+            PodcastChapter(startMilliseconds: 103_000, title: "Past the end, within the margin"),
+        ]).bookChapters(fileDuration: 100)
+
+        XCTAssertEqual(chapters.map(\.title), ["Interview", "Chapter 2", "Closing"])
+        XCTAssertEqual(chapters.map(\.startTime), [0, 60, 90])
+        XCTAssertEqual(chapters.map(\.duration), [60, 30, 10])
+    }
+
+    /// One chapter is a book of one chapter that lasts the whole file.
+    func testOneChapterLastsTheWholeFile() {
+        let chapters = bookChapters(starting: [0], fileDuration: 61.5)
+
+        XCTAssertEqual(chapters.map(\.title), ["One"])
+        XCTAssertEqual(chapters.map(\.startTime), [0])
+        XCTAssertEqual(chapters.map(\.duration), [61.5])
+    }
+
+    /// The most chapters a file may hold are all taken, each beginning where
+    /// it says, and together they last exactly as long as the audio.
+    func testTheMostChaptersAFileMayHoldAreAllTaken() {
+        let count = PodcastChapters.maximumChapters
+        let starts = (0..<count).map { TimeInterval($0) * 2 }
+
+        let chapters = bookChapters(starting: starts, fileDuration: TimeInterval(count) * 2)
+
+        XCTAssertEqual(chapters.count, count)
+        XCTAssertEqual(chapters.map(\.startTime), starts)
+        XCTAssertEqual(chapters.map(\.duration), Array(repeating: 2, count: count))
+    }
+
+    /// A title of a megabyte reaches a heading no longer than the limit,
+    /// with a mark that it was cut; a title at the limit is kept whole.
+    func testAVeryLongTitleIsCutToTheLimit() {
+        let limit = PodcastChapters.maximumTitleCharacters
+        XCTAssertEqual(limit, 200)
+        let atTheLimit = String(repeating: "a", count: limit)
+        let huge = String(repeating: "word ", count: 200_000)
+
+        XCTAssertEqual(PodcastChapters.headingTitle(atTheLimit), atTheLimit)
+        XCTAssertEqual(PodcastChapters.headingTitle(atTheLimit + "a"), atTheLimit + "\u{2026}")
+        // The limit falls just after a space, which is not kept before the
+        // mark: it would be heard as a pause.
+        let cut = PodcastChapters.headingTitle(huge)
+        XCTAssertEqual(cut, String(huge.prefix(limit)).trimmingCharacters(in: .whitespaces) + "\u{2026}")
+        XCTAssertLessThanOrEqual(cut.unicodeScalars.count, limit + 1)
+        XCTAssertFalse(cut.hasSuffix(" \u{2026}"))
+
+        // Through the whole path: the title is what a book names its chapter.
+        let chapters = PodcastChapters(chapters: [PodcastChapter(startMilliseconds: 0, title: huge)])
+            .bookChapters(fileDuration: 10)
+        XCTAssertEqual(chapters.map(\.title), [cut])
+    }
+
+    /// Characters the listener sees as one are never parted by the cut: an
+    /// accented letter, an emoji joined from several, and a flag stay whole
+    /// or go; and one character of a megabyte of marks is no title.
+    func testTheCutKeepsWholeCharactersAndBoundsOneEndlessCharacter() {
+        let limit = PodcastChapters.maximumTitleCharacters
+        // "é" as e and a combining acute: two scalars, one character. After
+        // one plain letter, 99 of them fill 199 scalars and a hundredth would
+        // pass the limit; a cut by scalars would keep its "e" without its accent.
+        let accented = "a" + String(repeating: "e\u{301}", count: limit)
+        XCTAssertEqual(
+            PodcastChapters.headingTitle(accented),
+            "a" + String(repeating: "e\u{301}", count: (limit - 1) / 2) + "\u{2026}"
+        )
+
+        // A family emoji is seven scalars; one that would straddle the limit goes whole.
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}"
+        let padded = String(repeating: "a", count: limit - 3) + family
+        XCTAssertEqual(PodcastChapters.headingTitle(padded), String(repeating: "a", count: limit - 3) + "\u{2026}")
+
+        // One letter followed by a megabyte of combining marks is a single
+        // character that cannot fit: nothing of it is kept, so the book names the chapter by its place.
+        let endless = "a" + String(repeating: "\u{301}", count: 1_000_000)
+        XCTAssertEqual(PodcastChapters.headingTitle(endless), "")
+        XCTAssertEqual(
+            PodcastChapters(chapters: [PodcastChapter(startMilliseconds: 0, title: endless)]).bookChapters(fileDuration: 5).map(\.title),
+            ["Chapter 1"]
+        )
+    }
+
+    /// A control character is dropped from a title, a title nobody can see
+    /// or hear is no title, and an ordinary title is untouched: Markdown's
+    /// characters, a joiner in an emoji, and a right-to-left mark included.
+    func testTitlesLoseControlCharactersAndInvisibleOnesAreUntitled() {
+        XCTAssertEqual(PodcastChapters.headingTitle("Tide\u{0}table\u{7}"), "Tidetable")
+        for invisible in ["", " ", "\u{200B}", "\u{FEFF}\u{200B}\u{2060}", "\u{0}", "\u{0}\u{200D}\u{200E}"] {
+            XCTAssertEqual(PodcastChapters.headingTitle(invisible), "", "\(invisible.unicodeScalars.map(\.value))")
+        }
+        for plain in ["# Not a heading", "*stars* and _bars_", "Q&A --> Part 2", "<b>bold</b>", "\u{1F468}\u{200D}\u{1F469}", "שלום\u{200F}"] {
+            XCTAssertEqual(PodcastChapters.headingTitle(plain), plain)
+        }
+    }
+
+    /// A line feed and a run of white space in a title are finished by the
+    /// reader into single spaces before the title reaches a heading.
+    func testALineFeedInAFilesTitleIsOneLineInTheBook() throws {
+        let file = Data(#"{"version":"1.2.0","chapters":[{"startTime":0,"title":"Line one\nline\ttwo   end"}]}"#.utf8)
+
+        let chapters = try PodcastChapters.read(file).bookChapters(fileDuration: 10)
+
+        XCTAssertEqual(chapters.map(\.title), ["Line one line two end"])
+    }
+
     // MARK: - The Analysis
 
     /// An episode's chapters kept beside its audio become its chapters and
