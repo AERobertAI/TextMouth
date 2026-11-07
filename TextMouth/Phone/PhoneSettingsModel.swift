@@ -13,8 +13,9 @@ private typealias Words = PhoneSettingsVocabulary
 
 /// The screen's sections, in the spec's order as its outside reviews left it
 /// on November 7: Navigation, with the phone's units for each kind of book,
-/// takes the place of the Mac's Skip Controls, and Reading is new. The view
-/// draws them in this order, so a test of this list is a test of the screen's.
+/// takes the place of the Mac's Skip Controls, and Reading, new, follows
+/// Sleep Timer. The view draws them in this order, so a test of this list is
+/// a test of the screen's.
 enum PhoneSettingsSection: CaseIterable, Identifiable {
     case voice
     case navigation
@@ -22,9 +23,9 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     case punctuationPauses
     case endOfBook
     case sleepTimer
+    case reading
     case times
     case pages
-    case reading
     case removalBehavior
     case statistics
     case about

@@ -11,13 +11,14 @@ final class PhoneSettingsModelTests: XCTestCase {
     // MARK: - Sections and Rows
 
     /// The screen's headings are the spec's, in its order as the outside
-    /// reviews left it: Navigation in Skip Controls' place, and Reading new.
+    /// reviews left it: Navigation in Skip Controls' place, and Reading, new,
+    /// after Sleep Timer.
     func testTheSectionsAreInTheSpecsOrderAndWords() {
         XCTAssertEqual(
             PhoneSettingsSection.allCases.map(\.title),
             [
                 "Voice", "Navigation", "Rewind on Resume", "Punctuation Pauses", "End of Book", "Sleep Timer",
-                "Times", "Pages", "Reading", "Removal Behavior", "Statistics", "About",
+                "Reading", "Times", "Pages", "Removal Behavior", "Statistics", "About",
             ]
         )
     }
