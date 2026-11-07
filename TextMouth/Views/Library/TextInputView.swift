@@ -151,6 +151,9 @@ struct TextInputView: View {
     /// What to check after a Reload, shown and spoken like a failure but
     /// kept while the reloaded text stays: its characters may be wrong.
     @State private var reloadNote: String?
+    /// The text the note is about. The note is shown only while the text is
+    /// still this: once the listener edits it, the doubt is theirs to settle.
+    @State private var reloadedContent: String?
 
     init(onAdd: @escaping (String, String, String) -> Void, onCancel: @escaping () -> Void) {
         self.onAdd = onAdd
@@ -216,7 +219,7 @@ struct TextInputView: View {
             if let failureMessage {
                 OperationFailureNotice(message: failureMessage)
             }
-            if let reloadNote {
+            if let reloadNote, textContent == reloadedContent {
                 Text(reloadNote)
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
@@ -268,6 +271,7 @@ struct TextInputView: View {
     private func beginAction() {
         failureMessage = nil
         reloadNote = nil
+        reloadedContent = nil
     }
 
     private func pasteFromClipboard() {
@@ -295,12 +299,16 @@ struct TextInputView: View {
             fail(TextImportPolicy.editorOpenFailedAnnouncement)
             return
         }
-        editorTempURL = fileURL
-        // Nothing may open the file; then there is no editor to reload from.
+        // Nothing may open the file; then there is no editor to reload from,
+        // and Reload, if an earlier Open in Editor showed it, keeps reading
+        // the earlier file, which an editor did open.
         guard NSWorkspace.shared.open(fileURL) else {
+            try? FileManager.default.removeItem(at: fileURL)
             fail(TextImportPolicy.editorNotOpenedAnnouncement)
             return
         }
+        cleanupTempFile()
+        editorTempURL = fileURL
         showReload = true
         #else
         // Phase 0: iOS has no external editor to open the text in; phase 1
@@ -318,6 +326,7 @@ struct TextInputView: View {
         textContent = reloaded.text
         if reloaded.mayBeMisread {
             reloadNote = TextImportPolicy.reloadMayBeMisreadAnnouncement
+            reloadedContent = reloaded.text
             VoiceOverAnnouncer.announce(TextImportPolicy.reloadMayBeMisreadAnnouncement)
         }
     }
