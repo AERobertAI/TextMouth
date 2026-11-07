@@ -805,7 +805,12 @@ extension LibraryViewModel {
         // alert: the overlay clears as the queue empties.
         guard !(error is ImportCancelled) else { return }
         importProgress.end(.failure)
+        #if os(iOS)
+        // The phone's alert for a failed import is titled as the spec asks.
+        presentImportMessage(error.localizedDescription, title: ImportProgressWording.nothingImportedTitle)
+        #else
         presentImportMessage(error.localizedDescription)
+        #endif
     }
 
     /// Tell the reader about an import through the library's alert: why it
