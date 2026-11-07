@@ -237,6 +237,33 @@ enum SpeechExportText {
 
     // MARK: Where Sections Begin and End
 
+    /// The places in `headings` of the headings `range` reads: from the
+    /// "From" heading, or the first for the book's beginning, through the
+    /// "To" heading and its subheadings, up to the next heading of its level
+    /// or above, or through the last heading for the book's end. Should two
+    /// headings share an ID (the same text, level, and place), the range
+    /// starts at the first and runs through the last, so neither one's text
+    /// is left out. Nil for a range that ends before it begins, which holds
+    /// nothing; only a range naming both ends can, and the Export dialog
+    /// never asks for one.
+    ///
+    /// The text cuts its sections by these places, and the Export dialog's
+    /// options count the chapters a range makes by them.
+    /// - Throws: `Failure.headingNotFound` for a heading `headings` lacks.
+    static func headingPlaces(of range: SpeechExportRange, in headings: [Heading]) throws -> Range<Int>? {
+        var first = 0
+        if let id = range.fromHeadingID {
+            guard let index = headings.firstIndex(where: { $0.id == id }) else { throw Failure.headingNotFound(id) }
+            first = index
+        }
+        guard let id = range.throughHeadingID else { return first..<headings.count }
+        guard let last = headings.lastIndex(where: { $0.id == id }) else { throw Failure.headingNotFound(id) }
+        guard first <= last else { return nil }
+        let level = headings[last].level
+        let pastLast = headings[(last + 1)...].firstIndex { $0.level <= level } ?? headings.count
+        return first..<pastLast
+    }
+
     /// A place in a book's text: a chapter, and a UTF-16 offset in that
     /// chapter's text as the book holds it, before any preparation.
     private struct Place: Comparable {
@@ -290,16 +317,17 @@ enum SpeechExportText {
             headings.indices.contains(index) ? place(of: headings[index], in: content) : bookEnd
         }
 
+        // The headings read: the "To" heading's section takes its
+        // subheadings with it, so a range from a chapter to the same chapter
+        // is the whole chapter. A range that ends before it begins holds
+        // nothing.
+        guard let places = try headingPlaces(of: range, in: headings) else { return [] }
+
         var spans: [Span] = []
-        // The first heading read. From the book's beginning, the text before
-        // the first heading comes first, under the book's title: up to that
-        // heading, or the whole book when it has no headings.
-        let first: Int
-        if let id = range.fromHeadingID {
-            guard let index = headings.firstIndex(where: { $0.id == id }) else { throw Failure.headingNotFound(id) }
-            first = index
-        } else {
-            first = 0
+        // From the book's beginning, the text before the first heading comes
+        // first, under the book's title: up to that heading, or the whole
+        // book when it has no headings.
+        if range.fromHeadingID == nil {
             spans.append(Span(
                 title: title(of: nil, bookTitle: bookTitle),
                 headingID: nil,
@@ -308,25 +336,7 @@ enum SpeechExportText {
             ))
         }
 
-        // The heading after the last one read. The "To" heading's section
-        // takes its subheadings with it, up to the next heading of its level
-        // or above, so a range from a chapter to the same chapter is the
-        // whole chapter. Should two headings share an ID (the same text,
-        // level, and place), the range starts at the first and runs through
-        // the last, so neither one's text is left out.
-        let pastLast: Int
-        if let id = range.throughHeadingID {
-            guard let last = headings.lastIndex(where: { $0.id == id }) else { throw Failure.headingNotFound(id) }
-            // A range that ends before it begins holds nothing. Only a range
-            // naming both ends can, and the Export dialog never asks for one.
-            guard first <= last else { return [] }
-            let level = headings[last].level
-            pastLast = headings[(last + 1)...].firstIndex { $0.level <= level } ?? headings.count
-        } else {
-            pastLast = headings.count
-        }
-
-        for index in first..<pastLast {
+        for index in places {
             spans.append(Span(
                 title: title(of: headings[index], bookTitle: bookTitle),
                 headingID: headings[index].id,

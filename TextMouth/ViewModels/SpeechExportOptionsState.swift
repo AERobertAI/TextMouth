@@ -173,6 +173,24 @@ final class SpeechExportOptionsState: ObservableObject {
         )
     }
 
+    /// How many headings the chosen range reads, its skipped ones left out:
+    /// the chapters it makes, besides any text before the first heading.
+    /// The text's own count of what a range reads
+    /// (`SpeechExportText.headingPlaces(of:in:)`); 0 for a range that holds
+    /// nothing.
+    var headingCount: Int {
+        guard let places = try? SpeechExportText.headingPlaces(of: choices.range, in: headings) else { return 0 }
+        return headings[places].filter { !skippedHeadingIDs.contains($0.id) }.count
+    }
+
+    /// The line the options show under the Format pop-up while MP3 is
+    /// chosen for a range of more headings than an MP3 has chapters for;
+    /// nil otherwise.
+    var mp3ChapterNote: String? {
+        guard format == .mp3, headingCount > MP3Tag.maximumChapters else { return nil }
+        return SpeechExportWording.mp3ChapterLimit(headings: headingCount)
+    }
+
     // MARK: Choosing the Range
 
     /// Chooses where the spoken audio begins, by a From item's tag: "" for

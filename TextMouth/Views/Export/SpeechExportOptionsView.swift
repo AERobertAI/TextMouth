@@ -38,6 +38,11 @@ struct SpeechExportOptionsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             formatPicker
+            // Right after the pop-up, so VoiceOver reads it next.
+            if let note = state.mp3ChapterNote {
+                Text(note)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if state.hasHeadings {
                 RangePicker(
                     options: state,

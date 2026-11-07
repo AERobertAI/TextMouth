@@ -459,6 +459,39 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(model.summary)
     }
 
+    /// An MP3 made of more headings than it has chapters for, 256 of them,
+    /// says so at its end, suggesting M4B; an MP3 of fewer, or an M4B of as
+    /// many, says nothing of it.
+    func testAnMP3OfMoreHeadingsThanItHasChaptersForSaysSoAtItsEnd() async throws {
+        let markdown = (1...256).map { "# Heading \($0)\n\nWord.\n" }.joined(separator: "\n")
+        let dialog = try await makeDialog(
+            "Speech Dialog MP3 Chapters",
+            markdown: markdown,
+            synthesizer: FakeSpeechBufferSynthesizer(framesPerUnit: 200)
+        )
+        let model = dialog.model
+        let options = try XCTUnwrap(model.speechOptions)
+        options.format = .mp3
+        XCTAssertEqual(options.mp3ChapterNote, SpeechExportWording.mp3ChapterLimit(headings: 256))
+        checkOnlySpokenAudio(model)
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        let outcome = try await end(of: ExportRun(of: model), within: 120)
+
+        let stem = BookExportService.fileNameStem(for: dialog.book.title)
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["\(stem) - Audio.mp3"])
+        XCTAssertEqual(
+            announcements.messages,
+            ["Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)). "
+                + SpeechExportWording.mp3ChaptersKept(of: 256)]
+        )
+
+        options.format = .m4b
+        _ = try await end(of: ExportRun(of: model), within: 120)
+        XCTAssertEqual(announcements.messages.last, "Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)).")
+    }
+
     // MARK: - Drawn
 
     /// Checking the kind draws its options' three pop-ups and two sliders
@@ -781,11 +814,12 @@ final class SpeechExportDialogTests: XCTestCase {
     }
 
     /// What the export `run` did, once it has ended. It is waited for with a
-    /// limit: the test fails, rather than waits for ever, should the export
-    /// not end within 30 seconds, or should it never have begun.
-    private func end(of run: ExportRun) async throws -> BookExportOutcome {
-        let hasEnded = await eventually(within: 30) { run.hasEnded }
-        XCTAssertTrue(hasEnded, "the export did not end within 30 seconds")
+    /// limit, `seconds`, 30 unless given: the test fails, rather than waits
+    /// for ever, should the export not end in time, or should it never have
+    /// begun.
+    private func end(of run: ExportRun, within seconds: Int = 30) async throws -> BookExportOutcome {
+        let hasEnded = await eventually(within: seconds) { run.hasEnded }
+        XCTAssertTrue(hasEnded, "the export did not end within \(seconds) seconds")
         return try XCTUnwrap(run.outcome, "the export did not end, or did not begin")
     }
 

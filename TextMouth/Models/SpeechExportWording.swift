@@ -14,9 +14,26 @@ enum SpeechExportWording {
     /// The label of the pop-up that chooses the kind of audio file. Its items
     /// are the formats' names (`SpeechExportFormat.title`).
     static let formatLabel = "Format"
-    /// What the Format pop-up chooses, spoken after its label and value.
+    /// What the Format pop-up chooses, spoken after its label and value. An
+    /// MP3's table of contents counts its chapters in one byte
+    /// (`MP3Tag.maximumChapters`).
     static let formatHint = "The kind of audio file. M4B is an audiobook; M4A and MP3 play in more apps. "
-        + "Each has a chapter for each heading."
+        + "M4B and M4A have a chapter for each heading; an MP3, for each of the first \(MP3Tag.maximumChapters)."
+
+    /// The line under the Format pop-up while MP3 is chosen for a range of
+    /// more headings than an MP3 has chapters for, `headings` of them: what
+    /// is lost, and what keeps it.
+    static func mp3ChapterLimit(headings: Int) -> String {
+        "This range has \(headings.formatted()) headings, and an MP3 has chapters for the first "
+            + "\(MP3Tag.maximumChapters) only. Choose M4B to have a chapter for each of them."
+    }
+
+    /// The sentence the Export dialog adds after an MP3 of `chapters`
+    /// chapters is made, more than an MP3 has chapters for.
+    static func mp3ChaptersKept(of chapters: Int) -> String {
+        "The MP3 has chapters for the first \(MP3Tag.maximumChapters) of its \(chapters.formatted()) headings; "
+            + "export it as M4B to have a chapter for each."
+    }
 
     // MARK: The Range
 

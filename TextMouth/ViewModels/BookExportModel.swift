@@ -526,6 +526,12 @@ final class BookExportModel: ObservableObject, Identifiable {
         // The conversions are read here, on the main actor, with the options
         // as they are now; the export takes the copy off the main thread.
         let conversions = self.conversions
+        let speechFormat: SpeechExportFormat?
+        if case .speech(let request)? = conversions[.spokenAudio] {
+            speechFormat = request.format
+        } else {
+            speechFormat = nil
+        }
         let folder = destination
         guard !Self.isInsideDataDirectory(folder) else {
             self.cancellation = nil
@@ -580,6 +586,11 @@ final class BookExportModel: ObservableObject, Identifiable {
         if case .ended(let kept, let total)? = speechRecord.latest,
            let keptWords = SpeechExportWording.kept(done: kept, total: total) {
             words += " " + keptWords
+        }
+        // An MP3 made of more chapters than it has chapters for says so.
+        if speechFormat == .mp3, case .ended(_, let chapters)? = speechRecord.latest, chapters > MP3Tag.maximumChapters,
+           outcome.exported.contains(where: { $0.pathExtension == SpeechExportFormat.mp3.fileExtension }) {
+            words += " " + SpeechExportWording.mp3ChaptersKept(of: chapters)
         }
         summary = Self.didEverything(outcome) ? nil : words
         VoiceOverAnnouncer.announce(words, from: window)

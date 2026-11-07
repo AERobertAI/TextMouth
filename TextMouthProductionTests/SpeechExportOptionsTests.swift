@@ -46,6 +46,56 @@ final class SpeechExportOptionsTests: XCTestCase {
         )
     }
 
+    /// `count` level-1 headings, one in each of `count` chapters.
+    private func manyHeadings(_ count: Int) -> [Heading] {
+        (0..<count).map { Heading(level: 1, text: "Heading \($0 + 1)", chapterIndex: $0, characterOffset: 0) }
+    }
+
+    // MARK: - An MP3's Chapters
+
+    /// An MP3 has chapters for its first 255 headings only. The options
+    /// count the headings the chosen range reads, its skipped ones left out,
+    /// and while MP3 is chosen for more than 255, they say so under the
+    /// Format pop-up; for 255 or fewer, or in M4B or M4A, they say nothing.
+    func testAnMP3OfMoreHeadingsThanItHasChaptersForSaysSo() {
+        let headings = manyHeadings(300)
+        let state = makeState(headings)
+        XCTAssertEqual(state.headingCount, 300)
+        XCTAssertNil(state.mp3ChapterNote, "the note showed for M4B")
+
+        state.format = .mp3
+        XCTAssertEqual(state.mp3ChapterNote, SpeechExportWording.mp3ChapterLimit(headings: 300))
+        state.format = .m4a
+        XCTAssertNil(state.mp3ChapterNote, "the note showed for M4A")
+
+        state.format = .mp3
+        state.setThrough(headings[254].id)
+        XCTAssertEqual(state.headingCount, 255)
+        XCTAssertNil(state.mp3ChapterNote, "the note showed for 255 headings")
+        state.setThrough(headings[255].id)
+        XCTAssertEqual(state.headingCount, 256)
+        XCTAssertEqual(state.mp3ChapterNote, SpeechExportWording.mp3ChapterLimit(headings: 256))
+        state.setFrom(headings[1].id)
+        XCTAssertEqual(state.headingCount, 255, "the range's own headings were not counted")
+        XCTAssertNil(state.mp3ChapterNote)
+
+        let skipping = makeState(headings, skipped: Set(headings.prefix(45).map(\.id)))
+        skipping.format = .mp3
+        XCTAssertEqual(skipping.headingCount, 255, "skipped headings were counted")
+        XCTAssertNil(skipping.mp3ChapterNote)
+    }
+
+    /// A range through a heading counts that heading's subheadings too, as
+    /// the export reads them.
+    func testTheCountTakesTheToHeadingsSubheadings() {
+        let state = makeState()
+        state.setFrom(chapterOne.id)
+        state.setThrough(chapterOne.id)
+        XCTAssertEqual(state.headingCount, 2, "Chapter 1 and its Notes")
+        state.setThrough(chapterTwo.id)
+        XCTAssertEqual(state.headingCount, 3)
+    }
+
     // MARK: - The Words
 
     /// Every label, hint, value, item, and line of the options, and the
@@ -54,7 +104,17 @@ final class SpeechExportOptionsTests: XCTestCase {
         XCTAssertEqual(SpeechExportWording.formatLabel, "Format")
         XCTAssertEqual(
             SpeechExportWording.formatHint,
-            "The kind of audio file. M4B is an audiobook; M4A and MP3 play in more apps. Each has a chapter for each heading."
+            "The kind of audio file. M4B is an audiobook; M4A and MP3 play in more apps. "
+                + "M4B and M4A have a chapter for each heading; an MP3, for each of the first 255."
+        )
+        XCTAssertEqual(
+            SpeechExportWording.mp3ChapterLimit(headings: 1_000),
+            "This range has 1,000 headings, and an MP3 has chapters for the first 255 only. "
+                + "Choose M4B to have a chapter for each of them."
+        )
+        XCTAssertEqual(
+            SpeechExportWording.mp3ChaptersKept(of: 300),
+            "The MP3 has chapters for the first 255 of its 300 headings; export it as M4B to have a chapter for each."
         )
         XCTAssertEqual(SpeechExportWording.fromLabel, "From")
         XCTAssertEqual(SpeechExportWording.fromHint, "Where the spoken audio begins: the beginning of the book, or a heading.")
