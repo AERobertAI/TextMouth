@@ -33,7 +33,7 @@ Part of [TextMouth's documentation](../../README.md).
 - RTF headings are bold and larger, from 22 point at level 1 down to 13 point at level 6, and carry outline levels, so TextMouth reads them back as headings at the same levels. A list is a run of paragraphs, each starting with a bullet or a number and a tab. A table of more than 63 columns becomes a paragraph for each row, its cells apart by tabs.
 - Word 97-2003 (.doc) is made by Apple's writer from TextMouth's RTF, so it holds the same text. Its headings are larger and bold but plain text, so Word's navigation pane does not list them. It loses six rare characters that the RTF keeps: the bidirectional embedding and override controls U+202A to U+202E, and U+FFFD, which becomes "?".
 
-- EPUB is an EPUB 3 e-book, made by TextMouth's own writer from the book's text, never parsed from Markdown again (see EPUB 3, below). It is written for a reader who navigates by headings and pages, and states only what is true of the file.
+- EPUB is an EPUB 3 e-book, made by TextMouth's own writer from the same walk of content.md that the other converted formats are written from, with the chapters and the pages kept as well as the words (see EPUB 3, below). It is written for a reader who navigates by headings and pages, and states only what is true of the file.
 
 ## EPUB 3
 
