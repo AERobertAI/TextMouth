@@ -366,23 +366,28 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### HTML, Markdown, and plain text files
 
-- HTML, Markdown, and plain text files, whatever their text encoding and line endings.
+- TextMouth reads HTML, Markdown, and plain text files, whatever their text encoding and line endings.
 
 #### Where a file's text encoding comes from
 
-- TextMouth takes a file's text encoding from the file where it can, using the first of these that applies: a byte-order mark for UTF-8, UTF-16, or UTF-32; UTF-16 without a mark, if it is mostly Latin letters, which shows in its zero bytes; bytes that are valid UTF-8; and, for an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
+- TextMouth takes a file's text encoding from the file where it can, using the first of these that applies:
+  - A byte-order mark for UTF-8, UTF-16, or UTF-32.
+  - UTF-16 without a mark, if it is mostly Latin letters, which shows in its zero bytes.
+  - Bytes that are valid UTF-8.
+  - For an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
 
 #### A file that none of these settles
 
 - A file that none of these settles, because it is neither UTF-8 nor UTF-16 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters.
-  - Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
-  - Only a file you add yourself is guessed at: a feed's article is read as it always was.
+- Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
+- Only a file you add yourself is guessed at: a feed's article is read as it always was.
 
 #### The encodings TextMouth guesses among
 
 - TextMouth guesses among the encodings below.
-  - Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
-  - Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
+- Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
+- Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
+- The encodings, by script:
   - Western European: "Mac Roman (Western European)" and "ISO 8859-15 (Western European)".
   - Central European: "Windows-1250 (Central European)" and "ISO 8859-2 (Central European)".
   - Cyrillic: "Windows-1251 (Cyrillic)", "KOI8-R (Russian)", "KOI8-U (Ukrainian)", "CP866 (Russian DOS)", "ISO 8859-5 (Cyrillic)", and "Mac Cyrillic".
@@ -392,18 +397,23 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   - Arabic: "Windows-1256 (Arabic)" and "ISO 8859-6 (Arabic)".
   - Baltic: "Windows-1257 (Baltic)" and "ISO 8859-13 (Baltic)".
   - Thai: "Windows-874 (Thai)".
-  - Japanese: "Shift JIS (Japanese)", "EUC-JP (Japanese)", and "ISO 2022-JP (Japanese)". ISO 2022-JP writes only 7-bit bytes, so it is valid UTF-8 too; TextMouth looks for it, by its escape sequences, before it takes bytes for UTF-8.
+  - Japanese: "Shift JIS (Japanese)", "EUC-JP (Japanese)", and "ISO 2022-JP (Japanese)".
+    - ISO 2022-JP writes only 7-bit bytes, so it is valid UTF-8 too.
+    - TextMouth looks for it, by its escape sequences, before it takes bytes for UTF-8.
   - Chinese: "GB 18030 (Simplified Chinese)", "GBK (Simplified Chinese)", "GB 2312 (Simplified Chinese)", and "Big5 (Traditional Chinese)".
   - Korean: "EUC-KR (Korean)".
 
 #### When TextMouth guesses
 
 - TextMouth guesses only when it can trust the guess more than Windows-1252, since a wrong guess turns text that was right into text that is not, which the book keeps, while a missed guess leaves a book as garbled as it was.
-  - You can mend either by choosing the book's encoding yourself (see Choosing the encoding, below).
-  - It examines the lines that hold a byte beyond plain ASCII, about 64 KB of them from the start, and takes a guess only when all of these hold:
-    - The Windows-1252 reading shows that it is wrong: it holds at least three characters that real writing almost never holds (symbols inside words, control characters, and the like), not all the same character; or at least five capitals inside lowercase words; or a fifth or more of its letters beyond plain ASCII lie outside the alphabet of the one language that fits them best, where the other reading's letters fit one language.
-    - Another encoding reads them clearly better, with almost nothing odd left. When other encodings read them as well but differently, the file stays Windows-1252, unless macOS's own guess names one of exactly two of them.
-    - The whole file, not only the lines examined, reads in that encoding with no byte dropped or replaced, and writes back to exactly the same bytes.
+- You can mend either by choosing the book's encoding yourself (see Choosing the encoding, below).
+- It examines the lines that hold a byte beyond plain ASCII, about 64 KB of them from the start, and takes a guess only when all of these hold:
+  - The Windows-1252 reading shows that it is wrong:
+    - It holds at least three characters that real writing almost never holds (symbols inside words, control characters, and the like), not all the same character.
+    - Or it holds at least five capitals inside lowercase words.
+    - Or a fifth or more of its letters beyond plain ASCII lie outside the alphabet of the one language that fits them best, where the other reading's letters fit one language.
+  - Another encoding reads them clearly better, with almost nothing odd left. When other encodings read them as well but differently, the file stays Windows-1252, unless macOS's own guess names one of exactly two of them.
+  - The whole file, not only the lines examined, reads in that encoding with no byte dropped or replaced, and writes back to exactly the same bytes.
 
 #### The same bytes give the same guess
 
@@ -422,30 +432,30 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 #### A guess can be wrong
 
 - A guess can still be wrong, most often for a text of only a few lines, and, rarely, for a Windows-1252 file of program code with several accented capitals inside its names, which can be read as Mac Roman.
-  - Book Information names the encoding a book was read in, so a book whose letters read oddly can be checked there, and set right there with its Text Encoding pop-up (see Choosing the encoding, below).
+- Book Information names the encoding a book was read in, so a book whose letters read oddly can be checked there, and set right there with its Text Encoding pop-up (see Choosing the encoding, below).
 
 #### Books already in your library
 
 - A book already in your library keeps its text.
-  - TextMouth records a guess with the book when the book is added, and an encoding you choose when you choose it, and reads the book in it every time its text is built again, after an update or with Redo Text Extraction.
-  - A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- TextMouth records a guess with the book when the book is added, and an encoding you choose when you choose it, and reads the book in it every time its text is built again, after an update or with Redo Text Extraction.
+- A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 #### Choosing the encoding
 
-- Choosing the encoding: the Text Encoding pop-up in Book Information reads a book's file again in the encoding you choose, or, with Automatic, as TextMouth reads a file you add.
-  - Use it for a book whose letters read oddly, whether the guess was wrong or missed.
-  - Its items, and every sentence it says, are under Text Encoding in [The Library window](library-window.md).
-  - A book you added from a file has it. Text you typed in with New from Text, a feed's article, and a book of another format do not.
-  - A chosen encoding is read whatever the file's bytes say of themselves: a byte-order mark, bytes that are valid UTF-8, and an HTML file's own declaration do not overrule it, since you choose it for a file that read wrong.
-  - It is read strictly: every byte must belong to a character of the encoding, and none is dropped or replaced. UTF-8 refuses a file that is not valid UTF-8, and an encoding of one byte to a character refuses a byte it leaves undefined, such as 0x98 in Windows-1251. Windows-1252 gives every byte a character, so it refuses nothing.
-  - A file that is not valid in the encoding chosen is refused, and nothing changes: not the book's text, its saved places, nor its record. The sentence names the book and the encoding (see Text Encoding in [The Library window](library-window.md)).
-  - Limits, since macOS's own readers decide which characters an encoding defines:
-    - Characters of JIS X 0212 in EUC-JP, which it writes with the byte 0x8F before two bytes, are refused, because macOS reads them as other characters.
-    - The euro sign in Big5 and in EUC-KR is refused.
-    - Big5-HKSCS characters, the Hong Kong additions to Big5, are refused.
-    - A GB 18030 file that holds the replacement character itself, U+FFFD, is refused.
-    - In Big5 as Windows writes it, the two bytes 0xA2 0xCC are read as 十 followed by a character from a private-use area, which a braille display shows.
-  - A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read: "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read. Choose another in Book Information."
+- The Text Encoding pop-up in Book Information reads a book's file again in the encoding you choose, or, with Automatic, as TextMouth reads a file you add.
+- Use it for a book whose letters read oddly, whether the guess was wrong or missed.
+- Its items, and every sentence it says, are under Text Encoding in [The Library window](library-window.md).
+- A book you added from a file has it. Text you typed in with New from Text, a feed's article, and a book of another format do not.
+- A chosen encoding is read whatever the file's bytes say of themselves: a byte-order mark, bytes that are valid UTF-8, and an HTML file's own declaration do not overrule it, since you choose it for a file that read wrong.
+- It is read strictly: every byte must belong to a character of the encoding, and none is dropped or replaced. UTF-8 refuses a file that is not valid UTF-8, and an encoding of one byte to a character refuses a byte it leaves undefined, such as 0x98 in Windows-1251. Windows-1252 gives every byte a character, so it refuses nothing.
+- A file that is not valid in the encoding chosen is refused, and nothing changes: not the book's text, its saved places, nor its record. The sentence names the book and the encoding (see Text Encoding in [The Library window](library-window.md)).
+- Limits, since macOS's own readers decide which characters an encoding defines:
+  - Characters of JIS X 0212 in EUC-JP, which it writes with the byte 0x8F before two bytes, are refused, because macOS reads them as other characters.
+  - The euro sign in Big5 and in EUC-KR is refused.
+  - Big5-HKSCS characters, the Hong Kong additions to Big5, are refused.
+  - A GB 18030 file that holds the replacement character itself, U+FFFD, is refused.
+  - In Big5 as Windows writes it, the two bytes 0xA2 0xCC are read as 十 followed by a character from a private-use area, which a braille display shows.
+- A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read: "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read. Choose another in Book Information."
 
 ### Safari web archives
 
