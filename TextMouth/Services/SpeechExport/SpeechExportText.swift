@@ -363,11 +363,11 @@ enum SpeechExportText {
         heading.flatMap { oneLine($0.text) } ?? oneLine(bookTitle) ?? ""
     }
 
-    /// `text` on one line, as a chapter marker shows it: each run of white
-    /// space, line breaks included, made one space, and none left at either
-    /// end. Nil when nothing but white space is left.
+    /// `text` on one line, as a chapter marker shows it
+    /// (`SpeechExportWording.oneLine(_:)`); nil when nothing but white space
+    /// is left.
     private static func oneLine(_ text: String) -> String? {
-        let line = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let line = SpeechExportWording.oneLine(text)
         return line.isEmpty ? nil : line
     }
 
