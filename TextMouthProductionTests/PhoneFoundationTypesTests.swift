@@ -179,8 +179,10 @@ final class PhoneListFocusTests: XCTestCase {
 final class VoiceOverAnnouncerCollectingTests: XCTestCase {
     /// What the call announces is collected, in order, and nothing is posted;
     /// the poster is back afterwards, after a throw too.
-    func testItCollectsAndPutsThePosterBack() {
-        let recorder = recordingAnnouncements {
+    func testItCollectsAndPutsThePosterBack() throws {
+        // The closure holds a `try` (inside XCTAssertThrowsError), so Swift
+        // reads it as throwing, and the recorder, which rethrows, needs one.
+        let recorder = try recordingAnnouncements {
             let collected = VoiceOverAnnouncer.collectingAnnouncements {
                 VoiceOverAnnouncer.announce("Next heading", priority: .high)
                 VoiceOverAnnouncer.announce("Chapter 2", priority: .low)
