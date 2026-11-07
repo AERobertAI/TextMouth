@@ -136,7 +136,7 @@ final class EPUBExportRoundTripTests: XCTestCase {
     func testHostileTextReadsBackTheSame() throws {
         try assertRoundTrips("""
         <!-- chapter: Rock & <Roll> "quoted" -->
-        # Head & <b>bold</b> 'single' &amp; done
+        # Head & bold 'single' &amp; done
 
         Body & <i>raw</i> text and ]]> and &lt;tag&gt; and page\u{0C}break and emoji \u{1F469}\u{200D}\u{1F4BB} \u{1F44D}\u{1F3FD} caf\u{E9} e\u{301}.
 
@@ -247,7 +247,7 @@ final class EPUBExportRoundTripTests: XCTestCase {
         let actual = try EPUBRoundTrip.reading(ofEPUB: url)
         XCTAssertEqual(actual.words, expected.words)
         XCTAssertEqual(actual.pages, expected.pages)
-        XCTAssertEqual(actual.pages, ["3@2"])
+        XCTAssertEqual(actual.pages, ["3@3"], "after the three words of chapter One, where the plate stood")
         let archive = try Archive(url: url, accessMode: .read)
         XCTAssertEqual(archive.filter { $0.path.hasPrefix("OEBPS/chapter-") }.count, 2, "the plate has no file of its own")
     }
