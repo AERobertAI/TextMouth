@@ -363,6 +363,11 @@ final class MarkupGuardTests: XCTestCase {
     func testWhatCannotBeCertainCountsEveryTagAhead() throws {
         let tags = String(repeating: "<i>", count: 100)
         XCTAssertGreaterThanOrEqual(try inspected("<frameset>" + tags, as: .html).deepest, 100)
+        // In a page of frames SwiftSoup leaves a table and its end tag out, so
+        // each frameset opens inside the last where a body's table would close
+        // it: a pass that read this frameset as a body's element counts 5.
+        let frames = "<frameset>" + String(repeating: "<table><frameset></table>", count: 300)
+        XCTAssertGreaterThanOrEqual(try inspected(frames, as: .html).deepest, depth(of: try SwiftSoup.parseHTML(frames, "")))
         XCTAssertGreaterThanOrEqual(try inspected("<noscript><title></noscript></title>" + tags, as: .html).deepest, 100)
         XCTAssertGreaterThanOrEqual(try inspected("<noscript><select></noscript></select>" + tags, as: .html).deepest, 100)
         XCTAssertGreaterThanOrEqual(try inspected("<noscript><plaintext></noscript>" + tags, as: .html).deepest, 100)
