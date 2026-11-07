@@ -276,59 +276,61 @@ final class DOCXHiddenTextTests: XCTestCase {
         }
     }
 
-    /// A row marked hidden (`w:trPr` holding `w:hidden`) is not read, as in a
-    /// Word 2003 XML document: its words are hidden text, whatever their own
-    /// properties say, in a table nested in it too. It stays a row, empty, and
-    /// the other rows are read. `w:hidden` with a value of 0 hides nothing,
-    /// and the properties a record of a change holds are those from before it.
-    func testAHiddenRowIsNotRead() throws {
-        func row(_ text: String, rowProperties: String = "", runProperties: String = "") -> String {
-            "<w:tr><w:trPr>\(rowProperties)</w:trPr><w:tc>\(docxParagraph(docxRun(text, runProperties)))</w:tc></w:tr>"
+    /// A row marked hidden (`w:trPr` holding `w:hidden`) hides nothing of its
+    /// own, as in a Word 2003 XML document: ECMA-376 §17.4.20 hides the glyph
+    /// of the row's end marker, "to ensure that the entire table row is hidden
+    /// and not displayed in the document, as if any part of the row is visible,
+    /// the row is displayed". So a row with an ordinary run shows its words,
+    /// and a row whose runs and marks are all `w:vanish` reads nothing, which
+    /// each run's own toggle says. (Nothing here has been checked in Word.)
+    func testAHiddenRowMarkHidesNothingOfItsOwn() throws {
+        let hidden = "<w:hidden/>"
+        func row(_ text: String, rowProperties: String = "", runProperties: String = "", markProperties: String = "") -> String {
+            "<w:tr><w:trPr>\(rowProperties)</w:trPr><w:tc>"
+                + docxParagraph(docxRun(text, runProperties), markProperties: markProperties) + "</w:tc></w:tr>"
         }
         func spokenRows(_ rows: String...) throws -> String {
             try spoken("<w:tbl><w:tblPr/>" + rows.joined() + "</w:tbl>", styles: styles)
         }
-        XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden/>"), row("shown row")),
-                       "Before shown row After")
-        XCTAssertEqual(try spokenRows(row("shown row"), row("hidden row", rowProperties: "<w:hidden/>")),
-                       "Before shown row After")
-        // A row hidden by its value, and by every value that turns it on.
-        for value in ["1", "true", "on"] {
-            XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden w:val=\"\(value)\"/>")), "Before After", value)
+        // An ordinary run is read, whatever the mark says and wherever the row is.
+        XCTAssertEqual(try spokenRows(row("marked row", rowProperties: hidden), row("plain row")),
+                       "Before marked row plain row After")
+        XCTAssertEqual(try spokenRows(row("plain row"), row("marked row", rowProperties: hidden)),
+                       "Before plain row marked row After")
+        for value in ["1", "true", "on", "0", "false", "off"] {
+            XCTAssertEqual(try spokenRows(row("marked row", rowProperties: "<w:hidden w:val=\"\(value)\"/>")),
+                           "Before marked row After", value)
         }
-        for value in ["0", "false", "off"] {
-            XCTAssertEqual(try spokenRows(row("shown row", rowProperties: "<w:hidden w:val=\"\(value)\"/>")),
-                           "Before shown row After", value)
-        }
-        // The row's own say-so wins over the words' own properties.
-        XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden/>", runProperties: "<w:vanish w:val=\"0\"/>")),
-                       "Before After")
-        // A record of a change to the row's properties holds the ones from before it.
-        let change = "<w:trPrChange w:id=\"1\" w:author=\"A\"><w:trPr><w:hidden/></w:trPr></w:trPrChange>"
-        XCTAssertEqual(try spokenRows(row("shown row", rowProperties: change)), "Before shown row After")
-        // The next row is not hidden with it, and a nested table in the row is.
+        // A run with its own `w:vanish` is hidden by that, and `w:val="0"` shows it.
+        XCTAssertEqual(try spokenRows(row("gone", rowProperties: hidden, runProperties: "<w:vanish/>"), row("seen")),
+                       "Before seen After")
+        XCTAssertEqual(try spokenRows(row("shown", rowProperties: hidden, runProperties: "<w:vanish w:val=\"0\"/>")),
+                       "Before shown After")
+        // A row whose runs and paragraph marks are hidden reads nothing, and a table of them is not written.
+        let wholeRowHidden = row("gone", rowProperties: hidden, runProperties: "<w:vanish/>", markProperties: "<w:vanish/>")
+        XCTAssertEqual(try spokenRows(wholeRowHidden), "Before After")
+        XCTAssertEqual(try spokenRows(wholeRowHidden, row("seen")), "Before seen After")
+        // The words of a table nested in a marked row are read by their own toggles too.
         let nested = "<w:tbl><w:tblPr/>" + row("inner") + "</w:tbl>"
-        let hiddenWithNested = "<w:tr><w:trPr><w:hidden/></w:trPr><w:tc>\(docxParagraph(docxRun("outer")))\(nested)</w:tc></w:tr>"
-        XCTAssertEqual(try spokenRows(hiddenWithNested, row("after")), "Before after After")
-        // A hidden row inside a nested table hides that row only.
-        let mixed = "<w:tbl><w:tblPr/>" + row("gone", rowProperties: "<w:hidden/>") + row("inner") + "</w:tbl>"
-        let outer = "<w:tr><w:tc>\(docxParagraph(docxRun("outer")))\(mixed)</w:tc></w:tr>"
-        XCTAssertEqual(try spokenRows(outer), "Before outer inner After")
-        // A table of hidden rows only is not written.
-        XCTAssertEqual(try spokenRows(row("gone", rowProperties: "<w:hidden/>")), "Before After")
+        let marked = "<w:tr><w:trPr>\(hidden)</w:trPr><w:tc>\(docxParagraph(docxRun("outer")))\(nested)</w:tc></w:tr>"
+        XCTAssertEqual(try spokenRows(marked, row("after")), "Before outer inner after After")
     }
 
-    /// A page break in a hidden row begins no page, and the page a visible
-    /// break after it begins is still marked.
-    func testAPageBreakInAHiddenRowBeginsNoPage() throws {
+    /// Pages follow the same toggles: a page break in a hidden run begins no
+    /// page, in a row marked hidden as anywhere, and a visible one in a marked
+    /// row begins its page.
+    func testAPageBreakInAMarkedRowBeginsAPageOnlyWhenItIsRead() throws {
         let breaking = "<w:r><w:br w:type=\"page\"/></w:r>"
-        let hiddenRow = "<w:tbl><w:tblPr/><w:tr><w:trPr><w:hidden/></w:trPr><w:tc>\(docxParagraph(breaking + docxRun("gone")))</w:tc></w:tr>"
-            + "<w:tr><w:tc>\(docxParagraph(docxRun("seen")))</w:tc></w:tr></w:tbl>"
-        let markdown = try docxMarkdown(
-            body: docxParagraph(docxRun("first")) + hiddenRow + docxParagraph(breaking + docxRun("last")),
-            styles: styles, includesPages: true)
-        XCTAssertEqual(try pageLabels(of: markdown), ["1", "2"])
-        XCTAssertFalse(markdown.contains("gone"), markdown)
+        let hiddenBreaking = "<w:r><w:rPr><w:vanish/></w:rPr><w:br w:type=\"page\"/></w:r>"
+        func labels(_ cell: String) throws -> [String] {
+            let table = "<w:tbl><w:tblPr/><w:tr><w:trPr><w:hidden/></w:trPr><w:tc>\(cell)</w:tc></w:tr></w:tbl>"
+            let markdown = try docxMarkdown(
+                body: docxParagraph(docxRun("first")) + table + docxParagraph(docxRun("last")),
+                styles: styles, includesPages: true)
+            return try pageLabels(of: markdown)
+        }
+        XCTAssertEqual(try labels(docxParagraph(hiddenBreaking + docxRun("gone", "<w:vanish/>"))), ["1"])
+        XCTAssertEqual(try labels(docxParagraph(breaking + docxRun("seen"))), ["1", "2"])
     }
 
     /// What the styles part names: the table styles that hide, the default

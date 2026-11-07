@@ -500,10 +500,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // The innermost table's style, which may hide its text (not the
             // style of a record of a change, which is nested deeper)
             tables[tables.count - 1].style = attributes["w:val"] ?? ""
-        case "hidden" where elementStack.suffix(3) == ["tr", "trPr", "hidden"] && !tables.isEmpty:
-            // A hidden row, as in a Word 2003 XML document (`WordMLReader`):
-            // its words are hidden text, whatever their own properties say
-            tables[tables.count - 1].rowIsHidden = DOCXOnOff.isOn(attributes["w:val"])
         case "tbl":
             // A table may begin a section, and a page pending when an
             // outermost one begins is written before it (PG07)
@@ -1049,9 +1045,16 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runIsHidden || deletionDepth > 0
     }
 
-    /// Settle whether the run being read is hidden. A run in a hidden table
-    /// row is, whatever else is said (a Word 2003 XML document's rule too).
-    /// Otherwise the toggle rule of ECMA-376 17.7.3 for `w:vanish` holds: the
+    /// Settle whether the run being read is hidden, by its own toggle alone.
+    /// A row marked hidden (`w:trPr/w:hidden`) hides nothing of its own:
+    /// ECMA-376 Part 1 §17.4.20 (Hidden Table Row Marker) hides the glyph of the row's
+    /// end marker, "to ensure that the entire table row is hidden and not displayed in
+    /// the document, as if any part of the row is visible, the row is displayed". So a
+    /// row marked hidden whose runs are visible shows them, and a row that Word hides
+    /// has its runs and marks hidden, which the runs' own `w:vanish` already says. The
+    /// clause's example says the row is not displayed, so the clause is not clean, and
+    /// nothing here has been checked in Word itself.
+    /// The toggle rule of ECMA-376 17.7.3 for `w:vanish` holds: the
     /// run's own properties, when they say anything, decide; otherwise, when
     /// the document defaults hide all text, it is hidden; otherwise the table
     /// style, the paragraph style, and the character style each hide the run
@@ -1061,10 +1064,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// of the run and again as its style and `w:vanish` are read, which come
     /// before any of its text.
     private func updateRunHidden() {
-        if tables.contains(where: \.rowIsHidden) {
-            paragraph.runIsHidden = true
-            return
-        }
         if let explicit = paragraph.runExplicitlyHidden {
             paragraph.runIsHidden = explicit
             return
@@ -1228,9 +1227,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var cell: ReadTable.Cell?
         /// The table's style (`w:tblStyle`), empty when it names none.
         var style = ""
-        /// Whether the row in progress is hidden (`w:trPr` holding
-        /// `w:hidden`): its words are hidden text.
-        var rowIsHidden = false
     }
 
     /// Start a row in the innermost table, finishing any row left open.
@@ -1262,12 +1258,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         guard let innermost = tables.indices.last else { return }
         endTableCell()
         if let row = tables[innermost].row {
-            // A hidden row stays a row of empty cells, as a Word 2003 XML
-            // document's does (`WordMLReader`): its words were left out as
-            // they were read, as a hidden cell's are.
             tables[innermost].table.rows.append(row)
             tables[innermost].row = nil
-            tables[innermost].rowIsHidden = false
         }
     }
 
