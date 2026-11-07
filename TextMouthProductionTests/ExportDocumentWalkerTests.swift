@@ -75,7 +75,7 @@ final class ExportDocumentWalkerTests: XCTestCase {
                     listDepth = max(listDepth, inner.listDepth)
                 }
                 result = (max(result.nesting, nesting + 1), max(result.listDepth, listDepth))
-            case .heading, .paragraph, .codeBlock, .thematicBreak, .table:
+            case .heading, .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak:
                 break
             }
         }
