@@ -530,6 +530,40 @@ final class TimedTextReaderTests: XCTestCase {
         )
     }
 
+    /// A cue in which another voice takes over ends in that voice, and the
+    /// sentences name speakers by it: the next cue in the first voice names
+    /// her again (else a listener hears her words as Ben's), and one in the
+    /// second voice names nobody, since Ben spoke last. A cue that ends in
+    /// its own voice has no last voice.
+    func testTheVoiceThatSpeaksLastInACueIsTheOneNamedLast() throws {
+        let handedOver = try webVTT("""
+            WEBVTT
+
+            00:01.000 --> 00:02.000
+            <v Ana>Hi.<v Ben>Hello.
+
+            00:03.000 --> 00:04.000
+            <v Ana>Bye.
+
+            00:05.000 --> 00:06.000
+            <v Ana>Again.
+            """)
+        XCTAssertEqual(handedOver.cues.map(\.lastVoice), ["Ben", nil, nil])
+        XCTAssertEqual(handedOver.sentences.map(\.text), ["Ana: Hi. Ben: Hello.", "Ana: Bye.", "Again."])
+
+        let continued = try webVTT("""
+            WEBVTT
+
+            00:01.000 --> 00:02.000
+            <v Ana>Hi.<v Ben>Hello.<v Ana>Yes.<v Ben>No.
+
+            00:03.000 --> 00:04.000
+            <v Ben>Right.
+            """)
+        XCTAssertEqual(continued.cues.map(\.lastVoice), ["Ben", nil])
+        XCTAssertEqual(continued.sentences.map(\.text), ["Ana: Hi. Ben: Hello. Ana: Yes. Ben: No.", "Right."])
+    }
+
     /// A voice's classes are not its name (`<v.loud.first Ben>` is "Ben"),
     /// and the white space of its annotation is made plain.
     func testAVoicesClassesAndWhiteSpaceAreNotItsName() throws {

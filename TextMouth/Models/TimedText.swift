@@ -74,6 +74,13 @@ struct TimedTextCue: Equatable, Sendable {
     /// Who speaks the cue, when the file says: a WebVTT voice (`<v Ana>`), a
     /// JSON segment's speaker. Nil when it names nobody; never blank.
     var voice: String? = nil
+    /// The voice that speaks last in the cue, when another voice than
+    /// `voice` takes over inside it (`<v Ana>Hi.<v Ben>Hello.` ends in Ben's
+    /// voice, the text naming him where his tag stood). Nil when the cue
+    /// ends in `voice`, or has none. A transcript needs it to name the next
+    /// cue's speaker whenever that is not the one who spoke last
+    /// (`TimedTextDocument.sentences`); never blank.
+    var lastVoice: String? = nil
     /// The cue's timed words, each where it lies in `text`, in UTF-16 units,
     /// and when it was spoken, when the file times words, as a Podcasting
     /// 2.0 transcript of one word per segment does; empty when it times none.
@@ -111,10 +118,16 @@ struct TimedTextDocument: Equatable, Sendable {
     /// and not again for each cue the same voice speaks. A cue without a
     /// voice names nobody, and leaves the voice named last as it was. A
     /// named cue's words move along by the name's length, so each still lies
-    /// over its own characters.
+    /// over its own characters. A cue in which another voice takes over
+    /// (`TimedTextCue.lastVoice`) leaves that voice as the one named last, so
+    /// the next cue in the first voice names it again, and one in the second
+    /// does not.
     var sentences: [TranscriptSentence] {
         var lastNamed: String?
         return cues.map { cue in
+            // The voice speaking at the cue's end is the one named last
+            // once the cue is done, whether or not its start was named.
+            defer { lastNamed = cue.lastVoice ?? cue.voice ?? lastNamed }
             guard let voice = cue.voice, voice != lastNamed else {
                 return TranscriptSentence(
                     text: cue.text,
@@ -123,7 +136,6 @@ struct TimedTextDocument: Equatable, Sendable {
                     words: cue.words
                 )
             }
-            lastNamed = voice
             let name = voice + ": "
             let shift = name.utf16.count
             return TranscriptSentence(
