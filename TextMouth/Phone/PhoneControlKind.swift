@@ -15,6 +15,10 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case skipBackward
     /// Moves forward by the unit.
     case skipForward
+    /// Moves to the previous heading, whatever the unit.
+    case previousHeading
+    /// Moves to the next heading, whatever the unit.
+    case nextHeading
     /// The speed.
     case speed
     /// Where Am I?
