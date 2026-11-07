@@ -28,10 +28,10 @@ final class BookExportServiceTests: XCTestCase {
         let offer = BookExportService.offer(for: book)
 
         XCTAssertFalse(offer.isPackageInCloud)
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         XCTAssertEqual(
             offer.items.map(\.suggestedName),
-            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt"]
+            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt", "\(stem) - Audio.m4b"]
         )
         XCTAssertEqual(offer.item(.originalFile)?.byteCount, try byteCount(of: book.bookFileURL))
         XCTAssertEqual(offer.item(.markdown)?.byteCount, try byteCount(of: cache))
@@ -133,7 +133,7 @@ final class BookExportServiceTests: XCTestCase {
 
         let offer = BookExportService.offer(for: book)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         let original = try XCTUnwrap(offer.item(.originalFile))
         XCTAssertEqual(original.folderName, BookExportService.fileNameStem(for: book.title))
         XCTAssertEqual(original.files.map(\.path), DAISYPackageFixtures.packageBookFiles)
@@ -147,7 +147,7 @@ final class BookExportServiceTests: XCTestCase {
 
         let offer = BookExportService.offer(for: book)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         XCTAssertEqual(offer.item(.originalFile)?.suggestedName, "daisy202_test.zip")
         XCTAssertNil(offer.item(.originalFile)?.folderName)
     }
@@ -171,7 +171,7 @@ final class BookExportServiceTests: XCTestCase {
             audioOffer.item(.transcript)?.files.map(\.path),
             ["Night Shift Notes - Transcript.json", "Night Shift Notes - Transcript.md"]
         )
-        XCTAssertEqual(textOffer.items.map(\.kind), [.originalFile, .markdown, .plainText, .originalRecording, .transcript])
+        XCTAssertEqual(textOffer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio, .originalRecording, .transcript])
         let stem = BookExportService.fileNameStem(for: textBook.title)
         XCTAssertEqual(textOffer.item(.transcript)?.files.map(\.path), ["\(stem) - Transcript.json"])
         XCTAssertEqual(textOffer.item(.originalRecording)?.byteCount, Int64(Self.takeBytes.count))
