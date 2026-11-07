@@ -1,0 +1,281 @@
+import Combine
+import XCTest
+@testable import TextMouth
+
+/// `PhoneReaderModel`: the state its controls read, and the one move path,
+/// over a real reader of a text book held in memory: nothing plays, nothing
+/// is read from disk, and every announcement is caught, never posted.
+@MainActor
+final class PhoneReaderModelTests: XCTestCase {
+    /// What the model posted, oldest first.
+    private var posted: [VoiceOverAnnouncement] = []
+    /// The delays the model asked to wait before posting.
+    private var delays: [TimeInterval] = []
+    /// How many times the model said the book was engaged.
+    private var engagements = 0
+    /// How many times the model asked for Play or Pause.
+    private var playPresses = 0
+
+    // MARK: - Moving While Paused
+
+    /// Adjusting Play by sentence while paused moves to the next sentence,
+    /// puts that sentence in Play's value, and announces nothing: the value
+    /// is the adjustment's answer. The Mac's "Next sentence" isn't said.
+    func testAPausedSentenceMovePutsTheSentenceInPlaysValue() {
+        let (model, reader) = makeModel()
+
+        model.moveOnScreen(forward: true, source: .adjustingPlay)
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 19)
+        XCTAssertEqual(model.description(of: .play)?.value, "The wind rose at noon.")
+        XCTAssertEqual(posted, [])
+        XCTAssertEqual(engagements, 1, "A first move engages the book")
+    }
+
+    /// A paused move by heading from a button says the Mac's heading words,
+    /// in Play's value and, a moment later, announced.
+    func testAPausedHeadingMoveFromAButtonIsAlsoAnnounced() {
+        let (model, reader) = makeModel()
+
+        model.moveOnScreen(forward: true, unit: .heading, source: .command)
+
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(model.description(of: .play)?.value, "Heading: The Crossing")
+        XCTAssertEqual(posted.map(\.message), ["Heading: The Crossing"])
+        XCTAssertEqual(delays, [PhoneAnnouncer.delay])
+    }
+
+    /// A move with nothing that way says so, and the cursor stays.
+    func testAMoveWithNothingThatWaySaysSo() {
+        let (model, reader) = makeModel()
+
+        model.moveOnScreen(forward: false, unit: .heading, source: .adjustingPlay)
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        XCTAssertEqual(model.description(of: .play)?.value, "No previous heading.")
+    }
+
+    /// Play forgets what the last move said, and asks the session to play.
+    func testPlayForgetsTheMovesWords() {
+        let (model, _) = makeModel()
+        model.moveOnScreen(forward: true, source: .adjustingPlay)
+
+        model.togglePlayPause()
+
+        XCTAssertEqual(playPresses, 1)
+        XCTAssertEqual(model.description(of: .play)?.value, "")
+    }
+
+    /// The next move's words replace the last one's.
+    func testTheNextMoveReplacesTheWords() {
+        let (model, _) = makeModel()
+        model.moveOnScreen(forward: true, source: .adjustingPlay)
+        model.moveOnScreen(forward: true, source: .adjustingPlay)
+
+        XCTAssertEqual(model.description(of: .play)?.value, "It fell by evening.")
+    }
+
+    /// A move while the book loads does nothing.
+    func testAMoveWhileLoadingDoesNothing() {
+        let (model, reader) = makeModel()
+        reader.isLoading = true
+
+        model.moveOnScreen(forward: true, source: .command)
+
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        XCTAssertEqual(posted, [])
+        XCTAssertEqual(engagements, 0)
+    }
+
+    // MARK: - Navigation Unit and Speed
+
+    /// The unit in force is the kind's default until the book has its own;
+    /// adjusting Navigation unit makes the next one the book's own, says
+    /// nothing, and the value reads the new unit at once.
+    func testAdjustingTheUnitChangesTheValueAtOnceAndSaysNothing() {
+        let (model, reader) = makeModel()
+        XCTAssertEqual(model.description(of: .navigationUnit)?.value, "Sentence")
+
+        model.adjustUnit(up: true)
+
+        XCTAssertEqual(model.description(of: .navigationUnit)?.value, "Paragraph")
+        XCTAssertEqual(model.description(of: .play)?.hint, "Moves back or forward by paragraph.")
+        XCTAssertEqual(model.description(of: .skipForward)?.label, "Skip forward: Paragraph")
+        XCTAssertEqual(reader.book.localSkipForwardUnit, "Paragraph")
+        XCTAssertEqual(posted, [], "The shared \"Navigation unit: Paragraph\" isn't posted")
+    }
+
+    /// Adjusting down from the first unit wraps to the last offered: a book
+    /// without pages offers no Page.
+    func testAdjustingTheUnitDownWraps() {
+        let (model, _) = makeModel()
+        model.choose(.seconds10)
+
+        model.adjustUnit(up: false)
+
+        XCTAssertEqual(model.description(of: .navigationUnit)?.value, "Bookmark")
+    }
+
+    /// Adjusting Speed steps by 25 words per minute, says nothing, and the
+    /// value reads the new speed at once.
+    func testAdjustingSpeedChangesTheValueAtOnceAndSaysNothing() {
+        let (model, reader) = makeModel()
+        let before = reader.speechService.wordsPerMinute
+
+        model.adjustSpeed(up: true)
+
+        XCTAssertEqual(reader.speechService.wordsPerMinute, min(before + 25, reader.speechService.maximumWPM))
+        XCTAssertEqual(
+            model.description(of: .speed)?.value,
+            "\(Int(reader.speechService.wordsPerMinute)) words per minute"
+        )
+        XCTAssertEqual(posted, [])
+    }
+
+    // MARK: - Answers
+
+    /// Return with no place to return to says the Mac's words, a moment
+    /// later.
+    func testReturnWithNoPlaceSaysSo() {
+        let (model, _) = makeModel()
+
+        model.returnToPreviousPlace()
+
+        XCTAssertEqual(posted.map(\.message), [BookSearchWording.nothingToGoBackTo])
+        XCTAssertEqual(delays, [PhoneAnnouncer.delay])
+    }
+
+    /// Return after a heading move goes back, and says the Mac's words.
+    func testReturnAfterAJumpGoesBack() {
+        let (model, reader) = makeModel()
+        model.moveOnScreen(forward: true, unit: .heading, source: .adjustingPlay)
+        posted = []
+
+        model.returnToPreviousPlace()
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        XCTAssertEqual(posted.map(\.message), ["Returned to previous position"])
+    }
+
+    // MARK: - The State
+
+    /// The state is built once per turn of the main queue: a change from
+    /// outside the model shows only after the turn, or after `invalidate()`.
+    func testTheStateIsKeptForATurn() {
+        let (model, reader) = makeModel()
+        XCTAssertEqual(model.state?.bookmarkCount, 0)
+
+        reader.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0)]
+        XCTAssertEqual(model.state?.bookmarkCount, 0, "Rebuilt within the turn")
+
+        model.invalidate()
+        XCTAssertEqual(model.state?.bookmarkCount, 1)
+    }
+
+    /// The state reads the real cursor and the book: a paused text book at
+    /// its first heading, with no timer.
+    func testTheStateReadsTheReader() throws {
+        let (model, _) = makeModel()
+        let state = try XCTUnwrap(model.state)
+
+        XCTAssertEqual(state.bookTitle, "Weather Notes")
+        XCTAssertFalse(state.isPlaying)
+        XCTAssertFalse(state.isAudioBook)
+        XCTAssertEqual(state.unit, .sentence)
+        XCTAssertEqual(state.headingPosition.number, 1)
+        XCTAssertEqual(state.whereAmI.heading, "Morning")
+        XCTAssertEqual(model.description(of: .headings)?.value, "Morning, 1 of 3")
+    }
+
+    /// Play's rotors are offered only where the book has what they move by:
+    /// headings here, bookmarks once there's one, pages never in a book
+    /// without them.
+    func testPlaysRotorsFollowWhatTheBookHas() {
+        let (model, reader) = makeModel()
+        XCTAssertEqual(model.playRotorUnits, [.heading])
+
+        reader.bookmarks = [Bookmark(number: 1, chapterIndex: 1, characterOffset: 0)]
+
+        XCTAssertEqual(model.playRotorUnits, [.heading, .bookmark])
+    }
+
+    /// A move says whether the place changed, as a rotor's search needs.
+    func testAMoveSaysWhetherThePlaceChanged() {
+        let (model, _) = makeModel()
+        XCTAssertTrue(model.moveOnScreen(forward: true, unit: .heading, source: .command))
+        XCTAssertTrue(model.moveOnScreen(forward: true, unit: .heading, source: .command))
+        XCTAssertFalse(model.moveOnScreen(forward: true, unit: .heading, source: .command), "There's no fourth heading")
+    }
+
+    /// With no book open, nothing is described, and moves do nothing.
+    func testWithNoBookNothingIsDescribed() {
+        let model = PhoneReaderModel(
+            currentReader: { nil },
+            readers: Empty<ReaderViewModel?, Never>().eraseToAnyPublisher(),
+            playOrPause: {}
+        )
+        XCTAssertNil(model.state)
+        XCTAssertNil(model.description(of: .play))
+        model.moveOnScreen(forward: true, source: .command)
+        model.adjustUnit(up: true)
+        model.returnToPreviousPlace()
+    }
+
+    // MARK: - Helpers
+
+    /// A model over a paused reader of "Weather Notes", three chapters of
+    /// two sentences each, a heading at each chapter's start, moving by
+    /// Sentence, its announcements caught here and posted at once.
+    private func makeModel() -> (PhoneReaderModel, ReaderViewModel) {
+        let reader = makeReader()
+        let model = PhoneReaderModel(
+            currentReader: { reader },
+            readers: Just(reader).map(Optional.some).eraseToAnyPublisher(),
+            playOrPause: { [weak self] in self?.playPresses += 1 },
+            preferences: makeSandboxedPreferences("PhoneReaderModel"),
+            post: { [weak self] in self?.posted.append($0) },
+            schedule: { [weak self] delay, work in
+                self?.delays.append(delay)
+                work()
+            },
+            noteEngaged: { [weak self] in self?.engagements += 1 }
+        )
+        return (model, reader)
+    }
+
+    /// A stopped reader of a text book held in memory: nothing plays, and
+    /// nothing is read from disk.
+    private func makeReader() -> ReaderViewModel {
+        let book = Book(
+            title: "Weather Notes",
+            format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-weather-notes.txt",
+            md5Hash: UUID().uuidString
+        )
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(initializeServices: false)
+        )
+        let texts = [
+            ("Morning", "Clouds came early. The wind rose at noon. It fell by evening."),
+            ("The Crossing", "The ferry left late. Nobody minded the wait."),
+            ("Harbor", "Lamps were lit. The day was done."),
+        ]
+        let chapters = texts.enumerated().map { index, entry in
+            Chapter(
+                title: entry.0,
+                text: entry.1,
+                headings: [Heading(level: 1, text: entry.0, chapterIndex: index, characterOffset: 0)]
+            )
+        }
+        reader.content = DocumentContent(title: book.title, author: book.author, chapters: chapters)
+        reader.isLoading = false
+        return reader
+    }
+}
