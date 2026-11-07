@@ -5,6 +5,7 @@ import UIKit
 #endif
 import Combine
 import Foundation
+import os
 import SwiftUI
 
 // MARK: - The Export Setting
@@ -105,6 +106,11 @@ struct BookExportConversionChoice: Identifiable, Equatable {
 /// it is. The export runs off the main thread too, with its progress here,
 /// and ends with one announcement naming how many items went where, and
 /// anything that could not be exported, in the cloud included.
+///
+/// For one text book the dialog also offers its text as spoken audio (FMT43):
+/// the options are made as the book is listed (`speechOptions`), and an export
+/// that takes the kind runs `SpeechExportJob` with them, showing which chapter
+/// is being spoken, and saying at its end what it kept for the next export.
 @MainActor
 final class BookExportModel: ObservableObject, Identifiable {
     /// Where the dialog is.
@@ -140,6 +146,12 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
     /// exports as it always has.
     @Published private(set) var conversionIDs: [BookExportKind: String] = [:]
+    /// The spoken audio options, once the books have been listed: nil unless
+    /// the dialog exports one text book whose text can be read here.
+    @Published private(set) var speechOptions: SpeechExportOptionsState?
+    /// How far a speech export has come while it speaks or encodes; nil before
+    /// and after it.
+    @Published private(set) var speechProgress: SpeechExportProgress?
 
     /// How files are checked and read without downloading (FR02).
     private let access: MaintenanceFileAccess
@@ -154,6 +166,15 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// dialog's life so that choosing another writer and coming back finds
     /// them as they were.
     private var optionsStates: [String: any TextExportOptionsEditing] = [:]
+    /// What a speech export reaches: the synthesizer, the voices, the power
+    /// assertion, the disks, and the folder its chapters are kept in.
+    private let speechEnvironment: SpeechExportEnvironment
+    /// The preferences holding the global voice, speed, pitch, and pause
+    /// level, which a book without its own speaks with.
+    private let speechDefaults: UserDefaults
+    /// The substitution rules and repeated-symbol settings speech is prepared
+    /// with.
+    private let substitutionService: TextSubstitutionService
 
     /// The folder an export went to last this session, which the next
     /// dialog starts in.
@@ -180,17 +201,29 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///   - writers: The text writers the picker offers. The app always
     ///     passes all of them (`TextExportWriters.all`); a test passes
     ///     writers of its own, such as one with options.
+    ///   - speechEnvironment: What a speech export reaches; tests pass fakes,
+    ///     so that nothing speaks and nothing keeps the Mac awake.
+    ///   - speechDefaults: The preferences holding the global voice, speed,
+    ///     pitch, and pause level; the sandbox's under hosted tests.
+    ///   - substitutionService: The substitution rules speech is prepared
+    ///     with.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
         destination: URL? = nil,
         access: MaintenanceFileAccess = .live,
-        writers: [any TextExportWriter] = TextExportWriters.all
+        writers: [any TextExportWriter] = TextExportWriters.all,
+        speechEnvironment: SpeechExportEnvironment = .live,
+        speechDefaults: UserDefaults = TextMouthRuntime.current.preferences,
+        substitutionService: TextSubstitutionService = .shared
     ) {
         self.books = books
         self.destination = destination ?? Self.defaultDestination
         self.access = access
         self.writers = writers
+        self.speechEnvironment = speechEnvironment
+        self.speechDefaults = speechDefaults
+        self.substitutionService = substitutionService
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
@@ -199,12 +232,21 @@ final class BookExportModel: ObservableObject, Identifiable {
     // MARK: Listing
 
     /// Lists what the books hold, off the main thread, and shows the
-    /// checkboxes, the first kind that can be exported checked.
+    /// checkboxes, the first kind that can be exported checked. Spoken audio
+    /// that can be exported gets its options first; a book whose text cannot
+    /// be read has none, and is not offered the kind.
     func load() async {
         phase = .listing
         let listed = await Self.offers(for: books, access: access)
         offers = listed
-        choices = BookExportChoice.choices(for: listed)
+        var listedChoices = BookExportChoice.choices(for: listed)
+        if listedChoices.contains(where: { $0.kind == .spokenAudio && $0.isAvailable }) {
+            speechOptions = await makeSpeechOptions(from: listed)
+            if speechOptions == nil {
+                listedChoices.removeAll { $0.kind == .spokenAudio }
+            }
+        }
+        choices = listedChoices
         if let first = choices.first(where: \.isAvailable) {
             checked = [first.kind]
         }
@@ -216,6 +258,38 @@ final class BookExportModel: ObservableObject, Identifiable {
         await OffMainWork.run {
             books.map { BookExportService.offer(for: $0, access: access) }
         }
+    }
+
+    /// The spoken audio options of the one book `offers` list: its headings,
+    /// read off the main thread as the reader parses them, and the voice,
+    /// speed, and pitch it is read with now, as the library holds it. Nil when
+    /// its text cache cannot be read.
+    private func makeSpeechOptions(from offers: [BookExportOffer]) async -> SpeechExportOptionsState? {
+        guard let offer = offers.first, let markdown = offer.item(.spokenAudio)?.files.first?.source.url else {
+            return nil
+        }
+        let access = self.access
+        let title = offer.book.title
+        let headings = await OffMainWork.run { () -> [Heading]? in
+            try? access.read(markdown) {
+                let bytes = try Data(contentsOf: markdown)
+                return try BookExportService.readingContent(fromMarkdown: bytes, at: markdown, title: title).allHeadings
+            }
+        }
+        guard let headings else { return nil }
+        let book = currentBooks([offer.book]).first ?? offer.book
+        let environment = speechEnvironment
+        let settings = SpeechExportVoiceSettings.of(
+            book,
+            defaults: speechDefaults,
+            isInstalled: { environment.voiceInfo($0) != nil }
+        )
+        return SpeechExportOptionsState(
+            headings: headings,
+            skippedHeadingIDs: Set(book.skippedHeadingIDs ?? []),
+            voice: settings.voiceIdentifier.flatMap { environment.voiceInfo($0) },
+            settings: settings
+        )
     }
 
     // MARK: State the Dialog Shows
@@ -266,10 +340,34 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// The export's progress as the dialog shows and speaks it, while one
-    /// is under way.
+    /// is under way: which chapter is being spoken, or that the audio file is
+    /// being encoded, while a speech export works; otherwise how many items
+    /// are done.
     var progressText: String? {
         guard case .exporting(let done, let total) = phase else { return nil }
+        if let speechProgress, let words = SpeechExportWording.progress(speechProgress) {
+            return words
+        }
         return BookExportWording.progress(done: done, total: total)
+    }
+
+    /// How full the progress bar is, from 0 to 1, while an export is under
+    /// way: the speech export's own fraction while it works, otherwise the
+    /// items done of all; nil before the items have been counted, when the
+    /// bar says only that something is happening.
+    var progressFraction: Double? {
+        guard case .exporting(let done, let total) = phase else { return nil }
+        if let fraction = speechProgress?.fraction {
+            return fraction
+        }
+        return total > 0 ? Double(done) / Double(total) : nil
+    }
+
+    /// Whether the export under way takes spoken audio, whose Stop keeps the
+    /// chapters already spoken. The checkboxes are disabled while an export
+    /// runs, so the kinds checked are the kinds it took.
+    var isExportingSpeech: Bool {
+        isExporting && isChecked(.spokenAudio)
     }
 
     // MARK: Converting
@@ -337,10 +435,15 @@ final class BookExportModel: ObservableObject, Identifiable {
         BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
     }
 
-    /// The options view of the writer chosen for `kind`, to show under the
-    /// picker; nil while the kind is unchecked, on Markdown, or when the
-    /// writer takes no options.
+    /// The options view to show under the checkbox of `kind`: spoken audio's
+    /// own, or the one of the writer chosen in the kind's picker; nil while
+    /// the kind is unchecked, on Markdown, or when the writer takes no
+    /// options.
     func optionsView(for kind: BookExportKind) -> AnyView? {
+        if kind == .spokenAudio {
+            guard isChecked(kind), let speechOptions else { return nil }
+            return AnyView(SpeechExportOptionsView(state: speechOptions))
+        }
         guard isChecked(kind), let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
             return nil
         }
@@ -351,6 +454,7 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// writer, that writer with its options as they are. Markdown has no
     /// options state, so a kind on Markdown has no conversion here: its
     /// files stay as the offer lists them, the Markdown the offer writes.
+    /// Spoken audio, while checked, is the speech its options ask for.
     var conversions: [BookExportKind: BookExportConversion] {
         var made: [BookExportKind: BookExportConversion] = [:]
         for kind in checked {
@@ -358,7 +462,36 @@ final class BookExportModel: ObservableObject, Identifiable {
                 made[kind] = .text(state.conversion())
             }
         }
+        if isChecked(.spokenAudio), let request = speechRequest {
+            made[.spokenAudio] = .speech(request)
+        }
         return made
+    }
+
+    /// What a speech export of the one book speaks, as the library holds the
+    /// book now and the options stand now; nil without options.
+    private var speechRequest: SpeechExportRequest? {
+        guard let options = speechOptions, let book = currentBooks(books).first else { return nil }
+        let choices = options.choices
+        let fileTitle = options.fileTitle(bookTitle: book.title)
+        return SpeechExportRequest(
+            bookID: book.id,
+            bookTitle: book.title,
+            fileTitle: fileTitle,
+            // A range is titled as its file is named, so that a player's list
+            // tells it from the whole book and from the book's other ranges.
+            titleTag: choices.range.isWholeBook ? book.title : fileTitle,
+            author: ExportBookDetails(book).author,
+            format: choices.format,
+            range: choices.range,
+            voice: SpeechExportVoiceSettings(
+                voiceIdentifier: options.voice?.identifier,
+                wordsPerMinute: choices.wordsPerMinute,
+                pitch: choices.pitch
+            ),
+            skippedHeadingIDs: Set(book.skippedHeadingIDs ?? []),
+            preparation: SpeechPreparationSettings.current(substitutions: substitutionService, defaults: speechDefaults)
+        )
     }
 
     // MARK: Exporting
@@ -366,7 +499,8 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Exports the checked kinds of the books, as the library holds them
     /// now, into `destination`, off the main thread, and announces how it
     /// ended from `window`. The dialog keeps the summary when anything
-    /// could not be exported.
+    /// could not be exported. An export that ends without its spoken audio
+    /// file says too what it kept for the next export.
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
     func export(announcingFrom window: PlatformWindow? = nil) async -> BookExportOutcome? {
@@ -415,6 +549,17 @@ final class BookExportModel: ObservableObject, Identifiable {
                 self?.showProgress(done: done, total: total)
             }
         }
+        // The speech export's progress is kept as it is told, on the export's
+        // own threads, so the end below reads the last of it for certain, and
+        // shown on the main actor, always the latest, however the tasks that
+        // show it interleave.
+        let speechRecord = SpeechProgressRecord()
+        let speech = SpeechExportContext(environment: speechEnvironment, progress: { [weak self] progress in
+            speechRecord.keep(progress)
+            Task { @MainActor in
+                self?.showSpeechProgress(speechRecord.latest)
+            }
+        })
         let outcome = await OffMainWork.run {
             let offers = books.map { BookExportService.offer(for: $0, access: access) }
             return BookExportService.export(
@@ -424,12 +569,18 @@ final class BookExportModel: ObservableObject, Identifiable {
                 to: folder,
                 access: access,
                 cancellation: cancellation,
-                progress: report
+                progress: report,
+                speech: speech
             )
         }
         self.cancellation = nil
+        speechProgress = nil
         phase = .finished(outcome)
-        let words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
+        var words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
+        if case .ended(let kept, let total)? = speechRecord.latest,
+           let keptWords = SpeechExportWording.kept(done: kept, total: total) {
+            words += " " + keptWords
+        }
         summary = Self.didEverything(outcome) ? nil : words
         VoiceOverAnnouncer.announce(words, from: window)
         return outcome
@@ -442,7 +593,18 @@ final class BookExportModel: ObservableObject, Identifiable {
         phase = .exporting(done: done, total: total)
     }
 
-    /// Stops the export under way before its next file.
+    /// Shows how far the speech export has come, while the export is still
+    /// under way: a report arriving after it ended changes nothing, and once
+    /// the speech export has ended the bar goes back to the items done.
+    /// (Not private so that a test can show each stage while it holds an
+    /// export at a chosen place.)
+    func showSpeechProgress(_ progress: SpeechExportProgress?) {
+        guard isExporting else { return }
+        speechProgress = progress?.fraction == nil ? nil : progress
+    }
+
+    /// Stops the export under way before its next file, or within a moment
+    /// while a chapter is spoken or the audio file encoded.
     func stop() {
         cancellation?.cancel()
     }
@@ -533,4 +695,24 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// does nothing and the destination stays as it was.
     func chooseDestination(from window: PlatformWindow?) {}
     #endif
+}
+
+// MARK: - A Speech Export's Latest Progress
+
+/// The latest progress a speech export has told, kept in a lock: the export
+/// tells it on its own threads, the synthesizer's and the encoder's, and the
+/// dialog reads it on the main actor.
+private final class SpeechProgressRecord: Sendable {
+    /// The latest progress, nil before the first.
+    private let progress = OSAllocatedUnfairLock<SpeechExportProgress?>(initialState: nil)
+
+    /// The latest progress told, nil before the first.
+    var latest: SpeechExportProgress? {
+        progress.withLock { $0 }
+    }
+
+    /// Keeps `progress` as the latest.
+    func keep(_ progress: SpeechExportProgress) {
+        self.progress.withLock { $0 = progress }
+    }
 }

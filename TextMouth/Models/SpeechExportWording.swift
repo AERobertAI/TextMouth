@@ -3,10 +3,11 @@ import Foundation
 /// Every word the spoken audio options of the Export dialog show or speak
 /// (FMT43): the labels, values, and hints of the Format, From, and To
 /// pop-ups and of the Rate and Pitch sliders, a heading as the pop-ups list
-/// it, the line naming the voice, the line about Apple's licence, and the
-/// words an exported file's name is made of. Each is defined once, here, so
-/// the options' view and state share it, the words on screen are the words
-/// VoiceOver speaks, and a test pins each one exactly.
+/// it, the line naming the voice, the line about Apple's licence, the words
+/// an exported file's name is made of, and what the dialog says while an
+/// export runs and when it ends. Each is defined once, here, so the dialog,
+/// the options' view, and their state share it, the words on screen are the
+/// words VoiceOver speaks, and a test pins each one exactly.
 enum SpeechExportWording {
     // MARK: The Format
 
@@ -122,6 +123,43 @@ enum SpeechExportWording {
     /// Chapter 2").
     static func rangeName(from: String, through: String) -> String {
         "\(from) to \(through)"
+    }
+
+    // MARK: While an Export Runs, and When It Ends
+
+    /// What the dialog's progress bar says, and VoiceOver reads, while a
+    /// speech export runs: "Speaking chapter 3 of 12…", counting the chapter
+    /// being spoken; "Encoding the audio file…"; nil once it has ended, when
+    /// the dialog says what it says of any export.
+    static func progress(_ progress: SpeechExportProgress) -> String? {
+        switch progress {
+        case .speaking(let done, let total, _):
+            return "Speaking chapter \(min(done + 1, total)) of \(total)…"
+        case .encoding:
+            return "Encoding the audio file…"
+        case .ended:
+            return nil
+        }
+    }
+
+    /// The Stop button's hint while a speech export runs: unlike the file
+    /// other exports leave off making, its spoken chapters are kept.
+    static let stopHint = "Stops the export. The chapters already spoken are kept until TextMouth quits, "
+        + "so exporting the same range again goes on from there."
+
+    /// The sentence an export that ended without its file adds to what the
+    /// dialog says, telling what it kept and how to use it: `done` of its
+    /// `total` chapters are kept (`SpeechExportProgress.ended`). Nil when none
+    /// is.
+    static func kept(done: Int, total: Int) -> String? {
+        guard done > 0 else { return nil }
+        let again = "export the same range at the same rate and pitch before quitting TextMouth"
+        guard done >= total else {
+            return "Kept \(done) of \(total) chapters: \(again) to go on from chapter \(done + 1)."
+        }
+        return total == 1
+            ? "Kept the spoken chapter: \(again) to make the audio file from it."
+            : "Kept all \(total) spoken chapters: \(again) to make the audio file from them."
     }
 
     // MARK: Text on One Line

@@ -15,6 +15,13 @@ import SwiftUI
 /// picker (FMT18) chooses Markdown, today's export, or a text writer (HTML,
 /// RTF, Word); the checkbox's label and hint then name the writer, and the
 /// writer's own options view, when it has one, shows under the row.
+///
+/// For one text book, a "Text as spoken audio" checkbox (FMT43) shows its
+/// options under it while it is checked: the format, the range of headings,
+/// the rate, and the pitch (`SpeechExportOptionsView`). While that export runs,
+/// the progress bar says which chapter is being spoken, and then that the file
+/// is being encoded, and Stop's hint says that the chapters already spoken are
+/// kept.
 struct BookExportSheet: View {
     /// The dialog's state, and the export.
     @ObservedObject var model: BookExportModel
@@ -142,11 +149,11 @@ struct BookExportSheet: View {
     }
 
     /// The export's progress bar, labelled and valued with `text`, as in
-    /// "Exporting 3 of 40 items…".
+    /// "Exporting 3 of 40 items…" or "Speaking chapter 3 of 12…".
     private func progressBar(_ text: String) -> some View {
         Group {
-            if case .exporting(let done, let total) = model.phase, total > 0 {
-                ProgressView(value: Double(done), total: Double(total)) {
+            if let fraction = model.progressFraction {
+                ProgressView(value: fraction, total: 1) {
                     Text(text)
                 }
             } else {
@@ -169,7 +176,7 @@ struct BookExportSheet: View {
                     model.stop()
                 }
                 .keyboardShortcut(.cancelAction)
-                .accessibilityHint(BookExportWording.stopHint)
+                .accessibilityHint(model.isExportingSpeech ? SpeechExportWording.stopHint : BookExportWording.stopHint)
             } else {
                 Button(model.summary == nil ? BookExportWording.cancelTitle : BookExportWording.closeTitle) {
                     close()

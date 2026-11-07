@@ -52,6 +52,17 @@ enum SpeechExportProgress: Equatable, Sendable {
     /// none once its file is in place, and any finished so far after a Stop
     /// or a failure. Told once, last of all.
     case ended(kept: Int, total: Int)
+
+    /// How far the part under way has come, from 0 to 1, as a progress bar
+    /// shows it; nil once the export has ended, when nothing is under way.
+    var fraction: Double? {
+        switch self {
+        case .speaking(_, _, let fraction), .encoding(_, let fraction):
+            return min(max(fraction, 0), 1)
+        case .ended:
+            return nil
+        }
+    }
 }
 
 // MARK: - What an Export Reaches
