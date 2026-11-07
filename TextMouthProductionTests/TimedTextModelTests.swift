@@ -78,6 +78,22 @@ final class TimedTextModelTests: XCTestCase {
         XCTAssertEqual(TimedTextCue.plainText("Already plain."), "Already plain.")
     }
 
+    /// A cue's plain text is what splitting at white space and joining with
+    /// single spaces gives, for every mixture of white space of every kind,
+    /// letters, a combining mark, a zero-width space (not white space), and
+    /// an emoji: 500 texts from a fixed seed.
+    func testPlainTextIsWhatSplittingAtWhiteSpaceAndJoiningGives() {
+        let pieces = [" ", "\t", "\n", "\r\n", "\u{00A0}", "\u{2028}", "a", "bc", "e\u{0301}", "\u{200B}", "\u{1F600}"]
+        var generator = SeededGenerator(state: 0x91A1_77E5)
+        for _ in 0..<500 {
+            let raw = (0..<Int(generator.next() % 24)).map { _ in pieces[Int(generator.next() % UInt64(pieces.count))] }
+                .joined()
+            let expected = raw.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+
+            XCTAssertEqual(TimedTextCue.plainText(raw), expected, raw.debugDescription)
+        }
+    }
+
     // MARK: - Sentences
 
     /// A cue's voice is named before its text when it is not the voice

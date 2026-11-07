@@ -93,7 +93,26 @@ struct TimedTextCue: Equatable, Sendable {
     /// space) one space, and none at either end. Every reader finishes a
     /// cue's text with it, so cues read from any format are spaced alike.
     static func plainText(_ raw: some StringProtocol) -> String {
-        raw.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        // Built character by character, a space put in only when a word
+        // follows: the same text as splitting at white space and joining,
+        // but without an array holding a substring (32 bytes) for each
+        // word, which for a 20 MB cue of one-letter words was some 320 MB.
+        var plain = ""
+        var followsWhiteSpace = false
+        for character in raw {
+            if character.isWhitespace {
+                // White space at the start puts nothing in; elsewhere it
+                // waits to see whether a word follows it.
+                followsWhiteSpace = !plain.isEmpty
+            } else {
+                if followsWhiteSpace {
+                    plain.append(" ")
+                    followsWhiteSpace = false
+                }
+                plain.append(character)
+            }
+        }
+        return plain
     }
 }
 
