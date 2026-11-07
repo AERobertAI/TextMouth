@@ -68,6 +68,11 @@ enum PhoneBackgroundWork {
             guard let reader else { return }
             attach(hold, to: reader)
         }
+        // The subscription tells of the reader on screen as it begins; one
+        // already gone behind it, before this ran, is given the hooks too.
+        if let behind = model.session.listeningReader {
+            attach(hold, to: behind)
+        }
         installSleepTimerHold(lifeCycle)
         lifeCycle.onDidEnterBackground {
             // Paused as the app leaves, the book needs the audio session no
