@@ -7,11 +7,13 @@ import UIKit
 ///
 /// UIKit's order at launch, from Apple's "About the app launch sequence":
 /// `UIApplicationMain` makes `UIApplication` and this delegate; then
-/// `application(_:didFinishLaunchingWithOptions:)`, where the model is made;
-/// then, "after the app launch completes", the scene's configuration, which
-/// names the scene delegate, and that delegate's
-/// `scene(_:willConnectTo:options:)`. Nothing has run on iOS yet, so this order
-/// is the documentation's, not an observation.
+/// `application(_:didFinishLaunchingWithOptions:)`, where the model is made and
+/// the audio session installed; then, "after the app launch completes", the
+/// scene's configuration, which names the scene delegate, and that delegate's
+/// `scene(_:willConnectTo:options:)`. So a launch in the background for a Play
+/// from the lock screen, which may connect no scene, still has the model and the
+/// media commands' targets. Nothing has run on iOS yet, so this order is the
+/// documentation's, not an observation.
 @main
 final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// The app's one model, made at its first use and kept for the process.
@@ -21,9 +23,13 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// played on all that time.
     static let model = PhoneAppModel()
 
-    /// Makes the model, before any scene connects, and gives its life cycle a
-    /// hold that is a background task. Not in this delegate's initializer,
-    /// which runs inside `UIApplicationMain` before launching has begun.
+    /// Makes the model, before any scene connects, gives its life cycle a hold
+    /// that is a background task, and installs the audio session over its
+    /// session: the category, the observers, and the remote commands' targets,
+    /// which must be in place for a Play to wake a killed app (the engineer's
+    /// review, F9; `PhoneAudioSession.install(session:)`). Not in this
+    /// delegate's initializer, which runs inside `UIApplicationMain` before
+    /// launching has begun.
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -32,6 +38,7 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         model.lifeCycle.beginHold = { name in
             Self.beginBackgroundTask(named: name)
         }
+        PhoneAudioSession.install(session: model.session)
         return true
     }
 
