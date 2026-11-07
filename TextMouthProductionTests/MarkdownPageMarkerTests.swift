@@ -697,14 +697,17 @@ final class MarkdownPageMarkerTests: XCTestCase {
 
     /// Ten thousand page numbers in a row after a line of 2 MB, each placed
     /// at the end of that line, are written in a fraction of a second in a
-    /// DTBook (5,000 took 15.7 s in the review): the converter remembers where
-    /// the last went. The limit is thirty seconds.
+    /// DTBook (5,000 took 15.7 s before the converter remembered where the last
+    /// went). The limit is thirty seconds. A space stands between the line and
+    /// the first number, as between the numbers: without it the numbers are
+    /// placed in a few milliseconds even by a converter that forgets, and the
+    /// test would not notice the memory removed.
     func testManyPageNumbersAfterALongLineAreConvertedInLinearTime() throws {
         let count = 10_000
         let numbers = (0..<count).map { "<pagenum>\($0)</pagenum> " }.joined()
         let line = String(repeating: "word ", count: 400_000)
         let dtbook = "<?xml version=\"1.0\"?><dtbook xmlns=\"http://www.daisy.org/z3986/2005/dtbook/\"><book><bodymatter><level1><poem>"
-            + "<line>\(line)</line>\(numbers)</poem></level1></bodymatter></book></dtbook>"
+            + "<line>\(line)</line> \(numbers)</poem></level1></bodymatter></book></dtbook>"
         let clock = ContinuousClock()
         let start = clock.now
         let conversion = try DTBookToMarkdownConverter(data: Data(dtbook.utf8), file: "book.xml").convert()
@@ -720,24 +723,32 @@ final class MarkdownPageMarkerTests: XCTestCase {
     /// Markdown as writing them one by one from the line, for every way a line
     /// can end (a hard break of spaces or a backslash, a plain break, and a
     /// break followed by indentation), with other text written between,
-    /// with and without words kept apart.
+    /// with and without words kept apart, and with the caller's continuation
+    /// lines at the margin or not (a caller that writes them at the margin is
+    /// not given a memo's shortcut, which would place a marker at the line's
+    /// end where the margin puts it elsewhere).
     func testARunOfMarkersAfterALineBreakIsWrittenAsOneByOne() {
-        for tail in ["  \n", "\\\n", "\n", "  \n  ", "\n    ", "\n\t", "\n\n"] {
+        for tail in ["  \n", "\\\n", "\n", "  \n  ", "\n    ", "\n\t", "\n\n", "\n- item  \n  ", "\n1. item\n   "] {
             for apart in [false, true] {
-                var plain = "line one words" + tail
-                var remembered = plain
-                var memo = MarkdownMarkerWriter.RunMemo()
-                for page in 1...60 {
-                    let marker = "<!-- page: \(page) -->"
-                    MarkdownMarkerWriter.write(marker, inline: true, keepingWordsApart: apart, into: &plain)
-                    MarkdownMarkerWriter.write(
-                        marker, inline: true, keepingWordsApart: apart, remembering: &memo, into: &remembered)
-                    // Now and then something else is written: the run is placed from the line again.
-                    if page % 7 == 0 {
-                        plain += "more words" + tail
-                        remembered += "more words" + tail
+                for margin in [false, true] {
+                    var plain = "line one words" + tail
+                    var remembered = plain
+                    var memo = MarkdownMarkerWriter.RunMemo()
+                    for page in 1...60 {
+                        let marker = "<!-- page: \(page) -->"
+                        MarkdownMarkerWriter.write(
+                            marker, inline: true, keepingWordsApart: apart, continuationAtMargin: margin, into: &plain)
+                        MarkdownMarkerWriter.write(
+                            marker, inline: true, keepingWordsApart: apart, continuationAtMargin: margin,
+                            remembering: &memo, into: &remembered)
+                        // Now and then something else is written: the run is placed from the line again.
+                        if page % 7 == 0 {
+                            plain += "more words" + tail
+                            remembered += "more words" + tail
+                        }
+                        XCTAssertEqual(
+                            remembered, plain, "tail \(tail.debugDescription) apart \(apart) margin \(margin) page \(page)")
                     }
-                    XCTAssertEqual(remembered, plain, "tail \(tail.debugDescription) page \(page)")
                 }
             }
         }

@@ -212,6 +212,22 @@ final class DOCXHiddenTextTests: XCTestCase {
         }
     }
 
+    /// A table style named inside `w:tblPrChange`, the record of the table's
+    /// properties before a tracked change, is not the table's style: the table
+    /// is read with the style outside it, or the default.
+    func testATableStyleInATrackedChangeRecordIsNotTheTablesStyle() throws {
+        let cell = docxParagraph(docxRun("Cell"))
+        func spokenTable(_ properties: String) throws -> String {
+            try spoken("<w:tbl><w:tblPr>\(properties)</w:tblPr><w:tr><w:tc>\(cell)</w:tc></w:tr></w:tbl>", styles: tableStyles)
+        }
+        let before = "<w:tblPrChange w:id=\"1\"><w:tblPr><w:tblStyle w:val=\"Ghost\"/></w:tblPr></w:tblPrChange>"
+        XCTAssertEqual(try spokenTable(before), "Before Cell After")
+        // The style that stands outside the record is the table's, whichever comes first.
+        XCTAssertEqual(try spokenTable("<w:tblStyle w:val=\"Ghost\"/>" + before), "Before After")
+        XCTAssertEqual(try spokenTable(before + "<w:tblStyle w:val=\"Ghost\"/>"), "Before After")
+        XCTAssertEqual(try spokenTable("<w:tblStyle w:val=\"TableNormal\"/>" + before), "Before Cell After")
+    }
+
     /// Word's rule for the table style, the paragraph style, and the character
     /// style (`DOCXHiding`, MS-OI29500 17.7.6(b) and 17.7.8(a)): a table style
     /// or a paragraph style that states a value resets the state to it, a

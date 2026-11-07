@@ -75,6 +75,14 @@ final class DOCXPictureAttributeTests: XCTestCase {
         XCTAssertEqual(DOCXPictureAttribute.removingValues(from: Data()), Data())
     }
 
+    /// A UTF-8 part that begins with a byte-order mark (which Word does write
+    /// now and then) is cut where the value is, not three bytes off.
+    func testAPartWithAByteOrderMarkIsCutAtTheValue() {
+        let marked = Data([0xEF, 0xBB, 0xBF]) + bytes("<v:group a=\"1\" o:gfxdata=\"abc\"/><w:p>after</w:p>")
+        let expected = Data([0xEF, 0xBB, 0xBF]) + bytes("<v:group a=\"1\" o:gfxdata=\"\"/><w:p>after</w:p>")
+        XCTAssertEqual(DOCXPictureAttribute.removingValues(from: marked), expected)
+    }
+
     // MARK: - What it costs
 
     /// A value of 12 MB, past the 10 MB `XMLParser` stops at, is cut in the
