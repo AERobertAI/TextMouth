@@ -285,12 +285,16 @@ def tests_have_ended(log):
 
 def tests_all_passed(log):
     """Whether a run's log says its last test suite passed, for a run whose
-    xcodebuild was stopped before it could print its own verdict."""
-    with open(log, "rb") as handle:
-        handle.seek(0, os.SEEK_END)
-        handle.seek(max(0, handle.tell() - 4096))
-        tail = handle.read().decode("utf-8", "replace")
-    return re.search(r"Test Suite '(Selected tests|All tests)' passed at", tail) is not None
+    xcodebuild was stopped before it could print its own verdict.
+
+    A host that crashed or quit is restarted by xcodebuild, and the suite after
+    the restart can pass though the test that ended the host failed: on
+    November 7, 2026 one run's last suite passed and xcodebuild still said
+    TEST FAILED. So a restart anywhere in the log means not passed."""
+    text = Path(log).read_text(encoding="utf-8", errors="replace")
+    if "Restarting after unexpected exit, crash, or test timeout" in text:
+        return False
+    return re.search(r"Test Suite '(Selected tests|All tests)' passed at", text[-4096:]) is not None
 
 
 def watch_for_a_hung_run(log, finished, stopped):
