@@ -486,6 +486,13 @@ final class HandEditedMetadataTests: XCTestCase {
         // A title that was blank to begin with is a title like any other.
         let nameless = Book.MetadataEdit(opened: [.title: ""], saved: [.title: "Named at last"])
         XCTAssertEqual(nameless.changes, [.title: "Named at last"])
+
+        // A blank swapped for another blank is not an edit, and spaces are
+        // not a name: nothing changes, and nothing is marked edited by hand.
+        for (openedTitle, savedTitle) in [("", "   "), ("   ", ""), ("   ", "  \n"), ("", "")] {
+            let blank = Book.MetadataEdit(opened: [.title: openedTitle], saved: [.title: savedTitle])
+            XCTAssertEqual(blank.changes, [:], "\"\(openedTitle)\" saved as \"\(savedTitle)\"")
+        }
     }
 
     /// A library model listing one book without a package, without the
