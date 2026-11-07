@@ -88,6 +88,16 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 7, 2026
+
+- Main is version 0.4.1: the follow-up sweep, the reader follow-ups, EPUB 3 export, Word 6 and Word 95 documents with symbols read by their font, and the markup guard, which closes three ways a damaged or crafted book, web page, or feed could crash TextMouth. Full suite 10,631 tests, 78 skipped, 0 failures; `make typecheck-ios` 0 errors, 0 warnings. At the first launch, `.doc` books are read again once (1.3.0), and `.docx` and `.wordml` books once (1.2.0).
+- Not on main yet, each with a review and a fix round behind it: speech export (`speechexport/finish`), podcast transcripts and chapters (`podcast/finish`, which merges after speech export), DOCX symbols (`readers/docx-symbols`), KF8 Kindle books (`readers/azw3`, which merges main and routes KF8 through the guard next), and the guard's large-stack parse (`fix/markup-guard-stack`). The iPhone interface (`ios/interface`) has its spec and nine slices; the iOS 26.0.1 simulator is now installed, so it can run for the first time. The running log is `build/orchestrator/followups1105/agents.md`; the questions left with the user are in `humanQuestions/2026-11-06.md` and `2026-11-07.md`.
+- Lessons of that day, which hold for any campaign:
+  - The model's safeguards can stop an agent that searches for inputs that defeat a security check, on Sonnet and on Opus alike. When that happens, don't do the agent's work yourself, and don't hand the case to another agent: make the defence not depend on the search (here, a stack big enough for any tree the size limit allows).
+  - A branch under every reader trains the import and feeds areas, not only its own classes: the guard's trains passed while a MOBI test it changed never ran, and only the full suite caught it.
+  - `make bump-patch` regenerates the project with plain `xcodegen generate`, which rewrites the copy-files phases. Put the project file back and run `Scripts/agents/regenerate-project.py`, then check that only `MARKETING_VERSION` changed.
+  - Stamp the running log from the clock (`build/orchestrator/followups1105/logline.py`), never from an estimate.
+
 ## Where things stood on November 6, 2026
 
 - Main is version 0.4.0: the one policy for every document reader, OpenDocument and Word 2003 XML, and DRM-free KFX, after 0.3.2's removal of the page commands and a library in the cloud that fetches its files and opens by itself. Full suite 10243 tests, 78 skipped, 0 failures.
