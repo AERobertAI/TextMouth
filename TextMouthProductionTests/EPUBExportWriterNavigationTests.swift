@@ -194,16 +194,63 @@ extension EPUBExportWriterTests {
         XCTAssertTrue(try package(of: unknown).contains("<spine>"))
     }
 
-    /// The right-to-left languages are the ones written so.
+    /// The right-to-left languages are the ones written so, and a script
+    /// decides when the tag names one: Arabic in Latin letters is left to
+    /// right, and Punjabi in Arabic letters is right to left. Languages
+    /// written in more than one script are not assumed right to left.
     func testTheRightToLeftLanguages() throws {
-        for tag in ["ar", "ar-EG", "he", "fa", "ur", "yi", "ps", "sd", "ug", "dv", "ckb"] {
+        for tag in ["ar", "ar-EG", "AR", "he", "he-IL", "fa", "ur", "ur-Arab", "yi", "ps", "dv", "ckb", "syr", "nqo",
+                    "pa-Arab", "az-Arab", "sd-Arab", "ku-Arab", "ar-Arab"] {
             let url = try export("Words.", book: ExportBookDetails(title: "T", language: tag))
             XCTAssertTrue(try package(of: url).contains("page-progression-direction=\"rtl\""), tag)
+            XCTAssertTrue(try text("OEBPS/chapter-1.xhtml", in: url).contains(" dir=\"rtl\">"), tag)
         }
-        for tag in ["en", "fr", "de", "ja", "zh-Hans", "ru"] {
+        for tag in ["en", "fr", "de", "ja", "zh-Hans", "ru", "ar-Latn", "ku-Latn", "ur-Latn", "sd-Deva", "ku", "sd", "ks", "ug", "pa"] {
             let url = try export("Words.", book: ExportBookDetails(title: "T", language: tag))
             XCTAssertFalse(try package(of: url).contains("page-progression-direction"), tag)
         }
+    }
+
+    /// An explicit language of "und" (an older library row, or an export's own
+    /// word for a book with none) is no language: the blocks guess their
+    /// direction as for a book with none, and no document says "UND".
+    func testAnExplicitUndeterminedLanguageIsTreatedAsNone() throws {
+        for tag in ["und", "UND", "Und"] {
+            let url = try export("# One\n\nWords.", book: ExportBookDetails(title: "T", language: tag))
+            let chapter = try text("OEBPS/chapter-1.xhtml", in: url)
+            XCTAssertTrue(chapter.contains("<p dir=\"auto\">Words.</p>"), tag)
+            XCTAssertFalse(chapter.lowercased().contains("lang=\"und\""), tag)
+            XCTAssertTrue(try package(of: url).contains("<dc:language>und</dc:language>"), tag)
+        }
+    }
+
+    // MARK: - Zero-Width Headings and Labels
+
+    /// A heading made only of zero-width characters (which take no room and
+    /// are not white space) writes no heading element, as for one of
+    /// characters XML forbids: the target stays, and the contents say "Untitled".
+    func testAHeadingOfOnlyZeroWidthCharactersWritesNoHeadingElement() throws {
+        let url = try export("# \u{200B}\u{200D}\u{FEFF}\n\nWords.")
+        XCTAssertEqual(try bodyLines("OEBPS/chapter-1.xhtml", in: url), ["<span id=\"heading\"></span>", "<p>Words.</p>"])
+        XCTAssertEqual(try navLinks("toc", in: url).map(\.text), ["Untitled"])
+        try assertWellFormed(url)
+    }
+
+    /// A page label of only zero-width characters is the page's number.
+    func testAPageLabelOfOnlyZeroWidthCharactersIsNumbered() throws {
+        let url = try export("<!-- page: 1 -->\nOne.\n\n<!-- page: \u{200B}\u{FEFF} -->\nTwo.")
+        XCTAssertEqual(try navLinks("page-list", in: url).map(\.text), ["1", "2"])
+    }
+
+    /// What counts as text a person can see or hear.
+    func testVisibleTextIsNeitherWhiteSpaceNorZeroWidth() {
+        XCTAssertTrue(XMLEscaping.hasVisibleText("a"))
+        XCTAssertTrue(XMLEscaping.hasVisibleText("\u{200B}!"))
+        XCTAssertTrue(XMLEscaping.hasVisibleText("\u{5D0}"))
+        XCTAssertFalse(XMLEscaping.hasVisibleText(""))
+        XCTAssertFalse(XMLEscaping.hasVisibleText(" \n\t"))
+        XCTAssertFalse(XMLEscaping.hasVisibleText("\u{200B}\u{200C}\u{200D}\u{2060}\u{FEFF}"))
+        XCTAssertFalse(XMLEscaping.hasVisibleText("\u{1}\u{2} \u{200B}"))
     }
 
     // MARK: - What the Navigation Document Says of Itself (S10)
@@ -262,6 +309,96 @@ extension EPUBExportWriterTests {
         XCTAssertEqual(try chapterPaths(of: url).count, 2, "one file ends before the pages, and they go with the heading")
         let second = try bodyLines("OEBPS/chapter-2.xhtml", in: url)
         XCTAssertEqual(second.filter { $0.contains("pagebreak") }.count, 30)
+    }
+
+    // MARK: - A Damaged File Is Not an Export (B6)
+
+    /// The bytes of the file at `url`, one changed by `change`, written to a
+    /// new file in a folder of this test's own.
+    private func damaged(_ url: URL, at offset: Int) throws -> URL {
+        var bytes = [UInt8](try Data(contentsOf: url))
+        XCTAssertTrue(bytes.indices.contains(offset), "the offset is inside the file")
+        if bytes.indices.contains(offset) { bytes[offset] ^= 0x01 }
+        let copy = try makeSandboxDirectory("EPUB Damaged").appendingPathComponent("damaged.epub")
+        try Data(bytes).write(to: copy)
+        return copy
+    }
+
+    /// Where the data of the entry `path` begins and how long it is stored,
+    /// read from its local header (its name follows a 30-byte header, and the
+    /// compressed size is at byte 18).
+    private func dataOf(_ path: String, in url: URL) throws -> (start: Int, length: Int) {
+        let bytes = [UInt8](try Data(contentsOf: url))
+        let name = Array(path.utf8)
+        guard let nameStart = (30..<max(bytes.count - name.count, 30)).first(where: { Array(bytes[$0..<($0 + name.count)]) == name }) else {
+            XCTFail("\(path) has no header")
+            return (0, 0)
+        }
+        let size = (0..<4).reduce(0) { $0 | Int(bytes[nameStart - 12 + $1]) << (8 * $1) }
+        return (nameStart + name.count, size)
+    }
+
+    /// A byte changed in the data of a stored entry, and in the data of a
+    /// compressed one, is a file that is not an export: the checksum each
+    /// entry carries is compared with what it reads back as, wherever the
+    /// change falls in the data.
+    func testAChangedByteInAnEntryIsNotAnExport() throws {
+        let url = try export("# One\n\nWords of the book, long enough to compress with a little care.")
+        let all = try paths(of: url)
+        XCTAssertNoThrow(try EPUBExportWriter.verify(url, holds: all))
+
+        let stored = try dataOf("mimetype", in: url)
+        XCTAssertEqual(stored.length, 20)
+        for offset in stored.start..<(stored.start + stored.length) {
+            XCTAssertThrowsError(try EPUBExportWriter.verify(damaged(url, at: offset), holds: all), "stored byte \(offset)")
+        }
+        let compressed = try dataOf("OEBPS/chapter-1.xhtml", in: url)
+        XCTAssertGreaterThan(compressed.length, 40)
+        var caught = 0
+        var tried = 0
+        for offset in stride(from: compressed.start + 2, to: compressed.start + compressed.length - 2, by: 3) {
+            tried += 1
+            if (try? EPUBExportWriter.verify(damaged(url, at: offset), holds: all)) == nil { caught += 1 }
+        }
+        XCTAssertGreaterThan(tried, 10)
+        XCTAssertGreaterThanOrEqual(caught * 10, tried * 9, "a changed byte of compressed data is caught: \(caught) of \(tried)")
+    }
+
+    // MARK: - A Full Disk's Words
+
+    /// The sentence for a write that failed: the disk may be full for the
+    /// errors a full disk gives and for one that is none; the system's own
+    /// words for a few others.
+    func testTheSentenceForAFailedWrite() {
+        for code in [ENOSPC, EDQUOT, EFBIG, 0, ENOENT] {
+            XCTAssertEqual(
+                EPUBExportWriter.writeFailureSentence(errno: code),
+                "The EPUB file could not be written, because the disk may be full.", "errno \(code)"
+            )
+        }
+        XCTAssertEqual(EPUBExportWriter.writeFailureSentence(errno: EROFS), "The EPUB file could not be written: Read-only file system.")
+        XCTAssertEqual(EPUBExportWriter.writeFailureSentence(errno: EIO), "The EPUB file could not be written: Input/output error.")
+    }
+
+    /// The ZIP library's own failure to write is a plain sentence, not its
+    /// type's name, and the file it began is gone.
+    func testTheZIPLibrarysWriteFailureIsAPlainSentence() throws {
+        for failure in [Data.DataError.unwritableFile, Data.DataError.unreadableFile] {
+            let folder = try makeSandboxDirectory("EPUB Library Failure")
+            let url = folder.appendingPathComponent("book.epub")
+            let writer = EPUBExportWriter(modified: { Self.exportDate }, afterEachFile: { path in
+                if path == "META-INF/container.xml" { throw failure }
+            })
+            let document = ExportDocument(book: Self.book, blocks: [.paragraph([ExportRun("Words.")])])
+            XCTAssertThrowsError(
+                try writer.write(document, options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
+            ) { error in
+                let sentence = (error as? TextExportError)?.sentence ?? ""
+                XCTAssertTrue(sentence.hasPrefix("The EPUB file could not be written"), "\(error)")
+                XCTAssertFalse(error.localizedDescription.contains("DataError"))
+            }
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+        }
     }
 
     // MARK: - A File Cut Short Is Not an Export (B6)

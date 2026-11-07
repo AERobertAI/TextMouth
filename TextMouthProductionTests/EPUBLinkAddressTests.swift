@@ -25,6 +25,9 @@ final class EPUBLinkAddressTests: XCTestCase {
             ("https://example.com:8080/x", "https://example.com:8080/x"),
             ("https://user:pw@example.com/", "https://user:pw@example.com/"),
             ("http://[::1]:80/", "http://[::1]:80/"),
+            ("https://x.example:65535/", "https://x.example:65535/"),
+            ("https://x.example:00080/", "https://x.example:00080/"),
+            ("https://x.example/%\u{FF10}\u{FF11}", "https://x.example/%25%EF%BC%90%EF%BC%91"),
             ("https://example.com", "https://example.com"),
             ("https://example.com/a?b=1&c=2#frag", "https://example.com/a?b=1&c=2#frag"),
             ("mailto:a@example.com", "mailto:a@example.com"),
@@ -45,6 +48,7 @@ final class EPUBLinkAddressTests: XCTestCase {
             "http://example.com:port/", "http://example.com:123456/", "http://example.com:/",
             "http://[::1", "http://[]/", "http://exam\\ple.com", "http://exa mple.com/a b",
             "https://\u{FF45}xample.com/", "https://\u{E9}.example/\u{FC}", "https://exa<mple.com/",
+            "https://x.example:99999/", "https://x.example:65536/", "http://[\u{FF11}\u{FF12}]/",
             "javascript:alert(1)", "file:///etc/passwd", "data:text/html,x", "#a", "other.xhtml#a", "", "   ",
         ] {
             XCTAssertNil(EPUBLinkAddress.url(from: address), address.debugDescription)
