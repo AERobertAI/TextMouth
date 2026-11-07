@@ -1277,6 +1277,15 @@ extension ReaderViewModel {
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
 
+        #if os(iOS)
+        // The iPhone's life cycle holds look-ahead renders off when memory is
+        // short or the phone is hot (`SpeechRenderCoordinator.mayRenderAhead`).
+        guard SpeechRenderCoordinator.shared.mayRenderAhead() else {
+            DiagnosticLog.trace(.playback, "preRender: held off by the phone's memory or thermal state")
+            return
+        }
+        #endif
+
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
         guard case .found(let speech) = search else { return }
@@ -2438,8 +2447,14 @@ extension ReaderViewModel {
     /// (B07): "Playback stopped because TextMouth's memory grew to 3.2 GB
     /// while the audio played, a fault in macOS's audio."
     nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
+        #if os(iOS)
+        // The spec's "Words that say Mac": the phone's audio is the system's.
+        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
+            + "while the audio played, a fault in the system's audio."
+        #else
         "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
             + "while the audio played, a fault in macOS's audio."
+        #endif
     }
 
     /// Stop playback because TextMouth's memory grew to `footprint` bytes

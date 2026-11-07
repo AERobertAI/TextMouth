@@ -337,14 +337,16 @@ final class SpeechRenderCoordinator: Sendable {
     private let warmedVoices = OSAllocatedUnfairLock<Set<String>>(initialState: [])
 
     #if os(iOS)
-    /// Whether a render may start now, asked as each render is handed over;
-    /// held under its own lock. True unless the iPhone's life cycle (Slice 6)
-    /// sets a check of its own: the thermal state and the memory left.
+    /// Whether a look-ahead render may start now, held under its own lock.
+    /// True unless the iPhone's life cycle (Slice 6) sets a check of its own:
+    /// the thermal state and the memory left.
     private let renderPermission = OSAllocatedUnfairLock<@Sendable () -> Bool>(initialState: { true })
 
-    /// Whether a render may start now (`renderPermission`). A render it
-    /// refuses reports false, as a failed render does, and speech goes on
-    /// directly.
+    /// Whether the next chapter may be rendered ahead now
+    /// (`renderPermission`), asked by the reader's look-ahead
+    /// (`ReaderViewModel.preRenderNextChapter()`) before it renders. The
+    /// chapter being read is never held off: a chapter not rendered plays on
+    /// directly, and its next chapter starts the ordinary way.
     var mayRenderAhead: @Sendable () -> Bool {
         get { renderPermission.withLock { $0 } }
         set { renderPermission.withLock { $0 = newValue } }
@@ -424,12 +426,8 @@ final class SpeechRenderCoordinator: Sendable {
         completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
         #if os(iOS)
-        let isPersonalVoice = Self.leavesOutOfRendering(request.voice)
-        guard !isPersonalVoice, mayRenderAhead() else {
-            DiagnosticLog.trace(
-                .playback,
-                "RENDER_SKIP: \(isPersonalVoice ? "a Personal Voice is never rendered" : "the phone holds renders off now")"
-            )
+        guard !Self.leavesOutOfRendering(request.voice) else {
+            DiagnosticLog.trace(.playback, "RENDER_SKIP: a Personal Voice is never rendered")
             DispatchQueue.main.async { completion(false) }
             return
         }

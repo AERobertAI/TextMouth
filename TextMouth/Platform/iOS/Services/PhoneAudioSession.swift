@@ -98,8 +98,12 @@ final class PhoneAudioSession {
     /// unit, which may change from its control, from Settings, or from the
     /// book's own choice, is followed for the lock screen's skip commands.
     func attach(_ reader: ReaderViewModel) {
+        // Composed with whatever the hook asked before, which another part of
+        // the phone may have wrapped (the life cycle's background hold), so
+        // neither replaces the other.
+        let askedBefore = reader.phoneHooks.audioMayStart
         reader.phoneHooks.audioMayStart = {
-            PhoneAudioSession.shared.audioMayStart()
+            askedBefore() && PhoneAudioSession.shared.audioMayStart()
         }
         reader.nowPlayingService.installPhoneHandlers(NowPlayingService.PhoneHandlers(
             onInterruptionPause: { [weak reader] in reader?.pauseForAudioInterruption() },
