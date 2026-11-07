@@ -741,6 +741,7 @@
 		5C1AC5D110C105B082A6C90A /* WebArchiveReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B0904FADF7C22A1FC9DB53 /* WebArchiveReaderTests.swift */; };
 		5C3C475B9CF8AB5CA8CDF791 /* AudioFilterChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C939C3A7C950634850C673 /* AudioFilterChain.swift */; };
 		5C5F2AC2DFF0209833173D9B /* CloudMaintenanceTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9D725CED4DA99E9AC359DF2 /* CloudMaintenanceTestSupport.swift */; };
+		5C73ADEB01E2BA46998E7F61 /* PhoneGoToSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FCE35A7FA1912B4C3A0C90A /* PhoneGoToSheet.swift */; };
 		5C7616BDEC15809056EEF27A /* EPUBMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5737DE80C0D1C09DC603F5 /* EPUBMetadataTests.swift */; };
 		5C854AB988E43B0F3BAE6C2C /* PhoneSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988114F0CCB8B93D799A6124 /* PhoneSession.swift */; };
 		5C959D5AAEEEA9D34DD57E7B /* KFXIonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364364ACCDC253E8B79FB72B /* KFXIonTests.swift */; };
@@ -2461,6 +2462,7 @@
 		2FA10605839477BA1B97E1F5 /* DataDirectoryUnavailableViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryUnavailableViewTests.swift; sourceTree = "<group>"; };
 		2FAEAAB3F2CA699EACA58D3C /* ConfigWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigWatcherTests.swift; sourceTree = "<group>"; };
 		2FBB7167F9EBC0C86DABEE8E /* BrailleEmphasisReadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleEmphasisReadingTests.swift; sourceTree = "<group>"; };
+		2FCE35A7FA1912B4C3A0C90A /* PhoneGoToSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneGoToSheet.swift; sourceTree = "<group>"; };
 		2FE2E24A36B41467A8AC5916 /* NSAccessibilityPriorityLevel+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSAccessibilityPriorityLevel+iOS.swift"; sourceTree = "<group>"; };
 		2FF0781FD5D566FB266A439A /* RecordingWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingWindowController.swift; sourceTree = "<group>"; };
 		2FF5A2A89BC169EB37373187 /* FeedUIArrivalsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedUIArrivalsTests.swift; sourceTree = "<group>"; };
@@ -3668,6 +3670,7 @@
 		152D0077BCC31C1181594ACE /* Reader */ = {
 			isa = PBXGroup;
 			children = (
+				2FCE35A7FA1912B4C3A0C90A /* PhoneGoToSheet.swift */,
 				96E8C9CCECC242C39E4FCB0A /* PhoneHeadingsSheet.swift */,
 				F13226B57AAF1436754DE35C /* PhoneReaderSheetContent.swift */,
 				23854EE45A32406115E3F04E /* PhoneReaderView.swift */,
@@ -7648,6 +7651,7 @@
 				7D535301F590A872BA09DBB5 /* PhoneFocusPolicy.swift in Sources */,
 				FCCCCB02500B775BC3A1B5A8 /* PhoneFocusRegistry.swift in Sources */,
 				B5D59B9201BFA88BF8494B2D /* PhoneGoToModel.swift in Sources */,
+				5C73ADEB01E2BA46998E7F61 /* PhoneGoToSheet.swift in Sources */,
 				560E258B692CC24F7FE75A60 /* PhoneHeadingsModel.swift in Sources */,
 				8376172B7894E8D476609A7B /* PhoneHeadingsSheet.swift in Sources */,
 				98F8FCA24047D9FB7F51FDA4 /* PhoneImportPresentations.swift in Sources */,
