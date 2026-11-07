@@ -142,7 +142,14 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: "/c.json")
         try serveAudio(in: world, duration: 4)
         world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
-        world.server.serve("/c.json", try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json+chapters"))
+        // The chapters file names a link and a picture at example.invalid,
+        // where nothing records a request: moved to the stub server, a request
+        // for either would show among the requests below.
+        var chapters = try sampleResponse("podcast-chapters-json/chapters.json", type: "application/json+chapters")
+        chapters.body = Data(String(decoding: chapters.body, as: UTF8.self)
+            .replacingOccurrences(of: "example.invalid", with: world.server.host).utf8)
+        XCTAssertTrue(String(decoding: chapters.body, as: UTF8.self).contains("https://\(world.server.host)/art.jpg"))
+        world.server.serve("/c.json", chapters)
         let wordsBefore = debugLogLines(containing: "First tone").count
 
         world.center.download("guid:ep-1", of: feed.id)
