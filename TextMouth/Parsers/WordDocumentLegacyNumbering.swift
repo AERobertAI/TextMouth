@@ -42,6 +42,8 @@ enum WordLegacyNumbering {
     /// The levels of an outline, and the levels past them: 10 for a simple list, 11 for a bullet.
     private static let outlineLevels = 1...9
     private static let numberedLevels = 1...11
+    /// The level of a simple list (10).
+    private static let simpleListLevel = 10
 
     /// The list a numbered paragraph is in.
     private enum Kind: Hashable {
@@ -64,17 +66,19 @@ enum WordLegacyNumbering {
         var instanceOfKind: [Kind: Int] = [:]
         // The `ANLD` of the first paragraph at each outline level, which defines the level.
         var outline: [Int: [UInt8]] = [:]
+        // The level (0 to 8) that a simple list's paragraphs fill in the outline, when the outline has no
+        // paragraph at the level above its shallowest one.
+        let parent = parentLevelOfOutline(in: paragraphs, styles: styles)
         let runs = paragraphs.runs.map { run -> WordFormatRuns<WordParagraphFormat>.Run in
             guard let anld = run.format.legacyNumbering else { return run }
             var format = run.format
             format.legacyNumbering = nil
-            let direct = format.legacyNumberingLevel
             format.legacyNumberingLevel = nil
-            // The level: the paragraph's own, else its style's, else none.
-            let numbered = direct ?? styles.numberingLevel(styleIndex: format.style) ?? 0
+            let numbered = numberingLevel(of: run.format, styles: styles)
             guard anld.count == anldSize, numberedLevels.contains(numbered) else { return .init(range: run.range, format: format) }
-            let kind: Kind = outlineLevels.contains(numbered) ? .outline : .simple(anld)
-            let level = outlineLevels.contains(numbered) ? numbered - 1 : 0
+            let isParent = numbered == simpleListLevel && parent != nil
+            let kind: Kind = outlineLevels.contains(numbered) || isParent ? .outline : .simple(anld)
+            let level = isParent ? parent ?? 0 : outlineLevels.contains(numbered) ? numbered - 1 : 0
             let instance: Int
             if let known = instanceOfKind[kind] {
                 instance = known
@@ -108,6 +112,43 @@ enum WordLegacyNumbering {
             return nil
         })
         return (WordFormatRuns(runs: runs), WordListTables(legacyInstances: levels, endedByPlainText: simple))
+    }
+
+    /// The level in the document's numbering that a paragraph with `format` is at: its own, else its
+    /// style's, else 0 (none).
+    private static func numberingLevel(of format: WordParagraphFormat, styles: WordStyleSheet) -> Int {
+        format.legacyNumberingLevel ?? styles.numberingLevel(styleIndex: format.style) ?? 0
+    }
+
+    /// The outline level (0 to 8) that the paragraphs of a simple list stand for, or nil when they stand
+    /// for none: an outline whose shallowest level includes the previous one's number (`fPrev`) but has no
+    /// paragraph at that level above it takes the number from the simple list it is under. The real sample
+    /// `libreoffice-tdf150197_anlv2ListFormat.doc` has "1." and "2." as a simple list, then "2.1" to "2.3" at
+    /// the outline's second level, then "3." and "4." and "4.1" and "4.2": Word writes the number of the
+    /// last simple paragraph before the "." and the level counts again after each.
+    private static func parentLevelOfOutline(in paragraphs: WordFormatRuns<WordParagraphFormat>, styles: WordStyleSheet) -> Int? {
+        var shallowest: Int?
+        var hasSimpleList = false
+        for run in paragraphs.runs {
+            guard let anld = run.format.legacyNumbering, anld.count == anldSize else { continue }
+            let numbered = numberingLevel(of: run.format, styles: styles)
+            if numbered == simpleListLevel { hasSimpleList = true }
+            // Only a level that includes the previous number needs the level above.
+            guard outlineLevels.contains(numbered), anld[3] & 0x04 != 0 else { continue }
+            shallowest = min(shallowest ?? numbered, numbered)
+        }
+        // The paragraph's level is one-based; the level above it is zero-based `level - 2`.
+        guard hasSimpleList, let shallowest, shallowest >= 2, !outlineLevelsDefined(above: shallowest, in: paragraphs, styles: styles)
+        else { return nil }
+        return shallowest - 2
+    }
+
+    /// Whether some numbered paragraph is at an outline level shallower than `level`.
+    private static func outlineLevelsDefined(above level: Int, in paragraphs: WordFormatRuns<WordParagraphFormat>, styles: WordStyleSheet) -> Bool {
+        paragraphs.runs.contains { run in
+            guard let anld = run.format.legacyNumbering, anld.count == anldSize else { return false }
+            return (1..<level).contains(numberingLevel(of: run.format, styles: styles))
+        }
     }
 
     /// The level `level` (0 to 8) that the `ANLD` `anld` describes: its number in its format, the text before
