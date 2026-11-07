@@ -39,23 +39,28 @@ enum MarkupGuard {
         /// The most work the parser may be set, by `Inspection.work`.
         var mostWork: Int
 
-        /// The limits every reading has, set from 3,236 documents of 327 real files
-        /// (EPUB, HTML, Kindle, Word, OpenDocument, and rich text, Project Gutenberg's
-        /// and Standard Ebooks' largest among them) on November 7, 2026:
+        /// The limits every reading has, set on November 7, 2026 from 3,236 documents
+        /// of 327 real files (EPUB, HTML, Kindle, Word, OpenDocument, and rich text,
+        /// Project Gutenberg's and Standard Ebooks' largest among them), and from how
+        /// deep a tree each reading path survives on the 512 KiB stack of an import:
         ///
-        /// - **Nesting, 256.** The deepest real document nests 12 levels. SwiftSoup's
-        ///   own recursion overflowed a 512 KiB stack at 2,500 levels in a test build
-        ///   and 4,000 in the app's, and its tree can go twice as deep as the count:
-        ///   room ten times over.
+        /// - **Nesting, 32.** The deepest real document nests 12 levels. The converter
+        ///   calls itself for every level of the tree, with over 4 KB of stack a level
+        ///   in a debug build, so an import in a debug build overflows between 112 and
+        ///   121 levels; the app's optimized build, at 552 at the least, where the
+        ///   Markdown parser reads nested quotes. A tree can go twice as deep as the
+        ///   count, and two more, as when a form's end tag leaves what it holds open:
+        ///   at 32 the deepest tree, 66 levels, takes three fifths of a debug build's
+        ///   stack, and plain nesting, 32 levels, under a third.
         /// - **Memory, 1,000,000 units.** The most in a real document is 431,296,
-        ///   Webster's Unabridged Dictionary as one 31 MB HTML file. A unit is about
+        ///   Webster's Unabridged Dictionary as one 32 MB HTML file. A unit is about
         ///   800 bytes of SwiftSoup's tree, so the limit holds a parse near 800 MB.
         /// - **Attributes on a tag, 1,000.** No real tag has more than 7; SwiftSoup's
         ///   time grows with the square of them.
         /// - **Work, 30,000,000,000.** The most in a real document is 1,300; the limit
         ///   is about half a minute.
         static let standard = Limits(
-            deepestNesting: 256, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
+            deepestNesting: 32, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000
         )
     }
 

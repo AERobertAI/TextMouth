@@ -587,7 +587,7 @@ final class MarkupGuardTests: XCTestCase {
     func testTheStandardLimitsArePinned() {
         XCTAssertEqual(
             MarkupGuard.Limits.standard,
-            MarkupGuard.Limits(deepestNesting: 256, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
+            MarkupGuard.Limits(deepestNesting: 32, mostMemoryUnits: 1_000_000, mostAttributesOnATag: 1_000, mostWork: 30_000_000_000)
         )
     }
 

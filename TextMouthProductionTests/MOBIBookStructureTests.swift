@@ -328,7 +328,8 @@ final class MOBIBookStructureTests: XCTestCase {
                 + String(repeating: "</div>", count: depth) + "</body></html>"
             return fixture
         }
-        XCTAssertNoThrow(try prepared(book(depth: 100)))
+        // Twice the deepest real book, inside the guard's limit with html and body.
+        XCTAssertNoThrow(try prepared(book(depth: 24)))
         XCTAssertThrowsError(try prepared(book(depth: 300))) {
             XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: MarkupGuard.Limits.standard.deepestNesting))
         }
