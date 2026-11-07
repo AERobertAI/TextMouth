@@ -1,5 +1,7 @@
 import Foundation
+#if os(macOS)
 import IOKit.pwr_mgt
+#endif
 
 /// Keeps the Mac awake while a speech export (FMT43) speaks a book into a
 /// file, which can take half an hour: a power assertion that stops the Mac
@@ -9,13 +11,17 @@ import IOKit.pwr_mgt
 /// release one are all there is to it; tests pass their own, which record
 /// what was asked of them.
 struct SpeechExportPower: Sendable {
+    /// An assertion's ID: the plain number the Mac's `IOPMAssertionID` is.
+    typealias AssertionID = UInt32
+
     /// Holds an assertion named `reason` (the name `pmset -g assertions`
     /// lists it by), and gives its ID, or nil when the system would not
     /// take it.
-    var hold: @Sendable (_ reason: String) -> IOPMAssertionID?
+    var hold: @Sendable (_ reason: String) -> AssertionID?
     /// Lets the assertion with an ID go.
-    var release: @Sendable (IOPMAssertionID) -> Void
+    var release: @Sendable (AssertionID) -> Void
 
+    #if os(macOS)
     /// The system's own power assertions: one that keeps the system from
     /// sleeping when the user leaves the Mac idle (the display still
     /// sleeps), taken through `IOPMAssertionCreateWithName` and let go
@@ -35,6 +41,12 @@ struct SpeechExportPower: Sendable {
             _ = IOPMAssertionRelease(id)
         }
     )
+    #else
+    /// Phase 0 stand-in: iOS has no IOKit, so no assertion is held, and
+    /// `whileHeld` runs its work anyway, as it does when the Mac refuses one.
+    /// The iPhone interface decides how an export keeps its device awake.
+    static let live = SpeechExportPower(hold: { _ in nil }, release: { _ in })
+    #endif
 
     /// Runs `body` while an assertion named `reason` is held, and lets the
     /// assertion go however `body` ends, returning or throwing. When the
