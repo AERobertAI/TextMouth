@@ -7,12 +7,14 @@ import UIKit
 ///
 /// UIKit's order at launch, from Apple's "About the app launch sequence":
 /// `UIApplicationMain` makes `UIApplication` and this delegate; then
-/// `application(_:didFinishLaunchingWithOptions:)`, not needed yet; then, "after
-/// the app launch completes", the scene's configuration, which names the scene
-/// delegate, and that delegate's `scene(_:willConnectTo:options:)`, where `model`
-/// is first read. So everything the model makes runs with `UIApplication.shared`
-/// in place and a scene connecting. Nothing has run on iOS yet, so this order is
-/// the documentation's, not an observation.
+/// `application(_:didFinishLaunchingWithOptions:)`, where `model` is first read
+/// and the audio session installed; then, "after the app launch completes", the
+/// scene's configuration, which names the scene delegate, and that delegate's
+/// `scene(_:willConnectTo:options:)`. So everything the model makes runs with
+/// `UIApplication.shared` in place, and a launch in the background for a Play
+/// from the lock screen, which may connect no scene, still has the model and
+/// the media commands' targets. Nothing has run on iOS yet, so this order is the
+/// documentation's, not an observation.
 @main
 final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// The app's one model, made at its first use and kept for the process.
@@ -21,6 +23,18 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// a scene that comes back has a new delegate, while the book may have
     /// played on all that time.
     static let model = PhoneAppModel()
+
+    /// Makes the model, and installs the audio session over its session: the
+    /// category, the observers, and the remote commands' targets, which must
+    /// be in place for a Play to wake a killed app (the engineer's review, F9;
+    /// `PhoneAudioSession.install(session:)`).
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        PhoneAudioSession.install(session: Self.model.session)
+        return true
+    }
 
     /// Names `TextMouthSceneDelegate` for every scene, in code: the scene
     /// manifest Xcode generates holds no configurations. With none in the
