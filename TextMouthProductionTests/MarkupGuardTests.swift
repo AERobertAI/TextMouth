@@ -391,6 +391,24 @@ final class MarkupGuardTests: XCTestCase {
         }
     }
 
+    /// The second layer: the parsed tree's own depth, found with a stack of its
+    /// own, is held to the limit before any reader that calls itself for each
+    /// level sees the tree, whatever the pass counted.
+    func testTheParsedTreeIsHeldToTheLimitToo() throws {
+        let markup = "<html><body>" + String(repeating: "<div>", count: 30) + "words"
+        let document = try SwiftSoup.parseHTML(markup, "")
+        // `html`, `body`, and 30 divisions.
+        XCTAssertNoThrow(try MarkupGuard.requireDepth(of: document, atMost: 32))
+        XCTAssertThrowsError(try MarkupGuard.requireDepth(of: document, atMost: 31)) { error in
+            XCTAssertEqual(error as? MarkupRefusal, .nestedTooDeeply(limit: 31))
+        }
+        // Through the real path, with a limit the count meets exactly, it reads.
+        let limits = MarkupGuard.Limits(deepestNesting: 32, mostMemoryUnits: .max, mostAttributesOnATag: .max, mostWork: .max)
+        try MarkupGuard.$limits.withValue(limits) {
+            XCTAssertNoThrow(try MarkupGuard.parse(markup))
+        }
+    }
+
     /// A page of frames is counted as SwiftSoup builds it: before the body, a
     /// `frameset` opens the parser's mode for frames, which holds framesets and
     /// frames alone; once the body has begun, it is an ordinary element. A

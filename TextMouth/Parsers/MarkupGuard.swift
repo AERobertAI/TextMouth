@@ -20,11 +20,15 @@ import SwiftSoup
 /// - **Memory.** An element takes a kilobyte or two, however few bytes its tag
 ///   does, so the limit on the bytes of a document is no limit on its memory.
 ///
-/// One pass over the bytes (`MarkupScanner`), as linear as reading them, finds
-/// the same tags the parser will and follows the parser's own rules
-/// (`XMLOpenElements`, `HTMLTreeModel`), counting a depth never less than the
-/// tree will have. Past the limits it refuses with a sentence, before anything
-/// is built.
+/// The nesting is held in two layers, so that one slip of the first cannot
+/// crash the app. First, one pass over the bytes (`MarkupScanner`), as linear as
+/// reading them, finds the same tags the parser will and follows the parser's
+/// own rules (`XMLOpenElements`, `HTMLTreeModel`), counting a depth never less
+/// than the tree will have; past a limit it refuses with a sentence, before
+/// anything is built, which keeps SwiftSoup's own recursion safe. Then the
+/// parsed tree's real depth is measured by a walk with a stack of its own, and
+/// refused past the limit with the same sentence, before any reader that calls
+/// itself for each level, the converter first among them, sees the tree.
 enum MarkupGuard {
 
     // MARK: Limits
@@ -82,6 +86,11 @@ enum MarkupGuard {
     /// neither trap nor overflow the stack, with nesting read up to
     /// `deepestNesting`, or the limit in force. Only a reader that walks the
     /// tree without calling itself, and converts nothing, may ask for more.
+    ///
+    /// Two layers hold the nesting: the pass counts it before the parse, never
+    /// less than the tree will be, which keeps SwiftSoup's own recursion safe;
+    /// and the parsed tree's depth is measured before it is handed on, which
+    /// keeps a reader's recursion safe even where the count were wrong.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parse(_ markup: String, baseURI: String = "", deepestNesting: Int? = nil) throws -> Document {
         if opensAsXML(markup) {
@@ -90,24 +99,47 @@ enum MarkupGuard {
         var limits = limits
         if let deepestNesting { limits.deepestNesting = deepestNesting }
         _ = try inspect(Array(markup.utf8), as: .html, limits: limits)
-        return try SwiftSoup.parseHTML(markup, baseURI)
+        return try requireDepth(of: SwiftSoup.parseHTML(markup, baseURI), atMost: limits.deepestNesting)
     }
 
     /// `markup` parsed by SwiftSoup's XML parser, whatever it opens with, with
-    /// nesting read up to `deepestNesting`, or the limit in force.
+    /// nesting read up to `deepestNesting`, or the limit in force, in the same
+    /// two layers as `parse(_:baseURI:deepestNesting:)`.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parseXML(_ markup: String, baseURI: String = "", deepestNesting: Int? = nil) throws -> Document {
         var limits = limits
         if let deepestNesting { limits.deepestNesting = deepestNesting }
-        return try SwiftSoup.parse(neutralized(markup, limits: limits), baseURI, Parser.xmlParser())
+        let document = try SwiftSoup.parse(neutralized(markup, limits: limits), baseURI, Parser.xmlParser())
+        return try requireDepth(of: document, atMost: limits.deepestNesting)
     }
 
     /// The fragment `markup` in the body of an empty document, as
-    /// `SwiftSoup.parseBodyFragment(_:)` makes one, by its HTML parser.
+    /// `SwiftSoup.parseBodyFragment(_:)` makes one, by its HTML parser, in the
+    /// same two layers as `parse(_:baseURI:deepestNesting:)`.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parseBodyFragment(_ markup: String) throws -> Document {
         _ = try inspect(Array(markup.utf8), as: .bodyFragment, limits: limits)
-        return try SwiftSoup.parseBodyFragment(markup)
+        return try requireDepth(of: SwiftSoup.parseBodyFragment(markup), atMost: limits.deepestNesting)
+    }
+
+    /// `document`, once its deepest element is found no deeper than `limit`
+    /// (an element of the document's own children, `html`, at 1), by a walk
+    /// with a stack of its own: the second layer, after the parse and before
+    /// any reader that calls itself for each level, such as the converter.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` when an element is deeper.
+    static func requireDepth(of document: Document, atMost limit: Int) throws -> Document {
+        var pending: [(node: Node, depth: Int)] = [(document, 0)]
+        while let (node, depth) = pending.popLast() {
+            guard depth < limit else {
+                // Its children are elements one level deeper than the limit.
+                if node.getChildNodes().contains(where: { $0 is Element }) { throw MarkupRefusal.nestedTooDeeply(limit: limit) }
+                continue
+            }
+            for child in node.getChildNodes() where child is Element {
+                pending.append((child, depth + 1))
+            }
+        }
+        return document
     }
 
     // MARK: Which Parser
