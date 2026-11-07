@@ -127,11 +127,11 @@ final class SpeechExportOptionsTests: XCTestCase {
         XCTAssertEqual(SpeechExportWording.endOfBook, "End of the book")
         XCTAssertEqual(SpeechExportWording.noHeadings, "This book has no headings, so all of it is exported.")
 
-        XCTAssertEqual(SpeechExportWording.rateLabel, "Rate")
-        XCTAssertEqual(SpeechExportWording.rateValue(200), "200 words per minute")
+        XCTAssertEqual(SpeechExportWording.speedLabel, "Speed")
+        XCTAssertEqual(SpeechExportWording.speedValue(200), "200 words per minute")
         // A speed between whole words is spoken rounded, a half up.
-        XCTAssertEqual(SpeechExportWording.rateValue(212.5), "213 words per minute")
-        XCTAssertEqual(SpeechExportWording.rateHint, "How fast the voice speaks in the audio file. It starts at this book's speed.")
+        XCTAssertEqual(SpeechExportWording.speedValue(212.5), "213 words per minute")
+        XCTAssertEqual(SpeechExportWording.speedHint, "How fast the voice speaks in the audio file. It starts at this book's speed.")
         XCTAssertEqual(SpeechExportWording.pitchLabel, "Pitch")
         XCTAssertEqual(SpeechExportWording.pitchValue(1), "Normal (1.0x)")
         XCTAssertEqual(SpeechExportWording.pitchValue(1.5), "1.5x")
@@ -604,10 +604,10 @@ final class SpeechExportOptionsTests: XCTestCase {
             XCTAssertEqual(through.element.accessibilityValue() as? String, SpeechExportWording.endOfBook)
             XCTAssertEqual(through.hint, SpeechExportWording.throughHint)
 
-            let rate = try control(labelled: SpeechExportWording.rateLabel, in: controls)
+            let rate = try control(labelled: SpeechExportWording.speedLabel, in: controls)
             XCTAssertEqual(rate.role, .slider)
             XCTAssertEqual(rate.valueDescription, "225 words per minute")
-            XCTAssertEqual(rate.hint, SpeechExportWording.rateHint)
+            XCTAssertEqual(rate.hint, SpeechExportWording.speedHint)
             let pitch = try control(labelled: SpeechExportWording.pitchLabel, in: controls)
             XCTAssertEqual(pitch.role, .slider)
             XCTAssertEqual(pitch.valueDescription, "1.2x")

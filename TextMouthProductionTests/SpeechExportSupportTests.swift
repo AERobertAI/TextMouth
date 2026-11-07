@@ -257,7 +257,8 @@ final class SpeechExportSupportTests: XCTestCase {
         )
         XCTAssertEqual(
             SpeechExportError.busy.errorDescription,
-            "Another book is being exported as spoken audio. Export this one once it has finished."
+            "TextMouth is already exporting spoken audio, which it does one export at a time. "
+                + "Export this once that one has finished."
         )
         XCTAssertEqual(
             SpeechExportError.nothingToSpeak.errorDescription,

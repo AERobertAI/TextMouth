@@ -37,7 +37,8 @@ enum SpeechExportError: LocalizedError, Equatable {
                 + "and TextMouth keeps \(Self.size(ArchiveLimits.standard.freeSpaceReserve)) free. "
                 + "Free some space, then export again."
         case .busy:
-            return "Another book is being exported as spoken audio. Export this one once it has finished."
+            return "TextMouth is already exporting spoken audio, which it does one export at a time. "
+                + "Export this once that one has finished."
         case .nothingToSpeak:
             return "The part of the book chosen has no words to speak."
         case .headingsChanged:

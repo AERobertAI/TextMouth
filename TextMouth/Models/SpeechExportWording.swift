@@ -71,16 +71,17 @@ enum SpeechExportWording {
 
     // MARK: The Speed and the Pitch
 
-    /// The label of the slider that sets how fast the voice speaks.
-    static let rateLabel = "Rate"
-    /// The Rate slider's value, shown beside it and spoken as its value:
+    /// The label of the slider that sets how fast the voice speaks: "Speed",
+    /// the word the reader and Settings use for the same words per minute.
+    static let speedLabel = "Speed"
+    /// The Speed slider's value, shown beside it and spoken as its value:
     /// "200 words per minute". The speed is one the options hold, so a
     /// finite number inside the speeds Settings offers.
-    static func rateValue(_ wordsPerMinute: Double) -> String {
+    static func speedValue(_ wordsPerMinute: Double) -> String {
         "\(Int(wordsPerMinute.rounded())) words per minute"
     }
-    /// What the Rate slider sets.
-    static let rateHint = "How fast the voice speaks in the audio file. It starts at this book's speed."
+    /// What the Speed slider sets.
+    static let speedHint = "How fast the voice speaks in the audio file. It starts at this book's speed."
 
     /// The label of the slider that sets how high the voice sounds.
     static let pitchLabel = "Pitch"
@@ -153,24 +154,34 @@ enum SpeechExportWording {
         }
     }
 
+    /// Until when spoken chapters are kept for the same export to go on from
+    /// them: the next launch sweeps them (`SpeechExportStore.sweep`); a
+    /// different speech export, of another book, range, voice, speed, or
+    /// pitch, removes them as it opens the store; and a change to the book's
+    /// voice, text, substitution rules, or pauses changes what the same
+    /// range would speak, so it speaks every chapter again.
+    private static let keptUntil = "before TextMouth quits, a different export of spoken audio starts, "
+        + "or the book's voice, text, substitution rules, or pauses change"
+
     /// The Stop button's hint while a speech export runs: unlike the file
-    /// other exports leave off making, its spoken chapters are kept.
-    static let stopHint = "Stops the export. The chapters already spoken are kept until TextMouth quits, "
-        + "so exporting the same range again goes on from there."
+    /// other exports leave off making, its spoken chapters are kept, for as
+    /// long as they are.
+    static let stopHint = "Stops the export. The chapters already spoken are kept, so exporting the same range "
+        + "at the same speed and pitch goes on from there, \(keptUntil)."
 
     /// The sentence an export that ended without its file adds to what the
-    /// dialog says, telling what it kept and how to use it: `done` of its
-    /// `total` chapters are kept (`SpeechExportProgress.ended`). Nil when none
-    /// is.
+    /// dialog says, telling what it kept, how to use it, and for how long:
+    /// `done` of its `total` chapters are kept (`SpeechExportProgress.ended`).
+    /// Nil when none is.
     static func kept(done: Int, total: Int) -> String? {
         guard done > 0 else { return nil }
-        let again = "export the same range at the same rate and pitch before quitting TextMouth"
+        let again = "export the same range at the same speed and pitch"
         guard done >= total else {
-            return "Kept \(done) of \(total) chapters: \(again) to go on from chapter \(done + 1)."
+            return "Kept \(done) of \(total) chapters: \(again) to go on from chapter \(done + 1), \(keptUntil)."
         }
         return total == 1
-            ? "Kept the spoken chapter: \(again) to make the audio file from it."
-            : "Kept all \(total) spoken chapters: \(again) to make the audio file from them."
+            ? "Kept the spoken chapter: \(again) to make the audio file from it, \(keptUntil)."
+            : "Kept all \(total) spoken chapters: \(again) to make the audio file from them, \(keptUntil)."
     }
 
     // MARK: Text on One Line

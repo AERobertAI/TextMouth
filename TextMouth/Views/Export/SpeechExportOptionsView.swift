@@ -67,12 +67,12 @@ struct SpeechExportOptionsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             sliderRow(
-                SpeechExportWording.rateLabel,
+                SpeechExportWording.speedLabel,
                 value: $state.wordsPerMinute,
                 in: SettingsPolicy.wordsPerMinute.range,
                 step: ReaderViewModel.speechSpeedStep,
-                spoken: SpeechExportWording.rateValue(state.wordsPerMinute),
-                hint: SpeechExportWording.rateHint
+                spoken: SpeechExportWording.speedValue(state.wordsPerMinute),
+                hint: SpeechExportWording.speedHint
             )
             sliderRow(
                 SpeechExportWording.pitchLabel,
