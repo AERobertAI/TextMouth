@@ -39,13 +39,13 @@ struct WordFontTable {
     /// The character the code `code` of font `font` stands for, or nil when it stands for none a voice can
     /// speak (the caller reads a space): the code through the font's own layout. A font not in the table
     /// is read as pictures.
-    func symbolScalar(forCode code: Int, inFont font: Int) -> Unicode.Scalar? {
+    func symbolScalar(forCode code: Int, inFont font: Int, isPrivateUse: Bool = false) -> Unicode.Scalar? {
         guard let reading = reading(ofFont: font) else { return nil }
         // An ordinary font's code is a character of the code page of the font's own character set.
         let page = WordLegacyCharacters.codePage(ofFontCharacterSet: characterSets[font]).flatMap {
             WordLegacyCharacters.encoding(named: $0)
         }
-        return WordSymbolFontEncodings.scalar(forCode: code, reading: reading, codePage: page)
+        return WordSymbolFontEncodings.scalar(forCode: code, reading: reading, codePage: page, isPrivateUse: isPrivateUse)
     }
 
     // MARK: Reading

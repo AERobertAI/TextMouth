@@ -138,8 +138,16 @@ final class WordDocumentSymbolFontTests: XCTestCase {
         XCTAssertEqual(try body97([Run97("firm"), run97("\u{F030}", font: 3), Run97("s")]), "<p>firm s</p>\n")
     }
 
-    func testWord97TextTypedInAnOrdinaryFontIsTheLowByteInItsCodePage() throws {
-        XCTAssertEqual(try body97([Run97("caf"), run97("\u{F0E9}", font: 5), Run97("!")]), "<p>caf\u{00E9}!</p>\n")
+    func testWord97TextTypedInAnOrdinaryFontIsReadThroughTheSymbolTable() throws {
+        // Arial (character set 0): U+F06D is mu, so 5 micrometres is not 5 millimetres; U+F070 is pi. This is
+        // what textutil reads, and the rule when the font is not a symbol font (see `WordSymbolFontEncodings.scalar`).
+        XCTAssertEqual(try body97([Run97("5 "), run97("\u{F06D}", font: 5), Run97("m")]), "<p>5 \u{00B5}m</p>\n")
+        XCTAssertEqual(try body97([Run97("2*"), run97("\u{F070}", font: 0), Run97(".")]), "<p>2*\u{03C0}.</p>\n")
+        // A code the Symbol table has no character for is a space.
+        XCTAssertEqual(try body97([Run97("a"), run97("\u{F0E9}", font: 5), Run97("b")]), "<p>a b</p>\n")
+        // A symbol (`sprmCSymbol`) whose character is stored as U+F0xx follows the same rule; one that is not keeps the code page.
+        XCTAssertEqual(try body97([Run97("5 "), symbol97(font: 5, code: 0xF06D), Run97("m")]), "<p>5 \u{00B5}m</p>\n")
+        XCTAssertEqual(try body97([Run97("caf"), symbol97(font: 5, code: 0xE9), Run97("!")]), "<p>caf\u{00E9}!</p>\n")
         // A character of the font that is not in 0xF020 to 0xF0FF is itself.
         XCTAssertEqual(try body97([Run97("caf"), run97("\u{00E9}", font: 1), Run97("!")]), "<p>caf\u{00E9}!</p>\n")
     }
@@ -163,9 +171,9 @@ final class WordDocumentSymbolFontTests: XCTestCase {
         // The sheet's default font, when nothing else says; the run's own font wins over it.
         let fromDefault = try body97([Run97("\u{F061}")]) { $0.defaultFont = 1 }
         XCTAssertEqual(fromDefault, "<p>\u{03B1}</p>\n")
-        let overridden = try body97([run97("\u{F061}", font: 0)]) { $0.defaultFont = 1 }
-        // Times New Roman is an ordinary font: the low byte 0x61 is "a".
-        XCTAssertEqual(overridden, "<p>a</p>\n")
+        // The run's own font wins over the default: Wingdings is a font of pictures, so a space.
+        let overridden = try body97([Run97("x"), run97("\u{F061}", font: 2), Run97("y")]) { $0.defaultFont = 1 }
+        XCTAssertEqual(overridden, "<p>x y</p>\n")
     }
 
     func testWord97TextOfAnUnknownFontKeepsItsCharacters() throws {

@@ -65,7 +65,13 @@ enum WordSymbolFontEncodings {
     /// The character the code `code` of a font read as `reading` stands for, or nil when it stands for
     /// none a voice can speak (a picture, a code the font's table does not settle, a space or control).
     /// - Parameter codePage: the encoding of an ordinary font's own character set (nil: Windows-1252).
-    static func scalar(forCode code: Int, reading: Reading, codePage: String.Encoding? = nil) -> Unicode.Scalar? {
+    /// - Parameter isPrivateUse: whether Word 97 stored the code as U+F0xx (its code plus 0xF000: text typed in a
+    ///   symbol font, or a symbol whose character is so stored). In an ordinary text font that is read through the
+    ///   Symbol table, not the font's code page: Word shows such a character from the Symbol font, textutil reads
+    ///   it so, and in the real files it is mostly maths (`p` for pi, `D` for delta, `m` for mu: `100mm` for
+    ///   100 micrometres would change a measurement a thousandfold). Checkboxes are the exception and read wrongly
+    ///   either way (`gov216-216376`: Arial runs of U+F071 beside Wingdings runs of it; textutil gives theta).
+    static func scalar(forCode code: Int, reading: Reading, codePage: String.Encoding? = nil, isPrivateUse: Bool = false) -> Unicode.Scalar? {
         switch reading {
         case .adobeSymbol:
             return AdobeSymbolEncoding.wordScalar(forCode: code)
@@ -74,7 +80,7 @@ enum WordSymbolFontEncodings {
         case .pictures:
             return nil
         case .text:
-            return textScalar(forCode: code, codePage: codePage)
+            return isPrivateUse ? AdobeSymbolEncoding.wordScalar(forCode: code) : textScalar(forCode: code, codePage: codePage)
         }
     }
 
