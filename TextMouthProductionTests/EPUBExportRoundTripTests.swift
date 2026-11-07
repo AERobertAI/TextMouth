@@ -260,6 +260,22 @@ final class EPUBExportRoundTripTests: XCTestCase {
         try assertRoundTrips(markdown, language: nil)
     }
 
+    /// A book whose language is unknown is exported with the language "und"
+    /// (undetermined), which the reader takes as no language, not as one to
+    /// show in Book Info; a book with a language keeps it.
+    func testAnUndeterminedLanguageReadsBackAsNone() throws {
+        let folder = try makeSandboxDirectory("EPUB Round Trip Language")
+        let unknown = try EPUBRoundTrip.export("# One\n\nWords.", title: title, in: folder, writer: EPUBExportWriterTests.writer(), language: nil)
+        let archive = try Archive(url: unknown, accessMode: .read)
+        var data = Data()
+        _ = try archive.extract(try XCTUnwrap(archive["OEBPS/content.opf"])) { data.append($0) }
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("<dc:language>und</dc:language>"), "the export says und")
+        XCTAssertEqual(try EPUBParser.readMetadata(url: unknown).language, "")
+
+        let known = try EPUBRoundTrip.export("# One\n\nWords.", title: title, in: folder, writer: EPUBExportWriterTests.writer(), language: "fr-CA")
+        XCTAssertEqual(try EPUBParser.readMetadata(url: known).language, "fr-CA")
+    }
+
     /// A book with no text reads back as the EPUB reader says of any book with
     /// nothing to read, rather than as a book with an invented chapter.
     func testABookWithNoTextHasNothingToReadBack() throws {
