@@ -271,8 +271,10 @@ final class PhoneReaderModel {
     ///     gives Heading whatever unit is in force.
     ///   - source: Where the move came from, which decides whether a paused
     ///     move's words are announced as well as put in Play's value.
-    func move(on reader: ReaderViewModel, forward: Bool, unit: SkipUnit? = nil, source: PhoneMoveFeedback.Source) {
-        guard !reader.isLoading, !reader.hasClosed, reader.content != nil else { return }
+    /// - Returns: Whether the place changed.
+    @discardableResult
+    func move(on reader: ReaderViewModel, forward: Bool, unit: SkipUnit? = nil, source: PhoneMoveFeedback.Source) -> Bool {
+        guard !reader.isLoading, !reader.hasClosed, reader.content != nil else { return false }
         let unit = unit ?? unitInForce(of: reader)
         // Time-based skips don't cancel Where Am I? by themselves.
         reader.cancelWhereAmIIfActive()
@@ -306,13 +308,28 @@ final class PhoneReaderModel {
             placeDidMove?()
         }
         announceLater(feedback.announcements)
+        return before != after
     }
 
     /// Moves the screen's reader: what adjusting Play, the skip buttons, and
     /// the heading buttons call.
-    func moveOnScreen(forward: Bool, unit: SkipUnit? = nil, source: PhoneMoveFeedback.Source) {
-        guard let reader else { return }
-        move(on: reader, forward: forward, unit: unit, source: source)
+    /// - Returns: Whether the place changed.
+    @discardableResult
+    func moveOnScreen(forward: Bool, unit: SkipUnit? = nil, source: PhoneMoveFeedback.Source) -> Bool {
+        guard let reader else { return false }
+        return move(on: reader, forward: forward, unit: unit, source: source)
+    }
+
+    /// The units Play's rotors move by, in the spec's order: Headings in a
+    /// book with headings, Pages in a book of more than one page, Bookmarks
+    /// in a book with one or more (the spec, under "The rotors").
+    var playRotorUnits: [SkipUnit] {
+        guard let reader else { return [] }
+        var units: [SkipUnit] = []
+        if !reader.headings.isEmpty { units.append(.heading) }
+        if reader.hasSeveralPages { units.append(.page) }
+        if !reader.bookmarks.isEmpty { units.append(.bookmark) }
+        return units
     }
 
     /// The words from `reader`'s place to the end of their sentence.

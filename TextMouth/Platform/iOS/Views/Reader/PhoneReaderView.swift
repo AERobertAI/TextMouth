@@ -154,7 +154,8 @@ struct PhoneReaderView: View {
             decrement: adjustment(for: item, up: false),
             perform: customActions(for: item),
             focusKind: item.focusKind,
-            showsValue: item == .navigationUnit || item == .speed
+            showsValue: item == .navigationUnit || item == .speed,
+            rotors: item == .play && Self.playRotorsEnabled ? { element in Self.playRotors(on: element, model: model) } : nil
         )
         .frame(maxWidth: .infinity)
     }
@@ -272,6 +273,39 @@ struct PhoneReaderView: View {
         try? await Task.sleep(for: .seconds(5))
         if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true {
             PhoneAnnouncer.low(PhoneReaderVocabulary.loading(snapshot.title))
+        }
+    }
+
+    // MARK: - The Rotors on Play
+
+    /// The one flag the rotors on Play sit behind: off, the safe choice, until
+    /// a first run shows a move inside a rotor's search can be silent and
+    /// happens only when the listener flicks. A search VoiceOver makes when
+    /// nobody flicked would move the place unasked (the spec, under "The
+    /// rotors"; the engineering review's F20). Adjusting Play and Next
+    /// Heading are the design; this is a second way.
+    static let playRotorsEnabled = false
+
+    /// Play's rotors: Headings as the system's heading rotor, then Pages and
+    /// Bookmarks, each where the book has them. A flick down moves forward,
+    /// as on every rotor, and a flick up back; each returns Play itself, so
+    /// focus stays there and nothing is read but what the move says, or nil
+    /// with nothing that way, which is VoiceOver's boundary sound.
+    private static func playRotors(on play: UIView, model: PhoneReaderModel) -> [UIAccessibilityCustomRotor] {
+        model.playRotorUnits.map { unit in
+            let search = { [weak play, weak model] (predicate: UIAccessibilityCustomRotorSearchPredicate) -> UIAccessibilityCustomRotorItemResult? in
+                guard let play, let model else { return nil }
+                let moved = model.moveOnScreen(forward: predicate.searchDirection == .next, unit: unit, source: .command)
+                return moved ? UIAccessibilityCustomRotorItemResult(targetElement: play, targetRange: nil) : nil
+            }
+            switch unit {
+            case .heading:
+                return UIAccessibilityCustomRotor(systemType: .heading, itemSearch: search)
+            case .page:
+                return UIAccessibilityCustomRotor(name: PhoneReaderWording.pagesRotor, itemSearch: search)
+            default:
+                return UIAccessibilityCustomRotor(name: PhoneReaderVocabulary.bookmarks, itemSearch: search)
+            }
         }
     }
 

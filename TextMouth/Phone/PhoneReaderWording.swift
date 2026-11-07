@@ -78,6 +78,9 @@ enum PhoneReaderWording {
     /// The name of Book content's rotor that moves by sentence.
     static let sentencesRotor = "Sentences"
 
+    /// The name of Play's rotor that moves by page.
+    static let pagesRotor = "Pages"
+
     // MARK: The Grid's Buttons
 
     /// Bookmarks' hint.

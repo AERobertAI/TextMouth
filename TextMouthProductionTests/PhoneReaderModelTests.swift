@@ -190,6 +190,26 @@ final class PhoneReaderModelTests: XCTestCase {
         XCTAssertEqual(model.description(of: .headings)?.value, "Morning, 1 of 3")
     }
 
+    /// Play's rotors are offered only where the book has what they move by:
+    /// headings here, bookmarks once there's one, pages never in a book
+    /// without them.
+    func testPlaysRotorsFollowWhatTheBookHas() {
+        let (model, reader) = makeModel()
+        XCTAssertEqual(model.playRotorUnits, [.heading])
+
+        reader.bookmarks = [Bookmark(number: 1, chapterIndex: 1, characterOffset: 0)]
+
+        XCTAssertEqual(model.playRotorUnits, [.heading, .bookmark])
+    }
+
+    /// A move says whether the place changed, as a rotor's search needs.
+    func testAMoveSaysWhetherThePlaceChanged() {
+        let (model, _) = makeModel()
+        XCTAssertTrue(model.moveOnScreen(forward: true, unit: .heading, source: .command))
+        XCTAssertTrue(model.moveOnScreen(forward: true, unit: .heading, source: .command))
+        XCTAssertFalse(model.moveOnScreen(forward: true, unit: .heading, source: .command), "There's no fourth heading")
+    }
+
     /// With no book open, nothing is described, and moves do nothing.
     func testWithNoBookNothingIsDescribed() {
         let model = PhoneReaderModel(

@@ -33,6 +33,9 @@ struct PhoneControl: UIViewRepresentable {
     /// Speed do for a sighted helper: VoiceOver reads the words from
     /// `describe` either way.
     var showsValue = false
+    /// The control's own rotors, made when VoiceOver asks, for the element
+    /// they're set on; nil for none.
+    var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
 
     func makeUIView(context: Context) -> PhoneControlButton {
         let button = PhoneControlButton()
@@ -53,6 +56,7 @@ struct PhoneControl: UIViewRepresentable {
         button.decrement = decrement
         button.perform = perform
         button.showsValue = showsValue
+        button.rotors = rotors
         if let focusKind {
             PhoneFocusRegistry.shared.register(button, as: focusKind)
         }
@@ -87,6 +91,8 @@ final class PhoneControlButton: UIButton {
     var perform: (@MainActor (PhoneControlAction) -> Void)?
     /// Whether the visible title shows the value too.
     var showsValue = false
+    /// The control's own rotors, made when VoiceOver asks.
+    var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
 
     /// A plain, large button whose title wraps and follows the text size.
     init() {
@@ -166,6 +172,14 @@ final class PhoneControlButton: UIButton {
                 }
             }
         }
+        set {}
+    }
+
+    /// The control's rotors, set on the element itself, so that with the
+    /// rotor left on Headings a flick elsewhere still means what it did
+    /// (the engineering review's F20).
+    override var accessibilityCustomRotors: [UIAccessibilityCustomRotor]? {
+        get { rotors?(self) }
         set {}
     }
 
