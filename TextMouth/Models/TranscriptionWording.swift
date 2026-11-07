@@ -522,6 +522,13 @@ enum TranscriptionWording {
     /// a book's transcript came from.
     static let bookInfoLabel = "Transcript"
 
+    /// What VoiceOver says for the editor's Transcript detail whose line is
+    /// `line`: "Transcript: Attached from “lecture.vtt” on October 30, 2026."
+    /// (Details of the read-only sheet are spoken by `FeedInfoValue`.)
+    static func bookInfoSpokenDetail(_ line: String) -> String {
+        "\(bookInfoLabel): \(line)"
+    }
+
     /// What Book Information's detail says of a book's transcript, from what
     /// a read of it found: nil when the book has none the sheet could name
     /// (none, or one set aside as unusable, as the Transcribe Audio sheet

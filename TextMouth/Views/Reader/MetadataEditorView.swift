@@ -25,9 +25,9 @@ struct MetadataEditorView: View {
     /// above the buttons until the user changes an edit or the choice to
     /// write the file.
     @State private var failureMessage: String?
-    /// What the audiobook's transcript came from, for the read-only Transcript
-    /// detail; nil until it is read, and for a book without a transcript.
-    @State private var transcriptLine: String?
+    /// The read-only Transcript detail: what the audiobook's transcript came
+    /// from, empty until it is read and for a book without a transcript.
+    @StateObject private var transcript = TranscriptBookInfoModel()
     @Environment(\.dismiss) private var dismiss
 
     let isEPUB: Bool
@@ -153,10 +153,7 @@ struct MetadataEditorView: View {
         // The transcript is read off the main thread, without downloading
         // it; the Transcript row shows once it has answered.
         .task(id: transcriptBook?.id) {
-            // Another book's line is never kept while this one is read.
-            transcriptLine = nil
-            guard let transcriptBook else { return }
-            transcriptLine = await TranscriptStore.bookInfoLine(for: transcriptBook)
+            await transcript.load(for: transcriptBook)
         }
         // A reason that no longer applies is never read beside new input.
         .clearingFailure($failureMessage, whenChanged: editedEPUBFields)
@@ -283,11 +280,11 @@ struct MetadataEditorView: View {
 
             // Where the transcript came from; the row appears once the
             // package has been read, and only for a book that has one.
-            if let transcriptLine {
+            if let line = transcript.line {
                 LabeledContent(TranscriptionWording.bookInfoLabel) {
-                    Text(transcriptLine)
+                    Text(line)
                 }
-                .accessibilityLabel("\(TranscriptionWording.bookInfoLabel): \(transcriptLine)")
+                .accessibilityLabel(TranscriptionWording.bookInfoSpokenDetail(line))
             }
         } header: {
             Text("Read Only")

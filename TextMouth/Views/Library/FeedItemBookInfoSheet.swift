@@ -50,9 +50,9 @@ struct FeedItemBookInfoSheet: View {
     let info: LibraryBookInfo
     /// The title of the feed it belongs to, while the feed's record is here.
     let feedTitle: String?
-    /// What the episode's transcript came from, once it has been read; nil
+    /// What the episode's transcript came from, once it has been read; empty
     /// until then, and for an episode or article without a transcript.
-    @State private var transcriptLine: String?
+    @StateObject private var transcript = TranscriptBookInfoModel()
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -71,7 +71,7 @@ struct FeedItemBookInfoSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(
-                        FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle, transcriptLine: transcriptLine),
+                        FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle, transcriptLine: transcript.line),
                         id: \.label
                     ) { detail in
                         FeedInfoValue(label: detail.label, value: detail.value, spokenValue: detail.spokenValue)
@@ -95,9 +95,7 @@ struct FeedItemBookInfoSheet: View {
         // it; its row appears once it has answered, in the scrolling list,
         // so the sheet keeps its size.
         .task(id: book.id) {
-            // Another book's line is never kept while this one is read.
-            transcriptLine = nil
-            transcriptLine = await TranscriptStore.bookInfoLine(for: book)
+            await transcript.load(for: book)
         }
         // Escape closes the sheet too, wherever focus is, as Return does.
         .background(SilentKeyEquivalent(key: .escape, action: { dismiss() }))
