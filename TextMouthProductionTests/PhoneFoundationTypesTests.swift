@@ -246,5 +246,6 @@ final class ReaderPhoneHooksTests: XCTestCase {
         XCTAssertNil(hooks.moveForward)
         XCTAssertNil(hooks.moveBackward)
         XCTAssertNil(hooks.audioEnded)
+        XCTAssertNil(hooks.silentGapBegan)
     }
 }
