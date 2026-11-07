@@ -181,7 +181,7 @@ final class KF8BookTests: XCTestCase {
 
     func testABookWithNoContentsStillHasItsDocumentsAsChapters() throws {
         let fixture = KF8Fixture(documents: (1...3).map { number in
-            KF8Fixture.Document(html: "<html><head><title>Fixture KF8 Book</title></head><body><p>Words \(number).</p></body></html>")
+            KF8Fixture.Document(html: "<html><body><p>Words \(number).</p></body></html>")
         })
         let book = try prepared(fixture)
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 1", "Chapter 2", "Chapter 3"])
@@ -192,7 +192,7 @@ final class KF8BookTests: XCTestCase {
     func testAContentsPageAtTheEndThatTheGuideNamesAsContentsIsLeftOut() throws {
         // Every document is cut into a fragment, as a real book's are: a guide or a contents names a fragment.
         let real = "<html><body><h1>Chapter</h1><p>Real words.</p></body></html>"
-        let contents = "<html><body><h2>Table of Contents</h2><ul><li><a href=\"kindle:pos:fid:0000:off:0000000000\">Chapter</a></li></ul></body></html>"
+        let contents = "<html><head><title>Table of Contents</title></head><body><h2>Table of Contents</h2><ul><li><a href=\"kindle:pos:fid:0000:off:0000000000\">Chapter</a></li></ul></body></html>"
         let afterword = "<html><body><p>Afterword.</p></body></html>"
         func document(_ html: String) throws -> KF8Fixture.Document {
             let start = try XCTUnwrap(html.range(of: "<body>")).upperBound
@@ -383,8 +383,7 @@ final class KF8BookTests: XCTestCase {
         MOBIFixture.put32(&bytes, record0 + 252, 0xFFFF_FFFF)
         XCTAssertThrowsError(try opened(bytes)) {
             guard case .damaged? = $0 as? MOBIError else { return XCTFail("\($0)") }
-            XCTAssertTrue($0.localizedDescription.hasPrefix("This Kindle book is damaged or incomplete: "), $0.localizedDescription)
-            XCTAssertTrue($0.localizedDescription.hasSuffix("Get a fresh copy of the book, then import it again."))
+            XCTAssertEqual($0.localizedDescription, "This Kindle book is damaged or incomplete. Get a fresh copy of the book, then import it again.")
         }
     }
 
