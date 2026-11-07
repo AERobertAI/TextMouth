@@ -451,17 +451,41 @@ final class HandEditedMetadataTests: XCTestCase {
         )
     }
 
-    /// The editors refuse a save that would leave the book with no title:
-    /// the user emptied one it opened with, or left only blanks. A book
-    /// that opened without a title may be saved without one, so a change
-    /// to another field is never held back.
+    /// The rule: a save that would leave the book with no title is refused.
+    /// The user emptied one the editor opened with, or left only blanks. A
+    /// book that opened without a title may be saved without one, so a
+    /// change to another field is never held back.
     func testASaveThatEmptiesTheTitleIsRefused() {
-        XCTAssertTrue(MetadataEditorWording.clearsTitle(opened: "Dune", edited: ""))
-        XCTAssertTrue(MetadataEditorWording.clearsTitle(opened: "Dune", edited: "  \n "))
-        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "Dune", edited: "Dune Messiah"))
-        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "", edited: ""))
-        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "   ", edited: ""))
+        XCTAssertTrue(Book.MetadataEdit.clearsTitle(opened: "Dune", edited: ""))
+        XCTAssertTrue(Book.MetadataEdit.clearsTitle(opened: "Dune", edited: "  \n "))
+        XCTAssertFalse(Book.MetadataEdit.clearsTitle(opened: "Dune", edited: "Dune Messiah"))
+        XCTAssertFalse(Book.MetadataEdit.clearsTitle(opened: "", edited: ""))
+        XCTAssertFalse(Book.MetadataEdit.clearsTitle(opened: "   ", edited: ""))
         XCTAssertTrue(MetadataEditorWording.titleCleared.hasSuffix("save again."))
+    }
+
+    /// The model holds the rule too, so it does not rest on the editor's
+    /// refusal alone: an edit that empties the title changes every other
+    /// field it changes, and leaves the row's title and its record of hand
+    /// edits as they were.
+    @MainActor
+    func testAnEditThatEmptiesTheTitleLeavesTheRowsTitleAlone() throws {
+        let (model, book) = try makeLibrary()
+        let opened: Book.MetadataValues = [.title: book.title, .author: book.author]
+
+        for emptied in ["", "   "] {
+            let edit = Book.MetadataEdit(opened: opened, saved: [.title: emptied, .author: "Harbour Survey"])
+            XCTAssertEqual(edit.changes, [.author: "Harbour Survey"], "only the author changes")
+            let saved = try XCTUnwrap(model.updateBookMetadata(edit, of: book.id))
+            XCTAssertEqual(saved.title, book.title)
+            XCTAssertEqual(saved.author, "Harbour Survey")
+            XCTAssertEqual(saved.handEdits?.fields, [.author], "the title is not marked as edited by hand")
+            XCTAssertEqual(model.bookByID(book.id)?.title, book.title)
+        }
+
+        // A title that was blank to begin with is a title like any other.
+        let nameless = Book.MetadataEdit(opened: [.title: ""], saved: [.title: "Named at last"])
+        XCTAssertEqual(nameless.changes, [.title: "Named at last"])
     }
 
     /// A library model listing one book without a package, without the

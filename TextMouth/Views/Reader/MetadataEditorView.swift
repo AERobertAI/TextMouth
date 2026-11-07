@@ -21,8 +21,9 @@ struct MetadataEditorView: View {
     /// The audio metadata the editor opened with, handed to `onSaveAudio`.
     @State private var openedAudioMetadata: AudioMetadata
     @State private var writeToFile = false
-    /// Why the last EPUB save failed, shown above the buttons until the user
-    /// changes an edit or the choice to write the file.
+    /// Why the last save failed (an EPUB's write, or a title emptied), shown
+    /// above the buttons until the user changes an edit or the choice to
+    /// write the file.
     @State private var failureMessage: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -153,7 +154,7 @@ struct MetadataEditorView: View {
         // name to hear in the library, the windows, or Now Playing.
         let openedTitle = isAudio ? openedAudioMetadata.title : openedEPUBMetadata.title
         let editedTitle = isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title
-        if MetadataEditorWording.clearsTitle(opened: openedTitle, edited: editedTitle) {
+        if Book.MetadataEdit.clearsTitle(opened: openedTitle, edited: editedTitle) {
             failureMessage = MetadataEditorWording.titleCleared
             VoiceOverAnnouncer.announce(MetadataEditorWording.titleCleared)
             return
@@ -368,17 +369,6 @@ enum MetadataEditorWording {
     /// What the editor says when Save is pressed after the title was
     /// emptied.
     static let titleCleared = "Could not save: the book's title is empty. Type a title, then save again."
-
-    /// Whether saving would leave the book without a title: the editor
-    /// opened with a title, and the edit holds nothing but blanks. A book
-    /// that had no title to begin with may be saved with none, so that a
-    /// change to another field is never held back.
-    static func clearsTitle(opened: String, edited: String) -> Bool {
-        func isBlank(_ title: String) -> Bool {
-            title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-        return !isBlank(opened) && isBlank(edited)
-    }
 
     /// When the book titled `title` has left the library, so its edit has
     /// nowhere to go: "Could not save metadata: “Notes” is no longer in the
