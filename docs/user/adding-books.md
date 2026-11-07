@@ -225,6 +225,20 @@ Part of [TextMouth's documentation](../../README.md).
 - An OpenDocument or Word 2003 XML document is refused for any of these three with the one sentence of its kind, as in "This file could not be read as an OpenDocument text document. It may be damaged, or another kind of file.", and a PEF braille file with "This file could not be read as a PEF braille file. It may be damaged, or another kind of file."
 - A Word 2003 XML or OpenDocument document that declares a document type at all is refused too, as before.
 
+### Markup TextMouth can't safely read
+
+- Before TextMouth reads the markup of an EPUB chapter, an HTML file, a DAISY book, a Kindle book, or a web archive's page, it looks through it once. A Word, rich text, or OpenDocument document passes through the same look, in the HTML its reader writes. Markup that would crash TextMouth or fill the Mac's memory is refused, with one of four sentences that never call the file damaged, since it may not be.
+- Markup nested thousands of levels deep, a document of millions of tags, and a broken declaration used to be able to stop TextMouth. No real book tried is refused for any of them.
+- The four sentences, as an alert gives them after "Could not import “x”. Reading its text failed: ":
+  - Markup nested too deeply, more than 128 levels: "This file's markup nests more than 128 levels deep, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
+  - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file holds too much markup for TextMouth to read without running out of memory. Divide the document into smaller files, then import them."
+  - Too many attributes on one tag, more than 1,000: "One tag in this file has more than 1,000 attributes, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
+  - Markup built so that reading it would take far too long: "This file's markup is built in a way that would take TextMouth far too long to read. Get another copy of the file, or save it in another format, then import it again."
+- The deepest real book nests 12 levels, and the deepest web page tried 36. The biggest real document, a whole dictionary as one 32 MB HTML file, uses under half the memory limit. No real tag has more than 7 attributes.
+- An EPUB with a chapter that is refused reads its other chapters, and the report of the book names the chapter that was left out, as in chapter 2 (“OEBPS/ch02.xhtml”) "has markup that could not be read". If it is the only chapter, the EPUB's own sentence about a chapter that could not be read says so, not one of the four.
+- A broken declaration in the markup, such as `<?a>` or a torn `<?xml version="1.0"`, is read as nothing, with the words around it, and no sentence is spoken.
+- A feed gives no sentence. A page that a feed address was looked for in, an article's web page, and a title or summary in a feed are passed over when they pass a limit: no feed is found on that page, an article's book holds the feed's own text, a title is kept as it was written, and the markup of an item that passes a limit reads as no text. Feed discovery reads a page nested up to 512 levels deep, deeper than a book, since it converts nothing.
+
 ### Documents past the 64 MB limit
 
 - A document, web archive, SSML file, DTBook, or Kindle book past the limit of 64 MB (see [What TextMouth reads](what-textmouth-reads.md)) is refused with "This document holds more than 64 MB, the most TextMouth reads from one document."
