@@ -594,12 +594,12 @@ final class EPUBExportWriterTests: XCTestCase {
     /// past four times the limit, and every word is kept in order.
     func testTextWithNoHeadingIsSplitOnlyPastTheHardLimit() throws {
         let paragraphs = (1...40).map { "Paragraph \($0) has a few plain words in it." }
-        let url = try export(paragraphs.joined(separator: "\n\n"), writer: Self.writer(maximumFileBytes: 300))
+        let url = try export(paragraphs.joined(separator: "\n\n"), writer: Self.writer(maximumFileBytes: 100))
         let files = try chapterPaths(of: url)
         XCTAssertGreaterThan(files.count, 2)
         var words: [String] = []
         for file in files {
-            XCTAssertLessThan(try text(file, in: url).utf8.count, 4 * 300 + 400, "\(file) is far past four times the limit")
+            XCTAssertLessThan(try text(file, in: url).utf8.count, 4 * 100 + 600, "\(file) is far past four times the limit")
             words += try bodyLines(file, in: url).joined(separator: " ")
                 .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
                 .split(whereSeparator: \.isWhitespace).map(String.init)

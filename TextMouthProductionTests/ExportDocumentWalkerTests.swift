@@ -469,14 +469,14 @@ final class ExportDocumentWalkerTests: XCTestCase {
     }
 
     /// The details of a book: no author for "Unknown", no language for a
-    /// string that is no tag.
+    /// string that is no tag, and the book's identity in the library.
     func testBookDetails() {
         var book = Book(title: "A Title", author: "Unknown", format: .markdown, filePath: "/x.md", md5Hash: "abc")
-        XCTAssertEqual(ExportBookDetails(book), ExportBookDetails(title: "A Title", author: nil, language: nil))
+        XCTAssertEqual(ExportBookDetails(book), ExportBookDetails(title: "A Title", author: nil, language: nil, identifier: book.id))
 
         book.author = "Jane Doe"
         book.epubLanguage = "fr_CA"
-        XCTAssertEqual(ExportBookDetails(book), ExportBookDetails(title: "A Title", author: "Jane Doe", language: "fr-CA"))
+        XCTAssertEqual(ExportBookDetails(book), ExportBookDetails(title: "A Title", author: "Jane Doe", language: "fr-CA", identifier: book.id))
 
         book.epubLanguage = "English"
         XCTAssertNil(ExportBookDetails(book).language)
