@@ -247,7 +247,8 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### Kindle books that can't be read
 
-- A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”. Reading its text failed: This Kindle book is in the newer KF8 format, which TextMouth can't read yet." The sentences are:
+- A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”. Reading its text failed: This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+- The sentences are:
   - For a copy-protected book: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." This is checked first, so no part of such a book's text is read.
   - For a book only in the newer KF8 format, as an .azw3 is: "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
   - For a book whose text is compressed in a way TextMouth does not know: "This Kindle book is compressed in a way TextMouth can't read yet."
@@ -256,20 +257,23 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### KFX Kindle books that can't be read
 
-- A KFX Kindle book that can't be read is refused with a sentence that says why. A copy-protected book, a damaged one, and a file named as a Kindle book that is not one get the sentences above. The others are:
+- A KFX Kindle book that can't be read is refused with a sentence that says why.
+- A copy-protected book, a damaged one, and a file named as a Kindle book that is not one get the sentences above.
+- The others are:
   - For a book with no flowing text to read, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book of only pictures: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
   - For a Kindle Create package (.kpf), the file an author makes before a book is published: "This file is a Kindle Create package, which TextMouth can't read yet."
   - For a file that holds only a part of a Kindle book, such as the metadata file that sits beside it: "This file holds only part of a Kindle book. Open the book's main .kfx file."
-  - A KFX book is told copy-protected if its file, a license file beside it, or any part of a book of several is protected, and TextMouth never tries to remove the protection.
+- A KFX book is told copy-protected if its file, a license file beside it, or any part of a book of several is protected, and TextMouth never tries to remove the protection.
 
 ### Braille files that can't be read
 
-- A braille file that can't be read is refused with a sentence that says what is wrong, as in "Could not import “Emma.brf”. Reading its text failed: Line 12 holds “é”, which is not braille ASCII." The sentences are:
+- A braille file that can't be read is refused with a sentence that says what is wrong, as in "Could not import “Emma.brf”. Reading its text failed: Line 12 holds “é”, which is not braille ASCII."
+- The sentences are:
   - For a BRF or BRL file with something in it that is not braille ASCII: "Line 12 holds “é”, which is not braille ASCII."
     - Lines are counted from 1 by their ends.
-    - What shows as nothing, or joins the character before it (white space, an invisible character, or a combining mark), is named by its code, as in "Line 1 holds the character U+00A0, which is not braille ASCII.";
-      - so is a control character, as in "Line 12 holds the control character U+0007, which is not braille ASCII.";
-      - and the blank braille pattern U+2800 is named by its code too, as in "Line 1 holds the character U+2800, which is not braille ASCII."
+    - What shows as nothing, or joins the character before it (white space, an invisible character, or a combining mark), is named by its code, as in "Line 1 holds the character U+00A0, which is not braille ASCII."
+    - So is a control character, as in "Line 12 holds the control character U+0007, which is not braille ASCII."
+    - The blank braille pattern U+2800 is named by its code too, as in "Line 1 holds the character U+2800, which is not braille ASCII."
   - For a BRF or BRL file read as Eurobraille, six-dot, with something in it that is not Eurobraille, the same sentence with the code's name: "Line 3 holds “é”, which is not Eurobraille."
   - For a BRF or BRL file read as Unicode braille patterns, with a byte that is no braille pattern: "Line 2 holds the byte 0xE9, which is not a Unicode braille pattern."
   - For a BRF or BRL file read in a seven-bit code, North American Braille ASCII or Eurobraille, with a byte above 0x7F that begins no valid character, which may be a file of eight-bit computer braille: "Line 2 holds the byte 0xE9. This file may be eight-bit computer braille, which TextMouth does not read."
@@ -280,8 +284,11 @@ Part of [TextMouth's documentation](../../README.md).
   - For a PEF file in eight-dot braille, or a BRF or BRL file of Unicode braille patterns that uses dot 7 or 8: "This file is eight-dot braille, which TextMouth does not read."
   - For a file past a limit (see [What TextMouth reads](what-textmouth-reads.md)): "This braille file holds more than 32 MB, the most TextMouth reads from one braille file.", "This file has more than 100,000 braille pages, the most TextMouth reads.", or "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
   - For a book that names a braille table this TextMouth does not have, as a library written by a newer TextMouth with more tables can: "TextMouth has no braille table named “en-xx.ctb”."
-    - The same sentence refuses one of this Mac's tables that this Mac no longer has or that its check refused (see [Settings](settings.md)), named with "mac:" before its file name, as in "TextMouth has no braille table named “mac:el.ctb”."; a TextMouth from before it offered this Mac's tables reads every "mac:" name so.
-  - For one of this Mac's tables that could not be checked, as when the braille helper failed: "TextMouth could not check this Mac's braille table “mac:el.ctb”: the braille helper failed. Try again." The table is not refused, and trying again checks it again; the other reasons are listed in [Settings](settings.md).
+    - The same sentence refuses one of this Mac's tables that this Mac no longer has or that its check refused (see [Settings](settings.md)), named with "mac:" before its file name, as in "TextMouth has no braille table named “mac:el.ctb”."
+    - A TextMouth from before it offered this Mac's tables reads every "mac:" name so.
+  - For one of this Mac's tables that could not be checked, as when the braille helper failed: "TextMouth could not check this Mac's braille table “mac:el.ctb”: the braille helper failed. Try again."
+    - The table is not refused, and trying again checks it again.
+    - The other reasons are listed in [Settings](settings.md).
   - For a translation that TextMouth stopped on, for passing one of the helper's limits (see [Where TextMouth keeps your library](where-your-library-lives.md)): "TextMouth stopped the braille translation because it ran longer than 11 seconds."
     - The 11 seconds are the 10 allowed and the share of the book's size, rounded up, here for a small book.
     - The reasons are the watchdog's, in the words listed under "Converting X was stopped because ...", below.
@@ -290,7 +297,10 @@ Part of [TextMouth's documentation](../../README.md).
 ### Playlists that can't be imported
 
 - A playlist that can't be imported is refused at the step "Reading the file", as in "Could not import “radio.m3u8”. Reading the file failed: It is a streaming playlist for audio on the web, which TextMouth does not import."
-  - The other reasons are "It lists only web addresses, and TextMouth imports only files on this Mac."; "It names no audio file in its own folder that TextMouth can import.", followed, when entries were skipped, by "It skipped 3 entries: " and the entries, named as the notice above names them; and "The playlist “mix.m3u” is too large to read." for a playlist file of more than 4 MiB.
+- The other reasons are:
+  - "It lists only web addresses, and TextMouth imports only files on this Mac."
+  - "It names no audio file in its own folder that TextMouth can import.", followed, when entries were skipped, by "It skipped 3 entries: " and the entries, named as the notice above names them.
+  - "The playlist “mix.m3u” is too large to read." for a playlist file of more than 4 MiB.
 
 ## The Book Imported alert
 
