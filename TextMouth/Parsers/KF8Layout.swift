@@ -25,9 +25,11 @@ import Foundation
 /// nothing else is close to it. No code is copied.
 ///
 /// Everything in the tables is untrusted: each place and length is checked
-/// to lie inside the text, and the parts to lie inside the markup flow, and
-/// together to hold no more bytes than the text does, so a hostile book can
-/// make no part, and no sum of parts, larger than its own text.
+/// to lie inside the markup flow, and the documents and their fragments must
+/// follow one another from the start of that flow to its end, so a hostile
+/// book can make no part, and no sum of parts, larger than its own text, and
+/// a count or place that is wrong is a damaged book (its sentence says what
+/// to do, with no talk of skeletons).
 struct KF8Layout {
 
     /// One fragment: a run of the text that goes back into its document.
@@ -52,6 +54,11 @@ struct KF8Layout {
 
     /// The book's documents, in reading order.
     let parts: [Part]
+    /// The flows of the text, from the flow table (FDST): the first is the
+    /// markup, and the others are style sheets, SVG pictures, and the like.
+    /// Empty for a layout made from parts alone; one flow (the whole text)
+    /// where the book has no readable flow table.
+    let flows: [Range<Int>]
     /// Where each fragment is, by its sequence number: its part's index and
     /// its place among that part's fragments. The first fragment to have a
     /// number is its.
@@ -74,11 +81,12 @@ struct KF8Layout {
     ///   outside its part, or parts that together hold more than the text.
     init(database: MOBIPalmDatabase, headers: MOBIHeaders, textLength: Int) throws {
         guard let skeletonRecord = headers.skeletonIndexRecord, let fragmentRecord = headers.fragmentIndexRecord else {
-            throw MOBIError.damaged("it is a KF8 book without a skeleton or fragment index")
+            throw MOBIError.damaged("")
         }
         // The markup is the first flow of the text; what follows it is not
-        // read. A flow table that is missing or odd leaves the whole text.
-        let markupEnd = Self.markupFlowEnd(database: database, headers: headers, textLength: textLength)
+        // markup. A flow table that is missing or odd leaves the whole text.
+        let flows = Self.flowRanges(database: database, headers: headers, textLength: textLength)
+        let markup = flows[0]
 
         let skeletons = try MOBIIndex.table(startingAt: skeletonRecord, in: database).rows
         let fragmentTable = try MOBIIndex.table(startingAt: fragmentRecord, in: database).rows
@@ -87,49 +95,52 @@ struct KF8Layout {
         // The next row of the fragment index: each skeleton takes the next
         // `fragmentCount` of them.
         var nextFragment = 0
-        // The bytes of all the parts so far, held to the text's own size.
-        var bytesOfParts = 0
+        // Where the next document must begin: the documents lie end to end,
+        // each a skeleton and then its fragments, from the start of the
+        // markup flow to its end, as every real book's do (kindlegen's and
+        // calibre's, 76 of 76 files the review checked). That holds the HTML written
+        // for them to the size of the text, whatever the tables say, and
+        // makes a wrong count or place a damaged book rather than a silent
+        // loss of part of it.
+        var nextStart = markup.lowerBound
         for skeleton in skeletons {
             guard let fragmentCount = skeleton.values[1]?.first,
                   let place = skeleton.values[6], place.count >= 2 else {
-                throw MOBIError.damaged("a row of the skeleton index is missing its place or fragment count")
+                throw MOBIError.damaged("")
             }
-            guard fragmentCount <= fragmentTable.count - nextFragment else {
-                throw MOBIError.damaged("the skeleton index names more fragments than the fragment index holds")
-            }
-            let skeletonRange = try Self.range(from: place[0], length: place[1], within: markupEnd, "a skeleton")
+            guard fragmentCount <= fragmentTable.count - nextFragment else { throw MOBIError.damaged("") }
+            let skeletonRange = try Self.range(from: place[0], length: place[1], within: markup.upperBound)
+            guard skeletonRange.lowerBound == nextStart else { throw MOBIError.damaged("") }
 
-            // The fragments' places are counted from the end of the skeleton.
+            // The fragments' places are counted from the end of the skeleton,
+            // and each begins where the one before it ended.
             var fragments: [Fragment] = []
             fragments.reserveCapacity(fragmentCount)
+            var fragmentStart = skeletonRange.upperBound
             for row in fragmentTable[nextFragment..<(nextFragment + fragmentCount)] {
                 guard let place = row.values[6], place.count >= 2,
                       let identifier = row.values[4]?.first,
                       let insertOffset = Self.number(in: row.name) else {
-                    throw MOBIError.damaged("a row of the fragment index is missing its place, number, or name")
+                    throw MOBIError.damaged("")
                 }
                 let range = try Self.range(
-                    from: skeletonRange.upperBound + place[0], length: place[1], within: markupEnd, "a fragment")
+                    from: skeletonRange.upperBound + place[0], length: place[1], within: markup.upperBound)
+                guard range.lowerBound == fragmentStart else { throw MOBIError.damaged("") }
+                fragmentStart = range.upperBound
                 fragments.append(Fragment(insertOffset: insertOffset, identifier: identifier, range: range))
             }
             nextFragment += fragmentCount
-
-            // A part is the skeleton and the fragments after it, and holds
-            // nothing else: the sum of what the book's parts hold is held
-            // to the text's size, so the HTML written for them is.
-            let partBytes = skeletonRange.count + fragments.reduce(0) { $0 + $1.range.count }
-            bytesOfParts += partBytes
-            guard bytesOfParts <= textLength else {
-                throw MOBIError.damaged("its documents hold more than the text does")
-            }
-
+            nextStart = fragmentStart
             parts.append(Part(skeleton: skeletonRange, fragments: fragments))
         }
-        self.init(parts: parts)
+        // The documents fill the markup flow: a skeleton count that is too small, or an index cut short,
+        // would otherwise read part of the book and say nothing of the rest.
+        guard nextStart == markup.upperBound else { throw MOBIError.damaged("") }
+        self.init(parts: parts, flows: flows)
     }
 
     /// The layout of `parts` that are already read, and have been checked.
-    init(parts: [Part]) {
+    init(parts: [Part], flows: [Range<Int>] = []) {
         var locations: [Int: (part: Int, fragment: Int)] = [:]
         for (partIndex, part) in parts.enumerated() {
             for (position, fragment) in part.fragments.enumerated() where locations[fragment.identifier] == nil {
@@ -138,28 +149,43 @@ struct KF8Layout {
         }
         self.parts = parts
         self.locations = locations
+        self.flows = flows
     }
 
-    /// Where the markup flow of the text ends: the end of the first entry of
-    /// the flow table (FDST) when there is one and it lies inside the text,
-    /// else the end of the text.
-    private static func markupFlowEnd(database: MOBIPalmDatabase, headers: MOBIHeaders, textLength: Int) -> Int {
+    /// The most flows a book may name. A real book has a few dozen (a style
+    /// sheet or two, and an SVG picture for each cover or drawing).
+    static let maximumFlows = 65_536
+
+    /// The flows of the text, in order, from the flow table (FDST). The first
+    /// is the markup. A flow table that is missing, or that does not read, or
+    /// whose entries do not lie inside the text and in order, leaves one
+    /// flow, the whole text.
+    private static func flowRanges(database: MOBIPalmDatabase, headers: MOBIHeaders, textLength: Int) -> [Range<Int>] {
+        let whole = [0..<textLength]
         guard let record = headers.flowTableRecord,
               let table = try? database.record(record, "The flow table"),
               table.hasTag("FDST", at: 0),
-              let count = try? table.uint32(8, "The flow count"), count >= 1,
-              let end = try? table.uint32(16, "The markup flow's end"),
-              end > 0, end <= textLength else { return textLength }
-        return end
+              let count = try? table.uint32(8, "The flow count"), count >= 1, count <= maximumFlows else { return whole }
+        var flows: [Range<Int>] = []
+        var previousEnd = 0
+        for index in 0..<count {
+            guard let start = try? table.uint32(12 + index * 8, "A flow's start"),
+                  let end = try? table.uint32(16 + index * 8, "A flow's end"),
+                  start >= previousEnd, start <= end, end <= textLength else { return whole }
+            flows.append(start..<end)
+            previousEnd = end
+        }
+        // The markup flow must hold something, or the table is a lie.
+        return flows[0].isEmpty ? whole : flows
     }
 
     /// The range of `length` bytes from `start`, which must lie inside
     /// `0..<limit`.
-    /// - Throws: `MOBIError.damaged` otherwise, naming `what`.
-    private static func range(from start: Int, length: Int, within limit: Int, _ what: String) throws -> Range<Int> {
+    /// - Throws: `MOBIError.damaged` otherwise.
+    private static func range(from start: Int, length: Int, within limit: Int) throws -> Range<Int> {
         // Written without adding, so no value from the file can overflow.
         guard start >= 0, length >= 0, start <= limit, length <= limit - start else {
-            throw MOBIError.damaged("\(what) lies outside the text")
+            throw MOBIError.damaged("")
         }
         return start..<(start + length)
     }

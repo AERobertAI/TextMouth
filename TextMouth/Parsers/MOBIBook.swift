@@ -53,6 +53,21 @@ struct MOBIBook {
         /// section repeats, as it does for an EPUB's documents (a KF8 book's
         /// documents are an EPUB's, a MOBI 6 book's are not).
         var stripsDuplicateNavigation = false
+        /// For a KF8 book: the number of the document the section is, from 1
+        /// in the book's reading order, counting every document as the EPUB
+        /// reader counts a spine's. A chapter nothing titles is "Chapter" and
+        /// this number. Nil for a section that is numbered by the chapters
+        /// that hold text before it, as a MOBI 6 book's is.
+        var documentNumber: Int?
+        /// Whether the section continues the chapter before it: calibre cut
+        /// one document of the EPUB into several, and this is a later piece
+        /// of it. Its words are read in the chapter before it, with no heading
+        /// of its own (`KF8Book`).
+        var continuesPrevious = false
+        /// For a section that continues the chapter before it: whether the
+        /// cut fell in the middle of a paragraph, so the two halves are read
+        /// as one paragraph, with no break between them.
+        var joinsParagraph = false
     }
 
     /// Which half of a hybrid file is read.
@@ -65,13 +80,16 @@ struct MOBIBook {
     }
 
     /// The half of a hybrid file `init(bytes:)` reads: the KF8 half. On the
-    /// eight real hybrids read both ways (two made by Amazon's kindlegen, six
-    /// by calibre), the KF8 half had the same words as the MOBI 6 half, except
-    /// that the MOBI 6 half also read a contents page a converter added at the
-    /// end and the KF8 half also read a picture's description and a title
-    /// page that MOBI 6 had dropped; and it had at least as many headings in
-    /// all eight, at the levels the book's author gave them (the MOBI 6 half
-    /// of a calibre hybrid has every heading at level 1).
+    /// real hybrids read both ways (kindlegen's and calibre's, among them
+    /// 15 hybrids made by kindlegen from Project Gutenberg's EPUBs, and the
+    /// edge books of the review), the KF8 half had the same words as the MOBI 6
+    /// half, except that the MOBI 6 half also read a contents page a converter
+    /// added at the end and the KF8 half also read a picture's description,
+    /// the words in an SVG picture, and a title page that MOBI 6 had dropped;
+    /// and it had at least as many headings, at the levels the book's author
+    /// gave them (the MOBI 6 half of a calibre hybrid has every heading at
+    /// level 1). A KF8 half that fails to read, in any way but protection
+    /// and a cancel, leaves the MOBI 6 half.
     static let hybridChoice = HybridChoice.kf8
 
     var metadata: Metadata
@@ -89,15 +107,26 @@ struct MOBIBook {
     ///   - checkCancellation: Asked between the documents of a KF8 book; the
     ///     read stops when it throws. By default it hears the import running
     ///     on this thread being cancelled.
+    /// - Throws: see `init(data:hybrid:checkCancellation:)`.
+    init(
+        bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
+    ) throws {
+        try self.init(data: Data(bytes), hybrid: hybrid, checkCancellation: checkCancellation)
+    }
+
+    /// Reads the book in `data`, which may be a file mapped into memory, so that a book of
+    /// pictures costs no memory of its size.
+    /// - Parameters: as for `init(bytes:hybrid:checkCancellation:)`.
     /// - Throws: `MOBIError` for a file that is not a readable Kindle book
     ///   (see the type's comment for the refusals), `DocumentTooLargeError`
     ///   for a text past `DocumentByteLimit`, `FileImportError.noTextToRead`
     ///   for a book without text, and what `checkCancellation` throws.
     init(
-        bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice,
+        data: Data, hybrid: HybridChoice = MOBIBook.hybridChoice,
         checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws {
-        let database = try MOBIPalmDatabase(bytes: bytes)
+        let database = try MOBIPalmDatabase(data: data)
         let headers = try MOBIHeaders(
             record0: try database.record(0, "Record 0"),
             requiresMOBIHeader: database.type == MOBIPalmDatabase.mobiSignature.type
@@ -116,10 +145,15 @@ struct MOBIBook {
                     database: second.database, headers: second.headers, firstHeaders: headers,
                     checkCancellation: checkCancellation)
                 return
-            } catch MOBIError.damaged {
-                // A KF8 half that does not read leaves the MOBI 6 half,
-                // which the file opens as. Any other error (a cancel, a
-                // text too large) is the book's, not the half's.
+            } catch MOBIError.copyProtected {
+                throw MOBIError.copyProtected
+            } catch let cancelled as ImportCancelled {
+                throw cancelled
+            } catch {
+                // A KF8 half that does not read, for whatever reason (damaged tables, a
+                // compression no one defined, a text too large, no words at all), leaves
+                // the MOBI 6 half, which the file opens as and which holds the same book.
+                // Only protection and a cancel are the book's, not the half's.
             }
         }
         if headers.version >= 8 {
@@ -166,14 +200,23 @@ struct MOBIBook {
 
     /// What the book says about itself, read without its text. A book that
     /// is protected or compressed in a way not read still names its title
-    /// and author.
+    /// and author. A hybrid file is named as it is read: from its KF8 half
+    /// first, and from its MOBI 6 half where that names nothing.
     /// - Throws: `MOBIError` for a file that is not a Kindle book.
-    static func metadata(in bytes: [UInt8]) throws -> Metadata {
-        let database = try MOBIPalmDatabase(bytes: bytes)
+    static func metadata(in bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice) throws -> Metadata {
+        try metadata(in: Data(bytes), hybrid: hybrid)
+    }
+
+    /// `metadata(in:hybrid:)` for a file that may be mapped into memory.
+    static func metadata(in data: Data, hybrid: HybridChoice = MOBIBook.hybridChoice) throws -> Metadata {
+        let database = try MOBIPalmDatabase(data: data)
         let headers = try MOBIHeaders(
             record0: try database.record(0, "Record 0"),
             requiresMOBIHeader: database.type == MOBIPalmDatabase.mobiSignature.type
         )
+        if hybrid == .kf8, let second = secondHalf(of: database, firstHeaders: headers) {
+            return metadata(of: [second.headers, headers], database: database)
+        }
         return metadata(of: [headers], database: database)
     }
 

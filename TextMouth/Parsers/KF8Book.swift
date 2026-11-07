@@ -17,11 +17,14 @@ import SwiftSoup
 /// sequence number and a place in the fragment) are the contents'
 /// destination there as here. No code is copied.
 ///
-/// Links in the markup (`kindle:pos`, `kindle:flow`, and `kindle:embed`)
-/// are left as the book wrote them. Nothing reads a link's destination
-/// aloud, a picture is read by its description and not its file, and the
-/// flows that `kindle:flow` names (style sheets and SVG) hold no words that
-/// the markup does not.
+/// What the book's markup says about the rest of the book is mostly left as
+/// it was written. Links (`kindle:pos`) are never read aloud, so their
+/// destinations are not followed, and a picture is read by its description
+/// and not its file (`kindle:embed`). An SVG picture, which calibre and
+/// kindlegen move out of the markup into a flow of its own and name with
+/// `kindle:flow`, is put back where it stood, once for each flow, so the
+/// words in it (its visible `<text>`, its title and description) are read
+/// as they are in the EPUB. Style sheets are not read.
 enum KF8Book {
 
     /// One entry of the book's contents, resolved: the place in the text
@@ -39,6 +42,14 @@ enum KF8Book {
         var isWholeDocument: Bool
     }
 
+    /// What the book's contents (its NCX) says.
+    private struct Contents {
+        /// The entries that name a place in a document, in the order the contents lists them.
+        var destinations: [Destination] = []
+        /// The label of every entry, read, whether or not its place is found.
+        var labels: Set<String> = []
+    }
+
     // MARK: Sections
 
     /// The sections of the KF8 book in `database`, whose record 0 `headers`
@@ -49,84 +60,127 @@ enum KF8Book {
     ///   - checkCancellation: Asked before each document is joined; throws
     ///     to stop the read. A test passes its own to prove the read stops
     ///     partway.
-    /// - Throws: `MOBIError.damaged` for a book whose tables, contents, or
-    ///   markup do not read (see `KF8Layout`), and `ImportCancelled` when the
+    /// - Throws: `MOBIError.damaged` for a book whose tables or markup do not
+    ///   read (see `KF8Layout`), `FileImportError.noTextToRead` for one
+    ///   whose documents hold no words, and `ImportCancelled` when the
     ///   import running this was cancelled, which is heard between documents.
+    ///   A contents or guide that does not read is not an error: the book is
+    ///   read without it.
     static func sections(
         of text: [UInt8], headers: MOBIHeaders, database: MOBIPalmDatabase, bookTitle: String,
         checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> [MOBIBook.Section] {
         let layout = try KF8Layout(database: database, headers: headers, textLength: text.count)
-        let destinations = try self.destinations(of: layout, headers: headers, database: database)
+        let contents = readContents(of: layout, headers: headers, database: database)
 
         // A document that a contents entry names as a whole takes the
         // entry's label as its title; the first such entry names it.
         var titles: [Int: String] = [:]
-        // The entries that name a place inside a document are headings
-        // there, by the id of the destination written at the place.
-        var headingTargets: [String: MarkdownHeadingAnnotation] = [:]
         var places: Set<Int> = []
-        for destination in destinations {
+        for destination in contents.destinations {
             if destination.isWholeDocument {
                 if titles[destination.part] == nil { titles[destination.part] = destination.label }
-                continue
+            } else {
+                places.insert(destination.position)
             }
-            let id = MOBIMarkup.anchorID(forOffset: destination.position)
+        }
+        // The entries that name a place inside a document are headings
+        // there. Each place gets one anchor, and an anchor is named for the
+        // place it is written at: all the places inside one tag (which an
+        // anchor cannot go inside) share the anchor at its start, and the
+        // first entry to name it names it.
+        let snapped = MOBIMarkup.anchors(for: places.sorted(), in: text)
+        var positionOfPlace: [Int: Int] = [:]
+        for anchor in snapped { positionOfPlace[anchor.offset] = anchor.position }
+        var headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+        for destination in contents.destinations where !destination.isWholeDocument {
+            guard let position = positionOfPlace[destination.position] else { continue }
+            let id = MOBIMarkup.anchorID(forOffset: position)
             if headingTargets[id] == nil {
                 headingTargets[id] = MarkdownHeadingAnnotation(level: min(destination.depth + 1, 6), text: destination.label)
             }
-            places.insert(destination.position)
         }
-        let anchors = anchors(for: places, in: text)
-        // A contents page that was made for the book (see `generatedContentsPart`)
-        // is left out, unless the book's own contents names it.
-        let generatedContents = try generatedContentsPart(of: layout, headers: headers, database: database)
+        let anchors = Set(positionOfPlace.values).sorted().map {
+            KF8Layout.Anchor(position: $0, id: MOBIMarkup.anchorID(forOffset: $0))
+        }
+        // The last document may be a contents page a converter added (see `isGeneratedContents`).
+        let contentsPageCandidate = generatedContentsCandidate(of: layout, headers: headers, database: database)
             .flatMap { titles[$0] == nil ? $0 : nil }
 
         var sections: [MOBIBook.Section] = []
         sections.reserveCapacity(layout.parts.count)
-        for (index, part) in layout.parts.enumerated() where index != generatedContents {
+        // The SVG flows already put back; each is put back once.
+        var inlinedFlows: Set<Int> = []
+        var previousTitle: String?
+        var previousEndsMidParagraph = false
+        var anyWords = false
+        for (index, part) in layout.parts.enumerated() {
             // A very large book is cancelled between its documents.
             try checkCancellation()
             let joined = try layout.markup(of: part, in: text, anchors: anchors)
             try MOBIMarkup.requireShallowNesting(of: joined)
-            let markup = restoringPageBreakTypes(in: joined)
+            if index == contentsPageCandidate,
+               isGeneratedContents(joined, labels: contents.labels, encoding: headers.encoding) {
+                continue
+            }
+            let markup = rewritingTags(in: joined, layout: layout, text: text, inlinedFlows: &inlinedFlows)
+            anyWords = anyWords || MOBIMarkup.hasWords(markup)
+
+            // A document of the EPUB that calibre cut into pieces: a piece that no contents entry names,
+            // that opens with no heading, and whose <title> is the piece before it's, goes on with
+            // that piece's chapter (the headings and words are the document's own).
+            let rawTitle = rawDocumentTitle(in: text[part.skeleton], encoding: headers.encoding)
+            let start = documentOpening(of: markup)
+            let continues = titles[index] == nil && !start.hasHeading && rawTitle != nil && rawTitle == previousTitle
             sections.append(MOBIBook.Section(
-                title: titles[index] ?? documentTitle(in: text[part.skeleton], encoding: headers.encoding, differentFrom: bookTitle),
-                html: withoutSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
+                title: titles[index] ?? displayTitle(of: rawTitle, differentFrom: bookTitle),
+                html: MOBIMarkup.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
                 headingTargets: headingTargets,
-                stripsDuplicateNavigation: true
+                stripsDuplicateNavigation: true,
+                documentNumber: index + 1,
+                continuesPrevious: continues,
+                joinsParagraph: continues && previousEndsMidParagraph && start.hasSplitMarker
             ))
+            previousTitle = rawTitle
+            previousEndsMidParagraph = endsMidParagraph(markup)
         }
+        guard anyWords else { throw FileImportError.noTextToRead }
         return sections
     }
 
     // MARK: The Contents
 
-    /// The entries of the book's contents (its NCX) that name a place in a
-    /// document, in the order the contents lists them. An entry without a
-    /// label, or whose place is not in the book's documents, names nothing
-    /// a reader can use and is passed over, as the EPUB reader passes over
-    /// an entry it cannot place. A book without a contents has none.
-    /// - Throws: `MOBIError.damaged` for a contents that does not read.
-    private static func destinations(
-        of layout: KF8Layout, headers: MOBIHeaders, database: MOBIPalmDatabase
-    ) throws -> [Destination] {
-        guard let indexRecord = headers.indexRecord else { return [] }
-        let index = try MOBIIndex.table(startingAt: indexRecord, in: database)
-        var destinations: [Destination] = []
+    /// What the book's contents (its NCX) names. A book without a contents
+    /// names nothing, and so does one whose contents does not read: the
+    /// contents only helps to find the chapters, and the book is read
+    /// without it, as the EPUB reader reads an EPUB whose NCX is damaged.
+    /// An entry without a label, or whose place is not in the book's
+    /// documents, names nothing a reader can use and is passed over.
+    private static func readContents(of layout: KF8Layout, headers: MOBIHeaders, database: MOBIPalmDatabase) -> Contents {
+        guard let indexRecord = headers.indexRecord,
+              let index = try? MOBIIndex.table(startingAt: indexRecord, in: database) else { return Contents() }
+        var contents = Contents()
+        // Each label is read once, however many rows name it.
+        var readLabels: [Int: String] = [:]
         for row in index.rows {
             // Tag 3 is the label's place among the strings, tag 4 the depth,
             // and tag 6 the destination: a fragment's number and a place in it.
-            guard let raw = row.values[3]?.first.flatMap({ index.labels[$0] }),
-                  case let label = readableLabel(raw), !label.isEmpty,
-                  let target = row.values[6], target.count >= 2,
+            guard let key = row.values[3]?.first, let raw = index.labels[key] else { continue }
+            let label: String
+            if let known = readLabels[key] {
+                label = known
+            } else {
+                label = readableLabel(raw)
+                readLabels[key] = label
+            }
+            guard !label.isEmpty else { continue }
+            contents.labels.insert(label)
+            guard let target = row.values[6], target.count >= 2,
                   let location = layout.locations[target[0]] else { continue }
-            let part = layout.parts[location.part]
-            let fragment = part.fragments[location.fragment]
+            let fragment = layout.parts[location.part].fragments[location.fragment]
             // The place must be inside the fragment it names.
             guard target[1] < fragment.range.count else { continue }
-            destinations.append(Destination(
+            contents.destinations.append(Destination(
                 label: label,
                 depth: row.values[4]?.first ?? 0,
                 position: fragment.range.lowerBound + target[1],
@@ -134,113 +188,350 @@ enum KF8Book {
                 isWholeDocument: location.fragment == 0 && target[1] == 0
             ))
         }
-        return destinations
+        return contents
     }
 
     /// A contents label as it is read: its character references (`Tom &amp; Jerry`,
-    /// which a KF8 book's labels keep) read as characters and its white space
-    /// made single spaces, as the EPUB reader makes its labels. Empty when it
-    /// holds nothing to read.
+    /// which a KF8 book's labels keep) read as characters, its soft hyphens left out, and its
+    /// white space made single spaces, as the EPUB reader makes its labels. Empty
+    /// when it holds nothing to read.
     private static func readableLabel(_ label: String) -> String {
         let unescaped = (try? Entities.unescape(label)) ?? label
-        return unescaped.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-    }
-
-    /// The anchors to write for the contents' `places`, ascending: each at
-    /// its place, moved back to the start of the tag the place lies in (an
-    /// anchor cannot go inside a tag). An anchor lies in some piece of the
-    /// text or in none, and is written only where it does; a place that a
-    /// hostile book puts anywhere else costs nothing.
-    private static func anchors(for places: Set<Int>, in text: [UInt8]) -> [KF8Layout.Anchor] {
-        MOBIMarkup.anchors(for: places.sorted(), in: text)
-            .map { KF8Layout.Anchor(position: $0.position, id: $0.id) }
-            .sorted { $0.position < $1.position }
+        return MOBIMarkup.removingSoftHyphens(unescaped).split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     // MARK: A Contents Page Made for the Book
 
-    /// The index in `layout.parts` of a contents page that a converter added
-    /// to the end of the book, or nil. Such a page (calibre writes one, with
-    /// the heading "Table of Contents") repeats the book's own contents as
-    /// links and is not in the book it was made from, so reading it would
-    /// read the contents aloud at the book's end. It is the last document,
-    /// and the book's guide names it as its contents page (a guide entry of
-    /// the type `toc`, whose destination is a fragment's number and a place
-    /// in it, as the book's own contents' are). A contents page that comes
-    /// earlier in the book is the author's, and is read as an EPUB's is.
-    private static func generatedContentsPart(
+    /// The index of the last document when the book's guide names its start
+    /// as the book's contents page (a guide entry of the type `toc` whose
+    /// destination is the first fragment of the document, at place 0), else
+    /// nil. A guide that does not read names nothing.
+    private static func generatedContentsCandidate(
         of layout: KF8Layout, headers: MOBIHeaders, database: MOBIPalmDatabase
-    ) throws -> Int? {
-        guard let guideRecord = headers.guideIndexRecord, let last = layout.parts.indices.last else { return nil }
-        let guide = try MOBIIndex.table(startingAt: guideRecord, in: database)
+    ) -> Int? {
+        guard let guideRecord = headers.guideIndexRecord, let last = layout.parts.indices.last,
+              let guide = try? MOBIIndex.table(startingAt: guideRecord, in: database) else { return nil }
         for row in guide.rows where String(decoding: row.name, as: UTF8.self).lowercased() == "toc" {
-            if let fragment = row.values[6]?.first, layout.locations[fragment]?.part == last { return last }
+            if let target = row.values[6], target.count >= 2, target[1] == 0,
+               let location = layout.locations[target[0]], location.part == last, location.fragment == 0 {
+                return last
+            }
         }
         return nil
     }
 
-    // MARK: Page Breaks
+    /// The most bytes of markup looked through to decide a contents page is made for the book. A page
+    /// of links to a book's chapters is small.
+    private static let maximumGeneratedContentsBytes = 1_000_000
 
-    /// The attribute calibre leaves a page-break element with: it takes the
-    /// namespace prefix off `epub:type`, so `epub:type="pagebreak"` of the
-    /// EPUB the book was made from is `type="pagebreak"` in the KF8 book.
-    /// (`role="doc-pagebreak"` is kept as it was.) The spellings with each
-    /// kind of quote.
-    private static let unprefixedPageBreakTypes = [
-        Array("type=\"pagebreak\"".utf8), Array("type='pagebreak'".utf8),
-    ]
+    /// Whether the markup of the last document is a contents page that a
+    /// converter added to the book (calibre writes one, headed "Table of
+    /// Contents"): a page of links to the book's own chapters that is not in
+    /// the book it was made from, and that reading aloud would repeat at the
+    /// book's end. It is one only when all three hold (the guide has named
+    /// its start already):
+    /// - its only words outside its links are its own title;
+    /// - every link goes to a place in the book (`kindle:pos`);
+    /// - the words of each link are a label of the book's contents.
+    /// An author's contents page with a note, or a last chapter that ends with
+    /// a list of links, has other words and is read.
+    private static func isGeneratedContents(_ markup: [UInt8], labels: Set<String>, encoding: Int) -> Bool {
+        guard markup.count <= maximumGeneratedContentsBytes else { return false }
+        var inHead = false
+        var inTitle = false
+        var skipping = false
+        var inLink = false
+        var holds = true
+        var titleBytes: [UInt8] = []
+        var linkBytes: [UInt8] = []
+        var outsideBytes: [UInt8] = []
+        var cursor = 0
 
-    /// `markup` with `epub:type` put back on each tag that has a bare
-    /// `type="pagebreak"`, which the converter then takes for the page-break
-    /// element it was (`PublicationSemantics.isPageBreak`). The change is
-    /// made inside tags only, so no word of the book is touched. Markup with
-    /// no such attribute is returned as it is, after a scan for the word.
-    private static func restoringPageBreakTypes(in markup: [UInt8]) -> [UInt8] {
-        // The places an `epub:` goes: just before a `type` that starts an attribute.
-        var places: [Int] = []
+        /// The text between tags, put where it belongs.
+        func add(_ range: Range<Int>) {
+            guard !range.isEmpty, !skipping else { return }
+            if inTitle {
+                titleBytes += markup[range]; titleBytes.append(0x20)
+            } else if inHead {
+                return
+            } else if inLink {
+                linkBytes += markup[range]; linkBytes.append(0x20)
+            } else {
+                outsideBytes += markup[range]; outsideBytes.append(0x20)
+            }
+        }
         MOBIMarkup.forEachTag(in: markup, within: 0..<markup.count) { tag in
-            for pattern in unprefixedPageBreakTypes {
-                var position = tag.lowerBound + 1
-                while position + pattern.count <= tag.upperBound {
-                    if markup[position] == pattern[0], markup[position - 1] == 0x20 || markup[position - 1] == 0x0A
-                        || markup[position - 1] == 0x09, markup[position..<(position + pattern.count)].elementsEqual(pattern) {
-                        places.append(position)
-                        position += pattern.count
-                    } else {
-                        position += 1
-                    }
+            guard holds else { return }
+            add(cursor..<tag.lowerBound)
+            cursor = tag.upperBound
+            guard let name = tagName(markup, tag) else { return }
+            switch name {
+            case "head": inHead = true
+            case "/head": inHead = false
+            case "title": inTitle = true
+            case "/title": inTitle = false
+            case "script", "style": skipping = true
+            case "/script", "/style": skipping = false
+            case "a":
+                // An anchor with no href names a place and is no link.
+                guard let href = attribute("href", in: markup, tag: tag) else { return }
+                if markup[href.value].starts(with: Array("kindle:pos:".utf8)) {
+                    inLink = true
+                    linkBytes = []
+                } else {
+                    holds = false
+                }
+            case "/a":
+                if inLink {
+                    inLink = false
+                    if !labels.contains(readableLabel(MOBIText.decode(linkBytes, encoding: encoding))) { holds = false }
+                }
+            default: break
+            }
+        }
+        add(cursor..<markup.count)
+        guard holds else { return false }
+        // Its own words are its title's: every word outside its links is in the <title>.
+        let title = Set(words(of: titleBytes, encoding: encoding))
+        return words(of: outsideBytes, encoding: encoding).allSatisfy { title.contains($0) }
+    }
+
+    /// The words of `bytes`, read as text and folded to lower case.
+    private static func words(of bytes: [UInt8], encoding: Int) -> [String] {
+        readableLabel(MOBIText.decode(bytes, encoding: encoding)).lowercased().split(separator: " ").map(String.init)
+    }
+
+    // MARK: Tags
+
+    /// The name of the tag at `tag` in `markup`, in lower case and with a
+    /// leading "/" for an end tag; nil for a comment, a declaration, or a
+    /// name longer than 16 bytes.
+    private static func tagName(_ markup: [UInt8], _ tag: Range<Int>) -> String? {
+        var position = tag.lowerBound + 1
+        var name = ""
+        if position < tag.upperBound, markup[position] == UInt8(ascii: "/") { name = "/"; position += 1 }
+        let start = position
+        while position < tag.upperBound, position - start < 16 {
+            let byte = markup[position]
+            guard (byte >= UInt8(ascii: "a") && byte <= UInt8(ascii: "z")) || (byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "Z"))
+                    || (byte >= UInt8(ascii: "0") && byte <= UInt8(ascii: "9")) || byte == UInt8(ascii: ":") else { break }
+            name.append(Character(Unicode.Scalar(lower(byte))))
+            position += 1
+        }
+        guard position > start else { return nil }
+        // A name that goes on is not one of the names looked for.
+        if position < tag.upperBound, position - start == 16 { return nil }
+        return name
+    }
+
+    /// An attribute found in a tag: where its name starts and where its value is.
+    private struct Attribute {
+        var name: Int
+        var value: Range<Int>
+    }
+
+    /// The longest attribute value looked at.
+    private static let maximumAttributeBytes = 2_048
+
+    /// The attribute `name` (lower case) of the tag at `tag`, whose name
+    /// must follow a white space byte; nil when it has none. The value is
+    /// taken up to its closing quote, or up to a space or the tag's end when it is not quoted.
+    private static func attribute(_ name: String, in markup: [UInt8], tag: Range<Int>) -> Attribute? {
+        let wanted = Array(name.utf8)
+        var position = tag.lowerBound + 1
+        while position + wanted.count < tag.upperBound {
+            let before = markup[position - 1]
+            guard before == 0x20 || before == 0x0A || before == 0x09 || before == 0x0D,
+                  markup[position..<(position + wanted.count)].elementsEqual(wanted, by: { lower($0) == $1 }) else {
+                position += 1
+                continue
+            }
+            var cursor = position + wanted.count
+            while cursor < tag.upperBound, markup[cursor] == 0x20 { cursor += 1 }
+            guard cursor < tag.upperBound, markup[cursor] == UInt8(ascii: "=") else { position += 1; continue }
+            cursor += 1
+            while cursor < tag.upperBound, markup[cursor] == 0x20 { cursor += 1 }
+            guard cursor < tag.upperBound else { return nil }
+            var valueStart = cursor
+            var end = cursor
+            if markup[cursor] == UInt8(ascii: "\"") || markup[cursor] == UInt8(ascii: "'") {
+                let quote = markup[cursor]
+                valueStart = cursor + 1
+                end = valueStart
+                while end < tag.upperBound, end - valueStart < maximumAttributeBytes, markup[end] != quote { end += 1 }
+            } else {
+                while end < tag.upperBound, end - valueStart < maximumAttributeBytes,
+                      markup[end] != 0x20, markup[end] != UInt8(ascii: ">") { end += 1 }
+            }
+            return Attribute(name: position, value: valueStart..<end)
+        }
+        return nil
+    }
+
+    private static func lower(_ byte: UInt8) -> UInt8 {
+        byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "Z") ? byte + 32 : byte
+    }
+
+    // MARK: Putting Back What The Converters Took
+
+    /// The `epub:type` tokens whose prefix calibre strips (`type="pagebreak"`),
+    /// which the shared reading rules need: a page break is a page, and
+    /// a page list, the landmarks, and a contents list are navigation,
+    /// not words to be read aloud (`PublicationSemantics`).
+    private static let navigationTypes: Set<String> = ["pagebreak", "page-list", "landmarks", "toc"]
+
+    /// The largest SVG flow put back into the markup, in bytes.
+    private static let maximumInlinedFlowBytes = 262_144
+
+    /// `markup` with two things put back that the converters changed:
+    /// - `epub:type` on a tag whose bare `type` lists one of
+    ///   `navigationTypes` (`type="pagebreak bodymatter"` too), so the
+    ///   converter takes the tag for what it was. The change is made inside
+    ///   tags only, and no word of the book is touched.
+    /// - an SVG picture, where an `<img>` names its flow
+    ///   (`src="kindle:flow:0004?mime=image/svg+xml"`): the flow's `<svg>` is written in its place,
+    ///   so the words in it are read as they are in the EPUB, where the
+    ///   SVG stood in the markup. Each flow is put back once, in the first place
+    ///   that names it (`inlinedFlows`), and no more than `maximumInlinedFlowBytes` of it.
+    private static func rewritingTags(
+        in markup: [UInt8], layout: KF8Layout, text: [UInt8], inlinedFlows: inout Set<Int>
+    ) -> [UInt8] {
+        var edits: [(range: Range<Int>, replacement: [UInt8])] = []
+        MOBIMarkup.forEachTag(in: markup, within: 0..<markup.count) { tag in
+            // Start tags only.
+            guard tag.count > 2, lower(markup[tag.lowerBound + 1]) >= UInt8(ascii: "a"),
+                  lower(markup[tag.lowerBound + 1]) <= UInt8(ascii: "z") else { return }
+            if let src = attribute("src", in: markup, tag: tag),
+               let svg = svgFlow(named: markup[src.value], layout: layout, text: text, inlinedFlows: &inlinedFlows) {
+                edits.append((range: tag, replacement: svg))
+                return
+            }
+            if let type = attribute("type", in: markup, tag: tag) {
+                let tokens = String(decoding: markup[type.value], as: UTF8.self).lowercased().split(whereSeparator: \.isWhitespace)
+                if tokens.contains(where: { navigationTypes.contains(String($0)) }) {
+                    edits.append((range: type.name..<type.name, replacement: Array("epub:".utf8)))
                 }
             }
         }
-        guard !places.isEmpty else { return markup }
-        places.sort()
+        guard !edits.isEmpty else { return markup }
         var result: [UInt8] = []
-        result.reserveCapacity(markup.count + places.count * 5)
+        result.reserveCapacity(markup.count + edits.reduce(0) { $0 + $1.replacement.count })
         var cursor = 0
-        for place in places {
-            result.append(contentsOf: markup[cursor..<place])
-            result.append(contentsOf: "epub:".utf8)
-            cursor = place
+        for edit in edits {
+            result.append(contentsOf: markup[cursor..<edit.range.lowerBound])
+            result.append(contentsOf: edit.replacement)
+            cursor = edit.range.upperBound
         }
         result.append(contentsOf: markup[cursor...])
         return result
     }
 
-    // MARK: Soft Hyphens
-
-    /// The soft hyphen (U+00AD) and the three other ways markup spells it.
-    private static let softHyphenSpellings = ["\u{AD}", "&shy;", "&#173;", "&#xAD;", "&#xad;"]
-
-    /// `markup` without its soft hyphens, which a book's publisher puts
-    /// inside words to say where a line may break. A person reading sees
-    /// none in the middle of a line, and a speech engine or a braille
-    /// display should not meet one in the middle of a word.
-    private static func withoutSoftHyphens(_ markup: String) -> String {
-        var result = markup
-        for spelling in softHyphenSpellings where result.contains(spelling) {
-            result = result.replacingOccurrences(of: spelling, with: "")
+    /// The `<svg>` markup of the flow `source` names, or nil when it names no
+    /// SVG flow, names one already put back, or one that is too large or holds no `<svg>`.
+    private static func svgFlow(
+        named source: ArraySlice<UInt8>, layout: KF8Layout, text: [UInt8], inlinedFlows: inout Set<Int>
+    ) -> [UInt8]? {
+        let prefix = Array("kindle:flow:".utf8)
+        guard source.starts(with: prefix) else { return nil }
+        // The flow's number is base 32, up to the "?".
+        var number = 0
+        var digits = 0
+        var cursor = source.startIndex + prefix.count
+        while cursor < source.endIndex, digits < 6, let digit = base32Digit(source[cursor]) {
+            number = number * 32 + digit
+            digits += 1
+            cursor += 1
         }
-        return result
+        guard digits > 0, String(decoding: source[cursor...], as: UTF8.self).lowercased().contains("svg"),
+              number >= 1, number < layout.flows.count, !inlinedFlows.contains(number) else { return nil }
+        let flow = layout.flows[number]
+        guard flow.count <= maximumInlinedFlowBytes else { return nil }
+        // The flow begins with an XML declaration, perhaps a doctype and comments, then the <svg>.
+        let head = flow.lowerBound..<min(flow.upperBound, flow.lowerBound + 4_096)
+        let marker = Array("<svg".utf8)
+        var start = head.lowerBound
+        while start + marker.count < head.upperBound,
+              !(text[start] == UInt8(ascii: "<") && text[start..<(start + marker.count)].elementsEqual(marker, by: { lower($0) == $1 })
+                && (text[start + marker.count] == 0x20 || text[start + marker.count] == UInt8(ascii: ">")
+                    || text[start + marker.count] == UInt8(ascii: "/") || text[start + marker.count] == 0x0A)) {
+            start += 1
+        }
+        guard start + marker.count < head.upperBound else { return nil }
+        inlinedFlows.insert(number)
+        return Array(text[start..<flow.upperBound])
+    }
+
+    /// The value of the digit `byte` in base 32 (0 to 9, then A to V), or nil.
+    private static func base32Digit(_ byte: UInt8) -> Int? {
+        switch lower(byte) {
+        case UInt8(ascii: "0")...UInt8(ascii: "9"): return Int(byte - UInt8(ascii: "0"))
+        case UInt8(ascii: "a")...UInt8(ascii: "v"): return Int(lower(byte) - UInt8(ascii: "a")) + 10
+        default: return nil
+        }
+    }
+
+    // MARK: Where A Document Begins And Ends
+
+    /// How a document's markup begins: whether a heading comes before any word, and whether the first
+    /// element is one calibre's cut left (its `id` begins `calibre_pb_`).
+    private static func documentOpening(of markup: [UInt8]) -> (hasHeading: Bool, hasSplitMarker: Bool) {
+        let start = bodyStart(of: markup)
+        let window = start..<min(markup.count, start + 4_096)
+        var decided: Bool?
+        var cursor = start
+        MOBIMarkup.forEachTag(in: markup, within: window) { tag in
+            guard decided == nil else { return }
+            if hasWord(markup[cursor..<tag.lowerBound]) { decided = false; return }
+            cursor = tag.upperBound
+            if let name = tagName(markup, tag), name.count == 2, name.first == "h", let level = name.last?.wholeNumberValue,
+               (1...6).contains(level) {
+                decided = true
+            }
+        }
+        let marked = markup[start..<min(markup.count, start + 600)].indices.contains { index in
+            markup[index] == UInt8(ascii: "c") && markup[index...].starts(with: Array("calibre_pb_".utf8))
+        }
+        return (decided ?? false, marked)
+    }
+
+    /// Where the words of a document begin: after its `<body>` tag, else after its head, else at the start.
+    private static func bodyStart(of markup: [UInt8]) -> Int {
+        var body: Int?
+        var headEnd: Int?
+        MOBIMarkup.forEachTag(in: markup, within: 0..<min(markup.count, 16_384)) { tag in
+            guard body == nil, let name = tagName(markup, tag) else { return }
+            if name == "body" { body = tag.upperBound }
+            if name == "/head" { headEnd = tag.upperBound }
+        }
+        return body ?? headEnd ?? 0
+    }
+
+    /// Whether `bytes` hold a letter or digit.
+    private static func hasWord(_ bytes: ArraySlice<UInt8>) -> Bool {
+        bytes.contains { ($0 >= 0x30 && $0 <= 0x39) || ($0 >= 0x41 && $0 <= 0x5A) || ($0 >= 0x61 && $0 <= 0x7A) || $0 >= 0x80 }
+    }
+
+    /// Whether a document ends in the middle of a paragraph that calibre cut: its last text ends
+    /// with a space inside a `</p>`, with only tags after.
+    private static func endsMidParagraph(_ markup: [UInt8]) -> Bool {
+        let tailStart = max(0, markup.count - 600)
+        let closing = Array("</p".utf8)
+        guard let end = (tailStart..<markup.count).last(where: { index in
+            markup[index] == UInt8(ascii: "<") && markup[index...].prefix(closing.count).elementsEqual(closing, by: { lower($0) == $1 })
+        }), end > tailStart else { return false }
+        // The text before it ends with a space (or a no-break space).
+        let before = markup[end - 1]
+        let space = before == 0x20 || before == 0x0A || before == 0x09 || before == 0x0D
+            || (end >= 2 && markup[end - 2] == 0xC2 && before == 0xA0)
+        guard space else { return false }
+        // Only tags and white space follow.
+        var inTag = false
+        for byte in markup[end...] {
+            if byte == UInt8(ascii: "<") { inTag = true } else if byte == UInt8(ascii: ">") { inTag = false } else if !inTag, hasWord(ArraySlice([byte])) {
+                return false
+            }
+        }
+        return true
     }
 
     // MARK: A Document's Title
@@ -251,36 +542,44 @@ enum KF8Book {
 
     /// The text of the `<title>` element in the head of `skeleton`, with
     /// character references read and white space collapsed, or nil when it
-    /// has none, none that holds a letter or digit, or one that repeats
-    /// `bookTitle` (which names no chapter in particular).
-    private static func documentTitle(in skeleton: ArraySlice<UInt8>, encoding: Int, differentFrom bookTitle: String) -> String? {
+    /// has none or none that holds a letter or digit.
+    private static func rawDocumentTitle(in skeleton: ArraySlice<UInt8>, encoding: Int) -> String? {
         let head = skeleton.prefix(titleSearchLength)
         guard let open = find("<title", in: head, from: head.startIndex),
               let openEnd = head[open...].firstIndex(of: UInt8(ascii: ">")),
               let close = find("</title", in: head, from: openEnd) else { return nil }
         let raw = MOBIText.decode(Array(head[(openEnd + 1)..<close]), encoding: encoding)
-        let unescaped = (try? Entities.unescape(raw)) ?? raw
-        let title = unescaped.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        guard title.contains(where: { $0.isLetter || $0.isNumber }),
+        let title = readableLabel(raw)
+        return title.contains(where: { $0.isLetter || $0.isNumber }) ? title : nil
+    }
+
+    /// A document's title as a chapter's: nil when it repeats the book's title (which names no
+    /// chapter in particular) or is "Unknown", which calibre writes for a document whose title is blank.
+    private static func displayTitle(of title: String?, differentFrom bookTitle: String) -> String? {
+        guard let title, title.lowercased() != "unknown",
               title.caseInsensitiveCompare(bookTitle.split(whereSeparator: \.isWhitespace).joined(separator: " ")) != .orderedSame
         else { return nil }
         return title
     }
 
     /// The index of the first place in `bytes` at or after `start` where the
-    /// ASCII `word` is spelled in any letter case, or nil.
+    /// ASCII `word` is spelled in any letter case and a name ends right after it
+    /// (a white space, `/`, or `>`), or nil.
     private static func find(_ word: String, in bytes: ArraySlice<UInt8>, from start: Int) -> Int? {
         let wanted = Array(word.utf8)
         guard bytes.count >= wanted.count else { return nil }
         var position = start
         while position + wanted.count <= bytes.endIndex {
             var matches = true
-            for (offset, expected) in wanted.enumerated() {
-                var byte = bytes[position + offset]
-                if byte >= UInt8(ascii: "A"), byte <= UInt8(ascii: "Z") { byte += 32 }
-                if byte != expected { matches = false; break }
+            for (offset, expected) in wanted.enumerated() where lower(bytes[position + offset]) != expected {
+                matches = false
+                break
             }
-            if matches { return position }
+            if matches {
+                let after = position + wanted.count
+                if after >= bytes.endIndex || bytes[after] == 0x20 || bytes[after] == UInt8(ascii: ">")
+                    || bytes[after] == UInt8(ascii: "/") || bytes[after] == 0x0A { return position }
+            }
             position += 1
         }
         return nil

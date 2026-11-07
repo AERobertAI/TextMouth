@@ -1298,6 +1298,21 @@ extension LibraryViewModel {
             if withoutPages?.bytes == kept {
                 return .readAgain
             }
+            // A Kindle book stored before .mobi had a page reader (it has no stamp) holds what the
+            // MOBI 6 half of a hybrid file read, which is not what the KF8 half reads now: the same
+            // words, with the book's own headings and pages. Compared with the half it was stored
+            // from, it is TextMouth's own text, and is read again without a copy (S6).
+            if book.format == .mobi, book.pageReaderVersion == nil {
+                let storedHalf: MarkdownCacheService.ExtractedText?
+                do {
+                    storedHalf = try MarkdownCacheService.extractedText(for: book, includesPages: false, kindleHalf: .mobi6)
+                } catch where !DatalessFiles.isDownloadRefusal(error) {
+                    return .unreadable(why: error.localizedDescription, missingFile: false)
+                }
+                if storedHalf?.bytes == kept {
+                    return .readAgain
+                }
+            }
         }
         let withPages: MarkdownCacheService.ExtractedText?
         do {
