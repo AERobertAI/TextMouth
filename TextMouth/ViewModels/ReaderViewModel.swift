@@ -149,6 +149,12 @@ final class ReaderViewModel: ObservableObject {
     let libraryViewModel: LibraryViewModel
     let settingsViewModel: SettingsViewModel
     var soundEffectService: SoundEffectService?
+    #if os(iOS)
+    /// The iPhone's hooks into this reader (`ReaderPhoneHooks`), which the
+    /// phone's session fills as it makes the reader. The defaults do what the
+    /// Mac does.
+    var phoneHooks = ReaderPhoneHooks()
+    #endif
 
     @Published var content: DocumentContent? {
         // Derive the published heading list from whatever content the reader
@@ -1056,8 +1062,26 @@ final class ReaderViewModel: ObservableObject {
             },
             onAudioRouteChangePause: { [weak self] in self?.pauseForAudioRouteChange() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
-            onSkipForward: { [weak self] in self?.skipForward() },
-            onSkipBackward: { [weak self] in self?.skipBackward() },
+            onSkipForward: { [weak self] in
+                #if os(iOS)
+                // The iPhone's moves take one path of their own, which says
+                // what a move says on a phone (`ReaderPhoneHooks`).
+                if let move = self?.phoneHooks.moveForward {
+                    move()
+                    return
+                }
+                #endif
+                self?.skipForward()
+            },
+            onSkipBackward: { [weak self] in
+                #if os(iOS)
+                if let move = self?.phoneHooks.moveBackward {
+                    move()
+                    return
+                }
+                #endif
+                self?.skipBackward()
+            },
             // NowPlayingService needs to know whether playback is currently
             // running so it can correctly handle the Bluetooth-disconnect
             // suppress window: during that window, a spurious toggle command

@@ -284,10 +284,21 @@ targets:
       base:
         PRODUCT_NAME: TextMouth
         PRODUCT_MODULE_NAME: TextMouth
-        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
+        # An identifier of its own: a free team registers it, the background
+        # task identifiers must begin with it, and an iOS app running on a
+        # Mac would otherwise collide with the Mac app's container and
+        # preferences.
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
+        # Merged with the INFOPLIST_KEY_ settings below: it holds the keys that
+        # have no such setting, such as the background audio mode and the
+        # document types, and IOSInfoPlistTests reads it.
+        INFOPLIST_FILE: iOSApp/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: TextMouth
+        # A file from another app arrives where it is, as the Files app holds
+        # it, rather than as a copy in Documents/Inbox.
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         CODE_SIGN_STYLE: Automatic
