@@ -435,8 +435,9 @@ final class KF8BookTests: XCTestCase {
         XCTAssertEqual(imported.book.title, "Fixture KF8 Book")
         XCTAssertEqual(imported.book.author, "Imre Falk")
         let content = try openedContent(of: imported.book)
-        XCTAssertEqual(content.chapters.map(\.title), ["Part A", "Part G"])
-        XCTAssertEqual(headingLines(of: content), ["1: Part A", "2: Section Beta", "1: Part G"])
+        // Each document opens with a heading of its own, which titles its chapter as an EPUB's does.
+        XCTAssertEqual(content.chapters.map(\.title), ["Alpha", "Gamma"])
+        XCTAssertEqual(headingLines(of: content), ["1: Alpha", "2: Beta", "1: Gamma"])
         XCTAssertTrue(allText(of: content).contains("Second words."))
     }
 }
