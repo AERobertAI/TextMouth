@@ -16,8 +16,11 @@ import Foundation
 @MainActor
 final class PhoneSettingsVoicePreview {
     /// Pauses the open book if it's playing, and returns what resumes it, or
-    /// nil when nothing was playing. `PhoneSession` gives it. The resume is
-    /// called once, at the end, and should leave alone a book the listener
+    /// nil when nothing was playing. `PhoneSession` gives it. It's called just
+    /// before each run of previews speaks, so it's also where the audio
+    /// session is made active first, whether or not a book plays, as the
+    /// engineering review's F7 asks of the phone's Preview Voice. The resume
+    /// is called once, at the end, and should leave alone a book the listener
     /// has started or stopped in the meantime.
     typealias PauseBook = @MainActor () -> (@MainActor () -> Void)?
 
