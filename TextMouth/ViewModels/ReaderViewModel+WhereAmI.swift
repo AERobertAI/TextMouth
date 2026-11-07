@@ -600,6 +600,11 @@ extension ReaderViewModel {
         }
         // The window opens; the work below closes it.
         isWhereAmIEndSoundPlaying = true
+        #if os(iOS)
+        // Nothing of the book plays while the end sound does, and the book it
+        // paused resumes only after it.
+        phoneHooks.silentGapBegan?()
+        #endif
         afterWhereAmIEndSound { [weak self] in
             self?.resumeAfterWhereAmIEndSound()
         }

@@ -1657,6 +1657,10 @@ extension ReaderViewModel {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )
+        #if os(iOS)
+        // Nothing plays while the speech is prepared off the main thread.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Start the play that waited for its chapter's speech, now that the
@@ -2361,6 +2365,11 @@ extension ReaderViewModel {
         chapterStartAfterPause = start
         DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) starts after a pause of \(seconds) s")
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: start)
+        #if os(iOS)
+        // Nothing plays during the pause, a manifest's among them, and a
+        // suspended app would never start the chapter: the phone holds it.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// The pause before the cursor's chapter has passed: the chapter plays
@@ -2988,6 +2997,11 @@ extension ReaderViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
             handOver.askForNextBookIfNotYetAsked()
         }
+        #if os(iOS)
+        // Nothing plays until the next book is asked for, half a second on,
+        // and the phone's session holds the app from then until it has loaded.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Whether a Play that reaches this reader goes to the hand-over to the
