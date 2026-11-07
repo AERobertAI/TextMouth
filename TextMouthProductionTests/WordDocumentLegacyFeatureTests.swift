@@ -206,6 +206,29 @@ final class WordDocumentLegacyFeatureTests: XCTestCase {
         XCTAssertEqual(try body(paragraphs), "<ol>\n<li>A</li>\n<li>B<ol>\n<li>C</li>\n</ol>\n</li>\n</ol>\n")
     }
 
+    func testAnOutlineWithNoFirstLevelTakesTheNumberOfTheSimpleListAmongItsParagraphs() throws {
+        // The shape of libreoffice-tdf150197: "1." and "2." as a simple list, "2.1" and "2.2" at the outline's second
+        // level (which includes the previous level's number), then "3." and "3.1".
+        let simple = Builder.numbering()
+        let inner = Builder.numbering(before: ".", after: "", level: 2, includesPrevious: true)
+        let paragraphs = [
+            Paragraph("A", sprms: simple), Paragraph("B", sprms: simple), Paragraph("C", sprms: inner), Paragraph("D", sprms: inner),
+            Paragraph("E", sprms: simple), Paragraph("F", sprms: inner),
+        ]
+        XCTAssertEqual(
+            try body(paragraphs, speaksNumbers: true),
+            "<p>1. A</p>\n<p>2. B</p>\n<p>2.1 C</p>\n<p>2.2 D</p>\n<p>3. E</p>\n<p>3.1 F</p>\n"
+        )
+    }
+
+    func testASimpleListApartFromAnOutlineByTextIsItsOwnList() throws {
+        // Ordinary text between the lists: the simple list does not stand in for the outline's first level.
+        let simple = Builder.numbering()
+        let inner = Builder.numbering(before: ".", after: "", level: 2, includesPrevious: true)
+        let paragraphs = [Paragraph("A", sprms: simple), Paragraph("B", sprms: simple), Paragraph("Text"), Paragraph("C", sprms: inner)]
+        XCTAssertEqual(try body(paragraphs, speaksNumbers: true), "<p>1. A</p>\n<p>2. B</p>\n<p>Text</p>\n<p>1.1 C</p>\n")
+    }
+
     func testAnAnldWithNoLevelIsLeftOverAndTheParagraphIsNotInAList() throws {
         // 1,589 paragraphs in 22 real files: many begin with a number typed by hand. A heading stays a heading.
         let leftOver = Builder.numbering(level: nil)
