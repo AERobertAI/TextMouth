@@ -206,22 +206,6 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>alac</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>ALAC Audio</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.apple.coreaudio-format</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
 				<string>m3u</string>
 				<string>m3u8</string>
 			</array>
@@ -433,54 +417,6 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>brf</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>BRF Braille File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.textmouth.brf</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>brl</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>BRL Braille File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.textmouth.brl</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>pef</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>PEF Braille File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>org.daisy.pef</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
 				<string>daisy</string>
 			</array>
 			<key>CFBundleTypeName</key>
@@ -683,61 +619,6 @@
 					<string>kfx-zip</string>
 					<string>azw8</string>
 					<string>kpf</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.plain-text</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>BRF Braille File</string>
-			<key>UTTypeIdentifier</key>
-			<string>com.textmouth.brf</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>brf</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.plain-text</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>BRL Braille File</string>
-			<key>UTTypeIdentifier</key>
-			<string>com.textmouth.brl</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>brl</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.xml</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>PEF Braille File</string>
-			<key>UTTypeIdentifier</key>
-			<string>org.daisy.pef</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>pef</string>
-				</array>
-				<key>public.mime-type</key>
-				<array>
-					<string>application/x-pef+xml</string>
 				</array>
 			</dict>
 		</dict>

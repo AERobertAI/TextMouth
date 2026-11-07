@@ -12,16 +12,30 @@ which Xcode merges into the plist it generates (GENERATE_INFOPLIST_FILE). It is
 the Mac's plist, so the two cannot drift apart by hand, less what iOS refuses
 or has no use for, and with one addition. This script writes it.
 
-What iOS leaves out, and why:
-- The document types "Ogg Audio" and "Audio Converted at Import": the import
-  converts that audio with Apple's afconvert program
-  (ImportAudioConverter), and iOS lets an app start no program.
+What iOS leaves out, and why. iOS goes by the types a document type names
+(`LSItemContentTypes`) and the extensions that the declarations of those types
+tag (`UTImportedTypeDeclarations`), not by `CFBundleTypeExtensions`, so a type
+is left out by name, with the declaration of any type nothing else names:
+- "Ogg Audio" and "Audio Converted at Import": the import converts that audio
+  with Apple's afconvert program (ImportAudioConverter), and iOS lets an app
+  start no program.
+- "ALAC Audio": the one type it names, `com.apple.coreaudio-format`, is the
+  system's type for `.caf` files too (the system types `tones-*.caf` so), which
+  are converted at import with afconvert. Leaving the type in would offer every
+  `.caf`; leaving it out leaves `.alac` unoffered on iOS, which is the lesser
+  harm.
+- "BRF Braille File", "BRL Braille File", and "PEF Braille File" (`.brf`,
+  `.brl`, `.pef`), with their type declarations: reading them takes the braille
+  helper program, and humanQuestions/2026-11-03.md says braille fails on iPhone
+  for now. They come back when braille runs on iOS.
 - The keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which
   are macOS's.
 
-What iOS adds: ".azw3" beside the extensions of the Kindle MOBI type (the Mac's
-list does not name it yet), so a KF8 book that the MOBI reader opens is
-offered too.
+What iOS adds: ".azw3" beside the extensions of the Kindle MOBI type and its
+declaration. The Mac's list does not name it yet. `readers/azw3` adds it to
+`BookFormat` and to the Mac's plist, which overlaps `ADDED_EXTENSION` below
+(adding an extension already there changes nothing, so the merge is safe); the
+orchestrator settles which stays at the merge.
 
 Everything else is the Mac's, including the Kindle MOBI and KFX types, the
 network settings feeds need, and the build identity.
@@ -44,6 +58,10 @@ IOS_PLIST = Path("TextMouth/Platform/iOS/Info.plist")
 REFUSED = {
     "Ogg Audio",
     "Audio Converted at Import",
+    "ALAC Audio",
+    "BRF Braille File",
+    "BRL Braille File",
+    "PEF Braille File",
 }
 
 # The keys of the Mac's plist that mean nothing on iOS.
@@ -79,9 +97,13 @@ def ios_plist(mac):
         document_types.append(entry)
     result["CFBundleDocumentTypes"] = document_types
 
-    # Every type declaration stays: none is used by a refused type alone.
+    # The declaration of a type that a kept document type names stays; one
+    # that only a refused type named (the braille files') goes with it.
+    named = {uti for entry in document_types for uti in entry["LSItemContentTypes"]}
     imported = []
     for declaration in mac["UTImportedTypeDeclarations"]:
+        if declaration["UTTypeIdentifier"] not in named:
+            continue
         declaration = dict(declaration)
         if declaration["UTTypeIdentifier"] == MOBI_TYPE:
             tags = dict(declaration["UTTypeTagSpecification"])
