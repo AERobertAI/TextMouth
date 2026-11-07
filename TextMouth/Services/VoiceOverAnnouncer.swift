@@ -119,18 +119,31 @@ enum VoiceOverAnnouncer {
         #else
         // iOS posts through SwiftUI's announcement notification. The window
         // is not needed: iOS speaks the announcement for the whole screen.
-        // The Mac's priority levels map to iOS's speech priority: high
-        // speaks at once, interrupting current speech; medium and low wait
-        // for the current speech (default and low).
-        var spoken = AttributedString(announcement.message)
+        // The shared code announces at high priority by default, which on
+        // iOS would cut off VoiceOver's own speech on every word, so high
+        // and medium both wait for current speech (default), and low may be
+        // dropped (low). The few words that must interrupt take the
+        // iPhone's own path, which keeps iOS's high priority
+        // (`PhoneAnnouncer.important`).
         switch announcement.priority {
-        case .high: spoken.accessibilitySpeechAnnouncementPriority = .high
-        case .medium: spoken.accessibilitySpeechAnnouncementPriority = .default
-        case .low: spoken.accessibilitySpeechAnnouncementPriority = .low
+        case .high, .medium: postToVoiceOver(announcement.message, priority: .default)
+        case .low: postToVoiceOver(announcement.message, priority: .low)
         }
-        AccessibilityNotification.Announcement(spoken).post()
         #endif
     }
+
+    #if os(iOS)
+    /// Posts `message` through SwiftUI's announcement notification at iOS's
+    /// speech `priority`.
+    static func postToVoiceOver(
+        _ message: String,
+        priority: AttributeScopes.AccessibilityAttributes.AnnouncementPriorityAttribute.AnnouncementPriority
+    ) {
+        var spoken = AttributedString(message)
+        spoken.accessibilitySpeechAnnouncementPriority = priority
+        AccessibilityNotification.Announcement(spoken).post()
+    }
+    #endif
 }
 
 // MARK: - Said Once a Sheet Has Closed
