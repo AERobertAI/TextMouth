@@ -50,13 +50,23 @@ enum FeedItemPackage {
 
     /// Whether the package at `package` holds files of the listener's: a
     /// transcript, a copy of one kept beside it, or a copy Edit Text kept of
-    /// an edited text, which may be the only copy of the edit. Looked for
-    /// without downloading anything; a package that is there but cannot be
-    /// listed, as one whose folder is only in the cloud or cannot be read,
-    /// is taken to hold them, so it is kept rather than deleted on a guess.
+    /// an edited text, which may be the only copy of the edit. A podcast's
+    /// own transcript the listener has not touched is not the listener's
+    /// (FMT25): it came with the download and comes again with the next, so
+    /// an automatic download that ages out unopened still leaves nothing
+    /// behind (`TranscriptStore.holdsUntouchedPodcastTranscript(in:)`).
+    /// Looked for without downloading anything; a package that is there but
+    /// cannot be listed, as one whose folder is only in the cloud or cannot
+    /// be read, is taken to hold them, so it is kept rather than deleted on a
+    /// guess.
     static func holdsListenersFiles(_ package: URL) -> Bool {
         guard let names = try? listedEntryNames(of: package) else { return true }
-        return names.contains { TextMouthPaths.isTranscriptFile($0) || TextMouthPaths.isKeptTextCopy($0) }
+        return names.contains { name in
+            if name == TextMouthPaths.transcriptFileName {
+                return !TranscriptStore.holdsUntouchedPodcastTranscript(in: package)
+            }
+            return TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name)
+        }
     }
 
     /// Whether the entry named `name` at the top of a package stays there
