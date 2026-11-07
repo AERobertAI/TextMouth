@@ -103,7 +103,8 @@ enum MarkupGuard {
     struct Inspection: Equatable {
         /// The most elements open at once, by the count the limit is on.
         var deepest = 0
-        /// The tags, comments, and declarations read, and the elements the parser makes beyond them.
+        /// What takes a node in the tree: start tags, comments, and declarations
+        /// read, and the elements the parser makes beyond them. An end tag takes none.
         var tags = 0
         /// The most attributes on any one tag.
         var mostAttributes = 0
@@ -141,11 +142,12 @@ enum MarkupGuard {
                 case .text:
                     break
                 case let .startTag(tag):
-                    try count(tag)
+                    try countNode()
+                    try noteAttributes(of: tag)
                     open.start(tag)
                     try noteDepth(open.depth)
                 case let .endTag(tag):
-                    try count(tag)
+                    try noteAttributes(of: tag)
                     open.end(tag)
                 case .comment, .doctype:
                     try countNode()
@@ -171,7 +173,8 @@ enum MarkupGuard {
                 case let .text(range):
                     open.text(range)
                 case let .startTag(tag):
-                    try count(tag)
+                    try countNode()
+                    try noteAttributes(of: tag)
                     let change = open.start(tag, name: scanner.lowercasedName(tag.name))
                     guard open.tagsAreCertain else {
                         try countEverythingAhead(from: open.depth + unseen)
@@ -187,7 +190,7 @@ enum MarkupGuard {
                         scanner.skipToEnd()
                     }
                 case let .endTag(tag):
-                    try count(tag)
+                    try noteAttributes(of: tag)
                     open.end(tag, name: scanner.lowercasedName(tag.name))
                 case .comment, .doctype, .declaration:
                     try countNode()
@@ -210,9 +213,8 @@ enum MarkupGuard {
             scanner.skipToEnd()
         }
 
-        /// Counts a tag and its attributes.
-        private mutating func count(_ tag: MarkupScanner.Tag) throws {
-            try countNode()
+        /// Records how many attributes a tag names.
+        private mutating func noteAttributes(of tag: MarkupScanner.Tag) throws {
             inspection.mostAttributes = max(inspection.mostAttributes, tag.attributeCount)
             guard tag.attributeCount <= limits.mostAttributesOnATag else {
                 throw MarkupRefusal.tooManyAttributes(limit: limits.mostAttributesOnATag)

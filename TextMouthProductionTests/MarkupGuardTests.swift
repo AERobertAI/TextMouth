@@ -387,15 +387,18 @@ final class MarkupGuardTests: XCTestCase {
             }
         }
         for dialect in [MarkupGuard.Dialect.html, .xml] {
-            XCTAssertFalse(refused(String(repeating: "<i></i>", count: 500), as: dialect))
-            XCTAssertTrue(refused(String(repeating: "<i></i>", count: 501), as: dialect))
+            // An end tag takes no node.
+            XCTAssertFalse(refused(String(repeating: "<i></i>", count: 1_000), as: dialect))
+            XCTAssertTrue(refused(String(repeating: "<i></i>", count: 1_001), as: dialect))
+            XCTAssertFalse(refused(String(repeating: "</i>", count: 5_000), as: dialect))
             XCTAssertFalse(refused(String(repeating: "<!---->", count: 1_000), as: dialect))
             XCTAssertTrue(refused(String(repeating: "<!---->", count: 1_001), as: dialect))
             XCTAssertTrue(refused(String(repeating: "<?a?>", count: 1_001), as: dialect))
         }
         // A stray end tag of a paragraph makes a paragraph.
-        XCTAssertTrue(refused(String(repeating: "</p>", count: 501), as: .html))
-        // Formatting made again costs what its element costs: 100 for each of 12 paragraphs.
+        XCTAssertFalse(refused(String(repeating: "</p>", count: 1_000), as: .html))
+        XCTAssertTrue(refused(String(repeating: "</p>", count: 1_001), as: .html))
+        // Formatting made again costs what its element costs: 100 for each of 12 paragraphs, with their own.
         let formatting = "<p>" + (0..<100).map { "<b n=\($0)>" }.joined() + "</p>"
         XCTAssertTrue(refused(formatting + String(repeating: "<p>x</p>", count: 12), as: .html))
     }
