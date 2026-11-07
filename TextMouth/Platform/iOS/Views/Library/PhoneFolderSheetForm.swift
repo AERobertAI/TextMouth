@@ -166,6 +166,9 @@ struct PhoneFolderSheetForm: View {
             Task {
                 try? await Task.sleep(for: .seconds(PhoneListFocus.settleDelay))
                 nameHasKeyboard = true
+                // A turn later, once the field holds the keyboard, so the
+                // selection is the field's (unverified until a first run).
+                await Task.yield()
                 if model.selectsNameOnArrival {
                     nameSelection = TextSelection(range: model.name.startIndex..<model.name.endIndex)
                 }
