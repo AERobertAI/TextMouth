@@ -107,23 +107,90 @@ enum WebVTTWriter {
 /// Writes cues as a SubRip file (.srt), as SubRip's Windows tools write one:
 /// each cue as its number, its timing line, `HH:MM:SS,mmm --> HH:MM:SS,mmm`,
 /// and its text on one line, the cues apart by a blank line, and every line
-/// ended by CR LF. SubRip has no escapes, so the text is written as it is.
+/// ended by CR LF. SubRip has no standard escapes, but the few strings that
+/// players and readers take for structure or styling are written as
+/// character references (`cueText(_:)`), which the readers decode.
 enum SubRipWriter {
     /// The text of a SubRip file of `cues`, in their order: "" for none.
     ///
-    /// A cue's text is written on one line (`TimedTextCue.plainText`). A cue
-    /// left with no text is passed over, and the numbers, from 1, count only
-    /// the cues written. A cue that would end before it begins is written
-    /// ending where it begins.
+    /// A cue's text is written on one line (`cueText(_:)`). A cue left with
+    /// no text is passed over, and the numbers, from 1, count only the cues
+    /// written. A cue that would end before it begins is written ending
+    /// where it begins.
     static func text(of cues: [TimedTextCue]) -> String {
         var blocks: [String] = []
         for cue in cues {
-            let words = TimedTextCue.plainText(cue.text)
+            let words = cueText(cue.text)
             guard !words.isEmpty else { continue }
             let timing = CueTiming.line(of: cue, fractionSeparator: ",", shortestMilliseconds: 0)
             blocks.append("\(blocks.count + 1)\r\n\(timing)\r\n\(words)\r\n")
         }
         return blocks.joined(separator: "\r\n")
+    }
+
+    /// `raw` as the one line of a SubRip cue's text: each run of white space
+    /// one space (`TimedTextCue.plainText`), a control character no player
+    /// shows left out (a NUL would make a reader take the file for UTF-16),
+    /// and what a reader or player would take for something else written as
+    /// a character reference, which TextMouth's reader decodes
+    /// (`TimedTextMarkup`), so the cue reads back as the words it holds:
+    /// - the `>` of a "-->", which would begin a timing line and lose the
+    ///   cue, as `&gt;`;
+    /// - a `<` with a `>` after it, which would be taken for a tag (`<i>`),
+    ///   as `&lt;`;
+    /// - the `{` of a `{\`, which would be taken for an override (`{\an8}`),
+    ///   as `&#123;`;
+    /// - an `&` that begins what a reader would decode (`&amp;`, `&#65;`),
+    ///   as `&amp;`, so the words are not changed by being read.
+    /// Any other character is written as it is.
+    static func cueText(_ raw: String) -> String {
+        // White space controls (a form feed) stay, for the spacing to turn
+        // into one space; every other control goes.
+        let shown = String(String.UnicodeScalarView(raw.unicodeScalars.filter {
+            $0.properties.generalCategory != .control || $0.properties.isWhitespace
+        }))
+        let scalars = Array(TimedTextCue.plainText(shown).unicodeScalars)
+        // Where the last ">" lies: a "<" after it opens no tag.
+        let lastGreaterThan = scalars.lastIndex(of: ">")
+        var written = String.UnicodeScalarView()
+        for (index, scalar) in scalars.enumerated() {
+            let replacement: String?
+            switch scalar {
+            case ">":
+                // The ">" ending a "-->".
+                replacement = index >= 2 && scalars[index - 1] == "-" && scalars[index - 2] == "-" ? "&gt;" : nil
+            case "<":
+                replacement = lastGreaterThan.map { index < $0 } == true ? "&lt;" : nil
+            case "{":
+                replacement = index + 1 < scalars.count && scalars[index + 1] == "\\" ? "&#123;" : nil
+            case "&":
+                replacement = beginsReference(scalars[(index + 1)...]) ? "&amp;" : nil
+            default:
+                replacement = nil
+            }
+            if let replacement {
+                written.append(contentsOf: replacement.unicodeScalars)
+            } else {
+                written.append(scalar)
+            }
+        }
+        return String(written)
+    }
+
+    /// The names a reader decodes between an "&" and a ";"
+    /// (`TimedTextMarkup`), with the ";".
+    private static let decodedNames = ["amp;", "lt;", "gt;", "quot;", "apos;", "nbsp;", "lrm;", "rlm;"]
+
+    /// Whether `rest`, the scalars after an "&", begin what a reader decodes
+    /// as a character reference: one of the names it knows, or a "#", which
+    /// begins a numeric one. Any "#" counts, whether or not the reference is
+    /// whole, since a reference written needlessly changes no word.
+    private static func beginsReference(_ rest: ArraySlice<Unicode.Scalar>) -> Bool {
+        if rest.first == "#" { return true }
+        // Compared scalar by scalar, as the reader compares bytes: a
+        // combining mark after the ";" must not hide the name, as it would
+        // in Swift's characters.
+        return decodedNames.contains { rest.starts(with: $0.unicodeScalars) }
     }
 }
 

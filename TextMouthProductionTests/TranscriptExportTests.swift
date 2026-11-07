@@ -39,14 +39,15 @@ final class TranscriptExportTests: XCTestCase {
     }
 
     /// SubRip: each cue numbered from 1, timed with a comma before the
-    /// milliseconds, its text as it is, every line ended by CR LF, and the
-    /// cues apart by a blank line.
+    /// milliseconds, its text as it is but for the `<` that a `>` after it
+    /// would make a tag (`&lt;`), every line ended by CR LF, and the cues
+    /// apart by a blank line.
     func testSubRipNumbersEachCueAndEndsEveryLineWithCRLF() {
         XCTAssertEqual(
             SubRipWriter.text(of: Self.twoCues),
             "1\r\n00:00:00,000 --> 00:00:00,900\r\nFerry lines are cast off.\r\n"
                 + "\r\n"
-                + "2\r\n01:02:03,004 --> 01:02:03,500\r\na < b & c > d\r\n"
+                + "2\r\n01:02:03,004 --> 01:02:03,500\r\na &lt; b & c > d\r\n"
         )
     }
 
@@ -124,14 +125,153 @@ final class TranscriptExportTests: XCTestCase {
     /// A cue left with no text is passed over, and SubRip numbers only the
     /// cues it writes. WebVTT requires a cue to end after it begins, so a cue
     /// lasting no time ends a millisecond later there, while SubRip keeps its
-    /// times; WebVTT also leaves out a control character no player shows.
+    /// times; both leave out a control character no player shows.
     func testABlankCueIsPassedOverAndAnInstantLastsAMillisecondInWebVTT() {
         let cues = [
             TimedTextCue(startMilliseconds: 0, endMilliseconds: 500, text: " \n "),
             TimedTextCue(startMilliseconds: 1_000, endMilliseconds: 1_000, text: "Bell\u{07}."),
         ]
         XCTAssertEqual(WebVTTWriter.text(of: cues), "WEBVTT\n\n00:00:01.000 --> 00:00:01.001\nBell.\n")
-        XCTAssertEqual(SubRipWriter.text(of: cues), "1\r\n00:00:01,000 --> 00:00:01,000\r\nBell\u{07}.\r\n")
+        XCTAssertEqual(SubRipWriter.text(of: cues), "1\r\n00:00:01,000 --> 00:00:01,000\r\nBell.\r\n")
+    }
+
+    /// A time before 0 is written as 0, and a cue that would end before it
+    /// begins ends where it begins in SubRip and a millisecond after in
+    /// WebVTT, never before: a player drops a cue that ends before it begins.
+    func testATimeBeforeZeroAndAnEndBeforeTheStartAreHeldInRange() {
+        let cues = [
+            TimedTextCue(startMilliseconds: -500, endMilliseconds: 400, text: "Early."),
+            TimedTextCue(startMilliseconds: 2_000, endMilliseconds: 1_500, text: "Backwards."),
+        ]
+        XCTAssertEqual(
+            WebVTTWriter.text(of: cues),
+            "WEBVTT\n\n00:00:00.000 --> 00:00:00.400\nEarly.\n\n00:00:02.000 --> 00:00:02.001\nBackwards.\n"
+        )
+        XCTAssertEqual(
+            SubRipWriter.text(of: cues),
+            "1\r\n00:00:00,000 --> 00:00:00,400\r\nEarly.\r\n\r\n2\r\n00:00:02,000 --> 00:00:02,000\r\nBackwards.\r\n"
+        )
+    }
+
+    // MARK: - Reading It Back
+
+    /// Sentences that hold what a caption file gives a meaning to: an arrow
+    /// (WebVTT forbids it in a cue's text; SubRip would begin a timing line
+    /// with it), tags, character references, a SubRip override, a cue number,
+    /// a WebVTT block word, control characters, and plain text in other
+    /// scripts. (A cue's text is one line of single spaces, as the readers
+    /// give it.)
+    private static let hostileTexts = [
+        "Plain sentence.", "a --> b", "00:00:01,000 --> 00:00:02,000", "ends with an arrow -->", "--> begins with one",
+        "a --&gt; b", "5 < 6 and 7 > 3", "a < b & c > d", "I said <i>hello</i> there.", "<v Ana>not a voice</v>",
+        "only a lone < sign", "only a lone > sign", "AT&T and R&D", "x &lt; y typed out", "&amp;lt; twice",
+        "&#65; and &#x42; typed out", "&nbsp;&lrm;&rlm;", "{\\an8}Top of the frame", "mid {\\i1}text{\\i0} here",
+        "a { brace and a \\ slash", "12345", "7", "NOTE this is not a comment", "WEBVTT", "STYLE", "REGION",
+        "Ana: Hello there.", "Smørrebrød at the café — naïve? 日本語 😀", "tab\tinside", "quote \" and apostrophe '",
+        "<c.loud>a class</c>", "<00:00:01.000>a timestamp tag", "- - > not an arrow", "--", "---> three hyphens",
+        "\u{FEFF}a mark first", "zero\u{200B}width",
+    ]
+
+    /// Writes `cues` as `format` (the file's bytes, byte-order mark and all)
+    /// and reads the file with the format's own reader.
+    private static func readBack(_ cues: [TimedTextCue], as format: TranscriptExportFormat) throws -> TimedTextDocument {
+        let bytes = format.fileBytes(of: cues)
+        switch format {
+        case .webVTT: return try WebVTTReader.read(bytes)
+        case .subRip: return try SubRipReader.read(bytes)
+        }
+    }
+
+    /// Each hostile sentence alone, and between two plain ones, is read back
+    /// from the file as the same words at the same times, in either format:
+    /// none is lost, none swallows its neighbours, none changes.
+    func testHostileSentencesReadBackAsTheyWere() throws {
+        for format in TranscriptExportFormat.allCases {
+            for text in Self.hostileTexts {
+                let alone = [TimedTextCue(startMilliseconds: 1_000, endMilliseconds: 2_000, text: text)]
+                XCTAssertEqual(try Self.readBack(alone, as: format).cues, alone, "\(format.name): \(text)")
+
+                let between = [
+                    TimedTextCue(startMilliseconds: 0, endMilliseconds: 500, text: "Before."),
+                    TimedTextCue(startMilliseconds: 600, endMilliseconds: 900, text: text),
+                    TimedTextCue(startMilliseconds: 1_000, endMilliseconds: 1_500, text: "After."),
+                ]
+                XCTAssertEqual(try Self.readBack(between, as: format).cues, between, "\(format.name) between: \(text)")
+            }
+        }
+    }
+
+    /// All the hostile sentences in one file, each in a cue of its own, come
+    /// back as the same cues in the same order.
+    func testAFileOfAllTheHostileSentencesReadsBackWhole() throws {
+        let cues = Self.hostileTexts.enumerated().map {
+            TimedTextCue(startMilliseconds: $0.offset * 1_000, endMilliseconds: $0.offset * 1_000 + 900, text: $0.element)
+        }
+        for format in TranscriptExportFormat.allCases {
+            XCTAssertEqual(try Self.readBack(cues, as: format).cues, cues, format.name)
+        }
+    }
+
+    /// Cues that overlap, cues that begin together, a cue inside another, and
+    /// a cue at the 100th hour all come back with their times, in order.
+    func testOverlappingCuesAndLongTimesReadBackWithTheirTimes() throws {
+        let cues = [
+            TimedTextCue(startMilliseconds: 5_000, endMilliseconds: 9_000, text: "Long."),
+            TimedTextCue(startMilliseconds: 5_000, endMilliseconds: 6_000, text: "Together."),
+            TimedTextCue(startMilliseconds: 6_000, endMilliseconds: 7_000, text: "Inside."),
+            TimedTextCue(startMilliseconds: 8_500, endMilliseconds: 10_000, text: "Across."),
+            TimedTextCue(startMilliseconds: 359_999_000, endMilliseconds: 360_000_000, text: "The hundredth hour."),
+        ]
+        for format in TranscriptExportFormat.allCases {
+            XCTAssertEqual(try Self.readBack(cues, as: format).cues, cues, format.name)
+        }
+    }
+
+    /// An instant (a sentence with no duration) reads back beginning where it
+    /// did: ending where it did in SubRip, a millisecond later in WebVTT.
+    func testASentenceWithNoDurationReadsBackFromWhereItBegan() throws {
+        let instant = [TimedTextCue(startMilliseconds: 4_000, endMilliseconds: 4_000, text: "Click.")]
+        XCTAssertEqual(try Self.readBack(instant, as: .subRip).cues, instant)
+        XCTAssertEqual(
+            try Self.readBack(instant, as: .webVTT).cues,
+            [TimedTextCue(startMilliseconds: 4_000, endMilliseconds: 4_001, text: "Click.")]
+        )
+    }
+
+    /// SubRip writes the few strings a reader or player takes for something
+    /// else as character references, and nothing more: the exact lines.
+    func testSubRipWritesWhatWouldBeTakenForMarkupAsReferences() {
+        func written(_ text: String) -> String {
+            SubRipWriter.text(of: [TimedTextCue(startMilliseconds: 0, endMilliseconds: 1_000, text: text)])
+        }
+        let head = "1\r\n00:00:00,000 --> 00:00:01,000\r\n"
+        XCTAssertEqual(written("a --> b"), head + "a --&gt; b\r\n")
+        XCTAssertEqual(written("5 < 6 and 7 > 3"), head + "5 &lt; 6 and 7 > 3\r\n")
+        XCTAssertEqual(written("only a lone < sign"), head + "only a lone < sign\r\n")
+        XCTAssertEqual(written("{\\an8}Top"), head + "&#123;\\an8}Top\r\n")
+        XCTAssertEqual(written("a { brace"), head + "a { brace\r\n")
+        XCTAssertEqual(written("x &lt; y"), head + "x &amp;lt; y\r\n")
+        XCTAssertEqual(written("&#65;"), head + "&amp;#65;\r\n")
+        XCTAssertEqual(written("AT&T and a - > b -- c"), head + "AT&T and a - > b -- c\r\n")
+        XCTAssertEqual(written("12345"), head + "12345\r\n")
+    }
+
+    /// A control character no player shows is left out of SubRip as of
+    /// WebVTT, a NUL above all: a file holding one is taken for UTF-16 by a
+    /// reader. White space controls keep the words apart.
+    func testControlCharactersAreLeftOutOfSubRip() throws {
+        for scalar: UInt32 in [0x00, 0x01, 0x07, 0x1B, 0x7F, 0x9F] {
+            let text = "before" + String(Unicode.Scalar(scalar)!) + "after"
+            let bytes = TranscriptExportFormat.subRip.fileBytes(
+                of: [TimedTextCue(startMilliseconds: 0, endMilliseconds: 1_000, text: text)]
+            )
+            XCTAssertFalse(bytes.contains(UInt8(truncatingIfNeeded: scalar)) && scalar < 0x80, "U+\(String(scalar, radix: 16))")
+            XCTAssertEqual(try SubRipReader.read(bytes).cues.map(\.text), ["beforeafter"], "U+\(String(scalar, radix: 16))")
+        }
+        let spaced = TranscriptExportFormat.subRip.fileBytes(
+            of: [TimedTextCue(startMilliseconds: 0, endMilliseconds: 1_000, text: "page\u{0C}Start\u{0B}here")]
+        )
+        XCTAssertEqual(try SubRipReader.read(spaced).cues.map(\.text), ["page Start here"])
     }
 
     // MARK: - The Book's Timeline
@@ -196,6 +336,38 @@ final class TranscriptExportTests: XCTestCase {
         ])
         XCTAssertEqual(transcript.bookTimelineCues.map(\.text), ["Early.", "Next.", "Overrun.", "Together."])
         XCTAssertEqual(transcript.bookTimelineCues.map(\.startMilliseconds), [0, 2_000, 2_500, 2_500])
+    }
+
+    /// A transcript of timed words (the recognizer's, or a Podcasting 2.0
+    /// one) is exported by sentence: one cue for each sentence, its words
+    /// neither cues of their own nor kept in the cue, and a sentence's voice
+    /// is already in its text. The file holds the sentences' text and times.
+    func testTimedWordsAreExportedBySentenceAlone() throws {
+        let transcript = TranscriptFixtures.twoFiles
+        XCTAssertTrue(
+            transcript.files.allSatisfy { $0.sentences.allSatisfy { !$0.words.isEmpty } },
+            "the fixture times every word"
+        )
+        let cues = transcript.bookTimelineCues
+        XCTAssertEqual(cues.count, 5, "one cue for each of the five sentences")
+        XCTAssertTrue(cues.allSatisfy { $0.words.isEmpty && $0.voice == nil })
+        let read = try WebVTTReader.read(TranscriptExportFormat.webVTT.fileBytes(of: cues))
+        XCTAssertEqual(read.cues, cues)
+    }
+
+    /// An edited or cleaned-up transcript is exported as it now reads: the
+    /// editor and the cleanup both rewrite the sentence in transcript.json
+    /// (`TranscriptSentence.rewrite(as:)`), which is the file the captions
+    /// are made of, so the cue holds the new text at the sentence's old time.
+    func testAnEditedSentenceIsExportedAsEdited() throws {
+        var transcript = TranscriptFixtures.twoFiles
+        transcript.files[1].sentences[0].rewrite(as: "The salt road bends east, then north.")
+        let cues = transcript.bookTimelineCues
+        XCTAssertEqual(
+            cues[3],
+            TimedTextCue(startMilliseconds: 9_000, endMilliseconds: 10_980, text: "The salt road bends east, then north.")
+        )
+        XCTAssertEqual(cues.map(\.text).filter { $0.contains("salt road") }, ["The salt road bends east, then north."])
     }
 
     /// Lengths too large to add up, which only a damaged transcript.json
