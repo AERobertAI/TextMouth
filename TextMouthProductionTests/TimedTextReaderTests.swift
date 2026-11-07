@@ -409,6 +409,25 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(try SubRipReader.read(data).cues, [cue(1_000, 2_000, "A café at the corner.")])
     }
 
+    /// A SubRip file in Shift JIS, as Japanese subtitle tools write one,
+    /// reads as its Japanese text and not as a string of accented
+    /// letters: eight lines are enough for the encoding to be known.
+    func testAShiftJISSubRipFileReadsInItsEncoding() throws {
+        let sentences = [
+            "こんにちは、今日はいい天気ですね。", "はい、散歩に行きましょう。", "駅の近くに新しい喫茶店ができました。",
+            "コーヒーが大好きなので、楽しみです。", "それでは、三時に会いましょう。", "遅れないように気をつけてください。",
+            "雨が降るかもしれないので、傘を持って行きます。", "では、後でまたお会いしましょう。",
+        ]
+        let text = sentences.enumerated().map { number, sentence in
+            "\(number + 1)\r\n00:00:\(String(format: "%02d", number * 2)),000 --> 00:00:\(String(format: "%02d", number * 2 + 1)),500\r\n\(sentence)\r\n"
+        }.joined(separator: "\r\n")
+        let data = try XCTUnwrap(text.data(using: .shiftJIS))
+
+        let document = try SubRipReader.read(data)
+
+        XCTAssertEqual(document.cues.map(\.text), sentences)
+    }
+
     /// A file whose byte-order mark names UTF-16, but whose bytes are not
     /// UTF-16, is not timed text, and each reader says so in its own words.
     func testBytesNotInTheEncodingTheirMarkNamesAreNotTimedText() {
