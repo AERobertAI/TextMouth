@@ -12,18 +12,19 @@ struct PhoneImportPresentations: ViewModifier {
     /// The app's one model.
     let model: PhoneAppModel
     /// The process's copier, whose requests and questions are presented.
-    @ObservedObject private var copier = PhoneImportCopier.shared
+    @ObservedObject private var copier: PhoneImportCopier
 
     /// The presentations over `model`.
     init(model: PhoneAppModel) {
         self.model = model
+        copier = PhoneImportCopier.shared
     }
 
     func body(content: Content) -> some View {
         content
             // A question that arose while this sheet showed couldn't be
             // presented over it; it is offered again once the sheet is gone.
-            .sheet(item: $copier.addToLibraryFolder, onDismiss: copier.presentQuestionAgain) { request in
+            .sheet(item: $copier.addToLibraryFolder, onDismiss: { copier.presentQuestionAgain() }) { request in
                 PhoneAddToLibrarySheet(folderPath: request.folderPath, copier: copier)
             }
             .sheet(item: questionBinding) { question in

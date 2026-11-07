@@ -385,8 +385,11 @@ final class PhoneImportCopyRun {
                     failure = .noRoom
                 }
             }
+            // Constants, for the closure that crosses to the main thread.
+            let plan = planned
+            let ending = failure
             DispatchQueue.main.async {
-                run?.planned(planned, scoped: scoped, failure: failure)
+                run?.planned(plan, scoped: scoped, failure: ending)
             }
         }
     }

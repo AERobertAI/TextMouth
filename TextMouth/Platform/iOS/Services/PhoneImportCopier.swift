@@ -189,9 +189,9 @@ final class PhoneImportCopier: ObservableObject {
         guard run == nil, !waiting.isEmpty else { return }
         let request = waiting.removeFirst()
         record(starting: request.urls)
-        let copy = PhoneImportCopyRun(sources: request.urls) { [weak self] status in
+        let copy = PhoneImportCopyRun(sources: request.urls, statusChanged: { [weak self] status in
             self?.copyStatus = status
-        }
+        })
         run = copy
         copy.start { [weak self] outcome in
             self?.copied(request, outcome: outcome)
