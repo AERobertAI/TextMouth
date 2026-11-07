@@ -27,8 +27,9 @@ enum PhoneRowWording {
 
     // MARK: The Library View Row and the Bottom Bar
 
-    /// The Library view row's label, the Mac's "Library view".
-    static let libraryViewLabel = LibraryView.categoryPickerLabel
+    /// The Library view row's label, the Mac's "Library view", which the
+    /// Mac keeps on its main-actor view.
+    @MainActor static let libraryViewLabel = LibraryView.categoryPickerLabel
     /// What the Library view row does (the spec's).
     static let libraryViewHint = "Chooses what the Library lists."
     /// Settings' label and title (the spec's).

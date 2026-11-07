@@ -277,8 +277,10 @@ final class PhoneLibraryRows: ObservableObject {
         /// The list's signature.
         var signature: Signature {
             Signature(
-                folders: folders.map { Signature.Folder(path: $0.fullPath, name: $0.name) },
-                books: books.map { Signature.Book(id: $0.id, title: $0.title, author: $0.author, inReadingList: inReadingList.contains($0.id)) },
+                folders: folders.map { Signature.FolderEntry(path: $0.fullPath, name: $0.name) },
+                books: books.map {
+                    Signature.BookEntry(id: $0.id, title: $0.title, author: $0.author, inReadingList: inReadingList.contains($0.id))
+                },
                 sortField: sortField,
                 note: note
             )
@@ -289,18 +291,20 @@ final class PhoneLibraryRows: ObservableObject {
     /// rows in order and the words that name them, never a reading position.
     /// Folder counts are added as the folders are read.
     private struct Signature: Equatable {
-        struct Folder: Equatable {
+        /// A folder listed, by its place and its name.
+        struct FolderEntry: Equatable {
             let path: String
             let name: String
         }
-        struct Book: Equatable {
+        /// A book listed, by the words that name it.
+        struct BookEntry: Equatable {
             let id: UUID
             let title: String
             let author: String
             let inReadingList: Bool
         }
-        let folders: [Folder]
-        let books: [Book]
+        let folders: [FolderEntry]
+        let books: [BookEntry]
         let sortField: LibrarySortField
         let note: PhoneRowNote?
         var folderCounts: [Int] = []
