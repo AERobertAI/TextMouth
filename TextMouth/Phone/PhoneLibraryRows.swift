@@ -62,10 +62,12 @@ final class PhoneLibraryRows: ObservableObject {
     /// changes, and when the rows are built afresh.
     @Published private(set) var continueRow: PhoneContinueRow?
 
-    /// Where the screen is.
-    private(set) var location: LibraryLocation
-    /// What the search field holds; empty when not searching.
-    private(set) var searchText = ""
+    /// Where the screen is: published, so its title and Library view's value
+    /// follow a change even when the rows come out the same.
+    @Published private(set) var location: LibraryLocation
+    /// What the search field holds; empty when not searching. Published, so
+    /// the rows that step aside while searching follow it.
+    @Published private(set) var searchText = ""
     /// How many books and folders the search found, for what is said once
     /// typing stops.
     private(set) var searchCounts = (books: 0, folders: 0)
