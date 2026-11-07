@@ -5,7 +5,7 @@ Researcher: `iosui-research-code`, team `iosui`. Read from branch `ios/interface
 How to read the references:
 
 - Paths are relative to the `TextMouth/` source folder unless they begin with another top-level folder. Every `ReaderViewModel*.swift` and `LibraryViewModel*.swift` is in `ViewModels/`.
-- `file:12` is a line; `file:12-20` is a range.
+- `file:12` is a line; `file:12-20` is a range. A bare `:12` is a line of the file named most recently, and `Name:12` is what is declared at line 12 of that file.
 - "first" means in the first version, "later" means not.
 - "Shared" wording lives in a type every target compiles and can be called from iOS. "Inline" wording is a string literal inside a Mac view: a worker must call that view, or move the string into a wording type and leave the Mac reading it from there.
 
@@ -33,13 +33,13 @@ Library sheets and alerts.
 - `LibraryBookInfoSheet`, `Views/Library/LibrarySheetViews.swift:7`: title and author of a plain book (first).
 - `MetadataEditorView`, `Views/Reader/MetadataEditorView.swift:16`: an EPUB's or an audiobook's details (first for reading them; saving is cheap to keep).
 - `FeedItemBookInfoSheet`, `Views/Library/FeedItemBookInfoSheet.swift:45` (later, with feeds).
-- `NewFolderSheet:353`, `LibraryFolderPicker:457`, `MoveFolderSheet:677`, `RenameFolderSheet:895`, `MoveFolderToParentSheet:951`, `DeleteFolderMoveContentsSheet:1033`, all in `Views/Library/LibrarySheetViews.swift` (first).
+- All first, in `Views/Library/LibrarySheetViews.swift`: `NewFolderSheet:353`, `LibraryFolderPicker:457`, `MoveFolderSheet:677`, `RenameFolderSheet:895`, `MoveFolderToParentSheet:951`, `DeleteFolderMoveContentsSheet:1033`.
 - `ImportDecisionSheet`, `Views/Library/ImportDecisionSheet.swift:18`, shown by `ImportDecisionPresenter`, `Views/Library/ImportDecisionPresenter.swift:48` (first, with a new presenter).
 - `AddToLibrarySheet`, `Views/Library/AddToLibrarySheet.swift:82`, model `AddToLibraryModel:18`, host `AddToLibraryHost`, `Views/Library/AddToLibraryHost.swift:54` (first in a smaller form: Files only).
 - `FolderSettingsSheet`, `Views/Library/FolderSettingsSheet.swift:117`, model `FolderSettingsModel:9` (later; first if the spec wants "When a book ends" per folder).
 - `TextInputView`, `Views/Library/TextInputView.swift:137`: New from Text (later).
 - `DataDirectoryUnavailableView`, `Views/Library/DataDirectoryUnavailableView.swift:103` (first, reworded: see section 7.27).
-- `LibraryIndexRecoverySheet:63` and `LibraryIndexRecoveryBanner:174`, `Views/Library/LibraryIndexRecoveryViews.swift` (first: a damaged index must say so).
+- First, since a damaged index must say so, in `Views/Library/LibraryIndexRecoveryViews.swift`: `LibraryIndexRecoverySheet:63`, `LibraryIndexRecoveryBanner:174`.
 - `PersistenceFailureBanner`, `Views/Library/PersistenceFailureBanner.swift:14` (first).
 - `DataDirectoryMoveSheet`, `Views/Library/DataDirectoryMoveSheet.swift:54` (never on the phone: no move).
 - `ReadingListOptionsBar`, `Views/Library/ReadingListOptionsBar.swift` (first, with the Reading List view).
@@ -50,7 +50,7 @@ Reader window (first, rebuilt for the phone).
 - Model: `ReaderViewModel`, `ViewModels/ReaderViewModel.swift:147`, and through it `SpeechService`, `AudioEngineService`, `AudioPlaybackService`, `NowPlayingSession`, `SleepTimerService.shared`, `ReadingStatsService.shared`, `TextSubstitutionService.shared`, `SpeechRenderCoordinator.shared`, `ReaderAutoplayRequests.shared`, `ReadingListOpenRequests.shared`, `WindowSwitchRequests.shared`, `PlaybackMemoryGuard.shared`.
 - Parts of `Views/Reader/ReaderView.swift`: `ReaderWhereAmIToolbarButton:251`, `ReaderLoadFailureView:290`, `ReaderLocationHeader:316`, `ReaderTextArea:373`, `ReaderErrorAlert:416`, `ReaderPanelSheets:463`, `ReaderBookInfoSheet:558`, `ReaderPanelCommands:600`, `ReaderCloudPhaseView:673` (later), `BookVoicePickerView:822`, `BookInfoBar:1227`.
 - `PlaybackControlsView`, `Views/Reader/PlaybackControlsView.swift:3`.
-- `JumpToPercentPanel:161`, `JumpToTimePanel:193`, `JumpToPagePanel:221`, `JumpFieldPanel:269`, `Views/Reader/ReaderJumpPanels.swift` (first).
+- First, in `Views/Reader/ReaderJumpPanels.swift`: `JumpToPercentPanel:161`, `JumpToTimePanel:193`, `JumpToPagePanel:221`, `JumpFieldPanel:269`.
 - `HeadingNavigatorView`, `Views/Reader/HeadingNavigatorView.swift:4` (first).
 - `BookmarkPanelView`, `Views/Reader/BookmarkPanelView.swift:54` (first).
 - `SleepTimerView`, `Views/Reader/SleepTimerView.swift:35` (first).
@@ -85,49 +85,49 @@ Later windows and sheets.
 
 Almost every menu item posts a notification (`App/MenuCommands.swift`), and the window that takes it acts. Names are at `App/MenuCommands.swift:847-978`. Reader listeners are `setupNotifications()`, `ReaderViewModel.swift:1118-1401`, unless named otherwise.
 
-File (`FileCommands`, `App/MenuCommands.swift:125-161`; plus `BookCommands:678-684`):
+File (`FileCommands`, `App/MenuCommands.swift:125-161`; plus the Export item of `BookCommands`, `:678-684`):
 
 - `ShortcutAction.openBook.title` "Open Book…" posts `.openBookFile` to `LibraryWindowRouter`, then `LibraryWindowView.takeGlobalAction`, `Views/ContentView.swift:414-416`, sets `showFileImporter`. First.
 - "New from Text…" posts `.newFromText`, `Views/ContentView.swift:417-419`. Later.
 - "New Recording…" calls `RecordingWindowController.shared.show(library:)`. Later.
 - `BookExportWording.commandTitle` calls `ExportCommandRouting.exportFromWindowInFront()`. Later.
 
-Playback (`PlaybackCommands:163-249`):
+Playback (`PlaybackCommands`, `App/MenuCommands.swift:163-249`):
 
 - "Play / Pause": `.togglePlayback`, `ReaderViewModel.swift:1127`, `togglePlayPause()`, `ReaderViewModel+Playback.swift:366`. First.
-- "Skip Forward": `.skipForward`, `:1141`, `skipForward(useShiftUnit:)`, `ReaderViewModel+Navigation.swift:130`. First.
-- "Skip Backward": `.skipBackward`, `:1149`, `skipBackward(useShiftUnit:)`, `ReaderViewModel+Navigation.swift:145`. First.
-- "Cycle Forward Navigation Unit": `.cycleForwardNavigationUnit`, `:1157`, `cyclePlaybackSkipUnit(direction:)`, `ReaderViewModel+Navigation.swift:58`. First.
-- "Cycle Backward Navigation Unit": `.cycleBackwardNavigationUnit`, `:1164`, the same. First.
+- "Skip Forward": `.skipForward`, `ViewModels/ReaderViewModel.swift:1141`, `skipForward(useShiftUnit:)`, `ReaderViewModel+Navigation.swift:130`. First.
+- "Skip Backward": `.skipBackward`, `ViewModels/ReaderViewModel.swift:1149`, `skipBackward(useShiftUnit:)`, `ReaderViewModel+Navigation.swift:145`. First.
+- "Cycle Forward Navigation Unit": `.cycleForwardNavigationUnit`, `ViewModels/ReaderViewModel.swift:1157`, `cyclePlaybackSkipUnit(direction:)`, `ReaderViewModel+Navigation.swift:58`. First.
+- "Cycle Backward Navigation Unit": `.cycleBackwardNavigationUnit`, `ViewModels/ReaderViewModel.swift:1164`, the same. First.
 - "Increase Speed": `.increaseSpeed`, `:1171`, `stepSpeed(forward: true)`, `ReaderViewModel+VoiceAndSpeed.swift:16`. First.
-- "Decrease Speed": `.decreaseSpeed`, `:1178`, `stepSpeed(forward: false)`. First.
+- "Decrease Speed": `.decreaseSpeed`, `ViewModels/ReaderViewModel.swift:1178`, `stepSpeed(forward: false)`. First.
 - "Where Am I?": `.whereAmI`, `:1260`, `whereAmI(.brief)`, `ReaderViewModel+WhereAmI.swift:34`. First.
 - "Where Am I? Full Summary": `.whereAmIFull`, `whereAmI(.full)`. First.
-- "Release Media Controls" (while `canReleaseMediaControls`): `.releaseMediaControls`, `:1134`, `releaseMediaControls()`, `ReaderViewModel+Playback.swift:353`. First, as the phone's way to stop.
-- "Copy Reading Position": `.copyReadingPosition`, `:1281`, `copyReadingPosition()`, `ReaderViewModel+WhereAmI.swift:773`. Works on iOS through `UIPasteboard` (`:780-782`). Cheap to keep.
+- "Release Media Controls" (while `canReleaseMediaControls`): `.releaseMediaControls`, `ViewModels/ReaderViewModel.swift:1134`, `releaseMediaControls()`, `ReaderViewModel+Playback.swift:353`. First, as the phone's way to stop.
+- "Copy Reading Position": `.copyReadingPosition`, `ViewModels/ReaderViewModel.swift:1281`, `copyReadingPosition()`, `ReaderViewModel+WhereAmI.swift:773`. Works on iOS through `UIPasteboard` (`:780-782`). Cheap to keep.
 - "Search in Book": `.searchInBook`, `Views/Reader/ReaderView.swift:619`. Later.
 
-Navigate (`NavigationCommands:251-343`):
+Navigate (`NavigationCommands`, `App/MenuCommands.swift:251-343`):
 
 - "Go to Library": `.goToLibrary`, router. On the phone: back to the list.
 - "Go Back": `.goBack`, `Views/Reader/ReaderView.swift:635`, `goBack()`, `ReaderViewModel+Bookmarks.swift:371`; in a Library window `Views/ContentView.swift:242`.
 - "Go Forward": `.goForward`, `Views/ContentView.swift:247`, Library windows only.
-- "Next Heading": `.nextHeading`, `:1185`, `nextHeading()`, `ReaderViewModel+Navigation.swift:833`. First.
-- "Previous Heading": `.previousHeading`, `:1192`, `previousHeading()`, `:852`. First.
-- "Go to Page…": `.goToPage`, `:1200`, `requestGoToPage()`, `ReaderViewModel+Pages.swift:332`. First.
-- "Next in Reading List": `.nextInReadingList`, `:1208`, `goThroughReadingList(.down)`, `ReaderViewModel+ReadingList.swift:194`.
-- "Previous in Reading List": `.previousInReadingList`, `:1215`, `goThroughReadingList(.up)`.
+- "Next Heading": `.nextHeading`, `ViewModels/ReaderViewModel.swift:1185`, `nextHeading()`, `ReaderViewModel+Navigation.swift:833`. First.
+- "Previous Heading": `.previousHeading`, `ViewModels/ReaderViewModel.swift:1192`, `previousHeading()`, `ViewModels/ReaderViewModel+Navigation.swift:852`. First.
+- "Go to Page…": `.goToPage`, `ViewModels/ReaderViewModel.swift:1200`, `requestGoToPage()`, `ReaderViewModel+Pages.swift:332`. First.
+- "Next in Reading List": `.nextInReadingList`, `ViewModels/ReaderViewModel.swift:1208`, `goThroughReadingList(.down)`, `ReaderViewModel+ReadingList.swift:194`.
+- "Previous in Reading List": `.previousInReadingList`, `ViewModels/ReaderViewModel.swift:1215`, `goThroughReadingList(.up)`.
 - "Next in Folder": `.nextInFolder`, `:1223`, `goThroughFolder(.down)`, `ReaderViewModel+FolderNavigation.swift:41`.
-- "Previous in Folder": `.previousInFolder`, `:1230`, `goThroughFolder(.up)`.
+- "Previous in Folder": `.previousInFolder`, `ViewModels/ReaderViewModel.swift:1230`, `goThroughFolder(.up)`.
 - "Show Headings": `.showHeadingList`, `Views/Reader/ReaderView.swift:607`, sets `panels.headings`. First.
 - "Show Sleep Timer": `.showSleepTimer`, `Views/Reader/ReaderView.swift:615`. First.
 - "Book Info": `.showBookInfo`, `Views/Reader/ReaderView.swift:643`; in a Library window, by `LibraryInfoRow.infoCommand`. First.
 
-Library (`LibraryCommands:345-567`). Each is answered in `LibraryView` through `takesCommand(_:)`, `Views/Library/LibraryView.swift:1667`.
+Library (`LibraryCommands`, `App/MenuCommands.swift:345-567`). Each is answered in `LibraryView` through `takesCommand(_:)`, `Views/Library/LibraryView.swift:1667`.
 
 - "Import Folder…": `.importDAISYFolder`, `presentDAISYFolderPanel()`, `Views/ContentView.swift:478`, an `NSOpenPanel` behind `#if os(macOS)`. Later.
 - "Speak Import Progress": `.speakImportProgress`, `speakImportProgress()`, `LibraryViewModel+Import.swift:541`. First, as a button on the progress view.
-- "Speak Download Progress", "Add Feed…", "Refresh All Feeds", "Import OPML…", "Export OPML…": later.
+- Later, each posting what a Library window answers (`App/MenuCommands.swift:397-433`): `ShortcutAction.speakDownloadProgress.title`, `.speakDownloadProgress`; `ShortcutAction.addFeed.title`, `.addFeed`; `FeedWording.refreshAllCommand`, `.refreshAllFeeds`; `FeedWording.importCommand`, `.importOPML`; `FeedWording.exportCommand`, `.exportOPML`. The Library menu's `ShortcutAction.newRecording.title` calls `RecordingWindowController.shared.show()` (`:404-406`).
 - "Speak Info", "Speak Full Info": `.speakInfo`, `.speakFullInfo`, `LibraryView.speakSelectedInfo(_:)`, `Views/Library/LibraryView.swift:1700`, `LibraryInfoSpeaker`; in a reader `speakInfo(_:now:)`, `ReaderViewModel+SpeakInfo.swift:27`. Optional first; row actions are the phone's place for it.
 - "Edit Mode": `.toggleEditMode`, `Views/Library/LibraryView.swift:791-798`. First.
 - "New Folder": `.newFolder`, `:768-773`. First.
@@ -136,17 +136,17 @@ Library (`LibraryCommands:345-567`). Each is answered in `LibraryView` through `
 - "Add to Reading List", "Remove from Reading List": `.addToReadingList`, `.removeFromReadingList`, `performReadingListCommand(_:)`, `:1503`. First.
 - "Folder or Feed Settings": `.showFolderOrFeedSettings`, `openFolderSettings(_:)`, `:1754`. Later.
 - "Go to View" submenu: `.goToLibraryView`, `goToView(numbered:)`, `:1847`. Never (a picker does it).
-- "Keep on This Mac", "Stop Keeping on This Mac": later (cloud).
-- Remove, titled by `LibraryRemoveCommandWording.menuBarTitle`: `.removeFromLibrary`, `:759-766`, `removeBooks(_:)`, `LibraryViewModel+BookOperations.swift:21`. First.
+- `LibraryCloudWording.keepName`, `LibraryCloudWording.stopKeepingName`: post `.keepOnThisMac`, `.stopKeepingOnThisMac` (`App/MenuCommands.swift:525-531`). Later (cloud).
+- Remove, titled by `LibraryRemoveCommandWording.menuBarTitle`, `Models/RemovalWording.swift:473`: `.removeFromLibrary`, `Views/Library/LibraryView.swift:759-766`, `removeBooks(_:)`, `LibraryViewModel+BookOperations.swift:21`. First.
 
-Bookmarks (`BookmarkCommands:572-594`):
+Bookmarks (`BookmarkCommands`, `App/MenuCommands.swift:572-594`):
 
-- "Toggle Bookmark": `.addBookmark`, `:1237`, `toggleBookmarkAtCurrentPosition()`, `ReaderViewModel+Bookmarks.swift:69`. First.
+- "Toggle Bookmark": `.addBookmark`, `ViewModels/ReaderViewModel.swift:1237`, `toggleBookmarkAtCurrentPosition()`, `ReaderViewModel+Bookmarks.swift:69`. First.
 - "Show Bookmarks": `.showBookmarkList`, `Views/Reader/ReaderView.swift:611`. First.
-- "Next Bookmark": `.nextBookmark`, `:1244`, `goToNextBookmark()`, `ReaderViewModel+Bookmarks.swift:237`. First.
-- "Previous Bookmark": `.previousBookmark`, `:1251`, `goToPreviousBookmark()`, `:248`. First.
+- "Next Bookmark": `.nextBookmark`, `ViewModels/ReaderViewModel.swift:1244`, `goToNextBookmark()`, `ReaderViewModel+Bookmarks.swift:237`. First.
+- "Previous Bookmark": `.previousBookmark`, `ViewModels/ReaderViewModel.swift:1251`, `goToPreviousBookmark()`, `ViewModels/ReaderViewModel+Bookmarks.swift:248`. First.
 
-Book (`BookCommands:668-749`), answered in `ReaderBookCommandsSupport`, `Views/Reader/ReaderBookCommands.swift:63-116`. All later:
+Book (`BookCommands`, `App/MenuCommands.swift:668-749`), answered in `ReaderBookCommandsSupport`, `Views/Reader/ReaderBookCommands.swift:24`, its receivers at `:63-116`. All later:
 
 - Edit Text in Default Editor, Edit Text With…: `editText(choosingApp:)`, `:209`.
 - Edit Manifest in Default Editor, Edit Manifest With…: `editManifest(choosingApp:)`, `:220`.
@@ -156,7 +156,7 @@ Book (`BookCommands:668-749`), answered in `ReaderBookCommandsSupport`, `Views/R
 - Edit Audio…: `editAudio()`, `:190`.
 - Move to Library…: `requestMoveToLibrary()`, `:178`.
 
-Actions with a key and no menu item (`Models/KeyboardShortcut.swift:8-146`): "Up One Level", "Restart Sleep Timer" (`:1301`, `restartOrStartLastSleepTimer()`, `ReaderViewModel+Playback.swift:3283`), "Open Selected Book", "Select All", "Go to View 1" to "Go to View 9". The Restart Sleep Timer action is worth a button on the phone.
+Actions with a key and no menu item (`Models/KeyboardShortcut.swift:8-146`): "Up One Level", "Restart Sleep Timer" (`ViewModels/ReaderViewModel.swift:1301`, `restartOrStartLastSleepTimer()`, `ReaderViewModel+Playback.swift:3283`), "Open Selected Book", "Select All", "Go to View 1" to "Go to View 9". The Restart Sleep Timer action is worth a button on the phone.
 
 The Mac's `KeyboardShortcutManager` (`Services/KeyboardShortcutManager.swift`) posts these same notifications from an `NSEvent` monitor, which exists only on the Mac (`:42-44`, `:109-113`, `:574-586`).
 
@@ -172,7 +172,7 @@ Every call below is `@MainActor`. A view reads the published state named and cal
 - Open a book: `ReadingListOpenRequests.shared.open(_:shownIn:libraryIsMoving:with:)`, `Services/ReadingListOpenRequests.swift:79`, wraps the opener so the Reading List marks the open.
 - Continue button: `lastOpenedBook`, `LibraryViewModel+BookOperations.swift:966`.
 - Which books are open: `openBookIDs`, `ViewModels/LibraryViewModel.swift:173`.
-- Remove: `removeBooks(_:)`, `LibraryViewModel+BookOperations.swift:21`, which either asks, through `showRemoveBookDialog` and `pendingRemoveBooks`, `ViewModels/LibraryViewModel.swift:206-207`, or removes; the dialog's answers are `removeBooksAndDelete(_:)`, `:111`, and `removeBooksFromLibraryOnly(_:)`, `:41`.
+- Remove: `removeBooks(_:)`, `LibraryViewModel+BookOperations.swift:21`, which either asks, through `showRemoveBookDialog` and `pendingRemoveBooks`, `ViewModels/LibraryViewModel.swift:206-207`, or removes. The dialog's answers are `removeBooksAndDelete(_:)`, `LibraryViewModel+BookOperations.swift:111`, and `removeBooksFromLibraryOnly(_:)`, `:41`.
 - Errors: `errorMessage`, `errorTitle`, `showError`, `ViewModels/LibraryViewModel.swift:155-167`. The root view must present them (`Views/ContentView.swift:187-191`).
 - Plain types: `Book`, `Models/Book.swift`, with `isUnopened:248`, `estimatedTimeRemaining(wpm:):1028`, `percentComplete:1064`, `restsAtEnd:1085`; `BookFormat.displayName:64`; `CountWording`, `Models/CountWording.swift:10`; `LibrarySelectionPolicy`, `Views/Library/LibraryView.swift:80`.
 - Static word helpers usable off the view: `BookRow.progressText(for:)`, `spokenProgress(for:besideDownloadPercentage:)`, `timeRemaining(for:wpm:)`, `remainingText(_:)`, `accessibilityHint(isEditMode:isEditSelected:)`, `Views/Library/LibrarySubviews.swift:568`, `:636-670`.
@@ -191,9 +191,9 @@ Every call below is `@MainActor`. A view reads the published state named and cal
 ### 2.3 Sorting
 
 - Read: `sortState(at:)`, `LibraryViewModel+SortAndOrder.swift:242`, returns `LibrarySortState`, `Models/LibrarySortState.swift:185`.
-- Change: `userChangedSort(_:at:)`, `:255`, with `LibrarySortChange.choose(_)` or `.reverseDirection`, `Models/LibrarySortState.swift:140`; say `shown.changeAnnouncement`.
-- To subfolders: `applySortToSubfolders(_:from:)`, `:282`.
-- Manual order: `moveBook(_:direction:in:)`, `:338`, returns `MoveResult` with `placeAnnouncement`; `reorderBooks(in:from:to:)`, `:390`; `LibraryLocation.reorderTarget(sortedBy:)`, `Models/LibrarySortState.swift:107`; `LibraryManualMoves`, `Views/Library/LibrarySubviews.swift:697`.
+- Change: `userChangedSort(_:at:)`, `LibraryViewModel+SortAndOrder.swift:255`, with `LibrarySortChange.choose(_)` or `.reverseDirection`, `Models/LibrarySortState.swift:140`; say `shown.changeAnnouncement`.
+- To subfolders: `applySortToSubfolders(_:from:)`, `LibraryViewModel+SortAndOrder.swift:282`.
+- Manual order: `moveBook(_:direction:in:)`, `LibraryViewModel+SortAndOrder.swift:338`, returns `MoveResult` with `placeAnnouncement`; `reorderBooks(in:from:to:)`, `:390`; `LibraryLocation.reorderTarget(sortedBy:)`, `Models/LibrarySortState.swift:107`; `LibraryManualMoves`, `Views/Library/LibrarySubviews.swift:697`.
 - Plain types that need nothing else: `LibrarySortField`, `ViewModels/LibraryViewModel.swift:5`; `LibrarySortState` with all its words; `LibraryBookSorter`, `Models/LibraryBookSorter.swift`.
 
 ### 2.4 Library views
@@ -219,15 +219,15 @@ Every call below is `@MainActor`. A view reads the published state named and cal
 
 ### 2.7 Importing
 
-- Entry: `importFiles(urls:toFolder:from:addingToReadingList:)`, `LibraryViewModel+Import.swift:888`, as the Mac's `.fileImporter` calls it (`Views/ContentView.swift:167-186`), or `importAndOpenFiles(urls:from:)`, `:135`, for a file handed in from outside (share sheet, Open In). Pass `origin` nil.
-- Types for the picker: `FileImportService.supportedTypes`, `Services/FileImportService.swift:2843`. Its `UTType(importedAs:)` entries (`:2874-2886`) and `UTType("com.textmouth...")` entries (`:2911-2920`) rely on declarations in `Resources/Info.plist`, which the iOS target leaves out (`project.yml:278-280`). Not run.
+- Entry: `importFiles(urls:toFolder:from:addingToReadingList:)`, `LibraryViewModel+Import.swift:888`, as the Mac's `.fileImporter` calls it (`Views/ContentView.swift:167-186`), or `importAndOpenFiles(urls:from:)`, `LibraryViewModel+Import.swift:135`, for a file handed in from outside (share sheet, Open In). Pass `origin` nil.
+- Types for the picker: `FileImportService.supportedTypes`, `Services/FileImportService.swift:2843`. Its `UTType(importedAs:)` entries (`:2874-2885`) and `UTType("com.textmouth...")` entries (`:2911-2919`) rely on declarations in `Resources/Info.plist`, which the iOS target leaves out (`project.yml:278-280`). A `UTType("...")` with no declaration is nil and drops from the list (not run).
 - Security scope: each async path takes it itself (`LibraryViewModel+Import.swift:293`, `:569`, `:660`), but `importSources(for:)`, `:157`, touches the folder first, outside any scope, through `DAISYParser.packageEntryPoints(in:)`.
 - Progress: `isImporting`, `ViewModels/LibraryViewModel.swift:220`; `importProgress`, `:225`, `ImportProgress.state`, `ViewModels/ImportProgress.swift:232-249`, with `details(at:):179`, `lines(at:):201`, `spokenStatus(at:):210`. `LibraryWindowView.importProgressOverlay(for:at:)`, `Views/ContentView.swift:620`, builds the overlay.
 - Cancel: `cancelImports()`, `LibraryViewModel+Import.swift:491`.
 - Questions: `importDecisions`, `ViewModels/LibraryViewModel.swift:203`; `.current`, `Models/ImportDecisionQueue.swift:25`; `currentImportDecisionWording`, `LibraryViewModel+Duplicates.swift:38`; `answerImportDecision(_:with:)`, `:228`.
 - Opening what was imported: set `library.readerOpener`, `ViewModels/LibraryViewModel.swift:232`, to the iPhone's own opener.
 - Plain types: `ImportDecision`, `ImportDecisionAnswer`, `ImportDecisionWording`, `Models/ImportDecision.swift:50`, `:178`, `:215`; `ImportDecisionQueue`; `ImportProgressWording`, `Models/ImportProgressWording.swift:6`; `ImportStep`, `ImportFailure`, `Services/ImportFailure.swift`; `OriginalFileDeletionWording`.
-- What iOS cannot read today: every conversion, through `WatchedProcess+iOS`. A Word 6 or 95 document says "Converting this kind of file is not available on iPhone yet."; Ogg, Opus, AC-3, AMR, and the rest of `ImportAudioConverter.convertedExtensions`, `Services/ImportAudioConverter.swift:41-58`, fail the same way (`.convert` verdict, `Parsers/AudioContentSniffer.swift:110-111`); braille needs the helper, so BRF, BRL, and PEF import fail at translation (`BrailleTranslator`, not run). MP3, ADTS, WAV, AIFF, and FLAC are `.leave` (`:112-113`).
+- What iOS cannot read today: everything that needs a helper program, since `WatchedProcess.run` throws (`Platform/iOS/Services/WatchedProcess+iOS.swift:93-102`) and the import fails with "Converting this kind of file is not available on iPhone yet." A Word 6 or Word 95 document is left to textutil (`Parsers/WordDocumentReader.swift:18-19`, `Parsers/TextutilDocumentReader.swift:232`). Ogg, Opus, AC-3, AMR, and the rest of `ImportAudioConverter.convertedExtensions`, `Services/ImportAudioConverter.swift:41-58`, go to `afconvert` (the `.convert` verdict, `Parsers/AudioContentSniffer.swift:111-112`). BRF, BRL, and PEF go to the braille helper (`Parsers/BrailleBookReader.swift:11-13`, `Services/BrailleTranslator.swift:711`). All traced from the code, not run. MP3, ADTS, WAV, AIFF, and FLAC are `.leave`, and import as they are (`Parsers/AudioContentSniffer.swift:113-114`).
 
 ### 2.8 Reader for text
 
@@ -251,22 +251,24 @@ Every call below is `@MainActor`. A view reads the published state named and cal
 - Voices: `VoiceCatalog.shared`, `Services/VoiceCatalog.swift:24`; `voices`, `languages`, `isLoaded`, `:28-33`; `loadIfNeeded()`, `:70`; `voices(forLanguage:)`, `:111`; `listNow()`, `:81`. Quality: `qualityLabel`, `Parsers/ParserUtilities.swift:9`.
 - This book: `setLocalVoice(_:)`, `ReaderViewModel+VoiceAndSpeed.swift:57`; `adjustSpeed(delta:)`, `:33`; `stepSpeed(forward:)`, `:16`; `adjustPitch(to:)`, `:46`; `saveSettingsToGlobal()`, `:129`; `resetToGlobalSettings()`, `:147`; `hasLocalSettings`, `:173`.
 - Read: `speechService.currentVoice`, `.wordsPerMinute`, `.pitchMultiplier`, `Services/SpeechService.swift:658-669`; forwarded `currentWPM`. Limits `minimumWPM` 50, `maximumWPM` 650, `:994-995`; `speechSpeedStep` 25, `ReaderViewModel+VoiceAndSpeed.swift:11`.
-- Global: `SettingsViewModel.selectedVoiceID:194`, `wordsPerMinute:367`, `pitchMultiplier:373`, `availableVoices:317`, `availableLanguages:319`, `refreshVoices()`, `selectedVoice`, `voiceQualityLabel(_:)`.
-- Plain: `SpeechService.rateForWPM(_:):2311`, `clampedPitch(_:):2202`, `pitchLabel(_:):2207`.
+- Global, in `ViewModels/SettingsViewModel.swift`: `selectedVoiceID:194`, `wordsPerMinute:367`, `pitchMultiplier:373`, `availableVoices:317`, `availableLanguages:319`, `refreshVoices()`, `selectedVoice`, `voiceQualityLabel(_:)`.
+- Plain, in `Services/SpeechService.swift`: `rateForWPM(_:):2311`, `clampedPitch(_:):2202`, `pitchLabel(_:):2207`.
 - `BookVoicePickerView.ReaderState`, `Views/Reader/ReaderView.swift:829`, shows how to follow a reader without 8 Hz redraws.
 
 ### 2.11 Navigation units
 
 All go through `performSkip(unit:forward:)`, `ReaderViewModel+Navigation.swift:230`, from `skipForward(useShiftUnit:)`, `:130`, and `skipBackward(useShiftUnit:)`, `:145`. The two skip entries debounce 0.4 seconds (`skipDebounceWindow`, `ReaderViewModel.swift:721`; `acquireSkipToken()`, `ReaderViewModel+Navigation.swift:167`): a second quick press is dropped in silence.
 
-- Unit state: `playbackSkipForwardUnit:14`, `playbackSkipBackwardUnit:19`, resolved by `PlaybackSkipUnitPolicy.resolve`, `ViewModels/SettingsViewModel.swift:160`. Change: `setSharedPlaybackSkipUnit(_:):36`, `setPlaybackSkipUnit(_:direction:):43`, `cyclePlaybackSkipUnit(direction:):58`. Choices: `navigationUnitChoices(keeping:)`, `ReaderViewModel+Pages.swift:114`. Plain: `SkipUnit`, `ViewModels/SettingsViewModel.swift:38`, with `iconName(forward:):111`, `playbackMenuAccessibilityLabel(direction:):86`, `nextNavigationUnit:99`.
-- Sentence: `nextSentence():356`, `previousSentence():382`. Pure scans: `nextSentenceStart(in:after:):504`, `sentenceStart(in:before:):524`.
-- Paragraph: `nextParagraph():418`, `previousParagraph():443`. Pure: `nextParagraphStart(in:after:):543`, `paragraphStart(in:before:):566`.
-- Heading: `nextHeading():833`, `previousHeading():852`, `navigateToHeading(_:):869`. Subheading: `nextSubheading():296`, `previousSubheading():314`. Pure: `headingAnnouncement(arrivingAt:in:):336`, `nextHeading(in:chapterIndex:characterOffset:):1112`, `previousHeading(in:chapterIndex:characterOffset:):1125`.
+- Unit state, in `ReaderViewModel+Navigation.swift`: `playbackSkipForwardUnit:14`, `playbackSkipBackwardUnit:19`; resolved by `PlaybackSkipUnitPolicy.resolve`, `ViewModels/SettingsViewModel.swift:160`.
+- Change, in `ReaderViewModel+Navigation.swift`: `setSharedPlaybackSkipUnit(_:):36`, `setPlaybackSkipUnit(_:direction:):43`, `cyclePlaybackSkipUnit(direction:):58`. Choices: `navigationUnitChoices(keeping:)`, `ReaderViewModel+Pages.swift:114`.
+- Plain: `SkipUnit`, `ViewModels/SettingsViewModel.swift:38`, with `iconName(forward:):111`, `playbackMenuAccessibilityLabel(direction:):86`, `nextNavigationUnit:99`.
+- Sentence, in `ReaderViewModel+Navigation.swift`: `nextSentence():356`, `previousSentence():382`. Pure scans: `nextSentenceStart(in:after:):504`, `sentenceStart(in:before:):524`.
+- Paragraph, in the same file: `nextParagraph():418`, `previousParagraph():443`. Pure: `nextParagraphStart(in:after:):543`, `paragraphStart(in:before:):566`.
+- Heading, in the same file: `nextHeading():833`, `previousHeading():852`, `navigateToHeading(_:):869`. Subheading: `nextSubheading():296`, `previousSubheading():314`. Pure: `headingAnnouncement(arrivingAt:in:):336`, `nextHeading(in:chapterIndex:characterOffset:):1112`, `previousHeading(in:chapterIndex:characterOffset:):1125`.
 - Page: `nextPage()`, `previousPage()`, `ReaderViewModel+Pages.swift:185`, `:203`. Pure: `nextPage(in:chapterIndex:characterOffset:isPassedOver:):57`, `previousPage(...)`, `:73`, `unit(after:bookHasPages:):94`.
 - Bookmark: `goToNextBookmark()`, `goToPreviousBookmark()`, `ReaderViewModel+Bookmarks.swift:237`, `:248`.
-- Time: `skipByTime(seconds:)`, `:693` (text), `skipCharacters(count:)`, `:768` (audio, 10 characters a second, `audioCharsPerSecond`, `ReaderViewModel.swift:708`). A skip by time announces nothing.
-- Every jump: `navigateTo(chapterIndex:characterOffset:)`, `:893`. Return keeps a place: `navigatePreservingReturnPosition(chapterIndex:characterOffset:)`, `ReaderViewModel+Bookmarks.swift:401`; `returnToSavedPosition()`, `:409`; `goBack()`, `:371`; `autoPlayIfEnabled()`, `:385`.
+- Time: `skipByTime(seconds:)`, `ReaderViewModel+Navigation.swift:693` (text), `skipCharacters(count:)`, `:768` (audio, 10 characters a second, `audioCharsPerSecond`, `ReaderViewModel.swift:708`). A skip by time announces nothing.
+- Every jump: `navigateTo(chapterIndex:characterOffset:)`, `ReaderViewModel+Navigation.swift:893`. Return keeps a place: `navigatePreservingReturnPosition(chapterIndex:characterOffset:)`, `ReaderViewModel+Bookmarks.swift:401`; `returnToSavedPosition()`, `:409`; `goBack()`, `:371`; `autoPlayIfEnabled()`, `:385`.
 
 ### 2.12 Go to Page
 
@@ -287,7 +289,7 @@ All go through `performSkip(unit:forward:)`, `ReaderViewModel+Navigation.swift:2
 ### 2.15 Where Am I?
 
 - `whereAmI(_:)`, `ReaderViewModel+WhereAmI.swift:34`, `.brief` or `.full`; `cancelWhereAmIIfActive()`, `:416`; state `isWhereAmISpeaking`, `ReaderViewModel.swift:220`.
-- Pure: `briefWhereAmISummary(...)`, `:146`; `fullWhereAmISummary(...)`, `:212`; `whereAmISummary(parts:quoting:)`, `:266`; `whereAmIQuote(of:)`, `:298`; `readingPositionSummary(...)`, `:830`; `SummaryPress`, `SummaryDetail`, `Models/SummaryPress.swift:33`, `:9`; `HeadingPosition`, `Models/DocumentContent.swift:318`.
+- Pure: `briefWhereAmISummary(...)`, `ReaderViewModel+WhereAmI.swift:146`; `fullWhereAmISummary(...)`, `:212`; `whereAmISummary(parts:quoting:)`, `:266`; `whereAmIQuote(of:)`, `:298`; `readingPositionSummary(...)`, `:830`; `SummaryPress`, `SummaryDetail`, `Models/SummaryPress.swift:33`, `:9`; `HeadingPosition`, `Models/DocumentContent.swift:318`.
 - It speaks with its own `whereAmISynth`, `ReaderViewModel.swift:389`, in the book's voice and speed, not through VoiceOver.
 
 ### 2.16 Sleep timer
@@ -299,7 +301,7 @@ All go through `performSkip(unit:forward:)`, `ReaderViewModel+Navigation.swift:2
 
 ### 2.17 Now Playing and remote commands
 
-- A reader's own: `nowPlayingService`, `ReaderViewModel.swift:244`, `NowPlayingSession`, `Services/NowPlayingService.swift:101`. The reader sets it up (`setupCallbacks()`, `ReaderViewModel.swift:1051-1101`) and updates it as it plays; a view does nothing.
+- A reader's own: `nowPlayingService`, `ReaderViewModel.swift:244`, `NowPlayingSession`, `Services/NowPlayingService.swift:101`. The reader sets it up (`setupCallbacks()`, `ReaderViewModel.swift:1014`, its Now Playing part at `:1051-1101`) and updates it as it plays; a view does nothing.
 - Coordinator: `NowPlayingService.shared`, `Services/NowPlayingService.swift:239`; `setup:462`, `focus:518`, `prepareForPlayback:552`, `unregister:613`, `setupRemoteCommands:741`, `updateNowPlayingInfo:1167`, `writeMediaPlayerNowPlaying:1223`, `clearNowPlaying:1253`.
 - `canReleaseMediaControls`, `ReaderViewModel.swift:2105`; `holdsMediaControls`, `Services/NowPlayingService.swift:180`.
 - What the system is told: title, artist, media type, playback rate 1 or 0 (`:1230-1234`), `playbackState` (`:1237`). No duration, no elapsed time, no artwork.
@@ -317,7 +319,7 @@ All go through `performSkip(unit:forward:)`, `ReaderViewModel+Navigation.swift:2
 
 - Reader: `savePosition()`, `ReaderViewModel.swift:2151`; `savePositionIfMoved()`, `:2166`; live publish `scheduleLivePositionPublish()`, `:2195`, `publishLivePosition(now:)`, `:2210`, once a second; `PlaybackCheckpointPolicy.persistenceInterval` 30 seconds, `:132`.
 - Library: `persistReadingPosition(bookID:position:markingOpened:)`, `LibraryViewModel+BookOperations.swift:689`; `updateLiveReadingPosition(bookID:position:)`, `:666`.
-- Flush everything: `PlaybackMemoryGuard.savePendingWrites()`, `Services/PlaybackMemoryGuard.swift:442` or `UnsavedChangesTerminationGuard.flushPendingWrites()`, `App/UnsavedChangesTermination.swift:187`, which both compile on iOS.
+- Flush everything: `PlaybackMemoryGuard.savePendingWrites()`, `Services/PlaybackMemoryGuard.swift:448`, or `UnsavedChangesTerminationGuard.flushPendingWrites()`, `App/UnsavedChangesTermination.swift:187`, both of which compile on iOS.
 - Plain: `ReadingPosition`, `Models/Book.swift:1685`; `TextAnchor`, `PlaceRelocator`.
 
 ### 2.20 Reading statistics
@@ -358,7 +360,7 @@ Reuse with little change. For each the change is on one or two lines, wrapped so
 - `NewFolderSheet`, `MoveFolderSheet`, `RenameFolderSheet`, `MoveFolderToParentSheet`, `DeleteFolderMoveContentsSheet`: frames at `Views/Library/LibrarySheetViews.swift:410`, `:817`, `:941`, `:1020`, `:1101`.
 - `EditModeBar`, `Views/Library/LibrarySubviews.swift:13`: too many buttons in one row.
 - `LibraryBookListRow`, `Views/Library/LibrarySubviews.swift:794`: right as the row unit (`Equatable`, cached), but its menu (`:913-1021`) offers Mac commands (Export…, Show in Finder through `cloudCommands`), and it has no tap: a book opens by VoiceOver's default action (`:896-902`) or the context menu's Open, and on the Mac by Return, `.openSelectedBook`, `Views/Library/LibraryView.swift:751`. A sighted tap on iOS does nothing.
-- `AddToLibrarySheet`, `Views/Library/AddToLibrarySheet.swift:82`: fixed `width`/`height`, and `AddToLibraryHost` makes a `KeyboardShortcutManager` to show keys (`Views/Library/AddToLibraryHost.swift:54`).
+- `AddToLibrarySheet`, `Views/Library/AddToLibrarySheet.swift:82`: fixed `width`/`height`, and `AddToLibraryHost` makes a `KeyboardShortcutManager` to show keys (`Views/Library/AddToLibraryHost.swift:68`).
 
 Only makes sense on a Mac:
 
@@ -384,21 +386,24 @@ What compile but do nothing on iOS, so a reused view loses them without an error
 5. The view's `init`, `Views/Reader/BookReaderWindowView.swift:18-39`, finds the book or a placeholder "Unknown", and sets `_viewModel = StateObject(wrappedValue: Self.makeReader(...))`.
 6. `ReaderViewModel.init`, `ReaderViewModel.swift:752-816`, in order: keeps its services; `libraryViewModel.registerOpenBook(book.id)` (`:785`); restores the position (`:788-791`); `applyLocalSpeechOverrides()` (`:794`); `setupCallbacks()` (`:796`), which registers with Now Playing and so claims remote commands; `setupNotifications()`; `observeSpokenAudioSettings()`; `observeLibraryUpdates()`; `observeReadingList()`; `observeSleepTimerHandOvers()`; `forwardSpeechState()`; `followPlaybackForMemoryGuard()`; `setupAudioCallbacks()` for an audiobook; and `loadContent()` (`:815`). The reader starts loading in its initializer.
 7. `loadContent()`, `:1455`, reads on `loadQueue`, a global queue, through `readContent(of:)`, `:1492`. Then `finishLoading`, `:1643`, and `showLoadedContent(_:readFrom:)`, `:1660`, on the main actor: publishes `content` and headings, brings the place into range, sets `hasFinishedBook`, `isLoading = false`, saves, `refreshPlaybackUI()`, `claimSleepTimerHandOver()`, `placeFocusAfterSwitchIfDue()`, `claimAutoplayRequest()`, `prepareOpenedChapterSpeech()`.
-8. The view's `body`: `ReaderView(viewModel:)`, with `WindowAccessor` (`:90-105`), whose `onWindowFound` calls `viewModel.attach(to: window)` (`ReaderViewModel+NextBookWindow.swift:96`) and `LibraryWindowRouter.shared.registerReaderWindow`; `onWindowBecameKey` calls `viewModel.windowBecameKey()` (`ReaderViewModel.swift:2116`). `onAppear` calls `libraryViewModel.markBookOpened(bookID)` (`:121`).
+8. The view's `body`: `ReaderView(viewModel:)`, with `WindowAccessor` (`Views/Reader/BookReaderWindowView.swift:90-105`), whose `onWindowFound` calls `viewModel.attach(to: window)` (`ReaderViewModel+NextBookWindow.swift:96`) and `LibraryWindowRouter.shared.registerReaderWindow`; `onWindowBecameKey` calls `viewModel.windowBecameKey()` (`ReaderViewModel.swift:2116`). `onAppear` calls `libraryViewModel.markBookOpened(bookID)` (`Views/Reader/BookReaderWindowView.swift:121`).
 9. `ReaderView.onAppear` sets `viewModel.soundEffectService` (`Views/Reader/ReaderView.swift:28-30`). Until then the reader makes no sounds.
 10. A press of Play: `togglePlayPause()`, then `play()` (`ReaderViewModel+Playback.swift:37`): claims media controls (`nowPlayingService.activateRemoteCommandsIfNeeded()`, `:76`), plays the sound, `recordPlaybackStarted()`, `readingStatsService.startSession`, `sleepTimerService.resumeCountdown`, then speech or audio (section 6).
 
 ### 3.2 What it needs and who owns it
 
 - Needs: a `Book`, `LibraryViewModel`, `SettingsViewModel`. Everything else defaults to a shared store (`ReaderViewModel.swift:756-764`).
-- Owner on the Mac: `@StateObject` in `BookReaderWindowView`. SwiftUI keeps a closed window's views for the session, so `close()` must let go of everything by hand (`releaseWhatGrowsWithTheBook()`, `:2307`).
+- Owner on the Mac: `@StateObject` in `BookReaderWindowView`. SwiftUI keeps a closed reader window, and with it the reader, for the rest of the session, so `close()` must let go of everything by hand (`releaseWhatGrowsWithTheBook()`, `:2293-2307`).
 - Window type: `weak var hostWindow: PlatformWindow?`, `:382`. Nil is a supported state: tests run that way, and `WindowCommandRouting.shouldAccept` returns true for a nil host (`Views/Library/LibraryView.swift:30`).
+- How it gets its window: `WindowAccessor` (`Platform/macOS/Views/Reader/WindowAccessor.swift:8`) reports the window once the view is in one, and `attach(to:)` keeps it as `hostWindow` (`ReaderViewModel+NextBookWindow.swift:96-97`). The iOS stand-in never reports (`Platform/iOS/Views/Reader/WindowAccessor+iOS.swift:8`), so `hostWindow` stays nil there.
+- `SwitchedWindowFocus`: once a switch has made a reader, `placeFocusAfterSwitch` (`ViewModels/ReaderViewModel.swift:553`) places focus in its window. On iOS `place(in:)` is empty (`Platform/iOS/Views/SwitchedWindowFocus+iOS.swift:22-24`).
+- `FrontWindowKind` (`Platform/macOS/App/FrontWindowKind.swift:12`): the kind of window in front, for the menus' keys. Only `App/MenuCommands.swift` reads it, no reader does, and on iOS its `kind` is always nil (`Platform/iOS/App/FrontWindowKind+iOS.swift:13`).
 
 ### 3.3 What happens at close
 
 `close()`, `ReaderViewModel.swift:2239-2290`, guarded by `hasClosed`: ends the next-episode wait; `endCloudWorkForClose()`; cancels UI work; `stop()` (`ReaderViewModel+Playback.swift:482`), which stops speech or audio, ends the listening session, clears Now Playing, and saves; `savePosition()`; `stopWhereAmISynthesizer()`; `nowPlayingService.clearNowPlaying()`; `nowPlayingService.close()` (`unregister`); stops a sleep timer it owns unless it is held for the next book; `forgetLastOwner`; `removeWorkingCopy()`; `bookUpdates.unwatch`; `unregisterOpenBook`; `cancelHeld` when no other reader of the book is left; `releaseWhatGrowsWithTheBook()`, which empties `cancellables` and sets `content = nil`. A closed reader is finished: it never plays again, and a new one must be made.
 
-There is no `deinit` cleanup, since `deinit` is not main-actor isolated.
+There is no `deinit` cleanup, since "Swift deinitializers are nonisolated" (`ViewModels/ReaderViewModel.swift:2236-2238`).
 
 ### 3.4 What is saved, and when
 
@@ -416,7 +421,7 @@ There is no `deinit` cleanup, since `deinit` is not main-actor isolated.
 - `ReaderViewModel.swift:553`: `placeFocusAfterSwitch`, a stand-in.
 - `ReaderViewModel.swift:2116`: `windowBecameKey()`, which nothing calls on iOS.
 - `ReaderViewModel+NextBookWindow.swift:42-60`: `windowStanding`, `.noWindow` on iOS, unless `windowStandingOverride` (`ReaderViewModel.swift:549`) is set.
-- `ReaderViewModel+NextBookWindow.swift:79-85`: `switchingTheWindowCouldLoseWork`, always true on iOS with no override, because `.noWindow.isBusy` is true (`Models/NextBookWindow.swift:67-69`).
+- `ReaderViewModel+NextBookWindow.swift:79-85`: `switchingTheWindowCouldLoseWork`, always true on iOS with no override, because `.noWindow.isBusy` is true (`Models/NextBookWindow.swift:65-67`).
 - `ReaderViewModel+NextBookWindow.swift:96-113`: `attach(to:)`, `placeFocusAfterSwitchIfDue()`. Nothing calls `attach` on iOS, so a `WindowSwitchRequest` is left to lapse (`Services/ReaderRequestStore.swift:56`, 30 seconds).
 - `ReaderViewModel+NextBookWindow.swift:194-198`: closes the host window on the Mac alone.
 - `ReaderViewModel+SpeechRefusal.swift:14-32`: `speechRefusalWindowStanding`, always `.behind` on iOS, so a refusal says `SpeechRefusalWording.announcement` ("Details are in the book's window.") in place of moving to the sheet.
@@ -428,15 +433,15 @@ There is no `deinit` cleanup, since `deinit` is not main-actor isolated.
 
 ### 3.6 Two readers
 
-- Nothing limits how many readers exist. Windows differ by book ID, and the same ID brings its window forward. A book can have two readers only through tests or a race, which is why `openReaderCounts` counts per book (`ViewModels/LibraryViewModel.swift:182`, `LibraryViewModel+BookOperations.swift:940`, `:954`).
+- Nothing limits how many readers exist. Windows differ by book ID, and the same ID brings its window forward. `openReaderCounts` still counts per book, "since two windows may show one book" (`ViewModels/LibraryViewModel.swift:179-182`, `LibraryViewModel+BookOperations.swift:940`, `:954`).
 - Only one plays: `NowPlayingService.prepareForPlayback(ownerID:)`, `Services/NowPlayingService.swift:552`, pauses every other reader, reached from every start through `activateRemoteCommandsIfNeeded()`.
 - One sleep timer serves all: `SleepTimerService.shared`, each call carrying `readerID`.
 - Shared singletons a reader touches: `SleepTimerService.shared`, `ReadingStatsService.shared`, `TextSubstitutionService.shared`, `ReaderAutoplayRequests.shared`, `ReadingListOpenRequests.shared`, `WindowSwitchRequests.shared`, `SpeechRenderCoordinator.shared`, `NowPlayingService.shared`, `PlaybackMemoryGuard.shared`, `CloudServices`, `BookCloudStates.shared`, `ReaderWorkingCopies.shared`, `VoiceCatalog.shared`, `TranscribedBooks.shared`, `ConfigService.shared`.
 
 ### 3.7 Next-book window switching
 
-- The Mac: `showNextBook(_:under:openingANewWindowWith:)`, `ReaderViewModel+NextBookWindow.swift:125`, asks `NextBookWindowRule.action(choice:isBusy:canSwitch:nextBookIsOpenElsewhere:)`, `Models/NextBookWindow.swift` (in `NextBookWindowRule`, `:73`). `.switchThisWindow` sets `hasSwitchedWindow`, leaves a window-switch request, and calls `nextBookWindowSwitcher`; the scene sets `$bookID`, and `.id(bookID)` makes a new view and reader; the old view's `onDisappear` closes the old reader.
-- Before any of that, every request the new reader claims is made: `autoplayRequests.request(for:from:)` (`ReaderViewModel+Playback.swift:3003`), `readingListRequests`, `sleepTimerService.markAsked`. The new reader claims them as its load ends.
+- The Mac: `showNextBook(_:under:openingANewWindowWith:)`, `ReaderViewModel+NextBookWindow.swift:125`, asks `NextBookWindowRule.action(choice:isBusy:canSwitch:nextBookIsOpenElsewhere:)`, `Models/NextBookWindow.swift:133`. `.switchThisWindow` sets `hasSwitchedWindow`, leaves a window-switch request, and calls `nextBookWindowSwitcher` (`ReaderViewModel+NextBookWindow.swift:179-186`); the scene sets `$bookID`, and `.id(bookID)` makes a new view and reader; the old view's `onDisappear` closes the old reader.
+- Before any of that, every request the new reader claims is made: `autoplayRequests.request(for:from:)` (`ReaderViewModel+Playback.swift:3003`), `readingListRequests`, and `sleepTimerService.markAsked(forBook:)` (`ReaderViewModel+NextBookWindow.swift:159`). The new reader claims them as its load ends.
 
 ### 3.8 What an iPhone app must do differently
 
@@ -446,28 +451,29 @@ There is no `deinit` cleanup, since `deinit` is not main-actor isolated.
 - Set `reader.soundEffectService` right after making it, and not from a view's `onAppear`, or a Play from the AirPods or an autoplay comes first.
 - Open: if a reader for that book exists, show it. Otherwise make the new one with `makeReader`, then `close()` the old. Keep `close()` out of every `onDisappear`.
 - Go on to the next book, one of two ways:
-  - Set `reader.nextBookWindowSwitcher` to the coordinator's "show this book" and `reader.windowStandingOverride = .onScreen`, but compute the override so a sheet or a focused field counts as busy, since `windowStanding` no longer reads them on iOS. `.switchThisWindow` then runs, and the new reader claims the autoplay request. Set `hasSwitchedWindow` needs no handling, since nothing uses it but the Mac's view.
-  - Or leave them unset, so `showNextBook` takes `.openANewWindow`, and subscribe to `.continueToNextBook` and `.openBookWindow` in the coordinator (`GlobalAction.routedNotificationNames`, `Services/LibraryWindowRouter.swift:464-471`, `Notification.nextBookID`). The second is simplest: the coordinator is the only "window".
+  - Leave `nextBookWindowSwitcher` and `windowStandingOverride` nil, so `showNextBook` always takes `.openANewWindow` and posts, and subscribe in the coordinator to `.continueToNextBook` and `.openBookWindow` (`GlobalAction.routedNotificationNames`, `Services/LibraryWindowRouter.swift:464-471`). `GlobalAction(notification:)`, `:475`, reads either one, and `bookToOpen`, `:452`, names the book. This is the simplest way: the coordinator is the only "window".
+  - Or set `reader.nextBookWindowSwitcher` to the coordinator's opener and `reader.windowStandingOverride` to `.onScreen` (`Models/NextBookWindow.swift:46`), recomputed so a sheet or a field being typed in counts as busy, which `windowStanding` cannot read on iOS (`ReaderViewModel+NextBookWindow.swift:53-59`). `.switchThisWindow` then runs. It sets `hasSwitchedWindow`, which only the Mac's view reads (`Views/Reader/BookReaderWindowView.swift:129`), and leaves a window-switch request that lapses unclaimed.
+  - Either way, the new reader claims the autoplay request and any held sleep timer as its load ends (`ViewModels/ReaderViewModel.swift:1739`, `:1745`). Swap the readers on a later turn of the main queue, never inside the notification or the switcher's call: `showNextBook` is still running on the old reader then (`ReaderViewModel+NextBookWindow.swift:176-199`), where on the Mac SwiftUI rebuilds the view only after the call returns. That last point is reasoning from the code, not something run.
 - Announce the screen change: `SwitchedWindowFocus` does nothing on iOS, so VoiceOver must be moved to the new book's screen by new code.
 - A bar that outlives the reader's screen must read a `ReaderSnapshot` of what it shows (title, playing, sleep timer), or it redraws at 8 Hz (`playbackUIRefreshInterval` 0.12 seconds, `ReaderViewModel.swift:710`).
 - When the app goes to the background, nothing closes the reader, and nothing should: flush instead (section 4.6).
-- Do not call `windowBecameKey()`; `setup` gives the first reader the focus (`Services/NowPlayingService.swift:497-499`).
+- Do not call `windowBecameKey()`: `setup` gives the first reader the media focus (`Services/NowPlayingService.swift:497-499`), `unregister` passes it to the reader registered last (`:626-628`), and every start takes it (`:560`).
 
 ## 4. Launch
 
 ### 4.1 Finding the data directory
 
-- `TextMouthPaths.root`, `Services/TextMouthPaths.swift:74`, is `StorageBoundary.shared.current.root`; `StorageBoundary.shared`, `Services/StorageGeneration.swift:155`, starts from `TextMouthPaths.root(for: .current)`, `:40`.
-- With no custom path, that is `defaultRoot(in: runtime.homeDirectory)`, `:15-17`: `home/.TextMouth`.
+- `TextMouthPaths.root`, `Services/TextMouthPaths.swift:74`, is `StorageBoundary.shared.current.root`; `StorageBoundary.shared`, `Services/StorageGeneration.swift:155`, starts from `TextMouthPaths.root(for: .current)`, `Services/TextMouthPaths.swift:40`.
+- With no custom path, that is `defaultRoot(in:)`, `Services/TextMouthPaths.swift:15-17`, given the runtime's home: `home/.TextMouth`.
 - `TextMouthRuntime.current`, `App/TextMouthRuntime.swift:91`, `detect(...)`, `:117-140`: not under test, `homeDirectory: realHomeDirectory`, `:123`, and `preferences: .standard`.
 - `realHomeDirectory`, `:144-149`, is `getpwuid(getuid())`, with `NSHomeDirectory()` only as a fallback. Its comment says why: so no sandbox can redirect it. On iOS the sandbox redirecting it is what is wanted.
 
 What would make it sit in the iOS container:
 
-- In `realHomeDirectory`, under `#if os(iOS)`, return `URL(fileURLWithPath: NSHomeDirectory())`. Then `MachineLocalPaths` (`Models/CloudStorageContract.swift:573-655`) lands correctly, since `Library/Application Support/...`, `Library/Logs/...`, and `Library/Caches/...` all exist in a container.
+- In `realHomeDirectory`, under `#if os(iOS)`, return `URL(fileURLWithPath: NSHomeDirectory())`. Then `MachineLocalPaths` (`Models/CloudStorageContract.swift:573-655`) lands correctly, since `Library/Application Support/...`, `Library/Logs/...`, and `Library/Caches/...` all lie inside the container's `Library`, which an app may write (not run).
 - `.TextMouth` directly under the container's home is not writable on a device (only `Documents`, `Library`, and `tmp` are; not run). So under `#if os(iOS)` `defaultRoot(in:)` should name a folder inside `Library/Application Support` or `Documents`. The second makes the library visible in Files if the spec wants that.
-- Not `Library/Application Support/TextMouth`: `legacyApplicationSupportDirectory(in:)`, `:593`, names exactly that folder, and the legacy migration reads `oldLibraryFile`, `:613`, from it. A library placed there would be read as an old one. Pick another name.
-- `isDefaultLocation`, `:455`, then still holds, and `ensureDirectoryStructure()`, `:386`, creates it. `DataDirectoryCheck` treats a missing default as a first launch (`docs/architecture/launch.md:7-8`).
+- Not `Library/Application Support/TextMouth`: `legacyApplicationSupportDirectory(in:)`, `Services/TextMouthPaths.swift:593`, names exactly that folder, and the legacy migration reads `oldLibraryFile`, `:613`, from it. A library placed there would be read as an old one. Pick another name.
+- `isDefaultLocation`, `Services/TextMouthPaths.swift:455`, then still holds, and `ensureDirectoryStructure()`, `:386`, creates it. `DataDirectoryCheck` never refuses the default location: "created when missing, never refused" (`Services/DataDirectoryAvailability.swift:531-534`).
 
 ### 4.2 The Mac's launch, in order, and the phone's verdict
 
@@ -482,27 +488,27 @@ What would make it sit in the iOS container:
      - `removeLeftoverArchiveExtractions()`, `LibraryViewModel+Import.swift:475`, needed.
      - `ReadingTextCache.shared.removeExpiredInBackground()`, needed.
      - `loadLibraryIndex()`, `LibraryViewModel+IndexRecovery.swift:203`, needed, with `migrateOldBooksIfNeeded`, `LibraryViewModel+Migration.swift:32`.
-     - `setupDataDirectoryChangeHandler()`, `:483`, harmless.
+     - `setupDataDirectoryChangeHandler()`, `ViewModels/LibraryViewModel.swift:483`, harmless.
      - `sweepAudioOriginalsInBackground()`, `LibraryViewModel+AudioEditing.swift:14`, and `removeStaleAudioEditCachesInBackground()`, `:46`, harmless, nothing to find.
      - `observeImportActivity()`, needed for the overlay; `observeImportProgressRequests()`, `observeDownloadProgressRequests()`, harmless.
      - `updateContentCachesAndStatistics`, `LibraryViewModel+Migration.swift:613`, then `moveFinishedBooksToTheirEndsOnce`, `:2129`, needed: it keeps text caches current and shows the `textExtraction` overlay, which the phone must show or say.
      - `refreshOutdatedMetadata`, `LibraryViewModel+MetadataRefresh.swift:106`, `captureMissingTextAnchors`, `LibraryViewModel+TextAnchors.swift:94`, `takeOutsideManifestEdits`, `LibraryViewModel+ManifestEdits.swift:136`, `keepHandEditedTitlesInManifestsOnce`, `:77`, `convertOggBooksOnce`, `LibraryViewModel+OggConversion.swift:102`: all run inside that batch or beside it, all fine on a library of local books; the Ogg pass fails book by book if an Ogg book ever exists.
      - `startFeeds()`, `LibraryViewModel+Feeds.swift:39`, `FeedCenter.start(library:)`, `Services/Feeds/FeedCenter.swift:439`: starts the feed engine and its hourly schedule, with no feeds and so no network. `LibraryFeedFolders.shared.center` needs it. Leave running.
-     - `dataDirectoryEnvironment.sessionLease?.begin()`: `.app` gives `.shared` (`:549`), which writes nothing for a local library. Harmless. `presentWarning` answers `.continueHere` on iOS (`Services/LibrarySessionLease.swift:513`); the quit does nothing (`:159-163`).
+     - `dataDirectoryEnvironment.sessionLease?.begin()`: `.app` gives `.shared` (`ViewModels/LibraryViewModel.swift:549`), and "A library on the startup disk gets none" (`Services/LibrarySessionLease.swift:16`). Harmless, though what counts as the startup disk on iOS was not run. `presentWarning` answers `.continueHere` on iOS (`:513`); the quit does nothing (`:159-163`).
      - `fetchLaunchFilesInBackground()`, `LibraryViewModel+LaunchFiles.swift:74`, harmless.
-3. `@StateObject SettingsViewModel()`, `TextMouthApp.swift:7`; `ViewModels/SettingsViewModel.swift:504`; `startConfigSync()`, `:582` by its doc comment: applies config.json, `voiceCatalog.listNow()` on the first launch, writes the file, starts watching. Phone: needed, as it stands. It calls `KeyboardShortcutManager.moveSavedShortcutsIfNeeded`, harmless.
+3. `@StateObject SettingsViewModel()`, `TextMouthApp.swift:7`; `ViewModels/SettingsViewModel.swift:504`; `startConfigSync()`, `:580`: applies config.json, calls `voiceCatalog.listNow()` on the first launch only (`:586-588`), writes the file, and starts watching it (`:598`). Phone: needed, as it stands. It reaches `KeyboardShortcutManager.moveSavedShortcutsIfNeeded` (`:612`), harmless.
 4. `@StateObject KeyboardShortcutManager()`, `TextMouthApp.swift:8`. Phone: skip unless a view asks for the environment object. No event monitor exists on iOS.
 5. `@StateObject SoundEffectService()`, `TextMouthApp.swift:9`; `Services/SoundEffectService.swift:121`. Phone: `ReaderView` asks for it by `@EnvironmentObject`; the phone's reader needs one to set on the model. It plays nothing until sounds are bundled (section 5).
-6. `LibraryWindowRouter.shared`, `TextMouthApp.swift:10`. Phone: skip the router, or use only `listen`: `register(_:perform:)` needs a window.
+6. `LibraryWindowRouter.shared`, `TextMouthApp.swift:10`. Phone: skip it. `register(_:perform:)` takes a window (`Services/LibraryWindowRouter.swift:100`), and with none registered an action only waits for a Library window (`:254-257`).
 7. `AppDelegate.applicationWillFinishLaunching`, `Platform/macOS/App/AppDelegate.swift:19-23`: Phone: replace with the coordinator's subscriptions.
 8. First window's `onAppear`: `VoiceCatalog.shared.loadIfNeeded()`, `TextMouthApp.swift:32`. Phone: needed, in the root view's `onAppear` or `task`. `RecordingWindowController.shared.attach`, `:35`: skip.
 9. `AppDelegate.applicationDidFinishLaunching`, `AppDelegate.swift:48-91`:
    - `TextMouthPaths.ensureDirectoryStructure()`, `:54`: needed, already done by `startLibrary`. Keep for the case of an unavailable library.
    - `Self.logBuildIdentity(.current)`, `:55`: the phone calls `DiagnosticLog.event(.app, BuildIdentity.current.diagnosticLine)`, since `AppDelegate` is Mac-only.
    - `PlaybackMemoryGuard.tellOfAQuitToProtectTheMac()`, `:57`: compiles, tells nothing on iOS (`Services/PlaybackMemoryGuard.swift:424-441`). Skip.
-   - `PlaybackMemoryGuard.shared.beginWatching()`, `:62`: harmless, reads memory. Its limits are 3 GB and 6 GB, past what an iPhone allows. Keep or skip; see section 10.
+   - `PlaybackMemoryGuard.shared.beginWatching()`, `Platform/macOS/App/AppDelegate.swift:62`: harmless, reads memory. Its limits are 3 GB and 6 GB, past what an iPhone allows. Keep or skip; see section 10.
    - `OrphanedConversionSweep.sweepInBackground()`, `sweepTextutilInBackground()`, `sweepAfinfoInBackground()`, `:66-73`: no-ops (`Platform/iOS/Services/OrphanedConversionSweep+iOS.swift:13-21`). Skip.
-   - `BrailleTableCatalog.loadInBackground()`, `:76`: reads VoiceOver's tables, absent on iOS. Skip until braille.
+   - `BrailleTableCatalog.loadInBackground()`, `Platform/macOS/App/AppDelegate.swift:76`: reads VoiceOver's tables, absent on iOS. Skip until braille.
    - `MigrationStagingLeftovers.sweepInBackground()`, `:82`: nothing to find. Skip.
    - `NSWindow.allowsAutomaticWindowTabbing`, `disableWindowRestoration()`, `menuVisibilityManager.startObserving()`, `:85-90`: Mac-only.
 10. Singletons made when first read: `ConfigService.shared`, `TextSubstitutionService.shared`, `ReadingStatsService.shared`, `LibraryViewDefinitionStore.shared`, `RemovalPreferencesModel.shared`, `SleepTimerService.shared`, `NowPlayingService.shared`. All are fine. `ReadingStatsService` gets an unshared center for sleep and wake (`Services/ReadingStatsService.swift:217-223`).
@@ -511,7 +517,7 @@ What would make it sit in the iOS container:
 
 1. (Shared code first) `TextMouthRuntime.realHomeDirectory` and `TextMouthPaths.defaultRoot(in:)`, as in 4.1.
 2. In the `App`'s stored properties, in this order, as `TextMouthApp` holds them: `LibraryViewModel()`, `SettingsViewModel()`, `SoundEffectService()`, then the coordinator with those three.
-3. In the coordinator's `init`: set `library.readerOpener`; subscribe to `.continueToNextBook` and `.openBookWindow` (or set the switcher per reader); subscribe to `.speechSettingsChanged` only if it needs it (readers do already).
+3. In the coordinator's `init`: set `library.readerOpener`, and subscribe to `.continueToNextBook` and `.openBookWindow` (or set the switcher per reader).
 4. In the root view's `task`: `VoiceCatalog.shared.loadIfNeeded()`; `DiagnosticLog.event(.app, BuildIdentity.current.diagnosticLine)`.
 5. In the root view: present `library.showError`, `library.importDecisions.current`, `library.showRemoveBookDialog`, the delete-folder dialogs, `library.indexRecovery`, `library.dataDirectoryUnavailability`, `library.isImporting`.
 6. `onChange(of: scenePhase)`, to `.background`: section 4.6.
@@ -532,6 +538,7 @@ What would make it sit in the iOS container:
 - `ViewModels/LibraryViewModel+Duplicates.swift:827`: `deleteOriginalFile` runs outside the security scope the import took, so "Delete After Import" of a file from Files fails (not run).
 - `project.yml:281-292`: no `INFOPLIST_KEY_UIBackgroundModes`, no document types, no icon (`Resources/**` is excluded at `:280`, `Assets.xcassets` with it), and the Mac's bundle identifier at `:287`.
 - `TextMouth/Resources/transcript-cleanup.json` is excluded too; transcript cleanup needs it (later).
+- There is no login item to misbehave: a search of `TextMouth/` for `SMAppService`, `SMLoginItem`, and `LoginItem` finds nothing.
 
 ### 4.5 The session lease, config sync, logs, memory guard, voice warm-up, sweeps: short answers
 
@@ -541,15 +548,15 @@ What would make it sit in the iOS container:
 - Migrations: all run, all find nothing on a new library.
 - Memory guard: `beginWatching()` is optional; `ReaderViewModel.followPlaybackForMemoryGuard` reports anyway.
 - Voice warm-up: the reader does it itself (`warmUpVoice()`, `ReaderViewModel+VoiceAndSpeed.swift:71`, through `SpeechRenderCoordinator.warmUp`).
-- Metadata refresh, launch page re-read: inside `updateContentCachesAndStatistics`, automatic.
+- Metadata refresh, launch page re-read: inside `updateContentCachesAndStatistics`, automatic (`refreshOutdatedMetadata`, `LibraryViewModel+MetadataRefresh.swift:106`; the re-read chooses books by `PageReaderVersions.isDueForPages`, `ViewModels/LibraryViewModel+Migration.swift:744`).
 - Media keys: the first reader's `setup` installs them (`Services/NowPlayingService.swift:509`, `:668-673`); `installsSystemIntegrations` is true on iOS (`:256-258`).
 
 ### 4.6 What the termination path does, and the phone's replacement
 
 The Mac saves in `applicationShouldTerminate` and `applicationWillTerminate` (`AppDelegate.swift:195-236`). iOS sends no such call to a killed app. At `scenePhase == .background` the phone should call:
 
-- `PlaybackMemoryGuard.savePendingWrites()`, `Services/PlaybackMemoryGuard.swift:442`, which is `flushPendingWrites()`: every open reader's place (`saveEveryOpenReaderPosition()`, `:402`), `LibraryPersistenceService.flushPendingSave()`, `ReadingStatsService.shared.flushPendingSaves()`, `ConfigService.shared.flushScheduledSave()`, then `TextMouthPaths.flushLogs()`.
-- Not `statsService.endSession()`: a book playing in the background is still being listened to.
+- `PlaybackMemoryGuard.savePendingWrites()`, `Services/PlaybackMemoryGuard.swift:448`, which runs `flushPendingWrites()`, `App/UnsavedChangesTermination.swift:187-193` (every open reader's place, through `saveEveryOpenReaderPosition()`; `LibraryPersistenceService.flushPendingSave()`; `ReadingStatsService.shared.flushPendingSaves()`; `ConfigService.shared.flushScheduledSave()`), then `TextMouthPaths.flushLogs()`.
+- Not `statsService.endSession()`, as the Mac's quit does (`AppDelegate.swift:232-233`): a book playing in the background is still being listened to.
 - Long imports and other queues get no extra time without a background task: the code begins none.
 
 ## 5. The seams
@@ -557,10 +564,10 @@ The Mac saves in `applicationShouldTerminate` and `applicationWillTerminate` (`A
 Each entry: where, what iOS gets, and whether the first version must replace it.
 
 - `PlatformWindow`, `PlatformFont`, `PlatformView`: `Platform/PlatformTypes.swift:28-32`, UIKit's. Keep.
-- `PlatformApplication`: `Platform/PlatformApplication.swift:17`. `keyWindow` and `mainWindow` are nil (`:20-35`); `isActive` is `applicationState == .active` (`:39-45`); `didBecomeActiveNotification`, `didResignActiveNotification` are UIKit's (`:49-65`, the second being `willResignActive`). Keep, unless a window is really needed.
+- `PlatformApplication`: `Platform/PlatformApplication.swift:17`. `keyWindow` and `mainWindow` are nil (`:20-35`); `isActive` is `applicationState == .active` (`:39-45`); `didBecomeActiveNotification`, `didResignActiveNotification` are UIKit's (`:49-65`, the second being `UIApplication.willResignActiveNotification`, `:63`). Keep, unless a window is really needed.
 - `FrontWindowKind`: `Platform/iOS/App/FrontWindowKind+iOS.swift:8`, `kind` nil. Keep; nothing on the phone reads it.
-- `VoiceOverFocus`, `StandardVoiceOverFocus`, `InitialVoiceOverFocusModifier`, `StandardVoiceOverFocusTriggerView`: `Platform/iOS/Views/VoiceOverFocus+iOS.swift:47`, `:35`, `:59`, `:79`. Hidden `Color.clear`, or only the identifier `vo-focus-target` (`:14`, `:66-67`). Must be replaced: this is the first version's main accessibility work. The header names `AccessibilityFocusState`. Where it is asked for today: `ReaderDownloadProgressView`, `ReaderCloudMessageView`, `HeadingNavigatorRow:642`, `SleepTimerView:202`, `RequestedVoiceOverFocus:772`, `ImportDecisionSheet:267`, the play button `PlaybackControlsView:34-35`, `continueListeningButton`, `TimeRemainingBar`, `LibraryFocusTargetModifier`.
-- `VoiceOverAnnouncer`: `Services/VoiceOverAnnouncer.swift:29`; the iOS branch (`:119-132`) posts `AccessibilityNotification.Announcement` with `.high`, `.default`, or `.low` priority. Real; keep. `from window` is ignored. `afterSheetCloses` waits 0.6 seconds (`:86`, `:91-95`). Nearly every reader announcement is `.high`, which on iOS interrupts what VoiceOver is saying.
+- `VoiceOverFocus`, `StandardVoiceOverFocus`, `InitialVoiceOverFocusModifier`, `StandardVoiceOverFocusTriggerView`: `Platform/iOS/Views/VoiceOverFocus+iOS.swift:47`, `:35`, `:59`, `:79`. Hidden `Color.clear`, or only the identifier `vo-focus-target` (`:14`, `:66-67`). Must be replaced: this is the first version's main accessibility work. The file's own comment names `AccessibilityFocusState` (`Platform/iOS/Views/VoiceOverFocus+iOS.swift:7`). Where the first version's screens ask for it today: `Views/Reader/PlaybackControlsView.swift:34-35` (the play button), `Views/Reader/HeadingNavigatorView.swift:642`, `Views/Reader/SleepTimerView.swift:202`, `Views/Reader/BookmarkPanelView.swift:181`, `:272`, `:772`, `Views/Reader/SpeechRefusalReportSheet.swift:53`, `Views/Library/ImportDecisionSheet.swift:267`, `Views/Library/AddToLibrarySheet.swift:143`, `Views/Library/LibraryView.swift:1058-1059` (Continue), `:1961-1962` (`LibraryFocusTargetModifier`), `Views/Library/LibrarySubviews.swift:205` (`TimeRemainingBar`), `Views/Library/LibraryIndexRecoveryViews.swift:75`, `Views/Library/DataDirectoryUnavailableView.swift:137`.
+- `VoiceOverAnnouncer`: `Services/VoiceOverAnnouncer.swift:29`; the iOS branch (`:119-132`) posts `AccessibilityNotification.Announcement` with `.high`, `.default`, or `.low` priority. Real; keep. `from window` is ignored. `afterSheetCloses` waits 0.6 seconds (`:86`, `:91-95`). The default priority is high (`:78`), and so is the reader's usual `announceToVoiceOver` (`ReaderViewModel+WhereAmI.swift:866-868`), which on iOS speaks at once, interrupting current speech (`Services/VoiceOverAnnouncer.swift:122-124`).
 - `NSAccessibilityPriorityLevel`: `Platform/iOS/Services/NSAccessibilityPriorityLevel+iOS.swift:10`. Keep.
 - `NowPlayingService` on iOS: `Platform/iOS/Services/NowPlayingService+iOS.swift:19-23` gives two typealiases. `startDeviceChangeListener()` is empty on iOS (`Services/NowPlayingService.swift:1333`, `#if os(macOS)` at `:1347`), `currentDefaultOutputDeviceID()` nil (`:1574-1578`), `isBluetoothDevice` false (`:1606-1610`), `allAudioDeviceIDs()` empty (`:1684-1688`). The handler `onAudioRouteChangePause` (`pauseForAudioRouteChange()`, `ReaderViewModel+Playback.swift:324`) therefore never fires. Must be replaced: a route change must pause, as the file's own comment says.
 - `WindowAccessor`: `Platform/iOS/Views/Reader/WindowAccessor+iOS.swift:8`, no callbacks. Keep; do not rely on it.
@@ -569,7 +576,7 @@ Each entry: where, what iOS gets, and whether the first version must replace it.
 - `SilentKeyEquivalent`: `Platform/iOS/Views/SilentKeyEquivalent+iOS.swift:8`. Keep.
 - `PlatformControlStyles`: `Platform/PlatformControlStyles.swift:12`, `:23`. A switch and an inline picker. Keep. Add here any helper a shared sheet needs, such as a Mac-only frame, with its line in `Scripts/ios/mac-projection.py` (`docs/architecture/platforms.md:38`).
 - `IOSUnavailable`: `Platform/iOS/IOSUnavailable.swift:8`. `.feature(name)` says "\(name) is not available on iPhone yet." Keep.
-- `WatchedProcess`: `Platform/iOS/Services/WatchedProcess+iOS.swift:14`. `run` (`:93-101`) and `runCapturingOutput` (`:106-115`) throw `IOSUnavailable.feature("Converting this kind of file")`. Must change for `runCapturingOutput`: `AudioFileInfo.read` documents "Throws: `CancellationError` only" (`Services/AudioFileInfo.swift:285`) and `needsConversion` rethrows (`Services/ImportAudioConverter.swift:261-283`), so the import stops at `Services/FileImportService+AudioConversion.swift:51`, `:60`. The one-line way out: return `(.couldNotStart, Data())` from the iOS `runCapturingOutput`. `AudioFileInfo.read` then answers nil (`Services/AudioFileInfo.swift:306-307`), `isConvertedByWhatItHolds` false (`Services/ImportAudioConverter.swift:286-289`), and the file is left as it is, to be played by `AVPlayer`. The Mac does not compile this file.
+- `WatchedProcess`: `Platform/iOS/Services/WatchedProcess+iOS.swift:14`. `run` (`:93-101`) and `runCapturingOutput` (`:106-115`) throw `IOSUnavailable.feature("Converting this kind of file")`. Must change for `runCapturingOutput`: `AudioFileInfo.read` documents "Throws: `CancellationError` only" (`Services/AudioFileInfo.swift:285`) and `needsConversion` rethrows (`Services/ImportAudioConverter.swift:261-280`), so the import stops at `Services/FileImportService+AudioConversion.swift:51`, `:60`. The one-line way out: return `(.couldNotStart, Data())` from the iOS `runCapturingOutput`. `AudioFileInfo.read` then answers nil (`Services/AudioFileInfo.swift:308-309`), `isConvertedByWhatItHolds` false (`Services/ImportAudioConverter.swift:284-287`), and the file is left as it is, to be played by `AVPlayer`. The Mac does not compile this file.
 - `OrphanedConversionSweep`: `Platform/iOS/Services/OrphanedConversionSweep+iOS.swift:11`, no-ops. Keep.
 - `PackageFileEditing`, `BookTextEditor`, `BookManifestEditor`: `Platform/iOS/Services/PackageFileEditing+iOS.swift:13`, `BookTextEditor+iOS.swift:13`, `BookManifestEditor+iOS.swift:14`. No editing; `canEditText` false. Keep.
 - `AudioEditorLauncher`, `AudioEditorWindowController`: `Platform/iOS/Views/AudioEditor/`, `canEdit` false. Keep.
@@ -590,10 +597,10 @@ Each entry: where, what iOS gets, and whether the first version must replace it.
 - `ImportOrigin.init?(window:)`, `ImportDecisionPresenter.userIsIn(_:)`: `Views/Library/ImportDecisionPresenter.swift:15-24`, `:97-105`. Must be replaced by a phone presenter.
 - `PlaybackMemoryGuard`: no alert, no quit, `Services/PlaybackMemoryGuard.swift:427-441`, `:457-462`.
 - `revealInFinder`: nothing, `ViewModels/LibraryViewModel+Cloud.swift:534-539`. The row still offers it (`:447`).
-- `presentDAISYFolderPanel()`, `bringToFront()`, Quit: `Views/ContentView.swift:478-503`, `:440-448`, `:51-57`.
+- `presentDAISYFolderPanel()`, `bringToFront()`, Quit: `Views/ContentView.swift:478-504`, `:440-448`, `:51-57`.
 - `WindowCommandRouting.rootWindow(for:)`: the window itself, `Views/Library/LibraryView.swift:44-60`.
 - `copyReadingPosition`: `UIPasteboard`, `ReaderViewModel+WhereAmI.swift:776-782`. Real.
-- `TextInputView`: `UIPasteboard` real, editor action empty, `Views/Library/TextInputView.swift:279-302`.
+- `TextInputView`: `UIPasteboard` real, Open in Editor empty, `Views/Library/TextInputView.swift:279-284`, `:313-316`.
 - `showNextBook`: closes no window, `ReaderViewModel+NextBookWindow.swift:194-198`.
 
 To replace for the first version, in short: `VoiceOverFocus` and its kin; route-change handling and the audio session (with the audio researcher); `WatchedProcess.runCapturingOutput`; the import-question presenter; `TextMouthRuntime.realHomeDirectory`; the placeholder app.
@@ -606,9 +613,9 @@ Nothing selects up front. Every chapter starts in direct mode, and the engine ta
 
 - `SpeechService.speak(_:fromCharOffset:)`, `Services/SpeechService.swift:1010`: `stop()`, sets `isSpeaking`, calls `speakDirect(_:fromCharOffset:)`, `:1069`, on `AVSpeechSynthesizer`; then, for a text of at most `maximumTextLength` 100,000 UTF-16 units (`:328`, `:1036`), `SpeechRenderCoordinator.shared.render(...)`, `:1043`, into `AudioEngineService` (`AVSpeechSynthesizer.write`, then `AVAudioEngine` with a time-pitch unit).
 - Direct: first chunk `directModeFirstChunkSize` 1,000, later chunks `directModeChunkSize` 5,000 (`docs/architecture/state/media-playback.md:7`).
-- The engine is used at: `seek(toCharOffset:)`, `:2151`; `resume()`, `:1958`; either watchdog's recovery; a refusal's recovery; and a pre-rendered next chapter, `usePreRenderedEngine`, `ReaderViewModel+Playback.swift:703`.
-- A sleep fade never switches: `setSleepTimerFadeVolume(_:duration:)`, `:1789`.
-- Watchdogs tick on `RunLoopWatchdogTimer` on the main run loop, every 0.5 seconds; start stalls after about 5.5 seconds (10.5 cold), `media-playback.md:13`.
+- The engine is used at: `seek(toCharOffset:)`, `Services/SpeechService.swift:2151`; `resume()`, `:1958`; either watchdog's recovery; a refusal's recovery; and a pre-rendered next chapter, `usePreRenderedEngine`, `ReaderViewModel+Playback.swift:703`.
+- A sleep fade never switches: `setSleepTimerFadeVolume(_:duration:)`, `Services/SpeechService.swift:1789`.
+- Watchdogs tick on `RunLoopWatchdogTimer` on the main run loop, every 0.5 seconds; start stalls after about 5.5 seconds (10.5 cold), `docs/architecture/state/media-playback.md:13`.
 
 ### 6.2 How the reader starts and stops them
 
@@ -632,7 +639,7 @@ Nothing selects up front. Every chapter starts in direct mode, and the engine ta
 
 ### 6.4 Where `AVAudioSession` is or is not touched
 
-- Nowhere. A search of `TextMouth/` and `project.yml` for `AVAudioSession`, `setCategory`, `setActive`, `interruption`, `AVAudioEngineConfigurationChange`, `mediaServicesWereReset`, `beginReceivingRemoteControlEvents`, `usesApplicationAudioSession`, and `UIBackgroundModes` finds nothing.
+- Nowhere. A search of `TextMouth/` and `project.yml` for `AVAudioSession`, `setCategory`, `setActive`, `AVAudioEngineConfigurationChange`, `mediaServicesWereReset`, `beginReceivingRemoteControlEvents`, `usesApplicationAudioSession`, `UIBackgroundModes`, `beginBackgroundTask`, and `UIDocumentPicker` finds nothing. The word "interruption" occurs only in three unrelated comments (`ReaderViewModel+Playback.swift:364`, `Services/LegacyBookMigration.swift:335`, `Services/AudioEngineService.swift:1440`).
 - `AVSpeechUtterance.prefersAssistiveTechnologySettings = false` at `Services/SpeechService.swift:489`, `:1151`, `Services/AudioEngineService.swift:1182`, `ReaderViewModel+WhereAmI.swift:454`, `ViewModels/LibraryInfoSpeaker.swift:263`.
 - Synthesizers in play: the reader's direct one in `SpeechService`; `whereAmISynth`, `ReaderViewModel.swift:389`; `LibraryInfoSpeaker`'s; the render queue's; `VoiceWarmUp`'s; the preview `AVSpeechSynthesizer`s (`Views/Reader/ReaderView.swift:868`, `Views/Settings/SettingsView.swift:159`).
 - Sound effects: `SystemSoundEffectPlayer`, `AVAudioPlayer`, `Services/SoundEffectService.swift:32-57`.
@@ -668,17 +675,17 @@ Shared speed words:
 
 - Return: "Return" (`:111`), label "Return to previous reading position" (`:113`), hint "Go back to where you were before browsing headings or bookmarks" (`:117`).
 - Where Am I?: "Where Am I?" (`:259`); label "Where Am I? Announces current position in the book" (`:261`); while speaking "Stop Where Am I announcement" (`:264`); VoiceOver action `ShortcutAction.whereAmIFull.title`, "Where Am I? Full Summary" (`:267`, `Models/KeyboardShortcut.swift:68`).
-- Headings: "Headings", label "Show heading navigator" (`:124`).
+- Headings: "Headings", label "Show heading navigator" (`Views/Reader/ReaderView.swift:124`).
 - Bookmarks: "Bookmarks", label "Show bookmarks" (`:128`).
 - Sleep Timer: "Sleep Timer", label "Sleep timer" (`:132`).
 - Search: "Search", label "Search in book" (`:137`).
 - Book's settings: `BookSettingsWording.buttonTitle(isAudioBook:)`, "Audio Settings" or "Voice" (`:1150-1152`); `buttonLabel(isAudioBook:)`, "Audio Settings" or "Change voice for this book" (`:1155-1157`).
 - Book Info: "Book Info" (`:155`), label `FeedItemBookInfoWording.readerButtonLabel(readOnly:)`, "Show book information" or "Edit book metadata" (`Views/Library/FeedItemBookInfoSheet.swift:116-118`).
-- Speed caption: audiobook `AudioSpeed` words (`:187`, `:190`); text "\(Int(wpm)) WPM" (`:192`), label "\(Int(wpm)) words per minute" followed by ", book-specific speed" when the book has one (`:195`).
+- Speed caption: audiobook `AudioSpeed` words (`Views/Reader/ReaderView.swift:187`, `:190`); text "\(Int(wpm)) WPM" (`:192`), label "\(Int(wpm)) words per minute" followed by ", book-specific speed" when the book has one (`:195`).
 
 ### 7.3 Reader window, its states: inline unless named
 
-- Window title: "\(prefix): \(book.title) by \(book.author)", or "\(prefix): \(book.title)" with no known author, with prefix "Book" (`Views/Reader/BookReaderWindowView.swift:146`, `:154-160`) or `ReadingListReaderWording.windowTitlePrefix`, "Reading List" (`Models/ReadingListReaderWording.swift:18`).
+- Window title: "\(prefix): \(book.title) by \(book.author)", or "\(prefix): \(book.title)" with no known author, with prefix "Book" (`Views/Reader/BookReaderWindowView.swift:146`, `:154-160`) or `ReadingListReaderWording.windowTitlePrefix`, "Reading List" (`Models/ReadingListReaderWording.swift:17`).
 - Loading: "Loading book..." (`Views/Reader/ReaderView.swift:64`), label "Loading \(viewModel.book.title)" (`:65`).
 - Load failure: "Failed to load book" (`:300`), then the reason; one combined element.
 - Placeholder book: title "Unknown" (`Views/Reader/BookReaderWindowView.swift:27`).
@@ -697,7 +704,7 @@ Shared position words:
 ### 7.4 Status row: `BookInfoBar`, `Views/Reader/ReaderView.swift:1227`
 
 - Percent shown: `displayFormattedPercentComplete`, "%.1f%%" (`ReaderViewModel.swift:2144-2146`), such as "22.9%".
-- Percent label: "\(viewModel.displayFormattedPercentComplete) through the book" (`:1311`). Inline.
+- Percent label: "\(viewModel.displayFormattedPercentComplete) through the book" (`Views/Reader/ReaderView.swift:1311`). Inline.
 - Percent hints: "Opens jump to percent controls" (`:1415`), "Hides jump to percent controls" (`:1416`), "Switches to jump to percent controls" (`:1417`). Inline.
 - Page: `displayPagePosition.label` shown and spoken (`:1321`, `:1330`); hints `ReaderPageWording.openHint`, `hideHint`, `switchHint` (shared, below).
 - Time left: `ReaderTimeWording.timeLeftShown(_:_:)`, `timeLeftSpoken(_:_:)`; hints "Opens jump to time controls" (`:1425`), "Hides jump to time controls" (`:1426`), "Switches to jump to time controls" (`:1427`). Inline.
@@ -741,8 +748,8 @@ Shared:
 - Empty field: "Type a page number." (`:53`).
 - No such page: "There is no page \(typed) in this book." then " Its only page is \(first)." or " Its pages run from \(first) to \(last)." (`:61-64`).
 - Jump: "Jumped to \(page(label, occurrence: occurrence))." (`:78`), giving "Jumped to page 12." or "Jumped to page 2, the second page labelled 2."
-- With no words: "\(named) has no words, so the cursor is \(cursor)." (`:100-102`, `:136-138`), such as "Page 7 has no words, so the cursor is on page 8."
-- Skipped: "\(named) is in a skipped section, so the cursor is \(cursor)." (`:111-113`).
+- With no words, composed by `because(_:occurrence:_:cursor:)`, `:136-138`: "\(named) \(reason), so the cursor is \(cursor)." The reason is "has no words" (`:101`), such as "Page 7 has no words, so the cursor is on page 8." (`:135`).
+- Skipped, composed the same way: the reason is "is in a skipped section" (`:112`), such as "Page 40 is in a skipped section, so the cursor is on page 52." (`:107`).
 - Cursor: "The cursor is \(cursor)." (`:120`).
 - Button hints: "Opens jump to page controls" (`:190`), "Hides jump to page controls" (`:193`), "Switches to jump to page controls" (`:196`).
 - Settings: section "Pages" (`:201`); "Show the page on the reader screen" (`:204`); its hint "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page." (`:208`); "Say the page in Where Am I?" (`:211`); its hint "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." (`:215`).
@@ -797,7 +804,7 @@ Inline in `BookVoicePickerView`:
 - Section "Voice" (`:928`), "Speed" (`:960`), "Pitch" (`:989`), "End of Book" (`:1011`).
 - Speed: "Speed: \(Int(wpm)) WPM", hidden (`:935`); slider "Words per minute" (`:952`), label "Speed" (`:956`), value "\(Int(wpm)) words per minute" (`:957`). Range 50 to 650, step 25.
 - Pitch: "Pitch: \(SpeechService.pitchLabel(pitch))", hidden (`:967`); slider label "Pitch" (`:985`), value `pitchLabel` (`:986`). `pitchLabel`, `Services/SpeechService.swift:2207-2210`: "Normal (1.0x)", or "%.1fx". Range 0.5 to 2.0, step 0.1.
-- End of book: "When this book ends" (`:994`), label "End of book behavior for this book" (`:1002`); "Use Global Default" (`:1005`), label "Reset to global end-of-book setting" (`:1008`).
+- End of book: "When this book ends" (`Views/Reader/ReaderView.swift:994`), label "End of book behavior for this book" (`:1002`); "Use Global Default" (`:1005`), label "Reset to global end-of-book setting" (`:1008`).
 - "Close" (`:1035`).
 
 Spoken as they change, from the reader:
@@ -824,7 +831,7 @@ Static, callable from iOS:
 - Display modes: "Duration", "Time In", "Percentage" (`:230-232`).
 - Row suffixes: `TimeFormatting.spoken(seconds)` + `ReaderTimeWording.spokenSpeed`; "\(TimeFormatting.spoken(start)) in" (`:534`); "%.1f percent" (`:542`). Shown "%.1f%%" (`:541`).
 
-Inline:
+Inline, `Views/Reader/HeadingNavigatorView.swift`:
 
 - Heading "Headings" (`:254`).
 - Display picker "Display" (`:259`), label "Heading info display mode" (`:266`).
@@ -839,11 +846,11 @@ Inline:
 Shared or static:
 
 - Row label, `Bookmark.accessibilityLabel(headingText:)`, `Models/Book.swift:1777-1784`: "Bookmark \(number)", heading text, "Note: \(label)", "added \(dateText)", joined by ", "; such as "Bookmark 3, The Battle, Note: Check this, added October 9, 2026".
-- Commands, `BookmarkCommand`, `:651-657`: "Go To", "Edit Note", "Delete".
+- Commands, `BookmarkCommand`, `Views/Reader/BookmarkPanelView.swift:651-657`: "Go To", "Edit Note", "Delete".
 - Button labels, `:680-686`: "Go to bookmark \(number)", "Edit note for bookmark \(number)", "Delete bookmark \(number)".
 - Empty help, `emptyListHelp(keys:)`, `:456-459`: "Add Bookmark adds one at the current position." (with no keys), or "\(keys) adds a bookmark at the current position." The phone should pass no keys.
 
-Inline:
+Inline, `Views/Reader/BookmarkPanelView.swift`:
 
 - Heading "Bookmarks" (`:166`).
 - "Add Bookmark" (`:175`), label "Add bookmark at current position" (`:177`).
@@ -859,8 +866,8 @@ Spoken, from the reader:
 
 - "Bookmark \(number) added" (`ReaderViewModel+Bookmarks.swift:211`).
 - "Bookmark \(number) removed" (`:80`).
-- "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library." (`:183`).
-- "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library." (`:189`).
+- "Could not add the bookmark: “\(bookTitle)” is no longer in the library." (`:183`).
+- "Could not remove the bookmark: “\(bookTitle)” is no longer in the library." (`:189`).
 
 Menu names, `ShortcutAction`, `Models/KeyboardShortcut.swift:56-59`: "Toggle Bookmark", "Next Bookmark", "Previous Bookmark", "Show Bookmarks".
 
@@ -872,7 +879,7 @@ Menu names, `ShortcutAction`, `Models/KeyboardShortcut.swift:56-59`: "Toggle Boo
 - A transcribed audiobook adds the sentence being heard, at most 40 words and "…" (`:277`, `:298-305`).
 - The press rules are `SummaryPress.outcome(pressing:while:)`, `Models/SummaryPress.swift`.
 
-Copied reading position: joined by " | ": title; "by \(author)"; location; heading label; "%.1f%% through" (`:844`); place; "\(formatted) remaining\(shownSpeed)" (`:846`); or "Finished". Example at `:821`: "My Book | by An Author | The Battle | Heading 26 of 412 | 30.0% through | 3:00:00 remaining". Unknown author dropped (`:859`).
+Copied reading position, `ReaderViewModel+WhereAmI.swift`: joined by " | ": title; "by \(author)" (`:850`); location; heading label; "%.1f%% through" (`:844`); place; "\(formatted) remaining\(shownSpeed)" (`:846`); or "Finished". Example at `:821`: "My Book | by An Author | The Battle | Heading 26 of 412 | 30.0% through | 3:00:00 remaining". Unknown author dropped (`:859`).
 
 ### 7.12 Sleep timer
 
@@ -889,7 +896,7 @@ Static on the view, callable from iOS, `Views/Reader/SleepTimerView.swift`:
 - Set: "Timer set for \(duration.displayName)." (`:361`), or "Sleep timer: \(stop)." (`:362`).
 - Reset: "Timer reset: \(status)." (`:368`).
 
-Inline in the view:
+Inline, `Views/Reader/SleepTimerView.swift`:
 
 - "Sleep Timer" (`:75`, title `:102`).
 - "Close" (`:81`), hint "Close the sleep timer and return to the book" (`:83`).
@@ -938,13 +945,13 @@ Choices, `EndOfBookBehavior`, `ViewModels/SettingsViewModel.swift:21-30`: "Stop"
 
 ### 7.14 Next and Previous in Folder, and in Reading List: shared
 
-- Opening: "Opening: \(title)" (`Models/ReadingListReaderWording.swift`, `opening(_:)`).
-- Nothing that way: `FolderNavigationWording.nothingThatWay(_:)`, the note and ".", `Models/FolderNavigationWording.swift:15-17`.
-- Episode download words: `:22-24`, `:38-39`, `:51`.
-- Reading list place: "Reading list, book \(place.position) of \(place.count)" (`Models/ReadingListReaderWording.swift`, `place(_:)`).
-- Reading list stop: "The reading list is set to stop when a book ends"; "End of the reading list"; "Start of the reading list"; "Every book \(side(direction)) it in the reading list is finished".
-- Not read from the list: "This book was not opened from the reading list."
-- No neighbor: "No next book in the reading list", "No previous book in the reading list", then "." or ": every book \(side(direction)) this one is finished."
+- Opening: "Opening: \(title)" (`Models/ReadingListReaderWording.swift:60`).
+- Reading list place: "Reading list, book \(place.position) of \(place.count)" (`:23`).
+- Reading list stop: "The reading list is set to stop when a book ends" (`:31`); "End of the reading list", "Start of the reading list" (`:40`); "Every book \(side(direction)) it in the reading list is finished" (`:42`). The side is "below" or "above" (`:84`).
+- Not read from the list: "This book was not opened from the reading list." (`:52`).
+- No neighbor: "No next book in the reading list", "No previous book in the reading list" (`:69`), then "." (`:72`) or ": every book \(side(direction)) this one is finished." (`:74`).
+- Nothing that way in a folder: `FolderNavigationWording.nothingThatWay(_:)`, the note and ".", `Models/FolderNavigationWording.swift:15-17`.
+- Episode download words, for later, `Models/FolderNavigationWording.swift`: "Downloading the \(side(direction)) \(kind): \(item.title)" (`:23`); "The \(side(direction)) \(kind) could not be downloaded. \(reason)", with ", so playback stopped" before the full stop when the book was playing (`:38-39`); "Download of the \(side(direction)) \(kind) cancelled.", with the same words before the full stop (`:51`).
 
 ### 7.15 Media controls: shared, `Services/NowPlayingService.swift`
 
@@ -957,27 +964,27 @@ Choices, `EndOfBookBehavior`, `ViewModels/SettingsViewModel.swift:21-30`: "Stop"
 Row label (`BookRow.rowAccessibilityLabel`, `:589-624`), joined by ", ", in this order: "Selected" in edit mode (`:592`); title; "by \(book.author)" (`:595`); `ReadingListWording.inReadingListNote` "In reading list"; "New" (`:602`) or "Now Reading" (`:604`); cloud note; "Kept on this Mac"; transcription note; progress; time left; format.
 
 - Example from `docs/user/library-window.md:17`: "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text".
-- Hints: "Opens the book." (`:569`); "Deselects this book.", "Selects this book." (`:570`).
+- Hints: "Opens the book." (`Views/Library/LibrarySubviews.swift:569`); "Deselects this book.", "Selects this book." (`:570`).
 - Shown badges: "New" (`:475`), "Now Reading" (`:484`).
 - Progress: visible "\(wholePercent)%", spoken "\(wholePercent) percent" (`:642`); "\(progress.spoken) read" beside a download (`:652`); "Finished" for a finished book (`:638`).
 - Time left: shown "\(TimeFormatting.format(remaining)) left" (`:669`), spoken `LibraryInfoWording.remaining`, "\(TimeFormatting.spoken(remaining)) remaining" (`Models/LibraryInfoWording.swift:845`).
 - Format: `BookFormat.displayName`, `Models/Book.swift:66-83`: "EPUB", "Plain Text", "Markdown", "HTML", "Web Archive", "SSML", "Word Document", "Rich Text", "Rich Text with Attachments", "Word 97-2003 Document", "OpenDocument Text", "Word 2003 XML", "Braille", "DAISY", "PDF", "Audio", "Kindle Book (MOBI)", "Kindle Book (KFX)".
 - Unknown author: `Book.unknownAuthor`, "Unknown" (`Models/Book.swift:467`).
 
-Row commands (`LibraryBookListRow.menu`, `:913-1021`):
+Row commands (`LibraryBookListRow.menu`, `Views/Library/LibrarySubviews.swift:913-1021`):
 
 - "Open" (`:917`), "Book Info" (`:920`), "Select" (`:925`).
 - `LibraryTransitionWording.moveToFolderTitle(for:)`: "Move to Folder...", "Move \(movable) Books to Folder..." (`LibraryViewModel+BookOperations.swift:1183`).
 - `ReadingListCommand` titles, below.
 - `BookExportWording.commandTitle(count:)`: later.
-- "Move Up", "Move Down" (`:681`, `:683`), each only where the book can move.
+- "Move Up", "Move Down" (`Views/Library/LibrarySubviews.swift:681`, `:683`), each only where the book can move.
 - Remove, `LibraryRemoveCommandWording.menuTitle`, below.
 
 Move words (`LibraryViewModel+SortAndOrder.swift`): "\(title) can't move \(direction < 0 ? "up" : "down")." (`:42`); "Books can be moved only in a folder sorted by Manual Order, and this folder is not. Choose Manual Order in the Sort menu, then try again." (`:55-56`); "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again." (`:58`); "\(title) is an item of a feed, and a feed's items can't be moved." (`:65`); "No book is selected. Select the book to move, then try again." (`:70`); "Moved \(movedTitle) \(direction < 0 ? "above" : "below") \(adjacentTitle)" (`:23`). A move through VoiceOver's action says `placeAnnouncement`, such as "Dune, 3 of 12".
 
 Empty states:
 
-- A folder with no books has no sentence of its own on the Mac: the list shows the section header `CountWording.booksHeader`, "Books (0)", and `TimeRemainingBar` draws nothing (`:154`). The phone needs a new sentence, which the spec must word.
+- A folder with no books has no sentence of its own on the Mac: the list shows the section header `CountWording.booksHeader`, "Books (0)", and `TimeRemainingBar` draws nothing (`Views/Library/LibrarySubviews.swift:154`). The phone needs a new sentence, which the spec must word.
 - A filter view or a listener's view that lists nothing: "Nothing matches this view now." (`Models/LibraryViewPickerWording.swift:18`).
 - An empty Reading List: "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." (`Models/ReadingListWording.swift:57-58`). It names the Library menu, so the phone needs its own.
 - Book search with no match: nothing is said on the Mac.
@@ -993,7 +1000,7 @@ Folder row, `Views/Library/LibrarySubviews.swift`:
 Inline in `LibraryView`:
 
 - Section header "Folders" (`Views/Library/LibraryView.swift:1280`); books header `CountWording.booksHeader(of:)` (`:1349`, `Models/CountWording.swift:147-160`): "Books (743)", "Books (2), Episodes (5)".
-- Rotors: "Books" (`:504`), "Folders" (`:509`).
+- Rotors: "Books" (`Views/Library/LibraryView.swift:504`), "Folders" (`:509`).
 - Search prompt: "Search books" (`:503`).
 
 Breadcrumb: "Library" (`LibrarySubviews.swift:294`), label "Navigate to library root" (`:296`), "Navigate to \(part)" (`:309`).
@@ -1084,7 +1091,7 @@ Delete folder:
 
 - "Delete Folder?" (`Views/Library/LibraryView.swift:858`), "Move Contents Out" (`:861`), "Cancel" (`:867`).
 - `FolderRemovalWording`, `Models/RemovalWording.swift`: button `mode.buttonTitle("Everything")`, "Move Everything to Trash" or "Delete Everything Permanently" (`:567`).
-- Message: "“\(name)” contains \(books) and may have subfolders. With Move Contents Out, they stay in the library and only the folder is deleted. With \(buttonTitle), the folder and everything in it leave the library, and \(filesClause)." (`:593-596`).
+- Message: "\(quotedName) contains \(books) and may have subfolders. With Move Contents Out, they stay in the library and only the folder is deleted. With \(buttonTitle), the folder and everything in it leave the library, and \(mode.filesClause(plural: true))." (`:593-596`), the name in curly quotes (`:562`).
 - Contents sheet: "Move Contents of \"\(folder.name)\"" (`LibrarySheetViews.swift:1063`); "Choose where to move the books and subfolders before deleting \"\(folder.name)\"." (`:1067`); "Move contents to" (`:1071`), label "Destination for folder contents" (`:1076`); "Moving the folder's contents..." (`:1082`); "Move Contents & Delete Folder" (`:1089`); title "Move Contents: \(folder.name)" (`:1102`).
 
 Failures: `OperationFailureNotice`, "Error: \(message)" (`LibrarySheetViews.swift:278`).
@@ -1115,7 +1122,7 @@ Listening options, `Models/ListeningOptionsWording.swift:60`, `:73-76`: "When \(
 - Label: "Remove \(removal.subject) from the library" (`:497`).
 - Hint: "Asks whether to \(preferences.deletingTheFiles) or keep them in the TextMouth library folder." (`:511`).
 - Button: "Cancel" (`Views/ContentView.swift:218`).
-- Summary: "When a book is deleted, \(filesClause). With \(keepTitle), \(filesClause)." (`:746-750`).
+- Summary: "When a book is deleted, \(filesClause). With \(keepTitle), \(filesClause)." (`Models/RemovalWording.swift:746-750`).
 
 The word Trash has no meaning on a phone. See 7.27.
 
@@ -1126,7 +1133,7 @@ The word Trash has no meaning on a phone. See 7.27.
 - "Cancel" (`:21`).
 - Choices, `ShortcutAction`, `Models/KeyboardShortcut.swift:137-146`: "Open Book…", "Import Folder…", "New from Text…", "New Recording…", "Add Feed…".
 - Open Book summary: "Opens a file picker to import books in any format TextMouth reads." (`Views/Library/LibraryView.swift:1936`).
-- Others: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book." (`:29`), "Makes a new book from text you paste or type." (`:30`), "Records from a microphone into a new audiobook." (`:31`).
+- Others: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book." (`Models/AddToLibraryWording.swift:29`), "Makes a new book from text you paste or type." (`:30`), "Records from a microphone into a new audiobook." (`:31`).
 - Dimmed: "\(summary) Not available in this window." (`:39`).
 
 ### 7.24 Import progress: shared, `Models/ImportProgressWording.swift`
@@ -1174,7 +1181,9 @@ Shared, `Models/ImportDecision.swift`:
 - Where the old copy goes: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." (`:358`).
 - Incomplete: "The copy just imported is incomplete. \(warning)" (`:384`).
 - ZIP: "\(CountWording.books(batch.books.count)) were imported from “\(archive)”. Would you like to create a new folder to hold them?" (`:281-283`).
-- Copy gone, `DuplicateCopyWording`: `:407-408`, `:418-419`, `:427-428`.
+- The library unreachable, `DuplicateCopyWording`: "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. Answer again once the library is back." (`:407-408`).
+- The copy gone: "The files of the new copy of “\(bookTitle)” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again." (`:418-419`).
+- The mark not taken off: "TextMouth could not keep the new copy of “\(bookTitle)”. Choose Cancel to discard the copy, then import the file again." (`:427-428`).
 
 Shared in the view file, `ImportDecisionChoiceWording`, `Views/Library/ImportDecisionSheet.swift:184-245`:
 
@@ -1216,8 +1225,8 @@ Each is shared, so a change must leave the Mac's words as they are, by a platfor
 - `OriginalFileDeletionWording`, "Trash", `Models/OriginalFileDeletionWording.swift:52`.
 - `LibraryCloudWording.showInFinderTitle`, "Show in Finder", `Models/LibraryCloudWording.swift:52`.
 - `KeptOnThisMacNote.text`, `Views/Library/BookCloudNote.swift:84`; `TimeRemainingBar`, `Views/Library/LibrarySubviews.swift:252`, `:275`.
-- `DataDirectoryUnavailableText`, `Views/Library/DataDirectoryUnavailableView.swift`: "Library Not Available" (`:8`), "Getting Your Library" (`:11`), "Try Again" (`:21`), "Checks the library's location again, and opens the library when it is there." (`:23`), "Quit TextMouth" (`:25`), "Quits TextMouth without changing anything in the library's location." (`:27`), "To use another folder, open Settings, Storage, and choose ..." (`:34-36`), "Books can't be added while the library isn't available." (`:49`), "Books can't be opened while the library isn't available." (`:51`). And in the model: "The library is still not available. \(reason.explanation)", "The library is available." (`ViewModels/LibraryViewModel.swift:679`, `:704`). `Services/DataDirectoryAvailability.swift:254`, `:268-270`, `:293`, `:434` say "this Mac".
-- `FileCommands`' New Window and the words "this window" in `NextBookWindowWording`, `Models/NextBookWindow.swift:153-185`, and `"This Window"`, `"A New Window"`, `:18`, `:21`.
+- `DataDirectoryUnavailableText`, `Views/Library/DataDirectoryUnavailableView.swift`: "Library Not Available" (`:8`), "Getting Your Library" (`:11`), "Try Again" (`:21`), "Checks the library's location again, and opens the library when it is there." (`:23`), "Quit TextMouth" (`:25`), "Quits TextMouth without changing anything in the library's location." (`:27`), "To use another folder, open Settings, Storage, and choose Choose Another Library or Use Default Location." (composed at `:34-36`, as its comment gives it at `:32-33`), "Books can't be added while the library isn't available." (`:49`), "Books can't be opened while the library isn't available." (`:51`). And in the model: "The library is still not available. \(reason.explanation)", "The library is available." (`ViewModels/LibraryViewModel.swift:679`, `:704`). `Services/DataDirectoryAvailability.swift:254`, `:268-270`, `:293`, `:434` say "this Mac".
+- `NextBookWindowWording`, "in this window" and "in a new window", `Models/NextBookWindow.swift:156-158`, `:184-185`; the choices "This Window", "A New Window", `:18`, `:21`.
 
 Failure banner: "Storage problems" (`Views/Library/PersistenceFailureBanner.swift:34`), "Retry" (`:58`), "Dismiss" (`:61`), hint "Hides this notice without saving anything. It appears again if the problem returns after it clears." (`:69-70`).
 
@@ -1261,35 +1270,47 @@ Every preference below is on `SettingsViewModel`, `ViewModels/SettingsViewModel.
 Voice:
 
 - "Language" (`:163`), label "Voice language" (`:173`), item "All" (`:164`). Key `selectedLanguage`, default "en" (`SettingsViewModel.swift:521`).
-- "Voice" (`:175`), label "Select voice" (`:186`), hint "Choose a voice for reading. Change takes effect immediately." (`:187`), item label "\(voice.name), \(quality) quality" (`:183`). Key `selectedVoiceID` (`SettingsViewModel.swift:518`).
-- "Quality", "Language" readouts (`:190`, `:193`).
+- "Voice" (`Views/Settings/SettingsView.swift:175`), label "Select voice" (`:186`), hint "Choose a voice for reading. Change takes effect immediately." (`:187`), item label "\(voice.name), \(quality) quality" (`:183`). Key `selectedVoiceID` (`SettingsViewModel.swift:518`).
+- "Quality", "Language" readouts (`Views/Settings/SettingsView.swift:190`, `:193`).
 - "Preview Voice" (`:198`), label "Preview selected voice" (`:201`), speaks "Hello! This is TextMouth, ready to read for you." (`:263`).
 - "Default Speed" (`:227`); shown "Default Speed: \(Int(wpm)) WPM" (`:207`); slider "Words per minute" (`:215`), label "Default speed" (`:219`), value "\(Int(wpm)) words per minute" (`:220`); caption "Default speed for new books. Each book can override this with its own speed." (`:222`). Key `wordsPerMinute`, 50 to 650, step 25, default 200 (`SettingsPolicy.swift:373`).
-- "Default Pitch" (`:252`); shown "Default Pitch: \(pitchLabel)" (`:234`); label "Default pitch" (`:244`), value `pitchLabel` (`:245`); caption "Default pitch for new books. 1.0 is normal. Each book can override this." (`:247`). Key `pitchMultiplier`, 0.5 to 2.0, step 0.1, default 1 (`:377`).
+- "Default Pitch" (`Views/Settings/SettingsView.swift:252`); shown "Default Pitch: \(pitchLabel)" (`:234`); label "Default pitch" (`:244`), value `pitchLabel` (`:245`); caption "Default pitch for new books. 1.0 is normal. Each book can override this." (`:247`). Key `pitchMultiplier`, 0.5 to 2.0, step 0.1, default 1 (`Models/SettingsPolicy.swift:377`).
 
 Playback:
 
-- Section "Skip Controls" (`:299`). "Skip Forward" (`:277`), label "Skip forward unit" (`:285`), hint "What happens when you skip forward" (`:286`); key `skipForwardUnit`, default "15 seconds". "Skip Backward" (`:288`), label "Skip backward unit" (`:296`), hint "What happens when you skip backward" (`:297`); key `skipBackwardUnit`, default "15 seconds".
+- Section "Skip Controls" (`Views/Settings/SettingsView.swift:299`). "Skip Forward" (`:277`), label "Skip forward unit" (`:285`), hint "What happens when you skip forward" (`:286`); key `skipForwardUnit`, default "15 seconds". "Skip Backward" (`:288`), label "Skip backward unit" (`:296`), hint "What happens when you skip backward" (`:297`); key `skipBackwardUnit`, default "15 seconds".
 - Section "Rewind on Resume" (`:375`). "Rewind to" (`:333`), label "Rewind on resume unit" (`:341`), hint "When resuming playback, rewind to the start of this unit" (`:342`); key `rewindOnResumeUnit`, default None. "Smart mode" (`:345`), label "Smart rewind mode" (`:346`), hint "Only rewind if the pause was longer than the threshold" (`:347`); key `rewindSmartMode`, default off. "Minimum pause: \(Int) seconds" (`:353`), stepper label "Minimum pause threshold" (`:365`), value "\(Int) seconds" (`:366`), "Don't rewind if paused for less than this." (`:368`); key `rewindSmartThreshold`, 5 to 600, step 5, default 70.
 - Section "Punctuation Pauses" (`:402`). "Punctuation pauses: \(levelName)" (`:384`), names "Off", "Subtle", "Moderate", "Heavy" (`:381`); label "Punctuation pause level" (`:394`), value the name (`:395`); caption "0 = Off, 1 = Subtle (periods), 2 = Moderate (+ commas), 3 = Heavy (+ paragraph breaks)" (`:397`); key `punctuationPauseLevel`, 0 to 3, default 0.
 - Section "Navigation" (`:417`). "Auto-play after navigation" (`:406-407`), hint "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result" (`:408`), caption "Automatically start playing when you navigate to a heading, bookmark, or search result." (`:412`); key `autoPlayOnNavigate`, default off.
 - Section "End of Book" (`:463`). "When book ends" (`:421`), label "End of book behavior" (`:429`), hint "What happens when a book finishes playing" (`:430`), caption "\"Continue to Next Book\" plays the next book in the same folder by sort order." (`:432`), and `EndOfBookWording.playOnAFinishedBookCaption`; key `endOfBookBehavior`, default Stop.
 - Section "Sleep Timer" (`:495`). "Fade out: \(text)" (`:471`), text "Off" or `CountWording.seconds` (`:611-613`); stepper label "Fade out duration" (`:483`); caption "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly." (`:486`); key `sleepFadeOutDuration`, 0 to 10, default 0. "Close sheet after setting timer" (`:491`), label "Close sleep timer sheet after setting a timer" (`:492`), hint "When off, the sheet stays open showing the remaining time and a reset button" (`:493`); key `sleepTimerAutoClose`, default on. Sleep timer presets are constants; the last duration is stored under `sleepTimer.lastUsedDuration` (`Services/SleepTimerService.swift:140`).
-- Section `ReaderTimeWording.settingSection`, "Times" (`:553`). `settingTitle`, "Include the speed with time left and total time"; `settingHint`, "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations." (`Models/ReaderTimeWording.swift:161`, `:168-170`); key `includeSpeedWithTimes`, default off.
-- Section `ReaderPageWording.settingSection`, "Pages" (`:585`): `showsPageInReader`, default on; `saysPageInWhereAmI`, default on. Words in 7.6.
+- Section `ReaderTimeWording.settingSection`, "Times" (`Views/Settings/SettingsView.swift:553`). `settingTitle`, "Include the speed with time left and total time"; `settingHint`, "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations." (`Models/ReaderTimeWording.swift:161`, `:168-170`); key `includeSpeedWithTimes`, default off.
+- Section `ReaderPageWording.settingSection`, "Pages" (`Views/Settings/SettingsView.swift:585`): `showsPageInReader`, default on; `saysPageInWhereAmI`, default on. Words in 7.6.
 
 Removal, in `Views/Settings/StorageSettingsView.swift`:
 
 - Section "Removal Behavior" (`:365`). "Confirm before removing a book" (`:346`), key `confirmBeforeDelete`, default on (`Services/ConfigService.swift:237`).
-- "Move to Trash instead of deleting" (`:352`), key `moveToTrashInsteadOfDeleting`, default on (`:264`): see below.
+- "Move to Trash instead of deleting" (`Views/Settings/StorageSettingsView.swift:352`), key `moveToTrashInsteadOfDeleting`, default on (`Services/ConfigService.swift:264`): see below.
 
 Stats: `ReadingStatsView`, no settings.
 
+Library sort has no row in Settings. It is saved per folder or view as the listener chooses it in the Sort menu, under `library.folderSortSettings`, in the library's index (`userChangedSort(_:at:)`, `ViewModels/LibraryViewModel+SortAndOrder.swift:255`; `setFolderSortSetting(_:for:)`, `:266`; `FolderSortSetting`, `Models/Library.swift:7`).
+
+Announcements have no switches of their own. The two settings that change a spoken sentence in the first version are "Say the page in Where Am I?" and "Include the speed with time left and total time", above.
+
+Sleep timer defaults: the presets are constants (`Views/Reader/SleepTimerView.swift:38`); the last duration is remembered by the service (`Services/SleepTimerService.swift:71`); fade and auto-close are the two settings above.
+
+Where those keys are declared:
+
+- The stored `@AppStorage` properties, `ViewModels/SettingsViewModel.swift`: `selectedVoiceID:194`, `storedWordsPerMinute:198`, `storedPitchMultiplier:202`, `selectedLanguage:205`, `skipForwardUnitRaw:208`, `skipBackwardUnitRaw:211`, `rewindOnResumeUnitRaw:222`, `rewindSmartMode:225`, `storedRewindSmartThreshold:229`, `storedSleepFadeOutDuration:233`, `sleepTimerAutoClose:236`, `endOfBookBehaviorRaw:239`, `storedPunctuationPauseLevel:247`, `autoPlayOnNavigate:250`, `includeSpeedWithTimes:263`, `showsPageInReader:270`, `saysPageInWhereAmI:276`.
+- The checked properties a view binds, the same file: `wordsPerMinute:367`, `pitchMultiplier:373`, `rewindSmartThreshold:379`, `sleepFadeOutDuration:385`, `punctuationPauseLevel:391`, `skipForwardUnit:416`, `skipBackwardUnit:421`, `endOfBookBehavior:442`, `rewindOnResumeUnit:454`.
+- The rules, with their ranges and defaults, `Models/SettingsPolicy.swift`: `wordsPerMinute:373`, `pitchMultiplier:377`, `rewindSmartThreshold:382`, `sleepFadeOutDuration:387`, `punctuationPauseLevel:392`, `skipForwardUnit:423`, `skipBackwardUnit:425`, `rewindOnResumeUnit:431`, `endOfBookBehavior:433`.
+
 ### 8.2 Should not appear on a phone, and why
 
-- Shift+Skip: "Shift+Skip Forward", "Shift+Skip Backward", keys `shiftSkipForwardUnit`, `shiftSkipBackwardUnit` (`:303`, `:314`). They need a Shift key.
+- Shift+Skip: "Shift+Skip Forward", "Shift+Skip Backward", keys `shiftSkipForwardUnit`, `shiftSkipBackwardUnit` (`Views/Settings/SettingsView.swift:303`, `:314`). They need a Shift key.
 - "Open the next book in", key `nextBookWindow` (`:447`, `Models/SettingsPolicy.swift:437`). A phone has one screen. It also appears in Folder Settings (`Views/NextBookWindowPicker.swift`).
-- "Navigation unit controls", key `playbackNavigationUnitControlMode`, and "Show bookmark button", `showBookmarkInPlaybackControls`, "Show speed controls", `showSpeedInPlaybackControls` (`:499`, `:515`, `:522`): these decide what crowds a Mac's bar; the phone's screen has its own layout. The mode still matters: `PlaybackSkipUnitPolicy.resolve` reads it (`ViewModels/SettingsViewModel.swift:161-180`), and at its default `.none` per-book units are ignored. The spec should choose, and iPhone code should set it, not offer it.
+- "Navigation unit controls", key `playbackNavigationUnitControlMode`, and "Show bookmark button", `showBookmarkInPlaybackControls`, "Show speed controls", `showSpeedInPlaybackControls` (`Views/Settings/SettingsView.swift:499`, `:515`, `:522`): these decide what crowds a Mac's bar; the phone's screen has its own layout. The mode still matters: `PlaybackSkipUnitPolicy.resolve` reads it (`ViewModels/SettingsViewModel.swift:161-180`), and at its default `.none` per-book units are ignored. The spec should choose, and iPhone code should set it, not offer it.
 - "Show Export in the reader toolbar", `showExportInReaderToolbar`: later.
 - Shortcuts tab, all of it, and `shortcutDoublePressSeconds`: hardware keys. A later iPad or keyboard question.
 - Storage Directory, Library Maintenance, Logs (`logLocation`), `dataDirectoryPath`: the container is the place. Show Logs in Finder has no Finder.
@@ -1326,15 +1347,16 @@ Test classes are in `TextMouthProductionTests/`, one bundle hosted by the Mac ap
 - Reader sheets: `ViewsAndWindowsReaderSheetTests`, `BookmarkKeyboardAccessTests`, `BookmarkPlacementTests`.
 - Runtime and paths: `HostedTestIsolationTests`, `DataDirectoryPreferencesTests`.
 - Routing: `LibraryWindowRouterTests`, `WindowFocusPolicyTests`.
-- Concurrency policy: `UncheckedConcurrencyPolicyTests` counts `@unchecked Sendable` and `nonisolated(unsafe)` across every Swift file, platform folders included (27 and 15, `docs/architecture/parts-of-the-app.md:27`). A new one fails it.
+- Concurrency policy: `UncheckedConcurrencyPolicyTests` counts `@unchecked Sendable` and `nonisolated(unsafe)` in every Swift file under `TextMouth/`, platform folders included (`AppSourceFile.all()`, `TextMouthProductionTests/SourceScanTestSupport.swift:25-35`), and pins the counts at 27 and 15 (`docs/architecture/parts-of-the-app.md:27`). A new one fails it, even in `Platform/iOS/`.
 
 ### 9.2 Where iPhone logic should go
 
 - The Mac test target compiles `TextMouth` less `Platform/iOS/**` (`project.yml:109-111`), and `TextMouthProductionTests` is `platform: macOS` with `TEST_HOST` the Mac app (`:418-452`). So nothing under `TextMouth/Platform/iOS/` can be tested tonight, on any machine: the iOS platform is not installed, and the Mac does not compile that folder.
 - So a plain iPhone type that needs tests goes in a shared folder, such as `TextMouth/Models/` (values, words, and rules) or `TextMouth/ViewModels/` (a `@MainActor` coordinator with no UIKit). Both targets compile it (`docs/architecture/platforms.md:13`), and `@testable import TextMouth` reaches it.
 - It must import only `Foundation`, or `SwiftUI` with no UIKit-only name, or wrap the UIKit part in `#if os(iOS)`. An `#if os(iOS)` block is compiled on iOS alone and is untestable; keep decisions out of it.
-- A view with no platform code can go in `Views/iPhone/` or the like, also shared, and so be hosted in a test on the Mac, but a view named by no Mac code is dead code there. The Mac's size limit is 50 MB and its projection reports new shared files as new (`docs/architecture/platforms.md:40` has the precedent: 13 such files in phase 0, read and allowed). A view that can only run on iOS belongs in `Platform/iOS/Views/`.
-- A shared type used only by the iPhone is one of the kinds phase 0 allowed ("new shared code that only tests and aliases use"). `make mac-projection BASE=main` will list it; a reviewer reads it. Anything else the Mac compiles must fit one of the five kinds (`docs/architecture/platforms.md:30-36`): a move, a wrapper, an alias, a control-style helper, a split. A new helper in `Platform/` needs its line in `Scripts/ios/mac-projection.py` (`:38`).
+- A view with no platform code could go in a shared folder, and so be hosted in a test on the Mac, but a view no Mac code names is dead weight in the Mac app, whose limit is 50 MB (`docs/developer/building.md:83`). A view that only the phone shows belongs in `Platform/iOS/Views/`.
+- Source-scan tests read `Platform/iOS/` too (`AppSourceFile.all()`): that is the one way a Mac test sees those files.
+- A shared type only the iPhone uses is closest to what phase 0 allowed as "new shared code that only tests and aliases use" (`docs/architecture/platforms.md:40`). `make mac-projection BASE=main` lists it, and a reviewer reads it. Any other change the Mac compiles must be one of the five kinds (`docs/architecture/platforms.md:30-36`): a move, a wrapper, an alias, a control-style helper, a split. A new helper in `Platform/` needs its line in `Scripts/ios/mac-projection.py` (`docs/architecture/platforms.md:38`).
 - Wording moved out of a view stays pinned by the same tests, and `Views/...` statics are callable where they are: a view file can hold a `nonisolated static` word.
 
 ### 9.3 Adding a file
@@ -1352,7 +1374,7 @@ Test classes are in `TextMouthProductionTests/`, one bundle hosted by the Mac ap
 - `TextMouth` (Mac): `path: TextMouth`, `excludes: "Platform/iOS/**"` (`project.yml:109-111`). Everything else, `Resources/` included through `INFOPLIST_FILE` and the asset catalog.
 - `TextMouthiOS`: `path: TextMouth`, `excludes: "Platform/macOS/**"`, `"Resources/**"` (`:277-280`).
 - A new file in `Models/`, `ViewModels/`, `Views/`, `Services/`, `App/`, or directly in `Platform/` is in both. A new file in `Platform/iOS/` is in iOS alone. A new file in `Platform/macOS/` is in the Mac alone, and shared code must not name it without a stand-in (`docs/architecture/platforms.md:44`).
-- A resource for the phone cannot go in `Resources/`. It needs a folder of its own, listed in the `TextMouthiOS` target, and a `Platform/iOS` path outside `.swift` files needs the same care, since `sources: path: TextMouth` takes non-Swift files as resources too.
+- A resource for the phone cannot go in `TextMouth/Resources/`, which the iOS target excludes (`project.yml:280`). A folder under `TextMouth/Platform/iOS/` reaches the iOS target alone, since the target takes everything under `TextMouth` as its sources; to my knowledge XcodeGen sorts non-Swift files into resources by their kind (not run). `Scripts/ios/typecheck.py` builds a SwiftPM package over the same folder, excluding only `Resources` and the other platform's folder (`Scripts/ios/typecheck.py:147-152`), so a non-Swift file there may draw SwiftPM's warning about an unhandled file (not run).
 - Bundled sounds and `Assets.xcassets` for the iOS icon follow from this.
 
 ## 10. The fifteen things most likely to bite
@@ -1362,16 +1384,16 @@ Test classes are in `TextMouthProductionTests/`, one bundle hosted by the Mac ap
 3. Import questions never show. `Views/Library/ImportDecisionPresenter.swift:85-90` needs an `ImportOrigin`, and `:15-24` never gives one on iOS. The phone presents `library.importDecisions.current` itself, with `currentImportDecisionWording` and `answerImportDecision(_:with:)`, or a duplicate's new copy waits for ever.
 4. App-wide notifications reach nobody. `Services/LibraryWindowRouter.swift:380` listens only because `Platform/macOS/App/AppDelegate.swift:22` asked, and `openLibraryWindow` answers false by default (`:47`). `.continueToNextBook` and `.openBookWindow` must be heard, or Continue to Next Book says "Starting: Dune" and nothing starts. `windowStanding` is `.noWindow` (`ViewModels/ReaderViewModel+NextBookWindow.swift:53-59`), so `showNextBook` takes that path whatever the switcher.
 5. `close()` is final and is on `onDisappear`. `Views/Reader/BookReaderWindowView.swift:124-133` stops the book when its screen goes. Don't reuse that view. `ViewModels/ReaderViewModel.swift:2239`, `:2307`: after `close()`, `content` is nil and every subscription is gone. Own the reader above the navigation.
-6. Nothing saves as the app leaves. `Platform/macOS/App/AppDelegate.swift:195-236` is the Mac's whole save path, and iOS gives no last call. Without a `scenePhase` handler calling `PlaybackMemoryGuard.savePendingWrites()` (`Services/PlaybackMemoryGuard.swift:442`), a killed app loses up to 30 seconds of place (`ViewModels/ReaderViewModel.swift:132`) and any library.json waiting on its debounce.
+6. Nothing saves as the app leaves. `Platform/macOS/App/AppDelegate.swift:195-236` is the Mac's whole save path, and iOS gives no last call. Without a `scenePhase` handler calling `PlaybackMemoryGuard.savePendingWrites()` (`Services/PlaybackMemoryGuard.swift:448`), a killed app loses up to 30 seconds of place (`ViewModels/ReaderViewModel.swift:132`) and any library.json waiting on its debounce.
 7. VoiceOver focus does nothing. `Platform/iOS/Views/VoiceOverFocus+iOS.swift:35-71` holds hidden views and an identifier. Every reused sheet opens with VoiceOver left where it was, in silence and without an error. The rules to keep are in `Views/Reader/BookmarkPanelView.swift:489-584` (where focus goes after each operation) and `Views/Reader/HeadingNavigatorView.swift:405-410`.
 8. Fixed sizes. `Views/Reader/ReaderView.swift:1039`, `Views/Reader/HeadingNavigatorView.swift:357`, `Views/Reader/BookmarkPanelView.swift:116`, `Views/Reader/MetadataEditorView.swift:140`, `Views/Library/ImportDecisionSheet.swift:76`, `Views/Library/LibrarySheetViews.swift:152`, `Views/ContentView.swift:166`, `Views/Reader/BookReaderWindowView.swift:134`, `Views/Settings/SettingsView.swift:12`. Each clips on a phone and pushes controls out of VoiceOver's reach. Removing one directly changes the Mac: add a helper in `Platform/PlatformControlStyles.swift` that applies the frame on the Mac alone, with its line in `Scripts/ios/mac-projection.py`.
 9. Screen lock silences it. `project.yml:281-292` declares no background audio, and no code sets an audio session (section 6.4). Route changes never reach `ReaderViewModel+Playback.swift:324`, since the listener is empty on iOS (`Services/NowPlayingService.swift:1347`). The audio researcher has the rules; this code has none of it yet, and the route change must call `pauseForAudioRouteChange()`.
-10. The lock screen shows little and says the wrong thing. `Services/NowPlayingService.swift:1230-1234` gives title, artist, and rate alone, with no duration or elapsed time. `:772`, `:776` advertise 30 and 15 seconds, while `:923-946` skip by the reader's unit: a Control Center "back 15" can move a heading.
+10. The lock screen shows little and says the wrong thing. `Services/NowPlayingService.swift:1230-1234` gives title, artist, and rate alone, with no duration or elapsed time. `:772`, `:776` advertise 30 and 15 seconds, while `:923-946` skip by the reader's unit, so Control Center's back-15 button can move back a heading.
 11. A bar that watches the reader redraws 8 times a second. `ViewModels/ReaderViewModel.swift:710`; `Views/Reader/PlaybackControlsView.swift:4` observes all of it. A now-playing bar must use `ReaderSnapshot`, `Views/Reader/ReaderSnapshot.swift:16`, or VoiceOver's cursor suffers, as `Views/Reader/HeadingNavigatorView.swift:5-9` explains.
-12. Sounds are silent twice over. `ViewModels/ReaderViewModel.swift:151` is nil until `Views/Reader/ReaderView.swift:28-30`, and `Services/SoundEffectService.swift:194` names a folder iOS lacks (not run). The phone must set the service as it makes the reader, and bundle sounds. A blind listener uses these sounds to confirm a press.
+12. Sounds are silent twice over. `ViewModels/ReaderViewModel.swift:151` is nil until `Views/Reader/ReaderView.swift:28-30`, and `Services/SoundEffectService.swift:194` names a folder iOS lacks (not run). The phone must set the service as it makes the reader, and bundle sounds. On the Mac these sounds confirm Play and Pause (`docs/architecture/reading-a-book.md:9`), so without them the phone gives no such confirmation.
 13. Mac words in shared constants. `Services/SpeechService.swift:1455`, `Models/SpeechRefusalReport.swift:318`, `ViewModels/ReaderViewModel+Playback.swift:2413`, `:2421`, `Views/Reader/BookmarkPanelView.swift:465` ("Command + B"), `Models/RemovalWording.swift:32` ("Trash"). Mac tests pin these, so change them by a platform-aware function, and don't edit the Mac's text. Section 7.27 lists them all.
 14. A row has no tap, and its menu is the Mac's. `Views/Library/LibrarySubviews.swift:896-902` opens a book only by VoiceOver's default action or the context menu's Open. `:913-1021` offers Export… and, through `ViewModels/LibraryViewModel+Cloud.swift:447`, Show in Finder, which does nothing on iOS (`:534-539`). Pass an empty `cloudCommands` and build the phone's list of actions.
-15. The book's text. `Views/Reader/ReaderView.swift:373-409`: one `Text` of up to 20,000 characters (`ViewModels/ReaderViewModel.swift:1852`), replaced as playback moves, with a scroll-area label whose history on the Mac is the warning at `:363-368` (on the text itself, the label replaced the words). Selection is off during playback (`:383-394`). On iOS VoiceOver reads a `Text` as one element, so line and word reading needs a `UITextView` such as `ReadOnlyTextArea` (`Platform/iOS/Views/ReadOnlyTextArea+iOS.swift:12`), kept from rebuilding under the cursor.
+15. The book's text. `Views/Reader/ReaderView.swift:373-409`: one `Text` of up to 20,000 characters (`ViewModels/ReaderViewModel.swift:1852`), replaced as playback moves, with a scroll-area label whose history on the Mac is the warning at `Views/Reader/ReaderView.swift:363-368` (on the text itself, the label replaced the words). Selection is off during playback (`:383-394`). On iOS VoiceOver reads a `Text` as one element, so line and word reading needs a `UITextView` such as `ReadOnlyTextArea` (`Platform/iOS/Views/ReadOnlyTextArea+iOS.swift:12`), kept from rebuilding under the cursor.
 
 Two more, in case the fifteen are done early:
 
