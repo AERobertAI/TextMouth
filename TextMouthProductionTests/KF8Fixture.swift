@@ -25,7 +25,8 @@ struct KF8Fixture {
             var from = html.startIndex
             for text in texts {
                 guard let found = html.range(of: text, range: from..<html.endIndex) else {
-                    preconditionFailure("The fixture's document does not hold \(text)")
+                    XCTFail("The fixture's document does not hold \(text)")
+                    continue
                 }
                 chunks.append(html.utf8.distance(from: html.startIndex, to: found.lowerBound)
                     ..< html.utf8.distance(from: html.startIndex, to: found.upperBound))
@@ -144,7 +145,7 @@ struct KF8Fixture {
         let boundary = firstRecords.count + 1
         first.extraEXTH[121] = MOBIFixture.be32(boundary)
         let firstWithBoundary = Self.records(of: first.data())
-        precondition(firstWithBoundary.count + 1 == boundary)
+        XCTAssertEqual(firstWithBoundary.count + 1, boundary, "the EXTH record does not change the record count")
         return MOBIFixture.database(
             named: "Fixture_Hybrid", type: "BOOK", creator: "MOBI",
             records: firstWithBoundary + [Array("BOUNDARY".utf8)] + records()

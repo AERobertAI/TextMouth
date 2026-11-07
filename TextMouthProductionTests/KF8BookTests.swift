@@ -184,15 +184,16 @@ final class KF8BookTests: XCTestCase {
         let real = "<html><body><h1>Chapter</h1><p>Real words.</p></body></html>"
         let contents = "<html><body><h2>Table of Contents</h2><ul><li><a href=\"kindle:pos:fid:0000:off:0000000000\">Chapter</a></li></ul></body></html>"
         let afterword = "<html><body><p>Afterword.</p></body></html>"
-        func document(_ html: String) -> KF8Fixture.Document {
-            let body = html.range(of: "<body>")!.upperBound..<html.range(of: "</body>")!.lowerBound
-            return KF8Fixture.Document(html: html, cutting: [String(html[body])])
+        func document(_ html: String) throws -> KF8Fixture.Document {
+            let start = try XCTUnwrap(html.range(of: "<body>")).upperBound
+            let end = try XCTUnwrap(html.range(of: "</body>")).lowerBound
+            return KF8Fixture.Document(html: html, cutting: [String(html[start..<end])])
         }
-        var fixture = KF8Fixture(documents: [document(real), document(contents)])
+        var fixture = KF8Fixture(documents: [try document(real), try document(contents)])
         fixture.guide = [(type: "toc", document: 1)]
         XCTAssertEqual(try opened(fixture.data()).sections.count, 1)
         // The same page in the middle of the book is the author's, and is read.
-        fixture.documents.append(document(afterword))
+        fixture.documents.append(try document(afterword))
         XCTAssertEqual(try opened(fixture.data()).sections.count, 3)
         // A guide that names no contents page leaves every document.
         fixture.guide = [(type: "text", document: 1)]
