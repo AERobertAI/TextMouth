@@ -33,33 +33,101 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
     }
 
     /// Reload from Editor reads what an editor saved in the encoding the
-    /// editor chose, not only UTF-8, and gives nil, so the view says so,
-    /// when the file cannot be read.
+    /// editor chose, not only UTF-8: a byte-order mark, and the legacy
+    /// encodings the bytes of a paragraph give away (Cyrillic, Mac Roman,
+    /// Shift JIS), each as a whole paragraph, as an import reads them. Text
+    /// that is only ASCII or valid UTF-8 is never flagged as misread.
     func testReloadFromEditorReadsTheEncodingTheEditorSavedIn() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("ReloadFromEditor-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
-        func saved(_ name: String, _ bytes: Data) throws -> URL {
+        func reloaded(_ name: String, _ bytes: Data) throws -> TextImportPolicy.ReloadedText? {
             let url = folder.appendingPathComponent(name)
             try bytes.write(to: url)
-            return url
+            return TextImportPolicy.reloadedText(from: url)
+        }
+        func encoded(_ text: String, _ encoding: String.Encoding) throws -> Data {
+            try XCTUnwrap(text.data(using: encoding), "the paragraph has a character \(encoding) lacks")
         }
 
-        let utf8 = try saved("utf8.txt", Data("Caf\u{E9} au lait\n".utf8))
-        XCTAssertEqual(TextImportPolicy.reloadedText(from: utf8), "Caf\u{E9} au lait\n")
+        let utf8 = try reloaded("utf8.txt", Data("Caf\u{E9} au lait\n".utf8))
+        XCTAssertEqual(utf8, TextImportPolicy.ReloadedText(text: "Caf\u{E9} au lait\n", mayBeMisread: false))
 
         // An editor that saves UTF-16 with a byte-order mark.
-        let utf16 = try saved("utf16.txt", Data([0xFF, 0xFE]) + (try XCTUnwrap("Caf\u{E9}\n".data(using: .utf16LittleEndian))))
-        XCTAssertEqual(TextImportPolicy.reloadedText(from: utf16), "Caf\u{E9}\n")
+        let utf16 = try reloaded("utf16.txt", Data([0xFF, 0xFE]) + (try encoded("Caf\u{E9}\n", .utf16LittleEndian)))
+        XCTAssertEqual(utf16, TextImportPolicy.ReloadedText(text: "Caf\u{E9}\n", mayBeMisread: false))
 
-        // An editor that saves Windows-1252: a lone E9 byte is not valid UTF-8.
-        let windows = try saved("windows.txt", Data([0x43, 0x61, 0x66, 0xE9, 0x0A]))
-        XCTAssertEqual(TextImportPolicy.reloadedText(from: windows), "Caf\u{E9}\n")
+        // Plain ASCII in any encoding is the same text, and not in doubt.
+        XCTAssertEqual(
+            try reloaded("ascii.txt", Data("Plain words.\n".utf8)),
+            TextImportPolicy.ReloadedText(text: "Plain words.\n", mayBeMisread: false)
+        )
 
+        // Legacy encodings, each a whole paragraph the guess can tell.
+        let paragraphs: [(name: String, text: String, encoding: String.Encoding)] = [
+            ("cyrillic", "\u{421}\u{435}\u{433}\u{43E}\u{434}\u{43D}\u{44F} \u{443}\u{442}\u{440}\u{43E}\u{43C} \u{43C}\u{44B} "
+                + "\u{432}\u{44B}\u{448}\u{43B}\u{438} \u{438}\u{437} \u{434}\u{43E}\u{43C}\u{430} \u{440}\u{430}\u{43D}\u{43E}, "
+                + "\u{43F}\u{43E}\u{43A}\u{430} \u{43D}\u{430} \u{443}\u{43B}\u{438}\u{446}\u{435} \u{435}\u{449}\u{435} "
+                + "\u{43D}\u{435} \u{431}\u{44B}\u{43B}\u{43E} \u{43B}\u{44E}\u{434}\u{435}\u{439}, \u{438} \u{434}\u{43E}\u{43B}\u{433}\u{43E} "
+                + "\u{448}\u{43B}\u{438} \u{43F}\u{43E} \u{431}\u{435}\u{440}\u{435}\u{433}\u{443} \u{440}\u{435}\u{43A}\u{438}.\n",
+             .windowsCP1251),
+            ("macroman", "Il \u{E9}tait une fois un vieux meunier qui habitait pr\u{E8}s de la rivi\u{E8}re, et chaque matin "
+                + "il quittait sa maison avant l\u{2019}aube pour moudre le bl\u{E9} des voisins, "
+                + "m\u{EA}me \u{E0} la saison des pluies.\n",
+             .macOSRoman),
+            ("shiftjis", "\u{4ECA}\u{65E5}\u{306F}\u{671D}\u{65E9}\u{304F}\u{5BB6}\u{3092}\u{51FA}\u{3066}\u{3001}\u{5DDD}\u{6CBF}\u{3044}\u{306E}"
+                + "\u{53E4}\u{3044}\u{6A4B}\u{307E}\u{3067}\u{9577}\u{3044}\u{6642}\u{9593}\u{3092}\u{304B}\u{3051}\u{3066}"
+                + "\u{6B69}\u{304D}\u{307E}\u{3057}\u{305F}\u{3002}\n",
+             .shiftJIS),
+        ]
+        for paragraph in paragraphs {
+            let read = try reloaded("\(paragraph.name).txt", try encoded(paragraph.text, paragraph.encoding))
+            XCTAssertEqual(read?.text, paragraph.text, paragraph.name)
+            XCTAssertEqual(read?.mayBeMisread, false, paragraph.name)
+        }
+
+        // Too few bytes to tell: read as Windows-1252, and flagged, since
+        // the listener would not otherwise know the characters may be wrong.
+        let short = try reloaded("short.txt", Data([0x43, 0x61, 0x66, 0xE9, 0x0A]))
+        XCTAssertEqual(short?.text, "Caf\u{E9}\n")
+        XCTAssertEqual(short?.mayBeMisread, true)
+
+        // A file that cannot be read gives nothing, so the view says so.
         XCTAssertNil(TextImportPolicy.reloadedText(from: folder.appendingPathComponent("missing.txt")))
         XCTAssertTrue(TextImportPolicy.reloadFailedAnnouncement.contains("unchanged"))
+        XCTAssertTrue(TextImportPolicy.reloadFailedAnnouncement.hasSuffix("choose Open in Editor to start again."))
+        XCTAssertTrue(TextImportPolicy.reloadMayBeMisreadAnnouncement.contains("may be wrong"))
+    }
+
+    /// Open in Editor's file is written by the policy, which says when it
+    /// cannot: a folder that is not there is a real failure, and the text is
+    /// untouched either way.
+    func testOpenInEditorWritesItsFileOrSaysItCould() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OpenInEditor-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+
+        let written = try XCTUnwrap(TextImportPolicy.writeForEditor("Caf\u{E9}\n", inFolder: folder))
+        XCTAssertEqual(try String(contentsOf: written, encoding: .utf8), "Caf\u{E9}\n")
+        XCTAssertEqual(written.deletingLastPathComponent().standardizedFileURL, folder.standardizedFileURL)
+        XCTAssertEqual(written.pathExtension, "txt")
+
+        let missing = folder.appendingPathComponent("not-there", isDirectory: true)
+        XCTAssertNil(TextImportPolicy.writeForEditor("text", inFolder: missing))
         XCTAssertTrue(TextImportPolicy.editorOpenFailedAnnouncement.hasSuffix("try again."))
+        XCTAssertTrue(TextImportPolicy.editorNotOpenedAnnouncement.hasSuffix("try again."))
+    }
+
+    /// A title of only blanks is no title: the book is "Untitled", and its
+    /// file is not named for spaces. A title with blanks around it loses them.
+    func testATitleOfOnlyBlanksIsUntitled() {
+        XCTAssertEqual(TextImportPolicy.resolvedTitle("   "), "Untitled")
+        XCTAssertEqual(TextImportPolicy.resolvedTitle(" \n\t"), "Untitled")
+        XCTAssertEqual(TextImportPolicy.resolvedTitle(""), "Untitled")
+        XCTAssertEqual(TextImportPolicy.resolvedTitle("  Dune "), "Dune")
+        XCTAssertEqual(TextImportPolicy.textFilename(for: TextImportPolicy.resolvedTitle("   ")), "Untitled.txt")
     }
 
     func testTextImportSanitizesFilenameWithoutChangingTitle() {
