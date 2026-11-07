@@ -193,7 +193,11 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// TextMouth's walk. `MarkupGuard` refuses such a document before any of
     /// this, so its limit is lifted here, to hold the walk to itself.
     func testNavigationDocumentNestedThousandsDeepIsReadOnAWorkerStack() throws {
-        let depth = 20_000
+        // Deep enough that a walk calling itself for each level would overflow the
+        // worker's stack many times over, and shallow enough that the guard's pass,
+        // which looks down the open elements for each list it opens, stays quick
+        // in a debug build.
+        let depth = 5_000
         let nav = "<html xmlns:epub='http://www.idpf.org/2007/ops'><body><nav epub:type='toc'>"
             + "<ol><li><a href='../Text/one.xhtml'>Outer entry</a>"
             + String(repeating: "<ol><li>", count: depth - 2)

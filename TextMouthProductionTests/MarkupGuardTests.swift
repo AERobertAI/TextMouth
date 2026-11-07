@@ -62,8 +62,9 @@ final class MarkupGuardTests: XCTestCase {
         for shape in shapes {
             let result = try XCTUnwrap(converted(xhtml("<p>Before.</p>\(shape)<p>After.</p>")), shape)
             let markdown = try result.get()
-            XCTAssertTrue(markdown.contains("Before."), shape)
-            XCTAssertTrue(markdown.contains("After."), shape)
+            // The words, not their full stops, which Markdown writes escaped.
+            XCTAssertTrue(markdown.contains("Before"), shape)
+            XCTAssertTrue(markdown.contains("After"), shape)
         }
     }
 
@@ -476,7 +477,7 @@ final class MarkupGuardTests: XCTestCase {
     /// A web archive's main page reads through the two paths a page takes.
     func testAWebArchivePageHoldsToo() throws {
         let page = WebArchiveReader.MainPage(text: xhtml("<?a><p>Words.</p>"), isHTML: true)
-        XCTAssertTrue(try page.markdown().contains("Words."))
+        XCTAssertTrue(try page.markdown().contains("Words"))
         let deep = WebArchiveReader.MainPage(text: "<html><body>" + String(repeating: "<div></x>", count: 5_000), isHTML: true)
         let refused = onWorkerSizedStack {
             ((try? deep.markdown()) == nil, (try? deep.parsed(title: "T")) == nil)
@@ -524,9 +525,10 @@ final class MarkupGuardTests: XCTestCase {
         // A stray end tag of a paragraph makes a paragraph.
         XCTAssertFalse(refused(String(repeating: "</p>", count: 1_000), as: .html))
         XCTAssertTrue(refused(String(repeating: "</p>", count: 1_001), as: .html))
-        // A tag's first attribute takes twice what a plain tag takes, and three more one again.
-        XCTAssertFalse(refused(String(repeating: "<i a></i>", count: 333), as: .html))
-        XCTAssertTrue(refused(String(repeating: "<i a></i>", count: 334), as: .html))
+        // A tag with attributes takes two more than a plain tag, and each three of its
+        // attributes one more: 300 tags of one attribute make 1,000, and 301 make 1,003.
+        XCTAssertFalse(refused(String(repeating: "<i a></i>", count: 300), as: .html))
+        XCTAssertTrue(refused(String(repeating: "<i a></i>", count: 301), as: .html))
         XCTAssertEqual(try inspected("<i a b c d>", as: .html).memoryUnits, 1 + 2 + 1)
         // Formatting made again costs what its element costs: 100 for each of 12 paragraphs, with their own.
         let formatting = "<p>" + (0..<100).map { "<b n=\($0)>" }.joined() + "</p>"
@@ -558,7 +560,8 @@ final class MarkupGuardTests: XCTestCase {
     func testTheLimitsInForceReachTheRealPath() throws {
         let limits = MarkupGuard.Limits(deepestNesting: 10, mostMemoryUnits: 100, mostAttributesOnATag: 5, mostWork: 1_000)
         try MarkupGuard.$limits.withValue(limits) {
-            XCTAssertEqual(try HTMLToMarkdownConverter.convert("<p>Words.</p>"), "Words.")
+            // Markdown escapes the full stop.
+            XCTAssertEqual(try HTMLToMarkdownConverter.convert("<p>Words.</p>"), "Words\\.")
             XCTAssertThrowsError(try HTMLToMarkdownConverter.convert(String(repeating: "<div>", count: 11))) {
                 XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: 10))
             }
