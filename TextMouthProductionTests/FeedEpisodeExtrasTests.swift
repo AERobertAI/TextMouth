@@ -293,15 +293,13 @@ final class FeedEpisodeExtrasTests: XCTestCase {
     /// reaches the log, whatever it holds: a line break in it would make a
     /// line of the log of its own.
     func testTheVersionAFileNamesNeverReachesTheLog() {
-        let hostile = "9
-FEED_DOWNLOAD_FINISHED: x"
+        let hostile = "9\nFEED_DOWNLOAD_FINISHED: x"
         let transcript = FeedEpisodeExtras.logReason(of: TimedTextError.unsupportedVersion(.podcastJSON, hostile))
         XCTAssertEqual(transcript, "it is a Podcasting 2.0 JSON transcript of a version TextMouth doesn't read")
         let chapters = FeedEpisodeExtras.logReason(of: PodcastChaptersError.unsupportedVersion(hostile))
         XCTAssertEqual(chapters, "its version is not one TextMouth reads")
         for reason in [transcript, chapters] {
-            XCTAssertFalse(reason.contains("FEED_DOWNLOAD_FINISHED") || reason.contains("
-"), reason)
+            XCTAssertFalse(reason.contains("FEED_DOWNLOAD_FINISHED") || reason.contains("\n"), reason)
         }
     }
 
