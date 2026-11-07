@@ -1,0 +1,139 @@
+import XCTest
+@testable import TextMouth
+
+/// `PhoneNavigationUnits`: what each kind of book offers, the unit in force,
+/// and adjusting through the units, by the spec's "Navigation unit".
+final class PhoneNavigationUnitsTests: XCTestCase {
+    /// A text book with pages offers every unit, in the Mac's order.
+    func testATextBookWithPagesOffersEveryUnitInTheMacsOrder() {
+        XCTAssertEqual(
+            PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: true),
+            SkipUnit.allCases
+        )
+    }
+
+    /// A text book without pages leaves out Page alone.
+    func testATextBookWithoutPagesLeavesOutPage() {
+        XCTAssertEqual(
+            PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false),
+            SkipUnit.allCases.filter { $0 != .page }
+        )
+    }
+
+    /// An audiobook has no text to stop at, so Sentence and Paragraph aren't
+    /// offered; nor Page without pages.
+    func testAnAudiobookLeavesOutSentenceParagraphAndPageWithoutPages() {
+        XCTAssertEqual(
+            PhoneNavigationUnits.offered(isAudioBook: true, hasSeveralPages: false),
+            [.seconds10, .seconds15, .seconds30, .seconds60, .heading, .subheading, .bookmark]
+        )
+        XCTAssertEqual(
+            PhoneNavigationUnits.offered(isAudioBook: true, hasSeveralPages: true),
+            [.seconds10, .seconds15, .seconds30, .seconds60, .page, .heading, .subheading, .bookmark]
+        )
+    }
+
+    /// The book's own unit is in force when the book offers it.
+    func testTheBooksOwnUnitIsInForce() {
+        let offered = PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: true)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: "Bookmark", kindDefault: .sentence, offered: offered, isAudioBook: false),
+            .bookmark
+        )
+    }
+
+    /// With no unit of its own, or one naming no unit, the kind's default is
+    /// in force.
+    func testWithoutAUnitOfItsOwnTheKindsDefaultIsInForce() {
+        let offered = PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: nil, kindDefault: .paragraph, offered: offered, isAudioBook: false),
+            .paragraph
+        )
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: "Chapter", kindDefault: .heading, offered: offered, isAudioBook: false),
+            .heading
+        )
+    }
+
+    /// A saved unit the book doesn't offer, such as an audiobook's Sentence
+    /// or Page in a book without pages, falls to the kind's default.
+    func testAUnitTheBookDoesntOfferFallsToTheDefault() {
+        let audio = PhoneNavigationUnits.offered(isAudioBook: true, hasSeveralPages: false)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: "Sentence", kindDefault: .seconds30, offered: audio, isAudioBook: true),
+            .seconds30
+        )
+        let text = PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: "Page", kindDefault: .sentence, offered: text, isAudioBook: false),
+            .sentence
+        )
+    }
+
+    /// A default the book doesn't offer either, such as Page for an
+    /// audiobook without pages, falls to the spec's fallback for its kind.
+    func testADefaultTheBookDoesntOfferFallsToTheSpecsFallback() {
+        let audio = PhoneNavigationUnits.offered(isAudioBook: true, hasSeveralPages: false)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: nil, kindDefault: .page, offered: audio, isAudioBook: true),
+            .seconds15
+        )
+        let text = PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false)
+        XCTAssertEqual(
+            PhoneNavigationUnits.unitInForce(ownRawValue: "Page", kindDefault: .page, offered: text, isAudioBook: false),
+            .sentence
+        )
+    }
+
+    /// Adjusting up gives the next offered unit, and wraps from the last to
+    /// the first; adjusting down goes back, and wraps the other way.
+    func testAdjustingStepsThroughTheOfferedUnitsAndWraps() {
+        let offered = PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .sentence, up: true, in: offered), .paragraph)
+        // Page isn't offered, so Paragraph steps to Heading.
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .paragraph, up: true, in: offered), .heading)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .bookmark, up: true, in: offered), .seconds10)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .seconds10, up: false, in: offered), .bookmark)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .heading, up: false, in: offered), .paragraph)
+    }
+
+    /// A unit not offered steps to the offered unit beside where it sits in
+    /// the Mac's order, so a step never lands on a unit that does nothing.
+    func testAUnitNotOfferedStepsToItsOfferedNeighbor() {
+        let audio = PhoneNavigationUnits.offered(isAudioBook: true, hasSeveralPages: false)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .sentence, up: true, in: audio), .heading)
+        XCTAssertEqual(PhoneNavigationUnits.unit(after: .paragraph, up: false, in: audio), .seconds60)
+    }
+
+    /// Every step from every unit, both ways, lands on an offered unit, and
+    /// a full round up visits each offered unit once.
+    func testEveryStepLandsOnAnOfferedUnit() {
+        for isAudioBook in [false, true] {
+            for hasPages in [false, true] {
+                let offered = PhoneNavigationUnits.offered(isAudioBook: isAudioBook, hasSeveralPages: hasPages)
+                for unit in SkipUnit.allCases {
+                    for up in [false, true] {
+                        XCTAssertTrue(offered.contains(PhoneNavigationUnits.unit(after: unit, up: up, in: offered)))
+                    }
+                }
+                var visited: [SkipUnit] = []
+                var unit = offered[0]
+                for _ in offered {
+                    visited.append(unit)
+                    unit = PhoneNavigationUnits.unit(after: unit, up: true, in: offered)
+                }
+                XCTAssertEqual(visited, offered)
+                XCTAssertEqual(unit, offered[0])
+            }
+        }
+    }
+
+    /// The name in lower case, for hints and the words of a move that went
+    /// nowhere.
+    func testTheLowerCaseName() {
+        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .sentence), "sentence")
+        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .seconds10), "10 seconds")
+        XCTAssertEqual(PhoneNavigationUnits.lowercasedName(of: .subheading), "subheading")
+    }
+}
