@@ -89,6 +89,64 @@ enum MarkdownMarkerWriter {
         continuationAtMargin: Bool = false,
         into markdown: inout String
     ) {
+        var forgotten = RunMemo()
+        write(
+            marker, inline: inline, keepingWordsApart: keepingWordsApart,
+            continuationAtMargin: continuationAtMargin, remembering: &forgotten, into: &markdown)
+    }
+
+    /// What a caller that writes many markers in a row keeps between its
+    /// writes (`write(_:inline:keepingWordsApart:continuationAtMargin:remembering:into:)`):
+    /// where the last marker went, when it went at the end of the line before
+    /// a blank last line, and the Markdown's length after it.
+    struct RunMemo {
+        /// The Markdown's length in UTF-8 bytes right after the write that made
+        /// this memo; -1 when there is nothing to remember.
+        fileprivate var length = -1
+        /// The UTF-8 offset just after the marker that write inserted, where the
+        /// next marker of the run goes.
+        fileprivate var offset = 0
+        /// The marker inserted, to check the place before it is used.
+        fileprivate var marker = ""
+        fileprivate var keepingWordsApart = false
+
+        init() {}
+    }
+
+    /// `write(_:inline:keepingWordsApart:continuationAtMargin:into:)` for a
+    /// caller that writes many markers one after another, remembering the last
+    /// in `memo`. A marker written after a line break goes at the end of the
+    /// line before, whose words and openings the writer reads to place it,
+    /// from the line's start: on a line of megabytes that is the whole line,
+    /// for every marker of the run (5,000 markers after a 2 MB line took 15.7
+    /// s). While nothing else has been written, the next marker goes just
+    /// after the last: inserting a comment at the end of a line's words changes
+    /// nothing the placement reads (the line's openings, indentation, heading
+    /// opening, and whether it ends its paragraph depend on how it begins and
+    /// on its whole being one repeated mark or a fence, none of which a
+    /// comment of letters can change), and the words end after the comment.
+    /// So the marker is inserted there, and the memo moves on. Anything
+    /// written since (the Markdown's length is not the memo's) or any other
+    /// kind of write is placed from the line, as ever, and forgets the memo.
+    static func write(
+        _ marker: String,
+        inline: Bool,
+        keepingWordsApart: Bool = false,
+        continuationAtMargin: Bool = false,
+        remembering memo: inout RunMemo,
+        into markdown: inout String
+    ) {
+        if inline, !continuationAtMargin, memo.length >= 0, memo.length == markdown.utf8.count, isRememberable(marker),
+           memo.keepingWordsApart == keepingWordsApart, memo.offset >= memo.marker.utf8.count,
+           memo.offset <= memo.length, endsWithMemoMarker(markdown, memo) {
+            let at = markdown.utf8.index(markdown.utf8.startIndex, offsetBy: memo.offset)
+            markdown.unicodeScalars.insert(contentsOf: marker.unicodeScalars, at: at)
+            memo.length = markdown.utf8.count
+            memo.offset += marker.utf8.count
+            memo.marker = marker
+            return
+        }
+        memo = RunMemo()
         let place = inline
             ? placement(atEndOf: markdown, continuationAtMargin: continuationAtMargin)
             : Placement(position: .blockStart, index: markdown.endIndex)
@@ -105,7 +163,18 @@ enum MarkdownMarkerWriter {
         case .continuationLine where continuationAtMargin:
             markdown += "    " + marker
         case .continuationLine:
+            let offset = markdown.utf8.distance(from: markdown.utf8.startIndex, to: place.index)
             markdown.unicodeScalars.insert(contentsOf: marker.unicodeScalars, at: place.index)
+            // The next marker of a run goes just after this one, when the
+            // marker holds a scalar only words hold (a comment does), so the
+            // line cannot become a marker alone or an underline, and ends in
+            // a scalar that the words end with.
+            if isRememberable(marker) {
+                memo.length = markdown.utf8.count
+                memo.offset = offset + marker.utf8.count
+                memo.marker = marker
+                memo.keepingWordsApart = keepingWordsApart
+            }
         case .containerStart(let continuation):
             // The opening keeps one space after its last marker, so the
             // whitespace a source wrote after it cannot make the marker code.
@@ -118,6 +187,25 @@ enum MarkdownMarkerWriter {
             ensureBlankLine(&markdown)
             markdown += marker + "\n\n"
         }
+    }
+
+    /// Whether a run of markers can go on after `marker` without the line being
+    /// read again: it holds a scalar only words hold (a comment does), so the
+    /// line cannot become a marker alone or an underline, and ends in a scalar
+    /// that the line's words end with (not indentation or a backslash, which
+    /// a hard break leaves out of the words).
+    private static func isRememberable(_ marker: String) -> Bool {
+        guard let last = marker.unicodeScalars.last, !Line.isIndentation(last), last != "\\" else { return false }
+        return marker.unicodeScalars.contains(where: provesWords)
+    }
+
+    /// Whether the Markdown holds the memo's marker just before the memo's
+    /// offset, as the memo says.
+    private static func endsWithMemoMarker(_ markdown: String, _ memo: RunMemo) -> Bool {
+        let bytes = markdown.utf8
+        let end = bytes.index(bytes.startIndex, offsetBy: memo.offset)
+        let start = bytes.index(end, offsetBy: -memo.marker.utf8.count)
+        return bytes[start..<end].elementsEqual(memo.marker.utf8)
     }
 
     /// Ensure `markdown` ends with a blank line (two newlines), unless it is

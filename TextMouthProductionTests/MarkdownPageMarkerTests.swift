@@ -629,6 +629,160 @@ final class MarkdownPageMarkerTests: XCTestCase {
                        String(longLine.dropLast()) + marker + " \n")
     }
 
+    /// The characters a line's openings and list markers are made of prove
+    /// nothing about its words: a tab is indentation, ")" ends a list marker
+    /// ("1)"), and a carriage return is a word scalar. A tail of them is read
+    /// to the line's start, as a short line is. (The expected values are what
+    /// the writer gave before the long-line scan; the scan is meant to change none.)
+    func testTabsAndParenthesesProveNoWordsAndACarriageReturnDoes() {
+        let marker = "<!-- page: 2 -->"
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "1.\t"), .containerStart(continuation: "   "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "2) "), .containerStart(continuation: "   "))
+        XCTAssertEqual(written(into: "1.\t", inline: true), "1. " + marker + "\n   ")
+        XCTAssertEqual(written(into: "- \t", inline: true), "- " + marker + "\n  ")
+        // A list marker with a ")" alone puts the space after the marker; words after it, before.
+        XCTAssertEqual(written(into: "1)", inline: true, keepingWordsApart: true), "1)" + marker + " ")
+        XCTAssertEqual(written(into: "w 1)", inline: true, keepingWordsApart: true), "w 1) " + marker)
+        XCTAssertEqual(written(into: "w\t1)", inline: true, keepingWordsApart: true), "w\t1) " + marker)
+        XCTAssertEqual(written(into: "1.\ta", inline: true, keepingWordsApart: true), "1.\ta " + marker)
+        // White space before the marker is enough: none is added after a tab or a carriage return.
+        XCTAssertEqual(written(into: "a\t", inline: true, keepingWordsApart: true), "a\t" + marker)
+        XCTAssertEqual(written(into: "-\r", inline: true, keepingWordsApart: true), "-\r" + marker)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "\r"), .withinLine)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "\t"), .blockStart)
+        // The same after a long line, where the scan stops early: the long tail is read to the start.
+        let long = String(repeating: "\t", count: 5_000)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "1." + long), .containerStart(continuation: "   "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "w" + long + "1)"), .withinLine)
+    }
+
+    // MARK: - Runs of Page Anchors in the Converters
+
+    /// Eight thousand empty page anchors in a row, a space between each, are
+    /// converted in a fraction of a second. Each text node asked where the
+    /// page markers that end the Markdown begin, by walking back over all of
+    /// them (5,000 took 24 s in the review of `readers/followups-1106`, and
+    /// 8,000 would take 61 s): the converter now remembers where they begin. The
+    /// limit is twenty seconds.
+    func testManyPageAnchorsInARowAreConvertedInLinearTime() throws {
+        let count = 8_000
+        let anchors = (0..<count).map { "<span epub:type=\"pagebreak\" id=\"p\($0)\" title=\"\($0)\"></span> " }.joined()
+        let html = "<html xmlns:epub=\"http://www.idpf.org/2007/ops\"><body><p>word \(anchors)</p><p>after the pages.</p></body></html>"
+        let clock = ContinuousClock()
+        let start = clock.now
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertLessThan(clock.now - start, .seconds(20))
+        XCTAssertEqual(markdown.components(separatedBy: "<!-- page:").count - 1, count)
+        XCTAssertTrue(markdown.hasPrefix("word<!-- page: 0 --><!-- page: 1 -->"), String(markdown.prefix(60)))
+        XCTAssertTrue(markdown.hasSuffix("after the pages\\."), String(markdown.suffix(60)))
+    }
+
+    /// Page anchors among words, breaks, quotes, and lists are written where
+    /// they stood (the comparison with main's converter on 600 random
+    /// documents is in the report).
+    func testPageAnchorsAmongWordsAreWrittenWhereTheyStood() throws {
+        let html = """
+            <html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+            <p>One <span epub:type="pagebreak" id="a1" title="1"></span> <span epub:type="pagebreak" id="a2" title="2"></span> two</p>
+            <p>Three <span epub:type="pagebreak" id="a3" title="3"></span><br/><span epub:type="pagebreak" id="a4" title="4"></span> four</p>
+            <blockquote>Five <span epub:type="pagebreak" id="a5" title="5"></span> <span epub:type="pagebreak" id="a6" title="6"></span> </blockquote>
+            <ul><li>Six <span epub:type="pagebreak" id="a7" title="7"></span> <span epub:type="pagebreak" id="a8" title="8"></span></li></ul>
+            </body></html>
+            """
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertTrue(markdown.contains("One <!-- page: 1 --><!-- page: 2 -->two"), markdown)
+        XCTAssertTrue(markdown.contains("Three<!-- page: 3 -->  \n    <!-- page: 4 -->four"), markdown)
+        XCTAssertTrue(markdown.contains("> Five <!-- page: 5 --><!-- page: 6 -->"), markdown)
+        XCTAssertTrue(markdown.contains("- Six<!-- page: 7 --><!-- page: 8 -->"), markdown)
+        XCTAssertEqual(markdown.components(separatedBy: "<!-- page:").count - 1, 8)
+    }
+
+    /// Ten thousand page numbers in a row after a line of 2 MB, each placed
+    /// at the end of that line, are written in a fraction of a second in a
+    /// DTBook (5,000 took 15.7 s in the review): the converter remembers where
+    /// the last went. The limit is thirty seconds.
+    func testManyPageNumbersAfterALongLineAreConvertedInLinearTime() throws {
+        let count = 10_000
+        let numbers = (0..<count).map { "<pagenum>\($0)</pagenum> " }.joined()
+        let line = String(repeating: "word ", count: 400_000)
+        let dtbook = "<?xml version=\"1.0\"?><dtbook xmlns=\"http://www.daisy.org/z3986/2005/dtbook/\"><book><bodymatter><level1><poem>"
+            + "<line>\(line)</line>\(numbers)</poem></level1></bodymatter></book></dtbook>"
+        let clock = ContinuousClock()
+        let start = clock.now
+        let conversion = try DTBookToMarkdownConverter(data: Data(dtbook.utf8), file: "book.xml").convert()
+        XCTAssertLessThan(clock.now - start, .seconds(30))
+        XCTAssertEqual(conversion.markdown.components(separatedBy: "<!-- page:").count - 1, count)
+        XCTAssertNil(conversion.diagnostic)
+    }
+
+    // MARK: - A Run of Markers After a Line Break
+
+    /// A run of markers written after a line break, each at the end of the line
+    /// before, with the memo a caller keeps (`RunMemo`), is the same
+    /// Markdown as writing them one by one from the line, for every way a line
+    /// can end (a hard break of spaces or a backslash, a plain break, and a
+    /// break followed by indentation), with other text written between,
+    /// with and without words kept apart.
+    func testARunOfMarkersAfterALineBreakIsWrittenAsOneByOne() {
+        for tail in ["  \n", "\\\n", "\n", "  \n  ", "\n    ", "\n\t", "\n\n"] {
+            for apart in [false, true] {
+                var plain = "line one words" + tail
+                var remembered = plain
+                var memo = MarkdownMarkerWriter.RunMemo()
+                for page in 1...60 {
+                    let marker = "<!-- page: \(page) -->"
+                    MarkdownMarkerWriter.write(marker, inline: true, keepingWordsApart: apart, into: &plain)
+                    MarkdownMarkerWriter.write(
+                        marker, inline: true, keepingWordsApart: apart, remembering: &memo, into: &remembered)
+                    // Now and then something else is written: the run is placed from the line again.
+                    if page % 7 == 0 {
+                        plain += "more words" + tail
+                        remembered += "more words" + tail
+                    }
+                    XCTAssertEqual(remembered, plain, "tail \(tail.debugDescription) page \(page)")
+                }
+            }
+        }
+    }
+
+    /// Markers that cannot be remembered (a block, a marker that ends in white
+    /// space or holds no word) are written from the line, and forget the memo.
+    func testAMarkerThatCannotBeRememberedForgetsTheRun() {
+        var plain = "words  \n"
+        var remembered = plain
+        var memo = MarkdownMarkerWriter.RunMemo()
+        for marker in ["<!-- page: 1 -->", "<!-- page: 2 -->", "x ", "<!-- page: 3 -->", "-", "<!-- page: 4 -->", "<!-- page: 5 -->"] {
+            MarkdownMarkerWriter.write(marker, inline: true, into: &plain)
+            MarkdownMarkerWriter.write(marker, inline: true, remembering: &memo, into: &remembered)
+            XCTAssertEqual(remembered, plain, marker)
+        }
+        MarkdownMarkerWriter.write("<!-- page: 6 -->", inline: false, into: &plain)
+        MarkdownMarkerWriter.write("<!-- page: 6 -->", inline: false, remembering: &memo, into: &remembered)
+        XCTAssertEqual(remembered, plain)
+    }
+
+    /// Twenty thousand markers after a line of 2 MB and a break, which each
+    /// read the line to place themselves (5,000 took 15.7 s in the review of
+    /// `readers/followups-1106`), are written in a few milliseconds with the
+    /// memo. The limit is thirty seconds, checked as they are written: the walk
+    /// of the line passes it at about half of them.
+    func testManyMarkersAfterALongLineAreWrittenInLinearTime() {
+        var markdown = String(repeating: "word ", count: 400_000) + "  \n"
+        var memo = MarkdownMarkerWriter.RunMemo()
+        let limit: Duration = .seconds(30)
+        let clock = ContinuousClock()
+        let start = clock.now
+        var written = 0
+        while written < 20_000, clock.now - start < limit {
+            MarkdownMarkerWriter.write(
+                "<!-- page: \(written + 1) -->", inline: true, keepingWordsApart: true, remembering: &memo, into: &markdown)
+            written += 1
+        }
+        XCTAssertEqual(written, 20_000, "\(written) markers were written in \(limit)")
+        XCTAssertTrue(markdown.hasSuffix("<!-- page: 20000 -->  \n"))
+        XCTAssertEqual(markdown.filter { $0 == "\n" }.count, 1)
+    }
+
     func testABlankLineIsEnsuredOnlyWhenMissing() {
         var markdown = ""
         MarkdownMarkerWriter.ensureBlankLine(&markdown)

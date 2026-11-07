@@ -205,6 +205,27 @@ final class XMLInputGuardTests: XCTestCase {
         XCTAssertNoThrow(try SSMLReader.html(from: Data("<speak>words</speak>".utf8)))
     }
 
+    /// A DTBook conversion hears Cancel: cancelled before it begins, a
+    /// document of thousands of elements ends with `ImportCancelled` (the check
+    /// is every 256 parser events), and one that is not cancelled finishes.
+    func testADTBookConversionHearsCancel() throws {
+        let paragraphs = String(repeating: "<p>Words here.</p>", count: 3_000)
+        let dtbook = "<dtbook><book><bodymatter><level1>\(paragraphs)</level1></bodymatter></book></dtbook>"
+        let cancellation = ImportCancellation()
+        cancellation.cancel()
+        XCTAssertThrowsError(
+            try ImportCancellation.$current.withValue(cancellation) {
+                try DTBookToMarkdownConverter(data: Data(dtbook.utf8), file: "book.xml").convert()
+            }
+        ) { error in
+            XCTAssertEqual(error as? ImportCancelled, ImportCancelled())
+        }
+        let finished = try ImportCancellation.$current.withValue(ImportCancellation()) {
+            try DTBookToMarkdownConverter(data: Data(dtbook.utf8), file: "book.xml").convert()
+        }
+        XCTAssertTrue(finished.markdown.contains("Words here."))
+    }
+
     /// The sentences say what is wrong in words a listener can use, and none
     /// says no real file has it.
     func testTheSentencesAreForAListener() {
