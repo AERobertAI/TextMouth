@@ -20,9 +20,6 @@ struct PhoneSettingsView: View {
     /// The removal choice, which the Mac keeps in config.json and shows from
     /// this model.
     @ObservedObject private var removal: RemovalPreferencesModel
-    /// The store holding the phone's own settings (`PhoneSettingsDefaults`):
-    /// the app's preferences, where the settings model keeps its own.
-    private let preferences: UserDefaults
     /// Pauses the open book for a preview, given by `PhoneSession`.
     private let pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook?
 
@@ -55,20 +52,16 @@ struct PhoneSettingsView: View {
     ///   - settings: The app's settings model.
     ///   - removal: The removal choice: the app's own, unless a caller passes
     ///     another.
-    ///   - preferences: Where the phone's own settings are kept: the app's
-    ///     preferences, unless a caller passes another store.
     ///   - pauseBookForPreview: Pauses the open book while Preview Voice
     ///     speaks, and gives what resumes it. With none, the preview just
     ///     speaks.
     init(
         settings: SettingsViewModel,
         removal: RemovalPreferencesModel = .shared,
-        preferences: UserDefaults = TextMouthRuntime.current.preferences,
         pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook? = nil
     ) {
         _settings = ObservedObject(wrappedValue: settings)
         _removal = ObservedObject(wrappedValue: removal)
-        self.preferences = preferences
         self.pauseBookForPreview = pauseBookForPreview
     }
 
@@ -435,13 +428,14 @@ struct PhoneSettingsView: View {
         stored(PhoneSettingsDefaults.audioNavigationUnit)
     }
 
-    /// One of the phone's own settings, kept in `preferences`, counting each
-    /// change so the screen redraws.
+    /// One of the phone's own settings, kept in the app's preferences, where
+    /// the settings model keeps its own, counting each change so the screen
+    /// redraws.
     private func stored<Value: Equatable & Sendable>(_ preference: StoredPreference<Value>) -> Binding<Value> {
         Binding(
-            get: { preference.read(from: self.preferences) },
+            get: { preference.read(from: TextMouthRuntime.current.preferences) },
             set: { newValue in
-                preference.write(newValue, to: self.preferences)
+                preference.write(newValue, to: TextMouthRuntime.current.preferences)
                 noteChange()
             }
         )
