@@ -1680,6 +1680,15 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks or sounds its end; starting it once they are over")
             return
         }
+        #if os(iOS)
+        // Speech starts after a silent wait: asked first, as at a chapter after
+        // its pause, which ends the phone's hold. Refused, the book pauses while
+        // the wait still counts as playing, so the pause settles it.
+        guard phoneHooks.audioMayStart() else {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterSpeechCache.awaitedByPlay = nil
         switch searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay) {
         case .found(let start):
@@ -2379,6 +2388,16 @@ extension ReaderViewModel {
     /// one waits, still counted as playing. It plays once the announcement's
     /// end sound has passed (`startPlayHeldByWhereAmI()`).
     private func startChapterAfterPause() {
+        #if os(iOS)
+        // The chapter's audio starts after a silent gap: asked first, as every
+        // start asks, which also ends the phone's hold for the gap. Refused, as
+        // when a call came during the pause, the book pauses where it is, at
+        // the chapter's start, while the wait still counts as playing.
+        if !hasClosed, !isWhereAmISpeakingOrSoundingItsEnd, !phoneHooks.audioMayStart() {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterStartAfterPause = nil
         guard !hasClosed else { return }
         guard !isWhereAmISpeakingOrSoundingItsEnd else {
