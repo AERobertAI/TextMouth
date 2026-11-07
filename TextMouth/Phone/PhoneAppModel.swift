@@ -89,11 +89,13 @@ final class PhoneAppModel: ObservableObject {
         // Leaving the screen: what reopens the book is kept, then everything
         // waiting is saved, since iOS gives a suspended app no last call. The
         // reader is not closed, nor its listening session ended: a book playing
-        // with the screen locked is still being listened to.
+        // with the screen locked is still being listened to. The flush is the
+        // life cycle's one timed and logged flush, so every flush is measured
+        // the same way.
         lifeCycle.onDidEnterBackground { [weak self] in
             guard let self else { return }
             self.session.noteAppLeavingForeground(readerScreenShowing: PhoneRoute.showsReader(self.path))
-            UnsavedChangesTerminationGuard.flushPendingWrites()
+            PhoneLifeCycle.flushPendingWrites(because: "entered-background")
         }
         showReaderSubscription = session.showReaderRequests.sink { [weak self] _ in
             self?.showReader()
