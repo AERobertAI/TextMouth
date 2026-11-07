@@ -49,6 +49,8 @@ final class WordDocumentSymbolFontTests: XCTestCase {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [WordDocumentBuilder.Paragraph(runs: runs)]
         builder.fonts = Self.fonts
+        // The text is stored as UTF-16, as text of U+F020 to U+F0FF is (an 8-bit piece cannot hold it).
+        builder.isCompressed = false
         configure(&builder)
         return try body(of: builder.build())
     }
@@ -155,6 +157,7 @@ final class WordDocumentSymbolFontTests: XCTestCase {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [paragraph]
         builder.fonts = Self.fonts
+        builder.isCompressed = false
         builder.styles = styles
         XCTAssertEqual(try body(of: builder.build()), "<p>\u{03B1}</p>\n")
         // The sheet's default font, when nothing else says; the run's own font wins over it.
