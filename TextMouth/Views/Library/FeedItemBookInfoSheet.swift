@@ -50,6 +50,9 @@ struct FeedItemBookInfoSheet: View {
     let info: LibraryBookInfo
     /// The title of the feed it belongs to, while the feed's record is here.
     let feedTitle: String?
+    /// What the episode's transcript came from, once it has been read; nil
+    /// until then, and for an episode or article without a transcript.
+    @State private var transcriptLine: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -67,7 +70,10 @@ struct FeedItemBookInfoSheet: View {
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle), id: \.label) { detail in
+                    ForEach(
+                        FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle, transcriptLine: transcriptLine),
+                        id: \.label
+                    ) { detail in
                         FeedInfoValue(label: detail.label, value: detail.value, spokenValue: detail.spokenValue)
                     }
                 }
@@ -85,6 +91,14 @@ struct FeedItemBookInfoSheet: View {
         .padding()
         .frame(width: 450, height: 440)
         .navigationTitle("Info: \(book.title)")
+        // The transcript is read off the main thread, without downloading
+        // it; its row appears once it has answered, in the scrolling list,
+        // so the sheet keeps its size.
+        .task(id: book.id) {
+            // Another book's line is never kept while this one is read.
+            transcriptLine = nil
+            transcriptLine = await TranscriptStore.bookInfoLine(for: book)
+        }
         // Escape closes the sheet too, wherever focus is, as Return does.
         .background(SilentKeyEquivalent(key: .escape, action: { dismiss() }))
     }
@@ -124,8 +138,15 @@ enum FeedItemBookInfoWording {
     /// genre, year, duration, and file format from `info`, an article's
     /// format and word count, and when it was added and last opened. An
     /// episode's duration is the measured one when the library has it,
-    /// spoken in words.
-    static func details(of book: Book, info: LibraryBookInfo, feedTitle: String?) -> [BookInfoDetail] {
+    /// spoken in words. An episode's "Transcript" follows its format, saying
+    /// where its transcript came from (`transcriptLine`,
+    /// `TranscriptStore.bookInfoLine(for:)`), and is left out without one.
+    static func details(
+        of book: Book,
+        info: LibraryBookInfo,
+        feedTitle: String?,
+        transcriptLine: String? = nil
+    ) -> [BookInfoDetail] {
         var details = [BookInfoDetail(label: "Title", value: book.title)]
         switch info {
         case .audio(let metadata, _):
@@ -136,6 +157,7 @@ enum FeedItemBookInfoWording {
             details.append(BookInfoDetail(label: "Year", value: metadata.year))
             details.append(duration(of: book, read: metadata.duration))
             details.append(BookInfoDetail(label: "Format", value: metadata.fileFormat))
+            details.append(BookInfoDetail(label: TranscriptionWording.bookInfoLabel, value: transcriptLine ?? ""))
         case .epub, .simple:
             details.append(BookInfoDetail(label: "Author", value: book.author))
             details.append(BookInfoDetail(label: "Feed", value: feedTitle ?? ""))

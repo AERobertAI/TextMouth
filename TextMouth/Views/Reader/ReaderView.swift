@@ -578,6 +578,7 @@ struct ReaderBookInfoSheet: View {
             MetadataEditorView(
                 audioMetadata: audioMeta,
                 handEdits: viewModel.book.handEdits,
+                book: viewModel.book,
                 onSave: { edited, opened in
                     viewModel.saveAudioMetadata(edited, openedAs: opened)
                 }
