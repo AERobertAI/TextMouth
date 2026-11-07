@@ -552,8 +552,17 @@ enum BookContentAnalysisService {
     ///
     /// A book of one file without chapters of its own takes the chapters of
     /// a podcast episode kept beside its audio, when they fit it (FMT25,
-    /// `keptPodcastChapters(of:)`).
-    static func analyzeAudio(book: Book, url: URL, prober: AudioMediaProber = .avFoundation) throws -> Result {
+    /// `keptPodcastChapters(of:)`), unless `readingPodcastChapters` is false.
+    /// - Parameter readingPodcastChapters: False when the audio is no longer
+    ///   the audio the kept chapters were timed to, whatever the file beside
+    ///   it still holds: an edit has replaced it, and removing the chapters
+    ///   (`LibraryViewModel.dropPodcastChapters(of:in:)`) may have failed.
+    static func analyzeAudio(
+        book: Book,
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        readingPodcastChapters: Bool = true
+    ) throws -> Result {
         var isDirectory: ObjCBool = false
         let parsed: (
             content: DocumentContent,
@@ -568,7 +577,7 @@ enum BookContentAnalysisService {
             }
             parsed = (directoryResult.content, directoryResult.filePaths, directoryResult.segments)
         } else {
-            let podcastChapters = keptPodcastChapters(of: book)
+            let podcastChapters = readingPodcastChapters ? keptPodcastChapters(of: book) : nil
             let file = try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
                 try await AudioBookParser.parseFile(url: url, prober: prober, fallbackChapters: podcastChapters)
             }

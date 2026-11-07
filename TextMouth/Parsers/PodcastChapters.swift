@@ -156,6 +156,10 @@ struct PodcastChapters: Equatable, Sendable {
     /// the first beginning at 0, each lasting until the next, and one without
     /// a title named "Chapter N". A length that is not a finite number above
     /// zero gives none.
+    ///
+    /// A title is made fit for a heading a listener hears and a braille
+    /// display shows first (`headingTitle(_:)`): the file is third-party
+    /// data, and one title may hold as much as the whole file may.
     func bookChapters(fileDuration: TimeInterval) -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         // Compared as fractional milliseconds, which never overflow; a length
         // that is no number compares as false, and Nero's rules refuse it.
@@ -165,9 +169,64 @@ struct PodcastChapters: Equatable, Sendable {
             return []
         }
         return NeroChapterReader.bookChapters(
-            from: chapters.map { NeroChapterReader.Chapter(title: $0.title, start: Transcript.seconds($0.startMilliseconds)) },
+            from: chapters.map {
+                NeroChapterReader.Chapter(title: Self.headingTitle($0.title), start: Transcript.seconds($0.startMilliseconds))
+            },
             fileDuration: fileDuration
         )
+    }
+
+    /// The most characters (Unicode scalars) of a chapter's title a heading
+    /// keeps. A title is a line a listener hears when moving by heading and
+    /// a braille display shows; an episode's runs to a few dozen characters,
+    /// and a file of up to `TimedTextLimits.podcastChaptersBytes` may hold a
+    /// single title that long, which the heading list, the index saved in the
+    /// package, and the transcript's headings would all carry.
+    static let maximumTitleCharacters = 200
+
+    /// `title` as a heading shows it: its control characters (a NUL, say)
+    /// removed, cut to `maximumTitleCharacters` at the end of a character the
+    /// listener sees as one (so no accent is parted from its letter), with
+    /// "…" after what was cut, and empty when nothing in it can be seen or
+    /// heard (only invisible characters such as a zero-width space), so a book
+    /// names such a chapter by its place ("Chapter N") as it does an untitled
+    /// one. A title finished as `PodcastChapter.title` is (one line, its
+    /// white space single spaces) stays as it is.
+    static func headingTitle(_ title: String) -> String {
+        // Control characters are never part of a name; format characters
+        // (a joiner in an emoji, a mark that turns text right to left) are.
+        var scalars = String.UnicodeScalarView()
+        scalars.append(contentsOf: title.unicodeScalars.filter { $0.properties.generalCategory != .control })
+        guard scalars.contains(where: isVisible) else { return "" }
+
+        // Whole characters are kept while they fit: counting scalars, not
+        // characters, bounds a title made of one character with a megabyte
+        // of combining marks, which no count of characters would.
+        var kept = String.UnicodeScalarView()
+        var keptCount = 0
+        for character in String(scalars) {
+            let width = character.unicodeScalars.count
+            if keptCount + width > maximumTitleCharacters {
+                // Finished before the mark, so it never follows a space.
+                let text = String(kept).trimmingCharacters(in: .whitespaces)
+                return text.isEmpty ? "" : text + "\u{2026}"
+            }
+            kept.append(contentsOf: character.unicodeScalars)
+            keptCount += width
+        }
+        return String(kept)
+    }
+
+    /// Whether `scalar` can be seen or heard: not white space, not a format
+    /// character (a zero-width space, a byte order mark), not a separator.
+    /// A letter, mark, number, punctuation, or symbol can.
+    private static func isVisible(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .control, .format, .spaceSeparator, .lineSeparator, .paragraphSeparator:
+            return false
+        default:
+            return true
+        }
     }
 }
 

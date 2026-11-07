@@ -278,12 +278,18 @@ extension LibraryViewModel {
         }
         if isOneFile {
             // The podcast's chapters kept beside the file were timed to the
-            // audio before the edit, so the analysis must not take them.
+            // audio before the edit, so they are removed, and the analysis
+            // below must not take them even when they could not be: the
+            // file left would lay the old chapters over the new audio.
             dropPodcastChapters(of: book, in: request.package)
         }
         var analyzed = book
         analyzed.filePath = bookURL.path
-        let analysis = try BookContentAnalysisService.analyzeAudio(book: analyzed, url: bookURL)
+        let analysis = try BookContentAnalysisService.analyzeAudio(
+            book: analyzed,
+            url: bookURL,
+            readingPodcastChapters: false
+        )
         return RenderedBook(
             render: render,
             analysis: analysis.index,
