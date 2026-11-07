@@ -718,6 +718,42 @@ final class TranscriptExportTests: XCTestCase {
         XCTAssertEqual(plan.booksInCloud, [])
     }
 
+    /// Captions of a book whose transcript.json is only in the cloud, its
+    /// Markdown on this Mac, are refused as any export of a file in the cloud
+    /// is (S4): the book is named as not downloaded, never skipped in
+    /// silence, and nothing is downloaded. Its text, which is on this Mac,
+    /// still exports as text.
+    func testCaptionsOfATranscriptOnlyInTheCloudNameTheBook() throws {
+        let world = try makeIntegrationWorld("Transcript Export Cloud")
+        let book = try makeTranscribedBook(in: world)
+        let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let paths = Set([transcript.standardizedFileURL.path])
+        let cloud = MaintenanceFileAccess(
+            isDataless: { paths.contains($0.standardizedFileURL.path) },
+            refusesRead: { paths.contains($0.standardizedFileURL.path) }
+        )
+        let destination = try makeSandboxDirectory("Transcript Export Cloud Destination")
+
+        let offer = BookExportService.offer(for: book, access: cloud)
+        let captions = BookExportService.export(
+            [offer], kinds: [.transcript], conversions: [.transcript: .timedText(.webVTT)], to: destination, access: cloud
+        )
+        let text = BookExportService.export(
+            [offer], kinds: [.transcript], conversions: [.transcript: .text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))],
+            to: destination, access: cloud
+        )
+
+        XCTAssertEqual(offer.item(.transcript)?.transcriptInCloud, transcript)
+        XCTAssertEqual(captions.exported, [])
+        XCTAssertEqual(captions.booksInCloud, [BookExportBookName(book)])
+        XCTAssertEqual(
+            BookExportWording.finished(captions, folderName: "Exports"),
+            "\(book.title) isn't downloaded. Download it first: select it in the library, then choose Download Now."
+        )
+        XCTAssertEqual(text.exported.map(\.pathExtension), ["html"])
+        XCTAssertEqual(text.booksInCloud, [])
+    }
+
     /// Exporting the transcript as WebVTT writes exactly one file, the book's
     /// captions: the first track's sentences at their times, the second
     /// track's 3,000 ms later, after the first track, and the "&" escaped.

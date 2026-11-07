@@ -99,6 +99,12 @@ struct BookExportItem: Equatable, Sendable {
     /// only in the cloud (FR02); nil when every one is on this Mac. Such an
     /// item is never exported, since copying it would download it.
     let fileInCloud: URL?
+    /// A transcript's transcript.json when it is only in the cloud (FMT23):
+    /// its Markdown, on this Mac, is offered and exported as text, but
+    /// captions are made of the transcript.json, so captions of this book
+    /// are refused as an item in the cloud is, never left out in silence
+    /// (`BookExportService.plan`). Nil for every other item.
+    var transcriptInCloud: URL? = nil
 
     /// The item's size in bytes: its files' sizes together.
     var byteCount: Int64 {
@@ -398,14 +404,19 @@ enum BookExportService {
     ) -> BookExportItem? {
         var files: [BookExportFile] = []
         let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
-        if access.presence(of: transcript) == .present {
+        let presence = access.presence(of: transcript)
+        if presence == .present {
             files.append(copy(transcript, as: "\(stem) - Transcript.json"))
         }
         if book.format.isAudio, let markdown {
             files.append(markdownFile(of: book, from: markdown, as: "\(stem) - Transcript.md"))
         }
         guard !files.isEmpty else { return nil }
-        return standaloneItem(.transcript, files: files, access: access)
+        var item = standaloneItem(.transcript, files: files, access: access)
+        if presence == .inCloud {
+            item.transcriptInCloud = transcript
+        }
+        return item
     }
 
     /// An item of `kind` whose `files` are exported each as itself, in the
@@ -748,7 +759,13 @@ enum BookExportService {
         var exporting: [(book: Book, items: [BookExportItem])] = []
         for offer in offers where !kinds.isEmpty {
             let chosen = offer.items.filter { kinds.contains($0.kind) }
-            if offer.isPackageInCloud || chosen.contains(where: \.isInCloud) {
+            // Captions are made of a transcript.json, so one only in the
+            // cloud leaves the book in the cloud for them (FMT23, S4).
+            let captionsInCloud = chosen.contains { item in
+                guard case .timedText? = conversions[item.kind] else { return false }
+                return item.transcriptInCloud != nil
+            }
+            if offer.isPackageInCloud || chosen.contains(where: \.isInCloud) || captionsInCloud {
                 cloud.noteInCloud(BookExportBookName(offer.book))
             }
             let onThisMac = chosen.filter { !$0.isInCloud && !$0.files.isEmpty }
