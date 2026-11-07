@@ -66,11 +66,9 @@ enum MarkupGuard {
     /// nesting read up to `deepestNesting`, or the limit in force.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parseXML(_ markup: String, baseURI: String = "", deepestNesting: Int? = nil) throws -> Document {
-        let bytes = Array(markup.utf8)
         var limits = limits
         if let deepestNesting { limits.deepestNesting = deepestNesting }
-        let inspection = try inspect(bytes, as: .xml, limits: limits)
-        return try SwiftSoup.parse(neutralizing(inspection.brokenDeclarations, in: bytes, of: markup), baseURI, Parser.xmlParser())
+        return try SwiftSoup.parse(neutralized(markup, limits: limits), baseURI, Parser.xmlParser())
     }
 
     /// The fragment `markup` in the body of an empty document, as
@@ -241,9 +239,12 @@ enum MarkupGuard {
 
     // MARK: Neutralizing
 
-    /// `markup`, whose bytes are `bytes`, with each of `declarations` written
-    /// as an empty comment; `markup` itself when there are none, as in every real book.
-    private static func neutralizing(_ declarations: [Range<Int>], in bytes: [UInt8], of markup: String) -> String {
+    /// `markup` with each declaration that would trap the XML parser written as
+    /// an empty comment; `markup` itself when there are none, as in every real book.
+    /// - Throws: `MarkupRefusal` when the markup passes a limit.
+    private static func neutralized(_ markup: String, limits: Limits) throws -> String {
+        let bytes = Array(markup.utf8)
+        let declarations = try inspect(bytes, as: .xml, limits: limits).brokenDeclarations
         guard !declarations.isEmpty else { return markup }
         var result: [UInt8] = []
         result.reserveCapacity(bytes.count)

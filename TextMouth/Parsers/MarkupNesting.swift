@@ -179,6 +179,12 @@ struct HTMLOpenElements {
     ]
     private static let headings: Set<String> = ["h1", "h2", "h3", "h4", "h5", "h6"]
     private static let tableSections: Set<String> = ["tbody", "thead", "tfoot"]
+    /// What makes the parser's mode that of a cell or a caption, and what a table part closes first.
+    private static let cellsAndCaption: Set<String> = ["td", "th", "caption"]
+    /// What says whether a `table` start tag nests or closes the table it stands in.
+    private static let tableContext: Set<String> = ["table", "td", "th", "caption"]
+    /// A special element these three pass through, looking for the list item to close.
+    private static let listItemBreakers: Set<String> = ["address", "div", "p"]
     /// Tags that may come before the body without beginning it (`InHead`).
     private static let headContent: Set<String> = [
         "html", "head", "base", "basefont", "bgsound", "command", "link", "meta", "title", "noframes", "style", "noscript", "script",
@@ -385,7 +391,7 @@ struct HTMLOpenElements {
     /// `table`: directly in a table it closes that table first; in a cell or
     /// caption, or outside any table, it nests.
     private mutating func startTable() {
-        let context = stack.last { ["table", "td", "th", "caption"].contains($0.name) }
+        let context = stack.last { Self.tableContext.contains($0.name) }
         if context?.name == "table", let table = stack.lastIndex(where: { $0.name == "table" }) {
             popAll(from: table)
         }
@@ -439,7 +445,7 @@ struct HTMLOpenElements {
 
     /// An open cell, or caption, of the table at `table` closes, as the table's parts do.
     private mutating func closeCellOrCaption(above table: Int) {
-        guard let part = stack[(table + 1)...].lastIndex(where: { ["td", "th", "caption"].contains($0.name) }) else { return }
+        guard let part = stack[(table + 1)...].lastIndex(where: { Self.cellsAndCaption.contains($0.name) }) else { return }
         popAll(from: part)
         clearFormattingToMarker()
     }
@@ -459,7 +465,7 @@ struct HTMLOpenElements {
                 popAll(from: index)
                 return
             }
-            if Self.special.contains(open), !["address", "div", "p"].contains(open) { return }
+            if Self.special.contains(open), !Self.listItemBreakers.contains(open) { return }
         }
     }
 
