@@ -90,4 +90,22 @@ enum PhoneDefaults {
     private static func storedUnit(_ key: String, in preferences: UserDefaults) -> SkipUnit? {
         preferences.string(forKey: key).flatMap(SkipUnit.init(rawValue:))
     }
+
+    // MARK: - Follow in Braille
+
+    /// The preference that holds whether Book content moves on with the speech
+    /// while the book plays: Settings' Follow in Braille, a test switch, so a
+    /// first run can decide the spec's question 10.
+    nonisolated static let followInBrailleKey = "phoneFollowInBraille"
+
+    /// Whether Book content moves on with the speech while the book plays: off
+    /// until the listener turns it on in Settings.
+    static func followInBraille(in preferences: UserDefaults) -> Bool {
+        preferences.bool(forKey: followInBrailleKey)
+    }
+
+    /// Keeps whether Book content moves on with the speech.
+    static func setFollowInBraille(_ isOn: Bool, in preferences: UserDefaults) {
+        preferences.set(isOn, forKey: followInBrailleKey)
+    }
 }
