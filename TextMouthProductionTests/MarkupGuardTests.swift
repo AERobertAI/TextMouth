@@ -336,7 +336,7 @@ final class MarkupGuardTests: XCTestCase {
         ]
         for markup in cases {
             let inspection = try inspected(markup, as: .xml)
-            let tree = try SwiftSoup.parse(markup, "", Parser.xmlParser())
+            let tree = try MarkupGuard.parseXML(markup, deepestNesting: .max)
             XCTAssertEqual(inspection.deepest, depth(of: tree), markup.debugDescription)
         }
     }
