@@ -351,4 +351,22 @@ extension TranscriptionWording {
     /// The most transcript files `transcriptsNotAttached(fileNames:)` names
     /// before it counts the rest.
     static let transcriptFilesNamedAtMost = 5
+
+    /// What the listener hears once Replace Existing has kept the existing
+    /// copy's transcript over the one the new copy brought from a file
+    /// beside its audio (B1), as the question said: the one file by name,
+    /// with the way to use it after all, "“lecture.vtt” was beside the audio
+    /// but wasn't attached as the book's transcript: Replacing kept the
+    /// existing copy's transcript. To use the file instead, open the book and
+    /// choose Attach Transcript… from the Book menu."; or, when each track
+    /// brought its own, the files together, which Attach Transcript…, taking
+    /// one file for the book, cannot attach again.
+    static func broughtTranscriptNotUsed(fileName: String?) -> String {
+        let reason = "Replacing kept the existing copy's transcript."
+        guard let fileName else {
+            return "The transcript files beside the audio weren't attached as the book's transcript: \(reason)"
+        }
+        return transcriptNotAttached(fileName: fileName, reason: reason)
+            + " To use the file instead, open the book and choose \(attachCommandTitle) from the Book menu."
+    }
 }

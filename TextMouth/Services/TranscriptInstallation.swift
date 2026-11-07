@@ -204,7 +204,7 @@ extension TranscriptStore {
 
     /// What transcript.json says of where its transcript came from and of
     /// whether the listener has touched it, decoded without its sentences.
-    private struct Provenance: Decodable {
+    struct Provenance: Decodable, Equatable {
         /// The transcript's layout version.
         let version: Int
         /// Where the transcript came from, when recognition did not make it.
@@ -224,6 +224,12 @@ extension TranscriptStore {
             version = try fields.decode(Int.self, forKey: .version)
             source = try fields.decodeIfPresent(TranscriptSource.self, forKey: .source)
             isTouched = fields.contains(.editedAt) || fields.contains(.cleanedUp)
+        }
+
+        /// Whether the transcript is of the layout this TextMouth writes,
+        /// whose fields it can vouch for.
+        var isOfThisLayout: Bool {
+            version == Transcript.currentVersion
         }
     }
 
@@ -245,11 +251,23 @@ extension TranscriptStore {
         in package: URL,
         using reader: SavedFile.Reader = SavedFile.readWithoutDownloading
     ) -> Bool {
-        guard case .contents(let bytes) = SavedFile.read(TextMouthPaths.transcriptPath(in: package), using: reader),
-              let provenance = try? JSONDecoder().decode(Provenance.self, from: bytes) else { return false }
-        return provenance.version == Transcript.currentVersion
-            && provenance.source?.knownOrigin == .podcast
-            && !provenance.isTouched
+        guard let provenance = provenance(in: package, using: reader) else { return false }
+        return provenance.isOfThisLayout && provenance.source?.knownOrigin == .podcast && !provenance.isTouched
+    }
+
+    /// Where the transcript in the package at `package` came from, and
+    /// whether the listener touched it (`Provenance`), read without its
+    /// sentences and without downloading anything; nil for no transcript,
+    /// one only in the cloud, and one that cannot be read. A file that
+    /// cannot be used is left where it is.
+    static func provenance(
+        in package: URL,
+        using reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Provenance? {
+        guard case .contents(let bytes) = SavedFile.read(TextMouthPaths.transcriptPath(in: package), using: reader) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(Provenance.self, from: bytes)
     }
 }
 
