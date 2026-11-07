@@ -25,6 +25,9 @@ struct MetadataEditorView: View {
     /// above the buttons until the user changes an edit or the choice to
     /// write the file.
     @State private var failureMessage: String?
+    /// The read-only Transcript detail: what the audiobook's transcript came
+    /// from, empty until it is read and for a book without a transcript.
+    @StateObject private var transcript = TranscriptBookInfoModel()
     @Environment(\.dismiss) private var dismiss
 
     let isEPUB: Bool
@@ -33,6 +36,9 @@ struct MetadataEditorView: View {
     /// label of each such field (`MetadataEditorWording.fieldLabel`); nil
     /// for a book with no record.
     let handEdits: Book.HandEdits?
+    /// The audiobook being shown, whose transcript the read-only Transcript
+    /// detail tells of; nil for an EPUB and where the book is not known.
+    let transcriptBook: Book?
     /// Saves EPUB metadata: the edits, and the metadata the editor opened
     /// with, writing the library's copy of the EPUB file too when the Bool
     /// is true; returns what happened, which the caller has announced. The
@@ -58,15 +64,19 @@ struct MetadataEditorView: View {
         self.isEPUB = isEPUB
         self.isAudio = false
         self.handEdits = handEdits
+        self.transcriptBook = nil
         self.onSaveEPUB = onSave
         self.onSaveAudio = nil
     }
 
     /// Initialize for an audio book. `handEdits` is the book's record of
-    /// hand edits (`Book.handEdits`), which the labels say.
+    /// hand edits (`Book.handEdits`), which the labels say. `book`, when
+    /// given, is the audiobook itself, whose transcript the Transcript detail
+    /// tells of.
     init(
         audioMetadata: AudioMetadata,
         handEdits: Book.HandEdits? = nil,
+        book: Book? = nil,
         onSave: @escaping (_ edited: AudioMetadata, _ opened: AudioMetadata) -> Void
     ) {
         self._editedEPUBMetadata = State(initialValue: Self.noEPUBMetadata)
@@ -76,6 +86,7 @@ struct MetadataEditorView: View {
         self.isEPUB = false
         self.isAudio = true
         self.handEdits = handEdits
+        self.transcriptBook = book
         self.onSaveEPUB = nil
         self.onSaveAudio = onSave
     }
@@ -139,6 +150,11 @@ struct MetadataEditorView: View {
         }
         .frame(width: 450, height: 550)
         .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
+        // The transcript is read off the main thread, without downloading
+        // it; the Transcript row shows once it has answered.
+        .task(id: transcriptBook?.id) {
+            await transcript.load(for: transcriptBook)
+        }
         // A reason that no longer applies is never read beside new input.
         .clearingFailure($failureMessage, whenChanged: editedEPUBFields)
         .clearingFailure($failureMessage, whenChanged: editedAudioMetadata.title)
@@ -260,6 +276,15 @@ struct MetadataEditorView: View {
                     Text(editedAudioMetadata.fileFormat)
                 }
                 .accessibilityLabel("File format: \(editedAudioMetadata.fileFormat)")
+            }
+
+            // Where the transcript came from; the row appears once the
+            // package has been read, and only for a book that has one.
+            if let line = transcript.line {
+                LabeledContent(TranscriptionWording.bookInfoLabel) {
+                    Text(line)
+                }
+                .accessibilityLabel(TranscriptionWording.bookInfoSpokenDetail(line))
             }
         } header: {
             Text("Read Only")
