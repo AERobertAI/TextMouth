@@ -573,9 +573,12 @@ enum TranscriptionWording {
         return sentences.joined(separator: " ")
     }
 
-    /// The line for a book whose transcript is only in iCloud, which Book
-    /// Information does not download, so none of its details can be told yet.
-    private static let transcriptDetailsInCloud = "It is in iCloud, and its details appear once the book is downloaded."
+    /// The line for a book whose transcript is only in the cloud, which Book
+    /// Information does not download, so none of its details can be told
+    /// yet: "in the cloud", as the app says it of every cloud drive, not
+    /// iCloud alone.
+    private static let transcriptDetailsInCloud =
+        "The transcript is only in the cloud. Its details appear once the book is downloaded."
 
     // MARK: The Library Row
 

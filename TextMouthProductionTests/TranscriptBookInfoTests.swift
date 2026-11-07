@@ -103,7 +103,7 @@ final class TranscriptBookInfoTests: XCTestCase {
         XCTAssertNil(TranscriptionWording.bookInfoLine(for: .unusable("it is not valid JSON")))
         XCTAssertEqual(
             TranscriptionWording.bookInfoLine(for: .inCloud),
-            "It is in iCloud, and its details appear once the book is downloaded."
+            "The transcript is only in the cloud. Its details appear once the book is downloaded."
         )
         XCTAssertEqual(
             TranscriptionWording.bookInfoLine(for: .unsupportedVersion(7)),
