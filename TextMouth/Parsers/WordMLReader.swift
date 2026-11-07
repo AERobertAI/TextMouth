@@ -52,9 +52,9 @@ final class WordMLReader: OfficeXMLReader {
     private var naming: String?
     private var inDocumentProperties = false
 
-    /// Whether each open table row is hidden (`w:trPr` holding `w:hidden`),
-    /// innermost last, and whether `w:trPr` is open.
-    private var rowsHidden: [Bool] = []
+    /// Whether `w:trPr` is open. A row marked hidden (`w:hidden` in it) hides
+    /// nothing of its own (the hidden row rule of `DOCXHiding`), and its
+    /// properties are not read.
     private var inRowProperties = false
 
     /// Whether each `wx:sect` after the first begins a page (its type is not
@@ -154,10 +154,6 @@ final class WordMLReader: OfficeXMLReader {
         case "w:pPr": inParagraphProperties = true; return
         case "w:rPr": inRunProperties = true; return
         case "w:trPr": inRowProperties = true; return
-        case "w:hidden" where inRowProperties:
-            // A hidden row is not seen: its words are hidden text.
-            if !rowsHidden.isEmpty { rowsHidden[rowsHidden.count - 1] = WordMLRunProperties.isOn(attributes) }
-            return
         default: break
         }
         if inRowProperties { return }
@@ -181,7 +177,6 @@ final class WordMLReader: OfficeXMLReader {
             if sectionsStarted > 1, sectionsStarted - 1 < sectionsStartPages.count, sectionsStartPages[sectionsStarted - 1] {
                 writer.beginPage()
             }
-        case "w:tr": rowsHidden.append(false)
         case "w:tc": try writer.beginCell()
         case "w:p": paragraphs.append(OpenParagraph())
         case "w:r": runs.append(OpenRun())
@@ -233,9 +228,7 @@ final class WordMLReader: OfficeXMLReader {
         case "w:footnote", "w:endnote": writer.endNote()
         case "w:trPr": inRowProperties = false
         case "w:tc": try writer.endCell()
-        case "w:tr":
-            _ = rowsHidden.popLast()
-            try writer.endRow()
+        case "w:tr": try writer.endRow()
         case "w:tbl": try writer.endTable()
         default: break
         }
@@ -317,7 +310,7 @@ final class WordMLReader: OfficeXMLReader {
         func settle(_ property: KeyPath<WordMLRunProperties, Bool?>) -> Bool? {
             Self.toggled(paragraphStyle: paragraphStyle[keyPath: property], characterStyle: character[keyPath: property], direct: direct[keyPath: property])
         }
-        runs[index].isHidden = settle(\.hidden) == true || rowsHidden.contains(true)
+        runs[index].isHidden = settle(\.hidden) == true
         if runs[index].isHidden { writer.markHiddenText() }
         let size = direct.size ?? character.size ?? paragraphStyle.size
         writer.beginSpan(OfficeRun(size: size ?? 24).applying(bold: settle(\.bold) ?? false, italic: settle(\.italic) ?? false, size: nil))

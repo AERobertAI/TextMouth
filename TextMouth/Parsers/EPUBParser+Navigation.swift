@@ -434,7 +434,7 @@ extension EPUBParser {
     /// What `body` makes of the EPUB 2 NCX the package declares through the
     /// spine's `toc` attribute, or else of its first manifest item of an NCX
     /// media type, given its path inside the archive and its document, read
-    /// as every XML file of the book is (`readingXML(_:_:)`); nil when there
+    /// as every XML file of the book is (`readingXML(_:file:_:)`); nil when there
     /// is none or it cannot be read.
     private static func withNCX<Result>(
         archive: IndexedArchive,
@@ -447,7 +447,7 @@ extension EPUBParser {
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
         guard let xml = try? extractString(archive: archive, path: path) else { return nil }
-        return try? readingXML(xml) { body(path, $0) }
+        return try? readingXML(xml, file: path) { body(path, $0) }
     }
 
     // MARK: - Page Lists

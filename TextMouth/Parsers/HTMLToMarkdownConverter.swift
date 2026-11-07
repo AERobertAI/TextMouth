@@ -165,6 +165,26 @@ enum HTMLToMarkdownConverter {
         var ids: Set<String> = []
     }
 
+    /// Where the page markers that end one Markdown buffer begin, remembered
+    /// between questions (`beforeTrailingPageMarkers(of:context:)`): asking
+    /// walked back over every marker of the run each time, so a book of N
+    /// empty page anchors in a row took N squared steps (5,000 took 24 s).
+    /// There is one for each buffer the conversion writes (the result, a
+    /// quote's lines, a list item's content, the content between items),
+    /// shared by the copies of the `Context` that write into it, and it holds
+    /// only what a buffer of its own length would give: it is used only while
+    /// the buffer's length is the one it was made for, and every writer of the
+    /// buffer that is not one of its two updaters (`emit`, `dropSpace…`) changes
+    /// the length, which forgets it.
+    private final class TrailingMarkers {
+        /// The buffer's length in UTF-8 bytes when this was made; -1 when it
+        /// holds nothing.
+        var length = -1
+        /// The UTF-8 offset at which the markers that end the buffer begin
+        /// (the length itself when none does).
+        var start = 0
+    }
+
     /// What conversion knows about the position of the node it converts.
     private struct Context {
         /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
@@ -180,6 +200,9 @@ enum HTMLToMarkdownConverter {
         var includesPages: Bool
         /// The ids whose pages are written already (PG05).
         let writtenPageIDs = WrittenPageIDs()
+        /// Where the page markers that end the buffer being written begin; a
+        /// buffer of its own has a `TrailingMarkers` of its own.
+        var trailing = TrailingMarkers()
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
@@ -204,7 +227,7 @@ enum HTMLToMarkdownConverter {
     /// Markdown. Comments and the data of scripts and styles write nothing.
     private static func convertChild(_ child: Node, into result: inout String, context: Context) {
         if let textNode = child as? TextNode {
-            appendText(textNode.getWholeText(), to: &result)
+            appendText(textNode.getWholeText(), to: &result, context: context)
         } else if let element = child as? Element {
             convertElement(element, into: &result, context: context)
         }
@@ -224,7 +247,7 @@ enum HTMLToMarkdownConverter {
         // its own, and a table cell, ins, del, or s is at least a word of its
         // own. A line break is its own boundary, the hard break it writes.
         let boundary: HTMLReadingBoundary = tag == "br" ? .none : .of(element, tag: tag)
-        separate(at: boundary, in: &result)
+        separate(at: boundary, in: &result, context: context)
 
         // Preserve a TOC target, and the page an element begins (PG05), in the
         // Markdown stream at its actual DOM position. Inline targets stay
@@ -235,14 +258,14 @@ enum HTMLToMarkdownConverter {
         // written by the lookup, so a second lookup would lose it.
         let page = pageMarker(for: element, tag: tag, isPageBreak: isBreak, context: context)
         for marker in destinationMarkers(for: element, tag: tag, page: page, context: context) {
-            emit(marker, inline: boundary != .paragraph, into: &result)
+            emit(marker, inline: boundary != .paragraph, into: &result, context: context)
         }
         // A page-break element's own text that is no more than its page's
         // own label (the page's number, or its twin in the other numbering),
         // named or not, is not read, so its children are not converted. Any
         // other text is real words and is converted like any element's (ST02).
         if isBreak && !readsOwnText(ofPageBreak: element, page: page) {
-            separate(at: boundary, in: &result)
+            separate(at: boundary, in: &result, context: context)
             return
         }
 
@@ -258,7 +281,7 @@ enum HTMLToMarkdownConverter {
             // A page that begins inside the heading is written there too.
             let enclosed = destinationMarkers(inside: element, context: context)
             for marker in enclosed.markers {
-                emit(marker, inline: false, into: &result)
+                emit(marker, inline: false, into: &result, context: context)
             }
             // The heading line holds the label the direct reader gives it,
             // as literal text: one line even when the heading contains a line
@@ -273,7 +296,7 @@ enum HTMLToMarkdownConverter {
 
         // Line breaks
         case "br":
-            dropSpaceBeforeTrailingPageMarkers(in: &result)
+            dropSpaceBeforeTrailingPageMarkers(in: &result, context: context)
             result += "  \n"
 
         // Emphasis and strong emphasis. Only the outermost is marked: emphasis
@@ -312,7 +335,7 @@ enum HTMLToMarkdownConverter {
         case "img":
             let alt = HTMLReadingText.collapsingWhitespace((try? element.attr("alt")) ?? "")
             let src = (try? element.attr("src")) ?? ""
-            appendSpaced(alt, to: &result) { core, _ in
+            appendSpaced(alt, to: &result, context: context) { core, _ in
                 "![" + MarkdownLiteral.escaped(core) + "](" + destination(src) + ")"
             }
 
@@ -323,7 +346,9 @@ enum HTMLToMarkdownConverter {
         // Blockquotes
         case "blockquote":
             var inner = ""
-            convertNode(element, into: &inner, context: context)
+            var quoted = context
+            quoted.trailing = TrailingMarkers()
+            convertNode(element, into: &inner, context: quoted)
             // Prefix each line with >
             let lines = inner.trimmingCharacters(in: writtenWhitespace)
                 .components(separatedBy: "\n")
@@ -338,7 +363,7 @@ enum HTMLToMarkdownConverter {
         // block precede it rather than becoming words of the code.
         case "pre":
             for marker in destinationMarkers(inside: element, context: context).markers {
-                emit(marker, inline: false, into: &result)
+                emit(marker, inline: false, into: &result, context: context)
             }
             let code = HTMLReadingText.preformattedText(of: element)
             // Whitespace alone holds nothing to read.
@@ -351,9 +376,9 @@ enum HTMLToMarkdownConverter {
         // it precede it rather than becoming words of the code.
         case "code":
             for marker in destinationMarkers(inside: element, context: context).markers {
-                emit(marker, inline: true, into: &result)
+                emit(marker, inline: true, into: &result, context: context)
             }
-            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
+            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, context: context, codeSpan(_:after:))
 
         // Horizontal rules
         case "hr":
@@ -367,7 +392,7 @@ enum HTMLToMarkdownConverter {
             convertNode(element, into: &result, context: context)
         }
 
-        separate(at: boundary, in: &result)
+        separate(at: boundary, in: &result, context: context)
     }
 
     // MARK: - Navigation Annotations
@@ -379,8 +404,22 @@ enum HTMLToMarkdownConverter {
     /// opening and indents each of its lines itself, so a marker is placed by
     /// indentation alone (`continuationAtMargin`), which keeps the heading
     /// annotations exactly where cache format 3.0.7 wrote them.
-    private static func emit(_ marker: String, inline: Bool, into result: inout String) {
+    private static func emit(_ marker: String, inline: Bool, into result: inout String, context: Context) {
+        let trailing = context.trailing
+        let before = result.utf8.count
+        let wasKnown = trailing.length == before
+        let startedAt = trailing.start
         MarkdownMarkerWriter.write(marker, inline: inline, continuationAtMargin: true, into: &result)
+        // A page marker written at the end of the buffer, with nothing else
+        // added or moved (the length grew by the marker's own), extends the
+        // run of markers that ends it, or begins one where the buffer ended.
+        let grown = result.utf8.count - before
+        if wasKnown, grown == marker.utf8.count, result.hasSuffix(marker), MarkdownPageMarker.decode(marker) != nil {
+            trailing.length = result.utf8.count
+            trailing.start = startedAt
+        } else {
+            trailing.length = -1
+        }
     }
 
     /// The TOC destination an element carries through its id, or through the
@@ -620,9 +659,12 @@ enum HTMLToMarkdownConverter {
         var itemCount = 0
         // Content between two items, collected until the next item begins.
         var between = ""
+        // Each buffer written apart has a memory of its own for its markers.
+        var betweenContext = context
+        betweenContext.trailing = TrailingMarkers()
         for child in listElement.getChildNodes() {
             guard let item = child as? Element, item.tagName().lowercased() == "li" else {
-                convertChild(child, into: &between, context: context)
+                convertChild(child, into: &between, context: betweenContext)
                 continue
             }
             // A hidden item is not rendered: it must neither leave an empty
@@ -630,13 +672,16 @@ enum HTMLToMarkdownConverter {
             guard !context.readingFlow.excludes(item) else { continue }
             appendBlock(between, to: &result)
             between = ""
+            betweenContext.trailing = TrailingMarkers()
             itemCount += 1
             let bullet = ordered ? "\(itemCount). " : "- "
             result += bullet
             var itemContent = ""
+            var itemContext = context
+            itemContext.trailing = TrailingMarkers()
             // Go through the element entry point so an id on the li itself
             // receives its annotation as well as targets inside the item.
-            convertElement(item, into: &itemContent, context: context)
+            convertElement(item, into: &itemContent, context: itemContext)
             // Trim the item content and indent continuation lines
             let trimmed = itemContent.trimmingCharacters(in: writtenWhitespace)
             let lines = trimmed.components(separatedBy: "\n")
@@ -674,16 +719,16 @@ enum HTMLToMarkdownConverter {
     /// around a paragraph, at least a space around a word. Both are written
     /// only when missing, so nested and empty blocks never pile up blank
     /// lines, and nothing is written at the start of the Markdown.
-    private static func separate(at boundary: HTMLReadingBoundary, in result: inout String) {
+    private static func separate(at boundary: HTMLReadingBoundary, in result: inout String, context: Context) {
         switch boundary {
         case .none:
             break
         case .word:
-            if !isAtWordStart(result) {
+            if !isAtWordStart(result, context: context) {
                 result += " "
             }
         case .paragraph:
-            dropSpaceBeforeTrailingPageMarkers(in: &result)
+            dropSpaceBeforeTrailingPageMarkers(in: &result, context: context)
             MarkdownMarkerWriter.ensureBlankLine(&result)
         }
     }
@@ -699,8 +744,8 @@ enum HTMLToMarkdownConverter {
     /// passed over. Were a marker taken for a word's end, the space after an
     /// empty page anchor between two words would be kept beside the one
     /// before it, and "One <span id="p2"/> two" would read "One  two".
-    private static func isAtWordStart(_ result: String) -> Bool {
-        guard let last = beforeTrailingPageMarkers(of: result).unicodeScalars.last else { return true }
+    private static func isAtWordStart(_ result: String, context: Context) -> Bool {
+        guard let last = beforeTrailingPageMarkers(of: result, context: context).unicodeScalars.last else { return true }
         return last == " " || last == "\n"
     }
 
@@ -713,12 +758,22 @@ enum HTMLToMarkdownConverter {
     /// same with pages as without. A heading annotation is not passed over:
     /// the Markdown without pages, which holds annotations, stays as cache
     /// format 3.0.7 wrote it.
-    private static func beforeTrailingPageMarkers(of result: String) -> Substring {
+    ///
+    /// Where the markers begin is remembered in `context.trailing` for the
+    /// buffer's length, so a long run of them is walked once.
+    private static func beforeTrailingPageMarkers(of result: String, context: Context) -> Substring {
+        let trailing = context.trailing
+        let bytes = result.utf8
+        if trailing.length == bytes.count, trailing.start <= trailing.length {
+            return Substring(result)[..<bytes.index(bytes.startIndex, offsetBy: trailing.start)]
+        }
         var text = Substring(result)
         while text.hasSuffix("-->"), let open = lastCommentOpening(in: text),
               MarkdownPageMarker.decode(String(text[open...])) != nil {
             text = text[..<open]
         }
+        trailing.length = bytes.count
+        trailing.start = bytes.distance(from: bytes.startIndex, to: text.endIndex)
         return text
     }
 
@@ -743,10 +798,13 @@ enum HTMLToMarkdownConverter {
     /// (`PageBreak.firstWordStart`). An inline wrapper still open, whose
     /// start this may move, holds the line's end, so it is never written
     /// (`wrapSpan`, `emphasisSpan`).
-    private static func dropSpaceBeforeTrailingPageMarkers(in result: inout String) {
-        let words = beforeTrailingPageMarkers(of: result)
+    private static func dropSpaceBeforeTrailingPageMarkers(in result: inout String, context: Context) {
+        let words = beforeTrailingPageMarkers(of: result, context: context)
         guard words.endIndex < result.endIndex, words.unicodeScalars.last == " " else { return }
         result.unicodeScalars.remove(at: result.unicodeScalars.index(before: words.endIndex))
+        // The space was one byte before the markers: they begin one earlier.
+        context.trailing.length = result.utf8.count
+        context.trailing.start -= 1
     }
 
     // MARK: - Literal Text
@@ -756,11 +814,11 @@ enum HTMLToMarkdownConverter {
     /// direct reader collapses it (HTMLReadingText). A space is dropped at the
     /// start of a word, where it would be two spaces or begin a line; four
     /// spaces there would even begin a code block.
-    private static func appendText(_ raw: String, to result: inout String) {
+    private static func appendText(_ raw: String, to result: inout String, context: Context) {
         var text = HTMLReadingText.collapsingWhitespace(raw)
         // Scalars decide: a combining mark after a space joins it into one
         // Character, which `hasPrefix(" ")` would not match.
-        if text.unicodeScalars.first == " ", isAtWordStart(result) {
+        if text.unicodeScalars.first == " ", isAtWordStart(result, context: context) {
             text.unicodeScalars.removeFirst()
         }
         result += MarkdownLiteral.escaped(text)
@@ -775,6 +833,7 @@ enum HTMLToMarkdownConverter {
     private static func appendSpaced(
         _ text: String,
         to result: inout String,
+        context: Context,
         _ render: (_ words: String, _ previous: Unicode.Scalar?) -> String
     ) {
         // Scalars decide where the words begin and end: a combining mark
@@ -784,11 +843,11 @@ enum HTMLToMarkdownConverter {
         let end = scalars.lastIndex { $0 != " " }.map { scalars.index(after: $0) } ?? start
         let core = String(String.UnicodeScalarView(scalars[start..<end]))
         if start > scalars.startIndex {
-            appendText(" ", to: &result)
+            appendText(" ", to: &result, context: context)
         }
         result += render(core, result.unicodeScalars.last)
         if !core.isEmpty, end < scalars.endIndex {
-            appendText(" ", to: &result)
+            appendText(" ", to: &result, context: context)
         }
     }
 

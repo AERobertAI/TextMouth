@@ -290,10 +290,12 @@ final class WordMLReaderTests: XCTestCase {
         ])
     }
 
-    /// A row marked hidden is not read; a title in the custom properties is
-    /// not the document's; a list mark with no list table decides numbered
-    /// or bulleted; sections that are not continuous begin pages.
-    func testHiddenRowsCustomPropertiesListMarksAndSections() throws {
+    /// A row marked hidden hides nothing of its own (see
+    /// `testARowMarkedHiddenIsReadRunByRun`); a title in the custom
+    /// properties is not the document's; a list mark with no list table
+    /// decides numbered or bulleted; sections that are not continuous begin
+    /// pages.
+    func testHiddenRowMarksCustomPropertiesListMarksAndSections() throws {
         let head = """
             <o:DocumentProperties><o:Title>Real Title</o:Title></o:DocumentProperties>\
             <o:CustomDocumentProperties><o:Title>Custom</o:Title></o:CustomDocumentProperties>
@@ -312,9 +314,29 @@ final class WordMLReaderTests: XCTestCase {
         XCTAssertTrue(html.contains("<title>Real Title</title>"))
         XCTAssertEqual(odfBodyLines(html), [
             page(1) + "<ol>", "<li>numbered by mark</li>", "</ol>", "<ul>", "<li>bullet by mark</li>", "</ul>",
-            "<table>", "<tr><td></td></tr>", "<tr><td><p>shown row</p></td></tr>", "</table>",
+            "<table>", "<tr><td><p>hidden row</p></td></tr>", "<tr><td><p>shown row</p></td></tr>", "</table>",
             "<p>\(page(2))Second section next page.</p>", "<p>Third continuous.</p>",
         ])
+    }
+
+    /// A row marked hidden (`w:trPr` holding `w:hidden`) hides nothing of its
+    /// own, as in a DOCX (the hidden row rule of `DOCXHiding`). So a row with
+    /// an ordinary run shows its words, and a row whose runs and marks are all
+    /// `w:vanish` reads nothing, which each run's own toggle says.
+    func testARowMarkedHiddenIsReadRunByRun() throws {
+        func row(_ text: String, runProperties: String = "", markProperties: String = "") -> String {
+            "<w:tr><w:trPr><w:hidden/></w:trPr><w:tc><w:p><w:pPr><w:rPr>\(markProperties)</w:rPr></w:pPr>"
+                + "<w:r><w:rPr>\(runProperties)</w:rPr><w:t>\(text)</w:t></w:r></w:p></w:tc></w:tr>"
+        }
+        func lines(_ rows: String) throws -> [String] {
+            try bodyLines(of: document(body: "<w:tbl>\(rows)</w:tbl>"))
+        }
+        XCTAssertEqual(try lines(row("ordinary")), ["<table>", "<tr><td><p>ordinary</p></td></tr>", "</table>"])
+        XCTAssertEqual(try lines(row("shown", runProperties: "<w:vanish w:val=\"off\"/>")),
+                       ["<table>", "<tr><td><p>shown</p></td></tr>", "</table>"])
+        // Runs and marks hidden: nothing is read, but the row stays.
+        let hiddenRun = row("gone", runProperties: "<w:vanish/>", markProperties: "<w:vanish/>")
+        XCTAssertEqual(try lines(hiddenRun + row("seen")), ["<table>", "<tr><td></td></tr>", "<tr><td><p>seen</p></td></tr>", "</table>"])
     }
 
     /// A list that a `w:lists` table defines is numbered or bulleted by its
