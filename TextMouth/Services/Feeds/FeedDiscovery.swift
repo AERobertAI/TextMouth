@@ -30,10 +30,22 @@ enum FeedDiscovery {
         "application/rss+xml", "application/atom+xml", "application/rdf+xml", "application/feed+json",
     ]
 
+    /// How deep a page discovery reads may nest: deeper than any page the
+    /// converter reads (`MarkupGuard.Limits.standard`), since discovery walks
+    /// the page with a stack of its own, below, and converts nothing. What
+    /// still calls itself for each level is SwiftSoup's own (marking a node's
+    /// ancestors changed, finding its document), and on the 512 KiB stack of
+    /// an import that reads 3,002 levels at the least in the app's Release
+    /// build and 2,002 in a debug build (measured November 7, 2026). A tree
+    /// can go twice as deep as the count, and two more: at 512 the deepest is
+    /// 1,026 levels, about a third of Release's least and half of debug's.
+    /// Real pages nest 10 to 36 levels.
+    static let deepestNesting = 512
+
     /// The feeds the page `html`, fetched from `pageURL`, names, each once,
     /// with relative addresses resolved from the page's base address.
     static func feedLinks(inPage html: String, pageURL: URL) -> [FeedLink] {
-        guard let document = try? MarkupGuard.parse(html, baseURI: pageURL.absoluteString) else { return [] }
+        guard let document = try? MarkupGuard.parse(html, baseURI: pageURL.absoluteString, deepestNesting: deepestNesting) else { return [] }
         var links: [FeedLink] = []
         var seen = Set<String>()
         FeedHTMLWalk.visit(document) { element in

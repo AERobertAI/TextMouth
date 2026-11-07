@@ -511,6 +511,23 @@ final class MarkupGuardTests: XCTestCase {
         XCTAssertEqual(FeedTextConverter.plainLine("<?a><b>Words</b>", isHTML: true), "Words")
     }
 
+    /// Feed discovery reads pages nested deeper than any the converter reads,
+    /// since it walks a page with a stack of its own and converts nothing, up
+    /// to a limit of its own: a page nested 200 levels deep gives its feed, and
+    /// one past that limit is refused before SwiftSoup parses it.
+    func testFeedDiscoveryReadsPagesDeeperThanTheConverterDoes() throws {
+        let page = try XCTUnwrap(URL(string: "https://example.com/show/"))
+        func nested(_ levels: Int) -> String {
+            "<html><head><link rel=\"alternate\" type=\"application/rss+xml\" href=\"feed.xml\"></head><body>"
+                + String(repeating: "<div>", count: levels) + "words" + String(repeating: "</div>", count: levels) + "</body></html>"
+        }
+        XCTAssertGreaterThan(200, MarkupGuard.Limits.standard.deepestNesting)
+        let deep = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: nested(200), pageURL: page).map(\.url.absoluteString) }
+        XCTAssertEqual(deep, ["https://example.com/show/feed.xml"])
+        let past = onWorkerSizedStack { FeedDiscovery.feedLinks(inPage: nested(FeedDiscovery.deepestNesting), pageURL: page).count }
+        XCTAssertEqual(past, 0)
+    }
+
     // MARK: - Size
 
     /// The limit on tags counts everything that takes a node in the tree.

@@ -78,12 +78,16 @@ enum MarkupGuard {
 
     /// `markup` parsed as `SwiftSoup.parse(_:_:)` parses it, by its XML parser
     /// when it opens with `<?xml` and its HTML parser otherwise, but that it can
-    /// neither trap nor overflow the stack.
+    /// neither trap nor overflow the stack, with nesting read up to
+    /// `deepestNesting`, or the limit in force. Only a reader that walks the
+    /// tree without calling itself, and converts nothing, may ask for more.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
-    static func parse(_ markup: String, baseURI: String = "") throws -> Document {
+    static func parse(_ markup: String, baseURI: String = "", deepestNesting: Int? = nil) throws -> Document {
         if opensAsXML(markup) {
-            return try parseXML(markup, baseURI: baseURI)
+            return try parseXML(markup, baseURI: baseURI, deepestNesting: deepestNesting)
         }
+        var limits = limits
+        if let deepestNesting { limits.deepestNesting = deepestNesting }
         _ = try inspect(Array(markup.utf8), as: .html, limits: limits)
         return try SwiftSoup.parseHTML(markup, baseURI)
     }
