@@ -21,9 +21,10 @@ import SwiftSoup
 ///   does, so the limit on the bytes of a document is no limit on its memory.
 ///
 /// One pass over the bytes (`MarkupScanner`), as linear as reading them, finds
-/// the same tags the parser will, and follows the same stack it will keep
-/// (`XMLOpenElements`, `HTMLOpenElements`). Past the limits it refuses with a
-/// sentence, before anything is built.
+/// the same tags the parser will and follows the parser's own rules
+/// (`XMLOpenElements`, `HTMLTreeModel`), counting a depth never less than the
+/// tree will have. Past the limits it refuses with a sentence, before anything
+/// is built.
 enum MarkupGuard {
 
     // MARK: Limits
@@ -105,15 +106,16 @@ enum MarkupGuard {
     /// `SwiftSoup.parseBodyFragment(_:)` makes one, by its HTML parser.
     /// - Throws: `MarkupRefusal` when the markup passes a limit, or SwiftSoup's error.
     static func parseBodyFragment(_ markup: String) throws -> Document {
-        _ = try inspect(Array(markup.utf8), as: .html, limits: limits)
+        _ = try inspect(Array(markup.utf8), as: .bodyFragment, limits: limits)
         return try SwiftSoup.parseBodyFragment(markup)
     }
 
     // MARK: Which Parser
 
-    /// Which of SwiftSoup's parsers reads a document.
+    /// Which of SwiftSoup's parsers reads a document: its HTML parser for a
+    /// document or for a fragment in a body (`parseBodyFragment`), or its XML parser.
     enum Dialect {
-        case html, xml
+        case html, xml, bodyFragment
     }
 
     /// Whether SwiftSoup's automatic parse would choose its XML parser:
@@ -131,7 +133,8 @@ enum MarkupGuard {
 
     /// What a pass found in markup it did not refuse.
     struct Inspection: Equatable {
-        /// The most elements open at once, by the count the limit is on.
+        /// How deep the tree's deepest element will be, `html` at 1: never less
+        /// than the parser's real tree, which the limit is on.
         var deepest = 0
         /// What takes a node in the tree: start tags, comments, and declarations
         /// read, and the elements the parser makes beyond them. An end tag takes none.
@@ -160,7 +163,8 @@ enum MarkupGuard {
         var pass = Pass(bytes: bytes, limits: limits)
         switch dialect {
         case .xml: try pass.readXML()
-        case .html: try pass.readHTML()
+        case .html: try pass.readHTML(fragment: false)
+        case .bodyFragment: try pass.readHTML(fragment: true)
         }
         return pass.inspection
     }
@@ -207,46 +211,49 @@ enum MarkupGuard {
             }
         }
 
-        /// Reads as `HtmlTreeBuilder` does, whose start tags can change how the text after them is read.
-        mutating func readHTML() throws {
-            var open = HTMLOpenElements(bytes: scanner.bytes)
-            // The elements the parser has that the count leaves out: `html` and `body`.
-            let unseen = 2
-            inspection.deepest = unseen
-            var counted = HTMLOpenElements.Costs()
+        /// Reads as `HtmlTreeBuilder` does, whose start tags can change how the text
+        /// after them is read: a document, or a fragment in a body.
+        mutating func readHTML(fragment: Bool) throws {
+            var model = HTMLTreeModel(bytes: scanner.bytes, fragment: fragment)
+            // Every document the parser makes has `html`, and `head` and `body` in it.
+            try noteDepth(2)
+            var counted = HTMLTreeModel.Costs()
             while true {
                 switch scanner.next() {
                 case let .text(range):
-                    open.text(range)
+                    model.text(range)
                 case let .startTag(tag):
                     try countNode()
                     try noteAttributes(of: tag, holdsThem: true)
-                    let change = open.start(tag, name: scanner.lowercasedName(tag.name))
-                    guard open.tagsAreCertain else {
-                        try countEverythingAhead(from: open.depth + unseen)
-                        return
-                    }
-                    switch change {
-                    case .none:
-                        break
-                    case let .rawText(kind):
-                        // A raw text element comes off the stack with its text.
-                        _ = scanner.skipRawText(kind, name: scanner.lowercasedName(tag.name))
-                        try addWork(scanner.takeWork())
-                    case .rest:
-                        scanner.skipToEnd()
+                    let change = model.start(tag, name: scanner.lowercasedName(tag.name))
+                    if model.tagsAreCertain {
+                        switch change {
+                        case .none:
+                            break
+                        case let .rawText(kind):
+                            // A raw text element holds its text, and closes with it.
+                            _ = scanner.skipRawText(kind, name: scanner.lowercasedName(tag.name))
+                            try addWork(scanner.takeWork())
+                        case .rest:
+                            scanner.skipToEnd()
+                        }
                     }
                 case let .endTag(tag):
                     try noteAttributes(of: tag, holdsThem: false)
-                    open.end(tag, name: scanner.lowercasedName(tag.name))
+                    model.end(name: scanner.lowercasedName(tag.name))
                 case .comment, .doctype, .declaration:
                     try countNode()
                 case .finished:
+                    try noteDepth(model.deepest)
                     return
                 }
-                try noteDepth(open.depth + unseen)
-                // Elements made again, or made by a stray end tag, cost what any other does.
-                let costs = open.costs
+                try noteDepth(model.deepest)
+                guard model.tagsAreCertain else {
+                    try countEverythingAhead(from: model.openDepth)
+                    return
+                }
+                // Elements made again, or made up by the parser, cost what any other does.
+                let costs = model.costs
                 try countMade(costs.elements - counted.elements)
                 try countAttributes(costs.attributes - counted.attributes, onTags: costs.elementsWithAttributes - counted.elementsWithAttributes)
                 try addWork(costs.work - counted.work)

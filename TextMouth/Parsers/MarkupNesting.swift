@@ -50,124 +50,91 @@ struct XMLOpenElements {
     }
 }
 
-// MARK: - The Open Elements of an HTML Parse
+// MARK: - The Tree of an HTML Parse
 
-/// The elements SwiftSoup's HTML parser holds open as it reads, kept with no
-/// tree: its stack of open elements, its active formatting elements, and which
-/// of its rules applies to each tag.
+/// What SwiftSoup's HTML parser makes of markup, followed rule by rule without
+/// building its tree: its insertion modes, its stack of open elements, its list
+/// of active formatting elements, its form and head pointers, and where each
+/// element it makes goes, so that the depth of every element is known.
 ///
-/// It is a map of SwiftSoup 2.13.9's `HtmlTreeBuilderState` (MIT). A plain count
-/// of tags would be wrong in both directions. `<p>` and `<li>` left open by a
-/// real book do not nest, since the parser closes them; while `</span>` closes
-/// nothing past a `<div>` (`<span><div></span>` opens two and closes none), and
-/// `<div><b a=1></div>` opens more each time, since `b` comes back inside the
-/// next `div` (the parser's reconstruction of formatting). So each rule is
-/// followed as the parser has it, and where its modes make that uncertain the
-/// model errs on the side of more elements open. Where the parser's mode would
-/// read text differently from everywhere else (a page of frames, and text
-/// elements in a `noscript` of the head), the model stops trusting tags
-/// (`tagsAreCertain`) and the guard counts every one that could lie ahead.
+/// It follows SwiftSoup 2.13.9's own code (`HtmlTreeBuilder` and
+/// `HtmlTreeBuilderState`, MIT), with its slips, rather than the HTML standard:
+/// `generateImpliedEndTags` with nothing to exclude does nothing; `<frameset>`
+/// in the body is an ordinary element; `InBodyStartDrop` drops table parts; an
+/// explicit `<body>` start tag goes through `AfterHead`; `InSelect` serves a
+/// `select` in a table too; the adoption agency looks for its block among the
+/// first 64 elements of the stack and makes no list entry for its copy; and
+/// `InTableBody` asks whether `tfoot` is in the ordinary scope, where markers stop it.
 ///
-/// What it counts differs from the parser's stack by the `html` and `body`
-/// elements, which are never pushed here, and by the table parts it leaves out
-/// (`colgroup`, which holds only `col` and closes at anything else). The tree can
-/// go deeper than the stack, since the parser takes a `form` or an `a` off its
-/// stack from under what is above it: by no more than twice in thousands of random
-/// documents made for it. `MarkupGuardTests` holds the model against SwiftSoup's
-/// real trees, rule by rule and at random.
-struct HTMLOpenElements {
+/// What it counts is the depth of the deepest element, `html` at 1, and it must
+/// never count less than the parser's real tree will have. So where the parser
+/// moves elements (foster parenting, the adoption agency), an element's depth is
+/// never lowered, only raised; where the markup cannot say which of two paths the
+/// parser takes (whether text made of character references is whitespace), the
+/// model takes the one that builds deeper; and where neither path can be followed
+/// tag by tag (a `noscript` that may be in the head, holding what the tokeniser
+/// would read differently there), it stops trusting tags (`tagsAreCertain`), and
+/// the guard counts every one that could lie ahead. `MarkupGuardTests` and the
+/// harness's differential of repeated units hold it against SwiftSoup's real trees.
+struct HTMLTreeModel {
 
     // MARK: Elements
 
-    /// An element on the stack.
-    private struct Open {
-        var name: String
-        /// Which active formatting entry this element is, if any.
-        var activeID: Int?
-        /// How many elements had been made when this one opened: more than
-        /// the children it holds now, whatever has happened since.
-        var madeBefore = 0
+    /// An element the parser has made.
+    private struct Element {
+        let id: Int
+        let name: String
+        /// How deep it is in the tree: `html` is at 1.
+        var depth: Int
+        /// The deepest element at or inside it, so far as it is known.
+        var reach: Int
+        /// How many nodes had been made before it: more than the children it can ever hold.
+        let madeBefore: Int
+        /// Its tag's attributes, as bytes and as a count, which a copy of it takes too.
+        let attributes: Range<Int>
+        let attributeCount: Int
     }
 
-    /// An entry of the active formatting elements: an element to make again
-    /// after it has been closed by something else, or a marker that stops that.
-    private struct Active {
-        var id: Int
-        var name: String
-        /// Its attributes' bytes: entries with the same name and the same
-        /// bytes are the same to the three-of-a-kind rule.
-        var attributes: Range<Int>
-        /// How many attributes a copy of it holds.
+    /// The parser's insertion modes (`HtmlTreeBuilderState`). `Text` and
+    /// `InTableText` are folded into the modes that enter them: the tokeniser
+    /// reads a raw text element's text and end tag at once, and table text is
+    /// handled as it comes. `InSelectInTable` is never entered by this parser.
+    private enum Mode {
+        case initial, beforeHtml, beforeHead, inHead, inHeadNoscript, afterHead, inBody
+        case inTable, inCaption, inColumnGroup, inTableBody, inRow, inCell, inSelect
+        case afterBody, inFrameset, afterFrameset, afterAfterBody, afterAfterFrameset
+    }
+
+    /// A token, as the tree builder receives it.
+    private enum Token {
+        case start(StartTag)
+        case end(String)
+        case text(TextKind)
+        case eof
+    }
+
+    /// A start tag: one in the markup, with its attributes, or one the parser makes up.
+    private struct StartTag {
+        let name: String
+        var attributes: Range<Int> = 0..<0
         var attributeCount = 0
-        var isOnStack: Bool
-        var isMarker: Bool
+        var isSelfClosing = false
+        /// Whether an `input`'s type is surely `hidden`, surely not, or unknown (nil).
+        var isHiddenInput: Bool? = false
     }
 
-    /// What one start tag asks of the parser, by its name.
-    private enum Role {
-        /// A stack entry with no other effect, after remaking formatting.
-        case plain
-        /// Closes an open `p` first.
-        case closesP
-        /// `li`, `dd`, or `dt`: closes an open one first, and a `p`.
-        case listItem
-        case heading
-        /// A formatting element: `a` has its own rule.
-        case formatting, anchor
-        /// An element with a marker of its own in the formatting list.
-        case marker
-        /// No element on the stack, after remaking formatting.
-        case voidReconstructing
-        /// No element on the stack, and nothing else.
-        case void
-        case form, select, table, tablePart, ruby, option
-        /// Merges into what is open: `html` and `body`.
-        case root
-        /// `head` and `frame`: ignored where a book's text can be.
-        case ignored
-        case noscript, frameset, plaintext
-        /// The tokeniser leaves `Data` for the element's text.
-        case rawText(MarkupScanner.RawText)
+    /// What a run of text is to the parser, which treats whitespace apart.
+    enum TextKind {
+        /// Only the parser's whitespace: tab, line feed, form feed, carriage return, space.
+        case whitespace
+        /// Something else, for certain.
+        case words
+        /// Only whitespace and character references, which might decode to whitespace.
+        case uncertain
     }
 
-    /// The role of each start tag not `plain`, as `HtmlTreeBuilderState.InBody` has it.
-    private static let roles: [String: Role] = {
-        var roles: [String: Role] = [:]
-        for name in ["address", "article", "aside", "blockquote", "center", "details", "dir", "div", "dl", "fieldset",
-                     "figcaption", "figure", "footer", "header", "hgroup", "menu", "nav", "ol", "p", "section", "summary",
-                     "ul", "pre", "listing"] {
-            roles[name] = .closesP
-        }
-        for name in ["li", "dd", "dt"] { roles[name] = .listItem }
-        for name in ["h1", "h2", "h3", "h4", "h5", "h6"] { roles[name] = .heading }
-        for name in ["b", "big", "code", "em", "font", "i", "s", "small", "strike", "strong", "tt", "u"] {
-            roles[name] = .formatting
-        }
-        roles["a"] = .anchor
-        for name in ["applet", "marquee", "object"] { roles[name] = .marker }
-        for name in ["area", "br", "hr", "img", "keygen", "wbr", "input"] { roles[name] = .voidReconstructing }
-        for name in ["embed", "param", "source", "track", "base", "basefont", "bgsound", "command", "link", "meta", "col", "colgroup"] {
-            roles[name] = .void
-        }
-        roles["form"] = .form
-        roles["select"] = .select
-        roles["table"] = .table
-        for name in ["caption", "tbody", "thead", "tfoot", "tr", "td", "th"] { roles[name] = .tablePart }
-        for name in ["rp", "rt"] { roles[name] = .ruby }
-        for name in ["option", "optgroup"] { roles[name] = .option }
-        for name in ["html", "body"] { roles[name] = .root }
-        for name in ["head", "frame"] { roles[name] = .ignored }
-        roles["noscript"] = .noscript
-        roles["frameset"] = .frameset
-        roles["plaintext"] = .plaintext
-        roles["title"] = .rawText(.replaceable)
-        for name in ["style", "noframes"] { roles[name] = .rawText(.plain) }
-        roles["script"] = .rawText(.script)
-        return roles
-    }()
+    // MARK: Rules' Tag Sets (SwiftSoup's `TagSets` and `Constants`)
 
-    /// `HtmlTreeBuilder.TagSets.special`: the elements an end tag of another
-    /// name stops at, and that a formatting element's end tag moves.
     private static let special: Set<String> = [
         "address", "applet", "area", "article", "aside", "base", "basefont", "bgsound", "blockquote", "body", "br", "button",
         "caption", "center", "col", "colgroup", "command", "dd", "details", "dir", "div", "dl", "dt", "embed", "fieldset",
@@ -177,42 +144,60 @@ struct HTMLOpenElements {
         "style", "summary", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "title", "tr", "ul", "wbr", "xmp",
     ]
     /// What ends a search of the stack for an element in scope (`TagSets.inScope`).
-    private static let scopeLimits: Set<String> = ["applet", "caption", "table", "td", "th", "marquee", "object"]
-    /// End tags of these close what they name when it is in scope (`InBodyEndClosers`).
-    private static let scopedClosers: Set<String> = [
-        "address", "article", "aside", "blockquote", "button", "center", "details", "dir", "div", "dl", "fieldset",
-        "figcaption", "figure", "footer", "header", "hgroup", "listing", "menu", "nav", "ol", "pre", "section", "summary", "ul",
-    ]
-    /// End tags of these go through the adoption agency (`InBodyEndAdoptionFormatters`).
-    private static let adoptionNames: Set<String> = [
+    private static let scopeLimits: Set<String> = ["applet", "caption", "html", "table", "td", "th", "marquee", "object"]
+    /// What `generateImpliedEndTags` pops (`TagSets.endTags`).
+    private static let impliedEnds: Set<String> = ["dd", "dt", "li", "option", "optgroup", "p", "rp", "rt"]
+    private static let headings: Set<String> = ["h1", "h2", "h3", "h4", "h5", "h6"]
+    private static let formatters: Set<String> = ["b", "big", "code", "em", "font", "i", "s", "small", "strike", "strong", "tt", "u"]
+    private static let adoptionFormatters: Set<String> = [
         "a", "b", "big", "code", "em", "font", "i", "nobr", "s", "small", "strike", "strong", "tt", "u",
     ]
-    private static let headings: Set<String> = ["h1", "h2", "h3", "h4", "h5", "h6"]
-    private static let tableSections: Set<String> = ["tbody", "thead", "tfoot"]
-    /// What makes the parser's mode that of a cell or a caption, and what a table part closes first.
-    private static let cellsAndCaption: Set<String> = ["td", "th", "caption"]
-    /// What says whether a `table` start tag nests or closes the table it stands in.
-    private static let tableContext: Set<String> = ["table", "td", "th", "caption"]
-    /// A special element these three pass through, looking for the list item to close.
-    private static let listItemBreakers: Set<String> = ["address", "div", "p"]
-    /// Tags that may come before the body without beginning it (`InHead`).
-    private static let headContent: Set<String> = [
-        "html", "head", "base", "basefont", "bgsound", "command", "link", "meta", "title", "noframes", "style", "noscript", "script",
+    private static let pClosers: Set<String> = [
+        "address", "article", "aside", "blockquote", "center", "details", "dir", "div", "dl", "fieldset", "figcaption", "figure",
+        "footer", "header", "hgroup", "menu", "nav", "ol", "p", "section", "summary", "ul",
     ]
+    private static let endClosers: Set<String> = [
+        "address", "article", "aside", "blockquote", "button", "center", "details", "dir", "div", "dl", "fieldset", "figcaption",
+        "figure", "footer", "header", "hgroup", "listing", "menu", "nav", "ol", "pre", "section", "summary", "ul",
+    ]
+    private static let toHead: Set<String> = ["base", "basefont", "bgsound", "command", "link", "meta", "noframes", "script", "style", "title"]
+    private static let emptyFormatters: Set<String> = ["area", "br", "embed", "hr", "img", "keygen", "wbr"]
+    private static let media: Set<String> = ["param", "source", "track"]
+    private static let dropped: Set<String> = ["caption", "col", "colgroup", "frame", "head", "tbody", "td", "tfoot", "th", "thead", "tr"]
+    private static let liBreakers: Set<String> = ["address", "div", "p"]
+    private static let tableElements: Set<String> = ["table", "tbody", "tfoot", "thead", "tr"]
+    private static let tableSections: Set<String> = ["tbody", "tfoot", "thead"]
+    private static let tableRowsAndCols: Set<String> = ["caption", "col", "colgroup", "tbody", "td", "tfoot", "th", "thead", "tr"]
+    private static let tableMix: Set<String> = ["body", "caption", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr"]
+    private static let baseEtc: Set<String> = ["base", "basefont", "bgsound", "command", "link"]
+    private static let baseEtc2: Set<String> = ["basefont", "bgsound", "link", "meta", "noframes", "style"]
+    private static let baseEtc3: Set<String> = ["base", "basefont", "bgsound", "link", "meta", "noframes", "script", "style", "title"]
+    /// What the tokeniser would read differently in a `noscript` of the head, as text there.
+    private static let readDifferentlyInHeadNoscript: Set<String> = ["title", "script", "plaintext", "select"]
 
     // MARK: State
 
     /// The markup.
     let bytes: [UInt8]
-    /// The stack of open elements, innermost last, without `html` and `body`.
-    private var stack: [Open] = []
-    /// The active formatting elements and markers, last on the right, as the parser keeps them.
-    private var active: [Active] = []
-    /// The next ID for an active entry.
-    private var nextActiveID = 0
+    /// The stack of open elements, `html` first.
+    private var stack: [Element] = []
+    /// The active formatting elements; nil is a marker.
+    private var active: [Element?] = []
+    private var mode = Mode.initial
+    /// Inserts go to the foster parent, beside the table (`fosterInserts`).
+    private var fosterInserts = false
+    /// The form element pointer: the form a later `<form>` would be ignored for.
+    private var form: Element?
+    /// The head element pointer.
+    private var head: Element?
+    /// A fragment parse in a body (`parseBodyFragment`): `html` stands for the body.
+    private let isFragment: Bool
+    private var nextID = 0
+    /// How deep the deepest element is.
+    private(set) var deepest = 0
     /// What SwiftSoup spends beyond each tag's own node.
     struct Costs: Equatable {
-        /// Elements made again, or made by a stray end tag.
+        /// Elements made again, or made up by the parser for a tag that implies them.
         var elements = 0
         /// How many of them hold attributes.
         var elementsWithAttributes = 0
@@ -221,39 +206,36 @@ struct HTMLOpenElements {
         /// Time that grows with the square of the markup, in about a nanosecond each.
         var work = 0
     }
-
-    /// What has been spent so far.
     private(set) var costs = Costs()
-    /// How many start tags have been read, which with the elements made gives
-    /// how many nodes any element can hold at most.
+    /// How many start tags have been read.
     private var startTags = 0
     /// The attributes `html` and `body` tags have added to the one of each.
     private var rootAttributes = 0
-    /// A `form` element is current: another start tag of one is then ignored.
-    private var formIsCurrent = false
-    /// The parser is in its mode for `select`: nearly every tag is ignored.
-    private var inSelect = false
-    /// No text or tag so far has begun the body for certain.
-    private var bodyMayNotHaveBegun = true
-    /// The head has not been closed for certain.
-    private var headMayBeOpen = true
-    /// A `noscript` is open that began while the head may have been open.
-    /// There SwiftSoup reads most tags as text.
-    private var noscriptMayBeInHead = false
-
-    init(bytes: [UInt8]) {
-        self.bytes = bytes
-    }
-
-    /// How many elements are open, by this count.
-    var depth: Int { stack.count }
-
-    /// Whether the rest of the markup can be read tag by tag. The three modes of the
-    /// parser that stop reading text as it is read everywhere else (a `frameset` page,
-    /// and text elements inside a `noscript` of the head) can be told from the body
-    /// only by whitespace in character references. When one of them may have begun,
-    /// the guard stops trusting tags, and counts every one that could possibly lie ahead.
+    /// End tags the parser makes up for a self-closed element, to read after the tag.
+    private var madeUpEnds: [String] = []
+    /// What the tokeniser does after the start tag being read.
+    private var tokeniserChange = TokeniserChange.none
+    /// How deep the rules are in each other, to stop a rule that would never end.
+    private var nesting = 0
+    /// Whether the rest of the markup can be read tag by tag.
     private(set) var tagsAreCertain = true
+    /// Text that may have been whitespace began the body, so the head may still be open.
+    private var bodyMayBeHead = false
+    /// The `noscript` elements opened while the head may still have been open.
+    private var noscriptsMaybeInHead: Set<Int> = []
+
+    init(bytes: [UInt8], fragment: Bool = false) {
+        self.bytes = bytes
+        isFragment = fragment
+        if fragment {
+            // parseFragment: a root `html` on the stack, with the body as context, read in the body's mode.
+            // The fragment's nodes end up in the body of the document, so the root stands at the body's depth.
+            let root = Element(id: takeID(), name: "html", depth: 2, reach: 2, madeBefore: 0, attributes: 0..<0, attributeCount: 0)
+            stack = [root]
+            mode = .inBody
+            deepest = 2
+        }
+    }
 
     /// What the tokeniser must do for the start tag just handled, if anything.
     enum TokeniserChange {
@@ -263,512 +245,1182 @@ struct HTMLOpenElements {
         case rest
     }
 
-    // MARK: Text
+    /// How deep the current node is, below which every tag still to come could open.
+    var openDepth: Int { stack.last?.depth ?? 0 }
 
-    /// Text has been read in the tokeniser's `Data` state: formatting comes back for it.
+    // MARK: Tokens In
+
+    /// Text has been read in the tokeniser's `Data` state.
     mutating func text(_ range: Range<Int>) {
-        if bodyMayNotHaveBegun, !noscriptMayBeInHead, isCertainlyWords(range) {
-            bodyMayNotHaveBegun = false
-            headMayBeOpen = false
-        }
-        guard !inSelect else { return }
-        reconstructFormatting()
+        let kind = Self.kind(of: bytes[range])
+        if kind == .words { bodyMayBeHead = false }
+        process(.text(kind))
+        readMadeUpEnds()
     }
-
-    /// Whether the parser certainly reads `range` as more than whitespace,
-    /// so that the body begins: a character reference could be a space.
-    private func isCertainlyWords(_ range: Range<Int>) -> Bool {
-        var hasWords = false
-        for byte in bytes[range] {
-            if byte == Ascii.ampersand { return false }
-            if !Ascii.isTagSpace(byte), byte != Ascii.verticalTab { hasWords = true }
-        }
-        return hasWords
-    }
-
-    // MARK: Start Tags
 
     /// A start tag has been read; what the tokeniser does next.
     mutating func start(_ tag: MarkupScanner.Tag, name: String) -> TokeniserChange {
         startTags += 1
-        if inSelect { return startInSelect(tag, name: name) }
-        trackBodyStart(name: name)
-        let role = Self.roles[name] ?? .plain
-        // What SwiftSoup's `tb.insert` does for a tag that closes itself: it
-        // pushes the element, and at once acts on a made-up end tag.
-        var isInserted = true
-        switch role {
-        case .plain:
-            reconstructFormatting()
-            push(name)
-        case .closesP:
-            closeP()
-            push(name)
-        case .listItem:
-            closeListItem(name: name)
-            closeP()
-            push(name)
-        case .heading:
-            let wasHeading = stack.last.map { Self.headings.contains($0.name) } ?? false
-            closeP()
-            if wasHeading, !stack.isEmpty { pop() }
-            push(name)
-        case .formatting:
-            reconstructFormatting()
-            push(name, formatting: tag)
-        case .anchor:
-            startAnchor(tag)
-        case .marker:
-            reconstructFormatting()
-            push(name)
-            addMarker()
-        case .voidReconstructing:
-            reconstructFormatting()
-            isInserted = false
-        case .void, .ignored:
-            isInserted = false
-        case .root:
-            // Each attribute that goes onto the one `html` or `body` is first
-            // looked for among those there: 100 nanoseconds each.
+        tokeniserChange = .none
+        if name == "html" || name == "body" {
+            // Each attribute that goes onto the one `html` or `body` is first looked for among those there: 100 nanoseconds each.
             rootAttributes += tag.attributeCount
             costs.work += tag.attributeCount * rootAttributes * 100
-            isInserted = false
-        case .form:
-            // `insertForm` stays open whether the tag closes itself or not.
-            isInserted = false
-            if !formIsCurrent {
-                closeP()
-                push(name)
-                formIsCurrent = true
-            }
-        case .select:
-            guard !noscriptMayBeInHead else {
-                tagsAreCertain = false
-                return .none
-            }
-            reconstructFormatting()
-            guard !tag.isSelfClosing else { return .none }
-            push(name)
-            inSelect = true
-            isInserted = false
-        case .table:
-            startTable()
-        case .tablePart:
-            isInserted = startTablePart(name)
-        case .ruby:
-            if isInScope("ruby") {
-                if stack.last?.name != "ruby", let ruby = stack.lastIndex(where: { $0.name == "ruby" }) {
-                    popAll(above: ruby)
+        }
+        // Where the head might still be open, anything but what a head holds would have ended it there too.
+        if bodyMayBeHead, !Self.headCompatible.contains(name) { bodyMayBeHead = false }
+        var start = StartTag(name: name, attributes: tag.attributes, attributeCount: tag.attributeCount, isSelfClosing: tag.isSelfClosing)
+        if name == "input" { start.isHiddenInput = isHidden(tag) }
+        process(.start(start))
+        readMadeUpEnds()
+        return tagsAreCertain ? tokeniserChange : .none
+    }
+
+    /// An end tag has been read.
+    mutating func end(name: String) {
+        if bodyMayBeHead, ["head", "body", "html", "br"].contains(name) { bodyMayBeHead = false }
+        process(.end(name))
+        readMadeUpEnds()
+    }
+
+    /// What can stand in a head without ending it (`InHead`'s own start tags).
+    private static let headCompatible: Set<String> = [
+        "html", "head", "base", "basefont", "bgsound", "command", "link", "meta", "title", "noframes", "style", "noscript", "script",
+    ]
+
+    /// The end tags `insert` made up for self-closed elements, read as the tokeniser emits them, after the tag.
+    private mutating func readMadeUpEnds() {
+        while !madeUpEnds.isEmpty, tagsAreCertain {
+            process(.end(madeUpEnds.removeFirst()))
+        }
+    }
+
+    // MARK: Text Kinds
+
+    /// What `text` is to the parser: whitespace for certain, words for certain, or
+    /// whitespace and character references, which the tokeniser decodes first.
+    static func kind(of text: ArraySlice<UInt8>) -> TextKind {
+        var sawReference = false
+        var index = text.startIndex
+        while index < text.endIndex {
+            let byte = text[index]
+            if byte == Ascii.ampersand {
+                // A reference's own letters, digits, `#`, and `;` might decode to whitespace.
+                sawReference = true
+                index += 1
+                while index < text.endIndex, Ascii.isLetter(text[index]) || Ascii.isDigit(text[index]) || text[index] == Ascii.hash
+                    || text[index] == Ascii.semicolon {
+                    index += 1
                 }
-                push(name)
+                continue
+            }
+            if !Self.isParserWhitespace(byte) { return .words }
+            index += 1
+        }
+        return sawReference ? .uncertain : .whitespace
+    }
+
+    /// `HtmlTreeBuilderState.whitespaceTable`: tab, line feed, form feed, carriage return, space.
+    private static func isParserWhitespace(_ byte: UInt8) -> Bool {
+        byte == 0x09 || byte == 0x0A || byte == 0x0C || byte == 0x0D || byte == 0x20
+    }
+
+    /// Whether `tag`'s `type` attribute is `hidden` (`InTable` puts such an
+    /// `input` in the table itself), or nil when a character reference in it
+    /// keeps that unknown.
+    private func isHidden(_ tag: MarkupScanner.Tag) -> Bool? {
+        guard let value = Self.firstValue(of: Array("type".utf8), in: bytes[tag.attributes]) else { return false }
+        if value.contains(Ascii.ampersand) { return nil }
+        return value.count == 6 && zip(value, Array("hidden".utf8)).allSatisfy { Ascii.lowercased($0) == $1 }
+    }
+
+    /// The value of the first attribute named `name` (in lower case) among a
+    /// tag's attributes, as the tokeniser reads them: a name ends at
+    /// whitespace, `/`, `=`, or the tag's end, and a value is quoted or runs
+    /// to whitespace. Nil when there is no such attribute; empty for one
+    /// without a value.
+    private static func firstValue(of name: [UInt8], in attributes: ArraySlice<UInt8>) -> ArraySlice<UInt8>? {
+        var index = attributes.startIndex
+        let end = attributes.endIndex
+        while index < end {
+            // Before a name.
+            while index < end, Ascii.isTagSpace(attributes[index]) || attributes[index] == Ascii.slash { index += 1 }
+            let nameStart = index
+            index += 1
+            while index < end, !Ascii.isTagSpace(attributes[index]), attributes[index] != Ascii.slash, attributes[index] != Ascii.equals {
+                index += 1
+            }
+            let found = attributes[nameStart..<min(index, end)]
+            let matches = found.count == name.count && zip(found, name).allSatisfy { Ascii.lowercased($0) == $1 }
+            // After the name: an `=` and a value, or another name.
+            var probe = index
+            while probe < end, Ascii.isTagSpace(attributes[probe]) { probe += 1 }
+            guard probe < end, attributes[probe] == Ascii.equals else {
+                if matches { return attributes[end..<end] }
+                index = probe
+                continue
+            }
+            probe += 1
+            while probe < end, Ascii.isTagSpace(attributes[probe]) { probe += 1 }
+            var value = attributes[end..<end]
+            if probe < end, attributes[probe] == Ascii.doubleQuote || attributes[probe] == Ascii.singleQuote {
+                let quote = attributes[probe]
+                let valueStart = probe + 1
+                probe = valueStart
+                while probe < end, attributes[probe] != quote { probe += 1 }
+                value = attributes[valueStart..<probe]
+                probe = min(probe + 1, end)
             } else {
-                isInserted = false
+                let valueStart = probe
+                while probe < end, !Ascii.isTagSpace(attributes[probe]) { probe += 1 }
+                value = attributes[valueStart..<probe]
             }
-        case .option:
-            if stack.last?.name == "option" { pop() }
-            reconstructFormatting()
-            push(name)
-        case .noscript:
-            reconstructFormatting()
-            if bodyMayNotHaveBegun, headMayBeOpen { noscriptMayBeInHead = true }
-            push(name)
-        case .frameset:
-            // A page of frames, or a plain element, by whether the body has begun.
-            if bodyMayNotHaveBegun {
-                tagsAreCertain = false
-                return .none
-            }
-            reconstructFormatting()
-            push(name)
-        case .plaintext:
-            guard !noscriptMayBeInHead else {
-                tagsAreCertain = false
-                return .none
-            }
-            reconstructFormatting()
-            push(name)
-            return .rest
-        case let .rawText(kind):
-            // `script` and `title` are text themselves inside a `noscript` of the head.
-            if noscriptMayBeInHead, name != "style", name != "noframes" {
-                tagsAreCertain = false
-                return .none
-            }
-            // The element itself closes with its text, and its made-up end tag if it closes itself.
-            return tag.isSelfClosing ? .none : .rawText(kind)
+            if matches { return value }
+            index = probe
         }
-        if tag.isSelfClosing, isInserted { end(name: name) }
-        return .none
+        return nil
     }
 
-    /// A tag that begins the body for certain, unless a `noscript` of the head may be open.
-    private mutating func trackBodyStart(name: String) {
-        guard bodyMayNotHaveBegun, !noscriptMayBeInHead, !Self.headContent.contains(name), name != "frameset" else { return }
-        bodyMayNotHaveBegun = false
-        headMayBeOpen = false
+    // MARK: Processing
+
+    /// `process(t)`: the token by the rules of the current mode.
+    @discardableResult
+    private mutating func process(_ token: Token) -> Bool {
+        process(token, in: mode)
     }
 
-    /// `a`: an open one is closed first, and taken off the stack even if it could not be.
-    private mutating func startAnchor(_ tag: MarkupScanner.Tag) {
-        if lastActive(named: "a") != nil {
-            end(name: "a")
-            if let index = stack.lastIndex(where: { $0.name == "a" }) {
-                if let id = stack[index].activeID { removeActive(id: id) }
-                stack.remove(at: index)
-            }
+    /// `process(t, state)`: the token by the rules of `mode`, which the mode itself does not change.
+    @discardableResult
+    private mutating func process(_ token: Token, in mode: Mode) -> Bool {
+        guard tagsAreCertain else { return true }
+        nesting += 1
+        defer { nesting -= 1 }
+        // The parser's rules hand a token on a few times at most; a model that went on would be wrong.
+        guard nesting < 64 else {
+            tagsAreCertain = false
+            return true
         }
-        reconstructFormatting()
-        push("a", formatting: tag)
-    }
-
-    /// `table`: directly in a table it closes that table first; in a cell or
-    /// caption, or outside any table, it nests.
-    private mutating func startTable() {
-        let context = stack.last { Self.tableContext.contains($0.name) }
-        if context?.name == "table", let table = stack.lastIndex(where: { $0.name == "table" }) {
-            popAll(from: table)
+        switch mode {
+        case .initial: return initial(token)
+        case .beforeHtml: return beforeHtml(token)
+        case .beforeHead: return beforeHead(token)
+        case .inHead: return inHead(token)
+        case .inHeadNoscript: return inHeadNoscript(token)
+        case .afterHead: return afterHead(token)
+        case .inBody: return inBody(token)
+        case .inTable: return inTable(token)
+        case .inCaption: return inCaption(token)
+        case .inColumnGroup: return inColumnGroup(token)
+        case .inTableBody: return inTableBody(token)
+        case .inRow: return inRow(token)
+        case .inCell: return inCell(token)
+        case .inSelect: return inSelect(token)
+        case .afterBody: return afterBody(token)
+        case .inFrameset: return inFrameset(token)
+        case .afterFrameset: return afterFrameset(token)
+        case .afterAfterBody: return afterAfterBody(token)
+        case .afterAfterFrameset: return afterAfterFrameset(token)
         }
-        closeP()
-        push("table")
     }
 
-    /// `caption`, `tbody`, `thead`, `tfoot`, `tr`, `td`, or `th`, which the
-    /// parser ignores outside a table and otherwise makes room for, supplying
-    /// what is missing between them (`InTable`, `InTableBody`, `InRow`, `InCell`).
-    /// - Returns: whether an element was pushed.
-    private mutating func startTablePart(_ name: String) -> Bool {
-        guard let table = stack.lastIndex(where: { $0.name == "table" }) else { return false }
-        closeCellOrCaption(above: table)
-        switch name {
-        case "caption":
-            popAll(above: table)
-            push(name)
-            addMarker()
-        case "tbody", "thead", "tfoot":
-            popAll(above: table)
-            push(name)
-        case "tr":
-            popToRowContext(above: table)
-            push(name)
+    /// `processStartTag(name)`: a start tag the parser makes up, by the current mode.
+    @discardableResult
+    private mutating func processStartTag(_ name: String) -> Bool {
+        process(.start(StartTag(name: name)))
+    }
+
+    /// `processEndTag(name)`: an end tag the parser makes up, by the current mode.
+    @discardableResult
+    private mutating func processEndTag(_ name: String) -> Bool {
+        process(.end(name))
+    }
+
+    /// Text in a mode before the body: words for certain, or text that may be
+    /// whitespace, which the model reads as words, since the body that begins
+    /// then holds what the head would. The head may then still be open.
+    private mutating func isWordsBeforeBody(_ kind: TextKind) -> Bool {
+        switch kind {
+        case .whitespace: return false
+        case .words: return true
+        case .uncertain:
+            bodyMayBeHead = true
+            return true
+        }
+    }
+
+    // MARK: Before the Body
+
+    /// `Initial`.
+    private mutating func initial(_ token: Token) -> Bool {
+        if case let .text(kind) = token, !isWordsBeforeBody(kind) { return true }
+        mode = .beforeHtml
+        return process(token)
+    }
+
+    /// `BeforeHtml`.
+    private mutating func beforeHtml(_ token: Token) -> Bool {
+        func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
+            model.insertMadeUp("html", counted: false)
+            model.mode = .beforeHead
+            return model.process(token)
+        }
+        switch token {
+        case let .text(kind):
+            return isWordsBeforeBody(kind) ? anythingElse(&self) : true
+        case let .start(start) where start.name == "html":
+            insert(start)
+            mode = .beforeHead
+            return true
+        case let .end(name):
+            return ["head", "body", "html", "br"].contains(name) ? anythingElse(&self) : false
         default:
-            // A cell needs a row, and a row a section.
-            if let row = stack[(table + 1)...].lastIndex(where: { $0.name == "tr" }) {
-                popAll(above: row)
-            } else {
-                popToRowContext(above: table)
-                push("tr")
-                costs.elements += 1
+            return anythingElse(&self)
+        }
+    }
+
+    /// `BeforeHead`.
+    private mutating func beforeHead(_ token: Token) -> Bool {
+        switch token {
+        case let .text(kind) where !isWordsBeforeBody(kind):
+            return true
+        case let .start(start) where start.name == "html":
+            return inBody(token)
+        case let .start(start) where start.name == "head":
+            head = insert(start)
+            mode = .inHead
+            return true
+        case let .end(name) where !["head", "body", "html", "br"].contains(name):
+            return false
+        default:
+            // The made-up head is the parser's own, and costs what any element does once.
+            processStartTag("head")
+            return process(token)
+        }
+    }
+
+    /// `InHead`.
+    private mutating func inHead(_ token: Token) -> Bool {
+        func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
+            model.processEndTag("head")
+            return model.process(token)
+        }
+        switch token {
+        case let .text(kind):
+            return isWordsBeforeBody(kind) ? anythingElse(&self) : true
+        case let .start(start):
+            switch start.name {
+            case "html": return inBody(token)
+            case "meta": insertEmpty(start)
+            case "title": insertRawText(start, .replaceable)
+            case "noframes", "style": insertRawText(start, .plain)
+            case "noscript":
+                insert(start)
+                mode = .inHeadNoscript
+            case "script": insertRawText(start, .script)
+            case "head": return false
+            default:
+                if Self.baseEtc.contains(start.name) {
+                    insertEmpty(start)
+                } else {
+                    return anythingElse(&self)
+                }
             }
-            push(name)
-            addMarker()
+            return true
+        case let .end(name):
+            if name == "head" {
+                pop()
+                mode = .afterHead
+                return true
+            }
+            return ["body", "html", "br"].contains(name) ? anythingElse(&self) : false
+        case .eof:
+            return anythingElse(&self)
+        }
+    }
+
+    /// `InHeadNoscript`: what is not allowed there is read as text.
+    private mutating func inHeadNoscript(_ token: Token) -> Bool {
+        switch token {
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case let .end(name) where name == "noscript":
+            pop()
+            mode = .inHead
+            return true
+        case .text(.whitespace):
+            return process(token, in: .inHead)
+        case let .start(start) where Self.baseEtc2.contains(start.name):
+            return process(token, in: .inHead)
+        case let .end(name) where name == "br":
+            return true
+        case let .start(start) where start.name == "head" || start.name == "noscript":
+            return false
+        case .end:
+            return false
+        default:
+            // Inserted as text, which makes no element.
+            return true
+        }
+    }
+
+    /// `AfterHead`.
+    private mutating func afterHead(_ token: Token) -> Bool {
+        func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
+            model.processStartTag("body")
+            return model.process(token)
+        }
+        switch token {
+        case let .text(kind):
+            return isWordsBeforeBody(kind) ? anythingElse(&self) : true
+        case let .start(start):
+            switch start.name {
+            case "html": return process(token, in: .inBody)
+            case "body":
+                insert(start)
+                mode = .inBody
+            case "frameset":
+                insert(start)
+                mode = .inFrameset
+            case "head": return false
+            default:
+                guard Self.baseEtc3.contains(start.name), let head else { return anythingElse(&self) }
+                // The head goes back on the stack for the tag alone.
+                push(head)
+                process(token, in: .inHead)
+                removeFromStack(head.id)
+            }
+            return true
+        case let .end(name):
+            return name == "body" || name == "html" ? anythingElse(&self) : false
+        case .eof:
+            return anythingElse(&self)
+        }
+    }
+
+    // MARK: The Body
+
+    /// `InBody`.
+    private mutating func inBody(_ token: Token) -> Bool {
+        switch token {
+        case .text:
+            if lastFormattingElement != nil { reconstructFormatting() }
+            return true
+        case .eof:
+            return true
+        case let .start(start):
+            return inBodyStart(start, token)
+        case let .end(name):
+            return inBodyEnd(name, token)
+        }
+    }
+
+    /// `InBody`'s start tags.
+    private mutating func inBodyStart(_ start: StartTag, _ token: Token) -> Bool {
+        let name = start.name
+        noteMaybeInHeadNoscript(name)
+        // The parser reads the current node once, as the tag begins, and its rules below ask after it as it was then.
+        let current = stack.last?.name
+        switch name {
+        case "a":
+            if activeElement(named: "a") != nil {
+                processEndTag("a")
+                if let remaining = stack.last(where: { $0.name == "a" }) {
+                    removeActive(remaining.id)
+                    removeFromStack(remaining.id)
+                }
+            }
+            reconstructIfNeeded()
+            pushActive(insert(start))
+        case "span":
+            reconstructIfNeeded()
+            insert(start)
+        case "li", "dd", "dt":
+            closeListItem(named: name)
+            closePIfInButtonScope(current)
+            insert(start)
+        case "applet", "marquee", "object":
+            reconstructIfNeeded()
+            insert(start)
+            insertMarker()
+        case "embed":
+            insertEmpty(start)
+        case "rp", "rt":
+            if isInScope("ruby") {
+                if stack.last?.name != "ruby" { popStackToBefore("ruby") }
+                insert(start)
+            }
+        case "table":
+            closePIfInButtonScope(current)
+            insert(start)
+            mode = .inTable
+        case "form":
+            guard form == nil else { return false }
+            if isInButtonScope("p") { processEndTag("p") }
+            insertForm(start, onStack: true)
+        case "html":
+            break
+        case "body":
+            guard stack.contains(where: { $0.name == "body" }) else { return false }
+        case "input", "br", "img", "hr":
+            reconstructIfNeeded()
+            insertEmpty(start)
+        case "meta", "script", "style", "title":
+            return process(token, in: .inHead)
+        case "select":
+            reconstructIfNeeded()
+            insert(start)
+            mode = .inSelect
+        case "plaintext":
+            reconstructIfNeeded()
+            insert(start)
+            tokeniserChange = .rest
+        case "option", "optgroup":
+            if stack.last?.name == "option" { processEndTag("option") }
+            reconstructIfNeeded()
+            insert(start)
+        default:
+            if Self.formatters.contains(name) {
+                reconstructIfNeeded()
+                pushActive(insert(start))
+            } else if Self.emptyFormatters.contains(name) {
+                reconstructIfNeeded()
+                insertEmpty(start)
+            } else if Self.pClosers.contains(name) {
+                closePIfInButtonScope(current)
+                insert(start)
+            } else if Self.toHead.contains(name) {
+                return process(token, in: .inHead)
+            } else if Self.headings.contains(name) {
+                closePIfInButtonScope(current)
+                // A heading in a heading: the parser pops whatever is current now, if a heading was current when the tag began.
+                if let current, Self.headings.contains(current) { pop() }
+                insert(start)
+            } else if name == "pre" || name == "listing" {
+                closePIfInButtonScope(current)
+                insert(start)
+            } else if Self.media.contains(name) {
+                insertEmpty(start)
+            } else if Self.dropped.contains(name) {
+                return false
+            } else {
+                reconstructIfNeeded()
+                let element = insert(start)
+                // A noscript that would have been in the head, had text of character references been whitespace.
+                if name == "noscript", bodyMayBeHead { noscriptsMaybeInHead.insert(element.id) }
+            }
         }
         return true
     }
 
-    /// Makes the stack end at the row's parent, a section (supplied if the table has none).
-    private mutating func popToRowContext(above table: Int) {
-        if let section = stack[(table + 1)...].lastIndex(where: { Self.tableSections.contains($0.name) }) {
-            popAll(above: section)
-        } else {
-            popAll(above: table)
-            push("tbody")
-            costs.elements += 1
-        }
-    }
-
-    /// An open cell, or caption, of the table at `table` closes, as the table's parts do.
-    private mutating func closeCellOrCaption(above table: Int) {
-        guard let part = stack[(table + 1)...].lastIndex(where: { Self.cellsAndCaption.contains($0.name) }) else { return }
-        popAll(from: part)
-        clearFormattingToMarker()
-    }
-
-    /// Closes a `p` in button scope, as most block elements do first.
-    private mutating func closeP() {
-        if let index = indexInScope("p", extraLimits: ["button"]) { popAll(from: index) }
+    /// A tag the tokeniser would read differently in a `noscript` of the head,
+    /// inside a `noscript` that may be in the head: the markup can no longer be
+    /// read tag by tag.
+    private mutating func noteMaybeInHeadNoscript(_ name: String) {
+        guard !noscriptsMaybeInHead.isEmpty, Self.readDifferentlyInHeadNoscript.contains(name),
+              stack.contains(where: { noscriptsMaybeInHead.contains($0.id) }) else { return }
+        tagsAreCertain = false
     }
 
     /// `li`, `dd`, `dt`: closes the nearest of the same kind, unless a special
     /// element other than `address`, `div`, and `p` stands between.
-    private mutating func closeListItem(name: String) {
+    private mutating func closeListItem(named name: String) {
         let kinds: Set<String> = name == "li" ? ["li"] : ["dd", "dt"]
-        for index in stack.indices.reversed() {
-            let open = stack[index].name
-            if kinds.contains(open) {
-                popAll(from: index)
-                return
-            }
-            if Self.special.contains(open), !Self.listItemBreakers.contains(open) { return }
-        }
-    }
-
-    // MARK: End Tags
-
-    /// An end tag has been read.
-    mutating func end(_ tag: MarkupScanner.Tag, name: String) {
-        if inSelect {
-            endInSelect(name: name)
+        if let current = stack.last, kinds.contains(current.name) {
+            processEndTag(current.name)
             return
         }
-        // In a `noscript` of the head, no end tag but its own does anything.
-        if !noscriptMayBeInHead {
-            if name == "head" { headMayBeOpen = false }
-            if name == "body" || name == "html" {
-                bodyMayNotHaveBegun = false
-                headMayBeOpen = false
-            }
-        }
-        end(name: name)
-    }
-
-    /// The rules for an end tag, also followed for the one `tb.insert` makes up.
-    private mutating func end(name: String) {
-        if name == "noscript" { noscriptMayBeInHead = false }
-        if Self.adoptionNames.contains(name) {
-            endFormatting(name: name)
-        } else if Self.scopedClosers.contains(name) || name == "dd" || name == "dt" {
-            if let index = indexInScope(name) { popAll(from: index) }
-        } else if Self.headings.contains(name) {
-            for index in stack.indices.reversed() {
-                if Self.headings.contains(stack[index].name) {
-                    popAll(from: index)
-                    return
-                }
-                if Self.scopeLimits.contains(stack[index].name) { return }
-            }
-        } else {
-            switch name {
-            case "li":
-                if let index = indexInScope(name, extraLimits: ["ol", "ul"]) { popAll(from: index) }
-            case "p":
-                if let index = indexInScope(name, extraLimits: ["button"]) {
-                    popAll(from: index)
-                } else {
-                    // No p to close: an empty one is made.
-                    costs.elements += 1
-                }
-            case "body", "html", "head":
-                break
-            case "form":
-                endForm()
-            case "applet", "marquee", "object":
-                // An element named "name" in scope stops this, by a slip in the parser.
-                if !isInScope("name"), let index = indexInScope(name) {
-                    popAll(from: index)
-                    clearFormattingToMarker()
-                }
-            case "br":
-                reconstructFormatting()
-                costs.elements += 1
-            case "table":
-                endTable()
-            case "caption", "td", "th":
-                endCellOrCaption(name: name)
-            case "tr":
-                endRow()
-            case "tbody", "thead", "tfoot":
-                endSection(name: name)
-            case "col", "colgroup":
-                break
-            default:
-                endOther(name: name)
-            }
-        }
-    }
-
-    /// `anyOtherEndTag`: closes the nearest of the name, unless a special element stands between.
-    private mutating func endOther(name: String) {
-        for index in stack.indices.reversed() {
-            if stack[index].name == name {
-                if Self.adoptionNames.contains(name), let id = stack[index].activeID {
-                    removeActive(id: id)
-                    stack[index].activeID = nil
-                }
-                popAll(from: index)
+        var index = stack.count
+        while index > 1 {
+            index -= 1
+            let element = stack[index]
+            if kinds.contains(element.name) {
+                processEndTag(element.name)
                 return
             }
-            if Self.special.contains(stack[index].name) { return }
+            if Self.special.contains(element.name), !Self.liBreakers.contains(element.name) { return }
         }
     }
 
-    /// `</form>`: the form stops being current whatever else happens, and only
-    /// its own element is taken off the stack, leaving what is inside it.
-    private mutating func endForm() {
-        let wasCurrent = formIsCurrent
-        formIsCurrent = false
-        if wasCurrent, let index = indexInScope("form") { stack.remove(at: index) }
+    /// `closePIfInButtonScope`, with the current node as it was when the tag began.
+    private mutating func closePIfInButtonScope(_ current: String?) {
+        if current == "p" {
+            processEndTag("p")
+        } else if isInButtonScope("p") {
+            processEndTag("p")
+        }
     }
 
-    /// `</table>`: closes the nearest table, with a cell or caption in it.
-    private mutating func endTable() {
-        guard let table = stack.lastIndex(where: { $0.name == "table" }) else { return }
-        closeCellOrCaption(above: table)
-        popAll(from: table)
-    }
-
-    /// `</td>`, `</th>`, or `</caption>`, within the nearest table.
-    private mutating func endCellOrCaption(name: String) {
-        for index in stack.indices.reversed() {
-            if stack[index].name == name {
-                popAll(from: index)
-                clearFormattingToMarker()
-                return
+    /// `InBody`'s end tags.
+    private mutating func inBodyEnd(_ name: String, _ token: Token) -> Bool {
+        if Self.adoptionFormatters.contains(name) { return adoptionAgency(name) }
+        switch name {
+        case "span":
+            return anyOtherEnd(name)
+        case "div":
+            guard isInScope("div") else { return false }
+            popStackToClose("div")
+        case "li":
+            guard isInScope("li", extraLimits: ["ol", "ul"]) else { return false }
+            generateImpliedEnds(except: "li")
+            popStackToClose("li")
+        case "body":
+            guard isInScope("body") else { return false }
+            mode = .afterBody
+        case "html":
+            if processEndTag("body") { return process(token) }
+        case "form":
+            let current = form
+            form = nil
+            guard let current, isInScope("form") else { return false }
+            removeFromStack(current.id)
+        case "p":
+            guard isInButtonScope("p") else {
+                // No paragraph to close: an empty one is made, and closed.
+                processMadeUpStart("p")
+                return process(token)
             }
-            if stack[index].name == "table" { return }
+            generateImpliedEnds(except: "p")
+            popStackToClose("p")
+        case "dd", "dt":
+            guard isInScope(name) else { return false }
+            generateImpliedEnds(except: name)
+            popStackToClose(name)
+        case "applet", "marquee", "object":
+            // By a slip, the parser first asks after an element named "name".
+            guard !isInScope("name") else { break }
+            guard isInScope(name) else { return false }
+            popStackToClose(name)
+            clearFormattingToMarker()
+        case "br":
+            processMadeUpStart("br")
+            return false
+        default:
+            if Self.endClosers.contains(name) {
+                guard isInScope(name) else { return false }
+                popStackToClose(name)
+            } else if Self.headings.contains(name) {
+                guard stack.reversed().first(where: { Self.headings.contains($0.name) || Self.scopeLimits.contains($0.name) })
+                    .map({ Self.headings.contains($0.name) }) == true else { return false }
+                generateImpliedEnds(except: name)
+                if let index = stack.lastIndex(where: { Self.headings.contains($0.name) }) { popAll(from: index) }
+            } else {
+                return anyOtherEnd(name)
+            }
         }
+        return true
     }
 
-    /// `</tr>`, within the nearest table, with a cell in it.
-    private mutating func endRow() {
-        guard let row = indexInTable("tr") else { return }
-        closeCellOrCaption(above: row)
-        popAll(from: row)
+    /// `anyOtherEndTag`: closes the nearest element of the name, unless a special element stands between.
+    @discardableResult
+    private mutating func anyOtherEnd(_ name: String) -> Bool {
+        var index = stack.count
+        while index > 0 {
+            index -= 1
+            let element = stack[index]
+            if element.name == name {
+                generateImpliedEnds(except: name)
+                if Self.adoptionFormatters.contains(name) { removeActive(element.id) }
+                popStackToClose(name)
+                return true
+            }
+            if Self.special.contains(element.name) { return false }
+        }
+        return true
     }
 
-    /// `</tbody>`, `</thead>`, or `</tfoot>`, closing that section of the nearest
-    /// table; an open row makes the parser ignore it, though an open cell still closes.
-    private mutating func endSection(name: String) {
-        guard let section = indexInTable(name) else { return }
-        closeCellOrCaption(above: section)
-        guard !stack[(section + 1)...].contains(where: { $0.name == "tr" }) else { return }
-        popAll(from: section)
-    }
-
-    /// The adoption agency's effect on the stack: a formatting element with no
-    /// block in it closes, with what is above it; one with a block in it comes
-    /// off the stack alone, and a copy goes inside the block.
-    private mutating func endFormatting(name: String) {
+    /// The adoption agency, as SwiftSoup runs it, eight times at most.
+    private mutating func adoptionAgency(_ name: String) -> Bool {
         for _ in 0..<8 {
-            guard let entry = lastActive(named: name) else {
-                endOther(name: name)
-                return
+            guard let format = activeElement(named: name) else { return anyOtherEnd(name) }
+            guard let formatIndex = stack.lastIndex(where: { $0.id == format.id }) else {
+                removeActive(format.id)
+                return anyOtherEnd(name)
             }
-            guard entry.isOnStack, let format = stack.lastIndex(where: { $0.activeID == entry.id }) else {
-                removeActive(id: entry.id)
-                endOther(name: name)
-                return
-            }
-            guard isInScope(name) else { return }
-            guard let furthest = stack[(format + 1)...].firstIndex(where: { Self.special.contains($0.name) }) else {
-                if let last = stack.lastIndex(where: { $0.name == name }) { popAll(from: last) }
-                removeActive(id: entry.id)
-                return
-            }
-            // The block's children move to a copy of the formatting element, one
-            // at a time, each shifting those after it: 2 nanoseconds a pair.
-            let children = startTags + costs.elements - stack[furthest].madeBefore
-            costs.work += 2 * children * children
-            // Between the two, the parser takes one element that is not
-            // active off the stack, and copies up to three that are.
-            var above = furthest
-            var block = furthest
-            for _ in 0..<3 {
-                above -= 1
-                guard above > format else { break }
-                if stack[above].activeID == nil {
-                    stack.remove(at: above)
-                    block -= 1
+            guard isInScope(format.name) else { return false }
+            // The block is looked for among the first 64 elements of the stack only.
+            var furthest: Int?
+            var formatSeen: Int?
+            for index in 0..<min(stack.count, 64) {
+                if stack[index].id == format.id {
+                    formatSeen = index
+                } else if formatSeen != nil, Self.special.contains(stack[index].name) {
+                    furthest = index
                     break
                 }
-                costs.elements += 1
             }
-            // The copy of the formatting element, which is not active.
+            guard let furthest, let seen = formatSeen, seen > 0 else {
+                popStackToClose(format.name)
+                removeActive(format.id)
+                return true
+            }
+            _ = formatIndex
+            let common = stack[seen - 1]
+            var block = stack[furthest]
+            // The block's children move to a copy of the formatting element, one
+            // at a time, each shifting those after it: 2 nanoseconds a pair.
+            let children = startTags + costs.elements - block.madeBefore
+            costs.work += 2 * children * children
+            // What the block's tree reaches before anything moves: its closed part, and what stands open above it.
+            let closedReach = block.reach
+            let openReach = stack[(furthest + 1)...].map(\.reach).max() ?? 0
+            // Up to three elements between: those not active come off the stack, those active are copied.
+            var node: Element? = block
+            var chain: [Element] = []
+            for _ in 0..<3 {
+                if let current = node, let index = stack.lastIndex(where: { $0.id == current.id }) {
+                    node = index > 0 ? stack[index - 1] : nil
+                }
+                guard let candidate = node else { break }
+                if !isInActive(candidate.id) {
+                    removeFromStack(candidate.id)
+                    continue
+                }
+                if candidate.id == format.id { break }
+                let copy = makeElement(candidate.name, depth: candidate.depth, attributes: 0..<0, attributeCount: 0)
+                costs.elements += 1
+                replaceActive(candidate.id, with: copy)
+                replaceOnStack(candidate.id, with: copy)
+                node = copy
+                chain.append(copy)
+            }
+            // The chain, outermost first, goes into the common ancestor, or beside the last table.
+            let base = Self.tableElements.contains(common.name) ? fosterDepth() - 1 : common.depth
+            // The block goes inside the innermost copy, which may be higher or deeper than it was.
+            let blockDepth = base + 1 + chain.count
+            let delta = blockDepth - block.depth
+            // Its children go into the copy of the formatting element, inside it: one level more than the block's move.
+            let subtreeMove = delta + 1
+            // What stands above the block on the stack is its own, open, unless foster parenting put it elsewhere,
+            // where it stays: so it never goes higher, and goes deeper as the block's children do.
+            let openMove = max(delta, 0) + 1
+            let newReach = max(blockDepth + 1, closedReach + subtreeMove, openReach + openMove)
+            if let blockIndex = stack.lastIndex(where: { $0.id == block.id }) {
+                for index in (blockIndex + 1)..<stack.count {
+                    stack[index].depth += openMove
+                    stack[index].reach += openMove
+                }
+                stack[blockIndex].depth = blockDepth
+                stack[blockIndex].reach = newReach
+                block = stack[blockIndex]
+            }
+            // The copies stand where they go: new elements, one inside the other, around the block.
+            for (offset, copy) in chain.reversed().enumerated() {
+                if let index = stack.lastIndex(where: { $0.id == copy.id }) {
+                    stack[index].depth = base + 1 + offset
+                    stack[index].reach = newReach
+                }
+            }
+            let adopter = makeElement(format.name, depth: blockDepth + 1, attributes: format.attributes, attributeCount: format.attributeCount)
             costs.elements += 1
-            if entry.attributeCount > 0 { costs.elementsWithAttributes += 1 }
-            costs.attributes += entry.attributeCount
-            stack.insert(Open(name: name, activeID: nil, madeBefore: startTags + costs.elements), at: block + 1)
-            stack.remove(at: format)
-            removeActive(id: entry.id)
+            if format.attributeCount > 0 { costs.elementsWithAttributes += 1 }
+            costs.attributes += format.attributeCount
+            // Every element that was in the block's tree is now where its move puts it; none of them was counted less.
+            note(depth: newReach)
+            var placed = adopter
+            placed.reach = newReach
+            removeActive(format.id)
+            removeFromStack(format.id)
+            if let index = stack.lastIndex(where: { $0.id == block.id }) {
+                stack.insert(placed, at: index + 1)
+            }
+        }
+        return true
+    }
+
+    // MARK: Tables
+
+    /// `InTable`.
+    private mutating func inTable(_ token: Token) -> Bool {
+        func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
+            model.inBodyFostered(token)
+        }
+        switch token {
+        case let .text(kind):
+            // `InTableText`: whitespace stays in the table; anything else, or what may be, goes to the body's rules, beside the table.
+            if kind == .whitespace { return true }
+            return inBodyFostered(.text(.words))
+        case let .start(start):
+            switch start.name {
+            case "table":
+                if processEndTag("table") { return process(token) }
+                return true
+            case "tbody", "thead", "tfoot":
+                clearStack(toContext: ["table"])
+                insert(start)
+                mode = .inTableBody
+            case "td", "th", "tr":
+                processMadeUpStart("tbody")
+                return process(token)
+            case "caption":
+                clearStack(toContext: ["table"])
+                insertMarker()
+                insert(start)
+                mode = .inCaption
+            case "colgroup":
+                clearStack(toContext: ["table"])
+                insert(start)
+                mode = .inColumnGroup
+            case "col":
+                processMadeUpStart("colgroup")
+                return process(token)
+            case "script", "style":
+                return process(token, in: .inHead)
+            case "input":
+                switch start.isHiddenInput {
+                case true?:
+                    insertEmpty(start)
+                case false?:
+                    return anythingElse(&self)
+                case nil:
+                    // Both, since which is unknown: a hidden one is a level deeper, the other may remake formatting.
+                    note(depth: openDepth + 1)
+                    return anythingElse(&self)
+                }
+            case "form":
+                guard form == nil else { return false }
+                insertForm(start, onStack: false)
+            default:
+                return anythingElse(&self)
+            }
+            return true
+        case let .end(name):
+            if name == "table" {
+                guard isInTableScope("table") else { return false }
+                popStackToClose("table")
+                resetInsertionMode()
+                return true
+            }
+            if Self.tableMix.contains(name) { return false }
+            return anythingElse(&self)
+        case .eof:
+            return true
+        }
+    }
+
+    /// `InTable`'s anything else: the body's rules, beside the table when what is current is a table's own element.
+    private mutating func inBodyFostered(_ token: Token) -> Bool {
+        guard let current = stack.last, Self.tableElements.contains(current.name) else { return process(token, in: .inBody) }
+        fosterInserts = true
+        let processed = process(token, in: .inBody)
+        fosterInserts = false
+        return processed
+    }
+
+    /// `InCaption`.
+    private mutating func inCaption(_ token: Token) -> Bool {
+        switch token {
+        case let .end(name) where name == "caption":
+            guard isInTableScope("caption") else { return false }
+            popStackToClose("caption")
+            clearFormattingToMarker()
+            mode = .inTable
+            return true
+        case let .end(name) where ["body", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr"].contains(name):
+            return false
+        case let .start(start) where Self.tableRowsAndCols.contains(start.name):
+            if processEndTag("caption") { return process(token) }
+            return true
+        case let .end(name) where name == "table":
+            if processEndTag("caption") { return process(token) }
+            return true
+        default:
+            return process(token, in: .inBody)
+        }
+    }
+
+    /// `InColumnGroup`.
+    private mutating func inColumnGroup(_ token: Token) -> Bool {
+        func anythingElse(_ model: inout HTMLTreeModel) -> Bool {
+            if model.processEndTag("colgroup") { return model.process(token) }
+            return true
+        }
+        switch token {
+        case .text(.whitespace):
+            return true
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "col":
+            insertEmpty(start)
+            return true
+        case let .end(name) where name == "colgroup":
+            guard stack.last?.name != "html" else { return false }
+            pop()
+            mode = .inTable
+            return true
+        case .eof:
+            return stack.last?.name == "html" ? true : anythingElse(&self)
+        default:
+            return anythingElse(&self)
+        }
+    }
+
+    /// `InTableBody`.
+    private mutating func inTableBody(_ token: Token) -> Bool {
+        func exitTableBody(_ model: inout HTMLTreeModel) -> Bool {
+            // `tfoot` is asked after in the ordinary scope, where markers stop it: a slip of the parser.
+            guard model.isInTableScope("tbody") || model.isInTableScope("thead") || model.isInScope("tfoot") else { return false }
+            model.clearStack(toContext: Self.tableSections)
+            if let current = model.stack.last { model.processEndTag(current.name) }
+            return model.process(token)
+        }
+        switch token {
+        case let .start(start):
+            switch start.name {
+            case "tr":
+                clearStack(toContext: Self.tableSections)
+                insert(start)
+                mode = .inRow
+                return true
+            case "td", "th":
+                processMadeUpStart("tr")
+                return process(token)
+            case "caption", "col", "colgroup", "tbody", "thead", "tfoot":
+                return exitTableBody(&self)
+            default:
+                return process(token, in: .inTable)
+            }
+        case let .end(name):
+            if Self.tableSections.contains(name) {
+                guard isInTableScope(name) else { return false }
+                clearStack(toContext: Self.tableSections)
+                pop()
+                mode = .inTable
+                return true
+            }
+            if name == "table" { return exitTableBody(&self) }
+            if ["body", "caption", "col", "colgroup", "html", "td", "th", "tr"].contains(name) { return false }
+            return process(token, in: .inTable)
+        default:
+            return process(token, in: .inTable)
+        }
+    }
+
+    /// `InRow`.
+    private mutating func inRow(_ token: Token) -> Bool {
+        func handleMissingTr(_ model: inout HTMLTreeModel) -> Bool {
+            model.processEndTag("tr") ? model.process(token) : false
+        }
+        switch token {
+        case let .start(start):
+            switch start.name {
+            case "td", "th":
+                clearStack(toContext: ["tr"])
+                insert(start)
+                mode = .inCell
+                insertMarker()
+                return true
+            case "caption", "col", "colgroup", "tbody", "tfoot", "thead", "tr":
+                return handleMissingTr(&self)
+            default:
+                return process(token, in: .inTable)
+            }
+        case let .end(name):
+            switch name {
+            case "tr":
+                guard isInTableScope("tr") else { return false }
+                clearStack(toContext: ["tr"])
+                pop()
+                mode = .inTableBody
+                return true
+            case "table":
+                return handleMissingTr(&self)
+            case "body", "caption", "col", "colgroup", "html", "td", "th":
+                return false
+            default:
+                return process(token, in: .inTable)
+            }
+        default:
+            return process(token, in: .inTable)
+        }
+    }
+
+    /// `InCell`.
+    private mutating func inCell(_ token: Token) -> Bool {
+        func closeCell(_ model: inout HTMLTreeModel) {
+            if model.isInTableScope("td") {
+                model.processEndTag("td")
+            } else {
+                model.processEndTag("th")
+            }
+        }
+        switch token {
+        case let .end(name):
+            switch name {
+            case "td", "th":
+                guard isInTableScope(name) else {
+                    mode = .inRow
+                    return false
+                }
+                popStackToClose(name)
+                clearFormattingToMarker()
+                mode = .inRow
+                return true
+            case "body", "caption", "col", "colgroup", "html":
+                return false
+            default:
+                if Self.tableElements.contains(name) {
+                    guard isInTableScope(name) else { return false }
+                    closeCell(&self)
+                    return process(token)
+                }
+                return process(token, in: .inBody)
+            }
+        case let .start(start) where Self.tableRowsAndCols.contains(start.name):
+            guard isInTableScope("td") || isInTableScope("th") else { return false }
+            closeCell(&self)
+            return process(token)
+        default:
+            return process(token, in: .inBody)
         }
     }
 
     // MARK: Select
 
-    /// `InSelect`: a start tag does nothing but in the few cases it has.
-    private mutating func startInSelect(_ tag: MarkupScanner.Tag, name: String) -> TokeniserChange {
-        switch name {
-        case "input", "keygen", "textarea":
-            endInSelect(name: "select")
-            return start(tag, name: name)
-        case "script":
-            return tag.isSelfClosing ? .none : .rawText(.script)
-        case "option":
-            if stack.last?.name == "option" { pop() }
-            pushInSelect(tag, name: name)
-        case "optgroup":
-            if stack.last?.name == "option" {
-                pop()
-            } else if stack.last?.name == "optgroup" {
-                pop()
+    /// `InSelect`, which serves a `select` in a table too.
+    private mutating func inSelect(_ token: Token) -> Bool {
+        switch token {
+        case .text, .eof:
+            return true
+        case let .start(start):
+            switch start.name {
+            case "input", "keygen", "textarea":
+                guard isInSelectScope("select") else { return false }
+                processEndTag("select")
+                return process(token)
+            case "script":
+                return process(token, in: .inHead)
+            case "html":
+                return process(token, in: .inBody)
+            case "option":
+                if stack.last?.name == "option" { processEndTag("option") }
+                insert(start)
+            case "optgroup":
+                if stack.last?.name == "option" {
+                    processEndTag("option")
+                } else if stack.last?.name == "optgroup" {
+                    processEndTag("optgroup")
+                }
+                insert(start)
+            case "select":
+                return processEndTag("select")
+            default:
+                return false
             }
-            pushInSelect(tag, name: name)
-        case "select":
-            endInSelect(name: "select")
-        default:
-            break
+            return true
+        case let .end(name):
+            switch name {
+            case "optgroup":
+                // The parser reads the current node once, before closing an option, and asks after it again as it was.
+                let current = stack.last?.name
+                if current == "option", stack.count > 1, stack[stack.count - 2].name == "optgroup" { processEndTag("option") }
+                if current == "optgroup" { pop() }
+            case "option":
+                if stack.last?.name == "option" { pop() }
+            case "select":
+                guard isInSelectScope("select") else { return false }
+                popStackToClose("select")
+                resetInsertionMode()
+            default:
+                return false
+            }
+            return true
         }
-        return .none
     }
 
-    /// Pushes `option` or `optgroup`, closing it at once if its tag closes itself.
-    private mutating func pushInSelect(_ tag: MarkupScanner.Tag, name: String) {
-        push(name)
-        if tag.isSelfClosing { endInSelect(name: name) }
+    // MARK: After the Body, and Frames
+
+    /// `AfterBody`.
+    private mutating func afterBody(_ token: Token) -> Bool {
+        switch token {
+        case .text(.whitespace):
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case let .end(name) where name == "html":
+            if isFragment { return false }
+            mode = .afterAfterBody
+            return true
+        case .eof:
+            return true
+        default:
+            mode = .inBody
+            return process(token)
+        }
     }
 
-    /// `InSelect`: an end tag does nothing but for what is in a `select`.
-    private mutating func endInSelect(name: String) {
-        switch name {
-        case "optgroup":
-            if stack.last?.name == "option", stack.dropLast().last?.name == "optgroup" { pop() }
-            if stack.last?.name == "optgroup" { pop() }
-        case "option":
-            if stack.last?.name == "option" { pop() }
-        case "select":
-            if let index = stack.lastIndex(where: { $0.name == "select" }) { popAll(from: index) }
-            inSelect = false
-        default:
-            break
+    /// `InFrameset`.
+    private mutating func inFrameset(_ token: Token) -> Bool {
+        switch token {
+        case .text, .eof:
+            return true
+        case let .start(start):
+            switch start.name {
+            case "html": return process(token, in: .inBody)
+            case "frameset": insert(start)
+            case "frame": insertEmpty(start)
+            case "noframes": return process(token, in: .inHead)
+            default: return false
+            }
+            return true
+        case let .end(name):
+            guard name == "frameset" else { return false }
+            guard stack.last?.name != "html" else { return false }
+            pop()
+            if !isFragment, stack.last?.name != "frameset" { mode = .afterFrameset }
+            return true
         }
+    }
+
+    /// `AfterFrameset`.
+    private mutating func afterFrameset(_ token: Token) -> Bool {
+        switch token {
+        case .text, .eof:
+            return true
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "noframes":
+            return process(token, in: .inHead)
+        case let .end(name) where name == "html":
+            mode = .afterAfterFrameset
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// `AfterAfterBody`.
+    private mutating func afterAfterBody(_ token: Token) -> Bool {
+        switch token {
+        case .text(.whitespace):
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case .eof:
+            return true
+        default:
+            mode = .inBody
+            return process(token)
+        }
+    }
+
+    /// `AfterAfterFrameset`.
+    private mutating func afterAfterFrameset(_ token: Token) -> Bool {
+        switch token {
+        case .text(.whitespace):
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "html":
+            return process(token, in: .inBody)
+        case let .start(start) where start.name == "noframes":
+            return process(token, in: .inHead)
+        default:
+            return true
+        }
+    }
+
+    // MARK: Making Elements
+
+    /// A new element's ID.
+    private mutating func takeID() -> Int {
+        nextID += 1
+        return nextID
+    }
+
+    /// A new element, not yet anywhere.
+    private mutating func makeElement(_ name: String, depth: Int, attributes: Range<Int>, attributeCount: Int) -> Element {
+        Element(id: takeID(), name: name, depth: depth, reach: depth, madeBefore: startTags + costs.elements,
+                attributes: attributes, attributeCount: attributeCount)
+    }
+
+    /// How deep an element the parser puts in the tree now goes (`insertNode`):
+    /// into the current node, or, while inserts are fostered, beside the last
+    /// table, in that table's parent.
+    private func depthOfNextNode() -> Int {
+        if stack.isEmpty { return 1 }
+        if fosterInserts { return fosterDepth() }
+        return stack[stack.count - 1].depth + 1
+    }
+
+    /// `insertInFosterParent`: before the last table on the stack, in its parent; or, with none, into `html`.
+    private func fosterDepth() -> Int {
+        if let table = stack.last(where: { $0.name == "table" }) { return table.depth }
+        return stack[0].depth + 1
+    }
+
+    /// Records an element at `depth`.
+    private mutating func note(depth: Int) {
+        deepest = max(deepest, depth)
+    }
+
+    /// Puts a new element in the tree where the parser would, and records it: what the parser makes of a start tag, or of a name.
+    private mutating func place(_ start: StartTag) -> Element {
+        let depth = depthOfNextNode()
+        let element = makeElement(start.name, depth: depth, attributes: start.attributes, attributeCount: start.attributeCount)
+        note(depth: depth)
+        // The parent's reach: the current node, or for a fostered one the table's own parent, near enough.
+        if !stack.isEmpty {
+            if fosterInserts, let table = stack.lastIndex(where: { $0.name == "table" }), table > 0 {
+                stack[table - 1].reach = max(stack[table - 1].reach, depth)
+            } else {
+                stack[stack.count - 1].reach = max(stack[stack.count - 1].reach, depth)
+            }
+        }
+        return element
+    }
+
+    /// `insert(startTag)`: the element goes in the tree and on the stack. One
+    /// whose tag closes itself is followed by an end tag the parser makes up.
+    @discardableResult
+    private mutating func insert(_ start: StartTag) -> Element {
+        let element = place(start)
+        push(element)
+        if start.isSelfClosing { madeUpEnds.append(start.name) }
+        return element
+    }
+
+    /// `insertStartTag(name)`, for an element the parser makes up: counted as a
+    /// node of its own, except the document's `html`, `head`, and `body`.
+    private mutating func insertMadeUp(_ name: String, counted: Bool) {
+        if counted { costs.elements += 1 }
+        insert(StartTag(name: name))
+    }
+
+    /// `insertEmpty(startTag)`: the element goes in the tree, not on the stack.
+    private mutating func insertEmpty(_ start: StartTag) {
+        _ = place(start)
+    }
+
+    /// `insertForm`: the form goes in the tree, and on the stack too in the body.
+    private mutating func insertForm(_ start: StartTag, onStack: Bool) {
+        let element = place(start)
+        form = element
+        if onStack { push(element) }
+    }
+
+    /// A raw text element (`handleRcData`, `handleRawtext`, a script): it
+    /// holds its text, which the tokeniser reads with its end tag, so it is
+    /// made and closed at once. One whose tag closes itself has no text.
+    private mutating func insertRawText(_ start: StartTag, _ kind: MarkupScanner.RawText) {
+        _ = place(start)
+        if !start.isSelfClosing { tokeniserChange = .rawText(kind) }
+    }
+
+    /// A start tag in the body that the parser makes up: `p` for a stray `</p>`, `br` for `</br>`.
+    private mutating func processMadeUpStart(_ name: String) {
+        costs.elements += 1
+        processStartTag(name)
     }
 
     // MARK: The Stack
 
-    /// Pushes an element, with its tag when it is a formatting element.
-    private mutating func push(_ name: String, formatting tag: MarkupScanner.Tag? = nil) {
-        let madeBefore = startTags + costs.elements
-        guard let tag else {
-            stack.append(Open(name: name, activeID: nil, madeBefore: madeBefore))
-            return
-        }
-        let attributes = tag.attributes
-        // `pushActiveFormattingElements`: since the last marker, a fourth of
-        // the same kind pushes the first out of the list, not off the stack.
-        var seen = 0
-        for index in active.indices.reversed() {
-            if active[index].isMarker { break }
-            if isSameFormatting(active[index], name: name, attributes: attributes) { seen += 1 }
-            if seen == 3 {
-                forgetActive(at: index)
-                break
-            }
-        }
-        let id = nextActiveID
-        nextActiveID += 1
-        active.append(Active(id: id, name: name, attributes: attributes, attributeCount: tag.attributeCount, isOnStack: true, isMarker: false))
-        stack.append(Open(name: name, activeID: id, madeBefore: madeBefore))
+    /// Pushes an element.
+    private mutating func push(_ element: Element) {
+        stack.append(element)
     }
 
-    /// Whether an entry is the same to the three-of-a-kind rule as `name` with `attributes`.
-    private func isSameFormatting(_ entry: Active, name: String, attributes: Range<Int>) -> Bool {
-        entry.name == name && entry.attributes.count == attributes.count
-            && bytes[entry.attributes].elementsEqual(bytes[attributes])
-    }
-
-    /// Pops the innermost element.
+    /// Pops the current node; what it reached goes to the node below it.
     private mutating func pop() {
-        guard let open = stack.popLast(), let id = open.activeID else { return }
-        markOffStack(id: id)
+        guard let element = stack.popLast() else { return }
+        if !stack.isEmpty { stack[stack.count - 1].reach = max(stack[stack.count - 1].reach, element.reach) }
     }
 
     /// Pops the element at `index` and everything above it.
@@ -776,93 +1428,214 @@ struct HTMLOpenElements {
         while stack.count > index { pop() }
     }
 
-    /// Pops everything above the element at `index`.
-    private mutating func popAll(above index: Int) {
-        popAll(from: index + 1)
+    /// `removeFromStack`: the element with `id` leaves the stack, and what is above it stays.
+    private mutating func removeFromStack(_ id: Int) {
+        guard let index = stack.lastIndex(where: { $0.id == id }) else { return }
+        let element = stack.remove(at: index)
+        if index > 0 { stack[index - 1].reach = max(stack[index - 1].reach, element.reach) }
     }
 
-    /// The nearest element named `name`, unless a limit of its scope comes first.
-    private func indexInScope(_ name: String, extraLimits: Set<String> = []) -> Int? {
+    /// `replaceOnStack`.
+    private mutating func replaceOnStack(_ id: Int, with element: Element) {
+        guard let index = stack.lastIndex(where: { $0.id == id }) else { return }
+        var replacement = element
+        replacement.reach = max(replacement.reach, stack[index].reach)
+        stack[index] = replacement
+    }
+
+    /// Sets an element's depth on the stack, which only rises.
+    private mutating func setDepth(of id: Int, to depth: Int) {
+        guard let index = stack.lastIndex(where: { $0.id == id }) else { return }
+        stack[index].depth = max(stack[index].depth, depth)
+        stack[index].reach = max(stack[index].reach, depth)
+        note(depth: depth)
+    }
+
+    /// `popStackToClose(name)`: from the last element of the name, if there is one.
+    private mutating func popStackToClose(_ name: String) {
+        if let index = stack.lastIndex(where: { $0.name == name }) { popAll(from: index) }
+    }
+
+    /// `popStackToBefore(name)`: pops until the current node is of the name.
+    private mutating func popStackToBefore(_ name: String) {
+        while let current = stack.last, current.name != name { pop() }
+    }
+
+    /// `clearStackToContext`: pops until the current node is one of `names`, or `html`.
+    private mutating func clearStack(toContext names: Set<String>) {
+        while let current = stack.last, !names.contains(current.name), current.name != "html" { pop() }
+    }
+
+    /// `generateImpliedEndTags(excludeTag)`: pops what closes by itself, but `name`.
+    private mutating func generateImpliedEnds(except name: String) {
+        while let current = stack.last, current.name != name, Self.impliedEnds.contains(current.name) { pop() }
+    }
+
+    /// `resetInsertionMode`.
+    private mutating func resetInsertionMode() {
         for index in stack.indices.reversed() {
-            let open = stack[index].name
-            if open == name { return index }
-            if Self.scopeLimits.contains(open) || extraLimits.contains(open) { return nil }
+            let last = index == 0
+            let name = last ? "body" : stack[index].name
+            switch name {
+            case "select": mode = .inSelect
+            case "td" where true, "th" where !last: mode = .inCell
+            case "tr": mode = .inRow
+            case "tbody", "thead", "tfoot": mode = .inTableBody
+            case "caption": mode = .inCaption
+            case "colgroup": mode = .inColumnGroup
+            case "table": mode = .inTable
+            case "head", "body": mode = .inBody
+            case "frameset": mode = .inFrameset
+            case "html": mode = .beforeHead
+            default:
+                guard last else { continue }
+                mode = .inBody
+            }
+            return
         }
-        return nil
     }
 
-    /// Whether an element named `name` is in scope.
-    private func isInScope(_ name: String) -> Bool {
-        indexInScope(name) != nil
+    // MARK: Scopes
+
+    /// `inSpecificScope`: whether an element of the name is open before one of `limits`.
+    private func isInScope(_ name: String, extraLimits: Set<String> = []) -> Bool {
+        for element in stack.reversed() {
+            if element.name == name { return true }
+            if Self.scopeLimits.contains(element.name) || extraLimits.contains(element.name) { return false }
+        }
+        return false
     }
 
-    /// The nearest element named `name` within the nearest table.
-    private func indexInTable(_ name: String) -> Int? {
-        for index in stack.indices.reversed() {
-            if stack[index].name == name { return index }
-            if stack[index].name == "table" { return nil }
+    /// `inButtonScope`. For `p`, the parser keeps where its `p` and `button`
+    /// elements are on the stack, and while every element there is one it has an
+    /// id for, it answers from those alone (`inButtonScopePFast`): a `p` is in
+    /// scope when one is open above the last `button`, whatever else stands between.
+    private func isInButtonScope(_ name: String) -> Bool {
+        if name == "p", stack.allSatisfy({ Self.knownTags.contains($0.name) }) {
+            guard let lastP = stack.lastIndex(where: { $0.name == "p" }) else { return false }
+            guard let lastButton = stack.lastIndex(where: { $0.name == "button" }) else { return true }
+            return lastP > lastButton
         }
-        return nil
+        return isInScope(name, extraLimits: ["button"])
+    }
+
+    /// The names SwiftSoup has a tag id for (`Token.Tag.TagId`).
+    private static let knownTags: Set<String> = [
+        "a", "span", "p", "div", "em", "strong", "b", "i", "small", "li", "body", "html", "head", "title", "form", "br", "meta", "img",
+        "script", "style", "caption", "col", "colgroup", "table", "tbody", "thead", "tfoot", "tr", "td", "th", "input", "hr", "select",
+        "option", "optgroup", "textarea", "noscript", "noframes", "plaintext", "button", "base", "frame", "frameset", "iframe", "noembed",
+        "embed", "dd", "dt", "dl", "ol", "ul", "pre", "listing", "address", "article", "aside", "blockquote", "center", "dir", "fieldset",
+        "figcaption", "figure", "footer", "header", "hgroup", "menu", "nav", "section", "summary", "h1", "h2", "h3", "h4", "h5", "h6",
+        "applet", "marquee", "object", "ruby", "rp", "rt", "rb", "sub", "sup", "code",
+    ]
+
+    /// `inTableScope`: only `html` and `table` stop it.
+    private func isInTableScope(_ name: String) -> Bool {
+        for element in stack.reversed() {
+            if element.name == name { return true }
+            if element.name == "html" || element.name == "table" { return false }
+        }
+        return false
+    }
+
+    /// `inSelectScope`: everything but `optgroup` and `option` stops it.
+    private func isInSelectScope(_ name: String) -> Bool {
+        for element in stack.reversed() {
+            if element.name == name { return true }
+            if element.name != "optgroup", element.name != "option" { return false }
+        }
+        return false
     }
 
     // MARK: Active Formatting Elements
 
-    /// `getActiveFormattingElement`: the last entry named `name`, since the last marker.
-    private func lastActive(named name: String) -> Active? {
+    /// `lastFormattingElement`: the last entry, unless it is a marker.
+    private var lastFormattingElement: Element? {
+        active.last ?? nil
+    }
+
+    /// `getActiveFormattingElement`: the last entry of the name, since the last marker.
+    private func activeElement(named name: String) -> Element? {
         for entry in active.reversed() {
-            if entry.isMarker { return nil }
+            guard let entry else { return nil }
             if entry.name == name { return entry }
         }
         return nil
     }
 
-    /// The entry with `id` has gone from the stack but stays in the list, to be remade.
-    private mutating func markOffStack(id: Int) {
-        if let index = active.lastIndex(where: { $0.id == id }) { active[index].isOnStack = false }
+    /// `isInActiveFormattingElements`.
+    private func isInActive(_ id: Int) -> Bool {
+        active.contains { $0?.id == id }
     }
 
-    /// Takes the entry with `id` out of the list.
-    private mutating func removeActive(id: Int) {
-        if let index = active.lastIndex(where: { $0.id == id }) { active.remove(at: index) }
+    /// `removeFromActiveFormattingElements`: the last entry for the element.
+    private mutating func removeActive(_ id: Int) {
+        if let index = active.lastIndex(where: { $0?.id == id }) { active.remove(at: index) }
     }
 
-    /// Takes the entry at `index` out of the list, leaving its element, if it is open, unlinked.
-    private mutating func forgetActive(at index: Int) {
-        let id = active[index].id
-        if active[index].isOnStack, let open = stack.lastIndex(where: { $0.activeID == id }) {
-            stack[open].activeID = nil
+    /// `replaceActiveFormattingElement`.
+    private mutating func replaceActive(_ id: Int, with element: Element) {
+        if let index = active.lastIndex(where: { $0?.id == id }) { active[index] = element }
+    }
+
+    /// `pushActiveFormattingElements`: since the last marker, a fourth of the same kind pushes the first out of the list.
+    private mutating func pushActive(_ element: Element) {
+        var seen = 0
+        for index in active.indices.reversed() {
+            guard let entry = active[index] else { break }
+            if entry.name == element.name, entry.attributes.count == element.attributes.count,
+               bytes[entry.attributes].elementsEqual(bytes[element.attributes]) {
+                seen += 1
+            }
+            if seen == 3 {
+                active.remove(at: index)
+                break
+            }
         }
-        active.remove(at: index)
+        active.append(element)
     }
 
-    /// Adds a marker to the list.
-    private mutating func addMarker() {
-        let id = nextActiveID
-        nextActiveID += 1
-        active.append(Active(id: id, name: "", attributes: 0..<0, isOnStack: false, isMarker: true))
+    /// `insertMarkerToFormattingElements`.
+    private mutating func insertMarker() {
+        active.append(nil)
     }
 
     /// `clearFormattingElementsToLastMarker`.
     private mutating func clearFormattingToMarker() {
-        while let last = active.popLast(), !last.isMarker {
-            if last.isOnStack, let open = stack.lastIndex(where: { $0.activeID == last.id }) {
-                stack[open].activeID = nil
-            }
-        }
+        while let last = active.popLast(), last != nil {}
     }
 
-    /// `reconstructFormattingElements`: the entries since the last one still
-    /// on the stack, or the last marker, are made again, in order.
+    /// `reconstructFormattingElements` when there is a last formatting element.
+    private mutating func reconstructIfNeeded() {
+        if lastFormattingElement != nil { reconstructFormatting() }
+    }
+
+    /// `reconstructFormattingElements`: the entries since the last one still on
+    /// the stack, or the last marker, are made again, in order, as elements of
+    /// their own with their attributes.
     private mutating func reconstructFormatting() {
-        guard let last = active.last, !last.isMarker, !last.isOnStack else { return }
-        var index = active.count - 1
-        while index > 0, !active[index - 1].isMarker, !active[index - 1].isOnStack { index -= 1 }
-        for position in index..<active.count {
-            active[position].isOnStack = true
-            stack.append(Open(name: active[position].name, activeID: active[position].id, madeBefore: startTags + costs.elements))
+        guard let last = lastFormattingElement, !stack.contains(where: { $0.id == last.id }) else { return }
+        var position = active.count - 1
+        var skip = false
+        while true {
+            if position == 0 {
+                skip = true
+                break
+            }
+            position -= 1
+            guard let entry = active[position], !stack.contains(where: { $0.id == entry.id }) else { break }
+        }
+        let size = active.count
+        while true {
+            if !skip { position += 1 }
+            skip = false
+            guard let entry = active[position] else { return }
             costs.elements += 1
-            if active[position].attributeCount > 0 { costs.elementsWithAttributes += 1 }
-            costs.attributes += active[position].attributeCount
+            if entry.attributeCount > 0 { costs.elementsWithAttributes += 1 }
+            costs.attributes += entry.attributeCount
+            let copy = insert(StartTag(name: entry.name, attributes: entry.attributes, attributeCount: entry.attributeCount))
+            active[position] = copy
+            if position == size - 1 { break }
         }
     }
 }

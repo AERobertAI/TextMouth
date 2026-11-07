@@ -354,11 +354,12 @@ final class MarkupGuardTests: XCTestCase {
         }
     }
 
-    /// In random markup made for it, the tree goes no deeper than twice the pass's
-    /// count: the parser takes a `form` or an `a` off its stack from under what is
-    /// above it, which stays inside it in the tree, and the limit leaves room for that.
-    /// The parser's rules are walked through thousands of ways here, so this also
-    /// fails if an update of SwiftSoup changes them.
+    /// In random markup made for it, the tree goes no deeper than the pass counts:
+    /// the count follows the parser's rules, its moves of elements included (a
+    /// `form` taken off the stack from under what is above it, the adoption
+    /// agency's copies), and is never less than the real tree. The parser's rules
+    /// are walked through thousands of ways here, so this also fails if an update
+    /// of SwiftSoup changes them.
     func testRandomMarkupGoesNoDeeperThanThePassCounts() throws {
         for pieces in [6, 30, 150] {
             for round in 0..<600 {
@@ -366,30 +367,59 @@ final class MarkupGuardTests: XCTestCase {
                 let inspection = try inspected(text, as: opensAsXML ? .xml : .html)
                 let parsed = opensAsXML ? try? MarkupGuard.parseXML(text, deepestNesting: .max) : try? SwiftSoup.parseHTML(text, "")
                 guard let parsed else { continue }
-                XCTAssertLessThanOrEqual(depth(of: parsed), inspection.deepest * 2 + 2, text)
+                XCTAssertLessThanOrEqual(depth(of: parsed), inspection.deepest, text)
             }
         }
     }
 
-    /// What could tell a page of frames, or a `noscript` of the head, from the
-    /// body is read as many tags as could lie ahead, all left open.
-    func testWhatCannotBeCertainCountsEveryTagAhead() throws {
+    /// Repeated units, the shapes that walked past the first count: each is
+    /// counted as deep as SwiftSoup builds it, 30 times over, which is shallow
+    /// enough for a test host's stack. The harness holds every unit of one to
+    /// three tags to this at 40 and 2,000 repeats, in child processes.
+    func testRepeatedUnitsAreCountedAsDeepAsTheParserBuildsThem() throws {
+        let units = [
+            "<frameset><table>", "<marquee><table><tfoot>", "<tfoot><marquee><table>", "<object><table><tfoot>", "<applet><table><tfoot>",
+            "<section></applet><p><applet>", "<p></marquee><marquee><figure>", "<select><p><frameset>", "<select><frameset><p>",
+            "<frameset><select><p>", "<select><table><frameset>", "<table><tfoot><applet>", "<p><h1>", "<h1><p><caption>", "<form><div></form>",
+        ]
+        for head in ["<html><body>", "", "<!DOCTYPE html><html><head><title>T</title></head><body><p>words"] {
+            for unit in units {
+                let markup = head + String(repeating: unit, count: 30)
+                let real = depth(of: try SwiftSoup.parseHTML(markup, ""))
+                XCTAssertGreaterThanOrEqual(try inspected(markup, as: .html).deepest, real, markup.prefix(80).debugDescription)
+            }
+        }
+    }
+
+    /// A page of frames is counted as SwiftSoup builds it: before the body, a
+    /// `frameset` opens the parser's mode for frames, which holds framesets and
+    /// frames alone; once the body has begun, it is an ordinary element. A
+    /// `noscript` of the head reads as text what it may not hold. Where text of
+    /// character references leaves it unknown whether the body has begun, the
+    /// pass takes the body's way, which builds deeper; and a `noscript` that
+    /// would then have been in the head, holding what the tokeniser would read
+    /// differently there, is counted as every tag that could lie ahead, left open.
+    func testFramesAndTheHeadAreCountedAsTheParserBuildsThem() throws {
         let tags = String(repeating: "<i>", count: 100)
-        XCTAssertGreaterThanOrEqual(try inspected("<frameset>" + tags, as: .html).deepest, 100)
-        // In a page of frames SwiftSoup leaves a table and its end tag out, so
-        // each frameset opens inside the last where a body's table would close
-        // it: a pass that read this frameset as a body's element counts 5.
-        let frames = "<frameset>" + String(repeating: "<table><frameset></table>", count: 300)
-        XCTAssertGreaterThanOrEqual(try inspected(frames, as: .html).deepest, depth(of: try SwiftSoup.parseHTML(frames, "")))
-        XCTAssertGreaterThanOrEqual(try inspected("<noscript><title></noscript></title>" + tags, as: .html).deepest, 100)
-        XCTAssertGreaterThanOrEqual(try inspected("<noscript><select></noscript></select>" + tags, as: .html).deepest, 100)
-        XCTAssertGreaterThanOrEqual(try inspected("<noscript><plaintext></noscript>" + tags, as: .html).deepest, 100)
-        // Once words have begun the body, a frameset is a plain element.
-        XCTAssertLessThan(try inspected("words<frameset><div></div>", as: .html).deepest, 5)
-        // A noscript of the body reads as anything else does.
-        XCTAssertLessThan(try inspected("words<noscript><title>\(tags)</title></noscript>", as: .html).deepest, 5)
-        // A noscript of the head with what such a one holds.
-        XCTAssertLessThan(try inspected("<head><noscript><link rel=x><style>\(tags)</style></noscript></head><body>", as: .html).deepest, 5)
+        func exactly(_ markup: String) throws {
+            XCTAssertEqual(try inspected(markup, as: .html).deepest, depth(of: try SwiftSoup.parseHTML(markup, "")), markup.prefix(60).debugDescription)
+        }
+        // Frames before the body: the `i`s are ignored, and framesets nest in framesets.
+        try exactly("<frameset>" + tags)
+        try exactly("<frameset>" + String(repeating: "<table><frameset></table>", count: 300))
+        try exactly("<frameset><noframes>" + tags + "</noframes></frameset>")
+        // Frames in the body: ordinary elements.
+        try exactly("words<frameset><div></div>")
+        try exactly("<html><body>" + String(repeating: "<frameset><table>", count: 30))
+        // A noscript of the head, and one of the body.
+        try exactly("<noscript><title></noscript></title>" + tags)
+        try exactly("<noscript><select></noscript></select>" + tags)
+        try exactly("<noscript><plaintext></noscript>" + tags)
+        try exactly("<head><noscript><link rel=x><style>\(tags)</style></noscript></head><body>")
+        try exactly("words<noscript><title>\(tags)</title></noscript>")
+        // Whitespace made of a character reference: the body's way, deeper than the parser's frames.
+        XCTAssertGreaterThan(try inspected("&#32;<frameset>" + tags, as: .html).deepest, depth(of: try SwiftSoup.parseHTML("&#32;<frameset>" + tags, "")))
+        XCTAssertGreaterThanOrEqual(try inspected("&#32;<noscript><title></noscript></title>" + tags, as: .html).deepest, 100)
     }
 
     // MARK: - Each Format's Own Path

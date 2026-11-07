@@ -855,11 +855,18 @@ enum Ascii {
     static let doubleQuote = UInt8(ascii: "\"")
     static let singleQuote = UInt8(ascii: "'")
     static let backtick = UInt8(ascii: "`")
+    static let hash = UInt8(ascii: "#")
+    static let semicolon = UInt8(ascii: ";")
     static let verticalTab: UInt8 = 0x0B
 
     /// Whether `byte` is an ASCII letter.
     static func isLetter(_ byte: UInt8) -> Bool {
         (byte >= 0x41 && byte <= 0x5A) || (byte >= 0x61 && byte <= 0x7A)
+    }
+
+    /// Whether `byte` is an ASCII digit.
+    static func isDigit(_ byte: UInt8) -> Bool {
+        byte >= 0x30 && byte <= 0x39
     }
 
     /// Whether `byte` is one of the five characters that separate things in a tag.
