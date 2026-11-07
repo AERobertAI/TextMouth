@@ -459,112 +459,131 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### Safari web archives
 
-- Safari web archives (.webarchive).
-  - Only the archive's main page is read, as an HTML file is read (or a text file, for a text page), so its headings, lists, and tables read as in an HTML book.
-  - The archive's pictures, scripts, style sheets, and frames, and every address it names, are never read, decoded, or fetched, and WebKit is not used.
+- TextMouth reads Safari web archives (.webarchive).
+- Only the archive's main page is read, as an HTML file is read (or a text file, for a text page), so its headings, lists, and tables read as in an HTML book.
+- The archive's pictures, scripts, style sheets, and frames, and every address it names, are never read, decoded, or fetched, and WebKit is not used.
 
 ### SSML files
 
-- SSML files (.ssml), read as text: the markup is removed, and the paragraphs and sentences are kept.
-  - A sub element's alias is read in place of its written text: <sub alias="World Wide Web Consortium">W3C</sub> reads "World Wide Web Consortium".
-  - The text of desc, meta, metadata, and lexicon elements is left out. An audio element's sound file is never read or fetched, and only the text inside the element is read.
-  - A break, a change of voice, or a sentence's start keeps the words on either side of it apart.
-  - The file is never given to the speech engine as SSML, which would ignore the speed you set. Its words are spoken in your voice at your speed, whatever voice, speed, or pitch the markup asks for.
+- TextMouth reads SSML files (.ssml) as text: the markup is removed, and the paragraphs and sentences are kept.
+- A sub element's alias is read in place of its written text: <sub alias="World Wide Web Consortium">W3C</sub> reads "World Wide Web Consortium".
+- The text of desc, meta, metadata, and lexicon elements is left out.
+- An audio element's sound file is never read or fetched, and only the text inside the element is read.
+- A break, a change of voice, or a sentence's start keeps the words on either side of it apart.
+- The file is never given to the speech engine as SSML, which would ignore the speed you set.
+- Its words are spoken in your voice at your speed, whatever voice, speed, or pitch the markup asks for.
 
 ### New from Text
 
-- Text you type or paste with New from Text.
+- TextMouth reads text you type or paste with New from Text.
 
 ### Pages
 
-- Pages, which the Page navigation unit and Go to Page… move by (see [Reader windows](reader-windows.md)), are numbered as each format numbers them. A book already in your library gains pages when its text is read again (see [Where TextMouth keeps your library](where-your-library-lives.md)):
+- Pages, which the Page navigation unit and Go to Page… move by (see [Reader windows](reader-windows.md)), are numbered as each format numbers them.
+- A book already in your library gains pages when its text is read again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 #### Pages in EPUB books
 
-- EPUB: the book's page list or, when it has none, its page-break marks.
-  - A page list that gives none of its pages a number, such as one whose only entry is named by its link ("pagenum_000000"), counts as none, and a mark named only "Page" names no page.
-  - A page any book names "Page 12" is page 12, and a page number printed at its mark is not read aloud.
-  - A mark's own text is not read aloud when it is no more than its page's label, the print page's number and perhaps a caption of up to 32 characters; any longer or other text in a mark is read, after its page marker, and a mark with no aria-label or title that holds more than that begins no page.
+- In an EPUB, pages are the book's page list or, when it has none, its page-break marks.
+- A page list that gives none of its pages a number, such as one whose only entry is named by its link ("pagenum_000000"), counts as none, and a mark named only "Page" names no page.
+- A page any book names "Page 12" is page 12, and a page number printed at its mark is not read aloud.
+- A mark's own text is not read aloud when it is no more than its page's label, the print page's number and perhaps a caption of up to 32 characters.
+- Any longer or other text in a mark is read, after its page marker.
+- A mark with no aria-label or title that holds more than that begins no page.
 
 #### Pages in HTML files and web archives
 
-- HTML files, and Safari web archives as HTML files are read: page-break marks. In an EPUB and in an HTML book alike, a page break's number inside a heading is left out of the heading's name too (see [Reader windows](reader-windows.md)).
+- In HTML files, and in Safari web archives read as HTML files, pages are the page-break marks.
+- In an EPUB and in an HTML book alike, a page break's number inside a heading is left out of the heading's name too (see [Reader windows](reader-windows.md)).
 
 #### Pages in PDF files
 
-- PDF files: every page, with the page labels the PDF gives, such as i, ii, 1, 2, and A-1, or its number when it gives none. A page with no text is still a page.
+- In a PDF, every page is a page, with the page labels the PDF gives, such as i, ii, 1, 2, and A-1, or its number when it gives none.
+- A page with no text is still a page.
 
 #### Pages in Word documents
 
-- Word documents, templates, and macro documents: the page breaks the author wrote, paragraphs set to start a page, sections that start a page, and the page breaks Word recorded when it last laid the document out.
-  - Pages are numbered from 1; a section can restart the number and set its format (decimal, lower or upper case roman numerals, or lower or upper case letters; any other format counts as decimal).
-  - A document Word never laid out, such as one another program made, holds only its author's page breaks, so TextMouth shows fewer pages than Word would.
+- In Word documents, templates, and macro documents, pages are the page breaks the author wrote, paragraphs set to start a page, sections that start a page, and the page breaks Word recorded when it last laid the document out.
+- Pages are numbered from 1.
+- A section can restart the number and set its format (decimal, lower or upper case roman numerals, or lower or upper case letters; any other format counts as decimal).
+- A document Word never laid out, such as one another program made, holds only its author's page breaks, so TextMouth shows fewer pages than Word would.
 
 #### Pages in DAISY books
 
-- DAISY books: the page numbers the book gives, which are no longer read aloud as "[Page 12]". A DAISY 2.02 page entry's own number or caption, as "12" under the label "Page 12", is not read either; any longer or other text it points at is.
+- In a DAISY book, pages are the page numbers the book gives, which are no longer read aloud as "[Page 12]".
+- A DAISY 2.02 page entry's own number or caption, as "12" under the label "Page 12", is not read either.
+- Any longer or other text a DAISY 2.02 page entry points at is read.
 
 #### Pages in rich text
 
-- Rich text and rich text with attachments: each \page, each paragraph set to start a page (\pagebb, directly or by its style), and each section that starts a page (a \sect followed by a section of the kinds that start one, which is the default; \sbknone and \sbkcol do not).
-  - Pages are numbered from 1, and a page begins at its first letter or digit, so a break with no words after it begins none.
-  - A paragraph set to start a page before any words begins the first page, which is page 1 already.
-  - A document with 100,000 or more breaks has no pages, and the text is read as before.
+- In rich text and rich text with attachments, a page begins at each \page, each paragraph set to start a page (\pagebb, directly or by its style), and each section that starts a page (a \sect followed by a section of the kinds that start one, which is the default, but not \sbknone or \sbkcol).
+- Pages are numbered from 1, and a page begins at its first letter or digit, so a break with no words after it begins none.
+- A paragraph set to start a page before any words begins the first page, which is page 1 already.
+- A document with 100,000 or more breaks has no pages, and the text is read as before.
 
 #### Pages in Word 97-2003 documents
 
-- Word 97-2003 documents and templates: the page breaks the author wrote, a paragraph set to start a page ("Page break before"), directly or by its style, outside a table, and a section that starts a page (a section break of the kind that starts a new, even, or odd page, which a section that says nothing is; a continuous section break or a new column does not).
-  - Pages are numbered from 1, and a page begins at its first letter or digit.
-  - TextMouth reads no layout of Word's own, so a .doc shows fewer pages than Word would.
+- In Word 97-2003 documents and templates, pages are the page breaks the author wrote, a paragraph set to start a page ("Page break before"), directly or by its style, outside a table, and a section that starts a page.
+- A section starts a page if its break is of the kind that starts a new, even, or odd page, which a section that says nothing is. A continuous section break or a new column does not.
+- Pages are numbered from 1, and a page begins at its first letter or digit.
+- TextMouth reads no layout of Word's own, so a .doc shows fewer pages than Word would.
 
 #### Pages in OpenDocument text
 
-- OpenDocument text: the page breaks the author wrote (a paragraph or table style that breaks before or after it), a paragraph or table that names a master page, and the soft page breaks that the program which last laid the document out recorded.
-  - Pages are numbered from 1, with no restarts or formats, and a page begins at its first letter or digit.
-  - A page cannot begin inside a table or a text box.
-  - A document that no program laid out holds only its author's breaks, so it shows fewer pages than the author's program would.
+- In OpenDocument text, pages are the page breaks the author wrote (a paragraph or table style that breaks before or after it), a paragraph or table that names a master page, and the soft page breaks that the program which last laid the document out recorded.
+- Pages are numbered from 1, with no restarts or formats, and a page begins at its first letter or digit.
+- A page cannot begin inside a table or a text box.
+- A document that no program laid out holds only its author's breaks, so it shows fewer pages than the author's program would.
 
 #### Pages in Word 2003 XML
 
-- Word 2003 XML: the page breaks the author wrote, paragraphs set to start a page, and sections that start a page, numbered from 1.
+- In Word 2003 XML, pages are the page breaks the author wrote, paragraphs set to start a page, and sections that start a page, numbered from 1.
 
 #### Pages in Word 6 and Word 95 documents
 
-- Word 6 and Word 95 documents: a page break, a section that starts a page, and a paragraph set to start a page begin pages, as in a Word 97-2003 document; a continuous section break begins none, where textutil began a page.
+- In Word 6 and Word 95 documents, a page break, a section that starts a page, and a paragraph set to start a page begin pages, as in a Word 97-2003 document.
+- A continuous section break begins none, where textutil began a page.
 
 #### Pages in a Word document older than Word 6
 
-- On the Mac, a Word document older than Word 6: the page breaks textutil reports in a second run, numbered from 1, with the words textutil ran together at a break kept apart.
-  - A break whose surroundings differ in textutil's two readings is dropped, never placed wrongly; a Word field such as a table of contents or a link does not put the two readings out of step, since the breaks are placed before textutil's field instructions are removed.
+- On the Mac, a Word document older than Word 6 has the page breaks textutil reports in a second run, numbered from 1, with the words textutil ran together at a break kept apart.
+- A break whose surroundings differ in textutil's two readings is dropped, never placed wrongly.
+- A Word field such as a table of contents or a link does not put the two readings out of step, since the breaks are placed before textutil's field instructions are removed.
 
 #### Pages in braille files
 
-- BRF and PEF braille files: every braille page, the pages an embosser or a braille display counts.
-  - A page is named by its braille page number read as print, as ⠼⠁⠃ reads 12 and ⠏⠼⠁, a preliminary page, reads p1, or, when it has no braille page number or none that TextMouth can read, by its place among the book's pages, the first being 1.
-  - A print page number, such as a transcription of a print book carries, is no page here, and is left out of the text.
-  - A page that begins in the middle of a paragraph begins at its first word there.
-  - A page with neither words nor a number, such as the blank back of a two-sided page or the empty page a form feed leaves at a file's start or end, is not a page.
-  - A BRF without form feeds, which TextMouth cuts every 25 lines only to read its layout, has pages only when braille page numbers end most of those 25-line pieces, and a form feed only at a file's start or end counts as none.
-  - A BRL file has no pages.
+- In BRF and PEF braille files, every braille page is a page, the pages an embosser or a braille display counts.
+- A page is named by its braille page number read as print, as ⠼⠁⠃ reads 12 and ⠏⠼⠁, a preliminary page, reads p1.
+- A page with no braille page number, or none that TextMouth can read, is named by its place among the book's pages, the first being 1.
+- A print page number, such as a transcription of a print book carries, is no page here, and is left out of the text.
+- A page that begins in the middle of a paragraph begins at its first word there.
+- A page with neither words nor a number, such as the blank back of a two-sided page or the empty page a form feed leaves at a file's start or end, is not a page.
+- A BRF without form feeds, which TextMouth cuts every 25 lines only to read its layout, has pages only when braille page numbers end most of those 25-line pieces.
+- A form feed only at a file's start or end counts as none.
+- A BRL file has no pages.
 
 #### Pages in plain text
 
-- Plain text: each form feed between the words begins a page, numbered from 1, at the first line after it that is read; a form feed before the first words or after the last begins none, so a text without one between words has no pages.
-  - Two form feeds in a row make a blank page, which counts in the numbering and begins where the page after it does.
-  - A text has at most 100,000 pages, the most a book may have; a form feed past them begins none, and the text is read as before.
-  - A Safari web archive whose page is plain text has no pages.
+- In plain text, each form feed between the words begins a page, numbered from 1, at the first line after it that is read.
+- A form feed before the first words or after the last begins none, so a text without one between words has no pages.
+- Two form feeds in a row make a blank page, which counts in the numbering and begins where the page after it does.
+- A text has at most 100,000 pages, the most a book may have. A form feed past them begins none, and the text is read as before.
+- A Safari web archive whose page is plain text has no pages.
 
 #### Pages in SSML and Markdown
 
-- SSML files have no pages. A Markdown file has pages only where it holds page lines (see [Editing a book's text](editing-book-text.md)).
+- SSML files have no pages.
+- A Markdown file has pages only where it holds page lines (see [Editing a book's text](editing-book-text.md)).
 
 #### Pages in MOBI books
 
-- Kindle books in the MOBI format have no pages: the Kindle keeps a book's page numbers in a separate .apnx file beside it, which TextMouth does not read yet.
+- Kindle books in the MOBI format have no pages.
+- The Kindle keeps a book's page numbers in a separate .apnx file beside it, which TextMouth does not read yet.
 
 #### Pages in KFX books
 
-- Kindle books in the KFX format: the book's print page list, when it has one and a person made it. A KFX book with no print page list, or with only a machine's approximate one, has no pages.
+- In Kindle books in the KFX format, pages are the book's print page list, when it has one and a person made it.
+- A KFX book with no print page list, or with only a machine's approximate one, has no pages.
 
 ### Tables
 
@@ -573,59 +592,79 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 ### The 64 MB limit
 
 - A rich text, Word 97-2003, OpenDocument, or Word 2003 XML document, a web archive, an SSML file, a DTBook on its own, or a Kindle book that holds more than 64 MB is refused, since that is the most TextMouth reads from one document.
-  - For an .rtfd that is its text file, TXT.rtf, alone: the attachments are not read, and do not count toward it.
+- For an .rtfd the limit is on its text file, TXT.rtf, alone: the attachments are not read, and do not count toward it.
 
 ### How the Library window names a format
 
-- In the Library window, a book's row names its format: "Rich Text" for an .rtf, "Rich Text with Attachments" for an .rtfd, "Word 97-2003 Document" for a .doc or .dot, "OpenDocument Text" for an .odt or .ott, "Word 2003 XML", "Web Archive", "SSML", "Kindle Book (MOBI)" for a .mobi, .prc, or .azw, "Kindle Book (KFX)" for a .kfx, .kfx-zip, or .azw8, or "Braille" for a BRF, BRL, or PEF.
-  - A Word template or macro document says "Word Document", and a DTBook says "DAISY".
+- In the Library window, a book's row names its format:
+  - "Rich Text" for an .rtf.
+  - "Rich Text with Attachments" for an .rtfd.
+  - "Word 97-2003 Document" for a .doc or .dot.
+  - "OpenDocument Text" for an .odt or .ott.
+  - "Word 2003 XML", "Web Archive", and "SSML" for those formats.
+  - "Kindle Book (MOBI)" for a .mobi, .prc, or .azw.
+  - "Kindle Book (KFX)" for a .kfx, .kfx-zip, or .azw8.
+  - "Braille" for a BRF, BRL, or PEF.
+- A Word template or macro document says "Word Document", and a DTBook says "DAISY".
 
 ## Audiobooks, played at the speed you choose
 
 ### Single audio and video files
 
-- Single files in MP3, M4A, M4B, WAV (RF64 and BWF too), AIFF, FLAC, ALAC, or AAC format, and video files in MPEG-4 (.mp4), M4V, or QuickTime (.mov) format, whose sound alone plays.
-  - TextMouth plays these as they are, except an MPEG-4 or QuickTime file whose sound is not AAC, Apple Lossless, or MP3, which it converts like the audio below.
+- TextMouth plays single files in MP3, M4A, M4B, WAV (RF64 and BWF too), AIFF, FLAC, ALAC, or AAC format, and video files in MPEG-4 (.mp4), M4V, or QuickTime (.mov) format, whose sound alone plays.
+- It plays these as they are, except an MPEG-4 or QuickTime file whose sound is not AAC, Apple Lossless, or MP3, which it converts like the audio below.
 
 ### Audio that TextMouth converts as it is imported
 
-- Audio that TextMouth converts as it is imported, since macOS can decode it but TextMouth does not play it as it is: Ogg (.ogg, .oga, or .opus, holding Vorbis, Opus, or FLAC audio), AC-3 (.ac3), E-AC-3 (.ec3, .eac3), MP1 and MP2 (.mp1, .mp2, .mpa), AMR (.amr, .awb), 3GPP audio (.3gp, .3g2, .3ga), NeXT/Sun audio (.au, .snd), AIFC (.aifc), CAF (.caf), and Wave64 (.w64).
-  - Each file becomes an .m4a file in the book's package, and only that file is played.
-  - A file is converted wherever it comes from: a single file, a ZIP, a folder, a playlist, or a feed's episode.
-  - The book's package keeps only the converted file, unless Keep originals of converted audio is on in the Storage tab of Settings (see [Settings](settings.md)).
+- TextMouth converts audio as it is imported, since macOS can decode it but TextMouth does not play it as it is, in these formats:
+  - Ogg (.ogg, .oga, or .opus, holding Vorbis, Opus, or FLAC audio).
+  - AC-3 (.ac3).
+  - E-AC-3 (.ec3, .eac3).
+  - MP1 and MP2 (.mp1, .mp2, .mpa).
+  - AMR (.amr, .awb).
+  - 3GPP audio (.3gp, .3g2, .3ga).
+  - NeXT/Sun audio (.au, .snd).
+  - AIFC (.aifc).
+  - CAF (.caf).
+  - Wave64 (.w64).
+- Each file becomes an .m4a file in the book's package, and only that file is played.
+- A file is converted wherever it comes from: a single file, a ZIP, a folder, a playlist, or a feed's episode.
+- The book's package keeps only the converted file, unless Keep originals of converted audio is on in the Storage tab of Settings (see [Settings](settings.md)).
 
 #### What a file holds decides
 
 - What a file holds decides, not its extension.
-  - An Ogg file named .m4a, or an MP2 feed episode saved as .mp3, is converted all the same.
-  - TextMouth does not open an Ogg file under another name, an .mp3 or .m4a, with Apple's audio code to read its tags, which is what hung the Mac on October 14, 2026: it reads them from the file's own bytes, and names the book for the file when they can't be read.
-  - An audio file whose header claims an absurd length, past a year, or an absurd sample rate is refused rather than crashing the import.
+- An Ogg file named .m4a, or an MP2 feed episode saved as .mp3, is converted all the same.
+- TextMouth does not open an Ogg file under another name, an .mp3 or .m4a, with Apple's audio code to read its tags, which is what hung the Mac on October 14, 2026: it reads them from the file's own bytes, and names the book for the file when they can't be read.
+- An audio file whose header claims an absurd length, past a year, or an absurd sample rate is refused rather than crashing the import.
 
 #### Lossy audio
 
 - Lossy audio becomes AAC at about its own bit rate: it stays near its size, but a second lossy encoding can lose a little.
-  - The rate is the next standard AAC rate at or above the source's average (64 to 192 kbit/s for stereo, half that for mono).
-  - Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 20, 24, or 32 bits) and loses nothing.
-  - Plain WAV, AIFF, and FLAC files are not converted at all.
+- The rate is the next standard AAC rate at or above the source's average (64 to 192 kbit/s for stereo, half that for mono).
+- Lossless audio that TextMouth converts (PCM in CAF, AIFC, AU, or Wave64; Apple Lossless or FLAC in CAF; Ogg FLAC) becomes Apple Lossless at its own bit depth (16, 20, 24, or 32 bits) and loses nothing.
+- Plain WAV, AIFF, and FLAC files are not converted at all.
 
 #### Channels
 
 - TextMouth writes at most two channels, so audio of more than two channels is mixed to stereo as it is converted, with Apple's standard mix: the centre channel, where speech usually is, keeps its place in both ears.
-  - Such a book plays about 11 to 14 dB quieter than a stereo book: 11 when the source is linear PCM and 14 when it is AC-3.
-  - A file of more than two channels that does not say which is which can't be mixed, and is refused.
+- Such a book plays about 11 to 14 dB quieter than a stereo book: 11 when the source is linear PCM and 14 when it is AC-3.
+- A file of more than two channels that does not say which is which can't be mixed, and is refused.
 
 #### Ogg audio
 
-- Ogg: TextMouth converts Ogg audio on macOS 15.4 and later, which can read it; it never plays Ogg itself, since macOS's Vorbis decoder can lock up while playing (October 14, 2026).
-  - It does not ask macOS's audio to open an Ogg file for anything else either: it reads the file's title, artist, album, genre, year, and length from the file's own bytes with code of its own, and only afconvert, run as a separate process that TextMouth watches, decodes it.
-  - An Ogg file that claims to last more than a year is refused as unreadable.
-  - A file cut from a longer stream, as a live broadcast joined part way through is, reports the length it holds, not the length counted from the start of the broadcast, and a file that carries an Ogg Skeleton track beside its audio is read for its audio and imports like any other.
+- TextMouth converts Ogg audio on macOS 15.4 and later, which can read it.
+- It never plays Ogg itself, since macOS's Vorbis decoder can lock up while playing (October 14, 2026).
+- It does not ask macOS's audio to open an Ogg file for anything else either: it reads the file's title, artist, album, genre, year, and length from the file's own bytes with code of its own, and only afconvert, run as a separate process that TextMouth watches, decodes it.
+- An Ogg file that claims to last more than a year is refused as unreadable.
+- A file cut from a longer stream, as a live broadcast joined part way through is, reports the length it holds, not the length counted from the start of the broadcast.
+- A file that carries an Ogg Skeleton track beside its audio is read for its audio and imports like any other.
 
 #### Every other converted format
 
 - Every other converted format is read by Apple's afinfo tool, which says what the file holds, and then converted by afconvert, each run as a separate process that TextMouth watches (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-  - A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
-  - A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
+- A file of one of them that claims to last more than a year, or a length that its size cannot hold, is refused as unreadable.
+- A Mac that can't read or convert a format refuses a file of it by name when it is imported, and nothing is added.
 
 ### Chapter lists in Nero format
 
@@ -633,37 +672,41 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### M3U and M3U8 playlists
 
-- An M3U or M3U8 playlist (.m3u, .m3u8), which becomes one audiobook of the files it lists, a heading for each, in the playlist's order (see [Adding books](adding-books.md)).
+- An M3U or M3U8 playlist (.m3u, .m3u8) becomes one audiobook of the files it lists, a heading for each, in the playlist's order (see [Adding books](adding-books.md)).
 
 ### A ZIP of audio tracks
 
-- A ZIP of audio tracks, which becomes one book with a heading for each track.
-  - A manifest.json in the ZIP, at its top level or inside the one folder that holds everything, as Finder's Compress command makes it, can name the book and its author, put the tracks in your order with titles of their own, group them under headings, and set the pauses between them.
-  - An import whose manifest has a mistake stops and says what is wrong and where (see [The audiobook manifest](audiobook-manifest.md)).
+- A ZIP of audio tracks becomes one book with a heading for each track.
+- A manifest.json in the ZIP, at its top level or inside the one folder that holds everything, as Finder's Compress command makes it, can name the book and its author, put the tracks in your order with titles of their own, group them under headings, and set the pauses between them.
+- An import whose manifest has a mistake stops and says what is wrong and where (see [The audiobook manifest](audiobook-manifest.md)).
 
 ### A DAISY audio book in a ZIP
 
-- A DAISY audio book in a ZIP, which becomes one audiobook whose sections are its headings. A section plays all of its heading's narration, even where it runs on into other audio files. A DAISY audiobook imported by an earlier version keeps one stretch of audio per section until it is imported again.
+- A DAISY audio book in a ZIP becomes one audiobook whose sections are its headings.
+- A section plays all of its heading's narration, even where it runs on into other audio files.
+- A DAISY audiobook imported by an earlier version keeps one stretch of audio per section until it is imported again.
 
 ## Transcripts of audiobooks, on macOS 26 and later
 
 ### Transcribing an audiobook
 
 - Transcribe Audio… transcribes an audiobook with the Mac's own speech recognizer (SpeechAnalyzer), which asks no permission and sends nothing anywhere: the book's audio never leaves this Mac (see [Transcribing an audiobook](transcribing.md)).
-  - The transcript becomes the book's text: the reader shows it around the sentence being narrated, following the narration as the book plays, while positions and bookmarks go on counting time.
-  - Where Am I? ends with the sentence being heard, the one the text is shown around, quoting up to 40 words of it.
-  - Edit Text opens that text in your own editor (see [Editing a book's text](editing-book-text.md)).
+- The transcript becomes the book's text: the reader shows it around the sentence being narrated, following the narration as the book plays, while positions and bookmarks go on counting time.
+- Where Am I? ends with the sentence being heard, the one the text is shown around, quoting up to 40 words of it.
+- Edit Text opens that text in your own editor (see [Editing a book's text](editing-book-text.md)).
 
 ### The language of a transcript
 
-- Transcripts are in English unless you choose another language in Settings, under Playback, Transcription, or with transcriptionLocale in config.json (see [Editing settings in config.json](config-json.md)): English as this Mac's region writes it when the Mac is set to English, such as en-GB in the United Kingdom, and otherwise US English.
-  - Each language needs its speech model, which macOS downloads from Apple only when you ask for it in the Transcribe Audio sheet, and keeps for other apps too.
+- Transcripts are in English unless you choose another language in Settings, under Playback, Transcription, or with transcriptionLocale in config.json (see [Editing settings in config.json](config-json.md)).
+- The English is as this Mac's region writes it when the Mac is set to English, such as en-GB in the United Kingdom, and otherwise US English.
+- Each language needs its speech model, which macOS downloads from Apple only when you ask for it in the Transcribe Audio sheet, and keeps for other apps too.
 
 ### Cleaning up a transcript
 
-- Clean Up Transcript (Experimental)… corrects, by rules you write, words the recognizer always writes another way, such as a name in a series of books, and the last cleanup can be undone (see [Transcribing an audiobook](transcribing.md)).
-  - TextMouth comes with no rules of its own: measured on 38,834 words read aloud, no correction was right in every book.
-  - TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md, in the same folder as this file, says which words the recognizer gets wrong, and what a cleanup can fix.
+- Clean Up Transcript (Experimental)… corrects, by rules you write, words the recognizer always writes another way, such as a name in a series of books.
+- The last cleanup can be undone (see [Transcribing an audiobook](transcribing.md)).
+- TextMouth comes with no rules of its own: measured on 38,834 words read aloud, no correction was right in every book.
+- TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md, in the same folder as this file, says which words the recognizer gets wrong, and what a cleanup can fix.
 
 ### macOS 14 and 15
 
@@ -671,27 +714,32 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ## Podcasts and article feeds
 
-- Podcasts and article feeds, in RSS 2.0, RSS 1.0, Atom, or JSON Feed (1.0 and 1.1), with Apple's podcast elements and Podcasting 2.0's:
+- TextMouth reads podcasts and article feeds in RSS 2.0, RSS 1.0, Atom, or JSON Feed (1.0 and 1.1), with Apple's podcast elements and Podcasting 2.0's.
 
 ### Subscribing to a feed
 
 - TextMouth can subscribe to a feed by its address, by a feed:, pcast:, or itpc: link, by a web page that names its feed, or by searching Apple's podcast directory, and lists the feed's episodes and articles in a library folder of its own, named after it (see [Podcasts and article feeds](feeds.md)).
-  - An episode downloads as an audiobook, a video episode as an audiobook that plays its sound, and an article as an HTML book, read from its web page when the feed gives only a short summary that links one, though an article TextMouth downloads by itself reads its page only on a network without data limits, and otherwise holds the feed's own text;
-    - each download is kept in the feed's own folder in the data directory, apart from the library's books (see Feeds, under [Where TextMouth keeps your library](where-your-library-lives.md)).
+- An episode downloads as an audiobook, a video episode as an audiobook that plays its sound, and an article as an HTML book.
+- An article is read from its web page when the feed gives only a short summary that links one, though an article TextMouth downloads by itself reads its page only on a network without data limits, and otherwise holds the feed's own text.
+- Each download is kept in the feed's own folder in the data directory, apart from the library's books (see Feeds, under [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ### Refreshing feeds
 
 - Feeds refresh when TextMouth opens and every hour while it runs, unless the Feeds tab of Settings says otherwise, skipping an hour in Low Power Mode.
-  - A feed you unsubscribed from is never refreshed, at launch, every hour, or by Refresh All Feeds, until you choose Resubscribe (see Commands, under [Podcasts and article feeds](feeds.md)).
-  - Each feed's List and download choice decides which of its episodes and articles are listed and which download by themselves: unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feeds.md)).
-  - Those refreshes, and the episodes TextMouth downloads by itself, never use a network with data limits, such as Low Data Mode or a phone's hotspot: such an episode waits, its row saying "Waiting to Download, it downloads once this Mac is on a network without data limits", and is asked for again after the next refresh TextMouth makes by itself on a network without them.
-  - A finished episode or article counts among Books Finished, and its download's file is deleted for good a day after it finished, or as the Feeds tab of Settings says, unless it is open in a reader, being transcribed, or being exported, when it goes at a later pass; its place and bookmarks are kept should you download it again (see Commands, under [Podcasts and article feeds](feeds.md)).
+- A feed you unsubscribed from is never refreshed, at launch, every hour, or by Refresh All Feeds, until you choose Resubscribe (see Commands, under [Podcasts and article feeds](feeds.md)).
+- Each feed's List and download choice decides which of its episodes and articles are listed and which download by themselves: unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feeds.md)).
+- Those refreshes, and the episodes TextMouth downloads by itself, never use a network with data limits, such as Low Data Mode or a phone's hotspot: such an episode waits, its row saying "Waiting to Download, it downloads once this Mac is on a network without data limits", and is asked for again after the next refresh TextMouth makes by itself on a network without them.
+- A finished episode or article counts among Books Finished.
+- Its download's file is deleted for good a day after it finished, or as the Feeds tab of Settings says, unless it is open in a reader, being transcribed, or being exported, when it goes at a later pass.
+- Its place and bookmarks are kept should you download it again (see Commands, under [Podcasts and article feeds](feeds.md)).
 
 ### What reaches the network
 
-- The feeds, and a search of Apple's podcast directory, are the only things TextMouth itself reaches the network for, and its connections keep no cookies and cache nothing on disk; a feed or episode at a plain http address loads too, since many still use one.
-  - A transcription language's speech model is downloaded by macOS, and only when you ask for it (see [Transcribing an audiobook](transcribing.md)).
+- The feeds, and a search of Apple's podcast directory, are the only things TextMouth itself reaches the network for, and its connections keep no cookies and cache nothing on disk.
+- A feed or episode at a plain http address loads too, since many still use one.
+- A transcription language's speech model is downloaded by macOS, and only when you ask for it (see [Transcribing an audiobook](transcribing.md)).
 
 ## TextMouth packages
 
-- TextMouth packages (.tmb folders) from another TextMouth library. A package keeps its reading position, bookmarks, and per-book settings.
+- TextMouth reads TextMouth packages (.tmb folders) from another TextMouth library.
+- A package keeps its reading position, bookmarks, and per-book settings.
