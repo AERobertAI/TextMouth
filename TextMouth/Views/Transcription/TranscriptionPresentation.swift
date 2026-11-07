@@ -76,7 +76,10 @@ final class TranscriptionPresenter: ObservableObject {
     /// until the transcript is saved (`replaceConfirmed(_:)`).
     @Published var attachReplacement: TranscriptAttachRequest? {
         didSet {
-            askedBookID.withLock { $0 = attachReplacement?.book.id }
+            // Read here, on the main actor, and handed to the lock's closure
+            // as a value.
+            let askedBook = attachReplacement?.book.id
+            askedBookID.withLock { $0 = askedBook }
             if let oldValue, oldValue.book.id != attachReplacement?.book.id {
                 TranscriptAttachments.shared.end(oldValue.book.id)
             }
