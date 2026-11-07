@@ -22,10 +22,11 @@ final class PhoneAudioSession {
     /// The notification observers, kept for as long as the app runs. Apple
     /// (QA1749): after a media reset, "Don't re-register notifications".
     private var observers: [NSObjectProtocol] = []
-    /// Follows the phone session's reader, to attach each reader it opens.
-    private var readerSubscription: AnyCancellable?
-    /// Follows the attached reader's units, for the lock screen's commands.
-    private var unitSubscription: AnyCancellable?
+    /// Follows the phone session's two readers, the one on screen and the one
+    /// going on behind it, to attach each reader it opens.
+    private var readerSubscriptions: Set<AnyCancellable> = []
+    /// The readers attached, each held weakly with what follows its units.
+    private var attachedReaders: [AttachedReader] = []
 
     /// Opens the book again, paused at its place, after a media reset: what the
     /// engineer's review (F26) makes the reset's whole rebuild, since a
@@ -76,26 +77,40 @@ final class PhoneAudioSession {
         nowPlaying.activateRemoteCommandsIfNeeded()
 
         audio.reopenBookAfterMediaServicesReset = { [weak session] in
-            guard let session, let book = session.reader?.book else { return }
+            // The book going on behind is the one heard, when there is one.
+            guard let session, let book = (session.listeningReader ?? session.reader)?.book else { return }
             session.closeReader()
-            let reopened = session.open(book)
+            guard let reopened = session.open(book) else { return }
             // Shown paused at once, so the app stays the Now Playing app, as
             // the engineer's review (F1) asks of every pause.
             reopened.nowPlayingService.updateNowPlayingInfo(title: book.title, author: book.author, isPlaying: false)
         }
 
-        // `$reader` tells of each reader as it is about to be set, a new one or
-        // nil, while `session.reader` still holds the one before it.
-        audio.readerSubscription = session.$reader.sink { [weak session] reader in
-            if let reader {
-                PhoneAudioSession.shared.attach(reader)
-            }
-            // A reader that closes, or gives way to another, may let the
-            // session go once this turn is over (`deactivateAfterAReaderCloses(in:)`).
-            guard let session, let closing = session.reader, closing !== reader else { return }
-            DispatchQueue.main.async {
-                PhoneAudioSession.shared.deactivateAfterAReaderCloses(in: session)
-            }
+        // Each publisher tells of a reader as it is about to be set, a new one
+        // or nil, while the session still holds the one before it.
+        session.$reader.sink { [weak session] reader in
+            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.reader, in: session)
+        }
+        .store(in: &audio.readerSubscriptions)
+        session.$listeningReader.sink { [weak session] reader in
+            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.listeningReader, in: session)
+        }
+        .store(in: &audio.readerSubscriptions)
+    }
+
+    /// One of the session's readers changes from `old` to `new`: a new reader
+    /// is attached, and a reader that has closed by the end of this turn may
+    /// let the session go (`deactivateAfterAReaderCloses(in:)`). One that only
+    /// moved behind the book on screen, or came forward, keeps it: the
+    /// engineer's review (F1) has only a close deactivate.
+    private func readerChanges(to new: ReaderViewModel?, from old: ReaderViewModel?, in session: PhoneSession?) {
+        if let new {
+            attach(new)
+        }
+        guard let session, let old, old !== new else { return }
+        DispatchQueue.main.async { [weak old] in
+            guard old == nil || old?.hasClosed == true else { return }
+            PhoneAudioSession.shared.deactivateAfterAReaderCloses(in: session)
         }
     }
 
@@ -105,6 +120,9 @@ final class PhoneAudioSession {
     /// unit, which may change from its control, from Settings, or from the
     /// book's own choice, is followed for the lock screen's skip commands.
     func attach(_ reader: ReaderViewModel) {
+        // A reader moves between the screen and behind it: it is attached once.
+        attachedReaders.removeAll { $0.reader == nil || $0.reader?.hasClosed == true }
+        guard !attachedReaders.contains(where: { $0.reader === reader }) else { return }
         // Composed with whatever the hook asked before, which another part of
         // the phone may have wrapped (the life cycle's background hold), so
         // neither replaces the other.
@@ -121,7 +139,7 @@ final class PhoneAudioSession {
         ))
         // Each publisher tells as its value is about to change, so the commands
         // are read a turn later, on the main queue, when the change is in.
-        unitSubscription = Publishers.Merge(
+        let units = Publishers.Merge(
             reader.$book.map { _ in () },
             reader.settingsViewModel.objectWillChange.map { _ in () }
         )
@@ -129,6 +147,7 @@ final class PhoneAudioSession {
         .sink { [weak reader] in
             reader?.nowPlayingService.phoneRemoteCommandsMayHaveChanged()
         }
+        attachedReaders.append(AttachedReader(reader: reader, unitSubscription: units))
     }
 
     // MARK: - The Session
@@ -191,7 +210,7 @@ final class PhoneAudioSession {
     /// Play tries again.
     func audioMayStart() -> Bool {
         guard activateForPlayback() else {
-            VoiceOverAnnouncer.announce(PhoneAudioWording.cannotPlayNow, priority: .high)
+            PhoneAnnouncer.important(PhoneAudioWording.cannotPlayNow)
             return false
         }
         return true
@@ -233,10 +252,11 @@ final class PhoneAudioSession {
     /// (`AudioSessionTypes.h:50-52`; the engineer's review, F1).
     private func deactivateAfterAReaderCloses(in session: PhoneSession) {
         guard UIApplication.shared.applicationState == .active else { return }
-        if let reader = session.reader,
-           reader.isPlaybackUnderWay || reader.autoplayRequests.waitingRequest(for: reader.book.id) != nil {
-            return
+        let open = [session.reader, session.listeningReader].compactMap { $0 }
+        let bookPlaysOrWaits = open.contains { reader in
+            reader.isPlaybackUnderWay || reader.autoplayRequests.waitingRequest(for: reader.book.id) != nil
         }
+        guard !bookPlaysOrWaits else { return }
         deactivateIfIdle()
     }
 
@@ -382,5 +402,20 @@ final class PhoneAudioSession {
     /// Whole milliseconds since `start`.
     nonisolated private static func milliseconds(since start: Date) -> Int {
         Int((Date().timeIntervalSince(start) * 1000).rounded())
+    }
+}
+
+/// A reader `PhoneAudioSession` has attached, held weakly, so that a closed
+/// reader is let go, with what follows its units.
+@MainActor
+private final class AttachedReader {
+    /// The reader, or nil once it has gone.
+    weak var reader: ReaderViewModel?
+    /// Follows the reader's units for the lock screen's commands.
+    let unitSubscription: AnyCancellable
+
+    init(reader: ReaderViewModel, unitSubscription: AnyCancellable) {
+        self.reader = reader
+        self.unitSubscription = unitSubscription
     }
 }
