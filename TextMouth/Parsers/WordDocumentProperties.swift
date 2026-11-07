@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Formats
 
-/// The paragraph properties a paragraph of a Word 97-2003 document names
+/// The paragraph properties a paragraph of a Word document (any version) names
 /// directly (its PAPX), of those this reader uses.
 struct WordParagraphFormat: Equatable {
     /// The paragraph's style index (`istd`).
@@ -25,6 +25,12 @@ struct WordParagraphFormat: Equatable {
     var listIndex: Int?
     /// The paragraph's level in its list (`sprmPIlvl`), or nil as for `listIndex`.
     var listLevel: Int?
+    /// For a Word 6 or Word 95 paragraph, the `ANLD` that numbers it (its
+    /// 52 bytes) and its level (1 to 9, 10 for a simple list), as it names
+    /// them; the reader turns them into a list instance and level
+    /// (`WordLegacyNumbering`), which `listIndex` and `listLevel` then hold.
+    var legacyNumbering: [UInt8]?
+    var legacyNumberingLevel: Int?
 }
 
 /// The character properties a run of text names directly (its CHPX), of
@@ -49,6 +55,19 @@ struct WordCharacterFormat: Equatable {
     /// Whether the characters are text a tracked change deleted, which the
     /// document no longer holds.
     var isDeleted = false
+    /// The font the run sets itself (an index into the font table), for a Word 6 or
+    /// Word 95 document, whose font's character set names the code page of the
+    /// run's text (`sprmCFtc`); nil when it says nothing and its styles decide.
+    var fontIndex: Int?
+    /// The character set the run says its text is in (`sprmCChse`), when it says it differs
+    /// from the document's: 256 for the Macintosh's, 0 for Windows'; nil when it says nothing.
+    var characterSet: Int?
+    /// The font and the character (0 to 255 in practice) of a symbol the run holds
+    /// (`sprmCSymbol`): the run's text is a placeholder ("(") for it.
+    var symbolFont: Int?
+    var symbolCharacter: Int?
+    /// Whether Word 97 stored the symbol's character as U+F0xx (the code plus 0xF000).
+    var symbolIsPrivateUse = false
 }
 
 // MARK: - Runs of Formats
@@ -93,7 +112,7 @@ struct WordFormatRuns<Format> {
 
 // MARK: - Reading the Bin Tables
 
-/// Reads the paragraph and character properties of a Word 97-2003 document
+/// Reads the paragraph and character properties of a Word document (Word 6 and Word 95 in their form: `dialect`)
 /// from its bin tables and formatted disk pages (FKPs, [MS-DOC] 2.9.25 and
 /// 2.9.181).
 ///
@@ -111,8 +130,10 @@ enum WordDocumentProperties {
 
     /// The size of a formatted disk page.
     private static let pageSize = 512
-    /// A paragraph run is a 13-byte BxPap, and a character run a byte.
-    private static let paragraphEntrySize = 13
+    /// A paragraph run is a 13-byte BxPap, and a character run a byte. In
+    /// Word 6 and Word 95 the BxPap is 7 bytes: the PAPX's offset, and a
+    /// 6-byte PHE.
+    private static func paragraphEntrySize(_ dialect: WordSprm.Dialect) -> Int { dialect == .modern ? 13 : 7 }
 
     // MARK: Paragraphs
 
@@ -126,33 +147,42 @@ enum WordDocumentProperties {
     ///   not fit.
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil
+        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern,
+        declaredPageCount: Int = 0, checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordParagraphFormat> {
-        try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 maximumRuns: (pageSize - 1 - 4) / (4 + paragraphEntrySize),
+        let entrySize = paragraphEntrySize(dialect)
+        return try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
+                 maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
                  // A paragraph is one run, and the modifiers of the piece that
                  // holds its last character (the last range) are the ones
                  // that apply to it all ([MS-DOC] 2.4.6.1).
                  modifiersOfRange: { ranges, _ in ranges.last?.modifiers ?? [] }) { page, index, runCount, modifiers in
             var format = WordParagraphFormat()
             // The BxPap: the offset in words of the PAPX, and a PHE we skip.
-            let offset = try document.u8(page + (runCount + 1) * 4 + index * paragraphEntrySize)
+            let offset = try document.u8(page + (runCount + 1) * 4 + index * entrySize)
             if offset != 0 {
                 // The PAPX: a size in words (or, when that byte is zero, a second
                 // byte of the size in words), the style index, and the modifiers.
+                // In Word 6 and Word 95 the size in words is of the bytes after
+                // it (so the PAPX takes one byte more than twice it), and a
+                // size of zero says the paragraph has no properties.
                 let start = page + offset * 2
                 let first = try document.u8(start)
                 var listStart = start + 1
-                var listSize = first * 2 - 1
-                if first == 0 {
+                var listSize = dialect == .modern ? first * 2 - 1 : first * 2
+                if first == 0, dialect == .modern {
                     listStart = start + 2
                     listSize = try document.u8(start + 1) * 2
                 }
-                guard listSize >= 2, listStart + listSize <= page + pageSize - 1 else {
-                    throw OLEDamage(reason: "a paragraph's properties run past their page")
+                // A Word 6 or Word 95 PAPX of size zero has no properties.
+                if listSize > 0 || dialect == .modern {
+                    guard listSize >= 2, listStart + listSize <= page + pageSize - 1 else {
+                        throw OLEDamage(reason: "a paragraph's properties run past their page")
+                    }
+                    format.style = try document.u16(listStart)
+                    apply(try document.slice(offset: listStart + 2, length: listSize - 2), to: &format, data: data, dialect: dialect)
                 }
-                format.style = try document.u16(listStart)
-                apply(try document.slice(offset: listStart + 2, length: listSize - 2), to: &format, data: data)
             }
             // Then the piece's own modifiers, over the PAPX's.
             apply(modifiers, to: &format, data: data)
@@ -173,13 +203,15 @@ enum WordDocumentProperties {
     /// this list; that one may name another, so a chain is followed, but only
     /// so far, since a file can make it a loop. One that is not first is ignored
     /// ([MS-DOC] sprmPHugePapx).
-    private static func apply(_ grpprl: ArraySlice<UInt8>, to format: inout WordParagraphFormat, data: OLEBytes?) {
+    private static func apply(
+        _ grpprl: ArraySlice<UInt8>, to format: inout WordParagraphFormat, data: OLEBytes?, dialect: WordSprm.Dialect = .modern
+    ) {
         var group = grpprl
         for _ in 0...mostDataHops {
             var next: ArraySlice<UInt8>?
             var isFirst = true
             var isRedirected = false
-            WordSprm.forEach(in: group) { opcode, operand in
+            WordSprm.forEach(in: group, dialect: dialect) { opcode, operand in
                 defer { isFirst = false }
                 if isRedirected { return }
                 if isFirst, opcode == WordSprm.hugeParagraphProperties || opcode == WordSprm.tableProperties {
@@ -223,6 +255,8 @@ enum WordDocumentProperties {
         case WordSprm.pageBreakBefore: format.pageBreakBefore = value != 0
         case WordSprm.listIndex: format.listIndex = value
         case WordSprm.listLevel: format.listLevel = value
+        case WordSprm.legacyNumbering: format.legacyNumbering = Array(operand.dropFirst())
+        case WordSprm.legacyNumberingLevel: format.legacyNumberingLevel = value
         default: break
         }
     }
@@ -247,6 +281,18 @@ enum WordDocumentProperties {
             format.style = nil
         case WordSprm.styleSeparator: format.isStyleSeparator = value == 1 || value == 0x81
         case WordSprm.special: format.isSpecial = value != 0
+        case WordSprm.legacyFont, WordSprm.fontAscii: format.fontIndex = value
+        case WordSprm.legacyCharacterSet:
+            // A flag byte (non-zero when the run's set differs from the document's), then 16 bits.
+            if operand.count >= 3, value & 0xFF != 0 { format.characterSet = (value >> 8) & 0xFFFF }
+        case WordSprm.symbol:
+            // A 16-bit font, then a 16-bit character; one in 0xF000 to 0xF0FF stands for its low byte.
+            if operand.count >= 4 {
+                format.symbolFont = value & 0xFFFF
+                let character = (value >> 16) & 0xFFFF
+                format.symbolIsPrivateUse = (0xF000...0xF0FF).contains(character)
+                format.symbolCharacter = format.symbolIsPrivateUse ? character & 0xFF : character
+            }
         case WordSprm.fontSize: format.fontSize = value
         // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
         // gives a deletion, so only 1 and 0x81 delete.
@@ -261,9 +307,11 @@ enum WordDocumentProperties {
     ///   not fit.
     static func characterRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int
+        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern, declaredPageCount: Int = 0,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
                  maximumRuns: (pageSize - 1 - 4) / 5,
                  // Each character takes the modifiers of its own piece.
                  modifiersOfRange: { ranges, position in ranges[position].modifiers }) { page, index, runCount, modifiers in
@@ -275,7 +323,7 @@ enum WordDocumentProperties {
                 let start = page + offset * 2
                 let size = try document.u8(start)
                 guard start + 1 + size <= page + pageSize - 1 else { throw OLEDamage(reason: "a run's properties run past their page") }
-                WordSprm.forEach(in: try document.slice(offset: start + 1, length: size)) { opcode, operand in
+                WordSprm.forEach(in: try document.slice(offset: start + 1, length: size), dialect: dialect) { opcode, operand in
                     apply(opcode, operand, to: &format)
                 }
             }
@@ -295,11 +343,14 @@ enum WordDocumentProperties {
         format.italic = nil
         format.hidden = nil
         format.fontSize = nil
+        format.fontIndex = nil
     }
 
     /// Walks a bin table's pages and builds the runs of formats `format`
     /// reads from them.
     /// - Parameters:
+    ///   - declaredPageCount: for a Word 6 or Word 95 document, how many pages of this kind the FIB
+    ///     says the file holds (the table may list fewer); 0 for none.
     ///   - maximumRuns: the most runs a page of this kind can hold, by its size.
     ///   - modifiersOfRange: the property modifiers (`Pcd.prm`) that apply to
     ///     the characters of range number `position` of `ranges`, the ranges
@@ -308,25 +359,50 @@ enum WordDocumentProperties {
     ///     `runCount` runs, with the piece modifiers laid over its properties.
     private static func runs<Format>(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes, pieces: WordPieceTable, limit: Int,
-        maximumRuns: Int,
+        dialect: WordSprm.Dialect, declaredPageCount: Int, checkCancellation: () throws -> Void, maximumRuns: Int,
         modifiersOfRange: (_ ranges: [WordPieceTable.Placed], _ position: Int) -> ArraySlice<UInt8>,
         format: (_ page: Int, _ index: Int, _ runCount: Int, _ modifiers: ArraySlice<UInt8>) throws -> Format
     ) throws -> WordFormatRuns<Format> {
-        // A PLC of n+1 file offsets and n page numbers of 4 bytes each.
+        // A PLC of n+1 file offsets and n page numbers of 4 bytes each (2 in
+        // Word 6 and Word 95).
+        let numberSize = dialect == .modern ? 4 : 2
         let length = binTable.count
-        guard length >= 4, (length - 4) % 8 == 0 else { throw OLEDamage(reason: "a bin table is \(length) bytes long") }
-        let pageCount = (length - 4) / 8
+        guard length >= 4, (length - 4) % (4 + numberSize) == 0 else { throw OLEDamage(reason: "a bin table is \(length) bytes long") }
+        let pageCount = (length - 4) / (4 + numberSize)
         let pageNumbersStart = binTable.lowerBound + (pageCount + 1) * 4
 
-        // The pieces examined in all, for the overlap bound of the piece table.
-        var budget = 16 * (pieces.pieces.count + pageCount * maximumRuns) + 4096
-        var result: [WordFormatRuns<Format>.Run] = []
+        // The pages the table lists, then (in a Word 6 or Word 95 document saved in full) the pages
+        // the FIB says exist beyond the last listed: a bin table that stops short leaves the formatting
+        // of the rest of the file on pages that follow the last, one after another.
+        var pageNumbers: [Int] = []
         for pageIndex in 0..<pageCount {
-            // The page number is the low 22 bits.
-            let page = (try table.u32(pageNumbersStart + pageIndex * 4) & 0x003F_FFFF) * pageSize
+            pageNumbers.append(try dialect == .modern
+                ? table.u32(pageNumbersStart + pageIndex * 4) & 0x003F_FFFF
+                : table.u16(pageNumbersStart + pageIndex * 2))
+        }
+        if dialect == .legacy, declaredPageCount > pageCount, let last = pageNumbers.last {
+            for offset in 1...(declaredPageCount - pageCount) {
+                // A page past the stream ends the pages there are.
+                guard document.contains(offset: (last + offset) * pageSize, length: pageSize) else { break }
+                pageNumbers.append(last + offset)
+            }
+        }
+        let listedCount = pageCount
+
+        // The pieces examined in all, for the overlap bound of the piece table.
+        var budget = 16 * (pieces.pieces.count + pageNumbers.count * maximumRuns) + 4096
+        var result: [WordFormatRuns<Format>.Run] = []
+        for (pageIndex, number) in pageNumbers.enumerated() {
+            // A page of runs is a unit of work; a cancelled import stops between them.
+            try checkCancellation()
+            let page = number * pageSize
+            let isFollowing = pageIndex >= listedCount
             guard document.contains(offset: page, length: pageSize) else {
                 throw OLEDamage(reason: "a properties page at \(page) is past the stream")
             }
+            // A page that follows the listed ones and is no page of runs (its count of runs is too
+            // large) is not one: the formatting is a help, and this is not what the table said.
+            if isFollowing, try document.u8(page + pageSize - 1) > maximumRuns { continue }
             let runCount = try document.u8(page + pageSize - 1)
             guard runCount <= maximumRuns else { throw OLEDamage(reason: "a properties page holds \(runCount) runs") }
             for index in 0..<runCount {

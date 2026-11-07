@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The File Information Block
 
-/// The File Information Block (FIB) at the start of a Word 97-2003
+/// The File Information Block (FIB) at the start of a Word 6 to 2003
 /// document's `WordDocument` stream ([MS-DOC] 2.5.1): the version, the flags,
 /// the length of the main text, and a table of (offset, length) pairs that
 /// say where each structure lives in the table stream (`0Table` or
@@ -19,8 +19,14 @@ struct WordFileInformationBlock {
     /// The `wIdent` of a Word 6 document.
     private static let word6Identifier = 0xA5DC
     /// The oldest `nFib` of Word 97 (0x00C1); older files are Word 6 and
-    /// Word 95, which this reader leaves alone.
+    /// Word 95, read by their own layout (`Layout.legacy`).
     private static let firstWord97Version = 0x00C1
+    /// The `nFib` of Word 6 (0x0065); Word 95's is 0x0068. An older file is
+    /// Word 5 or before, whose layout this reader does not know.
+    private static let firstLegacyVersion = 0x0065
+    /// The least a Word 6 or Word 95 FIB holds that this reader reads: it
+    /// ends with the CLX's offset and size, at 0x160 and 0x164.
+    private static let legacyLength = 0x168
     /// The newest `nFib` any Word version has written (Word 2007's is 0x0112).
     private static let lastKnownVersion = 0x0200
 
@@ -36,6 +42,9 @@ struct WordFileInformationBlock {
         case characterBinTable = 12
         /// The paragraph property bin table (PlcfBtePapx).
         case paragraphBinTable = 13
+        /// The font table (SttbfFfn), which names each font's character set;
+        /// a Word 6 or Word 95 document's code page comes from it.
+        case fontTable = 15
         /// The complex file information (CLX), which holds the piece table.
         case complexInformation = 33
         /// Where the footnotes' reference marks lie in the main text (PlcffndRef).
@@ -52,6 +61,36 @@ struct WordFileInformationBlock {
         case listFormats = 73
         /// The list override table (PlfLfo): the list instances paragraphs name.
         case listOverrides = 74
+
+        /// Where the offset and size of this structure lie in the FIB of a
+        /// Word 6 or Word 95 document, or nil for one those do not have
+        /// (endnotes, text boxes, and the list tables of Word 97: the stories
+        /// of the first two are read whole, in one range each). The
+        /// structures are in the `WordDocument` stream itself. Every offset here
+        /// was found by reading real files; the footnote tables fit in all 26
+        /// real documents that have footnotes (the sizes of the tables, the marks
+        /// in the main text, and the ends agreeing with `ccpFtn`).
+        fileprivate var legacyOffset: Int? {
+            switch self {
+            case .styleSheet: return 0x60
+            case .footnoteReferences: return 0x68
+            case .footnoteText: return 0x70
+            case .sectionTable: return 0x88
+            case .characterBinTable: return 0xB8
+            case .paragraphBinTable: return 0xC0
+            case .fontTable: return 0xD0
+            case .complexInformation: return 0x160
+            default: return nil
+            }
+        }
+    }
+
+    /// Which layout the FIB and the structures it names have.
+    enum Layout {
+        /// Word 97 and later: the structures are in the `0Table` or `1Table` stream.
+        case modern
+        /// Word 6 and Word 95: the structures are in the `WordDocument` stream.
+        case legacy
     }
 
     // MARK: Fields
@@ -62,6 +101,15 @@ struct WordFileInformationBlock {
     let flags: Int
     /// `ccpText`: how many characters the main document holds.
     let mainTextLength: Int
+    /// The layout of the document: Word 97's, or Word 6's and Word 95's.
+    let layout: Layout
+    /// For a Word 6 or Word 95 document, the offsets of the first and of the
+    /// last character of the text in the `WordDocument` stream (`fcMin` and
+    /// `fcMac`), which hold the text of a document saved in full; and the
+    /// language (`lid`) and the character set (`chs`) of the document.
+    let legacyText: Range<Int>
+    let languageIdentifier: Int
+    let characterSet: Int
     /// Where the FIB's 32-bit values begin, and how many there are.
     private let longValuesOffset: Int
     private let longValueCount: Int
@@ -74,27 +122,53 @@ struct WordFileInformationBlock {
 
     /// Whether the document is encrypted (`fEncrypted`).
     var isEncrypted: Bool { flags & 0x0100 != 0 }
+    /// Whether a Word 6 or Word 95 document is saved with its text in the
+    /// piece table of a CLX (`fComplex`), as Fast Save leaves it, and not
+    /// whole from `legacyText`'s start.
+    var hasPieceTable: Bool { flags & 0x0004 != 0 }
+    /// Whether the characters of a Word 6 or Word 95 document are two bytes
+    /// each (`fExtChar`): the files of Far East editions, and of Word 95
+    /// for them, store the 8-bit text of a code page as 16-bit units.
+    var hasTwoByteCharacters: Bool { flags & 0x1000 != 0 }
     /// Whether the table stream is `1Table` (`fWhichTblStm`), or `0Table`.
     var usesOneTable: Bool { flags & 0x0200 != 0 }
+    /// For a Word 6 or Word 95 document, how many formatted disk pages of the bin table `structure` the file
+    /// holds (`cpnBteChp` at 0x18E, `cpnBtePap` at 0x190), or 0 for any other structure or document or a FIB too
+    /// short to say. The table itself may list fewer, and the rest follow the last listed.
+    func declaredPageCount(of structure: Structure) -> Int {
+        guard layout == .legacy, stream.count >= 0x192 else { return 0 }
+        switch structure {
+        case .characterBinTable: return (try? stream.u16(0x18E)) ?? 0
+        case .paragraphBinTable: return (try? stream.u16(0x190)) ?? 0
+        default: return 0
+        }
+    }
+
     /// The name of the table stream.
     var tableStreamName: String { usesOneTable ? "1Table" : "0Table" }
 
     // MARK: Reading
 
-    /// The FIB at the start of `stream`, or nil for a Word 6 or Word 95
-    /// document, whose older layout this reader does not read.
+    /// The FIB at the start of `stream`, or nil for a document older than
+    /// Word 6, whose layout this reader does not know.
     /// - Throws: `OLEDamage` when the stream does not begin as a FIB or the
     ///   FIB does not fit it.
     static func read(from stream: OLEBytes) throws -> WordFileInformationBlock? {
         let ident = try stream.u16(0)
         let version = try stream.u16(2)
-        // A file with another identifier and the version of Word 6 or 95 or older
-        // (some Word for Windows and Macintosh files have 0xA699) has their layout,
-        // which this reader leaves to textutil; any other is not a FIB.
-        guard ident == identifier || ident == word6Identifier || version < firstWord97Version else {
-            throw OLEDamage(reason: "the WordDocument stream is not a FIB")
+        // A file whose identifier is Word 97's (0xA5EC, which [MS-DOC] says every Word 97 and later
+        // FIB has) is read by that layout whatever its version: Word installs a special empty
+        // document with an `nFib` of 0x00C0. Any other identifier with the version of Word 6 or 95 or
+        // older (Word 6's own is 0xA5DC, and some Word for Windows and Macintosh files have 0xA697 to
+        // 0xA699) has the older layout; any other is not a FIB.
+        if ident != identifier {
+            guard ident == word6Identifier || version < firstWord97Version else {
+                throw OLEDamage(reason: "the WordDocument stream is not a FIB")
+            }
+            // Word 5 and older keep to textutil; Word 6 and Word 95 are read here.
+            guard version >= firstLegacyVersion, version < firstWord97Version else { return nil }
+            return try readLegacy(from: stream, version: version)
         }
-        if ident == word6Identifier || version < firstWord97Version { return nil }
         guard version <= lastKnownVersion else { throw OLEDamage(reason: "nFib \(version) is not a Word version") }
 
         // FibBase is 32 bytes; csw (the count of 16-bit values) follows it,
@@ -118,8 +192,30 @@ struct WordFileInformationBlock {
         guard pairCount > Structure.complexInformation.rawValue else { throw OLEDamage(reason: "the FIB has no CLX") }
         return WordFileInformationBlock(
             version: version, flags: flags, mainTextLength: textLength,
+            layout: .modern, legacyText: 0..<0, languageIdentifier: 0, characterSet: 0,
             longValuesOffset: longStart, longValueCount: longValues,
             pairsOffset: pairsOffset, pairCount: pairCount, stream: stream
+        )
+    }
+
+    /// The FIB of a Word 6 or Word 95 document ([MS-DOC] does not describe
+    /// it; the offsets were found by reading real files): the flags at 10,
+    /// the language at 6, the character set at 0x14, the first and the end of
+    /// the text at 0x18 and 0x1C, the lengths of the stories from 0x34 (the
+    /// main text's first, in the same order as Word 97's), and the offsets and
+    /// sizes of the structures from 0x58, each four bytes.
+    private static func readLegacy(from stream: OLEBytes, version: Int) throws -> WordFileInformationBlock {
+        guard stream.count >= legacyLength else { throw OLEDamage(reason: "the FIB is cut short") }
+        let first = try stream.u32(0x18)
+        let end = try stream.u32(0x1C)
+        // The text of a document saved in full lies between these two offsets, in the stream.
+        guard first <= end, end <= stream.count else { throw OLEDamage(reason: "the text runs past the stream") }
+        return WordFileInformationBlock(
+            version: version, flags: try stream.u16(10), mainTextLength: try stream.u32(0x34),
+            layout: .legacy, legacyText: first..<end, languageIdentifier: try stream.u16(6),
+            characterSet: try stream.u16(0x14),
+            // The story lengths are the Word 97 order from ccpText (the fourth value) on.
+            longValuesOffset: 0x28, longValueCount: 11, pairsOffset: 0, pairCount: 0, stream: stream
         )
     }
 
@@ -175,10 +271,20 @@ struct WordFileInformationBlock {
     /// against the stream; nil when the document has none (a length of zero).
     /// - Throws: `OLEDamage` when the structure runs past the end of `table`.
     func range(of structure: Structure, in table: OLEBytes) throws -> Range<Int>? {
-        // A FIB with fewer pairs than the structure's place has none of it.
-        guard structure.rawValue < pairCount else { return nil }
-        let offset = try stream.u32(pairsOffset + structure.rawValue * 8)
-        let length = try stream.u32(pairsOffset + structure.rawValue * 8 + 4)
+        // Where the pair of the structure lies in the FIB. A Word 97 FIB with
+        // fewer pairs than the structure's place has none of it; a Word 6 or
+        // Word 95 FIB has the few it names (`Structure.legacyOffset`).
+        let pairOffset: Int
+        switch layout {
+        case .modern:
+            guard structure.rawValue < pairCount else { return nil }
+            pairOffset = pairsOffset + structure.rawValue * 8
+        case .legacy:
+            guard let offset = structure.legacyOffset else { return nil }
+            pairOffset = offset
+        }
+        let offset = try stream.u32(pairOffset)
+        let length = try stream.u32(pairOffset + 4)
         guard length > 0 else { return nil }
         guard table.contains(offset: offset, length: length) else {
             throw OLEDamage(reason: "a structure at \(offset) of \(length) bytes runs past the table stream")
@@ -235,6 +341,10 @@ enum WordSprm {
     static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).
     static let fontSize = 0x4A43
+    /// A Word 97 run's font for the ASCII range (`sprmCRgFtc0`, an index into the font table). The real
+    /// documents' runs of Word 97 text typed in a symbol font (U+F020 to U+F0FF) have this and `sprmCRgFtc2` (the
+    /// font for other characters) the same font, always; this one decides.
+    static let fontAscii = 0x4A4F
     /// The character style (`sprmCIstd`); it takes its properties from the
     /// style, so the direct ones before it do not stay.
     static let characterStyle = 0x4A30
@@ -247,6 +357,20 @@ enum WordSprm {
     static let special = 0x0855
     /// How a section begins (`sprmSBkc`).
     static let sectionBreakKind = 0x3009
+    /// The symbol a run holds (`sprmCSymbol`): a 16-bit font (an index into the font
+    /// table) and a 16-bit character ([MS-DOC] 2.6.1; a character in 0xF000 to 0xF0FF is its low byte).
+    static let symbol = 0x6A09
+    /// Opcodes that only a Word 6 or Word 95 document makes (`WordLegacySprm`), outside the
+    /// ones Word 97 has. Their top bits (`spra`) give the operand sizes the Word 97 walker reads
+    /// them by, so a group of modifiers kept in this form (a piece's) is read by either walker:
+    /// - the paragraph's numbering (`sprmPAnld`; a size byte, then the 52 bytes of an `ANLD`) and
+    ///   its level in the numbering (`sprmPNLvlAnm`);
+    /// - the run's font (`sprmCFtc`, an index into the font table) and its character set
+    ///   (`sprmCChse`: a flag that says it differs, and 16 bits, 256 for the Macintosh's).
+    static let legacyNumbering = 0xC0F0
+    static let legacyNumberingLevel = 0x24F1
+    static let legacyFont = 0x4AF2
+    static let legacyCharacterSet = 0xE0F3
 
     // MARK: Operands
 
@@ -257,13 +381,24 @@ enum WordSprm {
 
     // MARK: Walking
 
+    /// Which format's property modifiers a list holds.
+    enum Dialect {
+        /// Word 97 and later: two-byte opcodes whose top bits give the operand's size.
+        case modern
+        /// Word 6 and Word 95: one-byte opcodes, sizes from a table (`WordLegacySprm`).
+        case legacy
+    }
+
     /// Calls `body` with the opcode and operand of each sprm in `grpprl`, in
     /// order. A sprm whose operand runs past the end of `grpprl` ends the
     /// walk: a property list is only a list of hints about the text, and no
     /// offset in it reaches anything but itself, so damage here costs
     /// formatting and never safety. A single trailing byte, the padding Word
     /// leaves, is not a sprm.
-    static func forEach(in grpprl: ArraySlice<UInt8>, _ body: (_ opcode: Int, _ operand: ArraySlice<UInt8>) -> Void) {
+    static func forEach(in grpprl: ArraySlice<UInt8>, dialect: Dialect = .modern, _ body: (_ opcode: Int, _ operand: ArraySlice<UInt8>) -> Void) {
+        // A Word 6 or Word 95 list is walked by its own table, which hands
+        // the body the Word 97 form of each sprm the reader acts on.
+        if dialect == .legacy { return WordLegacySprm.forEach(in: grpprl, body) }
         var position = grpprl.startIndex
         // Bounded by the list: every sprm takes at least two bytes.
         while grpprl.endIndex - position >= 2 {

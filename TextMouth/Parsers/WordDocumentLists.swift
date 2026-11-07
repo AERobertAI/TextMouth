@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - A Level of a List
 
-/// One level of a list of a Word 97-2003 document: the `LVL` of [MS-DOC]
+/// One level of a list of a Word 6 to 2003 document: the `LVL` of [MS-DOC]
 /// 2.9.149, with the parts this reader uses. A level says how its items are
 /// numbered (or that they are bullets, or are not numbered), where its count
 /// begins and when it begins again, and the text that stands before an item:
@@ -123,7 +123,7 @@ struct WordListLevel {
 
 // MARK: - The List Tables
 
-/// The lists of a Word 97-2003 document: the list table (`PlfLst`, [MS-DOC]
+/// The lists of a Word 6 to 2003 document: the list table (`PlfLst`, [MS-DOC]
 /// 2.9.201), which defines each list's levels, and the list override table
 /// (`PlfLfo`, 2.9.200), by which a paragraph names the list it is in
 /// (`sprmPIlfo`, an index into the overrides) and which may start a level
@@ -164,6 +164,24 @@ struct WordListTables {
         lists = [:]
         instances = []
     }
+
+    /// The tables of a Word 6 or Word 95 document, which numbers a paragraph
+    /// by a description of its own (`ANLD`): `levels[i]` are the nine levels
+    /// of list instance `i + 1`, a list of its own, with no overrides.
+    /// - Parameter endedByPlainText: the instances (one-based) whose count begins again after a paragraph
+    ///   of ordinary text (see `endedByPlainText`).
+    init(legacyInstances levels: [[WordListLevel]], endedByPlainText: Set<Int> = []) {
+        lists = Dictionary(uniqueKeysWithValues: levels.enumerated().map { ($0.offset + 1, $0.element) })
+        instances = levels.indices.map { Instance(listIdentifier: $0 + 1, overrides: [:]) }
+        self.endedByPlainText = endedByPlainText
+    }
+
+    /// The list instances (one-based) whose count begins again at the number it starts at after a
+    /// paragraph of ordinary text: the simple lists of a Word 6 or Word 95 document, whose paragraphs carry
+    /// their numbers in themselves and are stored with the numbers they were counted to, in the files
+    /// seen, when plain text lies between them. (The levels of an outline go on counting through text.)
+    /// Empty for a Word 97 document.
+    private(set) var endedByPlainText: Set<Int> = []
 
     /// Whether the document has no list a paragraph could be in.
     var isEmpty: Bool { instances.isEmpty || lists.isEmpty }
@@ -346,6 +364,11 @@ struct WordListNumbering {
         self.tables = tables
         numbering = tables.numbering
         counter = DOCXListCounter(numbering: numbering)
+    }
+
+    /// A paragraph of ordinary text has been met: the lists it ends begin again (`WordListTables.endedByPlainText`).
+    mutating func plainTextEndsCounts() {
+        for instance in tables.endedByPlainText { counter.restart(numId: String(instance)) }
     }
 
     /// Forgets every count: the paragraphs after this are in another story
