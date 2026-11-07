@@ -969,16 +969,16 @@ Each is shared, in `TextMouth/Phone/`, with a test class of the same name plus `
 
 In order. Each is a branch off `ios/interface`, merged only after both type-checks and its tests pass. The train runs its test classes, plus the classes any shared change can break. The briefs are in `Scripts/agents/briefs/2026-11-07/iosui-slices.md`.
 
-1. **The foundation:** the frame, the plist, the paths, the M4B fix, `PhoneSession` with two readers, the next book, the crash guard, `PhoneDefaults`, `PhoneRoute`, `PhoneLifeCycle`, the reader's hooks, the announcer's collector and mapping, the focus policy and registry, the reader's sheet list, the root's modifiers, and the policy tools.
-2. **The Library:** its screens, rows, search, Continue row, sorting, views, removal, and Book Info.
-3. **The folder sheets,** split from the Library.
-4. **Importing:** Add to Library, the copy, other apps, progress, questions, refusals. Then the drop folder, if time allows.
-5. **The reader:** its controls, Book content, the moves and their words, loading and failure.
-6. **Audio:** the session, interruptions, routes, the engine, Now Playing, remote commands.
-7. **The life cycle:** saving, memory, thermal state, silent gaps, the sleep timer's deadline, reopening.
-8. **The reader's panels:** the sheets, and Where Am I?. Then Search in Book, if time allows.
-9. **VoiceOver:** the rotors, Read All, escape, and a sweep of every screen.
-10. **Settings,** with Share Logs first.
+- **Slice 1, the foundation:** the frame, the plist, the paths, the M4B fix, `PhoneSession` with two readers, the next book, the crash guard, `PhoneDefaults`, `PhoneRoute`, `PhoneLifeCycle`, the reader's hooks, the announcer's collector and mapping, the focus policy and registry, the reader's sheet list, the root's modifiers, and the policy tools.
+- **Slice 2, the Library:** its screens, rows, search, the Continue row, sorting, views, removal, and Book Info.
+- **Slice 2b, the folder sheets,** split from the Library.
+- **Slice 3, importing:** Add to Library, the copy, other apps, progress, questions, refusals. Then the drop folder, if time allows.
+- **Slice 4, the reader:** its controls, Book content, the moves and their words, loading and failure.
+- **Slice 5, audio:** the session, interruptions, routes, the engine, Now Playing, remote commands.
+- **Slice 6, the life cycle:** saving, memory, thermal state, silent gaps, the sleep timer's deadline, reopening.
+- **Slice 7, the reader's panels:** the sheets, and Where Am I?. Then Search in Book, if time allows.
+- **Slice 8, VoiceOver:** the rotors, Read All, escape, and a sweep of every screen.
+- **Slice 9, Settings,** with Share Logs first.
 
 **If the night is cut short, in this order:** the foundation and Share Logs; Open Book and the duplicate question; audio's core; the reader's core (Play, Book content, Where Am I?, Navigation unit, the skips); the background flush. Cut first: the rotors, Read All, the Library's other views, the panels but Headings, then the rest of Settings.
 
