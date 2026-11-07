@@ -521,6 +521,65 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(read.index.allHeadings.map(\.text), Self.sampleTitles)
     }
 
+    /// A folder of tracks takes no chapters, whatever its package holds,
+    /// since each track is its own chapter; and nothing is logged about a
+    /// file that was never looked at.
+    func testAFolderOfTracksTakesNoKeptChapters() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Folder")
+        let title = uniqueTitle("Two Tracks")
+        let chapters = try sampleChaptersFile()
+        let book = try world.makeOneFileAudioBook(title: title, fileName: "Tracks") { folder in
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            for name in ["01 First.wav", "02 Second.wav"] {
+                try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(name), duration: 2)
+            }
+            try chapters.write(to: TextMouthPaths.podcastChaptersPath(in: folder.deletingLastPathComponent()))
+        }
+
+        // One heading for each track, none of the podcast's four.
+        let headings = try indexedHeadings(of: book)
+        XCTAssertEqual(headings.count, 2)
+        XCTAssertTrue(Set(headings).isDisjoint(with: Self.sampleTitles), "\(headings)")
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
+    }
+
+    /// With the transcript of an episode that has podcast chapters, the
+    /// transcript's text has a heading for each chapter, titled as the
+    /// chapter is even when the title holds what Markdown or the chapter
+    /// marker is made of, and each sentence is in the chapter it was heard
+    /// in, timed from that chapter's start, so following along crosses from
+    /// one chapter to the next.
+    func testATranscriptsHeadingsFollowThePodcastsChapters() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Transcript")
+        let titles = ["Q&A --> Part <b>2</b>", "# Hash and *stars*", "Plain"]
+        let chapters = try PodcastChapters(chapters: zip([0, 2_000, 4_000], titles).map {
+            PodcastChapter(startMilliseconds: $0, title: $1)
+        }).normalizedJSON()
+        let book = try makeSilentEpisode(in: world, title: uniqueTitle("Three Parts"), duration: 6, keeping: chapters)
+        let audio = try BookContentAnalysisService.load(book: book).index
+        XCTAssertEqual(audio.allHeadings.map(\.text), titles)
+        let fileName = book.bookFileURL.lastPathComponent
+        let transcript = TranscriptFixtures.transcript([(path: fileName, duration: 6_000, sentences: [
+            TranscriptFixtures.sentence("The first part opens.", from: 500, to: 1_500),
+            TranscriptFixtures.sentence("The second part follows.", from: 2_500, to: 3_500),
+            TranscriptFixtures.sentence("The last part closes.", from: 4_500, to: 5_500),
+        ])])
+
+        let parts = TranscriptTextBuilder.chapters(of: transcript, over: audio, bookFileName: fileName)
+        XCTAssertEqual(parts.map(\.title), titles)
+        XCTAssertEqual(parts.map { $0.sentences.map(\.text) }, [
+            ["The first part opens."], ["The second part follows."], ["The last part closes."],
+        ])
+        // Each is timed from its own chapter's start.
+        XCTAssertEqual(parts.map { $0.sentences.map(\.startMilliseconds) }, [[500], [500], [500]])
+
+        let text = try XCTUnwrap(TranscriptTextBuilder.text(of: parts, bookTitle: book.title, bookAuthor: book.author))
+        XCTAssertEqual(text.chapters.map(\.title), titles)
+        XCTAssertEqual(text.chapters.map { $0.headings.map(\.text) }, titles.map { [$0] })
+        XCTAssertEqual(text.sentences.map(\.count), [1, 1, 1])
+        XCTAssertNil(text.readingIndex.alignmentFailure(with: text.chapters))
+    }
+
     /// A book without a package of its own, as only the earliest books
     /// are, takes no chapters from the folder its file lies in, which is
     /// where its package would be.
