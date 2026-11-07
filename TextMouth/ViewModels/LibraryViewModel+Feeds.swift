@@ -98,6 +98,15 @@ extension LibraryViewModel: FeedLibraryHost {
         save()
     }
 
+    /// Shows the transcript fetched with an episode and just saved into its
+    /// package (FMT25), as a finished transcription shows its own
+    /// (`TranscriptionJobCenter`): the row says the book is transcribed, and
+    /// its open readers show `text`.
+    func feedTranscriptAttached(bookID: UUID, text: TranscriptText) {
+        TranscribedBooks.shared.record(bookID, isTranscribed: true)
+        bookUpdates.transcriptReplaced(bookID: bookID, with: text)
+    }
+
     /// Removes the files of the feed items `books` the library lists, in the
     /// order that never loses the listener's place (FR11, branch A2;
     /// FEED-ITEMS-ADDENDUM-2026-10-07.md, section 6):
