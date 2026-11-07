@@ -142,6 +142,22 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertNoThrow(try OutsideTranscript.checkFits([], durationMilliseconds: 0))
     }
 
+    /// An audio length that is not a length (below 0, as a damaged file may
+    /// claim, down to the smallest number) is the audio's end at 0: a
+    /// sentence is measured against that and never makes the subtraction
+    /// overflow, which would stop TextMouth.
+    func testALengthBelowZeroIsTheAudiosEndAtZero() {
+        let early = TranscriptFixtures.sentence("Last call for the ferry.", from: 0, to: 4_000)
+        let late = TranscriptFixtures.sentence("Last call for the ferry.", from: 0, to: 6_000)
+
+        XCTAssertNoThrow(try OutsideTranscript.checkFits([early], durationMilliseconds: Int.min))
+        XCTAssertNoThrow(try OutsideTranscript.checkFits([early], durationMilliseconds: -1))
+        XCTAssertThrowsError(try OutsideTranscript.checkFits([late], durationMilliseconds: Int.min)) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .runsPastTheEnd(transcriptEnd: 6_000, audioEnd: Int.min))
+        }
+        XCTAssertNoThrow(try OutsideTranscript.checkFits([TranscriptFixtures.sentence("Done.", from: 0, to: Int.max)], durationMilliseconds: Int.max))
+    }
+
     /// Each refusal says plainly why, as the screen shows it and VoiceOver
     /// speaks it: how far a transcript runs, in spoken time, against where
     /// the audio ends; and never the reason an unusable transcript's times
@@ -225,6 +241,50 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertTrue(OutsideTranscript.split([atBoundary], across: [Self.planFile("silence.wav", seconds: 0)]).isEmpty)
     }
 
+    /// Files of fractional length lie end to end as their lengths round to
+    /// milliseconds (2.4996 seconds is 2,500, as the transcript records
+    /// the file), so no drift builds up and a sentence starting a
+    /// millisecond before a file opens stays in the file before it, its end
+    /// held at that file's end.
+    func testFilesOfFractionalLengthAreLaidEndToEndAsTheyAreRounded() throws {
+        let files = [
+            Self.planFile("01.wav", seconds: 2.4996),
+            Self.planFile("02.wav", seconds: 1.0004),
+            Self.planFile("03.wav", seconds: 1.5),
+        ]
+
+        let split = OutsideTranscript.split([
+            TranscriptFixtures.sentence("Gulls circle the quay.", from: 2_000, to: 2_400),
+            TranscriptFixtures.sentence("A rope is thrown.", from: 2_499, to: 2_600),
+            TranscriptFixtures.sentence("Ropes go taut.", from: 2_500, to: 3_000),
+            TranscriptFixtures.sentence("The ferry docks.", from: 3_499, to: 3_600),
+            TranscriptFixtures.sentence("Lamps come on.", from: 3_500, to: 3_900),
+        ], across: files)
+
+        XCTAssertEqual(split["01.wav"]?.map(\.startMilliseconds), [2_000, 2_499])
+        XCTAssertEqual(split["01.wav"]?.map(\.endMilliseconds), [2_400, 2_500])
+        XCTAssertEqual(split["02.wav"]?.map(\.startMilliseconds), [0, 999])
+        XCTAssertEqual(split["02.wav"]?.map(\.endMilliseconds), [500, 1_000])
+        XCTAssertEqual(split["03.wav"]?.map(\.startMilliseconds), [0])
+        XCTAssertEqual(split["03.wav"]?.map(\.endMilliseconds), [400])
+    }
+
+    /// A sentence that ends exactly where its file does keeps its words, as
+    /// every one of them lies inside it; the sentences of one file keep the
+    /// order they were given in, whatever files lie between.
+    func testASentenceEndingWhereItsFileEndsKeepsItsWords() throws {
+        let files = [Self.planFile("01.wav", seconds: 3), Self.planFile("02.wav", seconds: 2)]
+        let closing = TranscriptFixtures.sentence("The ferry docks late.", from: 2_000, to: 3_000)
+        let first = TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 900)
+        let second = TranscriptFixtures.sentence("Ropes go taut.", from: 0, to: 900)
+
+        let split = OutsideTranscript.split([first, second, closing], across: files)
+
+        XCTAssertEqual(split["01.wav"]?.map(\.text), [first.text, second.text, closing.text])
+        XCTAssertEqual(split["01.wav"]?.last, closing)
+        XCTAssertNil(split["02.wav"])
+    }
+
     // MARK: - Making the Transcript
 
     /// A transcript made from each file's sentences is made as recognition
@@ -267,6 +327,31 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertNil(transcript.editedAt)
         XCTAssertNil(transcript.cleanedUp)
         XCTAssertNil(transcript.validationFailure())
+    }
+
+    /// A file's own sentences are kept as the file timed them: one running
+    /// on past its track's end by no more than the margin is stored so, its
+    /// end after the track's (the transcript still passes validation, and
+    /// its text and captions are made from it), while a sentence of the
+    /// book's timeline is held inside the file it opens in.
+    func testASentenceRunningPastItsTracksEndWithinTheMarginIsKeptAsGiven() throws {
+        let (_, plan) = try makeBook("Outside Transcript Margin")
+        let margin = TimedTextLimits.pastTheEndMarginMilliseconds
+        let late = TranscriptFixtures.sentence("Ropes go taut.", from: 1_500, to: 2_000 + margin)
+
+        let ownFile = try OutsideTranscript.transcript(
+            sentencesByFile: ["02.wav": [late]], plan: plan, source: Self.lectureSource
+        )
+        let timeline = try OutsideTranscript.transcript(
+            bookTimeline: [TranscriptFixtures.sentence("Ropes go taut.", from: 4_500, to: 5_000 + margin)],
+            plan: plan,
+            source: Self.podcastSource
+        )
+
+        XCTAssertEqual(ownFile.files.map(\.sentences), [[], [late]])
+        XCTAssertNil(ownFile.validationFailure())
+        XCTAssertEqual(timeline.files.map { $0.sentences.map(\.endMilliseconds) }, [[], [2_000]])
+        XCTAssertNil(timeline.validationFailure())
     }
 
     /// A transcript timed on the book's timeline, as a podcast's transcript
