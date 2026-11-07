@@ -486,6 +486,57 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.transcript?.source, Self.lectureSource)
     }
 
+    /// An install that gives way to an untouched podcast transcript (FMT25)
+    /// looks at the transcript as it stands when the install runs: the
+    /// podcast's own, untouched, is replaced; once the listener has edited it,
+    /// as they might while a new download's audio was measured, it is kept,
+    /// byte for byte, and the install says so; and any other transcript is
+    /// kept as `keepingExisting` keeps it.
+    func testAnInstallGivesWayOnlyToAPodcastTranscriptStillUntouched() throws {
+        let (book, plan) = try makeBook("Outside Transcript Gives Way")
+        func podcasts(_ text: String) throws -> Transcript {
+            try OutsideTranscript.transcript(
+                sentencesByFile: ["01.wav": [TranscriptFixtures.sentence(text, from: 0, to: 1_200)]],
+                plan: plan,
+                source: Self.podcastSource
+            )
+        }
+        func installGivingWay(_ transcript: Transcript) throws {
+            try TranscriptStore.install(
+                transcript, for: book, keepingExisting: true, givingWayToAnUntouchedPodcastTranscript: true
+            )
+        }
+        let transcriptURL = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        try installGivingWay(try podcasts("Gulls circle the quay."))
+
+        // Untouched: the newer podcast transcript takes its place.
+        let newer = try podcasts("Ropes go taut.")
+        try installGivingWay(newer)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(newer))
+
+        // Edited since: kept, whatever the caller saw before.
+        var edited = newer
+        edited.editedAt = TranscriptFixtures.date
+        try TranscriptStore.write(edited, into: book.tmbDirectory)
+        let editedBytes = try Data(contentsOf: transcriptURL)
+        XCTAssertThrowsError(try installGivingWay(try podcasts("Sails come down."))) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .alreadyTranscribed)
+        }
+        XCTAssertEqual(try Data(contentsOf: transcriptURL), editedBytes, "an edited podcast transcript was replaced")
+
+        // Not the podcast's: kept too.
+        let attached = try OutsideTranscript.transcript(
+            sentencesByFile: ["02.wav": [TranscriptFixtures.sentence("Nets dry on the wall.", from: 400, to: 1_400)]],
+            plan: plan,
+            source: Self.lectureSource
+        )
+        try TranscriptStore.install(attached, for: book)
+        XCTAssertThrowsError(try installGivingWay(try podcasts("Sails come down."))) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .alreadyTranscribed)
+        }
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(attached))
+    }
+
     // MARK: - The Retranscribe Sheet's Line
 
     /// The line naming a transcript from outside says where it came from,

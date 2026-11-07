@@ -64,6 +64,14 @@ extension TranscriptStore {
     ///   so no data-directory move comes between it and the install's write;
     ///   installs are not made one at a time, though, so another install of
     ///   the same book at the same moment still could.
+    /// - Parameter givingWayToAnUntouchedPodcastTranscript: With
+    ///   `keepingExisting`, a transcript that is the podcast's own and that
+    ///   the listener has neither edited nor cleaned up
+    ///   (`holdsUntouchedPodcastTranscript(in:)`) is not kept but replaced
+    ///   (FMT25). It is looked at in the same storage work as the transcript
+    ///   being there at all, so an edit saved while the caller measured the
+    ///   audio, seconds before, makes the transcript the listener's, and it
+    ///   is kept.
     /// - Parameter saveIndex: Saves the book's audio index, with the text's
     ///   layer, through the book's record, returning the book as the record
     ///   holds it then (`LibraryPersistenceService.saveContentAnalysis`);
@@ -78,6 +86,7 @@ extension TranscriptStore {
         _ transcript: Transcript,
         for book: Book,
         keepingExisting: Bool = false,
+        givingWayToAnUntouchedPodcastTranscript: Bool = false,
         hasher: FingerprintHasher = .md5,
         isDataless: @escaping (URL) -> Bool = DatalessFiles.isDataless,
         keepCopy: @escaping (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:),
@@ -96,8 +105,10 @@ extension TranscriptStore {
                 throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: book.tmbDirectory.lastPathComponent])
             }
             // A transcript the book has, kept when asked, before anything
-            // is read or written.
-            if keepingExisting, hasTranscript(of: book) {
+            // is read or written: unless it is the podcast's own, untouched,
+            // when asked to give way to that, as it stands now.
+            if keepingExisting, hasTranscript(of: book),
+               !(givingWayToAnUntouchedPodcastTranscript && holdsUntouchedPodcastTranscript(in: book.tmbDirectory)) {
                 throw OutsideTranscriptError.alreadyTranscribed
             }
             var audioIndex = try BookContentAnalysisService.load(book: book).index

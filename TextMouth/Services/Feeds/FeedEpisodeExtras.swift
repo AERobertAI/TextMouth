@@ -312,10 +312,12 @@ enum FeedEpisodeExtras {
     ///   longer audio, and whatever else `TranscriptionPlan.make(for:)`,
     ///   `OutsideTranscript`, and `TranscriptStore.install` throw.
     static func attach(_ document: TimedTextDocument, to book: Book) throws -> Attached {
-        let replacesItsOwn = TranscriptStore.holdsUntouchedPodcastTranscript(in: book.tmbDirectory)
         // Before the audio is measured and fingerprinted, which reads the
-        // whole of it, for a transcript that would only be turned away.
-        guard replacesItsOwn || !TranscriptStore.hasTranscript(of: book) else {
+        // whole of it, for a transcript that would only be turned away. The
+        // install looks again, in its storage work, where an edit saved
+        // meanwhile is seen (`givingWayToAnUntouchedPodcastTranscript`).
+        guard !TranscriptStore.hasTranscript(of: book)
+                || TranscriptStore.holdsUntouchedPodcastTranscript(in: book.tmbDirectory) else {
             throw OutsideTranscriptError.alreadyTranscribed
         }
         let plan = try TranscriptionPlan.make(for: book)
@@ -324,7 +326,12 @@ enum FeedEpisodeExtras {
             plan: plan,
             source: TranscriptSource(origin: .podcast, format: document.format)
         )
-        let installation = try TranscriptStore.install(transcript, for: book, keepingExisting: !replacesItsOwn)
+        let installation = try TranscriptStore.install(
+            transcript,
+            for: book,
+            keepingExisting: true,
+            givingWayToAnUntouchedPodcastTranscript: true
+        )
         return Attached(installation: installation, wordCount: transcript.wordCount)
     }
 
