@@ -59,23 +59,32 @@ struct XMLOpenElements {
 ///
 /// It follows SwiftSoup 2.13.9's own code (`HtmlTreeBuilder` and
 /// `HtmlTreeBuilderState`, MIT), with its slips, rather than the HTML standard:
-/// `generateImpliedEndTags` with nothing to exclude does nothing; `<frameset>`
-/// in the body is an ordinary element; `InBodyStartDrop` drops table parts; an
-/// explicit `<body>` start tag goes through `AfterHead`; `InSelect` serves a
-/// `select` in a table too; the adoption agency looks for its block among the
-/// first 64 elements of the stack and makes no list entry for its copy; and
-/// `InTableBody` asks whether `tfoot` is in the ordinary scope, where markers stop it.
+/// `generateImpliedEndTags` with nothing to exclude does nothing; the body's
+/// rules for a start tag read the current node once, as the tag begins; while
+/// every open element is one it has a tag id for, a `p` is in button scope
+/// whenever one stands above the last `button`; `<frameset>` in the body is an
+/// ordinary element; `InBodyStartDrop` drops table parts; an explicit `<body>`
+/// start tag goes through `AfterHead`; an end tag of `applet`, `marquee` or
+/// `object` does nothing while an element named `name` is in scope; `InSelect`
+/// serves a `select` in a table too; the adoption agency looks for its block
+/// among the first 64 elements of the stack and makes no list entry for its
+/// copy; and `InTableBody` asks whether `tfoot` is in the ordinary scope, where
+/// markers stop it.
 ///
 /// What it counts is the depth of the deepest element, `html` at 1, and it must
 /// never count less than the parser's real tree will have. So where the parser
-/// moves elements (foster parenting, the adoption agency), an element's depth is
-/// never lowered, only raised; where the markup cannot say which of two paths the
-/// parser takes (whether text made of character references is whitespace), the
-/// model takes the one that builds deeper; and where neither path can be followed
-/// tag by tag (a `noscript` that may be in the head, holding what the tokeniser
-/// would read differently there), it stops trusting tags (`tagsAreCertain`), and
-/// the guard counts every one that could lie ahead. `MarkupGuardTests` and the
-/// harness's differential of repeated units hold it against SwiftSoup's real trees.
+/// moves elements (foster parenting, the adoption agency), each is counted where
+/// the parser puts it, by the depth of what it lands in, which can be higher than
+/// before; what may move with them or stay behind (what stands open above the
+/// adoption agency's block, which a table may have put elsewhere) is counted at
+/// the deeper of the two places, or deeper; where the markup cannot say which of
+/// two paths the parser takes (whether text made of character references is
+/// whitespace), the model takes the one that builds deeper; and where neither
+/// path can be followed tag by tag (a `noscript` that may be in the head, holding
+/// what the tokeniser would read differently there), it stops trusting tags
+/// (`tagsAreCertain`), and the guard counts every one that could lie ahead.
+/// `MarkupGuardTests` and the harness's differential of repeated units hold it
+/// against SwiftSoup's real trees.
 struct HTMLTreeModel {
 
     // MARK: Elements
