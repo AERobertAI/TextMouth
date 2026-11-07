@@ -613,6 +613,27 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertNil(session.snapshot)
     }
 
+    /// The snapshot carries the reader's error alert, the Mac's, as it comes
+    /// and as it goes, so the reader's screen can show it without observing
+    /// the reader.
+    func testTheSnapshotCarriesTheReadersErrorAlert() throws {
+        let world = try makeIntegrationWorld("PhoneSnapshotError")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let session = makeSession(in: world)
+        let reader = try XCTUnwrap(session.open(book))
+        waitForReaderToLoad(reader)
+        XCTAssertTrue(eventually { session.snapshot?.isLoading == false })
+        XCTAssertNil(session.snapshot?.errorAlert)
+
+        reader.errorMessage = "The audio file could not be played."
+        XCTAssertTrue(eventually { session.snapshot?.errorAlert != nil }, "The error never reached the snapshot")
+        XCTAssertEqual(session.snapshot?.errorAlert, reader.errorAlert)
+        XCTAssertEqual(session.snapshot?.errorAlert?.message, "The audio file could not be played.")
+
+        reader.errorMessage = nil
+        XCTAssertTrue(eventually { session.snapshot?.errorAlert == nil }, "The error never went from the snapshot")
+    }
+
     // MARK: - Reopening
 
     /// The book open is kept for the next launch, with whether its screen was
