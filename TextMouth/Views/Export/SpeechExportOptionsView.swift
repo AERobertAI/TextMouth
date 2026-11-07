@@ -7,7 +7,9 @@ import SwiftUI
 /// Pitch sliders, which start at the book's own speed and pitch; the line
 /// naming the voice; and the line about Apple's licence.
 ///
-/// VoiceOver finds the options in one group, "Spoken audio options". Every
+/// The options are not a group of their own. They follow their checkbox in
+/// the dialog's list of choices, as the braille options do, so VoiceOver
+/// reaches each control without interacting with one more group. Every
 /// control has a label, a value, and a hint, in the words of
 /// `SpeechExportWording`, the same on screen and in speech; each slider's
 /// value, shown after it for the eye, is spoken once, as the slider's value
@@ -82,8 +84,6 @@ struct SpeechExportOptionsView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(idealWidth: Self.idealWidth, alignment: .leading)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(SpeechExportWording.optionsLabel)
     }
 
     // MARK: Parts

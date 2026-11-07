@@ -81,7 +81,6 @@ final class SpeechExportOptionsTests: XCTestCase {
             SpeechExportWording.licence,
             "Speech made with the Mac's voices is for your personal, non-commercial use, under Apple's licence."
         )
-        XCTAssertEqual(SpeechExportWording.optionsLabel, "Spoken audio options")
 
         XCTAssertEqual(SpeechExportWording.wholeBookName, "Audio")
         XCTAssertEqual(SpeechExportWording.beginningName, "Beginning")
@@ -513,35 +512,35 @@ final class SpeechExportOptionsTests: XCTestCase {
     /// with the item chosen, each slider with its value in words; and no
     /// label names the kind of control, which VoiceOver says itself.
     ///
-    /// The controls sit in the options' group, an element SwiftUI builds
-    /// for an accessibility client but never for a test reading the window
-    /// in-process (`FeedDownloadProgressViewTests` meets the same), so the
-    /// AppKit pop-ups and sliders are read themselves where the group keeps
-    /// them out of the window's elements (`exposedControls(in:)`). Skipped
-    /// where the session exposes no hosted control to accessibility, or
-    /// where none of the controls shows any of its words.
+    /// The controls are read among the window's accessibility elements, as
+    /// VoiceOver finds them, and as the dialog's other pop-up tests read
+    /// theirs (`TextEncodingPopUpTests`, `BrailleSettingsViewTests`). The
+    /// options are in no group of their own: under one, SwiftUI stood its
+    /// own elements, with no role, value, or hint, in for the AppKit
+    /// controls, for a test reading the window in-process (train 1107-0800).
+    /// Skipped only where the session exposes no hosted control to
+    /// accessibility at all.
     func testVoiceOverHearsEachControlsLabelValueAndHint() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let state = makeState()
         state.setFrom(notes.id)
         try withOptionsView(state, popUps: 3) { hosting in
-            let labels = [
-                SpeechExportWording.formatLabel, SpeechExportWording.fromLabel, SpeechExportWording.throughLabel,
-                SpeechExportWording.rateLabel, SpeechExportWording.pitchLabel,
-            ]
-            _ = waitUntil { self.exposedControls(in: hosting).contains { labels.contains($0.label) } }
-            let controls = exposedControls(in: hosting)
-            guard controls.contains(where: { labels.contains($0.label) }) else {
-                throw XCTSkip("SwiftUI exposed none of the options' controls to a test reading the window in-process")
-            }
+            XCTAssertTrue(
+                waitUntil { self.accessibleControls(in: hosting).contains { $0.label == SpeechExportWording.formatLabel } },
+                "no control is labelled \(SpeechExportWording.formatLabel): \(accessibleControls(in: hosting).map(\.label))"
+            )
+            let controls = accessibleControls(in: hosting)
 
             let format = try control(labelled: SpeechExportWording.formatLabel, in: controls)
+            XCTAssertEqual(format.role, .popUpButton)
             XCTAssertEqual(format.element.accessibilityValue() as? String, SpeechExportFormat.m4b.title)
             XCTAssertEqual(format.hint, SpeechExportWording.formatHint)
             let from = try control(labelled: SpeechExportWording.fromLabel, in: controls)
+            XCTAssertEqual(from.role, .popUpButton)
             XCTAssertEqual(from.element.accessibilityValue() as? String, "Notes - level 2")
             XCTAssertEqual(from.hint, SpeechExportWording.fromHint)
             let through = try control(labelled: SpeechExportWording.throughLabel, in: controls)
+            XCTAssertEqual(through.role, .popUpButton)
             XCTAssertEqual(through.element.accessibilityValue() as? String, SpeechExportWording.endOfBook)
             XCTAssertEqual(through.hint, SpeechExportWording.throughHint)
 
@@ -586,18 +585,6 @@ final class SpeechExportOptionsTests: XCTestCase {
             hosting.layoutSubtreeIfNeeded()
             return false
         }
-    }
-
-    /// The options' controls as VoiceOver reads them (`accessibleControls`):
-    /// those among the window's accessibility elements; or, where the
-    /// options' group keeps them out of those for a test reading in-process,
-    /// the AppKit pop-ups and sliders the options drew, read the same way.
-    private func exposedControls(in hosting: NSView) -> [AccessibleControl] {
-        let underTheWindow = accessibleControls(in: hosting)
-        guard underTheWindow.isEmpty else { return underTheWindow }
-        let popUps: [NSView] = descendants(of: hosting, as: NSPopUpButton.self)
-        let sliders: [NSView] = descendants(of: hosting, as: NSSlider.self)
-        return (popUps + sliders).flatMap { accessibleControls(in: $0) }
     }
 
     /// Where `slider` stands between its ends, from 0 at its minimum to 1 at

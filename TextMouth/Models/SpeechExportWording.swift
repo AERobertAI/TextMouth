@@ -92,12 +92,6 @@ enum SpeechExportWording {
     static let licence = "Speech made with the Mac's voices is for your personal, non-commercial use, "
         + "under Apple's licence."
 
-    // MARK: The Options as a Whole
-
-    /// The accessibility label of the group holding the options, which
-    /// VoiceOver speaks on entering it.
-    static let optionsLabel = "Spoken audio options"
-
     // MARK: A File's Name
 
     /// What a file of the whole book is called after the book's title:
