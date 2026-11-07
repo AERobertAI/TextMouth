@@ -189,6 +189,56 @@ extension TranscriptStore {
     static func hasTranscript(of book: Book) -> Bool {
         FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path)
     }
+
+    /// What transcript.json says of where its transcript came from and of
+    /// whether the listener has touched it, decoded without its sentences.
+    private struct Provenance: Decodable {
+        /// The transcript's layout version.
+        let version: Int
+        /// Where the transcript came from, when recognition did not make it.
+        let source: TranscriptSource?
+        /// Whether the listener edited it or cleaned it up.
+        let isTouched: Bool
+
+        private enum CodingKeys: String, CodingKey {
+            case version, source, editedAt, cleanedUp
+        }
+
+        /// Reads the fields above, and no others. Whether the listener
+        /// touched the transcript is whether either field is there at all,
+        /// whatever it holds: transcript.json leaves each out until then.
+        init(from decoder: Decoder) throws {
+            let fields = try decoder.container(keyedBy: CodingKeys.self)
+            version = try fields.decode(Int.self, forKey: .version)
+            source = try fields.decodeIfPresent(TranscriptSource.self, forKey: .source)
+            isTouched = fields.contains(.editedAt) || fields.contains(.cleanedUp)
+        }
+    }
+
+    /// Whether the transcript in the package at `package` is a podcast's
+    /// own, fetched with its episode (FMT25), that the listener has neither
+    /// edited nor cleaned up: one nothing of the listener's would be lost
+    /// with. Read without downloading anything. Any doubt answers false, so
+    /// the transcript is taken for the listener's: no transcript, one only
+    /// in the cloud, one that cannot be read, one of another layout, and one
+    /// of an origin this TextMouth does not know. It is only a read: a file
+    /// that cannot be used is left where it is, as a read for the reader
+    /// would not leave it.
+    ///
+    /// The main thread asks this before a removal, for an unopened episode
+    /// holding nothing else of the listener's. A long transcript runs to
+    /// megabytes, so its sentences are never decoded for the question
+    /// (`Provenance`).
+    static func holdsUntouchedPodcastTranscript(
+        in package: URL,
+        using reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Bool {
+        guard case .contents(let bytes) = SavedFile.read(TextMouthPaths.transcriptPath(in: package), using: reader),
+              let provenance = try? JSONDecoder().decode(Provenance.self, from: bytes) else { return false }
+        return provenance.version == Transcript.currentVersion
+            && provenance.source?.knownOrigin == .podcast
+            && !provenance.isTouched
+    }
 }
 
 // MARK: - Putting Back What a Failed Install Wrote
