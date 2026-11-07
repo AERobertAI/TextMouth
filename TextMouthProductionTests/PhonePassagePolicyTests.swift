@@ -70,6 +70,33 @@ final class PhonePassagePolicyTests: XCTestCase {
         XCTAssertGreaterThan(range.count, 60, "The end moved back too far")
     }
 
+    // MARK: - Paging
+
+    /// Paging forward goes on where the passage ends, then to the next
+    /// chapter with words in it, passing over a chapter of spaces; nothing
+    /// after the last.
+    func testPagingForwardCrossesChapters() {
+        let chapters = ["0123456789", "   ", "Next words."]
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 0..<4, forward: true)?.chapter, 0)
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 0..<4, forward: true)?.offset, 4)
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 4..<10, forward: true)?.chapter, 2)
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 4..<10, forward: true)?.offset, 0)
+        XCTAssertNil(target(chapters, chapter: 2, shown: 0..<11, forward: true))
+    }
+
+    /// Paging back goes a passage's length before the start, then to the
+    /// last passage of the chapter with words before; nothing before the
+    /// first.
+    func testPagingBackCrossesChapters() {
+        let chapters = ["0123456789", "   ", "Next words."]
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 8..<10, forward: false)?.offset, 4)
+        XCTAssertEqual(target(chapters, chapter: 0, shown: 2..<10, forward: false)?.offset, 0)
+        let back = target(chapters, chapter: 2, shown: 0..<11, forward: false)
+        XCTAssertEqual(back?.chapter, 0)
+        XCTAssertEqual(back?.offset, 6)
+        XCTAssertNil(target(chapters, chapter: 0, shown: 0..<10, forward: false))
+    }
+
     // MARK: - Listen from Here
 
     /// A moved selection wins; then the rotor's sentence; then the start.
@@ -110,6 +137,17 @@ final class PhonePassagePolicyTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Where a page from `shown` of chapter `chapter` goes, with passages of
+    /// at most four characters.
+    private func target(
+        _ chapters: [String],
+        chapter: Int,
+        shown: Range<Int>,
+        forward: Bool
+    ) -> (chapter: Int, offset: Int)? {
+        PhonePassagePolicy.pageTarget(chapters: chapters, chapter: chapter, shown: shown, forward: forward, maximumLength: 4)
+    }
 
     /// Whether `event` changes the passage in the state given.
     private func changes(

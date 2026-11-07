@@ -104,6 +104,8 @@ final class PhoneBookTextView: UITextView {
     func attach(model: PhoneReaderModel, followsInBraille: @escaping @MainActor () -> Bool) {
         self.model = model
         self.followsInBraille = followsInBraille
+        // Known by its kind, so a landing here ends the arrival's pull to Play.
+        PhoneFocusRegistry.shared.register(self, as: .bookContent)
         model.placeDidMove = { [weak self] in
             self?.passageEvent(.movedWhilePaused)
         }

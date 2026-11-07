@@ -22,6 +22,24 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
     }
 
+    /// Every control has a focus kind of its own, and every kind belongs to
+    /// a control, so a landing on any control is the listener's.
+    func testEveryControlHasItsOwnFocusKind() {
+        let kinds = PhoneReaderControl.allCases.map(\.focusKind)
+        XCTAssertEqual(Set(kinds).count, kinds.count)
+        XCTAssertEqual(Set(kinds), Set(PhoneControlKind.allCases))
+    }
+
+    /// The controls that open a sheet name it; the others open none.
+    func testTheControlsThatOpenASheet() {
+        XCTAssertEqual(PhoneReaderControl.navigationUnit.sheet, .navigationUnit)
+        XCTAssertEqual(PhoneReaderControl.headings.sheet, .headings)
+        XCTAssertEqual(PhoneReaderControl.voice.sheet, .voice)
+        XCTAssertNil(PhoneReaderControl.play.sheet)
+        XCTAssertNil(PhoneReaderControl.addBookmark.sheet)
+        XCTAssertEqual(Set(PhoneReaderControl.allCases.compactMap(\.sheet)), Set(PhoneReaderSheet.allCases))
+    }
+
     // MARK: - Play
 
     /// Paused: "Play", adjustable, starting a media session, with the unit

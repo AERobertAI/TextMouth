@@ -44,17 +44,17 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     static let grid: [PhoneReaderControl] = Array(allCases.drop { $0 != .whereAmI })
 
     /// The kind `PhoneFocusRegistry` knows the control by, for focus on
-    /// arrival and on return from a sheet. The foundation's kinds don't yet
-    /// name the two heading buttons, so they have none: a landing on one
-    /// doesn't count as the listener's in `PhoneFocusPolicy` until they do.
-    var focusKind: PhoneControlKind? {
+    /// arrival and on return from a sheet: every control has one, so a
+    /// landing on any of them counts as the listener's in `PhoneFocusPolicy`.
+    var focusKind: PhoneControlKind {
         switch self {
         case .bookContent: return .bookContent
         case .play: return .play
         case .whereAmI: return .whereAmI
         case .navigationUnit: return .navigationUnit
         case .speed: return .speed
-        case .previousHeading, .nextHeading: return nil
+        case .previousHeading: return .previousHeading
+        case .nextHeading: return .nextHeading
         case .addBookmark: return .addBookmark
         case .bookmarks: return .bookmarks
         case .headings: return .headings
