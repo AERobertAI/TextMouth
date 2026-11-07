@@ -274,7 +274,7 @@ extension EPUBParser {
         let doc: Document
         let title: String
         do {
-            doc = try SwiftSoup.parse(html)
+            doc = try MarkupGuard.parse(html)
             title = try doc.title()
 
             // Some converted EPUBs have an incomplete machine TOC but a full
@@ -401,7 +401,7 @@ extension EPUBParser {
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             navigationDocumentPaths.insert(path)
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for toc in tableOfContentsNavigations(in: doc) {
@@ -421,7 +421,7 @@ extension EPUBParser {
             let path = ParserUtilities.resolvedPackagePath(href, relativeTo: opfPath, preserveFragment: false)
             guard !navigationDocumentPaths.contains(path),
                   let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             let fragment = ParserUtilities.splitFragment(href).fragment
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment, readingFlow: readingFlow) {
@@ -470,7 +470,7 @@ extension EPUBParser {
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             for list in pageListContainers(in: doc) {
                 for link in elements(in: list, pruning: { _ in false }) where link.tagName() == "a" {
                     guard link.hasAttr("href") else { continue }

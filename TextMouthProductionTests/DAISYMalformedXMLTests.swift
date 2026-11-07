@@ -597,24 +597,31 @@ final class DAISYMalformedXMLTests: XCTestCase {
     /// `</body>` closes the heading and the divisions: SwiftSoup itself calls
     /// itself once for every level above an `</h1>` or `</span>` it reads,
     /// which would overflow the stack in SwiftSoup before TextMouth's walk.
+    /// `MarkupGuard` refuses such a file before any of this, so its limit is
+    /// lifted here, to hold the walk to itself.
     func testNCCNestedThousandsDeepIsReadOnAWorkerStack() {
         let html = "<html><head><meta name=\"dc:title\" content=\"Harbor Soundings\"/></head><body>"
             + String(repeating: "<div>", count: 20_000)
             + "<h1><a href=\"part1.smil#p1\">Leadline Readings</a></body></html>"
-        let outline = onWorkerSizedStack { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        let outline = onWorkerSizedStack {
+            MarkupGuard.$limits.withValue(.withoutDepthLimit) { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        }
         XCTAssertEqual(outline, ["h1 Leadline Readings → part1.smil#p1"])
     }
 
     /// A heading whose link lies inside 20,000 nested spans is read on a
     /// worker thread's 512 KiB stack and keeps that link as its destination.
     /// The search for a heading's first link once called itself for every
-    /// element, which overflowed that stack. `</body>` closes the spans, as
-    /// in `testNCCNestedThousandsDeepIsReadOnAWorkerStack`.
+    /// element, which overflowed that stack. `</body>` closes the spans, and
+    /// `MarkupGuard`'s limit is lifted, as in
+    /// `testNCCNestedThousandsDeepIsReadOnAWorkerStack`.
     func testAHeadingsLinkNestedThousandsDeepIsFoundOnAWorkerStack() {
         let html = "<html><head></head><body><h1>"
             + String(repeating: "<span>", count: 20_000)
             + "<a href=\"part1.smil#p1\">Leadline Readings</a></body></html>"
-        let outline = onWorkerSizedStack { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        let outline = onWorkerSizedStack {
+            MarkupGuard.$limits.withValue(.withoutDepthLimit) { DAISYMalformedXMLTests.outlineOfNCC(html) }
+        }
         XCTAssertEqual(outline, ["h1 Leadline Readings → part1.smil#p1"])
     }
 

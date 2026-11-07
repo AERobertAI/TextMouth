@@ -53,7 +53,7 @@ enum HTMLToMarkdownConverter {
         includesPages: Bool = true
     ) throws -> String {
         try convert(
-            document: SwiftSoup.parse(html),
+            document: MarkupGuard.parse(html),
             readingFlow: PublicationSemantics.ReadingFlow(source: html),
             stripDuplicateNavigation: stripDuplicateNavigation,
             headingTargets: headingTargets,
