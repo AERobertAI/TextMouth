@@ -63,6 +63,18 @@ enum PhoneReaderWording {
         return "\(sentence) \(Self.sentence(heading))"
     }
 
+    /// The question before Add bookmark removes a bookmark that has a note:
+    /// "Remove Bookmark 3?", with the note as its message.
+    static func removeBookmarkTitle(_ bookmark: Bookmark) -> String {
+        "Remove Bookmark \(bookmark.number)?"
+    }
+
+    /// The question's button that removes the bookmark.
+    static let remove = "Remove"
+
+    /// The question's button that keeps it: the Mac's word in every sheet.
+    static let cancel = "Cancel"
+
     /// The name of Book content's rotor that moves by sentence.
     static let sentencesRotor = "Sentences"
 

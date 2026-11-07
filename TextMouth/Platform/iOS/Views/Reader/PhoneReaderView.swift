@@ -1,29 +1,328 @@
 import SwiftUI
+import UIKit
 
-/// The bare reader of Slice 1: the book's title and one Play button, both from
-/// the session's snapshot, so that the screen does not redraw as the book's
-/// place moves. Slice 4 replaces it with the reader the spec describes.
+/// The reader's screen: Book content, Play, and a grid of three columns and
+/// five rows, in the spec's order and layout (the spec, under "The reader").
+///
+/// The view is thin. It reads the session's snapshot, which changes only
+/// when the book's title, playing, or loading does, never as the place moves;
+/// every word comes from `PhoneReaderModel` when VoiceOver asks; and every
+/// control is a UIKit view (`PhoneControl`, `PhoneBookContent`). The screen
+/// is never keyed by book, so focus survives the next book.
+///
+/// Nothing here has run on iOS. Unverified, and on the hand-check list: the
+/// flick order down the column, focus landing on Play at every open, and
+/// that a person can find Play by touch.
 struct PhoneReaderView: View {
     /// The owner of the reader.
     @ObservedObject var session: PhoneSession
 
+    /// The sheet open over the reader, if any.
+    @State private var sheet: PhoneReaderSheet?
+    /// The control that opened it, which focus returns to when it closes.
+    @State private var sheetOpener: PhoneReaderControl?
+    /// The bookmark with a note that Add bookmark asks about removing.
+    @State private var bookmarkToRemove: Bookmark?
+    /// Whether the load failure has VoiceOver's focus.
+    @AccessibilityFocusState private var failureFocused: Bool
+
+    /// At accessibility text sizes the grid becomes one column.
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// Book content's height: about six lines of body text at any size.
+    @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 150
+    /// Play's height, the same in every book.
+    @ScaledMetric(relativeTo: .title2) private var playHeight: CGFloat = 88
+
+    /// The one model for the session's readers.
+    private var model: PhoneReaderModel {
+        PhoneReaderModel.attached(to: session)
+    }
+
     var body: some View {
-        // No snapshot means no reader. Nothing in Slice 1 closes the reader
-        // while this screen shows; a screen with nothing on it is the safe
-        // answer if something does, with the system's Back still there.
-        VStack(spacing: 24) {
-            if let snapshot = session.snapshot {
-                Text(snapshot.title)
-                    .font(.title2)
-                    .multilineTextAlignment(.center)
-                    .accessibilityAddTraits(.isHeader)
-                Button(PhoneAppWording.playButton(isPlaying: snapshot.isPlaying)) {
-                    session.togglePlayPause()
+        content
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(item: $sheet, onDismiss: sheetClosed) { shown in
+                sheetView(shown)
+            }
+            .alert(
+                bookmarkToRemove.map(PhoneReaderWording.removeBookmarkTitle) ?? "",
+                isPresented: Binding(
+                    get: { bookmarkToRemove != nil },
+                    set: { if !$0 { bookmarkToRemove = nil } }
+                ),
+                presenting: bookmarkToRemove
+            ) { _ in
+                Button(PhoneReaderWording.remove, role: .destructive) {
+                    model.toggleBookmark()
                 }
-                .accessibilityValue(snapshot.isLoading ? PhoneAppWording.loading : "")
+                Button(PhoneReaderWording.cancel, role: .cancel) {}
+            } message: { bookmark in
+                Text(bookmark.label)
+            }
+            // Once per arrival, never per book: the next book keeps the
+            // screen, and focus stays where the listener put it.
+            .task {
+                await arrive()
+            }
+    }
+
+    // MARK: - The Screen
+
+    /// The column, or the Mac's load failure in place of the moving
+    /// controls, with Back still working.
+    @ViewBuilder
+    private var content: some View {
+        if let failure = loadFailure {
+            ReaderLoadFailureView(message: failure)
+                .accessibilityFocused($failureFocused)
+                .task {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    failureFocused = true
+                }
+        } else {
+            ScrollView {
+                column
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: 640)
+                    .frame(maxWidth: .infinity)
             }
         }
-        .padding()
-        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Book content, Play, and the grid. No `accessibilityElement(children:)`
+    /// wraps it, or the UIKit views would vanish from VoiceOver.
+    private var column: some View {
+        VStack(spacing: 12) {
+            PhoneBookContent(
+                model: model,
+                snapshot: session.snapshot,
+                followsInBraille: { PhoneReaderView.followsInBraille }
+            )
+            .frame(height: textHeight)
+
+            control(.play)
+                .frame(height: playHeight)
+
+            if typeSize.isAccessibilitySize {
+                ForEach(PhoneReaderControl.grid, id: \.self) { item in
+                    control(item)
+                }
+            } else {
+                ForEach(gridRows, id: \.self) { row in
+                    HStack(spacing: 12) {
+                        ForEach(row, id: \.self) { item in
+                            control(item)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The grid's rows, three controls to a row, in the spec's order.
+    private var gridRows: [[PhoneReaderControl]] {
+        stride(from: 0, to: PhoneReaderControl.grid.count, by: 3).map {
+            Array(PhoneReaderControl.grid[$0..<min($0 + 3, PhoneReaderControl.grid.count)])
+        }
+    }
+
+    /// The book's title, with the Mac's prefix for a book read from the
+    /// Reading List.
+    private var title: String {
+        guard let snapshot = session.snapshot else { return "" }
+        guard session.reader?.readingListPlace != nil else { return snapshot.title }
+        return "\(ReadingListReaderWording.windowTitlePrefix): \(snapshot.title)"
+    }
+
+    /// Why the book couldn't load, once loading has ended.
+    private var loadFailure: String? {
+        guard session.snapshot?.isLoading == false else { return nil }
+        return session.reader?.loadErrorMessage
+    }
+
+    // MARK: - The Controls
+
+    /// The UIKit control for `item`, with what it does.
+    private func control(_ item: PhoneReaderControl) -> some View {
+        let model = model
+        return PhoneControl(
+            describe: { model.description(of: item) },
+            activate: action(for: item),
+            increment: adjustment(for: item, up: true),
+            decrement: adjustment(for: item, up: false),
+            perform: customActions(for: item),
+            focusKind: item.focusKind,
+            showsValue: item == .navigationUnit || item == .speed
+        )
+        .frame(maxWidth: .infinity)
+    }
+
+    /// What activating `item` does.
+    private func action(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
+        let model = model
+        switch item {
+        case .bookContent, .speed:
+            return nil
+        case .play:
+            return { model.togglePlayPause() }
+        case .whereAmI:
+            return { model.whereAmI() }
+        case .previousHeading:
+            return { model.moveOnScreen(forward: false, unit: .heading, source: .command) }
+        case .nextHeading:
+            return { model.moveOnScreen(forward: true, unit: .heading, source: .command) }
+        case .skipBackward:
+            return { model.moveOnScreen(forward: false, source: .command) }
+        case .skipForward:
+            return { model.moveOnScreen(forward: true, source: .command) }
+        case .addBookmark:
+            return {
+                // A bookmark with a note asks first; one without goes at once.
+                if let bookmark = model.bookmarkToConfirmRemoving {
+                    bookmarkToRemove = bookmark
+                } else {
+                    model.toggleBookmark()
+                }
+            }
+        case .returnToPlace:
+            return { model.returnToPreviousPlace() }
+        case .navigationUnit, .bookmarks, .headings, .goTo, .sleepTimer, .voice, .bookInfo:
+            return {
+                sheetOpener = item
+                sheet = item.sheet
+            }
+        }
+    }
+
+    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's.
+    private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
+        guard item == .whereAmI else { return nil }
+        let model = model
+        return { action in
+            switch action {
+            case .whereAmIFullSummary: model.whereAmIFullSummary()
+            case .copyReadingPosition: model.copyReadingPosition()
+            }
+        }
+    }
+
+    /// What adjusting `item` up or down does: Play moves by the unit,
+    /// Navigation unit steps through the units, Speed steps the speed.
+    private func adjustment(for item: PhoneReaderControl, up: Bool) -> (@MainActor () -> Void)? {
+        let model = model
+        switch item {
+        case .play:
+            // Up is forward, as Voice Dream's and Apple's "increase" have it.
+            return { model.moveOnScreen(forward: up, source: .adjustingPlay) }
+        case .navigationUnit:
+            return { model.adjustUnit(up: up) }
+        case .speed:
+            return { model.adjustSpeed(up: up) }
+        default:
+            return nil
+        }
+    }
+
+    // MARK: - Sheets
+
+    /// The sheet's content: Navigation unit's choices here, the panels'
+    /// sheets from `PhoneReaderSheetContent`.
+    @ViewBuilder
+    private func sheetView(_ shown: PhoneReaderSheet) -> some View {
+        if shown == .navigationUnit, let reader = session.reader {
+            PhoneChoiceSheet(
+                title: PhoneReaderVocabulary.navigationUnit,
+                choices: PhoneNavigationUnits.offered(isAudioBook: reader.isAudioBook, hasSeveralPages: reader.hasSeveralPages)
+                    .map { PhoneChoice(id: $0, label: $0.rawValue) },
+                selected: model.unitInForce(of: reader),
+                onChoose: { model.choose($0) }
+            )
+        } else if let reader = session.reader {
+            PhoneReaderSheetContent(sheet: shown, reader: reader)
+        }
+    }
+
+    /// A sheet closed: the text follows a jump made in it, and focus returns
+    /// to the control that opened it, after 0.35 seconds, by a layout change
+    /// with that control as its argument. Sheets don't return focus by
+    /// themselves.
+    private func sheetClosed() {
+        model.invalidate()
+        model.placeDidMove?()
+        guard let kind = sheetOpener?.focusKind else { return }
+        sheetOpener = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + PhoneFocusPolicy.screenChangedDelay) {
+            guard let view = PhoneFocusRegistry.shared.view(for: kind) else { return }
+            UIAccessibility.post(notification: .layoutChanged, argument: view)
+        }
+    }
+
+    // MARK: - Arrival
+
+    /// A book opened: focus lands on Play by `PhoneFocusPolicy`, and the
+    /// title is said after it with low priority. A load that takes more than
+    /// 5 seconds says "Loading Moby-Dick" once, with low priority.
+    private func arrive() async {
+        guard let snapshot = session.snapshot else { return }
+        await PhoneReaderArrival().run()
+        PhoneAnnouncer.low(snapshot.title)
+        guard session.snapshot?.isLoading == true else { return }
+        try? await Task.sleep(for: .seconds(5))
+        if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true {
+            PhoneAnnouncer.low(PhoneReaderVocabulary.loading(snapshot.title))
+        }
+    }
+
+    /// Whether Settings' Follow in Braille is on, read from preferences.
+    private static var followsInBraille: Bool {
+        TextMouthRuntime.current.preferences.bool(forKey: PhoneReaderModel.followInBrailleKey)
+    }
+}
+
+/// Runs `PhoneFocusPolicy`'s arrival on the reader: `.screenChanged` with
+/// Play at 0.35 seconds, `.layoutChanged` with Play once at 1.2 seconds if
+/// focus has reached none of the reader's controls, and nothing after 3
+/// seconds or after focus has landed on one of them, which is the listener's.
+@MainActor
+private final class PhoneReaderArrival {
+    /// The rules, with the arrival's time.
+    private var policy = PhoneFocusPolicy(arrivedAt: ProcessInfo.processInfo.systemUptime)
+    /// The focus observer, while the arrival runs.
+    private var observer: NSObjectProtocol?
+
+    /// Runs the arrival to its end: at most 3 seconds.
+    func run() async {
+        observer = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.elementFocusedNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            let element = notification.userInfo?[UIAccessibility.focusedElementUserInfoKey]
+            MainActor.assumeIsolated {
+                self?.landed(on: element)
+            }
+        }
+        defer {
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+        }
+        while let next = policy.nextCheck {
+            let wait = max(0, next - ProcessInfo.processInfo.systemUptime)
+            try? await Task.sleep(for: .seconds(wait))
+            if Task.isCancelled { return }
+            switch policy.action(at: ProcessInfo.processInfo.systemUptime) {
+            case .postScreenChanged?:
+                UIAccessibility.post(notification: .screenChanged, argument: PhoneFocusRegistry.shared.view(for: .play))
+            case .postLayoutChanged?:
+                UIAccessibility.post(notification: .layoutChanged, argument: PhoneFocusRegistry.shared.view(for: .play))
+            case nil:
+                break
+            }
+        }
+    }
+
+    /// VoiceOver's focus landed on `element`: once on any reader control, the
+    /// arrival is over.
+    private func landed(on element: Any?) {
+        policy.focusLanded(on: PhoneFocusRegistry.shared.kind(of: element))
     }
 }
