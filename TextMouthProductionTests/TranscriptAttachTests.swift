@@ -543,6 +543,38 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertTrue(ended, "the transcription never stopped")
     }
 
+    /// Transcribe Audio… is not offered for an audiobook a transcript is being
+    /// attached to, and is again once that ends (follow-up 7); asked for all
+    /// the same, as from a library row, it opens no sheet and says to wait.
+    func testTranscribeAudioWaitsWhileATranscriptIsBeingAttached() throws {
+        let world = try makeIntegrationWorld("Attach Transcript Transcribe")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let text = Book(title: "Harbour Notes", format: .markdown, filePath: "/Harbour Notes.md", md5Hash: "")
+        XCTAssertTrue(TranscriptAttachments.canTranscribe(book, attaching: []))
+        XCTAssertFalse(TranscriptAttachments.canTranscribe(book, attaching: [book.id]))
+        XCTAssertFalse(TranscriptAttachments.canTranscribe(text, attaching: []))
+        let attachments = TranscriptAttachments.shared
+        attachments.begin(book.id)
+        defer { attachments.end(book.id) }
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        presenter.transcribe([book], library: world.library, window: nil)
+
+        XCTAssertNil(presenter.sheet, "the sheet opened while a transcript was being attached")
+        XCTAssertEqual(presenter.notice?.title, "Transcribe Audio")
+        XCTAssertEqual(
+            presenter.notice?.message,
+            "A transcript is being attached to Four Tones. Transcribe it once that finishes."
+        )
+
+        attachments.end(book.id)
+        presenter.notice = nil
+        presenter.transcribe([book], library: world.library, window: nil)
+
+        XCTAssertNotNil(presenter.sheet, "the sheet did not open once the attaching ended")
+        XCTAssertNil(presenter.notice)
+    }
+
     /// A transcription of the book begun while the confirmation showed keeps
     /// Replace from attaching, since it would save its own transcript over
     /// the file's: the notice says to wait, the transcript stays byte for

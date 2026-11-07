@@ -47,6 +47,15 @@ final class TranscriptAttachments: ObservableObject {
         LibraryAudioCommand.isTranscribable(book) && !attaching.contains(book.id)
     }
 
+    /// Whether Transcribe Audio… can transcribe `book`: an audiobook in a
+    /// package of its own (`LibraryAudioCommand.isTranscribable(_:)`) that
+    /// no transcript is being attached to, as `attaching` lists them. A
+    /// transcription begun while a file is attached would save its own
+    /// transcript over the file's moments later (follow-up 7).
+    static func canTranscribe(_ book: Book, attaching: Set<UUID>) -> Bool {
+        LibraryAudioCommand.isTranscribable(book) && !attaching.contains(book.id)
+    }
+
     /// The kinds of file the Open panel offers: WebVTT and SubRip, each by
     /// its extension (`TimedTextFormat.cueFileFormats`), as the system
     /// knows it or as a type of its own when it knows none.

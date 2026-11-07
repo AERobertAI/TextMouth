@@ -163,7 +163,11 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 \.canEditBookManifest,
                 BookManifestEditing.canEditManifest(of: viewModel.book, isTrackFolder: trackFolderBooks.contains(viewModel.book.id))
             )
-            .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
+            // Dimmed while a transcript is being attached to the book.
+            .focusedSceneValue(
+                \.canTranscribeBookAudio,
+                TranscriptAttachments.canTranscribe(viewModel.book, attaching: attachments.bookIDs)
+            )
             .focusedSceneValue(
                 \.canAttachBookTranscript,
                 TranscriptAttachments.canAttach(viewModel.book, attaching: attachments.bookIDs)

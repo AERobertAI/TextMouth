@@ -460,6 +460,16 @@ enum TranscriptionWording {
     /// why the file chosen was not attached.
     static let attachNoticeTitle = "Attach Transcript"
 
+    /// The title of the notice saying why Transcribe Audio did nothing.
+    static let transcribeNoticeTitle = "Transcribe Audio"
+
+    /// Why Transcribe Audio waits while a transcript is being attached to
+    /// the same book (follow-up 7): "A transcript is being attached to
+    /// Moby-Dick. Transcribe it once that finishes."
+    static func transcribeWhileAttaching(bookTitle: String) -> String {
+        "A transcript is being attached to \(bookTitle). Transcribe it once that finishes."
+    }
+
     /// Why Attach Transcript waits while the same book is transcribed.
     static func attachWhileTranscribing(bookTitle: String) -> String {
         whileTranscribing(bookTitle: bookTitle, orElse: "attach the transcript")

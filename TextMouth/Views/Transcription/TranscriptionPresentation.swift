@@ -151,8 +151,20 @@ final class TranscriptionPresenter: ObservableObject {
     /// is not an audiobook, the sheet saying why, unless a sheet is open
     /// already. With `startsAtOnce`, the sheet presses Transcribe for the
     /// user as soon as it can.
+    ///
+    /// For one audiobook a transcript is being attached to
+    /// (`TranscriptAttachments`), a notice says to wait instead, from
+    /// whichever way the command came: the reader's Book menu dims it then,
+    /// and a library row or VoiceOver action reaches here (follow-up 7).
     func transcribe(_ books: [Book], library: LibraryViewModel, window: PlatformWindow?, startsAtOnce: Bool = false) {
         guard sheet == nil else { return }
+        if books.count == 1, let book = books.first, TranscriptAttachments.shared.bookIDs.contains(book.id) {
+            notice = TranscriptionNotice(
+                title: TranscriptionWording.transcribeNoticeTitle,
+                message: TranscriptionWording.transcribeWhileAttaching(bookTitle: book.title)
+            )
+            return
+        }
         let model = TranscriptionSheetModel(
             request: TranscriptionRequest(books: books),
             library: library,
