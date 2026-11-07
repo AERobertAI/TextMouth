@@ -614,10 +614,17 @@ final class PortableXMLDifferentialTests: XCTestCase {
         let instructions = String(repeating: "<?x <a> ?>", count: limit)
         let closed = String(repeating: "<a/>", count: limit * 2) + String(repeating: "<a></a>", count: limit * 2)
         for text in [comments, cdata, attributes, instructions, closed] {
-            XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array(text.utf8)))
+            XCTAssertFalse(nestsTooDeeply(text))
         }
-        XCTAssertTrue(PortableXMLLenientReader.nestsTooDeeply(Array(String(repeating: "<a>", count: limit + 1).utf8)))
-        XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array("1 < 2 and 3 > 2 <".utf8)))
+        XCTAssertTrue(nestsTooDeeply(String(repeating: "<a>", count: limit + 1)))
+        XCTAssertFalse(nestsTooDeeply("1 < 2 and 3 > 2 <"))
+    }
+
+    /// Whether the lenient reader's scan, `MarkupGuard`'s, refuses `text` as nested past the tree's limit.
+    private func nestsTooDeeply(_ text: String) -> Bool {
+        var limits = MarkupGuard.Limits.standard
+        limits.deepestNesting = PortableXMLDocument.maximumDepth
+        return (try? MarkupGuard.inspect(Array(text.utf8), as: .xml, limits: limits)) == nil
     }
 
     /// A chain of `depth` elements, each inside the one before, built by
@@ -642,22 +649,22 @@ final class PortableXMLDifferentialTests: XCTestCase {
         let limit = PortableXMLDocument.maximumDepth
         let items = String(repeating: "<item><description>One<br>Two<br>Three<br></description></item>", count: 300)
         let feed = "<rss><channel>" + items + "</channel></rss>"
-        XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array(feed.utf8)))
+        XCTAssertFalse(nestsTooDeeply(feed))
         let tidied = try PortableXMLDocument(xmlString: feed, options: [.documentTidyXML])
         XCTAssertEqual(try tidied.nodes(forXPath: "//*[local-name()='item']").count, 300)
 
         // An end tag closes the nearest open element of its name, and those above it.
         let rounds = String(repeating: "<a>" + String(repeating: "<b><c>", count: 200) + "</a>", count: 5)
-        XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array(rounds.utf8)))
+        XCTAssertFalse(nestsTooDeeply(rounds))
         // Stray end tags close nothing: the opens pile up.
         let stray = "<a>" + String(repeating: "<b></q>", count: limit + 88) + "</a>"
-        XCTAssertTrue(PortableXMLLenientReader.nestsTooDeeply(Array(stray.utf8)))
+        XCTAssertTrue(nestsTooDeeply(stray))
         XCTAssertThrowsError(try PortableXMLDocument(xmlString: stray, options: [.documentTidyXML])) { error in
             XCTAssertEqual(error as? PortableXMLError, .tooDeep)
         }
         // 600 stray end tags around nested opens.
         let around = String(repeating: "</q>", count: 600) + String(repeating: "<a>", count: limit + 1) + String(repeating: "</q>", count: 600)
-        XCTAssertTrue(PortableXMLLenientReader.nestsTooDeeply(Array(around.utf8)))
+        XCTAssertTrue(nestsTooDeeply(around))
     }
 
     /// A hostile document of 100,000 pairs `<a></q>` is refused promptly by
