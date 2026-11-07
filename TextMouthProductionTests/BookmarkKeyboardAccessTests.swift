@@ -108,6 +108,34 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertFalse(expected.contains("Nothing was changed"), "the reader's own list is emptied too")
     }
 
+    /// Toggling a bookmark that is near the reading position, after the book
+    /// left the library, removes nothing: it says the book is gone, after
+    /// the focus has settled, as the add paths do, and never that a
+    /// bookmark was removed.
+    func testTogglingABookmarkForAnUnknownBookSaysItCouldNotBeRemoved() {
+        let nearby = [Bookmark(number: 7, chapterIndex: 0, characterOffset: 0)]
+        let reader = makeReader(bookmarks: nearby, isInLibrary: false)
+        defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
+
+        XCTAssertEqual(messages, [ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus")])
+        XCTAssertEqual(
+            ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus"),
+            "Could not remove the bookmark: \u{201C}Bookmark Focus\u{201D} is no longer in the library."
+        )
+        XCTAssertFalse(messages.contains { $0.contains("removed") && $0.hasPrefix("Bookmark") })
+    }
+
     // MARK: - Where focus goes
 
     /// The panel lists bookmarks by number, the order they were added in.

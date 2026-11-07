@@ -68,6 +68,12 @@ extension ReaderViewModel {
     /// the offset it is saved at, the adjusted one (T06, `anchorToSave(at:)`).
     func toggleBookmarkAtCurrentPosition() {
         if let existing = nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) {
+            // A book the library no longer holds has no bookmark to remove:
+            // say so, as the add paths do, not that one was removed.
+            guard libraryViewModel.bookByID(book.id) != nil else {
+                announceBookmarkNotDone(Self.bookmarkNotRemovedAnnouncement(bookTitle: book.title))
+                return
+            }
             // Remove the nearby bookmark
             let number = existing.number
             removeBookmark(existing)
@@ -177,22 +183,34 @@ extension ReaderViewModel {
         "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
     }
 
+    /// What VoiceOver says when a bookmark could not be removed because the
+    /// library holds no record of the book.
+    static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
+        "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
+    }
+
+    /// Says `sentence`, which tells that a bookmark command did nothing, a
+    /// moment late: the bookmarks panel moves VoiceOver's focus a moment
+    /// after an add, which cuts off words posted with the move, so the long
+    /// sentence waits until the focus has settled (REV11 F6,
+    /// `VoiceOverAnnouncer.afterSheetCloses`).
+    private func announceBookmarkNotDone(_ sentence: String) {
+        VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+            self?.announceToVoiceOver(sentence)
+        }
+    }
+
     /// Says which bookmark was added, by the number it was given, or that
     /// none was when `added` is nil. The number is the new bookmark's own,
     /// never a count of the bookmarks, so it names the bookmark that was
     /// made, and a command that added nothing never claims a bookmark. The
-    /// sentence for none is long and the bookmarks panel moves VoiceOver's
-    /// focus a moment after an add, which cuts off words posted with the
-    /// move, so it waits until the focus has settled (REV11 F6,
-    /// `VoiceOverAnnouncer.afterSheetCloses`).
+    /// sentence for none waits for the focus to settle
+    /// (`announceBookmarkNotDone`).
     private func announceBookmarkAdded(_ added: Bookmark?) {
         if let added {
             announceToVoiceOver("Bookmark \(added.number) added")
         } else {
-            let sentence = Self.bookmarkNotAddedAnnouncement(bookTitle: book.title)
-            VoiceOverAnnouncer.afterSheetCloses { [weak self] in
-                self?.announceToVoiceOver(sentence)
-            }
+            announceBookmarkNotDone(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
         }
     }
 
