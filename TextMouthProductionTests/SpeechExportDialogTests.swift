@@ -188,6 +188,12 @@ final class SpeechExportDialogTests: XCTestCase {
 
         XCTAssertEqual(model.phase, .ready)
         XCTAssertTrue(model.choices.contains { $0.kind == .spokenAudio && $0.isAvailable })
+        if case .notMade = model.speechOptionsMaking {} else {
+            XCTFail("the options were being made as the dialog opened")
+        }
+        // A read started as the dialog opened would come on the main actor a
+        // moment later: give it the time to show.
+        try await Task.sleep(for: .milliseconds(200))
         XCTAssertEqual(cloud.refusedReads, [], "opening the dialog read the book's text")
 
         model.setChecked(true, for: .spokenAudio)
