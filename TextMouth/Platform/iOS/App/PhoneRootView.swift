@@ -33,8 +33,10 @@ struct PhoneRootView: View {
                     case .folder(let path):
                         PhoneLibraryView(model: model, location: LibraryLocation(category: .folders, folderPath: path))
                     case .settings:
-                        // The Settings slice's screen takes this place.
-                        EmptyView()
+                        // Slice 9's screen. Its voice preview doesn't yet pause
+                        // a playing book: the session's closure for that is a
+                        // follow-up, and with none the preview just speaks.
+                        PhoneSettingsView(settings: model.settings)
                     }
                 }
         }
