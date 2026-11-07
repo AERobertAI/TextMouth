@@ -70,6 +70,24 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A bullet made by a symbol, at the start of a paragraph, now makes a list item. A paragraph that holds only a picture symbol, such as a checkbox, is no longer written.
 - Word 6 and Word 95 documents read their symbols by the same rule, and read text typed in Symbol as its Greek letters or signs.
 
+### Markup that could crash TextMouth
+- A damaged or deliberately crafted book, web page, or feed can no longer crash TextMouth through its HTML reader, the one that reads EPUB chapters, HTML files, DAISY books, Kindle books, web archives, and the pages and titles of feeds.
+- There were three ways it could, and each could come from one flipped byte or a file made on purpose:
+  - A broken declaration, such as `<?a>` or a torn `<?xml version="1.0"`, stopped the reader.
+  - Markup nested thousands of levels deep overflowed the stack of an import.
+  - A document of millions of tags filled the Mac's memory, since each tag takes a kilobyte or two however few bytes it has.
+- TextMouth now looks through the markup once before it reads it, and again at the tree it makes. A broken declaration is read as nothing, with the words around it, and no sentence is spoken.
+- Markup that passes a limit is refused with a sentence that says what is wrong and what to do, and never calls the file damaged, since it may not be (see [Adding books](adding-books.md)):
+  - More than 128 levels deep: "This file's markup nests more than 128 levels deep, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
+  - Too much markup in one document: "One document in this file holds too much markup for TextMouth to read without running out of memory. Divide the document into smaller files, then import them."
+  - More than 1,000 attributes on one tag: "One tag in this file has more than 1,000 attributes, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
+  - Markup built so that reading it would take far too long: "This file's markup is built in a way that would take TextMouth far too long to read. Get another copy of the file, or save it in another format, then import it again."
+- A Kindle book whose markup nested more than 256 levels deep was refused as damaged, with "its markup is nested more than 256 levels deep". It now meets the first sentence above, at 128 levels.
+- An EPUB with one refused chapter reads its other chapters, and the report of the book names the chapter that was left out. A feed gives no sentence: a page, an article, or a title that passes a limit is passed over.
+- Every real book tried reads as before. Of 355 real files, among them the largest Project Gutenberg and Standard Ebooks offer, and 62 web pages and other files fetched for the test, every one reads exactly as it did, and none is refused.
+- The deepest real file nests 12 levels and the deepest web page tried 36 (GitHub's), against a limit of 128. The biggest document, a whole dictionary as one 32 MB HTML file, uses under half the memory limit.
+- No book is read again for this.
+
 ### Older versions
 - The first time this version opens, every .doc book is read again once, for the Word 6 and Word 95 documents and the symbols it now reads (page reader line 1.3.0), and every .docx and .wordml book once, for the hidden text it now finds (1.2.0). Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
 
