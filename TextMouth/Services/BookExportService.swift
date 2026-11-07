@@ -846,6 +846,28 @@ enum BookExportService {
         }
     }
 
+    /// The captions asked of `offers` that cannot be made, each a failure
+    /// a listener hears with the export's end (S4): a book whose Transcript
+    /// item holds its Markdown but no transcript.json, as when its
+    /// transcript was set aside as unusable, has no timed transcript to
+    /// write, and would otherwise be skipped in silence. One whose
+    /// transcript.json is only in the cloud is left in the cloud instead
+    /// (`plan`), and one in the cloud as a whole is not asked here.
+    private static func captionsWithoutATranscript(
+        _ offers: [BookExportOffer],
+        kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion]
+    ) -> [BookExportFailure] {
+        guard kinds.contains(.transcript), let conversion = conversions[.transcript],
+              case .timedText = conversion else { return [] }
+        return offers.compactMap { offer in
+            guard !offer.isPackageInCloud, let item = offer.item(.transcript), !item.isInCloud,
+                  item.transcriptInCloud == nil, !item.files.contains(where: isTranscriptFile) else { return nil }
+            let name = "\(fileNameStem(for: offer.book.title)) - Transcript.\(conversion.fileExtension)"
+            return BookExportFailure(name: name, reason: BookExportWording.noTimedTranscriptReason)
+        }
+    }
+
     /// Whether `file` is made from a transcript's transcript.json, which
     /// captions are made of and a text writer leaves out (FMT23).
     private static func isTranscriptFile(_ file: BookExportFile) -> Bool {
@@ -886,6 +908,7 @@ enum BookExportService {
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
         var outcome = BookExportOutcome(destination: destination, booksInCloud: booksInCloud)
+        outcome.failures += captionsWithoutATranscript(offers, kinds: kinds, conversions: conversions)
         // One token for the whole export, so a conversion has one to check
         // even when the caller passed none.
         let token = cancellation ?? BookExportCancellation()

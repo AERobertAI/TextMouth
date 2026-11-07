@@ -758,30 +758,27 @@ final class TranscriptExportTests: XCTestCase {
     /// Captions of a book whose transcript.json is only in the cloud, its
     /// Markdown on this Mac, are refused as any export of a file in the cloud
     /// is (S4): the book is named as not downloaded, never skipped in
-    /// silence, and nothing is downloaded. Its text, which is on this Mac,
-    /// still exports as text.
+    /// silence. Its text, which is on this Mac, still exports as text. The
+    /// offer is made by hand, since an offer finds a file in the cloud by
+    /// the file system itself, which a test cannot make dataless.
     func testCaptionsOfATranscriptOnlyInTheCloudNameTheBook() throws {
         let world = try makeIntegrationWorld("Transcript Export Cloud")
         let book = try makeTranscribedBook(in: world)
         let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
-        let paths = Set([transcript.standardizedFileURL.path])
-        let cloud = MaintenanceFileAccess(
-            isDataless: { paths.contains($0.standardizedFileURL.path) },
-            refusesRead: { paths.contains($0.standardizedFileURL.path) }
+        let markdown = try XCTUnwrap(
+            BookExportService.offer(for: book).item(.transcript)?.files.filter { $0.path.hasSuffix(".md") },
+            "the offer lists no Markdown of the transcript"
         )
+        let item = BookExportItem(kind: .transcript, folderName: nil, files: markdown, fileInCloud: nil, transcriptInCloud: transcript)
+        let offer = BookExportOffer(book: book, items: [item], isPackageInCloud: false)
         let destination = try makeSandboxDirectory("Transcript Export Cloud Destination")
+        let html = BookExportConversion.text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))
 
-        let offer = BookExportService.offer(for: book, access: cloud)
-        let captions = BookExportService.export(
-            [offer], kinds: [.transcript], conversions: [.transcript: .timedText(.webVTT)], to: destination, access: cloud
-        )
-        let text = BookExportService.export(
-            [offer], kinds: [.transcript], conversions: [.transcript: .text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))],
-            to: destination, access: cloud
-        )
+        let captions = BookExportService.export([offer], kinds: [.transcript], conversions: [.transcript: .timedText(.webVTT)], to: destination)
+        let text = BookExportService.export([offer], kinds: [.transcript], conversions: [.transcript: html], to: destination)
 
-        XCTAssertEqual(offer.item(.transcript)?.transcriptInCloud, transcript)
         XCTAssertEqual(captions.exported, [])
+        XCTAssertEqual(captions.failures, [])
         XCTAssertEqual(captions.booksInCloud, [BookExportBookName(book)])
         XCTAssertEqual(
             BookExportWording.finished(captions, folderName: "Exports"),
@@ -789,6 +786,40 @@ final class TranscriptExportTests: XCTestCase {
         )
         XCTAssertEqual(text.exported.map(\.pathExtension), ["html"])
         XCTAssertEqual(text.booksInCloud, [])
+    }
+
+    /// Captions of a book whose transcript keeps no times, its transcript.json
+    /// set aside and only its Markdown left, are a failure saying why (S4),
+    /// never skipped in silence: alone, and among books whose captions are
+    /// written.
+    func testCaptionsOfATranscriptWithoutTimesSayWhy() throws {
+        let world = try makeIntegrationWorld("Transcript Export Untimed")
+        let book = try makeTranscribedBook(in: world)
+        let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        try FileManager.default.moveItem(at: transcript, to: transcript.appendingPathExtension("aside"))
+        let timed = try world.makeSilentAudioBook(title: "Lock Gates", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: timed, sentences: Self.harbourSentences), for: timed)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Transcript Export Untimed Destination")
+
+        let alone = BookExportService.export(
+            [BookExportService.offer(for: book)], kinds: [.transcript], conversions: [.transcript: .timedText(.webVTT)], to: destination
+        )
+        let together = BookExportService.export(
+            [BookExportService.offer(for: book), BookExportService.offer(for: timed)],
+            kinds: [.transcript],
+            conversions: [.transcript: .timedText(.subRip)],
+            to: destination
+        )
+
+        XCTAssertEqual(alone.exported, [])
+        XCTAssertEqual(alone.failures, [BookExportFailure(name: "\(stem) - Transcript.vtt", reason: BookExportWording.noTimedTranscriptReason)])
+        XCTAssertEqual(
+            BookExportWording.finished(alone, folderName: "Exports"),
+            "Couldn't export \(stem) - Transcript.vtt: The book has no timed transcript to write as captions."
+        )
+        XCTAssertEqual(together.exported.map(\.pathExtension), ["srt"])
+        XCTAssertEqual(together.failures.map(\.name), ["\(stem) - Transcript.srt"])
     }
 
     /// Exporting the transcript as WebVTT writes exactly one file, the book's

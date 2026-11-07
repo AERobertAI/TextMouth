@@ -93,6 +93,11 @@ enum BookExportWording {
     /// What the picker's hint says while JSON and Markdown is chosen.
     static let transcriptJSONChoiceHint = "The transcript as TextMouth keeps it, in JSON, with its text as Markdown."
 
+    /// Why a book's captions were not written when its transcript keeps no
+    /// times, only its text (S4): "The book has no timed transcript to write
+    /// as captions.", after the file's name in the export's failure sentence.
+    static let noTimedTranscriptReason = "The book has no timed transcript to write as captions."
+
     /// What the picker's hint says while `format` is chosen: what reads the
     /// format, and how its captions are laid out.
     static func transcriptChoiceHint(for format: TranscriptExportFormat) -> String {
