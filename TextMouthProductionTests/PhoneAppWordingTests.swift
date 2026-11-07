@@ -24,6 +24,15 @@ final class PhoneAppWordingTests: XCTestCase {
         XCTAssertTrue(macView.contains("return \"\(PhoneAppWording.playButton(isPlaying: false))\""))
     }
 
+    /// The sentence for a book that closed the app while opening is the
+    /// engineering review's, with the book's title.
+    func testTheSentenceForABookThatClosedTheAppNamesIt() {
+        XCTAssertEqual(
+            PhoneAppWording.closedWhileOpening("Dune"),
+            "TextMouth closed while opening Dune, so it wasn't reopened."
+        )
+    }
+
     /// The text of the source file at `path` in the app's source folder.
     private static func source(_ path: String) throws -> String {
         try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)
