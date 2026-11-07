@@ -54,6 +54,18 @@ final class TranscriptAttachments: ObservableObject {
         TimedTextFormat.cueFileFormats.compactMap { UTType(filenameExtension: $0.fileExtension) }
     }
 
+    /// Whether the file the listener chose can be read at all: a regular
+    /// file, or a link to one. Opening a named pipe or another special file
+    /// waits for a writer that never comes, and would leave the book
+    /// "being attached to" for good, so nothing but a regular file is read.
+    /// A look at the file system, which reads nothing.
+    static func isReadableFile(at url: URL) -> Bool {
+        // The listener chose the file, so a link is followed to what it
+        // names, unlike a file found beside the audio at import.
+        let target = url.resolvingSymlinksInPath()
+        return (try? target.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
+    }
+
     /// The folder the Open panel starts in for `book`: where the book was
     /// imported from (`Book.sourceFilePath`), where its transcript most
     /// likely lies. That is the folder itself for a book imported from a

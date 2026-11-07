@@ -354,6 +354,12 @@ final class TranscriptionPresenter: ObservableObject {
             showAttachFailure(TranscriptionWording.attachUnknownFormat, fileAt: url, to: book)
             return
         }
+        // Nothing is opened that is not a regular file (a named pipe would
+        // wait for ever).
+        guard TranscriptAttachments.isReadableFile(at: url) else {
+            showAttachFailure(TranscriptionWording.attachNotAFile, fileAt: url, to: book)
+            return
+        }
         let document: TimedTextDocument
         do {
             document = try await OffMainWork.runThrowing { try TimedTextReader.read(fileAt: url, as: format) }
