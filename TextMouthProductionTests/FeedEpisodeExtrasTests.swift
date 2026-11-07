@@ -408,6 +408,36 @@ FEED_DOWNLOAD_FINISHED: x"
         )
     }
 
+    /// A video episode with a transcript downloads as it always did, and its
+    /// outcome is told by one line: the transcript attached, or the reason it
+    /// was not. Measuring video's sound is where an attach could fail, and a
+    /// failure there must not touch the download.
+    func testAVideoEpisodeWithATranscriptStillDownloadsAndSaysWhatBecameOfIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasVideo")
+        let title = uniqueTitle()
+        let feed = try await subscribe(
+            world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil, audio: ("/video/tour.mp4", "video/mp4")
+        )
+        let video = try await FeedMediaFixtures.silentVideo(duration: 4)
+        world.server.serve("/video/tour.mp4", FeedMediaFixtures.file(video, mimeType: "video/mp4"))
+        world.server.serve("/t.vtt", try sampleResponse("vtt/tone4.vtt", type: "text/vtt"))
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state, .downloaded(bookID: book.id))
+        let episode = "\(title) (The Tactile Atlas)"
+        let attached = debugLogLines(containing: "FEED_TRANSCRIPT_ATTACHED: \(episode): WebVTT, ").count
+        let notAttached = debugLogLines(containing: "FEED_TRANSCRIPT_NOT_ATTACHED: \(episode): ").count
+        XCTAssertEqual(attached + notAttached, 1, "the transcript's outcome was not told by exactly one line")
+        // What the line says is what the package holds.
+        if case .found = TranscriptStore.read(from: book.tmbDirectory) {
+            XCTAssertEqual(attached, 1)
+        } else {
+            XCTAssertEqual(notAttached, 1)
+        }
+    }
+
     /// Links that carry no times are never asked for.
     func testLinksWithNoTimesAreNeverAskedFor() async throws {
         let world = try FeedTestWorld(self, label: "FeedExtrasUntimed")
@@ -1093,7 +1123,8 @@ FEED_DOWNLOAD_FINISHED: x"
         _ world: FeedTestWorld,
         title: String,
         transcripts: [(path: String, type: String?)],
-        chapters: String?
+        chapters: String?,
+        audio: (path: String, type: String) = (/audio/1.m4a, audio/mp4)
     ) async throws -> Feed {
         await world.start()
         let transcriptLinks = transcripts.map { link in
@@ -1109,7 +1140,7 @@ FEED_DOWNLOAD_FINISHED: x"
         <channel><title>The Tactile Atlas</title><link>https://show.example/</link>
         <description>A show for tests.</description>
         <item><title>\(title)</title><guid isPermaLink="false">ep-1</guid>
-        <enclosure url="\(world.server.url("/audio/1.m4a").absoluteString)" length="1000" type="audio/mp4"/>
+        <enclosure url="\(world.server.url(audio.path).absoluteString)" length="1000" type="\(audio.type)"/>
         \(transcriptLinks)\(chaptersLink)
         </item>
         </channel></rss>
