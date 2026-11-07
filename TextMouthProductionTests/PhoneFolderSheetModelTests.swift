@@ -485,8 +485,8 @@ final class PhoneFolderSheetModelTests: XCTestCase {
                 task: task,
                 library: library,
                 operations: operations,
-                announce: { [unowned self] in atOnce.append($0) },
-                announceAfterClosing: { [unowned self] in afterClosing.append($0) }
+                announce: { self.atOnce.append($0) },
+                announceAfterClosing: { self.afterClosing.append($0) }
             )
         }
     }
