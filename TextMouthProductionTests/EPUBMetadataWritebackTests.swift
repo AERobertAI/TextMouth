@@ -43,6 +43,36 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         XCTAssertNil(library.errorMessage)
     }
 
+    /// A file missing from the library is told apart from one that could not
+    /// be written: the sentence says it is missing, names the choice that
+    /// saves to the library only, and reads out no path. The row, the
+    /// record, and the file stay as they were.
+    func testTheLibrarysSaveSaysAMissingFileIsMissing() throws {
+        let book = try makePackagedEPUB()
+        let library = makeLibrary(with: book)
+        let fileBefore = try Data(contentsOf: book.bookFileURL)
+        let wording = EPUBMetadataSaveWording(filePath: book.filePath)
+        let writerReportingItMissing = EPUBMetadataWriter { _, file in
+            throw EPUBParserError.fileNotFound(file.path)
+        }
+
+        let save = library.saveEPUBMetadata(
+            try editedMetadata(of: book),
+            openedAs: try openedMetadata(of: book),
+            for: book,
+            writingToFile: true,
+            writer: writerReportingItMissing
+        )
+
+        XCTAssertNil(save.savedBook)
+        XCTAssertEqual(save.outcome, .failure(wording.fileMissing))
+        XCTAssertTrue(wording.fileMissing.contains("is missing from the library"))
+        XCTAssertTrue(wording.fileMissing.contains("Also write to the library's copy of the EPUB file"))
+        XCTAssertFalse(save.outcome.failureMessage?.contains("/") ?? true, "no path is read out")
+        XCTAssertEqual(try agreedMetadata(of: book, in: library), SavedMetadata(book))
+        XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
+    }
+
     /// The edit applies to the book where the library holds it now: an
     /// editor whose copy of the book names an older location still writes
     /// the library's copy, and the row and the record take the edit with

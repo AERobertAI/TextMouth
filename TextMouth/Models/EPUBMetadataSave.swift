@@ -121,6 +121,16 @@ struct EPUBMetadataSaveWording {
         "Could not save metadata to \(libraryCopy): \(PersistenceFailure.sentence(reason)) Nothing was changed."
     }
 
+    /// After writing the file failed because the file is not in the library
+    /// where it should be, so nothing was saved: it names the file, not its
+    /// place on the disk, and the choice that saves to the library alone,
+    /// which is the way to keep the edit.
+    var fileMissing: String {
+        "Could not save metadata to \(libraryCopy), because that file is missing from the library. "
+            + "Turn off \u{201C}\(Self.writeBackToggleTitle)\u{201D} to save the metadata to the library only. "
+            + "Nothing was changed."
+    }
+
     /// After the library alone took the metadata, as asked.
     static let savedToLibraryOnly = "Metadata saved to the library only; the EPUB file is unchanged."
 }

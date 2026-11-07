@@ -40,6 +40,23 @@ final class EPUBMetadataTests: XCTestCase {
         XCTAssertEqual(try EPUBParser.readMetadata(url: workingCopy).title, "Alice's Adventures in Wonderland")
     }
 
+    /// Writing metadata into an EPUB that is not there says the file is
+    /// missing, not that it "could not be opened as a ZIP archive".
+    func testWritingMetadataIntoAMissingFileSaysItIsMissing() throws {
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent("no-such-\(UUID().uuidString).epub")
+
+        XCTAssertThrowsError(try EPUBParser.writeMetadata(EPUBMetadata(
+            title: "", author: "", publisher: "", publicationDate: "",
+            isbn: "", language: "", identifier: "", epubVersion: ""
+        ), to: missing)) { error in
+            guard case EPUBParserError.fileNotFound(let path) = error else {
+                return XCTFail("Expected fileNotFound, got \(error)")
+            }
+            XCTAssertEqual(path, missing.path)
+        }
+    }
+
     func testAtomicReplacementPersistsPreparedMetadata() throws {
         let workingCopy = try makeWorkingCopy()
         defer { try? FileManager.default.removeItem(at: workingCopy) }

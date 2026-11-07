@@ -191,12 +191,9 @@ enum EPUBParser {
         to url: URL,
         replacingWith replacement: ((URL, URL) throws -> Void)? = nil
     ) throws -> String {
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
-        }
+        // A file that is not there is said to be missing, not to be a damaged
+        // archive, as reading the metadata says it.
+        let archive = try openArchive(at: url)
 
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
         let opfPath = try parseContainerForOPFPath(containerXML)

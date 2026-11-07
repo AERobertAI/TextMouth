@@ -1581,8 +1581,30 @@ extension Book {
         /// so the book's file still gives its value later, as it does for
         /// a cloud-only book's EPUB publisher and date or an audiobook's
         /// album, genre, and year. Only a value typed into it is saved.
+        ///
+        /// A title of nothing but blanks is never a change: a book keeps
+        /// the name it has, and a book with none is not given spaces, nor
+        /// has its blank swapped for another (`clearsTitle(opened:edited:)`),
+        /// whichever editor asks, so that the refusal an editor makes is not
+        /// the only thing between a save and a book with no name.
         var changes: MetadataValues {
-            saved.filter { field, value in (opened[field] ?? "") != value }
+            saved.filter { field, value in
+                if field == .title, Self.isBlank(value) { return false }
+                return (opened[field] ?? "") != value
+            }
+        }
+
+        /// Whether `title` holds nothing but blanks, or nothing.
+        private static func isBlank(_ title: String) -> Bool {
+            title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        /// Whether saving `edited` as a title would leave the book without
+        /// one: the editor opened with a title, and the edit holds nothing
+        /// but blanks. A book that had no title to begin with may be saved
+        /// without one, so a change to another field is never held back.
+        static func clearsTitle(opened: String, edited: String) -> Bool {
+            !isBlank(opened) && isBlank(edited)
         }
     }
 

@@ -99,7 +99,7 @@ enum AudioBookParser {
     ///   this function always did, and is only what older callers (and
     ///   tests) that name no scan rely on.
     static func audioFiles(in directory: URL, scan: TrackScan = .importing) throws -> [URL] {
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
             at: directory,
@@ -116,10 +116,10 @@ enum AudioBookParser {
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
-            if file.lastPathComponent == "__MACOSX" || values.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            // A link is neither a regular file nor entered as a folder, so
+            // the guard below passes it over. The skip is for Finder's
+            // metadata folder alone (`skipFinderMetadataFolder`).
+            if enumerator.skipFinderMetadataFolder(file, isDirectory: values.isDirectory) { continue }
             guard values.isRegularFile == true else { continue }
             let fileExtension = file.pathExtension.lowercased()
             switch scan {

@@ -1464,9 +1464,7 @@ struct LibraryView: View {
                 moveToFolder(books)
             },
             moveInManualOrder: { book, direction in
-                if let target = reorderTarget {
-                    moveBook(book.id, direction: direction, in: target)
-                }
+                moveBooks([book.id], direction: direction)
             },
             moveSayingPlace: moveSayingPlace,
             performCloudCommand: performCloudCommand,
@@ -1971,22 +1969,23 @@ struct LibraryView: View {
     /// Move the currently selected book up or down in the order the list
     /// shows. Only works when a single book is selected and the list shows
     /// an order the user arranges: one folder's manual order (TODO A06), or
-    /// the reading list (FR09). Announces the result to VoiceOver.
+    /// the reading list (FR09). Announces the result to VoiceOver, and when
+    /// the move cannot be made, says why rather than staying silent
+    /// (`LibraryViewModel.moveSelection`). Only the books selected count:
+    /// a selected folder row is not a book to move.
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard let target = reorderTarget else { return }
-        let ids = effectiveSelection
-        guard ids.count == 1, let bookID = ids.first else { return }
-        moveBook(bookID, direction: direction, in: target)
+        moveBooks(Set(selectedBooks.map(\.id)), direction: direction)
     }
 
-    /// Moves a book one place up (-1) or down (+1) in `target`, which saves
-    /// at once, and tells VoiceOver where it went, the same way in a folder
-    /// and in the reading list. Move Up and Move Down in the context menu
-    /// and on the keyboard share it.
-    private func moveBook(_ bookID: UUID, direction: Int, in target: LibraryReorderTarget) {
-        if let result = libraryViewModel.moveBook(bookID, direction: direction, in: target) {
-            announceToVoiceOver(result.announcement)
-        }
+    /// Moves the one book in `bookIDs` one place up (-1) or down (+1) in the
+    /// order the list shows, which saves at once, and tells VoiceOver where
+    /// it went or why it could not, the same way in a folder and in the
+    /// reading list. Move Up and Move Down in the context menu, and Move
+    /// Book Up and Move Book Down from the menu and the keyboard, share it.
+    private func moveBooks(_ bookIDs: Set<UUID>, direction: Int) {
+        announceToVoiceOver(
+            libraryViewModel.moveSelection(bookIDs, direction: direction, at: location, sortedBy: sort)
+        )
     }
 
     /// A row's Move Up (-1) or Move Down (+1) VoiceOver action (FR09):

@@ -1290,10 +1290,11 @@ enum FileImportService {
 
     /// The visible files anywhere in `folder`, counted by kind: hidden
     /// files, Finder's __MACOSX folder, and symbolic links are passed over,
-    /// as the tracks' discovery passes over them.
+    /// as the tracks' discovery passes over them. A link is no regular
+    /// file, so it is never counted.
     private static func filesHeld(by folder: URL) -> NonBookFiles {
         var files = NonBookFiles()
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1301,10 +1302,7 @@ enum FileImportService {
         ) else { return files }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isRegularFile == true {
                 files.add(item)
             }
@@ -1335,9 +1333,10 @@ enum FileImportService {
     /// its top level (`DAISYParser.isDAISYDirectory(url:)`). `folder`'s own
     /// top level is not checked: `BookFormat.detect` has done that. Finder's
     /// __MACOSX folder, hidden items, and symbolic links are passed over, as
-    /// `filesHeld(by:)` and the tracks' discovery pass over them.
+    /// `filesHeld(by:)` and the tracks' discovery pass over them. A link is
+    /// no folder to the enumerator, so it is never entered.
     private static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
-        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1345,10 +1344,7 @@ enum FileImportService {
         ) else { return false }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isDirectory == true, DAISYParser.isDAISYDirectory(url: item) {
                 return true
             }
@@ -2026,10 +2022,7 @@ enum FileImportService {
         var found = ImportCandidates()
         for case let url as URL in entries {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
-                guard url.lastPathComponent != "__MACOSX" else {
-                    entries.skipDescendants()
-                    continue
-                }
+                if entries.skipFinderMetadataFolder(url, isDirectory: true) { continue }
                 // An RTFD is a folder that stands for one document, and a
                 // TextMouth package a folder holding one book with its
                 // record: each is the book, never what is inside it (an
@@ -3830,5 +3823,33 @@ enum FileImportService {
             }
             return paths
         }
+    }
+}
+
+// MARK: - Walking Folders
+
+extension FileManager.DirectoryEnumerator {
+    /// Finder's metadata folder, which it adds to the archives it makes.
+    static let finderMetadataFolderName = "__MACOSX"
+
+    /// Skips the contents of `item`, the item this enumerator returned last,
+    /// when it is Finder's metadata folder, and says whether it did.
+    ///
+    /// Only a folder is skipped. `skipDescendants()` is for the folder just
+    /// returned, but on a file or a symbolic link it skips the contents of
+    /// the next folder listed beside it (found on this Mac with a link
+    /// listed before "Disc 2": the folder was listed, its tracks never
+    /// were), so a walk that calls it for anything else loses the books or
+    /// tracks beneath that folder.
+    ///
+    /// - Parameters:
+    ///   - item: The item just returned.
+    ///   - isDirectory: Whether it is a folder, as its resource values say;
+    ///     nil (not known) counts as not a folder.
+    @discardableResult
+    func skipFinderMetadataFolder(_ item: URL, isDirectory: Bool?) -> Bool {
+        guard isDirectory == true, item.lastPathComponent == Self.finderMetadataFolderName else { return false }
+        skipDescendants()
+        return true
     }
 }

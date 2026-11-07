@@ -807,16 +807,26 @@ extension LibraryViewModel {
                     URL(fileURLWithPath: row.filePath)
                 )
             } catch {
+                // A file that is not there is told apart from one that could
+                // not be written: the way on is different, and its error
+                // carries the file's whole path, which neither the log nor
+                // a listener's ear should have.
+                var isMissing = false
+                if case EPUBParserError.fileNotFound = error { isMissing = true }
                 // The error's domain, code, and description, which names files
-                // by name; its full description would repeat absolute paths.
+                // by name; the missing file's error would repeat the path.
                 let failure = error as NSError
+                let detail = isMissing
+                    ? "the file was not found"
+                    : "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 DiagnosticLog.event(
                     .storage,
                     "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
-                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): "
-                        + "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
+                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): \(detail)"
                 )
-                return .failed(message: wording.writeFailed(reason: error.localizedDescription))
+                return .failed(message: isMissing
+                    ? wording.fileMissing
+                    : wording.writeFailed(reason: error.localizedDescription))
             }
             message = wording.savedToFile
         } else {
