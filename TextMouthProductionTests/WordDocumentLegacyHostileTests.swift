@@ -159,7 +159,7 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
 
     func testEveryPageOfPropertiesFilledWithTheLargestNumbersReadsOrThrowsAtOnce() throws {
         // The runs of every formatted page set to 0xFF: counts, offsets, and sizes at their largest.
-        for (name, stream) in try builtStreams() {
+        for (name, stream) in builtStreams() {
             for page in 2..<min(stream.count / 512, 12) {
                 var damaged = stream
                 damaged.replaceSubrange(page * 512..<(page + 1) * 512, with: [UInt8](repeating: 0xFF, count: 512))
