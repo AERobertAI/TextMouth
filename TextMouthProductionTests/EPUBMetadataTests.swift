@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Regression coverage for safe EPUB metadata persistence.
@@ -37,6 +38,23 @@ final class EPUBMetadataTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: workingCopy), originalData)
         XCTAssertEqual(try EPUBParser.readMetadata(url: workingCopy).title, "Alice's Adventures in Wonderland")
+    }
+
+    /// Writing metadata into an EPUB that is not there says the file is
+    /// missing, not that it "could not be opened as a ZIP archive".
+    func testWritingMetadataIntoAMissingFileSaysItIsMissing() throws {
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent("no-such-\(UUID().uuidString).epub")
+
+        XCTAssertThrowsError(try EPUBParser.writeMetadata(EPUBMetadata(
+            title: "", author: "", publisher: "", publicationDate: "",
+            isbn: "", language: "", identifier: "", epubVersion: ""
+        ), to: missing)) { error in
+            guard case EPUBParserError.fileNotFound(let path) = error else {
+                return XCTFail("Expected fileNotFound, got \(error)")
+            }
+            XCTAssertEqual(path, missing.path)
+        }
     }
 
     func testAtomicReplacementPersistsPreparedMetadata() throws {
@@ -201,6 +219,112 @@ final class EPUBMetadataTests: XCTestCase {
         var text = book
         text.format = .txt
         XCTAssertNil(text.keptEPUBMetadata, "a book that is not an EPUB")
+    }
+
+    // MARK: - Deep XML
+
+    /// A package document nested 5,000 elements deep, which XMLDocument
+    /// reads without complaint, is read and released on a worker thread's
+    /// 512 KiB stack, where an import reads it, and gives its title.
+    /// Foundation releases a tree one nested call per level, so such a
+    /// package once ended TextMouth as soon as it had been read.
+    func testAPackageDocumentNestedThousandsDeepIsReadOnAWorkerStack() {
+        let nesting = String(repeating: "<x>", count: 5_000) + String(repeating: "</x>", count: 5_000)
+        let opf = TextPipelineFixtures.packageDocument(metadata: "<dc:title>Deep Package</dc:title>\(nesting)")
+        let title = onWorkerSizedStack { (try? EPUBParser.parseOPF(opf))?.title ?? "" }
+        XCTAssertEqual(title, "Deep Package")
+    }
+
+    // MARK: - External Entities (U01)
+
+    /// The text of the file on this Mac that the crafted EPUB below names.
+    private static let secretText = "SECRET-FILE-TEXT"
+
+    /// An EPUB whose package document and NCX declare an external entity
+    /// naming a file on this Mac, and use it in the title, the author, a
+    /// description, and a heading's label, reads that entity as nothing:
+    /// neither the metadata read for the library, nor the book read for the
+    /// reader, nor the package Edit Metadata writes back into the EPUB holds
+    /// the file's text, and the book still reads. XMLDocument once loaded
+    /// such entities, so a crafted EPUB put a local file's text into the
+    /// library and, on Edit Metadata, into the EPUB itself.
+    func testAnExternalEntityNeverBringsAFilesTextIntoTheBook() throws {
+        let folder = try TextPipelineFixtures.temporaryFolder(for: self)
+        let secret = folder.appendingPathComponent("secret.txt")
+        try Data(Self.secretText.utf8).write(to: secret)
+        let epub = try makeEPUBNamingAnEntity(for: secret)
+
+        let metadata = try EPUBParser.readMetadata(url: epub)
+        let content = try EPUBParser.parse(url: epub)
+        var edited = metadata
+        edited.title = "Harbour Lamps"
+        _ = try EPUBParser.writeMetadata(edited, to: epub)
+        let written = try EPUBParser.extractString(archive: Archive(url: epub, accessMode: .read), path: "OEBPS/package.opf")
+
+        let readings: [(place: String, text: String)] = [
+            ("the title read for the library", metadata.title),
+            ("the author read for the library", metadata.author),
+            ("the publisher read for the library", metadata.publisher),
+            ("the title read for the reader", content.title),
+            ("the author read for the reader", content.author),
+            ("the headings", content.allHeadings.map(\.text).joined(separator: "\n")),
+            ("the chapter titles", content.chapters.map(\.title).joined(separator: "\n")),
+            ("the package written back by Edit Metadata", written),
+        ]
+        for reading in readings {
+            XCTAssertFalse(reading.text.contains(Self.secretText), "\(reading.place) holds the file's text: \(reading.text)")
+        }
+        XCTAssertEqual(content.chapters.map(\.text), ["Harbour lamps were lit at dusk."])
+    }
+
+    /// An EPUB in the test's own temporary folder whose package document and
+    /// NCX each declare the entity `leak` as the file at `secret`, using it
+    /// in the title, the author, the publisher, a description, and the label
+    /// of the NCX's one entry, which names the start of its one chapter.
+    private func makeEPUBNamingAnEntity(for secret: URL) throws -> URL {
+        let entity = "[<!ENTITY leak SYSTEM \"\(secret.absoluteString)\">]"
+        let opf = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE package \(entity)>
+        <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="uid">
+        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <dc:identifier id="uid">urn:uuid:8e3b2a71-4c5d-4f6e-9a0b-1c2d3e4f5a6b</dc:identifier>
+        <dc:title>&leak;</dc:title><dc:creator>&leak;</dc:creator><dc:publisher>&leak;</dc:publisher>
+        <dc:description>&leak;</dc:description>
+        </metadata>
+        <manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+        <item id="c1" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest>
+        <spine toc="ncx"><itemref idref="c1"/></spine>
+        </package>
+        """
+        let ncx = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE ncx \(entity)>
+        <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap>
+        <navPoint id="n1"><navLabel><text>Lamps &leak;</text></navLabel><content src="chapter.xhtml"/></navPoint>
+        </navMap></ncx>
+        """
+        let container = """
+        <?xml version="1.0"?>
+        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+        <rootfiles><rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/></rootfiles>
+        </container>
+        """
+        let chapter = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Harbour</title></head>
+        <body><p>Harbour lamps were lit at dusk.</p></body></html>
+        """
+        let files = [
+            ("mimetype", "application/epub+zip"),
+            ("META-INF/container.xml", container),
+            ("OEBPS/package.opf", opf),
+            ("OEBPS/toc.ncx", ncx),
+            ("OEBPS/chapter.xhtml", chapter),
+        ]
+        return try TextPipelineFixtures.writeEPUB(
+            files.map { TestZIPEntry($0.0, Data($0.1.utf8)) }, named: "entity.epub", for: self
+        )
     }
 
     /// A working copy of the Alice EPUB, imported as the developer imports a

@@ -24,6 +24,10 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         let indexBefore = try LibraryIndexSandbox.inode(of: indexURL)
 
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
+        waitForRecordedOffset(40, of: book)
+        // library.json must stay as it was: an index write that should not
+        // come, scheduled with the checkpoint or once the record took it,
+        // is given an ordinary save's delay, and more, to show itself.
         waitPastLibrarySaveDebounce()
 
         XCTAssertEqual(try recordedOffset(of: book), 40)
@@ -56,7 +60,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
 
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
         model.updateEndOfBookBehavior(bookID: book.id, behavior: "stop")
-        waitPastLibrarySaveDebounce()
+        waitForIndexedOffset(40, of: book)
 
         XCTAssertEqual(try indexedOffset(of: book), 40)
         XCTAssertFalse(journalExists())
@@ -71,7 +75,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
 
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
         model.unregisterOpenBook(book.id)
-        waitPastLibrarySaveDebounce()
+        waitForIndexedOffset(40, of: book)
 
         XCTAssertEqual(try indexedOffset(of: book), 40)
         XCTAssertFalse(journalExists())
@@ -85,12 +89,18 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         let model = makeSavedModel(with: [book])
         var checkpointed = model.library
         checkpointed.updateReadingPosition(bookID: book.id, position: Self.position(at: 40))
+        let deadline: TimeInterval = 1.5
 
-        LibraryPersistenceService.saveReadingCheckpoint(checkpointed, of: book.id, writingWithin: 1.5)
-        wait(seconds: 0.8)
-        XCTAssertEqual(try indexedOffset(of: book), 10, "library.json took the checkpoint before its deadline")
-        wait(seconds: 1.2)
+        let saved = ProcessInfo.processInfo.systemUptime
+        LibraryPersistenceService.saveReadingCheckpoint(checkpointed, of: book.id, writingWithin: deadline)
+        waitForIndexedOffset(40, of: book)
 
+        // Measured on the uptime clock the deadline's timer runs on: the
+        // index is read every turn of the run loop from the save on, so a
+        // write before the deadline shows as less time than it, and a busy
+        // Mac can only make the time seen longer.
+        let seen = ProcessInfo.processInfo.systemUptime - saved
+        XCTAssertGreaterThanOrEqual(seen, deadline, "library.json took the checkpoint before its deadline")
         XCTAssertEqual(try indexedOffset(of: book), 40)
         XCTAssertFalse(journalExists())
     }
@@ -110,7 +120,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         let model = makeSavedModel(with: [book])
 
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
-        waitPastLibrarySaveDebounce()
+        waitForIndexedOffset(40, of: book)
 
         XCTAssertEqual(try indexedOffset(of: book), 40)
         XCTAssertFalse(journalExists())
@@ -127,7 +137,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         addTeardownBlock { LibraryPersistenceService._useRecordAccessForTesting(previous) }
 
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
-        wait(seconds: 1.4)
+        waitForIndexedOffset(40, of: book)
 
         XCTAssertEqual(try indexedOffset(of: book), 40)
         XCTAssertEqual(try recordedOffset(of: book), 10, "a record in the cloud was written")
@@ -147,7 +157,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         let tookLine = "LIBRARY_INDEX: took the reading positions of 1 book from their records"
         let tookLinesBefore = logLineCount(tookLine)
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
-        waitPastLibrarySaveDebounce()
+        waitForRecordedOffset(40, of: book)
         LibraryPersistenceService._discardPendingIndexSaveForTesting()
         XCTAssertEqual(try indexedOffset(of: book), 10)
         let record = try BookInfo.load(from: book.tmbDirectory)
@@ -190,7 +200,7 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         let book = try makeRecordedBook(at: 10)
         let model = makeSavedModel(with: [book])
         model.persistReadingPosition(bookID: book.id, position: Self.position(at: 40))
-        waitPastLibrarySaveDebounce()
+        waitForRecordedOffset(40, of: book)
         LibraryPersistenceService._discardPendingIndexSaveForTesting()
         cloud.markDataless(TextMouthPaths.bookInfoPath(in: book.tmbDirectory))
         let skipLinesBefore = logLineCount(skipLine(.startupRepair, count: 1))
@@ -264,10 +274,53 @@ final class ReadingCheckpointTests: CloudMaintenanceTestCase {
         FileManager.default.fileExists(atPath: TextMouthPaths.readingCheckpointsFile.path)
     }
 
-    /// Lets `seconds` pass with the main run loop turning.
-    private func wait(seconds: TimeInterval) {
-        let elapsed = expectation(description: "\(seconds) seconds elapsed")
-        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { elapsed.fulfill() }
-        wait(for: [elapsed], timeout: seconds + 5)
+    // MARK: - Waiting for a Write
+
+    /// How long a test waits for a write it expects soon: far longer than a
+    /// loaded Mac takes, and far shorter than a checkpoint's five-minute
+    /// deadline (`LibraryPersistenceService.readingCheckpointDelay`), so a
+    /// write brought forward is still told from one left for later. A wait
+    /// ends as soon as the write is there.
+    private static let writeTimeout: TimeInterval = 30
+
+    /// Waits until library.json gives `book` the offset `offset`, as an
+    /// index write the test expects soon makes it (`waitForOffset`).
+    @MainActor
+    private func waitForIndexedOffset(_ offset: Int, of book: Book, file: StaticString = #filePath, line: UInt = #line) {
+        waitForOffset(offset, in: "library.json", file: file, line: line) { try indexedOffset(of: book) }
+    }
+
+    /// Waits until `book`'s record holds the offset `offset`, as the
+    /// record's debounced write makes it (`waitForOffset`).
+    @MainActor
+    private func waitForRecordedOffset(_ offset: Int, of book: Book, file: StaticString = #filePath, line: UInt = #line) {
+        waitForOffset(offset, in: "the book's record", file: file, line: line) { try recordedOffset(of: book) }
+    }
+
+    /// Waits until `read` gives `offset`, reading again at each turn of the
+    /// main run loop for at most `writeTimeout` seconds, and fails at the
+    /// caller's `line`, naming `place`, when it never does. Then it lets
+    /// the library's index and record writes under way end
+    /// (`LibraryPersistenceService.betweenWrites`), so what the queues did
+    /// beside the write seen is done too: an index write removes the
+    /// checkpoint journal just after library.json, and a checkpoint notes
+    /// its book in the journal on the index's queue, apart from its record.
+    @MainActor
+    private func waitForOffset(
+        _ offset: Int,
+        in place: String,
+        file: StaticString,
+        line: UInt,
+        read: () throws -> Int?
+    ) {
+        let held = waitUntil(timeout: Self.writeTimeout) { (try? read()) == offset }
+        let holding = (try? read()).map(String.init) ?? "none"
+        XCTAssertTrue(
+            held,
+            "\(place) never held offset \(offset) in \(Int(Self.writeTimeout)) seconds; it holds \(holding)",
+            file: file,
+            line: line
+        )
+        LibraryPersistenceService.betweenWrites {}
     }
 }

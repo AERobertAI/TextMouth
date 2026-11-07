@@ -325,6 +325,10 @@ final class WindowScopeShortcutTests: XCTestCase {
                 return !self.worksInControls(in: hosting).isEmpty
                     || self.worksInPopUps(in: hosting).first?.accessibilityLabel() == ShortcutsSettingsWording.worksInLabel
             }, "the pop-up is labelled \(worksInPopUps(in: hosting).first?.accessibilityLabel() ?? "nothing")")
+            // The pop-up AppKit drew is checked above; what follows needs the
+            // element SwiftUI builds around it, which an in-process read never
+            // finds where SwiftUI exposes nothing of its own.
+            try skipUnlessSwiftUIExposesItsOwnElements()
             _ = waitUntil { !self.worksInControls(in: hosting).isEmpty }
             guard let popUp = worksInControls(in: hosting).first else {
                 throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")

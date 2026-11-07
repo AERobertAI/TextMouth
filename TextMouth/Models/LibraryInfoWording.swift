@@ -51,6 +51,12 @@ struct BookInfoFacts: Equatable {
     /// English Braille, contracted (Grade 2)" (`Book.brailleCodeDescription`,
     /// FMT21), which only the full summary says; nil for every other book.
     var brailleCode: String? = nil
+    /// The braille file characters a BRF or BRL braille book's file is read
+    /// with, in words, such as "North American Braille ASCII"
+    /// (`Book.brailleFileCodeDescription`, braillecodes), which only the full
+    /// summary says, right after the braille code; nil for every other book,
+    /// a PEF's included.
+    var brailleFileCharacters: String? = nil
     /// The encoding a text book's file was guessed to be in, or chosen to be
     /// read in, in words, such as "Windows-1251 (Cyrillic), guessed" or
     /// "Shift JIS (Japanese), chosen" (`Book.textEncodingDescription`, FMT16,
@@ -59,7 +65,7 @@ struct BookInfoFacts: Equatable {
     var textEncoding: String? = nil
 }
 
-// MARK: - A Braille Book's Code (FMT21)
+// MARK: - A Braille Book's Code (FMT21) and File Characters (braillecodes)
 
 extension Book {
     /// The braille code this braille book is read in, in words: the
@@ -83,6 +89,22 @@ extension Book {
     var bookInfoBrailleCodeRow: (label: String, value: String)? {
         brailleCodeDescription.map { (BrailleCodeWording.bookInfoLabel, $0) }
     }
+
+    /// The braille file characters this BRF or BRL braille book's file is
+    /// read with, in words, as its row stores them (braillecodes): the
+    /// code's name for a known id, and North American Braille ASCII's for
+    /// none, such as "North American Braille ASCII"; an id this TextMouth
+    /// does not know as `BrailleFileCodeWording.unknownValue(_:)` says it.
+    /// Nil for a book that offers no such choice
+    /// (`offersBrailleFileCodeChoice`): a PEF, whose rows are always Unicode
+    /// braille patterns, a feed's item, and every book of another format.
+    /// Speak Info says it in the words Book Information's pop-up lists the
+    /// code by, both from `BrailleFileCodeWording.name(ofStored:)`, so the
+    /// two never differ.
+    var brailleFileCodeDescription: String? {
+        guard offersBrailleFileCodeChoice else { return nil }
+        return BrailleFileCodeWording.name(ofStored: brailleFileCode)
+    }
 }
 
 /// The words around a braille book's code (FMT21), kept together so a test
@@ -90,6 +112,137 @@ extension Book {
 enum BrailleCodeWording {
     /// The label of Book Information's row that names a braille book's code.
     static let bookInfoLabel = "Braille Code"
+}
+
+/// The words around the braille file characters a BRF or BRL braille book's
+/// file is read with (braillecodes), kept together so a test pins them. A
+/// re-read with other braille file characters is the encoding's re-read
+/// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`), so it says
+/// what it shares with it in the encoding's words: the refusals of a busy
+/// library, a failure, the alert's button and its sentences of what a
+/// re-read does to the text, and the announcement once the book is read
+/// again (`TextEncodingWording`). Only what differs is here.
+enum BrailleFileCodeWording {
+
+    // MARK: Book Information's Pop-up
+
+    /// The label of Book Information's pop-up that names the braille file
+    /// characters a BRF or BRL book's file is read with, in title case, as
+    /// the sheet's "Braille Code" and "Text Encoding" are; the Settings and
+    /// Export pop-ups say "Braille file characters", in their own sentence
+    /// case.
+    static let bookInfoLabel = "Braille File Characters"
+
+    /// The pop-up's hint, which VoiceOver says after its label and value.
+    static let popUpHint = "Choose other characters to read the book's file again with them."
+
+    /// The pop-up's value, and Speak Info's words, for a book whose stored
+    /// code is `id`, which this TextMouth does not know, as a later
+    /// TextMouth's may be: "“ascii-braillo-no-047-01”, which this version of
+    /// TextMouth can't read".
+    static func unknownValue(_ id: String) -> String {
+        "“\(id)”, which this version of TextMouth can't read"
+    }
+
+    /// The braille file characters a book's stored code
+    /// (`Book.brailleFileCode`) names, in words: the code's own name for a
+    /// known id, plainly, since nothing is guessed; North American Braille
+    /// ASCII's for none (nil or empty); and `unknownValue(_:)` for an id this
+    /// TextMouth does not know. The one place a stored code becomes words:
+    /// Book Information's pop-up lists its items by it
+    /// (`BrailleFileCodeChoiceModel.Item.name`), and Speak Info says the
+    /// book's (`Book.brailleFileCodeDescription`), so the two never differ.
+    static func name(ofStored stored: String?) -> String {
+        BrailleFileCode.code(forStored: stored)?.name ?? unknownValue(stored ?? "")
+    }
+
+    /// Speak Info's sentence for braille file characters described as
+    /// `description` (`Book.brailleFileCodeDescription`), said right after
+    /// the braille code's: "Braille characters: North American Braille
+    /// ASCII".
+    static func speakInfoPart(_ description: String) -> String {
+        "Braille characters: \(description)"
+    }
+
+    // MARK: The Confirmation
+
+    /// The title of the alert that asks before the book titled `bookTitle`
+    /// is read again with `code`, in the encoding's sentence
+    /// (`TextEncodingWording.confirmTitle(bookTitle:readingName:)`): "Read
+    /// “Ledger” again as Eurobraille, six-dot (German-speaking countries)?"
+    static func confirmTitle(bookTitle: String, code: BrailleFileCode) -> String {
+        TextEncodingWording.confirmTitle(bookTitle: bookTitle, readingName: code.name)
+    }
+
+    /// What the alert says first of a choice between two seven-bit codes:
+    /// nothing can tell whether it is right, since every printable ASCII
+    /// byte is a cell in every seven-bit code, so a wrong one reads with no
+    /// error (research of October 25, section 8.3).
+    static let uncheckedNote = "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another."
+
+    /// What the alert says first of a choice to or from Unicode braille
+    /// patterns, which the re-read checks byte by byte before it changes
+    /// anything (`BrailleBookReader.requireReadable(_:as:)`), so a wrong one
+    /// is refused at its first line (review of October 30, finding 5): a
+    /// file not written in the code named `codeName`, the one chosen, is
+    /// refused, and nothing changes. "If the file is not written in Unicode
+    /// braille patterns, TextMouth refuses it, and nothing changes."
+    static func checkedNote(codeName: String) -> String {
+        "If the file is not written in \(codeName), TextMouth refuses it, and nothing changes."
+    }
+
+    /// What a re-read does to the book's places, in the encoding's sentence
+    /// (`TextEncodingWording.placesSentence(example:)`) without its example
+    /// of garbled letters becoming Cyrillic, which is no braille book's.
+    static let placesNote = TextEncodingWording.placesSentence(example: nil)
+
+    /// The alert's message before a braille book read with `current`, the
+    /// code its stored id names (`BrailleFileCode.code(forStored:)`), is
+    /// read again with `chosen`: first whether the choice is checked, then
+    /// that the text is replaced, and what happens to the places; then, as
+    /// the encoding's alert ends, that an edit of the text is kept, when
+    /// content.md holds one (`keepsText`), and that Edit Text stops, for a
+    /// book being edited (`stopsEditing`), in the encoding's own sentences
+    /// (`TextEncodingWording.confirmMessage(_:keepsText:stopsEditing:)`).
+    ///
+    /// Only a choice between two seven-bit codes goes unchecked
+    /// (`uncheckedNote`). One to or from Unicode braille patterns is refused
+    /// unless the file is written in the code chosen (`checkedNote(codeName:)`).
+    /// A `current` of nil, an id this TextMouth does not know, counts as
+    /// seven-bit: only the code chosen can then make the choice checked.
+    static func confirmMessage(
+        from current: BrailleFileCode?, to chosen: BrailleFileCode, keepsText: Bool, stopsEditing: Bool
+    ) -> String {
+        let isChecked = [current, chosen].contains { $0?.kind == .unicodePatterns }
+        let check = isChecked ? checkedNote(codeName: chosen.name) : uncheckedNote
+        return TextEncodingWording.confirmMessage(
+            [check, TextEncodingWording.replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing
+        )
+    }
+
+    // MARK: Refusals
+
+    /// Why the book titled `bookTitle` was not read again with the braille
+    /// file characters named `codeName`: its file is not braille in them, as
+    /// `reason`, the reader's own sentence (`BrailleFileError`), says, and
+    /// nothing changed. It has the shape of an encoding's refusal
+    /// (`TextEncodingWording.notValidRefusal(bookTitle:encoding:)`):
+    /// "“Ledger” can't be read as Eurobraille, six-dot (German-speaking
+    /// countries): Line 3 holds the control character U+0007, which is not
+    /// Eurobraille. Nothing was changed."
+    static func notReadableRefusal(bookTitle: String, codeName: String, reason: String) -> String {
+        "“\(bookTitle)” can't be read as \(codeName): \(reason) Nothing was changed."
+    }
+
+    /// Why what would rewrite the text of the braille book titled
+    /// `bookTitle` waits while TextMouth reads it again with other braille
+    /// file characters, as the encoding's sentence says it for any other
+    /// book (`TextEncodingWording.readingAgainRefusal(bookTitle:)`): a second
+    /// re-read of it, Edit Text, Redo Text Extraction, and Replace Existing
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`).
+    static func readingAgainRefusal(bookTitle: String) -> String {
+        "TextMouth is reading “\(bookTitle)” again with other braille file characters. Try again when that finishes."
+    }
 }
 
 // MARK: - A Text Book's Encoding (FMT16, encodingchoice)
@@ -212,8 +365,16 @@ enum TextEncodingWording {
         case .automatic:
             return "Read “\(bookTitle)” again automatically?"
         case .encoding:
-            return "Read “\(bookTitle)” again as \(TextEncodingChoices.name(of: option))?"
+            return confirmTitle(bookTitle: bookTitle, readingName: TextEncodingChoices.name(of: option))
         }
+    }
+
+    /// The title of the alert that asks before the book titled `bookTitle`
+    /// is read again as the reading named `readingName`: "Read “Ledger” again
+    /// as Shift JIS (Japanese)?". Braille file characters are asked about in
+    /// the same sentence (`BrailleFileCodeWording.confirmTitle(bookTitle:code:)`).
+    static func confirmTitle(bookTitle: String, readingName: String) -> String {
+        "Read “\(bookTitle)” again as \(readingName)?"
     }
 
     /// What Automatic does, as the alert says it before it is chosen.
@@ -221,17 +382,32 @@ enum TextEncodingWording {
         + "in the encoding the file names, or else the one TextMouth finds."
     /// What any re-read does to the book's text.
     static let replacedNote = "Its text is replaced by the new reading."
-    /// What a re-read does to the book's places (T06): they move with their
-    /// words. Where none of a place's words are left, `PlaceRelocator` moves
-    /// it to about the same point in its chapter when the two readings share
-    /// no passage (the very word, for two encodings of one byte to a
-    /// character, whose readings are as long), and otherwise to the edge of
-    /// the nearest passage they share: after an English sentence in a Russian
-    /// book, to the start of the changed passage that follows it
-    /// (`TextEncodingRereadTests`).
-    static let placesNote = "Your place and bookmarks move with their words. "
-        + "Where none of their words are left, as when garbled letters become Cyrillic, "
-        + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
+    /// What the encoding's alert says a re-read does to the book's places
+    /// (`placesSentence(example:)`), with garbled letters becoming Cyrillic
+    /// as its example.
+    static let placesNote = placesSentence(example: "as when garbled letters become Cyrillic")
+
+    /// What a re-read does to the book's places (T06), as both re-read
+    /// alerts say it, so the two never drift apart (review of October 30,
+    /// finding 8): they move with their words. Where none of a place's words
+    /// are left, `PlaceRelocator` moves it to about the same point in its
+    /// chapter when the two readings share no passage (the very word, for
+    /// two encodings of one byte to a character, whose readings are as
+    /// long), and otherwise to the edge of the nearest passage they share:
+    /// after an English sentence in a Russian book, to the start of the
+    /// changed passage that follows it (`TextEncodingRereadTests`).
+    /// `example`, when given, says when that happens, as a clause of its own
+    /// after "are left": the encoding's alert gives one (`placesNote`), and
+    /// the braille file characters' gives none
+    /// (`BrailleFileCodeWording.placesNote`), since no braille book's
+    /// letters become Cyrillic.
+    static func placesSentence(example: String?) -> String {
+        // The example, when there is one, sits between commas of its own.
+        let whenNoneAreLeft = ["Where none of their words are left", example].compactMap { $0 }.joined(separator: ", ")
+        return "Your place and bookmarks move with their words. \(whenNoneAreLeft), "
+            + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
+    }
+
     /// What a re-read does to text TextMouth did not write, said only for a
     /// book whose content.md holds such text: an edit made with Edit Text,
     /// or a save no edit took, either kept as Replace Existing keeps it
@@ -248,12 +424,18 @@ enum TextEncodingWording {
     /// holds one (`keepsText`); and that Edit Text stops, for a book being
     /// edited (`stopsEditing`).
     static func confirmMessage(option: TextEncodingOption, keepsText: Bool, stopsEditing: Bool) -> String {
-        var parts: [String] = []
-        if option == .automatic {
-            parts.append(automaticNote)
-        }
-        parts.append(replacedNote)
-        parts.append(placesNote)
+        let automatic = option == .automatic ? [automaticNote] : []
+        return confirmMessage(automatic + [replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing)
+    }
+
+    /// A re-read alert's message: `notes`, which say what this re-read
+    /// does, then that an edit of the text is kept, when content.md holds
+    /// one (`keepsText`), and that Edit Text stops, for a book being edited
+    /// (`stopsEditing`), one space apart. The encoding's alert and the braille
+    /// file characters' (`BrailleFileCodeWording.confirmMessage(from:to:keepsText:stopsEditing:)`)
+    /// both end so.
+    static func confirmMessage(_ notes: [String], keepsText: Bool, stopsEditing: Bool) -> String {
+        var parts = notes
         if keepsText {
             parts.append(keptTextNote)
         }
@@ -320,20 +502,27 @@ enum TextEncodingWording {
     // MARK: Done
 
     /// What VoiceOver hears once the book titled `bookTitle` is read again,
-    /// now in `reading`: "“Ledger” is now read as Shift JIS (Japanese),
-    /// chosen.", or "“Ledger” was read again." when what it is read in
-    /// could not be learnt (its file went to the cloud as it was read);
-    /// when text TextMouth did not write was kept beside it as `keptCopy`,
-    /// where, in Replace Existing's words
+    /// now as `readingDescription` says in words: "“Ledger” is now read as
+    /// Shift JIS (Japanese), chosen." for an encoding
+    /// (`TextEncodingReading.description`), "“Ledger” is now read as
+    /// Eurobraille, six-dot (German-speaking countries)." for braille file
+    /// characters (`BrailleFileCode.name`, braillecodes), or "“Ledger” was
+    /// read again." when what it is read in could not be learnt (its file
+    /// went to the cloud as it was read); when text TextMouth did not write
+    /// was kept beside it as `keptCopy`, where, in Replace Existing's words
     /// (`BookTextEditWording.earlierTextKept(_:)`); and, when Edit Text was
     /// editing the book (`stoppedEditing`), that it has stopped, in the
     /// words Edit Text says it with
     /// (`BookTextEditWording.stoppedBookReadAgain(bookTitle:)`). One
     /// announcement says it all, so no part cuts another off.
+    ///
+    /// Its label is not `reading`, as the encoding's form below has it: two
+    /// functions told apart only by the type of `reading` could not be
+    /// called with `reading: nil`, which Swift could give to either.
     static func readAgainAnnouncement(
-        bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?, stoppedEditing: Bool = false
+        bookTitle: String, readingDescription: String?, keptCopy: URL?, stoppedEditing: Bool = false
     ) -> String {
-        var sentences = [reading.map { "“\(bookTitle)” is now read as \($0.description)." } ?? "“\(bookTitle)” was read again."]
+        var sentences = [readingDescription.map { "“\(bookTitle)” is now read as \($0)." } ?? "“\(bookTitle)” was read again."]
         if let keptCopy {
             sentences.append(BookTextEditWording.earlierTextKept(keptCopy))
         }
@@ -341,6 +530,18 @@ enum TextEncodingWording {
             sentences.append(BookTextEditWording.stoppedBookReadAgain(bookTitle: bookTitle))
         }
         return sentences.joined(separator: " ")
+    }
+
+    /// What VoiceOver hears once the book titled `bookTitle` is read again,
+    /// now in the encoding `reading`, or nil when that could not be learnt:
+    /// `readAgainAnnouncement(bookTitle:readingDescription:keptCopy:stoppedEditing:)`
+    /// with the reading in its words (`TextEncodingReading.description`).
+    static func readAgainAnnouncement(
+        bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?, stoppedEditing: Bool = false
+    ) -> String {
+        readAgainAnnouncement(
+            bookTitle: bookTitle, readingDescription: reading?.description, keptCopy: keptCopy, stoppedEditing: stoppedEditing
+        )
     }
 
     // MARK: A Choice That Cannot Be Read (encodingchoice)
@@ -512,10 +713,13 @@ enum LibraryInfoWording {
     /// it open. Example: "Added September 1 at 9:00 AM. Last opened today
     /// at 3:05 PM. 3 bookmarks. File size 1.2 MB. In Cloud. Kept on this
     /// Mac. Open in a reader window." A braille book says its code right
-    /// after its bookmarks: "3 bookmarks. Braille code: Unified English
-    /// Braille, contracted (Grade 2). File size 1.2 MB." A text book whose
-    /// encoding was guessed, or chosen, says it there too: "3 bookmarks. Text
-    /// encoding: Windows-1251 (Cyrillic), guessed. File size 1.2 MB."
+    /// after its bookmarks, and a BRF or BRL book the braille file
+    /// characters its file is read with right after that: "3 bookmarks.
+    /// Braille code: Unified English Braille, contracted (Grade 2). Braille
+    /// characters: North American Braille ASCII. File size 1.2 MB." A text
+    /// book whose encoding was guessed, or chosen, says it there too: "3
+    /// bookmarks. Text encoding: Windows-1251 (Cyrillic), guessed. File size
+    /// 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         var parts = ["Added \(FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale))"]
         if let lastOpened = book.lastOpened {
@@ -524,6 +728,9 @@ enum LibraryInfoWording {
         parts.append(CountWording.bookmarks(book.bookmarkCount))
         if let code = book.brailleCode {
             parts.append("Braille code: \(code)")
+        }
+        if let characters = book.brailleFileCharacters {
+            parts.append(BrailleFileCodeWording.speakInfoPart(characters))
         }
         if let encoding = book.textEncoding {
             parts.append(TextEncodingWording.speakInfoPart(encoding))

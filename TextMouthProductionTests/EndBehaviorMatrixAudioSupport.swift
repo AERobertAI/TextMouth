@@ -110,7 +110,11 @@ extension EndBehaviorMatrixTests {
     /// did. In the single-file and multi-file columns the end arrives as
     /// the end-of-file report alone, and no tick follows it in a stopping
     /// cell within 0.8 seconds, so there is nothing more to wait for; a
-    /// loop there gets a tick of the new play about 6 ms after.
+    /// loop there gets a tick of the new play about 6 ms after. Since
+    /// October 30 a chaptered book's last chapter has no clip end
+    /// (`ReaderViewModel.AudioLayout.clipEnd(ofChapter:chapterUTF16Lengths:)`),
+    /// so the chaptered column's end arrives as the single-file column's
+    /// does, which the wait covers as well.
     ///
     /// - Parameters:
     ///   - service: The audio service of the book's reader.

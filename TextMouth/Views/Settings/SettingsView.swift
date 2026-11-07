@@ -5,11 +5,11 @@ import AVFoundation
 /// order, each shown as `SettingsTabPage` shows it.
 struct SettingsView: View {
     /// The window's size, which every tab shares and none can change. Wide
-    /// enough for the ten tabs' toolbar to show every one, so none hides in
-    /// the toolbar's overflow menu (each tab added has needed about 80
-    /// points). A tab taller than this scrolls (`SettingsTab.scrollsAsAWhole`,
-    /// TODO A10).
-    nonisolated static let windowSize = CGSize(width: 780, height: 540)
+    /// enough for the eleven tabs' toolbar to show every one, so none hides
+    /// in the toolbar's overflow menu (each tab added has needed about 80
+    /// points: 780 for ten, 860 since the Library tab, October 30, 2026). A
+    /// tab taller than this scrolls (`SettingsTab.scrollsAsAWhole`, TODO A10).
+    nonisolated static let windowSize = CGSize(width: 860, height: 540)
 
     var body: some View {
         TabView {
@@ -44,6 +44,9 @@ enum SettingsTab: CaseIterable, Identifiable {
     case braille
     case sounds
     case stats
+    /// The Library window's views: their order, when each is offered, and
+    /// the views the listener makes (October 30, 2026).
+    case library
     /// The podcast and article feeds' settings (FR03).
     case feeds
     case storage
@@ -61,6 +64,7 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .braille: return BrailleSettingsWording.tabTitle
         case .sounds: return "Sounds"
         case .stats: return "Stats"
+        case .library: return LibraryViewsSettingsWording.tabTitle
         case .feeds: return FeedSettingsWording.tabTitle
         case .storage: return "Storage"
         case .miscellaneous: return "Miscellaneous"
@@ -77,6 +81,7 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .braille: return "hand.point.up.braille"
         case .sounds: return "speaker.badge.exclamationmark"
         case .stats: return "chart.bar"
+        case .library: return "books.vertical"
         case .feeds: return "dot.radiowaves.up.forward"
         case .storage: return "folder.badge.gearshape"
         case .miscellaneous: return "gearshape.2"
@@ -84,12 +89,12 @@ enum SettingsTab: CaseIterable, Identifiable {
     }
 
     /// Whether the tab scrolls as a whole when it is taller than the
-    /// window: every tab drawn as a form, which is every tab but Text. The
-    /// Text tab's rule list fills the room its other controls leave and
-    /// scrolls by itself, and a list inside a scrolling form would collapse
-    /// to nothing.
+    /// window: every tab drawn as a form, which is every tab but Text and
+    /// Library. The Text tab's rule list and the Library tab's list of views
+    /// fill the room their other controls leave and scroll by themselves,
+    /// and a list inside a scrolling form would collapse to nothing.
     var scrollsAsAWhole: Bool {
-        self != .text
+        self != .text && self != .library
     }
 }
 
@@ -108,6 +113,7 @@ struct SettingsTabContent: View {
         case .braille: BrailleSettingsView()
         case .sounds: SoundEffectsSettingsView()
         case .stats: ReadingStatsView()
+        case .library: LibraryViewsSettingsView()
         case .feeds: FeedSettingsView()
         case .storage: StorageSettingsView()
         case .miscellaneous: MiscellaneousSettingsView()
@@ -139,7 +145,7 @@ struct SettingsTabPage: View {
         if tab.scrollsAsAWhole {
             SettingsTabContent(tab: tab)
                 .formStyle(.grouped)
-                .toggleStyle(.checkbox)
+                .checkboxToggleStyle()
                 .textFieldStyle(.roundedBorder)
         } else {
             SettingsTabContent(tab: tab)
@@ -432,6 +438,27 @@ struct PlaybackSettingsView: View {
                 Text(EndOfBookWording.playOnAFinishedBookCaption)
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                // Where the next book opens when listening goes on from one
+                // book to another (0.2.5), below the captions of "When book
+                // ends", which stay under their picker. The label is spoken
+                // from the control itself; its hint says what the choices
+                // do, once.
+                Picker(NextBookWindowWording.globalLabel, selection: Binding(
+                    get: { settingsViewModel.nextBookWindow },
+                    set: { settingsViewModel.nextBookWindow = $0 }
+                )) {
+                    ForEach(NextBookWindow.allCases, id: \.self) { choice in
+                        Text(choice.rawValue).tag(choice)
+                    }
+                }
+                .accessibilityLabel(NextBookWindowWording.globalLabel)
+                .accessibilityHint(NextBookWindowWording.globalHint)
+
+                Text(NextBookWindowWording.globalHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             } header: {
                 Text("End of Book")
             }

@@ -34,7 +34,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
             tmbName: book.tmbDirectoryName
         )
         try FileManager.default.createDirectory(at: collision, withIntermediateDirectories: true)
-        let viewModel = LibraryViewModel()
+        let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library(books: [book])
 
         await viewModel.moveBooks([book], toFolder: destinationFolder).value
@@ -44,6 +44,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertEqual(stored.filePath, book.filePath)
         XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
         XCTAssertTrue(viewModel.showError)
+        XCTAssertEqual(viewModel.errorMessage, "Could not move books: \(Self.occupied(collision))")
     }
 
     func testFolderRenamePersistsNewBookInfoLocation() async throws {
@@ -74,7 +75,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         )
         try FileManager.default.createDirectory(at: rootCollision, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: rootCollision) }
-        let viewModel = LibraryViewModel()
+        let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library(books: [book], folders: [folder])
 
         await viewModel.removeFolderMovingContents(folder, toPath: "").value
@@ -83,6 +84,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertEqual(viewModel.library.books.first?.folderPath, folderPath)
         XCTAssertTrue(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
         XCTAssertTrue(viewModel.showError)
+        XCTAssertEqual(viewModel.errorMessage, "Could not relocate folder contents: \(Self.occupied(rootCollision))")
     }
 
     // MARK: - Spelling-Only Folder Renames
@@ -168,6 +170,10 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
         try FileManager.default.removeItem(at: record)
         try FileManager.default.createDirectory(at: record, withIntermediateDirectories: false)
+        // The reason the rewrite fails, read from the same write; its words
+        // name the record and its package, which the respelling keeps.
+        var reason = ""
+        XCTAssertThrowsError(try book.saveBookInfoThrowing()) { reason = $0.localizedDescription }
         let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library(books: [book], folders: [folder])
 
@@ -176,6 +182,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         }
 
         XCTAssertTrue(viewModel.showError)
+        XCTAssertEqual(viewModel.errorMessage, "Could not rename folder: \(reason)")
         XCTAssertEqual(viewModel.library.folders.map(\.name), [oldName])
         XCTAssertEqual(viewModel.library.books.first?.folderPath, oldName)
         let listing = try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path)
@@ -373,6 +380,13 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
     private func uniqueFolder(_ prefix: String) -> String {
         "\(prefix)-\(UUID().uuidString)"
+    }
+
+    /// The reason a library transition gives when a package's destination
+    /// is taken: the failure it throws for `destination`
+    /// (`LibraryTransitionDiskWork.perform`), in that failure's words.
+    private static func occupied(_ destination: URL) -> String {
+        CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: destination.path]).localizedDescription
     }
 
     private func cleanup(_ folderPaths: [String]) {

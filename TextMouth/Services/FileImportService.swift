@@ -87,6 +87,18 @@ struct ImportedBook {
     /// `deleteOriginalFile(at:)` refuses a folder too, whatever its caller
     /// decided.
     var isFromFolder = false
+    /// Whether the import took only part of its original into the library,
+    /// so the original is the only copy of the rest: a DAISY audio ZIP,
+    /// whose audio becomes the book while its text (the DTBook a braille
+    /// reader uses), its images, and anything else the archive holds stay
+    /// in the archive. Such an original is never deleted or offered for
+    /// deletion.
+    var tookOnlyPartOfOriginal = false
+    /// What a DAISY audio ZIP's import left in the archive, and the archive's
+    /// name, when it took only part of its original: names the book and the
+    /// archive in `originalKeptNotice`, and counts the other books the
+    /// archive holds that were not imported. Nil for every other import.
+    var archiveLeftovers: DAISYArchiveLeftovers?
     /// What the import tells the listener once the book is in the library,
     /// besides what is missing from it (`warning`): the entries a playlist
     /// import skipped (FMT10). Nil when there is nothing to tell. It does
@@ -99,22 +111,34 @@ struct ImportedBook {
     var keepsOriginal: Bool { !report.isComplete }
 
     /// Whether the "After Importing a Book" preference may delete the
-    /// original, or offer to: only for a complete book copied from a single
-    /// file. A DAISY book's or a folder of tracks' original is a folder of
-    /// files, some of which may belong to other books or to nothing the
-    /// import copied, so it is never deleted (TODO I02, FR17).
-    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
+    /// original, or offer to: only for a complete book copied whole from a
+    /// single file. A DAISY book's or a folder of tracks' original is a
+    /// folder of files, some of which may belong to other books or to
+    /// nothing the import copied, so it is never deleted (TODO I02, FR17);
+    /// nor is an original the import took only part of
+    /// (`tookOnlyPartOfOriginal`), which holds the rest of the book.
+    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder && !tookOnlyPartOfOriginal }
 
     /// What the reader is told when "After Importing a Book" would have
-    /// deleted this book's original, or asked about it, but cannot, because
-    /// the original is an RTFD: a folder, which an import never deletes. It
-    /// is the words of every kept original, then why. Nil for any other
-    /// import, whose original is deleted, offered, or kept without a word
-    /// (a DAISY folder or a folder of tracks is kept silently, as it
+    /// deleted this book's original, or asked about it, but cannot: the
+    /// words of every kept original, then why. An RTFD's original is a
+    /// folder, which an import never deletes; an original the import took
+    /// only part of is the only copy of the rest, and the only import that
+    /// does that is a DAISY audio ZIP's, so the words name it. Nil for any
+    /// other import, whose original is deleted, offered, or kept without a
+    /// word (a DAISY folder or a folder of tracks is kept silently, as it
     /// always was).
-    var rtfdOriginalKeptNotice: String? {
-        guard isFromFolder, book.format == .rtfd else { return nil }
-        return "The original file was kept: it is a folder, and an import never deletes a folder."
+    var originalKeptNotice: String? {
+        if tookOnlyPartOfOriginal, let leftovers = archiveLeftovers {
+            return DAISYArchiveWording.originalKept(bookTitle: book.title, leftovers: leftovers)
+        }
+        let reason: String
+        if isFromFolder, book.format == .rtfd {
+            reason = "it is a folder, and an import never deletes a folder"
+        } else {
+            return nil
+        }
+        return "The original file was kept: \(reason)."
     }
 
     /// The warning an import that left chapters or pages out presents once:
@@ -140,6 +164,47 @@ struct ImportedBook {
     }
 }
 
+/// What the audio import of a DAISY archive left in the archive
+/// (`FileImportService.daisyArchiveLeftovers(of:archiveName:)`).
+struct DAISYArchiveLeftovers: Equatable {
+    /// The archive's file name.
+    var archiveName: String
+    /// Whether the DAISY folder holds text the audio book lacks.
+    var holdsText: Bool
+    /// How many other books the archive holds outside the DAISY folder.
+    var otherBookCount: Int
+
+    /// Whether the archive holds nothing the import left behind.
+    var isEmpty: Bool { !holdsText && otherBookCount == 0 }
+}
+
+/// The files a SMIL document's text elements name, which tell whether a
+/// DAISY book has text of its own beyond its navigation.
+private final class SMILTextSources: NSObject, XMLParserDelegate {
+    /// The `src` of each text element read, fragments included.
+    private var sources: [String] = []
+
+    /// The `src` of each text element in `data`, in order, up to the point
+    /// a damaged document stops the read; the sources found stand.
+    static func scan(_ data: Data) -> [String] {
+        let scanner = SMILTextSources()
+        let parser = XMLParser(data: data)
+        parser.shouldResolveExternalEntities = false
+        parser.delegate = scanner
+        parser.parse()
+        return scanner.sources
+    }
+
+    func parser(
+        _ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+        qualifiedName qName: String?, attributes attributeDict: [String: String]
+    ) {
+        // Prefixed names ("smil:text") count; only the local name matters.
+        guard elementName.split(separator: ":").last == "text", let source = attributeDict["src"] else { return }
+        sources.append(source)
+    }
+}
+
 /// What an import reads about a book from its file before copying it: the
 /// title and author the book is listed under, and the format's extra
 /// fields. Reading it never fails an import: a file that names no title or
@@ -161,7 +226,7 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio: return true
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi, .kfx: return true
         case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
@@ -227,6 +292,22 @@ struct ImportedFileMetadata {
             // Title and author from the document's attributes.
             if let attributes = PDFTextParser.readMetadata(from: url) {
                 adopt(title: attributes.title, author: attributes.author)
+            }
+        case .mobi:
+            // Title and author from the book's EXTH records, or its header
+            // (FMT42). Reading metadata never fails an import, so a book
+            // that is protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? MOBIParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
+            }
+        case .kfx:
+            // Title and author from the book's metadata fragment (FMT52).
+            // Reading metadata never fails an import, so a book that is
+            // protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? KFXParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
             }
         case .daisy:
             // Title and author from the OPF or ncc.html.
@@ -899,6 +980,7 @@ enum FileImportService {
             )
             let bookID = UUID()
             let dateAdded = Date()
+            try refuseProtectedKindleBook(at: sourceURL, format: format)
 
             try run.begin(.preparingPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
@@ -916,6 +998,9 @@ enum FileImportService {
             // A braille book's table, read from the setting once, so the
             // version recorded with it is that table's (review R2).
             let brailleTable = format == .braille ? BraillePreferences.importTable() : nil
+            // And its braille file characters, decided once: those its bytes
+            // name for certain, else the setting's (braillecodes).
+            let brailleFileCode = format == .braille ? Self.brailleFileCode(ofImported: stagedFile) : nil
             let staged = Book(
                 id: bookID,
                 title: metadata.title,
@@ -951,8 +1036,12 @@ enum FileImportService {
                 // Braille setting's, as it stands for this import. Every
                 // later reading of the book uses this one, and one of this
                 // Mac's tables keeps the Mac's liblouis version too (review R2).
+                // A BRF or BRL keeps the braille file characters it is read in
+                // the same way (braillecodes), by an explicit id, North
+                // American Braille ASCII's included; a PEF keeps none.
                 brailleTable: brailleTable,
-                brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:))
+                brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:)),
+                brailleFileCode: brailleFileCode
             )
             // The one import that guesses (FMT16): a file the user chose, whose
             // bytes may name no encoding, is read in the encoding the guesser
@@ -968,6 +1057,24 @@ enum FileImportService {
             imported.isFromFolder = package != nil || isRTFDFolder(sourceURL)
             return imported
         }
+    }
+
+    /// The braille file characters the import of the braille book whose file
+    /// is staged at `url` records, by the code's id (braillecodes,
+    /// BRAILLE-CODES-RESEARCH-2026-10-25.md, sections 8.3 and 8.5). A PEF
+    /// records none (`BrailleBookReader.kind(of:)`): its rows are always
+    /// Unicode braille patterns. A BRF or BRL records Unicode braille
+    /// patterns when its bytes say so for certain
+    /// (`BrailleFileReader.certainCode(ofFileAt:)`), and the Braille
+    /// setting's code otherwise (`BraillePreferences.importFileCode()`). No
+    /// other code is ever guessed: the seven-bit codes write their cells with
+    /// the same printable characters, so no byte tells them apart for
+    /// certain. The id is explicit, North American Braille ASCII's included,
+    /// as the table is, so a later change of the setting never changes how
+    /// the book is read.
+    static func brailleFileCode(ofImported url: URL) -> String? {
+        guard BrailleBookReader.kind(of: url) != .pef else { return nil }
+        return BrailleFileReader.certainCode(ofFileAt: url)?.id ?? BraillePreferences.importFileCode()
     }
 
     // MARK: - Loose DAISY Packages
@@ -1047,10 +1154,44 @@ enum FileImportService {
         return try DAISYPackageInventory.ofSource(source)
     }
 
+    /// The name the book's own file `source` is copied into its package
+    /// under: its own name, unless that is the name of the package's text
+    /// cache (`TextMouthPaths.contentMarkdownFileName`), compared without
+    /// regard to case as the Mac's volumes compare names, when it is
+    /// "content (book)" with the source's own extension, spelled as the
+    /// source spells it. Otherwise the cache, written beside the book's
+    /// file, would replace it, and with it the exact bytes (line endings,
+    /// encoding, anything the reading drops) that Redo Text Extraction or a
+    /// re-read in another encoding reads again. The book's record names the
+    /// file by the name it was staged under (`Book.filePath`), so nothing
+    /// else needs to know.
+    static func stagedFileName(for source: URL) -> String {
+        let name = source.lastPathComponent
+        let cacheName = TextMouthPaths.contentMarkdownFileName
+        guard name.caseInsensitiveCompare(cacheName) == .orderedSame else { return name }
+        let cacheBaseName = (cacheName as NSString).deletingPathExtension
+        return "\(cacheBaseName) (book).\(source.pathExtension)"
+    }
+
+    /// Refuses a Kindle KFX book that is protected by what sits beside it: a
+    /// voucher, or a protected file in its `.sdr` folder. Only the book's file
+    /// is copied into the library, and the text is read from that copy, where
+    /// nothing stands beside it, so the refusal is made here, on the source
+    /// (an `.azw` that holds KFX is one, as Kindle's apps name KFX books).
+    /// - Throws: `MOBIError.copyProtected`.
+    private static func refuseProtectedKindleBook(at source: URL, format: BookFormat) throws {
+        var holdsKFX = format == .kfx
+        if format == .mobi, let kind = try? KFXSignature.kind(ofFileAt: source) {
+            holdsKFX = kind == .container || kind == .protected
+        }
+        if holdsKFX, KFXParser.isProtected(near: source) { throw MOBIError.copyProtected }
+    }
+
     /// Copies what an import of `source`, a book of `format`, reads into the
     /// staged package `directory`, and returns the book's own file there:
     /// every file of `package`, laid out as in its folder, when `source` is
-    /// a DAISY book kept as loose files; otherwise the source file itself.
+    /// a DAISY book kept as loose files; otherwise the source file itself,
+    /// under the name `stagedFileName(for:)` gives it.
     ///
     /// A text document that is a symbolic link is copied as what it points
     /// to, a real file or folder named as the link was: a link copied as a
@@ -1063,7 +1204,7 @@ enum FileImportService {
         in directory: URL
     ) throws -> URL {
         guard let package else {
-            let stagedFile = directory.appendingPathComponent(source.lastPathComponent)
+            let stagedFile = directory.appendingPathComponent(stagedFileName(for: source))
             let isText = format != .audio
             try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
             if isText { try removeSymbolicLinks(in: stagedFile) }
@@ -1149,10 +1290,11 @@ enum FileImportService {
 
     /// The visible files anywhere in `folder`, counted by kind: hidden
     /// files, Finder's __MACOSX folder, and symbolic links are passed over,
-    /// as the tracks' discovery passes over them.
+    /// as the tracks' discovery passes over them. A link is no regular
+    /// file, so it is never counted.
     private static func filesHeld(by folder: URL) -> NonBookFiles {
         var files = NonBookFiles()
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1160,10 +1302,7 @@ enum FileImportService {
         ) else { return files }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isRegularFile == true {
                 files.add(item)
             }
@@ -1194,9 +1333,10 @@ enum FileImportService {
     /// its top level (`DAISYParser.isDAISYDirectory(url:)`). `folder`'s own
     /// top level is not checked: `BookFormat.detect` has done that. Finder's
     /// __MACOSX folder, hidden items, and symbolic links are passed over, as
-    /// `filesHeld(by:)` and the tracks' discovery pass over them.
+    /// `filesHeld(by:)` and the tracks' discovery pass over them. A link is
+    /// no folder to the enumerator, so it is never entered.
     private static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
-        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1204,10 +1344,7 @@ enum FileImportService {
         ) else { return false }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isDirectory == true, DAISYParser.isDAISYDirectory(url: item) {
                 return true
             }
@@ -1587,6 +1724,23 @@ enum FileImportService {
     /// it (`Book.textEncoding`, FMT16). Only the import of a file the user
     /// chose sets it: the other callers re-read a book that already exists
     /// (a package added back, a reinstated one), whose text must not change.
+    ///
+    /// A text book whose content.md holds the edit the user took with Edit
+    /// Text keeps it (B12): the extraction will not read the book's file over
+    /// it (`EditedTextKept`), so content.md is read as it is and indexed as
+    /// the reader indexes a book whose edit stands
+    /// (`BookContentAnalysisService.load`), and `book` keeps the record of
+    /// the edit (`Book.editedText`) with the fingerprints that describe it
+    /// (`Book.textCacheFingerprint`). Only a package that already holds a
+    /// book meets this: one opened from Finder (a backup, another Mac's
+    /// copy) and one that Remove from Library Only retained. It needs no
+    /// parameter, since it is safe for every caller: an edit is recorded
+    /// only by a book that already exists, in its row or its package's
+    /// bookInfo.json (`BookTextEditSessions.holdsTakenEdit`), and every other
+    /// import (a file the user chose, New from Text, a feed's download, a
+    /// recording) reads into a newly staged package holding no record and no
+    /// content.md, for a row recording no edit, so its text is always read
+    /// from its file.
     static func readableContent(
         of book: inout Book,
         run: inout ImportRun,
@@ -1608,12 +1762,32 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
-        ) else {
-            // Only a book without a package gets no cache, and every
-            // import gives its book one before reading it.
-            throw FileImportError.importFailed("The book has no package to hold its text.")
+        let generated: MarkdownCacheService.GeneratedCache
+        do {
+            guard let written = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+                for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
+            ) else {
+                // Only a book without a package gets no cache, and every
+                // import gives its book one before reading it.
+                throw FileImportError.importFailed("The book has no package to hold its text.")
+            }
+            generated = written
+        } catch is EditedTextKept {
+            // The user's edit stands, and nothing was written: content.md is
+            // indexed as it is, as the reader indexes it, checked against the
+            // record the package holds.
+            var index = try BookContentAnalysisService.load(book: book).index
+            // A package with no record to check content.md against (Remove
+            // from Library Only deleted it) gets no fingerprints from the
+            // load: the book's own stand while they describe the edit, so
+            // that Redo Text Extraction still keeps a copy of the edit before
+            // it reads the book's file over it.
+            if index.textCacheFingerprint == nil, let kept = book.textCacheFingerprint,
+               kept.cache.digest == book.editedText?.cacheDigest {
+                index.textCacheFingerprint = kept
+            }
+            book.applyContentIndexSummary(index)
+            return ReadableContent(index: index)
         }
         if refusingBlankText, refusesBlankText(book),
            !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
@@ -1684,6 +1858,14 @@ enum FileImportService {
     /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns imported books together with any per-file failures.
     ///
+    /// A TextMouth package in the archive (a .tmb folder) is one book,
+    /// imported with its record as a package opened from the Finder is
+    /// (`importTMBPackage(_:observer:)`): at the library's top level,
+    /// whatever `folderPath` says, or, when the library holds the package
+    /// Remove from Library Only retained for the book, by taking that one
+    /// back where it is. One whose book the library already lists, by its
+    /// ID (`existingBookIDs`) or its checksum, is skipped as a duplicate.
+    ///
     /// The archive and the archives found inside it are extracted within one
     /// budget (`ArchiveLimits`, TODO I05): each is refused before anything of
     /// it is written when its declared size, its entries, or the free space it
@@ -1693,6 +1875,9 @@ enum FileImportService {
     /// shares its volume and in the data directory otherwise (FR02), removed
     /// on every exit.
     /// - Parameters:
+    ///   - existingBookIDs: the books the library lists, feed items
+    ///     included: a package whose record names one of them is skipped as
+    ///     a duplicate, so no two of the library's rows ever share an ID.
     ///   - progress: told the entries extracted and the bytes written of each
     ///     archive's totals, then each book as it begins and as it begins
     ///     each step, and the books done of the total found, so the overlay
@@ -1711,6 +1896,7 @@ enum FileImportService {
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
+        existingBookIDs: Set<UUID> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: @escaping ImportCancellationCheck = { false }
     ) throws -> ZipImportResult {
@@ -1764,6 +1950,7 @@ enum FileImportService {
                 candidates.books,
                 toFolder: folderPath,
                 existingHashes: existingHashes,
+                existingBookIDs: existingBookIDs,
                 progress: progress,
                 isCancelled: isCancelled
             )
@@ -1799,12 +1986,16 @@ enum FileImportService {
     /// - A DAISY book kept as loose files in a folder of its own is one
     ///   book, listed as that folder, and none of the files inside counts
     ///   on its own. A folder with several books' package files lists each
-    ///   package file instead, as does a TextMouth package holding a DAISY
-    ///   book, since neither folder names one book.
+    ///   package file instead, since it names no one book.
     /// - An archive whose own top level holds a DAISY book is that book.
     /// - A folder that is a Rich Text with Attachments document (an .rtfd,
     ///   a package the Finder shows as one file) is one book, listed as
     ///   that folder. Its files (the TXT.rtf and the attachments) are never
+    ///   books or files passed over.
+    /// - A TextMouth package (a .tmb folder, `isTMBPackageFolder(_:)`) is
+    ///   one book, listed as that folder, which the batch imports as a
+    ///   package with its record. Its files (the book's own file, its text
+    ///   cache, its record, its tracks, a DAISY book inside it) are never
     ///   books or files passed over.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
     ///   unpacked through `nested`, within the batch's budget, and searched
@@ -1831,13 +2022,13 @@ enum FileImportService {
         var found = ImportCandidates()
         for case let url as URL in entries {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
-                guard url.lastPathComponent != "__MACOSX" else {
-                    entries.skipDescendants()
-                    continue
-                }
-                // An RTFD is a folder that stands for one document: it is the
-                // book, never its TXT.rtf and its attachments.
-                if BookFormat.detect(from: url) == .rtfd {
+                if entries.skipFinderMetadataFolder(url, isDirectory: true) { continue }
+                // An RTFD is a folder that stands for one document, and a
+                // TextMouth package a folder holding one book with its
+                // record: each is the book, never what is inside it (an
+                // RTFD's TXT.rtf and attachments; a package's book file,
+                // text cache, and tracks).
+                if BookFormat.detect(from: url) == .rtfd || isTMBPackageFolder(url) {
                     entries.skipDescendants()
                     found.books.append(url)
                     continue
@@ -1845,8 +2036,7 @@ enum FileImportService {
                 let packageFiles = DAISYParser.packageEntryPoints(in: url)
                 guard !packageFiles.isEmpty else { continue }
                 entries.skipDescendants()
-                let isOneBooksFolder = packageFiles.count == 1 && url.pathExtension.lowercased() != "tmb"
-                found.books += isOneBooksFolder ? [url] : packageFiles
+                found.books += packageFiles.count == 1 ? [url] : packageFiles
             } else if url.pathExtension.lowercased() == "zip" {
                 if DAISYParser.isDAISYZip(url: url) {
                     found.books.append(url)
@@ -1862,6 +2052,30 @@ enum FileImportService {
         found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
         return found
+    }
+
+    /// Whether the item at `url` is a TextMouth package: a folder named
+    /// .tmb, in any capitals. A ZIP batch lists one as a single book
+    /// (`importCandidates(in:unpacking:)`) and imports it as a package, with
+    /// its record (`importSupportedFiles`). A plain file with that name is
+    /// not one.
+    static func isTMBPackageFolder(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "tmb" && isFolder(url)
+    }
+
+    /// Whether the entry at `path` in an archive lies inside a TextMouth
+    /// package: whether a folder on its path is named .tmb, in any capitals.
+    /// An archive holding a package is a batch (`importZip`), in which the
+    /// package imports with its record, so it is neither an audiobook's
+    /// tracks (`LibraryViewModel.isAudioZip(url:)`) nor one DAISY book
+    /// (`DAISYParser.isDAISYZip(url:)`), whatever the package holds. A file
+    /// named like a package is not a folder on any path.
+    static func liesInTMBPackage(_ path: String) -> Bool {
+        // Every part but the last names a folder; a folder entry's path
+        // ends in "/", so its own name is a part before the last, "".
+        path.split(separator: "/", omittingEmptySubsequences: false)
+            .dropLast()
+            .contains { (String($0) as NSString).pathExtension.lowercased() == "tmb" }
     }
 
     /// The bytes a ZIP batch's book is timed by, which the estimate of the
@@ -1888,13 +2102,27 @@ enum FileImportService {
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
+    ///
+    /// A TextMouth package (`isTMBPackageFolder(_:)`) is identified once, by
+    /// its record or its removal marker (`identifyTMBPackage(at:)`), whose
+    /// checksum and book ID the duplicate check compares, and imported as a
+    /// package opened from the Finder is (`importTMBPackage(_:observer:)`),
+    /// never through `checksum` or `importer`: at the library's top level,
+    /// whatever `folderPath` says, or, for a book whose package Remove from
+    /// Library Only retained, by taking that one back where it is. A package
+    /// that cannot be identified is listed among the failures.
     /// - Parameters:
+    ///   - existingHashes: the checksums of the books the library holds; a
+    ///     file known by one of them is skipped as a duplicate.
+    ///   - existingBookIDs: the books the library lists; a package whose
+    ///     record names one of them, or a book this batch imported, is
+    ///     skipped as a duplicate, so no two rows ever share an ID.
     ///   - progress: told first the size each file is timed by
     ///     (`ZipImportProgress.foundBooks`), then, for each file, that it
-    ///     begins by reading the file (`ZipImportProgress.importingBook`),
-    ///     each step its import then begins on its package, and the files
-    ///     done of the total once it is imported, fails, or is skipped as a
-    ///     duplicate (FR10).
+    ///     begins by reading the file, or a package by checking it
+    ///     (`ZipImportProgress.importingBook`), each step its import then
+    ///     begins on its package, and the files done of the total once it is
+    ///     imported, fails, or is skipped as a duplicate (FR10).
     ///   - isCancelled: asked before each file. Once it says to stop, the
     ///     files not yet imported are left alone, the books already imported
     ///     are kept, and the result says after how many of how many files
@@ -1910,6 +2138,7 @@ enum FileImportService {
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
+        existingBookIDs: Set<UUID> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: ImportCancellationCheck = { false },
         checksum: (URL) throws -> String = { try importHash(of: $0) },
@@ -1927,6 +2156,9 @@ enum FileImportService {
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
+        // The books listed or imported so far, by ID, so that a package
+        // naming one of them never becomes a second row of it.
+        var seenBookIDs = existingBookIDs
 
         // The size each book is timed by, which the estimate of the time
         // left weighs it by, read once for those who listen (FR10).
@@ -1955,12 +2187,27 @@ enum FileImportService {
                 progress?(.importingBook(number: number, total: total, book: fileURL.lastPathComponent, step: step))
             }
 
-            // Compute hash before creating .tmb to avoid orphaning on
-            // duplicate; a DAISY book in a folder has its package's. The
-            // import is given it, so the book's bytes are read once for it.
-            beganStep(.readingSource)
-            let hash = try? checksum(fileURL)
-            if let hash, seenHashes.contains(hash) {
+            // A TextMouth package is identified once, by its record or its
+            // removal marker, which gives the checksum and the book the
+            // duplicate check compares; its import takes the package so
+            // identified. Any other book's hash is computed before creating
+            // its .tmb to avoid orphaning on duplicate; a DAISY book in a
+            // folder has its package's. The import is given it, so the
+            // book's bytes are read once for it.
+            let package: Result<TMBImportSource, Error>?
+            let hash: String?
+            if isTMBPackageFolder(fileURL) {
+                beganStep(.checkingPackage)
+                package = Result { try identifyTMBPackage(at: fileURL) }
+                hash = try? package?.get().md5Hash
+            } else {
+                beganStep(.readingSource)
+                package = nil
+                hash = try? checksum(fileURL)
+            }
+            let isKnownChecksum = hash.map { seenHashes.contains($0) } ?? false
+            let isListedBook = (try? package?.get().bookID).map { seenBookIDs.contains($0) } ?? false
+            if isKnownChecksum || isListedBook {
                 skippedDuplicates += 1
                 progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
@@ -1969,8 +2216,17 @@ enum FileImportService {
             do {
                 // Each step the import begins on the book's package is told
                 // as it begins.
-                let imported = try importer(fileURL, folderPath, hash) { step, _ in beganStep(step) }
+                let observer: ImportStepObserver = { step, _ in beganStep(step) }
+                let imported: ImportedBook
+                if let package {
+                    // A package that could not be identified throws here,
+                    // and is listed among the failures by its name.
+                    imported = try importTMBPackage(try package.get(), observer: observer)
+                } else {
+                    imported = try importer(fileURL, folderPath, hash, observer)
+                }
                 seenHashes.insert(imported.book.md5Hash)
+                seenBookIDs.insert(imported.book.id)
                 books.append(imported.book)
                 if !imported.report.isComplete {
                     // A PDF whose pictures OCR could not read is missing
@@ -2104,15 +2360,21 @@ enum FileImportService {
         }
     }
 
+    /// Moves the item at `url` to the Trash, whatever the Trash setting says:
+    /// the removal for what no one chose to delete (a duplicate's new copy
+    /// whose question was never answered), and the default of
+    /// `removeItemRespectingTrashSetting`.
+    static func moveToTrash(_ url: URL) throws {
+        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+    }
+
     /// Remove an item from disk, using Trash if the setting is enabled.
     /// A Trash failure is surfaced to the caller and never converted into an
     /// unconfirmed permanent deletion.
     @MainActor
     static func removeItemRespectingTrashSetting(
         at url: URL,
-        trashItem: (URL) throws -> Void = { item in
-            try FileManager.default.trashItem(at: item, resultingItemURL: nil)
-        },
+        trashItem: (URL) throws -> Void = FileImportService.moveToTrash,
         removeItem: (URL) throws -> Void = { item in
             try FileManager.default.removeItem(at: item)
         }
@@ -2125,51 +2387,128 @@ enum FileImportService {
         }
     }
 
+    /// Whether `url` names a TextMouth book package: its extension is .tmb,
+    /// in any case. Open Book… and Finder open such a package as the book
+    /// it holds rather than import it as a file
+    /// (`LibraryViewModel.openTMBPackage(from:)`), and no import's original
+    /// that lies inside one is ever deleted (`reasonToKeepOriginal(at:)`).
+    static func isBookPackage(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "tmb"
+    }
+
+    /// Why the item at `url`, an import's original, is never deleted, in the
+    /// words of the log line that says so; nil when it may be deleted.
+    ///
+    /// - A folder, or a symbolic link to one: a folder import (a DAISY book
+    ///   kept as loose files, a folder of audio tracks) leaves files the
+    ///   import did not copy in it, such as a cover, lyrics, or other books.
+    /// - A file inside a book package: a book's own file, or a track of its
+    ///   audio, opened from inside the package in Finder (Show Package
+    ///   Contents), which its deletion would take from that book.
+    /// - A file inside `dataDirectory`, the data directory, which holds the
+    ///   library and everything else TextMouth keeps.
+    ///
+    /// Where the item lies is read with symbolic links resolved, on the item
+    /// and on the data directory alike (`lies(_:inside:)`), so neither a
+    /// link nor a folder whose name merely begins like the data
+    /// directory's (Library2 beside Library) can mislead it.
+    static func reasonToKeepOriginal(at url: URL, dataDirectory: URL = TextMouthPaths.root) -> String? {
+        // `fileExists(atPath:isDirectory:)` follows a symbolic link, so a link
+        // to a folder counts as a folder, which is wanted.
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            return "is a folder, which an import never deletes"
+        }
+        let item = url.resolvingSymlinksInPath()
+        // The names of the folders that hold the item, its own name left
+        // out: a package is known by its name alone, as Open Book… and
+        // Finder know it.
+        let folderNames = item.pathComponents.dropLast()
+        if folderNames.contains(where: { isBookPackage(URL(fileURLWithPath: $0, isDirectory: true)) }) {
+            return "is inside a book package, whose files an import never deletes"
+        }
+        if lies(item, inside: dataDirectory.resolvingSymlinksInPath()) {
+            return "is inside the data directory, whose files an import never deletes"
+        }
+        return nil
+    }
+
+    /// Whether `item` lies inside `folder`, somewhere below it, compared path
+    /// component by path component, so a folder whose name merely begins
+    /// with `folder`'s (Library2 beside Library) is not taken for it, and
+    /// without regard to case, as the Mac's volumes compare names: on a
+    /// volume that tells case apart, the worst a mismatch can do is keep a
+    /// file. Neither path is resolved here.
+    private static func lies(_ item: URL, inside folder: URL) -> Bool {
+        let itemPath = item.pathComponents.map { $0.lowercased() }
+        let folderPath = folder.pathComponents.map { $0.lowercased() }
+        return itemPath.count > folderPath.count && itemPath.starts(with: folderPath)
+    }
+
     /// Delete the original source file after import (if the user chose that
     /// option), to the Trash or permanently as "Move to Trash instead of
     /// deleting" chooses, like every other deletion. Throws when the file
     /// could not be removed, so the caller can say so (TODO S09); a file
     /// that is already gone counts as removed.
     ///
-    /// A folder is never deleted as an import's original: a folder import
-    /// (a DAISY book kept as loose files, a folder of audio tracks) leaves
-    /// files the import did not copy in it, such as a cover, lyrics, or other
-    /// books. The library already never offers the deletion for such a book
-    /// (`ImportedBook.mayDeleteOriginal`); this refuses it too, so a caller
-    /// that is ever given a folder (or a symbolic link to one) still cannot
-    /// remove it. The refusal removes nothing, sends nothing to the Trash,
-    /// and does not throw, since nothing failed: it writes one log line.
+    /// Some originals are never deleted, whatever the caller decided
+    /// (`reasonToKeepOriginal(at:)`): a folder, which a folder import
+    /// leaves holding files it did not copy, and any file inside a book
+    /// package or inside the data directory, which belongs to a book or to
+    /// TextMouth. The library already never offers the deletion of a
+    /// folder (`ImportedBook.mayDeleteOriginal`); this refuses one too, so
+    /// a caller that is ever given a folder (or a symbolic link to one)
+    /// still cannot remove it. A refusal removes nothing, sends nothing to
+    /// the Trash, and does not throw, since nothing failed: it writes one
+    /// log line naming the item, never its path, and saying why.
     @MainActor
     static func deleteOriginalFile(at url: URL) throws {
-        // `fileExists(atPath:isDirectory:)` follows a symbolic link, so a link
-        // to a folder counts as a folder, which is wanted.
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
-           isDirectory.boolValue {
-            DiagnosticLog.event(.import, "ORIGINAL_KEPT: \(url.lastPathComponent): is a folder, which an import never deletes")
+        if let reason = reasonToKeepOriginal(at: url) {
+            DiagnosticLog.event(.import, "ORIGINAL_KEPT: \(url.lastPathComponent): \(reason)")
             return
         }
         try removeItemRespectingTrashSetting(at: url)
     }
 
-    /// Compute MD5 hash of a file (streaming for large files)
+    /// Compute MD5 hash of a file (streaming for large files), reading it a
+    /// mebibyte at a time with `FileHandle.read(upToCount:)`, which throws
+    /// a Swift error when a read fails (see
+    /// `md5Hash(of:readingChunksWith:)`).
     static func md5Hash(of url: URL) throws -> String {
-        // FileHandle's legacy read raises an Objective-C exception, which
-        // Swift cannot catch, on a folder (an RTFD is one): refuse it first,
-        // so no caller can crash on a book whose file is a folder.
+        try md5Hash(of: url, readingChunksWith: { handle in try handle.read(upToCount: 1024 * 1024) })
+    }
+
+    /// The MD5 digest of the file at `url`, as 32 lowercase hexadecimal
+    /// digits, from the chunks `readChunk` reads from the open file in turn
+    /// until it gives nil or an empty chunk (the end of the file).
+    /// `md5Hash(of:)` reads with `FileHandle.read(upToCount:)`; a test
+    /// stands in for it to make a read fail.
+    ///
+    /// Every import, ZIP batch, folder, and text-cache fingerprint hashes
+    /// through here, so a read must fail as a Swift error: FileHandle's
+    /// legacy `readData(ofLength:)` raises an Objective-C exception, which
+    /// Swift cannot catch and which ends TextMouth, when a disk is
+    /// unplugged, a network share drops, or a cloud download fails
+    /// mid-read. A thrown error reaches the import's own report instead.
+    /// - Throws: `ContentFingerprintError.notARegularFile` for a folder (an
+    ///   RTFD is one), which is never opened; the error opening the file;
+    ///   or the first error `readChunk` throws.
+    static func md5Hash(of url: URL, readingChunksWith readChunk: (FileHandle) throws -> Data?) throws -> String {
+        // A folder (an RTFD is one) is refused with its own error before it
+        // is opened.
         guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
         let handle = try FileHandle(forReadingFrom: url)
-        defer { handle.closeFile() }
+        // A file only read from loses nothing if closing it fails, and the
+        // legacy `closeFile()` would raise an exception there too.
+        defer { try? handle.close() }
 
         var hasher = Insecure.MD5()
-        let bufferSize = 1024 * 1024
-
-        while autoreleasepool(invoking: {
-            let chunk = handle.readData(ofLength: bufferSize)
-            guard !chunk.isEmpty else { return false }
+        // Each read runs in its own autorelease pool, so what it autoreleases
+        // is freed before the next read and a large file never fills memory.
+        while let chunk = try autoreleasepool(invoking: { try readChunk(handle) }), !chunk.isEmpty {
             hasher.update(data: chunk)
-            return true
-        }) {}
+        }
 
         let digest = hasher.finalize()
         return digest.map { String(format: "%02hhx", $0) }.joined()
@@ -2185,7 +2524,10 @@ enum FileImportService {
     /// Import a DAISY audio ZIP as a multi-chapter audio book, staged like
     /// every import: the audio is converted into a hidden package and read
     /// as the reader will, and the package is published only once its
-    /// bookInfo.json is on disk.
+    /// bookInfo.json is on disk. The book is its audio alone, so what this
+    /// returns says the import took only part of its original
+    /// (`ImportedBook.tookOnlyPartOfOriginal`): the archive, the only copy
+    /// of the book's text, is never deleted after the import.
     ///
     /// The archive is admitted to a budget (`ArchiveLimits`, TODO I05) before
     /// any audio is converted, and every file the converter reads is held to
@@ -2251,8 +2593,92 @@ enum FileImportService {
                 staging: staging,
                 source: zipURL
             )
-            return try publishReadableBook(staged, from: staging, run: &run)
+            var imported = try publishReadableBook(staged, from: staging, run: &run)
+            // Only the audio and its manifest were staged. Text the package
+            // leaves out, or other books the archive holds, stay in the
+            // archive, which is then their only copy, so it is never
+            // deleted. An audio-only talking book in an archive of its own
+            // leaves nothing behind, so the preference stands.
+            let leftovers = daisyArchiveLeftovers(
+                of: ArchiveFileProvider(archive: archive), archiveName: zipURL.lastPathComponent
+            )
+            imported.tookOnlyPartOfOriginal = !leftovers.isEmpty
+            imported.archiveLeftovers = leftovers
+            return imported
         }
+    }
+
+    /// The most SMIL files and XML files `daisyArchiveLeftovers` reads
+    /// looking for text: an archive is untrusted, and one text file settles
+    /// the question.
+    private static let leftoverScanLimit = 2_000
+
+    /// What the audio import of a DAISY archive leaves in the archive that
+    /// `provider` reads: whether the DAISY folder holds text the audio book
+    /// lacks (a DTBook, or a text document a SMIL file points to, other than
+    /// the navigation file, which a talking book's SMIL files point to for
+    /// its headings), and how many other books lie outside that folder: DAISY
+    /// books in folders of their own, and files of the formats TextMouth
+    /// imports (audio not counted, since loose tracks are no book).
+    ///
+    /// The DAISY folder is the one holding the package or navigation file
+    /// (`DAISYParser.packageFolders(inArchivePaths:)`), the archive's top
+    /// level when the book lies there. Hidden entries and `__MACOSX` hold
+    /// nothing. Nothing is extracted: files are read as the parser reads
+    /// them, within its bounds, and a file that cannot be read counts as no
+    /// text.
+    static func daisyArchiveLeftovers(of provider: DAISYFileProvider, archiveName: String) -> DAISYArchiveLeftovers {
+        let paths = provider.listFiles().filter { path in
+            !path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
+        }
+        let folders = DAISYParser.packageFolders(inArchivePaths: paths)
+        let bookFolder = folders.contains("") ? "" : (folders.sorted().first ?? "")
+        /// Whether `path` lies in `folder`, "" being the whole archive.
+        func lies(_ path: String, in folder: String) -> Bool {
+            folder.isEmpty || path.hasPrefix(folder + "/")
+        }
+        let inBook = paths.filter { lies($0, in: bookFolder) }
+
+        // Other DAISY books in folders of their own count once each, and
+        // every other file of a book format counts as one book, unless it
+        // lies in a folder that is a DAISY book itself.
+        let otherFolders = folders.subtracting([bookFolder])
+        var otherBooks = bookFolder.isEmpty ? 0 : otherFolders.count
+        if !bookFolder.isEmpty {
+            for path in paths where !lies(path, in: bookFolder) && !otherFolders.contains(where: { lies(path, in: $0) }) {
+                if let format = BookFormat.detect(from: URL(fileURLWithPath: path)), !format.isAudio {
+                    otherBooks += 1
+                }
+            }
+        }
+        return DAISYArchiveLeftovers(
+            archiveName: archiveName,
+            holdsText: holdsText(among: inBook, provider: provider),
+            otherBookCount: otherBooks
+        )
+    }
+
+    /// Whether the DAISY book whose files are `paths` has text outside its
+    /// navigation: a file with a DTBook root, or a document that a SMIL
+    /// file's text element names and the book holds.
+    private static func holdsText(among paths: [String], provider: DAISYFileProvider) -> Bool {
+        for path in paths.filter({ $0.lowercased().hasSuffix(".xml") }).prefix(leftoverScanLimit) {
+            if let data = try? provider.readFile(at: path), XMLDocumentSniffer.rootKind(of: data) == .dtbook {
+                return true
+            }
+        }
+        let held = Set(paths.map { $0.lowercased() })
+        for smil in paths.filter({ $0.lowercased().hasSuffix(".smil") }).prefix(leftoverScanLimit) {
+            guard let data = try? provider.readFile(at: smil) else { continue }
+            for source in SMILTextSources.scan(data) {
+                let target = ParserUtilities.resolvedPackagePath(source, relativeTo: smil, preserveFragment: false)
+                let name = (target as NSString).lastPathComponent
+                if !target.isEmpty, !DAISYParser.isNCCFileName(name), held.contains(target.lowercased()) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     /// Import a ZIP of audio files as a single multi-chapter audio book.
@@ -2446,6 +2872,11 @@ enum FileImportService {
         // always offers .ssml.
         types.append(.webArchive)
         types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
+        // Kindle books (FMT42): .mobi, .prc, and .azw, for which macOS
+        // declares no type; the app imports one in Info.plist.
+        types.append(UTType(importedAs: "com.textmouth.mobi", conformingTo: .data))
+        // Kindle KFX books (FMT52): .kfx, .kfx-zip, .azw8, and .kpf, the same.
+        types.append(UTType(importedAs: "com.textmouth.kfx", conformingTo: .data))
         // Braille files (FMT20): BRF and BRL, which macOS declares no type
         // for, and PEF, which macOS takes for a Pentax raw photo by its
         // extension; the import tells them apart by their contents.
@@ -3029,6 +3460,18 @@ enum FileImportService {
     /// no orphan either: it is passed over before its record is read, so it
     /// is never adopted as a second book of the same package.
     ///
+    /// Nor is a duplicate's new copy whose question waits for the listener's
+    /// answer, or waited when a quit or a crash ended the session that asked
+    /// it: its package holds a `DuplicateQuestionMarker`. It is passed over
+    /// before its record is read, whoever runs the walk, so it never becomes
+    /// a book the listener did not choose to keep, and it is recorded in
+    /// `unanswered` when one is given: the launch's repair gives one, and
+    /// discards those no question waits for any more
+    /// (`LibraryViewModel.adoptOrphanedPackages`). A walk run while a question
+    /// waits (a rebuild, a recovery) gives none, and leaves every such
+    /// package as it is. A package the library lists, or a kept row owns, is
+    /// never looked at for the marker: it is a book.
+    ///
     /// An orphan whose record names a book the library already lists, under
     /// that book's ID, is another copy of it: the old copy Replace Existing
     /// sent to the Trash names its replacement's ID once Finder puts it
@@ -3049,14 +3492,18 @@ enum FileImportService {
     /// (FR02). A folder that cannot be listed without downloading is passed
     /// over, and a package whose folder, record, removal marker, or book file
     /// is in the cloud is neither adopted nor rewritten: it is counted in
-    /// `skips`, and adopted at a launch that finds it on this Mac. `access`
-    /// is how the repair reaches the packages' files.
+    /// `skips`, and adopted at a launch that finds it on this Mac. A package
+    /// holding a duplicate question's marker is likewise counted, and not
+    /// recorded in `unanswered`, while its folder or the marker is in the
+    /// cloud, where another Mac sharing the library may still be asking its
+    /// question. `access` is how the repair reaches the packages' files.
     @discardableResult
     static func adoptOrphanedTMBPackages(
         library: inout Library,
         libraryDirectory: URL = TextMouthPaths.libraryDir,
         access: MaintenanceFileAccess = .live,
-        skips: CloudSkips? = nil
+        skips: CloudSkips? = nil,
+        unanswered: UnansweredDuplicates? = nil
     ) -> Int {
         let fm = FileManager.default
         let libraryDir = libraryDirectory
@@ -3100,6 +3547,14 @@ enum FileImportService {
                     folderPath: libraryFolderPath(ofPackageAt: url, libraryDirectory: libraryDir),
                     tmbDirectoryName: url.lastPathComponent
                 ) { continue }
+
+                // Skip a duplicate's new copy whose question waits, or was
+                // never answered: adopting it would keep a copy the listener
+                // never chose to keep. The launch's repair discards it once no
+                // question waits for it; one in the cloud decides nothing.
+                if passesOverUnansweredDuplicate(at: url, access: access, skips: skips, unanswered: unanswered) {
+                    continue
+                }
 
                 let orphan: (book: Book, recordedFolderPath: String)
                 do {
@@ -3163,6 +3618,31 @@ enum FileImportService {
             }
             return adopted
         }
+    }
+
+    /// Whether the adoption passes over the package at `url` because it
+    /// holds a duplicate question's marker (`DuplicateQuestionMarker`): a
+    /// new copy whose question waits, or was never answered. Such a package
+    /// is recorded in `unanswered`, for the launch's repair to discard, only
+    /// when its folder and the marker are both on this Mac. When either is in
+    /// the cloud, another Mac sharing the library may still be asking that
+    /// question, so it is counted in `skips` instead and decided at a launch
+    /// that finds it here (FR02); a marker that cannot be looked for without
+    /// a download counts so too, as the record would.
+    private static func passesOverUnansweredDuplicate(
+        at url: URL,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips?,
+        unanswered: UnansweredDuplicates?
+    ) -> Bool {
+        let marker = DuplicateQuestionMarker.url(in: url)
+        guard access.presence(of: marker) != .absent else { return false }
+        if access.isInCloud(url) || access.isInCloud(marker) {
+            skips?.record(package: url)
+        } else {
+            unanswered?.record(url)
+        }
+        return true
     }
 
     /// When the record in the package at `url` was last written, in
@@ -3260,12 +3740,24 @@ enum FileImportService {
         return (book, info.metadata.folderPath)
     }
 
-    /// Recreates folder rows for the folders on disk and for every folder a
-    /// book lives in. Only the library index records folder rows, so when it
-    /// cannot be read, the directories under the library directory are the
+    /// Recreates folder rows for every folder a book lives in, its ancestors
+    /// included, and, when `includingFoldersOnDisk`, for the folders on disk
+    /// as well. Only the library index records folder rows, so when it holds
+    /// none to go by, the directories under the library directory are the
     /// best remaining evidence of the user's folders. Without rows, books in
     /// folders would be unreachable from the Folders view, and Rebuild Library
     /// Index would save a library whose folders had vanished.
+    ///
+    /// Which folders count is the caller's choice:
+    /// - The folders on disk too (the default), when there is no index to go
+    ///   by: the provisional library shown while the index cannot be read
+    ///   (`LibraryViewModel.buildProvisionalLibrary()`), and the startup
+    ///   repair of a library that began with no books and no folders, its
+    ///   library.json missing or empty.
+    /// - Only the folders books name, for the startup repair of every other
+    ///   library, whose index records the user's folders: a book never lies
+    ///   in a folder with no row, while a directory with no row, such as one
+    ///   a deleted folder left behind, stays out. The disk is not walked.
     ///
     /// Package directories, their contents, and hidden entries are skipped.
     /// Paths deeper than `BookFolder.maxDepth`, names folder creation refuses,
@@ -3274,9 +3766,10 @@ enum FileImportService {
     @discardableResult
     static func adoptLibraryFolders(
         library: inout Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        includingFoldersOnDisk: Bool = true
     ) -> Int {
-        var paths = folderDirectoryPaths(in: libraryDirectory)
+        var paths = includingFoldersOnDisk ? folderDirectoryPaths(in: libraryDirectory) : []
         for book in library.books where !book.folderPath.isEmpty {
             let components = book.folderPath.components(separatedBy: "/")
             for depth in 1...components.count {
@@ -3330,5 +3823,33 @@ enum FileImportService {
             }
             return paths
         }
+    }
+}
+
+// MARK: - Walking Folders
+
+extension FileManager.DirectoryEnumerator {
+    /// Finder's metadata folder, which it adds to the archives it makes.
+    static let finderMetadataFolderName = "__MACOSX"
+
+    /// Skips the contents of `item`, the item this enumerator returned last,
+    /// when it is Finder's metadata folder, and says whether it did.
+    ///
+    /// Only a folder is skipped. `skipDescendants()` is for the folder just
+    /// returned, but on a file or a symbolic link it skips the contents of
+    /// the next folder listed beside it (found on this Mac with a link
+    /// listed before "Disc 2": the folder was listed, its tracks never
+    /// were), so a walk that calls it for anything else loses the books or
+    /// tracks beneath that folder.
+    ///
+    /// - Parameters:
+    ///   - item: The item just returned.
+    ///   - isDirectory: Whether it is a folder, as its resource values say;
+    ///     nil (not known) counts as not a folder.
+    @discardableResult
+    func skipFinderMetadataFolder(_ item: URL, isDirectory: Bool?) -> Bool {
+        guard isDirectory == true, item.lastPathComponent == Self.finderMetadataFolderName else { return false }
+        skipDescendants()
+        return true
     }
 }

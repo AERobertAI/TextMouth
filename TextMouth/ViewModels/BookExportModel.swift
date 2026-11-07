@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 import SwiftUI
@@ -363,7 +367,7 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// could not be exported.
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
-    func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
+    func export(announcingFrom window: PlatformWindow? = nil) async -> BookExportOutcome? {
         guard canExport else { return nil }
         let earlier = (phase: phase, summary: summary)
         let cancellation = BookExportCancellation()
@@ -490,6 +494,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     // MARK: Choosing the Folder
 
+    #if os(macOS)
     /// The folder chooser of the dialog's Choose Folder… button: one folder,
     /// with a button that makes a new one, starting in `folder`.
     static func makeDestinationPanel(startingIn folder: URL) -> NSOpenPanel {
@@ -508,7 +513,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// Opens the folder chooser, as a sheet on `window` when there is one,
     /// and makes the folder chosen the destination.
-    func chooseDestination(from window: NSWindow?) {
+    func chooseDestination(from window: PlatformWindow?) {
         let panel = Self.makeDestinationPanel(startingIn: destination)
         let take: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let folder = panel.url else { return }
@@ -520,4 +525,10 @@ final class BookExportModel: ObservableObject, Identifiable {
             panel.begin(completionHandler: take)
         }
     }
+    #else
+    /// Phase 0 stand-in: the Mac opens a folder chooser here; iOS has no
+    /// folder panel yet (phase 1 brings the document picker), so choosing
+    /// does nothing and the destination stays as it was.
+    func chooseDestination(from window: PlatformWindow?) {}
+    #endif
 }

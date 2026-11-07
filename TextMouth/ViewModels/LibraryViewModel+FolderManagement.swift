@@ -379,16 +379,17 @@ extension LibraryViewModel {
         library.subfolders(of: path)
     }
 
-    /// The books a Library window shows at `location`: its category's or
+    /// The books a Library window shows at `location`: its view's or
     /// folder's books in the order of the sort it shows (`sortState(at:)`),
     /// narrowed to those whose title or author contains `search`, ignoring
     /// case. An empty search narrows nothing.
     ///
     /// Each list is derived once and kept until a book is added, removed,
-    /// or moved, or a field it is sorted or searched by changes (TODO
-    /// PERF10, `LibraryListCache`); any other change, such as a reading
-    /// position, reaches the books it returns without sorting them again.
-    /// So a window may read it as often as it draws.
+    /// or moved, a field it is sorted, searched, or filtered by changes, or
+    /// what its view's filter reads beyond the books changes (TODO PERF10,
+    /// `LibraryListCache`); any other change, such as a reading position,
+    /// reaches the books it returns without sorting them again. So a window
+    /// may read it as often as it draws.
     ///
     /// The Reading List is never sorted: it shows its books in the order
     /// the user arranged (FR09), and a search narrows that order.
@@ -396,15 +397,16 @@ extension LibraryViewModel {
         let sort = sortState(at: location)
         // A feed's folder lists its items beside its books (FR11), so which
         // feed the folder shown holds is part of what the list is.
-        let feedID = location.category == .folders ? feedID(listedIn: location.folderPath) : nil
-        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "", feedID: feedID)
+        let feedID = location.view.kind == .folders ? feedID(listedIn: location.folderPath) : nil
+        let context = filterContext(for: location)
+        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "", feedID: feedID, context: context)
         let books = listCache.books(for: unsearched, in: library) {
-            let listed = booksForCategory(location.category, folderPath: location.folderPath)
+            let listed = self.books(listedAt: location, context: context)
             return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort)
         }
         guard !search.isEmpty else { return books }
         let query = search.lowercased()
-        let searched = LibraryListCache.Key(location: location, sort: sort, search: query, feedID: feedID)
+        let searched = LibraryListCache.Key(location: location, sort: sort, search: query, feedID: feedID, context: context)
         return listCache.books(for: searched, in: library) {
             books.filter { $0.title.lowercased().contains(query) || $0.author.lowercased().contains(query) }
         }
@@ -434,31 +436,66 @@ extension LibraryViewModel {
         return sort.sorted(books, fileSizes: sizes)
     }
 
-    /// The books the category `category` lists, before sorting: the books
-    /// of the folder at `folderPath` in Folders, every book in All Items,
-    /// every book never opened, from every folder, in Unopened
-    /// (`Library.unopenedBooks()`), the books opened lately in Recent, and
-    /// the reading list's books in the Reading List, in the list's order,
-    /// which is never sorted (FR09). All Items, Unopened, Recent, and the
-    /// Reading List ignore `folderPath`.
-    ///
-    /// A feed's downloaded items are listed in their feed's folder alone,
-    /// beside its books (FR11): All Items, Unopened, and the top of Folders
-    /// leave them out, their feeds' rows standing for them; Recent lists,
-    /// of each feed's items, the one opened last; the Reading List lists any
-    /// it holds.
-    func booksForCategory(_ category: LibraryCategory, folderPath: String) -> [Book] {
-        switch category {
+    /// The books, episodes, and articles `location` lists, before sorting
+    /// (October 30, 2026, LIBRARY-VIEWS-RESEARCH-2026-10-30.md): in Folders,
+    /// the books of the folder shown, and, in a feed's folder, the feed's
+    /// downloaded items beside them (FR11); at the Reading List, its books in
+    /// its order, which is never sorted (FR09); in a filter view, what its
+    /// filter finds among every row of the library
+    /// (`LibraryViewFilterEvaluator.items`), reading `context` beside the
+    /// books. The views TextMouth ships list exactly what the categories
+    /// listed: All Items every book, Unopened every book never opened,
+    /// Recently Opened the ten books, episodes, and articles opened last, one
+    /// per feed, and Feeds no books; a feed's downloaded items are left out of
+    /// All Items, Unopened, and the top of Folders, their feeds' rows
+    /// standing for them. A limit chosen by the view's sort ranks the rows by
+    /// `sort`, or by the sort saved for the location when nil, so the view
+    /// editor counts a draft by its own sort (review of October 31, 2026,
+    /// finding 8).
+    func books(
+        listedAt location: LibraryLocation,
+        context: LibraryViewFilterContext?,
+        sortedBy sort: LibrarySortState? = nil
+    ) -> [Book] {
+        switch location.view.kind {
         case .folders:
-            return library.booksInFolder(folderPath) + feedItems(listedIn: folderPath)
-        case .allItems:
-            return library.libraryBooks
-        case .unopened:
-            return library.unopenedBooks()
-        case .recent:
-            return LibraryBookSorter.recent(library.books)
+            return library.booksInFolder(location.folderPath) + feedItems(listedIn: location.folderPath)
         case .readingList:
             return readingListBooks
+        case .filter:
+            guard let filter = location.view.filter else { return [] }
+            return LibraryViewFilterEvaluator.items(
+                of: filter,
+                in: library.books,
+                context: context ?? LibraryViewFilterContext(),
+                sorted: { self.sortedBooks($0, by: sort ?? self.sortState(at: location)) }
+            )
         }
+    }
+
+    /// The books the category `category`'s view, as TextMouth ships it,
+    /// lists before sorting (`books(listedAt:context:)`), at `folderPath` in
+    /// Folders; the other categories ignore `folderPath`.
+    func booksForCategory(_ category: LibraryCategory, folderPath: String) -> [Book] {
+        let location = LibraryLocation(category: category, folderPath: folderPath)
+        return books(listedAt: location, context: filterContext(for: location))
+    }
+
+    /// What the filter of `location`'s view reads beyond the library's books,
+    /// gathered now (`LibraryViewFilterContext`): today's date for its date
+    /// conditions, the books Books Finished counts, the reading list, the
+    /// paths of the folders its conditions name, and the feeds' folders; nil
+    /// for Folders and the Reading List, which have no filter.
+    func filterContext(for location: LibraryLocation) -> LibraryViewFilterContext? {
+        guard let filter = location.view.filter else { return nil }
+        return LibraryViewFilterContext(
+            for: filter,
+            now: Date(),
+            calendar: .current,
+            finishedIDs: { self.finishedBookIDs() },
+            readingListIDs: { Set(self.library.readingList.bookIDs) },
+            folderPath: { id in self.library.folders.first { $0.id == id }?.fullPath },
+            feedFolderPaths: { self.feedFolderPathsByFeedID() }
+        )
     }
 }

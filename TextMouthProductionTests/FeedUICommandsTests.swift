@@ -169,20 +169,50 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// Cancel Download stops a download under way; the item is not
-    /// downloaded, and nothing joins the library.
+    /// downloaded, and nothing joins the library. The download is under way
+    /// when Cancel Download comes: the slowed episode's first bytes are
+    /// written.
     func testCancelDownloadStopsIt() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsCancel", slowDownload: true)
         harness.presenter.perform(harness.action(.download), in: harness.context)
         XCTAssertTrue(harness.item?.state.isDownloading ?? false)
         XCTAssertEqual(harness.action(.cancelDownload).title, "Cancel Download")
+        // Cancelled in the same turn as Download, the download's task would
+        // be cancelled before it began, which is not the case this test is
+        // for, and which met a race in the transfer under load (TODO 3935).
+        await waitFor("the download is under way", timeout: 30) {
+            (harness.world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) > 0
+        }
 
         harness.presenter.perform(harness.action(.cancelDownload), in: harness.context)
 
-        await waitFor("the download stops") {
+        await waitFor("the download stops", timeout: 30) {
             harness.item?.state == .notDownloaded && !harness.world.center.downloads.isDownloading(Harness.episodeID, of: harness.feed.id)
         }
         XCTAssertEqual(harness.heard.last, "Stopped downloading “A map you can touch”.")
         XCTAssertTrue(harness.world.library.library.books.isEmpty)
+    }
+
+    /// Cancel Download chosen once the episode's book is already being
+    /// added to the library comes too late: it says so, in the words the
+    /// feed downloads section's Cancel says it, and the book arrives.
+    func testCancelDownloadTooLateSaysTheBookIsAlreadyBeingAdded() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsCancelLate")
+        let downloads = harness.world.center.downloads
+        downloads.beforeCommit = { [weak harness] _ in
+            guard let harness else { return }
+            harness.presenter.perform(harness.action(.cancelDownload), in: harness.context)
+        }
+        defer { downloads.beforeCommit = nil }
+
+        harness.presenter.perform(harness.action(.download), in: harness.context)
+        let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
+
+        XCTAssertEqual(harness.heard, [
+            "Downloading “A map you can touch”.",
+            "“A map you can touch” is already being added to the library.",
+        ])
+        XCTAssertEqual(harness.item?.state, .downloaded(bookID: book.id))
     }
 
     // MARK: - Played, Descriptions, and Deleting
@@ -456,7 +486,7 @@ final class FeedUICommandsTests: XCTestCase {
             XCTAssertTrue(steppers.allSatisfy { !$0.isEnabled }, "a stepper was available while following the global setting")
             XCTAssertEqual(feedCheckboxes(in: hosting).count, 5, "two Use the global setting checkboxes, an off checkbox, and the Skip finished and Download the next checkboxes")
             let popUps = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(popUps.count, 3, "the List and download, folder, and When an episode ends pop-ups")
+            XCTAssertEqual(popUps.count, 4, "the List and download, folder, When an episode ends, and Open the next episode in pop-ups")
             let listAndDownload = popUps.first { $0.itemTitles.contains("Every episode listed, downloads by hand") }
             XCTAssertNotNil(listAndDownload, "no List and download pop-up in the feed's words: \(popUps.map(\.itemTitles))")
             XCTAssertEqual(listAndDownload?.isEnabled, false, "the pop-up was available while following the global setting")

@@ -1,15 +1,15 @@
 import Foundation
 
-/// What the reader says about a book's pages (PG02, PG03, PG04): what Next
-/// Page and Previous Page announce, Go to Page's field and what it refuses,
-/// and the settings that show or say the page. Every sentence is shown and
+/// What the reader says about a book's pages (PG02, PG03, PG04): what a move
+/// by page announces, Go to Page's field and what it refuses, and the
+/// settings that show or say the page. Every sentence is shown and
 /// spoken alike, and pinned by tests. The position's own words, "Page 12 of
 /// 300" and "Before page 1", are `PagePosition.label`; callers use them and
 /// never rebuild them.
 enum ReaderPageWording {
-    // MARK: - Next Page and Previous Page
+    // MARK: - Moving by page
 
-    /// What Next Page and Previous Page say on reaching a page: "Page 13".
+    /// What a move by page says on reaching a page: "Page 13".
     /// `label` is the page's label as the book names it ("13", "xii").
     static func arrived(at label: String) -> String {
         "Page \(label)"
@@ -19,13 +19,35 @@ enum ReaderPageWording {
     /// nothing.
     static let noPages = "This book has no pages."
 
+    /// What a page command says in a book of one page, which has no other
+    /// page to go to, and moves nothing (the user's request, November 4,
+    /// 2026: such a command "should just warn the user and not do
+    /// anything").
+    static let onlyOnePage = "This book has only one page."
+
     // MARK: - Go to Page
 
     /// Go to Page's field name, shown before it and spoken as its label.
     static let fieldLabel = "Page"
 
-    /// What Go to Page's field takes, spoken as its hint.
-    static let fieldHint = "Type a page as the book numbers it, such as 12 or xii."
+    /// How Go to Page's field is filled in, the last sentence of its hint.
+    static let typingHint = "Type a page as the book numbers it, such as 12 or xii."
+
+    /// What Go to Page's field takes, spoken as its hint: how many pages the
+    /// book has, the N of "Page 12 of N" (`BookPages.total`), from its first
+    /// page's label to its last's, then `typingHint`. "This book has 300
+    /// pages, from i to 300. Type a page as the book numbers it, such as 12
+    /// or xii." A book of one page names it ("This book's only page is 1."),
+    /// and a book without pages says so, as a page command does there.
+    static func fieldHint(for pages: BookPages) -> String {
+        guard let first = pages.breaks.first?.label, let last = pages.breaks.last?.label else {
+            return noPages
+        }
+        let size = pages.count == 1
+            ? "This book's only page is \(first)."
+            : "This book has \(pages.total) \(pages.total == 1 ? "page" : "pages"), from \(first) to \(last)."
+        return "\(size) \(typingHint)"
+    }
 
     /// What Go to Page says to an empty field.
     static let emptyField = "Type a page number."
@@ -183,12 +205,12 @@ enum ReaderPageWording {
 
     /// What showing the page does, as its checkbox's hint says and its
     /// caption shows.
-    static let showInReaderHint = "Shows the page being read, such as Page 12 of 300, beside the percent, for books with pages."
+    static let showInReaderHint = "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
 
     /// The setting that adds the page to Where Am I?.
     static let sayInWhereAmITitle = "Say the page in Where Am I?"
 
     /// What saying the page does, as its checkbox's hint says and its
     /// caption shows.
-    static let sayInWhereAmIHint = "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books with pages."
+    static let sayInWhereAmIHint = "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page."
 }

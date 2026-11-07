@@ -3,8 +3,9 @@ import XCTest
 
 /// The licences of the code TextMouth bundles ship inside the app (L6 of the
 /// braille review, FMT21 and FR04): liblouis's GNU Lesser General Public
-/// License and README, and LAME's GNU Library General Public License and
-/// LICENSE note. project.yml copies them from the vendored folders into
+/// License and README, LAME's GNU Library General Public License and
+/// LICENSE note, and foliate-js's MIT License (the MOBI reader follows its
+/// mobi.js, FMT42). project.yml copies them from the vendored folders into
 /// `Contents/Resources/Licenses`; the app is the hosted tests' main bundle,
 /// so this reads them where a user of the built app would find them.
 final class BundledLicenseTests: XCTestCase {
@@ -35,5 +36,13 @@ final class BundledLicenseTests: XCTestCase {
         let copying = try licenseText("LAME", "COPYING")
         XCTAssertTrue(copying.contains("GNU LIBRARY GENERAL PUBLIC LICENSE"), String(copying.prefix(80)))
         XCTAssertFalse(try licenseText("LAME", "LICENSE").isEmpty)
+    }
+
+    /// foliate-js's licence is in the app: the MIT License, naming the
+    /// copyright holder of mobi.js, which the MOBI reader follows.
+    func testFoliateJSLicenseShipsWithTheApp() throws {
+        let licence = try licenseText("foliate-js", "LICENSE")
+        XCTAssertTrue(licence.hasPrefix("MIT License"), String(licence.prefix(80)))
+        XCTAssertTrue(licence.contains("John Factotum"), String(licence.prefix(120)))
     }
 }

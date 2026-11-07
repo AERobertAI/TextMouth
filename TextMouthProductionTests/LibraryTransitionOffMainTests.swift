@@ -252,6 +252,51 @@ final class LibraryTransitionOffMainTests: XCTestCase {
         XCTAssertEqual(published.folderSortSettings, ["Stacks": .defaultSort, "Other": manual])
     }
 
+    /// A change made meanwhile to a part of the library a folder edit leaves
+    /// alone, a book added to the Reading List in another window or a feed
+    /// item's row put on the feed shelf, stays once the edit publishes, with
+    /// the edit's own move made too. The proposed library holds those parts
+    /// as the plan found them, so it is published whole only when nothing at
+    /// all changed meanwhile.
+    @MainActor
+    func testThePublishedLibraryKeepsAReadingListOrFeedShelfChangeMadeMeanwhile() throws {
+        let shelf = BookFolder(name: "Shelf")
+        let moving = Book(title: "Moving", format: .txt, filePath: "/old/m.tmb/m.txt", md5Hash: "m", tmbDirectoryName: "m.tmb")
+        let listed = Book(title: "Listed", format: .txt, filePath: "/old/l.tmb/l.txt", md5Hash: "l", tmbDirectoryName: "l.tmb")
+        let original = Library(books: [moving, listed], folders: [shelf])
+        var moved = moving
+        moved.fileLocation = Book.FileLocation(folderPath: "Shelf", filePath: "/old/Shelf/m.tmb/m.txt", tmbDirectoryName: "m.tmb")
+        let proposed = Library(books: [moved, listed], folders: [shelf])
+        let plan = LibraryTransitionPlan(
+            original: original,
+            proposed: proposed,
+            moves: [LibraryTransitionMove(
+                original: moving,
+                updated: moved,
+                source: URL(fileURLWithPath: "/old/m.tmb"),
+                destination: URL(fileURLWithPath: "/old/Shelf/m.tmb"),
+                needsDiskMove: true
+            )],
+            changedFolders: []
+        )
+        var item = Book(title: "Harbour Log", format: .txt, filePath: "/old/feed/h.tmb/h.txt", md5Hash: "h", tmbDirectoryName: "h.tmb")
+        item.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:harbour-log")
+
+        XCTAssertEqual(LibraryViewModel.library(after: plan, current: original), proposed, "nothing changed, yet the proposed library was not published whole")
+
+        var listedMeanwhile = original
+        listedMeanwhile.readingList.append([listed.id])
+        let afterListing = LibraryViewModel.library(after: plan, current: listedMeanwhile)
+        XCTAssertEqual(afterListing.readingList.bookIDs, [listed.id], "the book added to the Reading List meanwhile was dropped")
+        XCTAssertEqual(afterListing.books, proposed.books, "the edit's move was not made")
+
+        var shelvedMeanwhile = original
+        shelvedMeanwhile.feedShelf.put(item)
+        let afterShelving = LibraryViewModel.library(after: plan, current: shelvedMeanwhile)
+        XCTAssertEqual(afterShelving.feedShelf.rows.map(\.id), [item.id], "the feed item's row put on the shelf meanwhile was dropped")
+        XCTAssertEqual(afterShelving.books, proposed.books, "the edit's move was not made")
+    }
+
     /// Only a transition that moves many packages, and so can take a while,
     /// says when it is done; a small one finishes before anyone could wonder.
     @MainActor

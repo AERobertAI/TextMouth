@@ -195,6 +195,16 @@ enum BookTextEditWording {
             + "The text content.md held before was kept as \(keptCopy.lastPathComponent), in the book's package."
     }
 
+    /// Why adding a book back to the library stopped when the text its
+    /// package held differed from the text of the book's file, which the
+    /// import replaces, and no copy of it could be kept: "Harbour Pilots was
+    /// not added back: no copy of the text its package held could be kept
+    /// first, so TextMouth left the text as it was."
+    static func addBackNoCopyKept(bookTitle: String) -> String {
+        "\(bookTitle) was not added back: no copy of the text its package held could be kept first, "
+            + "so TextMouth left the text as it was."
+    }
+
     /// What a rebuild says when it left a book's text alone because the
     /// user changed it with Edit Text and the rebuild was automatic (B12):
     /// "TextMouth kept the text you changed in Harbour Pilots. Choose Redo

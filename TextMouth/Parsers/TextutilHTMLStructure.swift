@@ -69,7 +69,7 @@ enum TextutilHTMLStructure {
     private static let deepestLevel = 6
 
     /// The characters that begin a bullet paragraph when a tab follows.
-    private static let bulletCharacters: Set<Character> = [
+    static let bulletCharacters: Set<Character> = [
         "•", "◦", "▪", "▫", "‣", "⁃", "∙", "●", "○", "■", "□", "–", "-", "*"
     ]
 

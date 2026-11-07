@@ -199,34 +199,39 @@ final class TextutilImportTests: XCTestCase {
     // MARK: - Samples: Word and OpenDocument
 
     func testWordSamplesImportAsDocWhateverTheirTemplateBit() throws {
-        let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
-        for sample in ["doc/headings.doc", "dot/headings-synthetic.dot"] {
+        // This test pins textutil's reading of the Word sample, so the sample goes to textutil whatever reads .doc in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
+            for sample in ["doc/headings.doc", "dot/headings-synthetic.dot"] {
+                try assertImports(Expectation(
+                    sample: sample, format: .doc, title: String(sample.dropFirst(4).dropLast(4)), author: "A. Sample",
+                    headings: harbour,
+                    contains: ["Bread from the bakery on Rue Ménard", "A newspaper already a day old"],
+                    excludes: ["•"]
+                ))
+            }
             try assertImports(Expectation(
-                sample: sample, format: .doc, title: String(sample.dropFirst(4).dropLast(4)), author: "A. Sample",
-                headings: harbour,
-                contains: ["Bread from the bakery on Rue Ménard", "A newspaper already a day old"],
-                excludes: ["•"]
+                sample: "dot/libreoffice-tdf120761_zOrder.dot", format: .doc, title: "libreoffice-tdf120761_zOrder",
+                headings: [], contains: ["Blah blah blah"]
+            ))
+            try assertImports(Expectation(
+                sample: "doc/libreoffice-tdf104239_chapterNumbering.doc", format: .doc,
+                title: "libreoffice-tdf104239_chapterNumbering",
+                headings: ["1: Heading 1", "2: Heading 2", "3: Heading 3", "4: Heading 4", "5: Heading 5", "5: Heading 6"]
+            ))
+            try assertImports(Expectation(
+                sample: "doc/libreoffice-tdf81705_outlineLevel.doc", format: .doc,
+                title: "libreoffice-tdf81705_outlineLevel", author: "user", headings: ["1: Contents"]
             ))
         }
-        try assertImports(Expectation(
-            sample: "dot/libreoffice-tdf120761_zOrder.dot", format: .doc, title: "libreoffice-tdf120761_zOrder",
-            headings: [], contains: ["Blah blah blah"]
-        ))
-        try assertImports(Expectation(
-            sample: "doc/libreoffice-tdf104239_chapterNumbering.doc", format: .doc,
-            title: "libreoffice-tdf104239_chapterNumbering",
-            headings: ["1: Heading 1", "2: Heading 2", "3: Heading 3", "4: Heading 4", "5: Heading 5", "5: Heading 6"]
-        ))
-        try assertImports(Expectation(
-            sample: "doc/libreoffice-tdf81705_outlineLevel.doc", format: .doc,
-            title: "libreoffice-tdf81705_outlineLevel", author: "user", headings: ["1: Contents"]
-        ))
     }
 
+    /// The author is the document's own (`dc:creator`), which textutil's
+    /// reading lost and TextMouth's own reader reads.
     func testOpenDocumentSamplesImportAsODTWhateverTheirTemplateName() throws {
         let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
         try assertImports(Expectation(
-            sample: "odt/handwritten.odt", format: .odt, title: "Harbour Notes", headings: harbour,
+            sample: "odt/handwritten.odt", format: .odt, title: "Harbour Notes", author: "A. Sample", headings: harbour,
             contains: ["Bread from the bakery on Rue Ménard"]
         ))
         try assertImports(Expectation(
@@ -234,7 +239,7 @@ final class TextutilImportTests: XCTestCase {
             contains: ["A newspaper already a day old"]
         ))
         try assertImports(Expectation(
-            sample: "ott/handwritten.ott", format: .odt, title: "Harbour Notes", headings: harbour
+            sample: "ott/handwritten.ott", format: .odt, title: "Harbour Notes", author: "A. Sample", headings: harbour
         ))
     }
 
@@ -418,8 +423,12 @@ final class TextutilImportTests: XCTestCase {
         for expected in cases {
             let recorder = TextutilToolRecorder()
             let copy = try copyOfFormatSample(expected.sample)
-            let book = try TextutilConverter.$tool.withValue(recorder.countingTool()) {
-                try importedForTest(copy).book
+            // The rich text samples are textutil's here, whatever reads them
+            // in the app (`OwnDocumentReaders.forcesTextutil`).
+            let book = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+                try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                    try importedForTest(copy).book
+                }
             }
             // One HTML conversion makes the text and the names; a second run
             // of textutil writes the plain text that holds the page breaks (PG11).
@@ -440,9 +449,12 @@ final class TextutilImportTests: XCTestCase {
     func testOnlyTheRefreshReadsTextutilNamesApartFromTheText() throws {
         let copy = try copyOfFormatSample("rtf/word-styles.rtf")
         let refresh = TextutilToolRecorder()
-        let read = TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
-            TextutilConverter.$tool.withValue(refresh.countingTool()) {
-                ImportedFileMetadata.read(from: copy, format: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let read = OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+                TextutilConverter.$tool.withValue(refresh.countingTool()) {
+                    ImportedFileMetadata.read(from: copy, format: .rtf)
+                }
             }
         }
         XCTAssertEqual(refresh.outputs.count, 1)
@@ -473,9 +485,13 @@ final class TextutilImportTests: XCTestCase {
         let thrown = thrown
         queue.enqueue {
             do {
-                // The stand-in tool is bound here, on the queue's own thread.
-                _ = try TextutilConverter.$tool.withValue(tool) {
-                    try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                // The stand-in tool is bound here, on the queue's own thread,
+                // and so is the rule that sends rich text to textutil, which
+                // these tests exercise (`OwnDocumentReaders.forcesTextutil`).
+                _ = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+                    try TextutilConverter.$tool.withValue(tool) {
+                        try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                    }
                 }
             } catch {
                 thrown.value = error
@@ -489,12 +505,15 @@ final class TextutilImportTests: XCTestCase {
     /// for, within a second or two: the import ends as a cancelled import
     /// does (`ImportCancelled`, no failure), nothing is left in the library
     /// or the staging folder, no child runs, and a conversion made outside
-    /// an import afterwards is not stopped.
+    /// an import afterwards is not stopped. The child is counted as launched
+    /// (`WatchedProcess.launchCount`), the count by which the next test
+    /// sees that a cancelled import started none.
     func testCancellingTheQueueStopsARunningTextutilAndLeavesNothing() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
         let queue = SerialImportQueue()
         let childrenBefore = WatchedProcess.runningChildCount
+        let launchesBefore = WatchedProcess.launchCount
 
         try assertLeavesNoTextutilFiles {
             let ended = queueImport(of: copy, on: queue, using: recorder.hangingTool())
@@ -503,6 +522,7 @@ final class TextutilImportTests: XCTestCase {
                 Thread.sleep(forTimeInterval: 0.02)
             }
             XCTAssertGreaterThan(WatchedProcess.runningChildCount, childrenBefore, "The child never started")
+            XCTAssertGreaterThan(WatchedProcess.launchCount, launchesBefore, "the running child was not counted as launched")
 
             let cancelledAt = Date()
             queue.cancelEnqueued()
@@ -522,12 +542,16 @@ final class TextutilImportTests: XCTestCase {
     }
 
     /// An import cancelled while it waits behind another never starts its
-    /// child: it ends cancelled as soon as its turn comes.
+    /// child: it ends cancelled as soon as its turn comes. No child is
+    /// launched at all (`WatchedProcess.launchCount`): the count of children
+    /// running, and the files left, are the same after a child started and
+    /// killed at once.
     func testAnImportCancelledWhileItWaitsStartsNoChild() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
         let queue = SerialImportQueue()
         let childrenBefore = WatchedProcess.runningChildCount
+        let launchesBefore = WatchedProcess.launchCount
 
         // A first import holds the queue until the test lets it go.
         let gate = DispatchSemaphore(value: 0)
@@ -543,6 +567,7 @@ final class TextutilImportTests: XCTestCase {
 
         XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
         XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(WatchedProcess.launchCount, launchesBefore, "a cancelled import started textutil")
         XCTAssertEqual(try folderEntries(), [])
     }
 
@@ -655,9 +680,12 @@ final class TextutilImportTests: XCTestCase {
     func testAConversionOutsideAStagedPackageWorksInTheBoundRoot() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
-        let named = try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
-            try TextutilConverter.$tool.withValue(recorder.countingTool()) {
-                try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let named = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+                try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                    try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+                }
             }
         }
         XCTAssertEqual(named.author, "A. Sample")
@@ -677,9 +705,12 @@ final class TextutilImportTests: XCTestCase {
     // MARK: - Nothing Left Behind
 
     func testASuccessfulImportLeavesNoTextutilFileAnywhere() throws {
-        try assertLeavesNoTextutilFiles {
-            for sample in ["rtf/headings.rtf", "rtfd/headings.rtfd", "doc/headings.doc", "odt/handwritten.odt"] {
-                _ = try importedForTest(try copyOfFormatSample(sample))
+        // This test is about the files textutil leaves, so the samples go to textutil whatever reads them in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try assertLeavesNoTextutilFiles {
+                for sample in ["rtf/headings.rtf", "rtfd/headings.rtfd", "doc/headings.doc", "odt/handwritten.odt"] {
+                    _ = try importedForTest(try copyOfFormatSample(sample))
+                }
             }
         }
     }

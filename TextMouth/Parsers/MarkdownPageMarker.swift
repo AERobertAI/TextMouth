@@ -33,12 +33,37 @@ struct MarkdownPageMarker: Equatable, Sendable {
     ///
     /// The label is normalized: whitespace at its ends is trimmed, each inner
     /// run of whitespace and line breaks becomes one space, and it is cut to
-    /// `maximumLabelLength` Characters and trimmed again. A label with nothing
-    /// left (a source that gives no name) becomes `ordinal`, the page's
-    /// 1-based number among the book's pages.
+    /// `maximumLabelLength` Characters and trimmed again. A label that names
+    /// no page (`namesNoPage`: nothing left, or only the word "Page", from a
+    /// source that gives no name) becomes `ordinal`, the page's 1-based
+    /// number among the book's pages.
     init(label: String, ordinal: Int) {
         let normalized = Self.normalized(label)
-        self.label = normalized.isEmpty ? String(ordinal) : normalized
+        self.label = Self.namesNoPage(normalized) ? String(ordinal) : normalized
+    }
+
+    // MARK: - Labels that name no page
+
+    /// Whether `label` gives a page no name of its own: it holds nothing but
+    /// white space and a lone period, or only the word "Page" in any
+    /// capitals, with a period or a colon or neither, which a generator
+    /// writes when it has no number for the page (`aria-label="Page "`).
+    /// Every reader of a book's page labels asks this one rule before it
+    /// takes a label, so no page is named "Page", which the reader would
+    /// show as "Page Page of 1". It asks after taking a leading "Page" off
+    /// as a marker does (`withoutPagePrefix`), so a label it accepts never
+    /// becomes one that names no page ("Page page").
+    static func namesNoPage(_ label: String) -> Bool {
+        let key = comparisonKey(withoutPagePrefix(collapsingWhitespace(label)))
+        return key.isEmpty || key == "PAGE" || key == "PAGE:"
+    }
+
+    /// Whether `label` is a page number as `isNoMoreThanLabel` reads one:
+    /// ASCII digits, or a Roman numeral in its canonical form, with case,
+    /// white space, one trailing period, and a leading word "Page" set aside
+    /// ("12", "xii", "XII.", "Page 12").
+    static func isPageNumber(_ label: String) -> Bool {
+        pageNumber(comparisonKey(withoutPagePrefix(collapsingWhitespace(label)))) != nil
     }
 
     /// A marker whose label is already normalized and not empty.
@@ -211,8 +236,10 @@ struct MarkdownPageMarker: Equatable, Sendable {
     // MARK: - Normalizing
 
     /// The label's normal form: trimmed, each inner run of whitespace one space,
-    /// cut to `maximumLabelLength` Characters, trimmed again (the cut may end
-    /// on a space). Shared by `init` and `decode`, so both agree on every label.
+    /// a leading word "Page" taken off (`withoutPagePrefix`), cut to
+    /// `maximumLabelLength` Characters, trimmed again (the cut may end on a
+    /// space). Shared by `init` and `decode`, so both agree on every label,
+    /// and a content.md written with "Page 12" reads as page "12".
     private static func normalized(_ label: String) -> String {
         var result = ""
         var pendingSpace = false
@@ -227,7 +254,34 @@ struct MarkdownPageMarker: Equatable, Sendable {
             }
             result.append(character)
         }
-        return String(result.prefix(maximumLabelLength)).trimmingCharacters(in: .whitespacesAndNewlines)
+        let unprefixed = withoutPagePrefix(result)
+        return String(unprefixed.prefix(maximumLabelLength)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// `label`, its whitespace runs already made single spaces, without a
+    /// leading word "Page" when a page's name follows it: the reader says
+    /// "Page" itself, so a source's "Page 12" would be shown as "Page Page
+    /// 12 of 300" (the user's choice, November 4, 2026). The word, in any
+    /// capitals, may end in a period or a colon, and the name follows a
+    /// space or begins with a digit: "Page 12", "page xii", "PAGE: 3", and
+    /// "Page12" name the pages "12", "xii", "3", and "12". "Page" alone
+    /// stays, and names no page (`namesNoPage`); so do words that only
+    /// begin with the letters, such as "Pages 4", "Pageant", and "Page-1".
+    private static func withoutPagePrefix(_ label: String) -> String {
+        let word = "page"
+        guard String(label.prefix(word.count)).lowercased() == word else { return label }
+        var rest = label.dropFirst(word.count)
+        // A period or a colon may close the word: "Page: 4".
+        if rest.first == "." || rest.first == ":" {
+            rest = rest.dropFirst()
+        }
+        if rest.first == " " {
+            rest = rest.drop(while: { $0 == " " })
+        } else if !(rest.first.map { $0.isASCII && $0.isNumber } ?? false) {
+            // Not the word "Page" before a name: "Pages", "Pageant", "Page".
+            return label
+        }
+        return rest.isEmpty ? label : String(rest)
     }
 
     /// Whether every scalar of `character` is whitespace or a line break, so a

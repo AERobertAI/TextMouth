@@ -113,6 +113,7 @@ test("All actions have default binding entries") {
             .releaseMediaControls, .addToReadingList, .removeFromReadingList,
             .nextInReadingList, .previousInReadingList, .speakImportProgress,
             .speakDownloadProgress, .moveToLibrary, .folderOrFeedSettings,
+            .nextInFolder, .previousInFolder,
         ].contains(action) {
             try assertGreater(bindings!.count, 0, "\(action.rawValue) should have at least one binding")
         }
@@ -303,8 +304,9 @@ test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
     // With Import Folder… (Import DAISY Folder… until FR17) and Add Feed…, the Library menu's commands
     // whose keys became editable (FR12's branch D), Move to Library…
-    // (FR11's branch D), and Folder or Feed Settings (FR19).
-    try assertEqual(libraryActions.count, 15, "Should have 15 library actions")
+    // (FR11's branch D), Folder or Feed Settings (FR19), and Go to View 1
+    // to Go to View 9 (the Library views of October 30, 2026).
+    try assertEqual(libraryActions.count, 24, "Should have 24 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
@@ -320,6 +322,9 @@ test("Library category includes all library actions") {
     try assertTrue(names.contains("Remove from Reading List"))
     try assertTrue(names.contains("Import Folder…"))
     try assertTrue(names.contains("Add Feed…"))
+    for number in 1...9 {
+        try assertTrue(names.contains("Go to View \(number)"))
+    }
     print("    Library category has \(libraryActions.count) actions")
 }
 

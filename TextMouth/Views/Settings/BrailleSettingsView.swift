@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - Wording
 
-/// Every sentence the Braille tab of Settings shows or speaks (FMT21),
-/// kept together so a test pins each one exactly.
+/// Every sentence the Braille tab of Settings shows or speaks (FMT21), the
+/// braille file characters pop-up's among them (braillecodes), kept
+/// together so a test pins each one exactly.
 enum BrailleSettingsWording {
     /// The tab's name in the Settings window's toolbar.
     static let tabTitle = "Braille"
@@ -23,10 +24,27 @@ enum BrailleSettingsWording {
     /// What the contraction pop-up does, spoken after its label and value.
     static let contractionHint =
         "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
-    /// The caption under the pop-ups: where the setting is used, and what it
+    /// The label of the pop-up that chooses how a BRF or BRL file writes
+    /// each braille cell as a character, its braille file code
+    /// (braillecodes); the Braille tab and Export's braille options share
+    /// it, as they share the labels above.
+    static let fileCodeLabel = "Braille file characters"
+    /// What the Braille tab's braille file characters pop-up does, spoken
+    /// after its label and value (BRAILLE-CODES-RESEARCH-2026-10-25.md,
+    /// section 8.3).
+    static let fileCodeHint =
+        "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII."
+    /// The caption under the code pop-ups: where the code is used, and what it
     /// leaves alone.
     static let caption =
         "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with."
+    /// The caption under the braille file characters pop-up, which follows
+    /// the code's caption, so neither caption is heard as the other's (the
+    /// review of October 30, finding 7): which files the characters apply
+    /// to, that Unicode braille patterns are recognized rather than chosen,
+    /// that a BRF export starts with them, and what a book keeps.
+    static let fileCodeCaption =
+        "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself. The Export dialog starts a BRF with them. A book keeps the characters it was imported with, which Book Information can change."
     /// What the group says in place of the pop-ups when the app's bundle
     /// holds no braille tables.
     static let noTables = "TextMouth found no braille tables in its bundle."
@@ -98,9 +116,15 @@ enum BrailleSettingsChoice {
 /// that code contracts. The three pop-ups (`BrailleTablePickers`) edit one
 /// setting, the table (`SettingsViewModel.brailleTable`, mirrored in
 /// config.json), and offer the bundled tables and this Mac's (October 20,
-/// 2026). Under them, one sentence says where the chosen table comes from.
+/// 2026). Under them, one sentence says where the chosen table comes from,
+/// and the code's caption follows. After it, a fourth pop-up chooses the
+/// braille file characters an import reads a BRF or BRL file with, one of
+/// the two seven-bit codes (braillecodes; `SettingsViewModel.brailleFileCode`,
+/// mirrored in config.json too), which Export's braille options start from,
+/// with a caption of its own (`trailingRows(for:)`).
 /// If the bundle holds no tables, the tab says so instead of showing pop-ups
-/// with nothing to choose.
+/// with nothing to choose; with no table, no braille can be read, so the
+/// braille file characters pop-up is left out too.
 struct BrailleSettingsView: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
 
@@ -116,12 +140,23 @@ struct BrailleSettingsView: View {
         )
     }
 
-    /// What the group shows above its caption: the two pop-ups, or the
-    /// sentence that says the bundle holds no tables. A pure choice of the
-    /// codes, so a test can pin it without drawing the view (hosted SwiftUI
-    /// text is not exposed to the tests).
+    /// The braille file characters imports read a BRF or BRL file with, by
+    /// the code's id, as the setting stores it
+    /// (`SettingsViewModel.brailleFileCode`).
+    private var fileCodeBinding: Binding<String> {
+        Binding(
+            get: { settingsViewModel.brailleFileCode },
+            set: { settingsViewModel.brailleFileCode = $0 }
+        )
+    }
+
+    /// What the group shows above its caption: the pop-ups, or the sentence
+    /// that says the bundle holds no tables. A pure choice of the codes, so
+    /// a test can pin it without drawing the view (hosted SwiftUI text is not
+    /// exposed to the tests).
     enum Content: Equatable {
-        /// The code and contraction pop-ups.
+        /// The table pop-ups, the sentence that says where the table comes
+        /// from, and the braille file characters pop-up.
         case choices
         /// The sentence shown instead of the pop-ups.
         case noTables(String)
@@ -131,6 +166,29 @@ struct BrailleSettingsView: View {
         static func of(codes: [BrailleCode]) -> Content {
             codes.isEmpty ? .noTables(BrailleSettingsWording.noTables) : .choices
         }
+    }
+
+    /// One row the group shows after the table pop-ups and their source
+    /// sentence (or after the no-tables sentence).
+    enum TrailingRow: Hashable {
+        /// The code's caption (`BrailleSettingsWording.caption`).
+        case caption
+        /// The braille file characters pop-up.
+        case fileCodePopUp
+        /// The braille file characters' own caption
+        /// (`BrailleSettingsWording.fileCodeCaption`).
+        case fileCodeCaption
+    }
+
+    /// The rows after the table pop-ups, in reading order, which the body
+    /// draws as listed (the review of October 30, finding 7): the code's
+    /// caption first, then the braille file characters pop-up and its own
+    /// caption, so neither caption is heard as the other's. With no tables,
+    /// no braille can be read, so the caption is alone. A pure list, so a
+    /// test pins the order without drawing the view, whose captions hosted
+    /// tests cannot read.
+    static func trailingRows(for content: Content) -> [TrailingRow] {
+        content == .choices ? [.caption, .fileCodePopUp, .fileCodeCaption] : [.caption]
     }
 
     /// The sentence that says where the table in use comes from
@@ -145,9 +203,10 @@ struct BrailleSettingsView: View {
     }
 
     var body: some View {
+        let content = Content.of(codes: codes)
         Form {
             Section {
-                switch Content.of(codes: codes) {
+                switch content {
                 case .choices:
                     BrailleTablePickers(
                         table: tableBinding,
@@ -156,20 +215,51 @@ struct BrailleSettingsView: View {
                         codeHint: BrailleSettingsWording.codeHint,
                         contractionHint: BrailleSettingsWording.contractionHint
                     )
-                    Text(sourceSentence)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    captionText(sourceSentence)
                 case .noTables(let sentence):
                     Text(sentence)
                 }
-                Text(BrailleSettingsWording.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                // The code's caption, then the braille file characters with
+                // a caption of their own, in the order `trailingRows(for:)`
+                // pins, so the code's "this code" is never heard as theirs.
+                ForEach(Self.trailingRows(for: content), id: \.self) { row in
+                    switch row {
+                    case .caption:
+                        captionText(BrailleSettingsWording.caption)
+                    case .fileCodePopUp:
+                        fileCodePicker
+                    case .fileCodeCaption:
+                        captionText(BrailleSettingsWording.fileCodeCaption)
+                    }
+                }
             } header: {
                 Text(BrailleSettingsWording.sectionHeader)
             }
         }
+    }
+
+    /// `text` drawn as the tab's captions are: small, secondary, and wrapped.
+    private func captionText(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The pop-up of braille file characters: the codes an import may be
+    /// set to (`BrailleFileCode.importChoices`, the two seven-bit codes; a
+    /// file of Unicode braille patterns is recognized by its bytes, never
+    /// chosen, review finding 4), each listed by its name and tagged by its
+    /// id, drawn by the form as it draws the table pop-ups. The selected
+    /// code's name is its value, so VoiceOver says "North American Braille
+    /// ASCII, Braille file characters, pop-up button".
+    private var fileCodePicker: some View {
+        Picker(BrailleSettingsWording.fileCodeLabel, selection: fileCodeBinding) {
+            ForEach(BrailleFileCode.importChoices) { code in
+                Text(code.name).tag(code.id)
+            }
+        }
+        .accessibilityLabel(BrailleSettingsWording.fileCodeLabel)
+        .accessibilityHint(BrailleSettingsWording.fileCodeHint)
     }
 }

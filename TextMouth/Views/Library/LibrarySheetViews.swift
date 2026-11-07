@@ -22,6 +22,12 @@ struct LibraryBookInfoSheet: View {
     /// another encoding. Made for every book the sheet shows, cheaply, and
     /// shown only for one that offers the choice.
     @StateObject private var encoding: TextEncodingChoiceModel
+    /// The Braille File Characters pop-up of a BRF or BRL braille book
+    /// (braillecodes): the code its file is read with, and the re-read with
+    /// another. Made for every book the sheet shows, cheaply, and shown only
+    /// for one that offers the choice. A book offers one pop-up at most, the
+    /// encoding's or this.
+    @StateObject private var fileCode: BrailleFileCodeChoiceModel
     @Environment(\.dismiss) private var dismiss
 
     init(book: Book, libraryViewModel: LibraryViewModel) {
@@ -31,6 +37,19 @@ struct LibraryBookInfoSheet: View {
         self._author = State(initialValue: book.author)
         self._opened = State(initialValue: Self.values(title: book.title, author: book.author))
         self._encoding = StateObject(wrappedValue: TextEncodingChoiceModel(book: book, library: libraryViewModel))
+        self._fileCode = StateObject(wrappedValue: BrailleFileCodeChoiceModel(book: book, library: libraryViewModel))
+    }
+
+    /// Whether the book offers a re-read pop-up: the Text Encoding pop-up,
+    /// or the Braille File Characters pop-up.
+    private var offersRereadChoice: Bool {
+        book.offersTextEncodingChoice || book.offersBrailleFileCodeChoice
+    }
+
+    /// Whether the book is being read again from either pop-up, which shows
+    /// the work indicator and keeps the sheet open until it ends.
+    private var isReadingAgain: Bool {
+        encoding.isWorking || fileCode.isWorking
     }
 
     var body: some View {
@@ -58,12 +77,19 @@ struct LibraryBookInfoSheet: View {
                         Text(row.value)
                     }
                 }
+                // A BRF or BRL braille book names the braille file characters
+                // its file is read with, and offers others (braillecodes):
+                // VoiceOver reads "North American Braille ASCII, Braille File
+                // Characters, pop-up button".
+                if book.offersBrailleFileCodeChoice {
+                    BookRereadPopUp(model: fileCode, label: BrailleFileCodeWording.bookInfoLabel, hint: BrailleFileCodeWording.popUpHint)
+                }
                 // A text book from the listener's own file names the encoding
                 // its file is read in, and offers another (FMT16,
                 // encodingchoice): VoiceOver reads "Windows-1251 (Cyrillic),
                 // guessed, Text Encoding, pop-up button".
                 if book.offersTextEncodingChoice {
-                    TextEncodingPopUp(model: encoding)
+                    BookRereadPopUp(model: encoding, label: TextEncodingWording.bookInfoLabel, hint: TextEncodingWording.popUpHint)
                 }
                 LabeledContent("Added") {
                     Text(book.dateAdded, style: .date)
@@ -80,10 +106,12 @@ struct LibraryBookInfoSheet: View {
                 }
             }
 
-            // Why the last choice of an encoding changed nothing, and the
-            // re-read under way (encodingchoice).
-            OperationFailureNotice(message: encoding.failureMessage)
-            if encoding.isWorking {
+            // Why the last choice of an encoding, or of braille file
+            // characters, changed nothing, and the re-read under way
+            // (encodingchoice, braillecodes). A book shows one pop-up at
+            // most, so only that pop-up's model has a message to show.
+            OperationFailureNotice(message: encoding.failureMessage ?? fileCode.failureMessage)
+            if isReadingAgain {
                 SheetWorkIndicator(label: TextEncodingWording.workingLabel)
             }
 
@@ -92,8 +120,9 @@ struct LibraryBookInfoSheet: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
-                // The sheet stays open until a re-read in another encoding ends.
-                .disabled(encoding.isWorking)
+                // The sheet stays open until a re-read in another encoding,
+                // or with other braille file characters, ends.
+                .disabled(isReadingAgain)
 
                 Spacer()
 
@@ -113,20 +142,25 @@ struct LibraryBookInfoSheet: View {
                     }
                 }
                 .keyboardShortcut(.return, modifiers: [])
-                .disabled(encoding.isWorking || Self.edit(from: opened, title: title, author: author) == nil)
+                .disabled(isReadingAgain || Self.edit(from: opened, title: title, author: author) == nil)
             }
         }
         .padding()
-        // Taller with the Text Encoding pop-up, and room for a refusal of a
-        // few lines below the form.
-        .frame(width: 400, height: book.offersTextEncodingChoice ? 470 : 350)
+        // Taller with either re-read pop-up, the Text Encoding or the Braille
+        // File Characters one, and room for a refusal of a few lines below
+        // the form.
+        .frame(width: 400, height: offersRereadChoice ? 470 : 350)
         .navigationTitle("Info: \(book.title)")
-        .textEncodingConfirmation(encoding)
         .task {
             // What the file is read in, worked out off the main actor, so the
-            // sheet never waits on a large file.
+            // sheet never waits on a large file; and the braille file
+            // characters the book's record keeps, which stand over a row
+            // that lags behind a re-read. A book offers one at most.
             if book.offersTextEncodingChoice {
                 await encoding.load()
+            }
+            if book.offersBrailleFileCodeChoice {
+                await fileCode.load()
             }
         }
     }
@@ -155,21 +189,31 @@ struct LibraryBookInfoSheet: View {
     }
 }
 
-// MARK: - Text Encoding (encodingchoice)
+// MARK: - Re-read Pop-ups (encodingchoice, braillecodes)
 
-/// Book Information's Text Encoding row: a pop-up button of the options
-/// (`TextEncodingChoices`), with the encoding the book is read in now
-/// selected and named with what decided it, so the button shows, and
-/// VoiceOver reads, "Windows-1251 (Cyrillic), guessed, Text Encoding, pop-up
-/// button" (`TextEncodingChoiceModel.name(of:)`). Choosing another option asks
-/// first (`textEncodingConfirmation(_:)`); the pop-up is dimmed while the
-/// file is checked and while the book is read again.
-struct TextEncodingPopUp: View {
-    @ObservedObject var model: TextEncodingChoiceModel
+/// One of Book Information's rows that names what a book's file is read
+/// with and reads it again with another choice: a pop-up button of
+/// `model`'s items, with what the book is read with now selected and named,
+/// so the button shows, and VoiceOver reads, the value before `label`:
+/// "Windows-1251 (Cyrillic), guessed, Text Encoding, pop-up button"
+/// (`TextEncodingChoiceModel.name(of:)`), or "North American Braille ASCII,
+/// Braille File Characters, pop-up button"
+/// (`BrailleFileCodeChoiceModel.name(of:)`). Choosing another item asks
+/// first, in the alert this view carries, so each pop-up's alert hangs on
+/// its own view and no view carries two; the pop-up is dimmed while its
+/// model takes no choice (`BookRereadChoosing.isEnabled`), as while the
+/// book is read again.
+struct BookRereadPopUp<Model: BookRereadChoosing>: View {
+    /// What the pop-up lists, the choice, and the re-read.
+    @ObservedObject var model: Model
+    /// The pop-up's label, which VoiceOver speaks after its value.
+    let label: String
+    /// The pop-up's hint, which VoiceOver speaks after its label.
+    let hint: String
 
     var body: some View {
         Picker(
-            TextEncodingWording.bookInfoLabel,
+            label,
             selection: Binding(get: { model.selection }, set: { item in Task { await model.choose(item) } })
         ) {
             ForEach(model.items, id: \.self) { item in
@@ -179,21 +223,16 @@ struct TextEncodingPopUp: View {
         .pickerStyle(.menu)
         // The label is spoken from the control itself: a pop-up button takes
         // no label from the picker's title.
-        .accessibilityLabel(TextEncodingWording.bookInfoLabel)
-        .accessibilityHint(TextEncodingWording.popUpHint)
+        .accessibilityLabel(label)
+        .accessibilityHint(hint)
         .disabled(!model.isEnabled)
-    }
-}
-
-extension View {
-    /// The confirmation `model` asks before its book is read again in the
-    /// option chosen: its title names the book and the option ("Read “Ledger”
-    /// again as Shift JIS (Japanese)?"), its message says what changes (an
-    /// edit of the text kept, and Edit Text stopping, included), Read Again
-    /// (Return) reads it again, and Cancel (Escape) leaves everything, the
-    /// pop-up included, as it was.
-    func textEncodingConfirmation(_ model: TextEncodingChoiceModel) -> some View {
-        alert(
+        // The confirmation asked before the book is read again with the
+        // choice: its title names the book and the choice ("Read “Ledger”
+        // again as Shift JIS (Japanese)?"), its message says what changes
+        // (an edit of the text kept, and Edit Text stopping, included), Read
+        // Again (Return) reads it again, and Cancel (Escape) leaves
+        // everything, the pop-up included, as it was.
+        .alert(
             model.pending.map { model.confirmTitle(for: $0.option) } ?? "",
             isPresented: Binding(get: { model.pending != nil }, set: { if !$0 { model.cancel() } }),
             presenting: model.pending

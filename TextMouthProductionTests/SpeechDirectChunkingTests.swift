@@ -281,6 +281,78 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(words, ["Braun", "recruit", "reply"])
     }
 
+    // MARK: - Words Reported Past the Text
+
+    /// Which ranges the synthesizer reports are read as words
+    /// (`SpeechService.isUsableSpokenRange(_:inTextOfLength:)`): those lying
+    /// within the utterance's text, an empty one at its very end included,
+    /// and none that runs past the end, starts past it, starts at
+    /// `NSNotFound`, or is negative. Decided on its own, so this cannot trap
+    /// whatever the decision: reading the word of a range past the end
+    /// raised an exception that ended TextMouth.
+    func testOnlyARangeWithinTheUtterancesTextIsReadAsAWord() {
+        let length = 20
+        let usable = [
+            NSRange(location: 0, length: 4),
+            NSRange(location: 16, length: 4),
+            NSRange(location: 0, length: 20),
+            NSRange(location: 20, length: 0),
+        ]
+        let unusable = [
+            NSRange(location: 17, length: 4),
+            NSRange(location: 21, length: 0),
+            NSRange(location: 0, length: 21),
+            NSRange(location: NSNotFound, length: 0),
+            NSRange(location: NSNotFound, length: 4),
+            NSRange(location: 4, length: Int.max),
+            NSRange(location: -1, length: 4),
+            NSRange(location: 4, length: -1),
+        ]
+        for range in usable {
+            XCTAssertTrue(SpeechService.isUsableSpokenRange(range, inTextOfLength: length), "\(range) was not read")
+        }
+        for range in unusable {
+            XCTAssertFalse(SpeechService.isUsableSpokenRange(range, inTextOfLength: length), "\(range) was read")
+        }
+    }
+
+    /// A word the synthesizer reports past the end of the live utterance's
+    /// text, as it may by its own accounting, moves nothing: the cursor
+    /// stays at the word reported before, one trace line names the range
+    /// and the text's length, and nothing traps, where reading the word
+    /// once ended TextMouth. A word within the text still moves the cursor.
+    func testAWordReportedPastTheEndOfItsUtteranceLeavesTheCursorWhereItWas() throws {
+        let (speech, recorder) = makeDirectSpeech()
+        defer { speech.stop() }
+        var cursor: [NSRange] = []
+        speech.onWordSpoken = { range, _ in cursor.append(range) }
+        let start = chunk(at: 20_000, size: SpeechService.directModeFirstChunkSize).start
+        speech.speak(Self.longText, fromCharOffset: start)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: 0, length: 4), of: first, to: speech)
+        let length = first.speechString.utf16.count
+
+        report(word: NSRange(location: length - 2, length: 10), of: first, to: speech)
+        report(word: NSRange(location: NSNotFound, length: 0), of: first, to: speech)
+
+        XCTAssertEqual(cursor, [NSRange(location: start, length: 4)], "a word past the end moved the cursor")
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: start, length: 4))
+        XCTAssertTrue(speech.isSpeaking, "a word past the end stopped speech")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains("SPOKEN_RANGE_IGNORED: location=\(length - 2) length=10 utteranceLength=\(length)"),
+            "\(lines)"
+        )
+        XCTAssertTrue(
+            lines.contains("SPOKEN_RANGE_IGNORED: location=\(NSNotFound) length=0 utteranceLength=\(length)"),
+            "\(lines)"
+        )
+
+        report(word: NSRange(location: 5, length: 3), of: first, to: speech)
+        XCTAssertEqual(cursor.last, NSRange(location: start + 5, length: 3), "a word within the text did not move the cursor")
+    }
+
     // MARK: - Recovery after the system cancels the live utterance
 
     /// When the system cancels the live utterance on its own, as the speech

@@ -214,9 +214,14 @@ final class EPUBPageListTests: XCTestCase {
     }
 
     /// The other samples have no pages and no markers without them either.
+    /// Each still reads as every chapter it has with pages: a parse that
+    /// read no chapter would hold no page and no marker either.
     func testNoSampleHasPagesWhenTheyAreNotIncluded() throws {
         for sample in ["epub3-pages/pagebreaks-only.epub", "epub2-pages/pagelist.epub"] {
-            for item in try chaptersOf(sample, includesPages: false) {
+            let items = try chaptersOf(sample, includesPages: false)
+            XCTAssertFalse(items.isEmpty, sample)
+            XCTAssertEqual(items.count, try chaptersOf(sample).count, sample)
+            for item in items {
                 XCTAssertTrue(item.chapter.pages.isEmpty, sample)
                 XCTAssertFalse(item.markdown.contains("<!-- page:"), sample)
             }
@@ -515,6 +520,181 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: chapters[1].chapter, [("4", "At dusk the tally")])
     }
 
+    // MARK: - Lists and labels that name no page
+
+    /// A one-chapter EPUB 3 whose navigation document holds `pageList`
+    /// (the inside of a `page-list` nav's ordered list, or nothing for no
+    /// page list), with `ncxPageList` as the inside of an NCX `pageList`
+    /// when it is not nil, and `body` as the chapter's body.
+    private func bookWithPageList(_ pageList: String?, ncxPageList: String? = nil, body: String) throws -> URL {
+        let pageListNav = pageList.map {
+            "<nav epub:type=\"page-list\" hidden=\"\"><h2>Page List</h2><ol>\($0)</ol></nav>"
+        } ?? ""
+        let nav = xhtml("""
+            <nav epub:type="toc"><ol><li><a href="ch1.xhtml">Title</a></li></ol></nav>
+            \(pageListNav)
+            """)
+        var manifest = """
+            <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+            <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+            """
+        var members = ["nav.xhtml": nav, "ch1.xhtml": xhtml(body)]
+        var spineAttributes = ""
+        if let ncxPageList {
+            manifest += "<item id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"/>"
+            spineAttributes = " toc=\"ncx\""
+            members["toc.ncx"] = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+                <navMap><navPoint id="n" playOrder="1"><navLabel><text>Title</text></navLabel><content src="ch1.xhtml"/></navPoint></navMap>
+                <pageList>\(ncxPageList)</pageList>
+                </ncx>
+                """
+        }
+        return try makeEPUB(
+            manifest: manifest, spine: "<itemref idref=\"ch1\"/>", spineAttributes: spineAttributes, members: members
+        )
+    }
+
+    /// The page list of a generator that had no page numbers: its one entry
+    /// is the id it links to, at a page-break element whose `aria-label` is
+    /// "Page " with no number and whose `title` is empty. The list labels
+    /// no page, so it is passed over, and the element names none either: the
+    /// book has no pages, where it had one called "pagenum_000000", and its
+    /// text reads as it does without pages.
+    func testAPageListOfOnlyTheIdItLinksToNamesNoPage() throws {
+        let epub = try bookWithPageList(
+            "<li><a href=\"ch1.xhtml#pagenum_000000\">pagenum_000000</a></li>",
+            body: """
+                <section><span epub:type="pagebreak" id="pagenum_000000" title="" role="doc-pagebreak" aria-label="Page " />
+                <h1>Title</h1><p>Alpha text.</p></section>
+                """
+        )
+        let withPages = try EPUBParser.prepareBook(url: epub).chapters
+        let withoutPages = try EPUBParser.prepareBook(url: epub, includesPages: false).chapters
+        XCTAssertEqual(withPages.count, 1)
+        XCTAssertEqual(withPages.flatMap(\.chapter.pages).map(\.label), [])
+        XCTAssertEqual(withPages.map(\.chapter.text), withoutPages.map(\.chapter.text))
+    }
+
+    /// A list passed over leaves the book's page-break elements as its pages,
+    /// as in a book without a list: one labelled by its `title` beside an
+    /// `aria-label` of only "Page", and none at the element the list named.
+    func testAPassedOverPageListLeavesThePageBreakElementsAsThePages() throws {
+        let epub = try bookWithPageList(
+            "<li><a href=\"ch1.xhtml#p_7\">p_7</a></li>",
+            body: """
+                <h1>Title</h1><p id="p_7">Alpha text.</p>
+                <p>Bravo <span epub:type="pagebreak" aria-label="Page " title="8"></span>text.</p>
+                """
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        XCTAssertEqual(chapters.count, 1)
+        guard let chapter = chapters.first?.chapter else { return }
+        assertPages(of: chapter, [("8", "text.")])
+    }
+
+    /// An entry whose id is its page's number ("12" linking to `#12`) is
+    /// labelled by it, since an id can be a number; only an id that is no
+    /// page number is passed over.
+    func testAnEntryWhoseIdIsItsPageNumberKeepsTheNumber() throws {
+        let epub = try bookWithPageList(
+            "<li><a href=\"ch1.xhtml#12\">12</a></li><li><a href=\"ch1.xhtml#xiii\">xiii</a></li>",
+            body: "<h1>Title</h1><p id=\"12\">Alpha text.</p><p id=\"xiii\">Bravo text.</p>"
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [("12", "Alpha text."), ("xiii", "Bravo text.")])
+    }
+
+    /// In a list that labels its other pages, an entry that is only the id
+    /// it links to, or only the word "Page", takes its 1-based place in the
+    /// list, as an entry with an empty label does.
+    func testAnEntryNamingNoPageAmongLabelledOnesTakesItsPlaceInTheList() throws {
+        let epub = try bookWithPageList(
+            """
+            <li><a href="ch1.xhtml#a">i</a></li><li><a href="ch1.xhtml#pg_b">pg_b</a></li>
+            <li><a href="ch1.xhtml#c">iii</a></li><li><a href="ch1.xhtml#d">Page</a></li>
+            """,
+            body: """
+                <h1>Title</h1><p id="a">Alpha text.</p><p id="pg_b">Bravo text.</p>
+                <p id="c">Charlie text.</p><p id="d">Delta text.</p>
+                """
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [
+            ("i", "Alpha text."), ("2", "Bravo text."), ("iii", "Charlie text."), ("4", "Delta text."),
+        ])
+    }
+
+    /// An NCX pageTarget whose label is only an id, the one it links to or
+    /// its own, is labelled by its `value`, or else by its place in the list.
+    func testAnNCXEntryOfOnlyAnIdTakesItsValueOrItsPlace() throws {
+        let epub = try bookWithPageList(
+            nil,
+            ncxPageList: """
+                <pageTarget id="t1" type="normal" value="7"><navLabel><text>pg_7</text></navLabel><content src="ch1.xhtml#pg_7"/></pageTarget>
+                <pageTarget id="t2" type="normal"><navLabel><text>t2</text></navLabel><content src="ch1.xhtml#b"/></pageTarget>
+                <pageTarget id="t3" type="normal" value="9"><navLabel><text>9</text></navLabel><content src="ch1.xhtml#c"/></pageTarget>
+                """,
+            body: "<h1>Title</h1><p id=\"pg_7\">Alpha text.</p><p id=\"b\">Bravo text.</p><p id=\"c\">Charlie text.</p>"
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [("7", "Alpha text."), ("2", "Bravo text."), ("9", "Charlie text.")])
+    }
+
+    /// A navigation document's list that labels no page gives way to the
+    /// NCX's list, which does; an NCX list that labels none is passed over
+    /// in its turn.
+    func testAListThatLabelsNoPageGivesWayToTheNCXsList() throws {
+        let body = "<h1>Title</h1><p id=\"a\">Alpha text.</p><p id=\"b\">Bravo text.</p>"
+        let fromNCX = try bookWithPageList(
+            "<li><a href=\"ch1.xhtml#a\">a</a></li>",
+            ncxPageList: "<pageTarget id=\"t\" type=\"normal\" value=\"1\"><navLabel><text>N1</text></navLabel><content src=\"ch1.xhtml#b\"/></pageTarget>",
+            body: body
+        )
+        let chapters = try EPUBParser.prepareBook(url: fromNCX).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [("N1", "Bravo text.")])
+
+        let neither = try bookWithPageList(
+            "<li><a href=\"ch1.xhtml#a\">a</a></li>",
+            ncxPageList: "<pageTarget id=\"t\" type=\"normal\"><navLabel><text>b</text></navLabel><content src=\"ch1.xhtml#b\"/></pageTarget>",
+            body: body
+        )
+        XCTAssertEqual(try EPUBParser.prepareBook(url: neither).chapters.flatMap(\.chapter.pages).map(\.label), [])
+    }
+
+    /// A page-break element's `aria-label` of only "Page" names no page: its
+    /// `title` names it then, or else a page number the element holds, and
+    /// with neither it is no page. Words it holds beside such an attribute
+    /// are read, and so are they beside no attribute at all; the word "Page"
+    /// alone, with no attribute, is no page and is not read.
+    func testAnAriaLabelOfOnlyPageIsPassedOver() throws {
+        let titled = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \" title=\"12\"></span>two</p>")
+        XCTAssertEqual(titled.chapter.pages.map(\.label), ["12"])
+        XCTAssertEqual(titled.chapter.text, "One two")
+
+        let numbered = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page\">xii</span>two</p>")
+        XCTAssertEqual(numbered.chapter.pages.map(\.label), ["xii"])
+        XCTAssertEqual(numbered.chapter.text, "One two")
+
+        let unnumbered = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \" title=\"\"></span> two</p>")
+        XCTAssertTrue(unnumbered.chapter.pages.isEmpty)
+        XCTAssertEqual(unnumbered.chapter.text, "One two")
+        XCTAssertFalse(unnumbered.markdown.contains("<!-- page:"), unnumbered.markdown)
+
+        let worded = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \">Chapter One</span> two</p>")
+        XCTAssertTrue(worded.chapter.pages.isEmpty)
+        XCTAssertTrue(worded.chapter.text.contains("Chapter One"), worded.chapter.text)
+
+        let bare = try parsed("<p>One <span epub:type=\"pagebreak\">Page</span> two</p>")
+        XCTAssertTrue(bare.chapter.pages.isEmpty)
+        XCTAssertEqual(bare.chapter.text, "One two")
+    }
+
     // MARK: - Precedence, blank documents, and duplicate ids
 
     /// A book with both an EPUB 3 page list and an NCX pageList takes the
@@ -595,6 +775,71 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertEqual(result.chapter.pages.first?.characterOffset, 0)
         XCTAssertEqual(result.markdown.components(separatedBy: "<!-- page:").count - 1, 1)
     }
+
+    // MARK: - Page lists in document order, at any depth
+
+    /// The navigation document's page lists are read in document order
+    /// however deep each lies, so an entry without a label takes its place
+    /// in that order as its number: here a list nested in a section and a
+    /// division comes before a later list beside them, giving the pages
+    /// "i", "2", and "3".
+    func testPageListsAreReadInDocumentOrderHoweverDeepEachLies() throws {
+        let nav = xhtml("""
+            <section><div><nav epub:type="page-list"><ol>
+            <li><a href="ch1.xhtml#a">i</a></li><li><a href="ch1.xhtml#b"></a></li>
+            </ol></nav></div></section>
+            <nav epub:type="page-list"><ol><li><a href="ch1.xhtml#c"></a></li></ol></nav>
+            """)
+        let epub = try makeEPUB(
+            manifest: Self.pageListManifest,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: [
+                "nav.xhtml": nav,
+                "ch1.xhtml": xhtml("<p id=\"a\">Alpha text.</p><p id=\"b\">Bravo text.</p><p id=\"c\">Charlie text.</p>"),
+            ]
+        )
+
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        XCTAssertEqual(chapters.count, 1)
+        guard let first = chapters.first?.chapter else { return }
+        assertPages(of: first, [("i", "Alpha text."), ("2", "Bravo text."), ("3", "Charlie text.")])
+    }
+
+    /// A navigation document whose page list is followed by 20,000 nested
+    /// divisions is read on a worker thread's 512 KiB stack, where an import
+    /// reads it, and gives the list's page. The search for page lists, which
+    /// goes on into the divisions, once called itself for every element,
+    /// which overflowed that stack and ended TextMouth during the import.
+    ///
+    /// The list lies beside the divisions rather than inside them, and they
+    /// are left open: SwiftSoup itself calls itself once for every level
+    /// above an element whose attributes are read, the list's included, or
+    /// above most end tags it reads, which would overflow the stack in
+    /// SwiftSoup before TextMouth's walk.
+    func testAPageListBesideMarkupNestedThousandsDeepIsReadOnAWorkerStack() throws {
+        let depth = 20_000
+        let nav = xhtml(
+            "<nav epub:type=\"page-list\"><ol><li><a href=\"ch1.xhtml#a\">7</a></li></ol></nav>"
+                + String(repeating: "<div>", count: depth) + "Deep words"
+        )
+        let epub = try makeEPUB(
+            manifest: Self.pageListManifest,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: ["nav.xhtml": nav, "ch1.xhtml": xhtml("<p>Before the page.</p><p id=\"a\">Alpha text.</p>")]
+        )
+
+        let labels = onWorkerSizedStack {
+            ((try? EPUBParser.prepareBook(url: epub))?.chapters ?? []).flatMap { $0.chapter.pages.map(\.label) }
+        }
+        XCTAssertEqual(labels, ["7"])
+    }
+
+    /// The manifest of the page list order and depth tests: the navigation
+    /// document and one chapter.
+    private static let pageListManifest = """
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+        <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+        """
 
     // MARK: - The converter on its own
 
@@ -678,16 +923,61 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: result.chapter, [("12", "Hello")])
     }
 
-    /// A number under a longer label ("12" under "Page 12") is not the page's
-    /// own label, so it is read (stable020 review, finding 2), as the reading
-    /// without pages reads it; the page begins at it.
-    func testANumberUnderALongerLabelIsRead() throws {
-        let html = "<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>"
-        let result = try parsed(html)
+    /// A number under a label of "Page" and the number ("12" under "Page
+    /// 12") is the page's own number, so it is not read: the label's leading
+    /// "Page" is taken off (the user's choice, November 4, 2026), where the
+    /// stable020 review read the "12" as words beside a longer label.
+    func testANumberUnderAPagePrefixedLabelIsNotRead() throws {
+        let result = try parsed("<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>")
 
-        XCTAssertEqual(result.chapter.text, "One 12two")
-        XCTAssertEqual(result.chapter.text, try parsed(html, includesPages: false).chapter.text, "the two readings differ")
-        assertPages(of: result.chapter, [("Page 12", "12two")])
+        XCTAssertEqual(result.chapter.text, "One two")
+        assertPages(of: result.chapter, [("12", "two")])
+    }
+
+    /// Text that is a page's label as its source spelled it ("Page 12") is no
+    /// more than the page's name, however the label is shown ("12"): the
+    /// element's own text with no attribute, the same text in its
+    /// `aria-label`, and a number beside an `aria-label` of "Page" alone are
+    /// each the page "12" and are not read. A caption under a label that
+    /// says only the number is still read (stable020 review, finding 2).
+    func testTextThatIsAPagePrefixedLabelIsNotRead() throws {
+        for html in [
+            "<p>One <span epub:type=\"pagebreak\">Page 12</span> two</p>",
+            "<p>One <span epub:type=\"pagebreak\" aria-label=\"Page 12\">Page 12</span> two</p>",
+            "<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \">Page 12</span> two</p>",
+        ] {
+            let result = try parsed(html)
+            XCTAssertEqual(result.chapter.text, "One two", html)
+            XCTAssertEqual(result.chapter.pages.map(\.label), ["12"], html)
+        }
+
+        let captioned = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"12\">Page 12</span> two</p>")
+        XCTAssertEqual(captioned.chapter.text, "One Page 12 two")
+        assertPages(of: captioned.chapter, [("12", "Page 12")])
+    }
+
+    /// A page list's labels lose their leading "Page" too: its "Page i" and
+    /// "Page 2" are the pages "i" and "2", and "of N" counts them. An
+    /// element whose text is the list's own label ("Page 2") is not read;
+    /// a caption under a list label of the number alone is.
+    func testAPageListsLabelsLoseTheirLeadingPage() throws {
+        let epub = try bookWithPageList(
+            """
+            <li><a href="ch1.xhtml#a">Page i</a></li><li><a href="ch1.xhtml#b">Page 2</a></li>
+            <li><a href="ch1.xhtml#c">3</a></li>
+            """,
+            body: """
+                <h1>Title</h1><p id="a">Alpha text.</p>
+                <p>Bravo <span epub:type="pagebreak" id="b">Page 2</span> text.</p>
+                <p>Charlie <span epub:type="pagebreak" id="c">Page 3</span> text.</p>
+                """
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [("i", "Alpha text."), ("2", "text."), ("3", "Page 3 text.")])
+        XCTAssertTrue(chapter.text.contains("Bravo text."), chapter.text)
+        XCTAssertTrue(chapter.text.contains("Charlie Page 3 text."), chapter.text)
+        XCTAssertEqual(BookPages(breaks: chapter.pages).total, 3)
     }
 
     /// A number with a caption ("Page XII" under the label "xii") is not the

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -66,7 +70,7 @@ struct TranscriptionSheetServices {
     /// Begins the book's Edit Text session again when the deletion failed.
     var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
-    var announce: @MainActor (String, NSWindow?) -> Void
+    var announce: @MainActor (String, PlatformWindow?) -> Void
 
     /// Whether `book`'s text, content.md, is only in iCloud, as `isDataless`
     /// says of the file (one lstat, which reads no content). The app asks it
@@ -241,7 +245,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var transcriptionStartedAt: Date?
 
     /// The window the sheet sits on, where announcements come from.
-    weak var window: NSWindow?
+    weak var window: PlatformWindow?
     /// Closes the sheet; the presenter sets it.
     var onClose: () -> Void = {}
 

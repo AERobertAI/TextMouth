@@ -63,6 +63,145 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), damagedBytes)
     }
 
+    // MARK: - Folder Rows at Startup
+
+    /// With library.json gone but the books' packages and folders still on
+    /// disk, the startup repair adopts the books and gives every folder a
+    /// row, an empty one and a nested one's parent included, so the books
+    /// show in the Folders view, and the index it saves keeps them all.
+    @MainActor
+    func testAStartWithoutTheIndexKeepsEveryFolder() throws {
+        try? FileManager.default.removeItem(at: sandbox.indexURL)
+        try? FileManager.default.removeItem(at: sandbox.legacyURL)
+
+        try assertTheStartupRepairKeepsEveryFolderOnDisk()
+    }
+
+    /// An index holding an empty library records no folder either, so the
+    /// startup repair gives every folder on disk a row, as when it is gone.
+    @MainActor
+    func testAStartWithAnEmptyIndexKeepsEveryFolder() throws {
+        try sandbox.stageValid(Library(), at: sandbox.indexURL)
+
+        try assertTheStartupRepairKeepsEveryFolderOnDisk()
+    }
+
+    /// An index listing a book whose folder has no row, as a race between an
+    /// import or a move into the folder and the folder's rename or deletion
+    /// can leave it: the startup repair gives that folder a row, its parent
+    /// included, and saves it, while a directory on disk that the index has
+    /// no row for, a folder the user deleted, stays out. One line says why,
+    /// and a second run adds nothing.
+    @MainActor
+    func testTheStartupRepairGivesABooksFolderARowButNotADeletedFolder() throws {
+        let shelf = uniqueFolderName("Renamed Shelf")
+        let inner = "\(shelf)/Inner"
+        let deleted = uniqueFolderName("Deleted Shelf")
+        // The top folder first, so the one inside it goes with it at tear-down.
+        try makeFolder(shelf)
+        let book = try makePackage(title: "Raced Fixture", inFolder: inner)
+        try makeFolder(deleted)
+        try sandbox.stageValid(Library(books: [book]), at: sandbox.indexURL)
+        let reason = "for folders books are in that had none"
+        let linesBefore = debugLogLines(containing: reason).count
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.loadLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        for library in [model.library, written] {
+            let paths = Set(library.folders.map(\.fullPath))
+            XCTAssertTrue(paths.isSuperset(of: [shelf, inner]), "the book's folder has no row")
+            XCTAssertFalse(paths.contains(deleted), "a folder the index has no row for came back")
+            XCTAssertEqual(library.books.first { $0.id == book.id }?.folderPath, inner)
+        }
+        XCTAssertEqual(debugLogLines(containing: reason).count, linesBefore + 1)
+        assertASecondRunAddsNothing(to: model)
+    }
+
+    // MARK: - Reading Positions Saved While Recovering
+
+    /// A reading position saved while the index can't be read reaches the
+    /// book's record, and the checkpoint journal names the book, so the
+    /// launch after the user puts the index back takes the newer position
+    /// from the record. Without the journal the book would open at the
+    /// index's older position, and the reader's next save would write that
+    /// over the record's.
+    @MainActor
+    func testPositionsSavedWhileRecoveringReachTheNextLaunch() throws {
+        let book = try makePackage(
+            title: "Read While Recovering",
+            inFolder: uniqueFolderName("Recovery Shelf"),
+            position: ReadingPosition(characterOffset: 1)
+        )
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertNotNil(model.indexRecovery)
+        var progress = ReadingPosition(characterOffset: 30)
+        progress.lastUpdated = Date().addingTimeInterval(60)
+
+        model.persistReadingPosition(bookID: book.id, position: progress)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.readingPosition?.characterOffset, 30)
+        XCTAssertTrue(
+            LibraryPersistenceService.booksWithCheckpointsAhead().contains(book.id),
+            "the checkpoint journal does not name the book"
+        )
+
+        // The user puts the good index back and opens TextMouth again, whose
+        // new process starts with index writes allowed.
+        try sandbox.stageValid(index, at: sandbox.indexURL)
+        LibraryPersistenceService.resumeIndexWrites()
+        let relaunched = LibraryViewModel(initializeServices: false)
+        relaunched.loadLibraryIndex()
+
+        XCTAssertNil(relaunched.indexRecovery)
+        XCTAssertEqual(relaunched.bookByID(book.id)?.readingPosition?.characterOffset, 30)
+        LibraryPersistenceService.flushPendingSave()
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.books.first { $0.id == book.id }?.readingPosition?.characterOffset, 30)
+    }
+
+    /// While the data directory is unavailable (FR02), a reading checkpoint
+    /// writes no checkpoint journal into it: not while the index can be
+    /// read, nor while an unreadable index is protected, which is then the
+    /// hold named first. Once the data directory is back, the protected
+    /// index's checkpoints name their books again, which shows the journal
+    /// looked for is the one a checkpoint writes.
+    @MainActor
+    func testCheckpointsWriteNoJournalWhileTheDataDirectoryIsUnavailable() throws {
+        let root = try makeCurrentDataDirectory("CheckpointJournalAway")
+        let journal = TextMouthPaths.readingCheckpointsFile
+        let book = try makePackage(title: "Read While Away", inFolder: uniqueFolderName("Recovery Shelf"))
+        DataDirectoryGate.close(root)
+
+        LibraryPersistenceService.saveReadingCheckpoint(Library(books: [book]), of: book.id)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path), "a journal was written with the index readable")
+
+        DataDirectoryGate.open(root)
+        try LibraryIndexSandbox.damagedBytes(.truncated, of: indexHolding(book)).write(to: TextMouthPaths.libraryIndexFile)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertNotNil(model.indexRecovery)
+        DataDirectoryGate.close(root)
+
+        LibraryPersistenceService.saveReadingCheckpoint(model.library, of: book.id)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path), "a journal was written with the index protected")
+
+        DataDirectoryGate.open(root)
+        LibraryPersistenceService.saveReadingCheckpoint(model.library, of: book.id)
+
+        XCTAssertEqual(LibraryPersistenceService.booksWithCheckpointsAhead(), [book.id])
+    }
+
     // MARK: - Try Again
 
     /// Try Again after the index is readable again restores it, with its
@@ -209,6 +348,76 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         LibraryPersistenceService.flushPendingSave()
         let resaved = try XCTUnwrap(LibraryPersistenceService.load().library)
         XCTAssertEqual(resaved.books.first { $0.id == book.id }?.manualSortOrder, 7)
+    }
+
+    /// Rebuild Library Index replaces nothing once the index can be read
+    /// again, as when the user restored it from a backup while the recovery
+    /// options were open: the file keeps its bytes, no copy is made of it,
+    /// index writes stay suspended, and the listener is told to choose Try
+    /// Again, which then uses the index, folder and manual order and all.
+    @MainActor
+    func testRebuildLeavesAnIndexThatCanBeReadAgain() throws {
+        let shelf = uniqueFolderName("Recovery Shelf")
+        let book = try makePackage(title: "Restored Before Rebuild", inFolder: shelf)
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        let copies = LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL)
+        let restoredBytes = try sandbox.stageValid(index, at: sandbox.indexURL)
+
+        XCTAssertThrowsError(try LibraryPersistenceService.replaceUnreadableIndex(with: model.library)) { error in
+            guard case LibraryIndexRecoveryError.indexReadableAgain = error else {
+                return XCTFail("Expected the index to be found readable again, got \(error)")
+            }
+        }
+        let outcome = model.rebuildLibraryIndex()
+
+        XCTAssertEqual(
+            outcome,
+            .rebuildFailed(
+                reason: "It can be read again now. Choose Try Again to use it."
+            )
+        )
+        XCTAssertEqual(
+            outcome.message,
+            "The library index was not rebuilt. It can be read again now. Choose Try Again to use it."
+        )
+        XCTAssertEqual(model.indexRecovery?.lastAttempt, outcome)
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
+        XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), restoredBytes)
+        XCTAssertEqual(LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL), copies, "a copy was made")
+
+        let retried = model.retryLibraryIndex()
+
+        XCTAssertEqual(retried, .restored(bookCount: model.library.books.count))
+        XCTAssertEqual(model.bookByID(book.id)?.manualSortOrder, 3)
+        XCTAssertTrue(model.library.folders.contains { $0.fullPath == shelf })
+    }
+
+    /// A legacy index that can be read again is not left unread behind a
+    /// rebuilt library.json, which a load would read in its place: Rebuild
+    /// Library Index writes no library.json and leaves the legacy index as
+    /// it is.
+    @MainActor
+    func testRebuildLeavesALegacyIndexThatCanBeReadAgain() throws {
+        let book = try makePackage(title: "Legacy Restored Before Rebuild", inFolder: uniqueFolderName("Legacy Shelf"))
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.legacyURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertEqual(
+            model.indexRecovery?.failure.indexURL.standardizedFileURL,
+            sandbox.legacyURL.standardizedFileURL
+        )
+        let restoredBytes = try sandbox.stageValid(index, at: sandbox.legacyURL)
+
+        let outcome = model.rebuildLibraryIndex()
+
+        XCTAssertEqual(outcome, .rebuildFailed(reason: LibraryIndexRecoveryError.indexReadableAgain.localizedDescription))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.indexURL.path), "a library.json was written")
+        XCTAssertEqual(try Data(contentsOf: sandbox.legacyURL), restoredBytes)
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
     }
 
     // MARK: - Data-Directory Maintenance
@@ -596,6 +805,74 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         )
         try book.saveBookInfoThrowing()
         return book
+    }
+
+    /// Lays out a library on disk, two books in a nested folder, one in a
+    /// folder of its own, and an empty folder, then starts a library model
+    /// on the index the test left, which holds nothing, and checks that
+    /// every folder has a row, in the model and in the index it saved, with
+    /// each book in its own folder; that one line says why; and that a
+    /// second run adds nothing.
+    @MainActor
+    private func assertTheStartupRepairKeepsEveryFolderOnDisk(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let essays = uniqueFolderName("Essays")
+        let short = "\(essays)/Short"
+        let novels = uniqueFolderName("Novels")
+        let empty = uniqueFolderName("Empty")
+        // The top folder first, so the one inside it goes with it at tear-down.
+        try makeFolder(essays)
+        let books = try [
+            makePackage(title: "First Short Essay", inFolder: short),
+            makePackage(title: "Second Short Essay", inFolder: short),
+            makePackage(title: "Novel", inFolder: novels),
+        ]
+        try makeFolder(empty)
+        let reason = "for the folders on disk and the folders books are in, "
+            + "since the library began with no books or folders"
+        let linesBefore = debugLogLines(containing: reason).count
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.loadLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNil(model.indexRecovery, file: file, line: line)
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library, file: file, line: line)
+        for library in [model.library, written] {
+            let paths = Set(library.folders.map(\.fullPath))
+            XCTAssertTrue(
+                paths.isSuperset(of: [essays, short, novels, empty]),
+                "a folder on disk has no row",
+                file: file,
+                line: line
+            )
+            for book in books {
+                let folderPath = library.books.first { $0.id == book.id }?.folderPath
+                XCTAssertEqual(folderPath, book.folderPath, book.title, file: file, line: line)
+            }
+        }
+        XCTAssertEqual(debugLogLines(containing: reason).count, linesBefore + 1, file: file, line: line)
+        assertASecondRunAddsNothing(to: model, file: file, line: line)
+    }
+
+    /// Runs the startup repair on `model` again and checks that it adds no
+    /// folder row and logs none added.
+    @MainActor
+    private func assertASecondRunAddsNothing(
+        to model: LibraryViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let folders = model.library.folders
+        let added = "FOLDER_REPAIR: added "
+        let linesBefore = debugLogLines(containing: added).count
+
+        model.migrateOldBooksIfNeeded()
+
+        XCTAssertEqual(model.library.folders, folders, "a second run added a folder row", file: file, line: line)
+        XCTAssertEqual(debugLogLines(containing: added).count, linesBefore, file: file, line: line)
     }
 
     /// An index for `book` holding state that only the index keeps: the

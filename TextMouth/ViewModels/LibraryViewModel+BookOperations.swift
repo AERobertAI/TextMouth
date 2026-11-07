@@ -524,13 +524,18 @@ extension LibraryViewModel {
     /// transition's own changes made to it: each moved book's place (its
     /// folder, package, and file paths), and the folders and folder sort
     /// settings the transition added, changed, or removed. A book removed
-    /// meanwhile stays removed, and one added meanwhile stays.
+    /// meanwhile stays removed, and one added meanwhile stays; so does any
+    /// other change, such as a book added to the reading list in another
+    /// window or a feed's rows on the feed shelf.
     nonisolated static func library(after plan: LibraryTransitionPlan, current: Library) -> Library {
         let original = plan.original
-        let unchanged = current.books == original.books
-            && current.folders == original.folders
-            && current.folderSortSettings == original.folderSortSettings
-        guard !unchanged else { return plan.proposed }
+        // The proposed library holds every part of the library as the plan
+        // found it, so it stands in only for a library unchanged in every
+        // stored field (`Library`'s synthesized `==`). Any change meanwhile,
+        // to the reading list, the feed shelf, or the kept rows as much as to
+        // the books, folders, or sort settings, goes through the merge below,
+        // which starts from `current` and so keeps it.
+        guard current != original else { return plan.proposed }
 
         var merged = current
         let places = Dictionary(
@@ -802,16 +807,26 @@ extension LibraryViewModel {
                     URL(fileURLWithPath: row.filePath)
                 )
             } catch {
+                // A file that is not there is told apart from one that could
+                // not be written: the way on is different, and its error
+                // carries the file's whole path, which neither the log nor
+                // a listener's ear should have.
+                var isMissing = false
+                if case EPUBParserError.fileNotFound = error { isMissing = true }
                 // The error's domain, code, and description, which names files
-                // by name; its full description would repeat absolute paths.
+                // by name; the missing file's error would repeat the path.
                 let failure = error as NSError
+                let detail = isMissing
+                    ? "the file was not found"
+                    : "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 DiagnosticLog.event(
                     .storage,
                     "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
-                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): "
-                        + "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
+                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): \(detail)"
                 )
-                return .failed(message: wording.writeFailed(reason: error.localizedDescription))
+                return .failed(message: isMissing
+                    ? wording.fileMissing
+                    : wording.writeFailed(reason: error.localizedDescription))
             }
             message = wording.savedToFile
         } else {
@@ -920,7 +935,10 @@ extension LibraryViewModel {
 
     // MARK: - Open Book Tracking
 
+    /// Notes that a reader opened the book `id`: the book is open until its
+    /// last reader closes (`openReaderCounts`).
     func registerOpenBook(_ id: UUID) {
+        openReaderCounts[id, default: 0] += 1
         openBookIDs.insert(id)
         // Track last opened book for quick-resume. config.json takes it once
         // changes pause (PERF17), not as the reader window opens.
@@ -929,11 +947,18 @@ extension LibraryViewModel {
         config.scheduleSave()
     }
 
-    /// Notes that the book `id`'s reader closed. Its last reading checkpoint,
-    /// saved as it closed, reaches library.json now rather than at the
-    /// checkpoint's deadline (PERF15).
+    /// Notes that a reader of the book `id` closed: the book leaves
+    /// `openBookIDs` with its last reader, not before. Its last reading
+    /// checkpoint, saved as it closed, reaches library.json now rather than at
+    /// the checkpoint's deadline (PERF15).
     func unregisterOpenBook(_ id: UUID) {
-        openBookIDs.remove(id)
+        let remaining = (openReaderCounts[id] ?? 0) - 1
+        if remaining > 0 {
+            openReaderCounts[id] = remaining
+        } else {
+            openReaderCounts[id] = nil
+            openBookIDs.remove(id)
+        }
         LibraryPersistenceService.writePendingIndexSoon()
     }
 

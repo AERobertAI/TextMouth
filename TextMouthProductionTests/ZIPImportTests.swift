@@ -398,4 +398,339 @@ final class ZIPImportTests: XCTestCase {
 
         XCTAssertEqual(imported.book.md5Hash, try FileImportService.md5Hash(of: file))
     }
+
+    // MARK: - TextMouth Packages
+
+    /// A TextMouth package in an archive is one book, listed as its folder
+    /// whatever the capitals of its extension, and nothing inside it is a
+    /// book or a file passed over: not its book file, its text cache, or its
+    /// record. A plain file named like a package is no book. Until October
+    /// 30, 2026 the batch walked into a package and imported its book file
+    /// and its text cache as two books, passing its record over.
+    func testAPackageInAnArchiveIsOneBookAndNothingInsideIt() throws {
+        let directory = try makeSandboxDirectory("zip-package-candidates")
+        for name in ["Novel.tmb", "Shouting.TMB"] {
+            let package = directory.appendingPathComponent(name, isDirectory: true)
+            try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+            try Data("Chapter one.".utf8).write(to: package.appendingPathComponent("novel.txt"))
+            try Data("# Chapter one".utf8).write(to: package.appendingPathComponent("content.md"))
+            try Data("{}".utf8).write(to: package.appendingPathComponent("bookInfo.json"))
+        }
+        try Data("epub".utf8).write(to: directory.appendingPathComponent("other.epub"))
+        try Data("not a folder".utf8).write(to: directory.appendingPathComponent("Plain.tmb"))
+        let unpacking = NestedArchiveUnpacking(
+            directory: try makeSandboxDirectory("zip-package-nested"),
+            budget: ArchiveBudget(),
+            depth: 1,
+            isCancelled: { false },
+            progress: nil
+        )
+
+        let found = try FileImportService.importCandidates(in: directory, unpacking: unpacking)
+
+        XCTAssertEqual(found.books.map(\.lastPathComponent), ["Novel.tmb", "other.epub", "Shouting.TMB"])
+        XCTAssertEqual(found.nonBookFiles.countsByExtension, ["tmb": 1])
+        XCTAssertEqual(found.failures, [])
+    }
+
+    /// A ZIP holding a TextMouth package, as the Finder's Compress makes of
+    /// one, imports one book: the package's own, under its book ID and
+    /// title, with its place, at the library's top level as a package opened
+    /// from the Finder is, whatever folder the batch imports into. Its book
+    /// file and its text cache are no books of their own.
+    func testAZippedPackageImportsAsItsOwnBookWithItsPlace() throws {
+        var position = ReadingPosition(characterOffset: 12, globalCharacterOffset: 12)
+        // Whole seconds, since bookInfo.json stores dates to the second.
+        position.lastUpdated = Date(timeIntervalSince1970: 1_790_000_000)
+        let package = try makeTextPackage(named: "Novel.tmb", title: "Chain Lines", position: position)
+        removeLibraryCopiesAfterTheTest(of: package.bookID)
+        let archive = try zipped(package.url)
+        let folder = makeIntegrationLibraryFolder("ZIP Package Folder")
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folder.path)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(result.books.map(\.id), [package.bookID])
+        let book = try XCTUnwrap(result.books.first)
+        XCTAssertEqual(book.title, "Chain Lines")
+        XCTAssertEqual(book.readingPosition, position)
+        XCTAssertEqual(book.folderPath, "")
+        XCTAssertEqual(book.tmbDirectory.deletingLastPathComponent().path, TextMouthPaths.libraryDir.path)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.bookID, package.bookID)
+    }
+
+    /// A zipped package whose book the library already lists, by its ID (as
+    /// Replace Existing's old copy records its replacement's, and a feed
+    /// item's package its item's) or by its checksum, is skipped as a
+    /// duplicate: no failure, and no copy of it in the library.
+    func testAZippedPackageOfAListedBookIsSkippedByItsIDOrItsChecksum() throws {
+        let package = try makeTextPackage(named: "Listed.tmb", title: "Gear Inches")
+        removeLibraryCopiesAfterTheTest(of: package.bookID)
+        let archive = try zipped(package.url)
+        let checksum = try BookInfo.load(from: package.url).metadata.md5Hash
+
+        let byID = try FileImportService.importZip(from: archive, existingBookIDs: [package.bookID])
+        let byChecksum = try FileImportService.importZip(from: archive, existingHashes: [checksum])
+
+        for result in [byID, byChecksum] {
+            XCTAssertEqual(result.books, [])
+            XCTAssertEqual(result.failures, [])
+            XCTAssertEqual(result.skippedDuplicates, 1)
+        }
+        XCTAssertEqual(Self.libraryCopies(of: package.bookID), [])
+    }
+
+    /// The library's ZIP import skips a package of a book it lists under the
+    /// same ID and another checksum, as Replace Existing's old copy is: the
+    /// library keeps its one row of the book, its alert says nothing new
+    /// came in, and no copy of the package is made.
+    @MainActor
+    func testTheLibrarysZIPImportNeverListsAPackagesBookTwice() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        useAfterImportingBehavior(.askEachTime)
+        let package = try makeTextPackage(named: "Old Copy.tmb", title: "Derailleur Hanger")
+        removeLibraryCopiesAfterTheTest(of: package.bookID)
+        let archive = try zipped(package.url)
+        let folder = makeIntegrationLibraryFolder("ZIP Listed Package")
+        let listed = Book(
+            id: package.bookID,
+            title: "Derailleur Hanger",
+            format: .txt,
+            filePath: "/nowhere/replacement.txt",
+            md5Hash: "replacement checksum"
+        )
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [listed])
+
+        model.importZipAsync(from: archive, toFolder: folder.path)
+
+        XCTAssertTrue(waitUntil(timeout: 20) { model.showError }, "no alert followed the import")
+        XCTAssertEqual(model.errorTitle, ImportProgressWording.nothingImportedTitle, model.errorMessage ?? "")
+        XCTAssertEqual(model.library.books.map(\.id), [listed.id])
+        XCTAssertEqual(model.library.books.map(\.md5Hash), [listed.md5Hash])
+        XCTAssertEqual(Self.libraryCopies(of: package.bookID), [])
+    }
+
+    /// A package in an archive that cannot be identified, its record missing
+    /// and no removal marker in its place, is one failure named by the
+    /// package, so the archive is kept, and nothing inside it is imported
+    /// on its own.
+    func testAZippedPackageThatCannotBeIdentifiedIsOneFailure() throws {
+        let archive = try makeTemporaryZip(prefix: "BrokenPackage", entries: [
+            "Broken.tmb/novel.txt": Data("Chapter one.".utf8),
+            "Broken.tmb/content.md": Data("# Chapter one".utf8)
+        ])
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+
+        let result = try FileImportService.importZip(from: archive)
+        let imported = result.books.map(\.tmbDirectory)
+        addTeardownBlock { imported.forEach { try? FileManager.default.removeItem(at: $0) } }
+
+        XCTAssertEqual(result.books, [])
+        XCTAssertEqual(result.failures.map(\.fileName), ["Broken.tmb"])
+        XCTAssertTrue(
+            result.failures.first?.message.hasPrefix("Checking the package failed:") == true,
+            "\(result.failures)"
+        )
+        XCTAssertTrue(result.keepsOriginal)
+    }
+
+    /// An archive's entry lies in a TextMouth package when a folder on its
+    /// path is named .tmb, in any capitals: never for a file named so, nor
+    /// for a folder whose name only holds it.
+    func testAnArchiveEntryLiesInAPackageWhenAFolderOnItsPathIsOne() {
+        XCTAssertTrue(FileImportService.liesInTMBPackage("Novel.tmb/bookInfo.json"))
+        XCTAssertTrue(FileImportService.liesInTMBPackage("Shelf/Novel.TMB/audio/01.mp3"))
+        XCTAssertTrue(FileImportService.liesInTMBPackage("Novel.tmb/"))
+        XCTAssertFalse(FileImportService.liesInTMBPackage("Novel.tmb"))
+        XCTAssertFalse(FileImportService.liesInTMBPackage("Shelf/Novel.tmb.d/notes.txt"))
+        XCTAssertFalse(FileImportService.liesInTMBPackage("Shelf/notes.txt"))
+    }
+
+    /// A ZIP of an audiobook's package, its tracks beside its record and no
+    /// text cache, is no audio ZIP: it reaches the batch, which imports it
+    /// as the package, under its book ID, rather than its tracks as a new
+    /// audiobook without its record. The same track zipped in a plain
+    /// folder is an audio ZIP, as before.
+    func testAZippedAudiobookPackageReachesTheBatchAsItsOwnBook() throws {
+        let package = try makeAudioPackage(named: "Cadence Drills.tmb", title: "Cadence Drills")
+        removeLibraryCopiesAfterTheTest(of: package.bookID)
+        let archive = try zipped(package.url)
+        let track = try Data(contentsOf: package.url.appendingPathComponent("audio/01.wav"))
+        let plainTracks = try makeTemporaryZip(prefix: "PlainTracks", entries: ["Cadence Drills/01.wav": track])
+        addTeardownBlock { try? FileManager.default.removeItem(at: plainTracks) }
+
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: plainTracks))
+        XCTAssertFalse(LibraryViewModel.isAudioZip(url: archive))
+        let result = try FileImportService.importZip(from: archive)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(result.books.map(\.id), [package.bookID])
+        XCTAssertEqual(result.books.map(\.format), [.audio])
+    }
+
+    /// A ZIP of a DAISY book's package is no DAISY ZIP: it reaches the
+    /// batch, which imports it as the package, under its book ID, rather
+    /// than as a new DAISY book without its record. The same book zipped in
+    /// a plain folder is a DAISY ZIP, as before.
+    func testAZippedDAISYBookPackageReachesTheBatchAsItsOwnBook() throws {
+        let package = try makeDAISYPackage(named: "Rope Splicing.tmb")
+        removeLibraryCopiesAfterTheTest(of: package.bookID)
+        let archive = try zipped(package.url)
+        let plainBook = try makeTemporaryZip(
+            prefix: "PlainDAISY",
+            entries: DAISYPackageFixtures.entries(DAISYPackageFixtures.navigationBook, inFolder: "Rope Splicing")
+                .mapValues { Data($0.utf8) }
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: plainBook) }
+
+        XCTAssertTrue(DAISYParser.isDAISYZip(url: plainBook))
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: archive))
+        let result = try FileImportService.importZip(from: archive)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(result.books.map(\.id), [package.bookID])
+        XCTAssertEqual(result.books.map(\.format), [.daisy])
+    }
+
+    // MARK: - Package Fixtures
+
+    /// A TextMouth package of a text book named `name` in a new sandbox
+    /// folder, as an import leaves one: the book's document, its text cache,
+    /// and a record naming the book `title` with `position`.
+    private func makeTextPackage(
+        named name: String,
+        title: String,
+        position: ReadingPosition? = nil
+    ) throws -> (url: URL, bookID: UUID) {
+        let package = try makePackageFolder(named: name)
+        let document = package.appendingPathComponent("novel.txt")
+        try Data("\(title)\n\nThe chain runs straight from the middle ring to the middle cog.\n".utf8).write(to: document)
+        try Data("# \(title)\n".utf8).write(to: TextMouthPaths.contentMarkdownPath(in: package))
+        let bookID = try writeRecord(
+            in: package,
+            title: title,
+            format: .txt,
+            fileName: document.lastPathComponent,
+            checksum: try FileImportService.md5Hash(of: document),
+            position: position
+        )
+        return (package, bookID)
+    }
+
+    /// A TextMouth package of an audiobook named `name` in a new sandbox
+    /// folder, as an import leaves one: a folder of one silent track beside
+    /// a record naming the book `title`, and no text cache, which an
+    /// audiobook never has. A folder of tracks has no checksum of its own,
+    /// so the record keeps one unique to the book, as an audio archive's
+    /// import records the archive's.
+    private func makeAudioPackage(named name: String, title: String) throws -> (url: URL, bookID: UUID) {
+        let package = try makePackageFolder(named: name)
+        let tracks = package.appendingPathComponent("audio", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: tracks.appendingPathComponent("01.wav"))
+        let bookID = try writeRecord(
+            in: package,
+            title: title,
+            format: .audio,
+            fileName: tracks.lastPathComponent,
+            checksum: "archive-\(UUID().uuidString)"
+        )
+        return (package, bookID)
+    }
+
+    /// A TextMouth package of a DAISY 2.02 book named `name` in a new
+    /// sandbox folder: the book's files laid out as its folder holds them,
+    /// its navigation file made unique to this test, so that no package
+    /// another test left behind holds the same content, and a record naming
+    /// the book by that file's checksum, as an import of its folder does.
+    private func makeDAISYPackage(named name: String) throws -> (url: URL, bookID: UUID) {
+        let navigation = (DAISYPackageFixtures.navigationBook["ncc.html"] ?? "")
+            .replacingOccurrences(of: "<title>", with: "<!-- \(UUID().uuidString) -->\n<title>")
+        let package = try DAISYPackageFixtures.writeFolder(
+            DAISYPackageFixtures.files(DAISYPackageFixtures.navigationBook, changing: ["ncc.html": navigation]),
+            named: name,
+            in: try makeSandboxDirectory("zip-package")
+        )
+        let navigationFile = package.appendingPathComponent("ncc.html")
+        let bookID = try writeRecord(
+            in: package,
+            title: "Notes on Rope Splicing",
+            format: .daisy,
+            fileName: navigationFile.lastPathComponent,
+            checksum: try FileImportService.md5Hash(of: navigationFile)
+        )
+        return (package, bookID)
+    }
+
+    /// A new, empty folder named `name`, for a package, inside a sandbox
+    /// folder of its own.
+    private func makePackageFolder(named name: String) throws -> URL {
+        let package = try makeSandboxDirectory("zip-package").appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        return package
+    }
+
+    /// Writes into `package` the record an import leaves there for the book
+    /// `title`, whose own file or folder there is `fileName`, of `format`,
+    /// known by `checksum`, at `position`. Returns the book's new ID.
+    private func writeRecord(
+        in package: URL,
+        title: String,
+        format: BookFormat,
+        fileName: String,
+        checksum: String,
+        position: ReadingPosition? = nil
+    ) throws -> UUID {
+        let bookID = UUID()
+        let info = BookInfo(
+            metadata: BookMetadata(
+                title: title,
+                author: "Workshop Notes",
+                format: format,
+                md5Hash: checksum,
+                originalFileName: fileName,
+                bookID: bookID
+            ),
+            state: BookState(readingPosition: position, tmbDirectoryName: package.lastPathComponent)
+        )
+        try info.save(to: package)
+        return bookID
+    }
+
+    /// A ZIP archive holding every file in `package`, at any depth, under
+    /// the package's own name, as the Finder's Compress makes of it,
+    /// removed after the test.
+    private func zipped(_ package: URL) throws -> URL {
+        var entries: [String: Data] = [:]
+        for relativePath in try FileManager.default.subpathsOfDirectory(atPath: package.path) {
+            let item = package.appendingPathComponent(relativePath)
+            var isFolder: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: item.path, isDirectory: &isFolder), !isFolder.boolValue else {
+                continue
+            }
+            entries["\(package.lastPathComponent)/\(relativePath)"] = try Data(contentsOf: item)
+        }
+        let archive = try makeTemporaryZip(prefix: "ZippedPackage", entries: entries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+        return archive
+    }
+
+    /// The packages at the library's top level named for the book `bookID`,
+    /// as a package's import names the copy it makes there.
+    private static func libraryCopies(of bookID: UUID) -> [URL] {
+        let library = TextMouthPaths.libraryDir
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: library.path)) ?? []
+        return names
+            .filter { $0.hasSuffix("\(bookID.uuidString.lowercased()).tmb") }
+            .map { library.appendingPathComponent($0, isDirectory: true) }
+    }
+
+    /// Removes, once the test ends, every copy of the book `bookID`'s
+    /// package an import made at the library's top level.
+    private func removeLibraryCopiesAfterTheTest(of bookID: UUID) {
+        addTeardownBlock {
+            ZIPImportTests.libraryCopies(of: bookID).forEach { try? FileManager.default.removeItem(at: $0) }
+        }
+    }
 }

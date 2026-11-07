@@ -209,7 +209,8 @@ enum FeedDownloadProgressWording {
             sentences.append("Stopped \(titles.count) feed downloads.")
         }
         if let finishing {
-            sentences.append("“\(finishing)” is already being added to the library.")
+            // As Cancel Download says it when it comes too late.
+            sentences.append(FeedWording.alreadyBeingAdded(title: finishing))
         }
         if let back = Self.comingBack(comingBack) {
             sentences.append(back)

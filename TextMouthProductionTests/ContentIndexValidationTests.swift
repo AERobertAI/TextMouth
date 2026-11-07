@@ -705,6 +705,161 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
+    // MARK: - Walks That Pass Over Links
+
+    /// A walk that calls `skipDescendants()` on a file or a link skips the
+    /// contents of the next folder listed beside it (found on this Mac: a
+    /// link at 02.wav, listed before "Disc 2", and Disc 2's tracks were never
+    /// listed). The tests below build folders in which that call would lose
+    /// something. The order a volume lists a folder in is its own (this
+    /// Mac's is neither by name nor by creation), so each fixture grows,
+    /// folder by folder or link by link, until the listing puts the offending
+    /// item right before a folder, and fails, naming the listing, if it never
+    /// does: a fixture that does not list so would pass whatever the code did.
+
+    /// What `folder` lists at its top level, in the order a walk meets it.
+    private func topLevelListing(of folder: URL) throws -> [URL] {
+        let walk = try XCTUnwrap(
+            FileManager.default.enumerator(
+                at: folder,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            )
+        )
+        return walk.allObjects.compactMap { $0 as? URL }
+    }
+
+    /// Whether `url` is a symbolic link.
+    private func isLink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+    }
+
+    /// Whether `folder` lists an item satisfying `isLead` right before a
+    /// folder (the shape in which `skipDescendants()` on the item hides what
+    /// the folder holds), or, with `name`, right before the one named so.
+    private func listsLead(_ isLead: (URL) -> Bool, rightBeforeAFolderNamed name: String? = nil, in folder: URL) throws -> Bool {
+        let listed = try topLevelListing(of: folder)
+        return zip(listed, listed.dropFirst()).contains { lead, next in
+            let isFolder = (try? next.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+            return isLead(lead) && isFolder && (name == nil || next.lastPathComponent == name)
+        }
+    }
+
+    /// Adds folders named `prefix01`, `prefix02`, and on, each holding
+    /// `files`, to `folder`, until one is listed right after an item
+    /// satisfying `isLead`. Returns the paths of the files made. Fails if 60
+    /// folders do not do it.
+    private func addFoldersUntilOneFollows(
+        _ isLead: (URL) -> Bool, in folder: URL, named prefix: String, holding files: [String]
+    ) throws -> [String] {
+        var made: [String] = []
+        for index in 1...60 {
+            let name = String(format: "%@%02d", prefix, index)
+            let paths = files.map { "\(name)/\($0)" }
+            try createFiles(paths, in: folder)
+            made += paths
+            if try listsLead(isLead, in: folder) { return made }
+        }
+        XCTFail("this volume lists no folder right after the item to test: \(try topLevelListing(of: folder).map(\.lastPathComponent))")
+        return made
+    }
+
+    /// Adds links named "0-link001" and on, with `suffix`, to `target` in
+    /// `folder`, until one is listed right before the folder named `name`.
+    /// Fails if 300 links do not do it.
+    private func addLinksUntilOneIsListedRightBefore(
+        _ name: String, in folder: URL, to target: URL, suffix: String = ""
+    ) throws {
+        for index in 1...300 {
+            try FileManager.default.createSymbolicLink(
+                at: folder.appendingPathComponent(String(format: "0-link%03d", index) + suffix),
+                withDestinationURL: target
+            )
+            if try listsLead(isLink, rightBeforeAFolderNamed: name, in: folder) { return }
+        }
+        XCTFail("this volume lists no link right before \(name): \(try topLevelListing(of: folder).map(\.lastPathComponent))")
+    }
+
+    /// A symbolic link among the tracks is passed over, and nothing else is:
+    /// every track in every folder is found, no link is listed as one, and
+    /// the tracks in a folder listed right after a link are not lost.
+    func testALinkAmongTheTracksHidesNoOtherTrack() throws {
+        let folder = try scratchFolder("ContentIndexLinksAmongTracks")
+        var realNames = (1...6).map { String(format: "t%02d.wav", $0) }
+        try createFiles(realNames, in: folder)
+        for index in 1...12 {
+            try FileManager.default.createSymbolicLink(
+                at: folder.appendingPathComponent(String(format: "0-link%02d.wav", index)),
+                withDestinationURL: folder.appendingPathComponent("t01.wav")
+            )
+        }
+        realNames += try addFoldersUntilOneFollows(isLink, in: folder, named: "Disc ", holding: ["d01.wav", "d02.wav"])
+
+        // Compared by file name (all unique here but the discs' own), since
+        // the temporary folder may be reached through a link (/var is
+        // /private/var).
+        let found = try AudioBookParser.audioFiles(in: folder).map(\.lastPathComponent)
+
+        XCTAssertEqual(found.sorted(), realNames.map { ($0 as NSString).lastPathComponent }.sorted(),
+                       "every track is listed once, and no link is listed as one")
+    }
+
+    /// Finder's metadata folder is skipped, but only when it is a folder: a
+    /// file or link named __MACOSX is passed over like any other, and does
+    /// not hide the folder listed after it.
+    func testAFileNamedLikeFindersMetadataFolderHidesNoTrack() throws {
+        let folder = try scratchFolder("ContentIndexMetadataNames")
+        try createFiles(["t01.wav"], in: folder)
+        try Data("not a folder".utf8).write(to: folder.appendingPathComponent("__MACOSX"))
+        let made = try addFoldersUntilOneFollows(
+            { $0.lastPathComponent == "__MACOSX" }, in: folder, named: "disc", holding: ["d01.wav"]
+        )
+
+        XCTAssertEqual(
+            try AudioBookParser.audioFiles(in: folder).map(\.lastPathComponent).sorted(),
+            (["t01.wav"] + made.map { ($0 as NSString).lastPathComponent }).sorted()
+        )
+
+        // As a folder, it is skipped with what it holds.
+        let withFolder = try scratchFolder("ContentIndexMetadataFolder")
+        try createFiles(["__MACOSX/junk.wav", "t01.wav"], in: withFolder)
+        XCTAssertEqual(try AudioBookParser.audioFiles(in: withFolder).map(\.lastPathComponent), ["t01.wav"])
+    }
+
+    /// A folder holding a DAISY book beneath a folder is no folder of tracks,
+    /// and the search for it passes over the links beside that folder: with
+    /// the call that skips the next folder's contents made on a link, the
+    /// book beneath "Series" is never met, and the folder is taken for an
+    /// audiobook of the tracks beside it (`isFolderOfTracks`).
+    func testADAISYBookBeneathAFolderIsFoundAmongLinks() throws {
+        let folder = try scratchFolder("ImportWalkDAISYBeneath")
+        try createFiles(["t01.wav", "Series/Talking/ncc.html"], in: folder)
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("Series/Talking")))
+        try addLinksUntilOneIsListedRightBefore("Series", in: folder, to: folder.appendingPathComponent("t01.wav"))
+
+        XCTAssertFalse(FileImportService.isFolderOfTracks(folder))
+    }
+
+    /// A folder holding no book names the files it holds, and counts the
+    /// files in a folder listed right after a link as well as the others.
+    func testAFolderWithoutABookCountsTheFilesBesideLinks() throws {
+        let folder = try scratchFolder("ImportWalkFilesHeld")
+        var names = (1...6).map { String(format: "n%02d.xyz", $0) }
+        try createFiles(names, in: folder)
+        for index in 1...12 {
+            try FileManager.default.createSymbolicLink(
+                at: folder.appendingPathComponent(String(format: "0-link%02d.xyz", index)),
+                withDestinationURL: folder.appendingPathComponent("n01.xyz")
+            )
+        }
+        names += try addFoldersUntilOneFollows(isLink, in: folder, named: "Disc ", holding: ["m01.xyz", "m02.xyz"])
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: folder)) { error in
+            let held = ((error as? ImportFailure)?.underlying as? FolderWithoutBookError)?.files
+            XCTAssertEqual(held?.countsByExtension, ["xyz": names.count], "\(error)")
+        }
+    }
+
     /// A folder, even one inside the book's folder, is not a playable file.
     func testAudioPathNamingAFolderIsRejected() throws {
         let folder = try audioFolder()
@@ -1428,6 +1583,16 @@ final class ContentIndexValidationTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
         return folder
+    }
+
+    /// Create the empty files at `relativePaths` inside `folder`, creating
+    /// the folders they need.
+    private func createFiles(_ relativePaths: [String], in folder: URL) throws {
+        for path in relativePaths {
+            let url = folder.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: Data()))
+        }
     }
 
     /// Replace the file at `relativePath` inside `folder` with a symbolic

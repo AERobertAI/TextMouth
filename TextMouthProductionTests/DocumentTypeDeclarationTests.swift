@@ -35,7 +35,11 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         Declaration(name: "SSML Document", extensions: ["ssml"], contentTypes: ["org.w3.ssml"]),
         Declaration(name: "BRF Braille File", extensions: ["brf"], contentTypes: ["com.textmouth.brf"]),
         Declaration(name: "BRL Braille File", extensions: ["brl"], contentTypes: ["com.textmouth.brl"]),
-        Declaration(name: "PEF Braille File", extensions: ["pef"], contentTypes: ["org.daisy.pef"])
+        Declaration(name: "PEF Braille File", extensions: ["pef"], contentTypes: ["org.daisy.pef"]),
+        // Kindle books (FMT42). The order of the rows does not matter: each is found by its extension.
+        Declaration(name: "Kindle Book (MOBI)", extensions: ["mobi", "prc", "azw"], contentTypes: ["com.textmouth.mobi"]),
+        // Kindle KFX books (FMT52); a .kpf is listed so it can be refused with its own sentence.
+        Declaration(name: "Kindle Book (KFX)", extensions: ["kfx", "kfx-zip", "azw8", "kpf"], contentTypes: ["com.textmouth.kfx"])
     ]
 
     // MARK: - Document types

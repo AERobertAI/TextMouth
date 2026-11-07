@@ -212,6 +212,7 @@ final class FullSummaryReaderTests: XCTestCase {
     /// for an assistive app, so without one this is skipped; the test above
     /// holds either way.
     func testTheToolbarButtonOffersTheFullSummaryToVoiceOver() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         var asked: [SummaryDetail] = []
         let button = ReaderWhereAmIToolbarButton(isSpeaking: false) { asked.append($0) }
         let label = ReaderWhereAmIToolbarButton.spokenLabel

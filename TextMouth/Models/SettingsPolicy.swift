@@ -431,6 +431,10 @@ enum SettingsPolicy {
     static let rewindOnResumeUnit = EnumSettingRule(key: "rewindOnResumeUnit", defaultValue: RewindUnit.none)
     /// What happens when a book ends (Playback settings picker).
     static let endOfBookBehavior = EnumSettingRule(key: "endOfBookBehavior", defaultValue: EndOfBookBehavior.stop)
+    /// Where the next book opens when listening goes on from one book to
+    /// another: in the window the listener is in, or in a new one (Playback
+    /// settings pop-up button, 0.2.5).
+    static let nextBookWindow = EnumSettingRule(key: "nextBookWindow", defaultValue: NextBookWindow.thisWindow)
     /// Which per-book navigation menus the playback bar shows.
     static let playbackNavigationUnitControlMode = EnumSettingRule(
         key: "playbackNavigationUnitControlMode", defaultValue: PlaybackNavigationUnitControlMode.none

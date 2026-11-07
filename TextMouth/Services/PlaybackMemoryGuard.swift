@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Darwin
 import os
 
@@ -227,6 +231,14 @@ protocol MemoryGuardedReader: AnyObject {
     func stopPlaybackForMemoryRunaway(footprint: UInt64)
     /// Save the reader's place now.
     func savePosition()
+    /// Save the reader's place now, but only if it moved since its last
+    /// durable save. A reader that cannot tell saves it regardless.
+    func savePositionIfMoved()
+}
+
+extension MemoryGuardedReader {
+    /// A reader that does not track its last saved place saves every time.
+    func savePositionIfMoved() { savePosition() }
 }
 
 // MARK: - The Guard
@@ -363,14 +375,34 @@ final class PlaybackMemoryGuard {
     }
 
     /// Save every open reader's place and every pending write, then quit,
-    /// asking nothing.
+    /// asking nothing. The app's pending writes are the quit's own flush,
+    /// which saves the same places again; the guard saves them itself all
+    /// the same, so a guard whose writes a test replaces saves them too.
     fileprivate func saveEverythingAndQuit(_ environment: Environment) {
         isQuittingToProtectTheMac = true
-        for reader in openReaders(playingOnly: false) {
-            reader.savePosition()
-        }
+        saveEveryOpenReaderPosition()
         environment.savePendingWrites()
         environment.quit()
+    }
+
+    /// Save the place of every open reader, playing or not, as TextMouth
+    /// quits: the guard's own quit does, and so does every other quit,
+    /// whose flush calls this first
+    /// (`UnsavedChangesTerminationGuard.flushPendingWrites()`). A playing
+    /// reader saves its place only every thirty seconds
+    /// (`PlaybackCheckpointPolicy`), and SwiftUI closes no reader window as
+    /// TextMouth quits, so without this the next launch could open a book
+    /// up to thirty seconds back. Every reader reports to the guard as it
+    /// opens, whether or not the guard `isEnabled`, so this finds them all;
+    /// a closed reader saved its place as it closed, and is skipped. A
+    /// reader at rest, whose place has not moved since it was last saved,
+    /// writes nothing (`savePositionIfMoved()`): saving it would date its
+    /// place anew and write this Mac's library index over a newer one that
+    /// another Mac on a shared library saved.
+    func saveEveryOpenReaderPosition() {
+        for reader in openReaders(playingOnly: false) {
+            reader.savePositionIfMoved()
+        }
     }
 
     /// The readers still open: those that last said they play, when
@@ -392,6 +424,7 @@ final class PlaybackMemoryGuard {
     static func tellOfAQuitToProtectTheMac() {
         guard !TextMouthRuntime.current.isHostedTest, let marker = MemoryQuitMarker.take() else { return }
         DiagnosticLog.event(.app, "AUDIO_MEMORY_QUIT_TOLD: TextMouth quit at its last launch to protect the Mac")
+#if os(macOS)
         Task { @MainActor in
             let alert = NSAlert()
             alert.alertStyle = .warning
@@ -400,13 +433,18 @@ final class PlaybackMemoryGuard {
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }
+#else
+        // Phase 0: iOS shows no alert (an iPhone app cannot quit itself to
+        // protect the device, so no quit marker is ever left to announce).
+        _ = marker
+#endif
     }
 
     // MARK: The App's Actions
 
-    /// Save what the termination path saves: the library index and every
-    /// queued book record, then the statistics, whose listening session is
-    /// credited so far.
+    /// Save what the termination path saves: every open reader's place,
+    /// then the library index and every queued book record, then the
+    /// statistics, whose listening session is credited so far.
     static func savePendingWrites() {
         UnsavedChangesTerminationGuard.flushPendingWrites()
         TextMouthPaths.flushLogs()
@@ -416,7 +454,12 @@ final class PlaybackMemoryGuard {
     /// `isQuittingToProtectTheMac` is set, so `applicationWillTerminate`
     /// shuts down as it always does.
     static func quitAskingNothing() {
+#if os(macOS)
         NSApplication.shared.terminate(nil)
+#else
+        // Phase 0: iOS lets an app end only by the system's choice, so there
+        // is nothing to quit; the system itself ends apps under memory pressure.
+#endif
     }
 
     /// Quit at once, from any thread, without running anything more: the

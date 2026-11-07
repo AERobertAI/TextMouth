@@ -48,12 +48,18 @@ final class OnDiskContractTests: XCTestCase {
 
     /// Every `BookFormat` is saved by its raw value, in library.json and in
     /// each package's record, in this order.
+    ///
+    /// "mobi" (FMT42, November 4, 2026) was added deliberately at the end: a
+    /// TextMouth built before it refuses a library that holds a Kindle book,
+    /// as 0.2.0's eight formats did, so the orchestrator raises the version's
+    /// MINOR and the changelog cautions the user. "kfx" (FMT52, November 6,
+    /// 2026) was added deliberately after it, for the same reason.
     func testEveryBookFormatIsSavedUnderItsOwnName() {
         XCTAssertEqual(
             BookFormat.allCases.map(\.rawValue),
             [
                 "epub", "txt", "markdown", "html", "webarchive", "ssml", "docx", "rtf", "rtfd", "doc", "odt",
-                "wordml", "braille", "daisy", "pdf", "audio",
+                "wordml", "braille", "daisy", "pdf", "audio", "mobi", "kfx",
             ],
             Self.because("a BookFormat's raw value, or the cases", Self.formatForces)
         )
@@ -108,11 +114,11 @@ final class OnDiskContractTests: XCTestCase {
                 "Go Forward",
                 "Next Heading",
                 "Previous Heading",
-                "Next Page",
-                "Previous Page",
                 "Go to Page…",
                 "Next in Reading List",
                 "Previous in Reading List",
+                "Next in Folder",
+                "Previous in Folder",
                 "Up One Level",
                 "Toggle Bookmark",
                 "Next Bookmark",
@@ -140,6 +146,15 @@ final class OnDiskContractTests: XCTestCase {
                 "Add to Reading List",
                 "Remove from Reading List",
                 "Folder or Feed Settings",
+                "Go to View 1",
+                "Go to View 2",
+                "Go to View 3",
+                "Go to View 4",
+                "Go to View 5",
+                "Go to View 6",
+                "Go to View 7",
+                "Go to View 8",
+                "Go to View 9",
                 "Import Folder…",
                 "Add Feed…",
                 "Open Book…",
@@ -227,7 +242,7 @@ final class OnDiskContractTests: XCTestCase {
             "skipBackwardUnit", "importDeleteBehavior", "dataDirectoryPath", "confirmBeforeDelete",
             "shiftSkipForwardUnit", "shiftSkipBackwardUnit", "rewindOnResumeUnit", "rewindSmartMode",
             "rewindSmartThreshold", "sleepFadeOutDuration", "sleepTimerAutoClose", "endOfBookBehavior",
-            "punctuationPauseLevel", "lastOpenedBookID", "autoPlayOnNavigate", "moveToTrashInsteadOfDeleting",
+            "nextBookWindow", "punctuationPauseLevel", "lastOpenedBookID", "autoPlayOnNavigate", "moveToTrashInsteadOfDeleting",
             "keepsOriginalOfConvertedAudio", "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay",
             "restartTimerGestureEnabled", "restartTimerGesturePattern", "restartTimerGestureWindow",
             "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls", "showSpeedInPlaybackControls",
@@ -236,10 +251,11 @@ final class OnDiskContractTests: XCTestCase {
             "repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet", "recordingInputDeviceID",
             "recordingAnnouncesLevel", "recordingLevelAnnouncementSeconds", "recordingOriginalPolicy",
             "recordingOriginalDays", "useInstalledFFmpeg", "audioEditorPreviewsFilters",
+            "libraryViews",
             "audioEditorPlaysAfterMoves", "keyboardShortcuts", "shortcutDoublePressSeconds", "feedRefreshAtLaunch",
             "feedRefreshIntervalHours", "feedItems", "feedNewestCount", "feedDeleteDownloadsDaysAfterPlayed",
             "feedRefreshAlert", "feedNotifications", "logLocation", "transcriptionLocale",
-            "offerTranscriptionAfterImport", "brailleTable",
+            "offerTranscriptionAfterImport", "brailleTable", "brailleFileCode",
         ]
         XCTAssertEqual(
             Set(object.keys),
@@ -276,6 +292,10 @@ final class OnDiskContractTests: XCTestCase {
             "epubISBN", "epubLanguage", "epubIdentifier", "epubVersion", "cacheFormatVersion",
             "contentIndexVersion", "textCacheFingerprint", "editedText", "pageReaderVersion",
             "metadataReaderVersion", "handEdits", "brailleTable", "brailleTableVersion",
+            // braillecodes: the braille file characters a BRF or BRL book is read with, by the code's id. An
+            // optional key, read leniently; an older TextMouth drops it, and the book then reads as North
+            // American Braille ASCII.
+            "brailleFileCode",
             // FMT16: the encoding a text book's file was guessed to be in. An optional key, written only for
             // a book imported with a guess, so every other row is exactly as it was.
             "textEncoding",
@@ -313,6 +333,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
+            // braillecodes: the braille file code, as in a library row.
+            "brailleFileCode",
             // FMT16, and encodingchoice's source, as in a library row.
             "textEncoding", "textEncodingSource",
         ]
@@ -372,6 +394,35 @@ final class OnDiskContractTests: XCTestCase {
             ["before", "after", "fraction", "measuredIn", "version"],
             Self.because("a text anchor's key", Self.keyForces)
         )
+    }
+
+    /// The keys of the removal marker Remove from Library Only writes into a
+    /// package (removedFromLibrary.json), as it writes them, from a book with
+    /// every field set. The marker is all a book added back keeps of its
+    /// deleted bookInfo.json.
+    func testARemovalMarkerHoldsExactlyTheseKeys() throws {
+        let marker = RemovedFromLibraryMarker(book: Self.bookWithEveryFieldSet(), removedAt: Self.date)
+        let package = try makeSandboxDirectory("Removal Marker Keys")
+        try marker.write(into: package)
+        let written = try Self.object(from: Data(contentsOf: TextMouthPaths.removedFromLibraryMarkerPath(in: package)))
+        let expected: Set<String> = [
+            "bookID", "title", "author", "removedAt", "brailleTable", "brailleTableVersion", "textEncoding",
+            "textEncodingSource",
+            // B12: the record of an edit taken with Edit Text and the fingerprints of the text cache, so that a
+            // book added back keeps the text the user changed. Optional keys, read leniently; an older
+            // TextMouth ignores them, and reads the book's file over the edit as it always did.
+            "editedText", "textCacheFingerprint",
+            // The braille file characters a BRF or BRL is read in (braillecodes), so that a book added back
+            // reads in the code it was read in. An optional key; an older TextMouth ignores it, and reads the
+            // file as North American Braille ASCII, as it always did.
+            "brailleFileCode",
+        ]
+        XCTAssertEqual(
+            Set(written.keys),
+            expected,
+            Self.because("a removal marker's key", "a book added back from a marker written before loses that field")
+        )
+        XCTAssertEqual(Self.propertyNames(of: marker), expected, Self.unset("a marker field"))
     }
 
     // MARK: - File and Folder Names
@@ -473,7 +524,7 @@ final class OnDiskContractTests: XCTestCase {
     /// Each page reader's version: the formats with pages, and that no
     /// other format has one.
     func testThePageReaderVersions() {
-        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt"]
+        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt", "kfx"]
         let forces = "every book of that format is read again at the next launch (V05, V07)"
         var versions: [String: String] = [:]
         var withoutPages: Set<String> = []
@@ -484,17 +535,35 @@ final class OnDiskContractTests: XCTestCase {
                 withoutPages.insert(format.rawValue)
             }
         }
-        // EPUB and HTML are at 1.0.1 since October 24, 2026: their converter
+        // EPUB and HTML were at 1.0.1 from October 24, 2026: their converter
         // left a page-break element's number out of the label of a heading
-        // that holds one, which changed those books' reading text.
+        // that holds one, which changed those books' reading text. On
+        // November 4, 2026 they went to 1.0.2, where a label of only the
+        // word "Page" names no page and an EPUB page list that labels none
+        // of its pages is passed over, and then to 1.0.3, where a label's
+        // leading "Page" is taken off; both changed those books' pages, and
+        // their text where a page-break element holds its page's number.
         XCTAssertEqual(
             versions,
-            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.1" : "1.0.0") }),
+            Dictionary(uniqueKeysWithValues: withPages.map { name -> (String, String) in
+                // Rich text and Word 97-2003 went to TextMouth's own readers (FMT47) at 1.1.0;
+                // rich text is at 1.2.0 (deleted text, a number in a cell, notes), DOCX at
+                // 1.1.0 (hidden text, text boxes once, notes), and Word 97-2003 at 1.2.0
+                // (hidden text, piece formatting, list numbers, and text boxes). OpenDocument
+                // text and Word 2003 XML went to TextMouth's own readers at 1.1.0.
+                let raised = [
+                    "epub": "1.0.3", "html": "1.0.3", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.2.0", "docx": "1.1.0",
+                    "odt": "1.1.0", "wordml": "1.1.0",
+                ]
+                return (name, raised[name] ?? "1.0.0")
+            }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )
         XCTAssertEqual(
             withoutPages,
-            ["markdown", "webarchive", "ssml", "audio"],
+            // A Kindle book (FMT42) has no print pages; an APNX file beside it
+            // would hold them, which is a later item.
+            ["markdown", "webarchive", "ssml", "audio", "mobi"],
             Self.because("the formats without pages", forces)
         )
     }
@@ -574,6 +643,7 @@ final class OnDiskContractTests: XCTestCase {
         config.feedRefreshAlert = true
         config.feedNotifications = true
         config.offerTranscriptionAfterImport = true
+        config.libraryViews = LibraryViewDefinitionList.shipped.fileEntries
         return config
     }
 
@@ -638,6 +708,7 @@ final class OnDiskContractTests: XCTestCase {
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
             brailleTableVersion: "liblouis",
+            brailleFileCode: "ascii-eurobraille",
             textEncoding: "windows-1251",
             textEncodingSource: .chosen
         )

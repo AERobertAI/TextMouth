@@ -9,6 +9,14 @@ struct HTMLPageTargets {
     /// labels are used and the document's page-break elements are not.
     var markers: [String: MarkdownPageMarker]
 
+    /// The labels of `markers` as the page list spelled them, by the same
+    /// ids, before normalization took a leading "Page" off them
+    /// (`MarkdownPageMarker`): an element's own text that is no more than
+    /// either form is not read (ST02), so "Page 12" under the list's "Page
+    /// 12" stays unread as it always was. An id whose entry gave no label of
+    /// its own, and so has its ordinal, is not here.
+    var sourceLabels: [String: String]
+
     /// Whether each page-break element is itself a page: true for standalone
     /// HTML and for a book without a page list, false once a page list names
     /// the book's pages (its page-break elements the list does not name are
@@ -19,8 +27,13 @@ struct HTMLPageTargets {
     var pageBreaksArePages: Bool
 
     /// Targets naming no page, with every page-break element a page.
-    init(markers: [String: MarkdownPageMarker] = [:], pageBreaksArePages: Bool = true) {
+    init(
+        markers: [String: MarkdownPageMarker] = [:],
+        sourceLabels: [String: String] = [:],
+        pageBreaksArePages: Bool = true
+    ) {
         self.markers = markers
+        self.sourceLabels = sourceLabels
         self.pageBreaksArePages = pageBreaksArePages
     }
 }
@@ -393,12 +406,12 @@ enum HTMLToMarkdownConverter {
     private static func destinationMarkers(
         for element: Element,
         tag: String,
-        page: MarkdownPageMarker?,
+        page: PageStart?,
         context: Context
     ) -> [String] {
         var markers: [String] = []
         if let page {
-            markers.append(page.markdown)
+            markers.append(page.marker.markdown)
         }
         if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
             markers.append(annotation.markdown)
@@ -465,21 +478,76 @@ enum HTMLToMarkdownConverter {
     /// be read like any element's (ST02): true when it is anything but its
     /// page's own label (`MarkdownPageMarker.isNoMoreThanLabel`), such as a
     /// heading "IV" or a word "Mix" under the page "5". The label is that of
-    /// `page` (the page the element begins), else
-    /// the element's `aria-label` or `title`, else empty, which any text up to
+    /// `page` (the page the element begins), in either of its forms: as
+    /// normalized ("12") and as its source spelled it ("Page 12"), so text
+    /// that is either is not read. Without a page it is the element's
+    /// `aria-label` or `title`, else empty, which any text up to
     /// `maximumLabelLength` Characters is no more than. Conversion and
     /// `destinationMarkers(inside:context:)` both ask this, so they agree.
-    private static func readsOwnText(ofPageBreak element: Element, page: MarkdownPageMarker?) -> Bool {
-        let label = page?.label ?? attributeLabel(of: element) ?? ""
-        return !MarkdownPageMarker.isNoMoreThanLabel(HTMLReadingText.inlineText(of: element), label: label)
+    private static func readsOwnText(ofPageBreak element: Element, page: PageStart?) -> Bool {
+        let text = HTMLReadingText.inlineText(of: element)
+        guard let page else {
+            return !MarkdownPageMarker.isNoMoreThanLabel(text, label: attributeText(of: element) ?? "")
+        }
+        return !MarkdownPageMarker.isNoMoreThanLabel(text, label: page.marker.label)
+            && !MarkdownPageMarker.isNoMoreThanLabel(text, label: page.sourceLabel)
     }
 
+    /// A page an element begins (PG05): its marker, and its label as the
+    /// source spelled it, which `readsOwnText` compares the element's text
+    /// with besides the marker's own.
+    private struct PageStart {
+        /// The page's marker, whose label is normalized: a leading "Page"
+        /// is taken off it ("Page 12" is the page "12").
+        let marker: MarkdownPageMarker
+        /// The label as the page list, the element's attribute, or its text
+        /// gave it ("Page 12"); the marker's own label when the source gave
+        /// none or a blank one, so the comparison never takes an empty label,
+        /// which any short text would be no more than.
+        let sourceLabel: String
+
+        /// The page `marker` names, which its source called `sourceLabel`.
+        init(marker: MarkdownPageMarker, sourceLabel: String?) {
+            self.marker = marker
+            if let sourceLabel, sourceLabel.contains(where: { !$0.isWhitespace }) {
+                self.sourceLabel = sourceLabel
+            } else {
+                self.sourceLabel = marker.label
+            }
+        }
+
+        /// The page a source labelled `label` (never blank here, so the
+        /// ordinal is never used).
+        init(label: String) {
+            self.init(marker: MarkdownPageMarker(label: label, ordinal: 0), sourceLabel: label)
+        }
+    }
+
+    /// The attributes a page-break element names its page in, in the order
+    /// they are asked.
+    private static let pageLabelAttributes = ["aria-label", "title"]
+
     /// The first of an element's `aria-label` and `title` that is not blank,
-    /// or nil when it has neither.
-    private static func attributeLabel(of element: Element) -> String? {
-        for name in ["aria-label", "title"] {
+    /// or nil when it has neither. This is what `readsOwnText` compares the
+    /// element's text with when it begins no page, so its words are read
+    /// whenever they are more than these attributes say.
+    private static func attributeText(of element: Element) -> String? {
+        for name in pageLabelAttributes {
             let value = (try? element.attr(name)) ?? ""
             if value.contains(where: { !$0.isWhitespace }) { return value }
+        }
+        return nil
+    }
+
+    /// The first of an element's `aria-label` and `title` that names a page,
+    /// or nil when neither does. A blank one, or one that is only the word
+    /// "Page" (`MarkdownPageMarker.namesNoPage`), names none: a generator
+    /// that has no number for a page writes `aria-label="Page "`, and the
+    /// element's `title` is then asked.
+    private static func attributeLabel(of element: Element) -> String? {
+        for name in pageLabelAttributes {
+            let value = (try? element.attr(name)) ?? ""
+            if !MarkdownPageMarker.namesNoPage(value) { return value }
         }
         return nil
     }
@@ -488,7 +556,9 @@ enum HTMLToMarkdownConverter {
     /// names at this element's id is that page, written once however many
     /// elements share the id. Otherwise a page-break element is a page of its
     /// own when the book has no page list, labelled by its `aria-label`, its
-    /// `title`, or its text, and is no page when it has no label at all. Its
+    /// `title`, or its text, and is no page when it has no label at all (a
+    /// label that is only the word "Page" is none,
+    /// `MarkdownPageMarker.namesNoPage`). Its
     /// text is a label only when it could be one (not longer than
     /// `maximumLabelLength`): a page-break element holding a paragraph begins
     /// no page, so the paragraph's first words are not read out by Go to Page.
@@ -497,36 +567,44 @@ enum HTMLToMarkdownConverter {
         tag: String,
         isPageBreak: Bool,
         context: Context
-    ) -> MarkdownPageMarker? {
+    ) -> PageStart? {
         guard context.includesPages else { return nil }
         if let named = namedPageMarker(for: element, tag: tag, context: context) {
             return named
         }
         guard isPageBreak, context.pages.pageBreaksArePages else { return nil }
-        // The ordinal is never used: every label here is not blank.
+        // Every label here names a page, so no marker takes its ordinal.
         if let label = attributeLabel(of: element) {
-            return MarkdownPageMarker(label: label, ordinal: 0)
+            return PageStart(label: label)
         }
-        // Without an attribute label the element's text names the page, when
-        // it is not blank and short enough to be a label.
         let text = HTMLReadingText.inlineText(of: element)
-        if text.contains(where: { !$0.isWhitespace }),
+        // An element whose attributes say "Page" and give no number names
+        // its page by its text only when the text is a page number. Words
+        // beside such an attribute ("Page " over "Chapter One") stay words,
+        // which `readsOwnText` reads.
+        if attributeText(of: element) != nil {
+            return MarkdownPageMarker.isPageNumber(text) ? PageStart(label: text) : nil
+        }
+        // Without an attribute the element's text names the page, when it
+        // names one at all and is short enough to be a label.
+        if !MarkdownPageMarker.namesNoPage(text),
            MarkdownPageMarker.isNoMoreThanLabel(text, label: "") {
-            return MarkdownPageMarker(label: text, ordinal: 0)
+            return PageStart(label: text)
         }
         return nil
     }
 
-    /// The marker the page list gives `element` through its id, or through the
-    /// name of a legacy anchor, when no earlier element took that id.
-    private static func namedPageMarker(for element: Element, tag: String, context: Context) -> MarkdownPageMarker? {
+    /// The page the page list gives `element` through its id, or through the
+    /// name of a legacy anchor, when no earlier element took that id, with
+    /// the label as the list spelled it (`HTMLPageTargets.sourceLabels`).
+    private static func namedPageMarker(for element: Element, tag: String, context: Context) -> PageStart? {
         // Most documents name no page. Avoid attribute lookups at every node.
         guard !context.pages.markers.isEmpty else { return nil }
         let id = (try? element.attr("id")) ?? ""
         let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
         for key in [id, legacyName] {
             if let marker = context.pages.markers[key], context.writtenPageIDs.ids.insert(key).inserted {
-                return marker
+                return PageStart(marker: marker, sourceLabel: context.pages.sourceLabels[key])
             }
         }
         return nil

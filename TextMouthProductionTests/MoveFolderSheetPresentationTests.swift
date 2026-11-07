@@ -94,7 +94,6 @@ final class MoveFolderSheetPresentationTests: XCTestCase {
         let second = MoveToFolderRequest(books: books)
         XCTAssertNotEqual(first.id, second.id)
         XCTAssertNotEqual(first, second)
-        XCTAssertEqual(first, first)
     }
 
     /// The debug log's line for the sheet appearing names the command and

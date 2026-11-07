@@ -57,6 +57,7 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
     /// Try Again and Quit TextMouth each have their label and hint, in that
     /// order, and pressing Try Again through accessibility tries again.
     func testTheButtonsAreLabelledAndTryAgainCanBePressed() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let tries = CallLog<String>()
         let screen = makeScreen(onTryAgain: { tries.record("try") })
 
@@ -78,6 +79,7 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
     /// VoiceOver reads the pointer to Storage settings after the reason and
     /// before Try Again and Quit TextMouth, which follow in that order.
     func testThePointerIsReadAfterTheReasonAndBeforeTheButtons() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let pointer = DataDirectoryUnavailableText.anotherFolderPointer
         let screen = makeScreen()
 

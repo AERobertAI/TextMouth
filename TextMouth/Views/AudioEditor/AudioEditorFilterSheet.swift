@@ -71,7 +71,7 @@ struct AudioEditorFilterSheet: View {
                         Text(AudioEditorWording.targetTitle(target)).tag(target)
                     }
                 }
-                .pickerStyle(.radioGroup)
+                .radioGroupPickerStyle()
                 .accessibilityLabel(AudioEditorWording.applyToLabel)
             }
             HStack {

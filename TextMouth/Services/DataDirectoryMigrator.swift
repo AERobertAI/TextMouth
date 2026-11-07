@@ -21,6 +21,8 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// A file, or anything else that is not a folder, stands at the new
     /// location, or at the end of the link the new location is.
     case destinationNotAFolder(DataDirectoryLocation)
+    /// The data directory to copy is gone, or is no folder: a file, or
+    /// anything else, stands where it was.
     case missingSource
     case missingBook(String)
     case invalidLibrary
@@ -362,8 +364,8 @@ enum DataDirectoryMigrator {
 
     /// Refuses, before anything is copied, a migration that could not be
     /// published safely: overlapping real folders (TODO F20), a data
-    /// directory that does not exist, and a new location that is a link
-    /// leading nowhere or that already holds something.
+    /// directory that does not exist or is no folder, and a new location
+    /// that is a link leading nowhere or that already holds something.
     private static func refuseUnsafeLocations(
         source: DataDirectoryLocation,
         destination: DataDirectoryLocation,
@@ -374,7 +376,12 @@ enum DataDirectoryMigrator {
         if let overlap = DataDirectoryOverlap(source: source, destination: destination) {
             throw DataDirectoryMigrationError.invalidRelationship(overlap, source: source, destination: destination)
         }
-        guard fileManager.fileExists(atPath: source.real.path) else {
+        // Only a folder is a data directory. A file where it was is refused
+        // as nothing there is: listing it for the copy would fail in the
+        // file system's own words, which say nothing of the data directory.
+        var sourceIsFolder: ObjCBool = false
+        guard fileManager.fileExists(atPath: source.real.path, isDirectory: &sourceIsFolder),
+              sourceIsFolder.boolValue else {
             throw DataDirectoryMigrationError.missingSource
         }
         // A new location that is a link leading nowhere has no folder to

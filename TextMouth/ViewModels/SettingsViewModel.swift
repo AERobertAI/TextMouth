@@ -239,6 +239,10 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage var endOfBookBehaviorRaw: String {
         didSet { syncToConfig() }
     }
+    /// Stored choice of where the next book opens; use `nextBookWindow`.
+    @AppStorage var nextBookWindowRaw: String {
+        didSet { syncToConfig() }
+    }
     /// Stored punctuation pause level; use `punctuationPauseLevel`.
     @AppStorage private var storedPunctuationPauseLevel: Double {
         didSet { syncToConfig() }
@@ -440,6 +444,13 @@ final class SettingsViewModel: ObservableObject {
         set { endOfBookBehaviorRaw = newValue.rawValue }
     }
 
+    /// Where the next book opens when listening goes on from one book to
+    /// another: this window by default (0.2.5).
+    var nextBookWindow: NextBookWindow {
+        get { SettingsPolicy.nextBookWindow.value(fromRaw: nextBookWindowRaw) }
+        set { nextBookWindowRaw = newValue.rawValue }
+    }
+
     var rewindOnResumeUnit: RewindUnit {
         get { SettingsPolicy.rewindOnResumeUnit.value(fromRaw: rewindOnResumeUnitRaw) }
         set { rewindOnResumeUnitRaw = newValue.rawValue }
@@ -518,6 +529,7 @@ final class SettingsViewModel: ObservableObject {
         _storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.appStorage(in: userDefaults)
         _sleepTimerAutoClose = AppStorage(wrappedValue: true, "sleepTimerAutoClose", store: userDefaults)
         _endOfBookBehaviorRaw = SettingsPolicy.endOfBookBehavior.appStorage(in: userDefaults)
+        _nextBookWindowRaw = SettingsPolicy.nextBookWindow.appStorage(in: userDefaults)
         _storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.appStorage(in: userDefaults)
         _autoPlayOnNavigate = AppStorage(wrappedValue: false, "autoPlayOnNavigate", store: userDefaults)
         _showBookmarkInPlaybackControls = AppStorage(
@@ -670,6 +682,7 @@ final class SettingsViewModel: ObservableObject {
         config.sleepFadeOutDuration = sleepFadeOutDuration
         config.sleepTimerAutoClose = sleepTimerAutoClose
         config.endOfBookBehavior = endOfBookBehavior.rawValue
+        config.nextBookWindow = nextBookWindow.rawValue
         config.punctuationPauseLevel = punctuationPauseLevel
         config.autoPlayOnNavigate = autoPlayOnNavigate
         config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
@@ -754,6 +767,7 @@ final class SettingsViewModel: ObservableObject {
             )
             adopt(config.sleepTimerAutoClose, into: \.sleepTimerAutoClose)
             adopt(config.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior, into: \.endOfBookBehaviorRaw)
+            adopt(config.nextBookWindow, rule: SettingsPolicy.nextBookWindow, into: \.nextBookWindowRaw)
             adopt(
                 config.punctuationPauseLevel,
                 rule: SettingsPolicy.punctuationPauseLevel,
@@ -872,21 +886,25 @@ final class SettingsViewModel: ObservableObject {
             + [KeyboardShortcutManager.editsPreference.key, LogLocation.preference.key]
             + [KeyboardShortcutManager.doublePressTimePreference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
-            + [BookExportPreferences.showInReaderToolbar.key]
+            // The Library window's views share the Export button's array: one
+            // more sum here takes the type checker past its time limit.
+            + [BookExportPreferences.showInReaderToolbar.key, LibraryViewDefinitionStore.preference.key]
         return earlier + [BraillePreferences.table.key]
+            + [BraillePreferences.fileCode.key]
     }
 
     /// The keys of the preferences other services keep that this model
     /// shows (the log location, the reader toolbar's Export button, the
-    /// feed settings, the transcription settings, and the braille table), whose changes it
-    /// announces wherever they are made, such as in config.json, so the
-    /// controls showing them follow.
+    /// feed settings, the transcription settings, the braille table, and the
+    /// braille file characters), whose changes it announces wherever they
+    /// are made, such as in config.json, so the controls showing them follow.
     private static let shownServicePreferenceKeys = Set([
         LogLocation.preference.key,
         BookExportPreferences.showInReaderToolbar.key,
         TranscriptionLanguage.preference.key,
         TranscriptionPreferences.offerAfterImport.key,
         BraillePreferences.table.key,
+        BraillePreferences.fileCode.key,
     ] + FeedSettings.preferenceKeys)
 
     /// The language transcription uses (FR05), in Playback settings'
@@ -915,6 +933,24 @@ final class SettingsViewModel: ObservableObject {
             guard let chosen = BrailleTableCatalog.table(withID: newValue)?.id, chosen != brailleTable else { return }
             objectWillChange.send()
             BraillePreferences.table.write(chosen, to: preferences)
+        }
+    }
+
+    /// The braille file characters imports read a BRF or BRL file with
+    /// (braillecodes), by the code's id, such as "ascii-na" for North
+    /// American Braille ASCII or "ascii-eurobraille". Imports read it
+    /// (`BraillePreferences.importFileCode()`), and Export's braille options
+    /// start from it; config.json follows it through the observer below,
+    /// which also announces a change made anywhere else. A value that is not
+    /// one of the import's choices (`BrailleFileCode.importChoices`, the
+    /// seven-bit codes; Unicode braille patterns are recognized, never
+    /// chosen), or the one already chosen, changes nothing.
+    var brailleFileCode: String {
+        get { BraillePreferences.fileCode.read(from: preferences) }
+        set {
+            guard let chosen = BrailleFileCode.importChoice(withID: newValue)?.id, chosen != brailleFileCode else { return }
+            objectWillChange.send()
+            BraillePreferences.fileCode.write(chosen, to: preferences)
         }
     }
 
@@ -979,9 +1015,10 @@ final class SettingsViewModel: ObservableObject {
     /// in the store. A change this model makes while applying config.json
     /// saves nothing, like every other change made then. A change of a
     /// preference this model shows, the log location, the reader toolbar's
-    /// Export button, a feed setting, or a transcription setting, is
-    /// announced, so Storage settings, Playback settings, the feed settings,
-    /// and open readers follow it wherever it was made.
+    /// Export button, a feed setting, a transcription setting, the braille
+    /// table, or the braille file characters, is announced, so Storage
+    /// settings, Playback settings, the feed settings, the Braille tab, and
+    /// open readers follow it wherever it was made.
     private func saveServicePreferenceChanges() {
         servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] key in
             if Self.shownServicePreferenceKeys.contains(key) {
@@ -1031,7 +1068,10 @@ final class SettingsViewModel: ObservableObject {
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
+        // The Library window's views, every one, as the views store keeps them.
+        config.libraryViews = LibraryViewDefinitionStore.preference.read(from: preferences).fileEntries
         config.brailleTable = BraillePreferences.table.read(from: preferences)
+        config.brailleFileCode = BraillePreferences.fileCode.read(from: preferences)
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -1111,10 +1151,22 @@ final class SettingsViewModel: ObservableObject {
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
+        // The Library window's views: the list reads each entry on its own,
+        // keeps the ones it cannot read as they are, and logs its repairs as
+        // config.json's; no key, or an empty list, leaves the views alone.
+        adopt(
+            config.libraryViews.flatMap { entries in
+                entries.isEmpty ? nil : LibraryViewDefinitionList(fileEntries: entries, logRepairsAs: "config.json")
+            },
+            into: LibraryViewDefinitionStore.preference
+        )
         // An empty or unknown table name leaves the current table alone; a
         // Mac table's value is taken without reading this Mac's tables
         // (review R3), and refused by name when it is used if the Mac lacks it.
         adopt(BrailleTableCatalog.storableValue(config.brailleTable), into: BraillePreferences.table)
+        // An empty id, or one this TextMouth lacks, leaves the current braille
+        // file characters alone.
+        adopt(BrailleFileCode.importChoice(withID: config.brailleFileCode)?.id, into: BraillePreferences.fileCode)
         return shortcutsWereRepaired
     }
 

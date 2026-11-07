@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - Bookmarks, Search Results, Saved Position, and Metadata Editing
 
@@ -64,6 +68,12 @@ extension ReaderViewModel {
     /// the offset it is saved at, the adjusted one (T06, `anchorToSave(at:)`).
     func toggleBookmarkAtCurrentPosition() {
         if let existing = nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) {
+            // A book the library no longer holds has no bookmark to remove:
+            // say so, as the add paths do, not that one was removed.
+            guard libraryViewModel.bookByID(book.id) != nil else {
+                announceBookmarkNotDone(Self.bookmarkNotRemovedAnnouncement(bookTitle: book.title))
+                return
+            }
             // Remove the nearby bookmark
             let number = existing.number
             removeBookmark(existing)
@@ -80,15 +90,7 @@ extension ReaderViewModel {
                 threshold: bookmarkProximityThreshold,
                 chapterLength: chapterLength
             )
-            libraryViewModel.addBookmark(
-                bookID: book.id,
-                chapterIndex: currentChapterIndex,
-                characterOffset: adjustedOffset,
-                label: "",
-                anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: adjustedOffset))
-            )
-            bookmarks = libraryViewModel.bookmarksForBook(book.id)
-            announceToVoiceOver("Bookmark \(bookmarks.count) added")
+            addBookmark(atOffset: adjustedOffset, label: "")
         }
     }
 
@@ -145,19 +147,71 @@ extension ReaderViewModel {
     ///   so added nothing.
     @discardableResult
     func addBookmarkAtCurrentPosition(label: String = "") -> Bookmark? {
+        addBookmark(atOffset: currentCharacterOffset, label: label)
+    }
+
+    /// Adds a bookmark at `offset` in the current chapter, keeping the words
+    /// around it (T06, `anchorToSave(at:)`), tells VoiceOver which bookmark
+    /// it made or that it made none, and returns it. The toggle and the
+    /// panel's Add share it.
+    ///
+    /// - Returns: The bookmark added; nil when the library holds no record
+    ///   of this book and so added nothing.
+    @discardableResult
+    private func addBookmark(atOffset offset: Int, label: String) -> Bookmark? {
         // The bookmarks saved before this one. Whichever bookmark is new
         // afterwards is the one added here, wherever the library placed it.
         let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
         libraryViewModel.addBookmark(
             bookID: book.id,
             chapterIndex: currentChapterIndex,
-            characterOffset: currentCharacterOffset,
+            characterOffset: offset,
             label: label,
-            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: offset))
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
-        announceToVoiceOver("Bookmark \(bookmarks.count) added")
-        return bookmarks.first { !existingIDs.contains($0.id) }
+        let added = bookmarks.first { !existingIDs.contains($0.id) }
+        announceBookmarkAdded(added)
+        return added
+    }
+
+    /// What VoiceOver says when no bookmark could be added because the
+    /// library holds no record of the book, as when the book was removed
+    /// while its reader was open. It does not say that nothing was changed:
+    /// the reader's own list of bookmarks is emptied too.
+    static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
+        "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
+    }
+
+    /// What VoiceOver says when a bookmark could not be removed because the
+    /// library holds no record of the book.
+    static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
+        "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library."
+    }
+
+    /// Says `sentence`, which tells that a bookmark command did nothing, a
+    /// moment late: the bookmarks panel moves VoiceOver's focus a moment
+    /// after an add, which cuts off words posted with the move, so the long
+    /// sentence waits until the focus has settled (REV11 F6,
+    /// `VoiceOverAnnouncer.afterSheetCloses`).
+    private func announceBookmarkNotDone(_ sentence: String) {
+        VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+            self?.announceToVoiceOver(sentence)
+        }
+    }
+
+    /// Says which bookmark was added, by the number it was given, or that
+    /// none was when `added` is nil. The number is the new bookmark's own,
+    /// never a count of the bookmarks, so it names the bookmark that was
+    /// made, and a command that added nothing never claims a bookmark. The
+    /// sentence for none waits for the focus to settle
+    /// (`announceBookmarkNotDone`).
+    private func announceBookmarkAdded(_ added: Bookmark?) {
+        if let added {
+            announceToVoiceOver("Bookmark \(added.number) added")
+        } else {
+            announceBookmarkNotDone(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
+        }
     }
 
     /// Update the user-facing label on an existing bookmark
@@ -166,34 +220,38 @@ extension ReaderViewModel {
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
     }
 
-    /// Navigate to the next bookmark after the current position
-    func goToNextBookmark() {
-        let sorted = bookmarks.sorted { $0.number < $1.number }
-        if let next = sorted.first(where: {
-            $0.chapterIndex > currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset > currentCharacterOffset)
-        }) {
-            navigatePreservingReturnPosition(
-                chapterIndex: next.chapterIndex,
-                characterOffset: next.characterOffset
-            )
-            announceToVoiceOver("Bookmark \(next.number)")
+    /// This book's bookmarks in the order they lie in the book: by chapter,
+    /// then by place within the chapter, two at one place by their numbers.
+    /// Next and Previous Bookmark go by this order. The numbers alone follow
+    /// the order the bookmarks were made, so going by them passed over a
+    /// bookmark made later at an earlier place.
+    private var bookmarksInBookOrder: [Bookmark] {
+        bookmarks.sorted { first, second in
+            (first.chapterIndex, first.characterOffset, first.number)
+                < (second.chapterIndex, second.characterOffset, second.number)
         }
     }
 
-    /// Navigate to the previous bookmark before the current position
-    func goToPreviousBookmark() {
-        let sorted = bookmarks.sorted { $0.number > $1.number }
-        if let prev = sorted.first(where: {
-            $0.chapterIndex < currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset < currentCharacterOffset)
-        }) {
-            navigatePreservingReturnPosition(
-                chapterIndex: prev.chapterIndex,
-                characterOffset: prev.characterOffset
-            )
-            announceToVoiceOver("Bookmark \(prev.number)")
+    /// Navigate to the nearest bookmark after the current position in the
+    /// book (`bookmarksInBookOrder`), saying its number.
+    func goToNextBookmark() {
+        let cursor = (currentChapterIndex, currentCharacterOffset)
+        guard let next = bookmarksInBookOrder.first(where: { ($0.chapterIndex, $0.characterOffset) > cursor }) else {
+            return
         }
+        navigatePreservingReturnPosition(chapterIndex: next.chapterIndex, characterOffset: next.characterOffset)
+        announceToVoiceOver("Bookmark \(next.number)")
+    }
+
+    /// Navigate to the nearest bookmark before the current position in the
+    /// book (`bookmarksInBookOrder`), saying its number.
+    func goToPreviousBookmark() {
+        let cursor = (currentChapterIndex, currentCharacterOffset)
+        guard let previous = bookmarksInBookOrder.last(where: { ($0.chapterIndex, $0.characterOffset) < cursor }) else {
+            return
+        }
+        navigatePreservingReturnPosition(chapterIndex: previous.chapterIndex, characterOffset: previous.characterOffset)
+        announceToVoiceOver("Bookmark \(previous.number)")
     }
 
     /// Delete a bookmark

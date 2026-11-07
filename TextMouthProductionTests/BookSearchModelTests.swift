@@ -585,6 +585,23 @@ private final class SearchLog: @unchecked Sendable {
     }
 }
 
+/// Waits, on a fake search's background thread, until the task running it
+/// is cancelled or `timeout` seconds pass, and returns whether it was
+/// cancelled. `BookSearchModel` installs its cancellation handler just
+/// after it starts the detached search, so a cancellation made in between
+/// reaches the search a moment after `cancelSearch()` returns: a test that
+/// asks whether the search was told to stop waits for that, not for a
+/// guess about time. A search never told to stop answers false after
+/// `timeout`, which fails the test.
+private func waitUntilCancelled(timeout: TimeInterval = 10) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while !Task.isCancelled {
+        guard Date() < deadline else { return false }
+        Thread.sleep(forTimeInterval: 0.001)
+    }
+    return true
+}
+
 /// Records what a model announces through VoiceOver.
 @MainActor
 private final class AnnouncementLog {
@@ -670,7 +687,9 @@ final class BookSearchModelTests: XCTestCase {
 
     /// A newer query cancels the older search, and the older search's
     /// completion never publishes, even when, like a runaway regular
-    /// expression, it ignores cancellation and finishes last.
+    /// expression, it ignores cancellation and finishes last. The old
+    /// search's fake waits until the cancellation reaches it, as the
+    /// cancellation handler passes it on a moment after the newer query.
     func testNewerQueryCancelsTheOlderSearchWhoseLateCompletionNeverPublishes() async throws {
         let log = SearchLog()
         let announcements = AnnouncementLog()
@@ -684,7 +703,7 @@ final class BookSearchModelTests: XCTestCase {
             if query == "old" {
                 oldSearchStarted.fulfill()
                 releaseOldSearch.wait()
-                log.recordCancellation(Task.isCancelled)
+                log.recordCancellation(waitUntilCancelled())
             }
             return .matches([fakeResult(for: query)], isTruncated: false)
         }
@@ -709,7 +728,9 @@ final class BookSearchModelTests: XCTestCase {
     }
 
     /// Stopping the search, as closing the sheet does, publishes and
-    /// announces nothing, even from a search that finishes anyway.
+    /// announces nothing, even from a search that finishes anyway. The fake
+    /// waits until the cancellation reaches it, as the cancellation handler
+    /// passes it on a moment after `cancelSearch()` returns.
     func testCancelledSearchPublishesNothing() async throws {
         let log = SearchLog()
         let announcements = AnnouncementLog()
@@ -721,7 +742,7 @@ final class BookSearchModelTests: XCTestCase {
             log.recordSearch(query: query, useRegex: useRegex)
             searchStarted.fulfill()
             releaseSearch.wait()
-            log.recordCancellation(Task.isCancelled)
+            log.recordCancellation(waitUntilCancelled())
             return .matches([fakeResult(for: query)], isTruncated: false)
         }
 

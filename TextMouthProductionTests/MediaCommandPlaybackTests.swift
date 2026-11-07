@@ -1829,6 +1829,40 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertTrue(quay.reader.speechService.isSpeaking, "Play did not speak")
     }
 
+    /// A 15-minute sleep timer's countdown halts where Release Media
+    /// Controls stops the book, as it halts at a pause, so its time left
+    /// holds while nothing plays; Play resumes it. Every stop halts it
+    /// (`ReaderViewModel.finishStopping`); before, only a pause did, and a
+    /// stop left the countdown running on, or running out, over silence.
+    func testReleasingMediaControlsHaltsTheSleepTimersCountdownUntilPlay() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let system = MediaSystem()
+        let world = try makeIntegrationWorld("Media Commands Release Timer")
+        let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+
+        quay.reader.play()
+        reportWordSpoken(by: quay)
+        quay.reader.startSleepTimer(duration: .minutes(15))
+        let atTheRelease = logLines(in: .sleepTimer) {
+            _ = recordingAnnouncements {
+                quay.reader.releaseMediaControls()
+            }
+        }
+
+        XCTAssertFalse(quay.reader.speechService.isSpeaking, "Releasing the media controls did not stop speech")
+        XCTAssertTrue(timer.isActive, "Releasing the media controls ended the timer")
+        XCTAssertTrue(atTheRelease.contains { $0.contains("COUNTDOWN_PAUSED") }, "\(atTheRelease)")
+        let timeLeft = timer.remainingSeconds
+        timer._advanceCountdownForTesting()
+        XCTAssertEqual(timer.remainingSeconds, timeLeft, "The countdown ran on while nothing played")
+        let atPlay = logLines(in: .sleepTimer) {
+            XCTAssertEqual(system.press(.play), .success)
+        }
+        XCTAssertTrue(atPlay.contains { $0.contains("COUNTDOWN_RESUMED") }, "\(atPlay)")
+        XCTAssertTrue(quay.reader.speechService.isSpeaking, "Play did not speak")
+    }
+
     /// Where the speech engine's refusal stopped speech, the book is shown
     /// paused and holds the media controls, so Release Media Controls is
     /// offered, as it is for a paused book, and hands them back: the system

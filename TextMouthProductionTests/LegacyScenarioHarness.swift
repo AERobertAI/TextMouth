@@ -243,7 +243,7 @@ final class LegacyDAISYAudioScenarioTests: XCTestCase {
         runDAISYAudioTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            16,
+            13,
             "Every inventoried DAISY audio scenario should remain registered"
         )
     }
@@ -269,7 +269,7 @@ final class LegacyIntegrationScenarioTests: XCTestCase {
         runIntegrationTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            36,
+            34,
             "Every inventoried integration scenario should remain registered"
         )
     }

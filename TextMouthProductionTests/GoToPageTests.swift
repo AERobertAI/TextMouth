@@ -29,6 +29,9 @@ final class GoToPageTests: XCTestCase {
         PageBreak(label: "300", chapterIndex: 1, characterOffset: 50),
     ]
 
+    /// A book's one page, at its start.
+    private static let onePage = [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)]
+
     /// Pages 11, 12, and 300 in chapter 0, so a place at offset 60 is on
     /// "Page 12 of 300".
     private static let pagesAroundTwelve = [
@@ -87,10 +90,45 @@ final class GoToPageTests: XCTestCase {
         )
     }
 
+    /// The field's hint says how many pages the book has, the N of "Page 12
+    /// of N", and its first and last pages' labels, before saying how to
+    /// type one: for a book numbered i, ii, then 1 to 300, "This book has
+    /// 300 pages, from i to 300." A book of one page names it, a book whose
+    /// labels hold no number counts its pages, and a book without pages
+    /// says so.
+    func testTheFieldHintGivesTheBooksPages() {
+        let typing = " Type a page as the book numbers it, such as 12 or xii."
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: Self.sixPages)),
+            "This book has 300 pages, from i to 300." + typing
+        )
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)])),
+            "This book's only page is 1." + typing
+        )
+        let lettered = ["A", "B", "C"].enumerated().map {
+            PageBreak(label: $0.element, chapterIndex: 0, characterOffset: $0.offset * 10)
+        }
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: lettered)),
+            "This book has 3 pages, from A to C." + typing
+        )
+        let oneNumbered = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 10),
+        ]
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: oneNumbered)),
+            "This book has 1 page, from 1 to A." + typing,
+            "the count follows the N of \"Page A of 1\", in the singular"
+        )
+        XCTAssertEqual(ReaderPageWording.fieldHint(for: .none), "This book has no pages.")
+    }
+
     /// The wording, pinned.
     func testTheWordsAreFixed() {
         XCTAssertEqual(ReaderPageWording.fieldLabel, "Page")
-        XCTAssertEqual(ReaderPageWording.fieldHint, "Type a page as the book numbers it, such as 12 or xii.")
+        XCTAssertEqual(ReaderPageWording.typingHint, "Type a page as the book numbers it, such as 12 or xii.")
         XCTAssertEqual(ReaderPageWording.emptyField, "Type a page number.")
         XCTAssertEqual(ReaderPageWording.jumped(to: "12"), "Jumped to page 12.")
         XCTAssertEqual(
@@ -121,12 +159,12 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.showInReaderTitle, "Show the page on the reader screen")
         XCTAssertEqual(
             ReaderPageWording.showInReaderHint,
-            "Shows the page being read, such as Page 12 of 300, beside the percent, for books with pages."
+            "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
         )
         XCTAssertEqual(ReaderPageWording.sayInWhereAmITitle, "Say the page in Where Am I?")
         XCTAssertEqual(
             ReaderPageWording.sayInWhereAmIHint,
-            "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books with pages."
+            "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page."
         )
     }
 
@@ -696,8 +734,9 @@ final class GoToPageTests: XCTestCase {
 
     // MARK: - The Hosted Field and Status Row
 
-    /// The page panel's field is one text field, labelled "Page", with what
-    /// to type as its hint and the current page's label as its value.
+    /// The page panel's field is one text field, labelled "Page", with the
+    /// book's pages and what to type as its hint and the current page's
+    /// label as its value.
     func testThePagePanelsFieldIsOneLabelledEditText() throws {
         let reader = makePagedReader(pages: Self.pagesAroundTwelve)
         defer { reader.close() }
@@ -708,7 +747,10 @@ final class GoToPageTests: XCTestCase {
         try withHostedField(panel, holding: "12") { field, controls in
             XCTAssertEqual(field.role, .textField)
             XCTAssertEqual(field.label, "Page")
-            XCTAssertEqual(field.hint, "Type a page as the book numbers it, such as 12 or xii.")
+            XCTAssertEqual(
+                field.hint,
+                "This book has 300 pages, from 11 to 300. Type a page as the book numbers it, such as 12 or xii."
+            )
             XCTAssertEqual(field.element.accessibilityValue() as? String, "12")
             XCTAssertEqual(controls.filter { $0.role == .textField }.count, 1)
         }
@@ -739,6 +781,7 @@ final class GoToPageTests: XCTestCase {
     /// A reader on page 12 of 300 has a page button in its status row, named
     /// by the position, with the hint that says what it opens.
     func testTheStatusRowHasAPageButton() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let settings = try makeIsolatedSettings("page-button")
         let reader = makePagedReader(pages: Self.pagesAroundTwelve, settings: settings)
         defer { reader.close() }
@@ -752,9 +795,10 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(button.hint, "Opens jump to page controls")
     }
 
-    /// With the setting off, or in a book without pages, the status row has
-    /// no page button.
-    func testTheStatusRowHasNoPageButtonWhenOffOrWithoutPages() throws {
+    /// With the setting off, in a book without pages, or in a book of one
+    /// page, the status row has no page button.
+    func testTheStatusRowHasNoPageButtonWhenOffOrWithOnePageOrNone() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let hidden = try makeIsolatedSettings("page-button-off")
         hidden.showsPageInReader = false
         let off = makePagedReader(pages: Self.pagesAroundTwelve, settings: hidden)
@@ -767,6 +811,32 @@ final class GoToPageTests: XCTestCase {
         defer { plain.close() }
         let plainButtons = try statusRowButtons(of: plain)
         XCTAssertFalse(plainButtons.contains { $0.label.hasPrefix("Page") })
+
+        let single = makePagedReader(pages: Self.onePage, settings: try makeIsolatedSettings("page-button-one"))
+        defer { single.close() }
+        let singleButtons = try statusRowButtons(of: single)
+        XCTAssertFalse(singleButtons.contains { $0.label.hasPrefix("Page") || $0.label.hasPrefix("Before page") })
+    }
+
+    /// A book of one page has pages but not several, so the status row
+    /// leaves its page button out (the user's request, November 4, 2026):
+    /// it would say "Page 1 of 1" wherever the book is read, and its page
+    /// commands say so and move nothing (`PageNavigationTests`). A book of
+    /// two pages has several, and a book without pages has neither.
+    func testABookOfOnePageHasAPageButNotSeveral() {
+        let single = makePagedReader(pages: Self.onePage)
+        defer { single.close() }
+        XCTAssertTrue(single.hasPages)
+        XCTAssertFalse(single.hasSeveralPages)
+
+        let two = makePagedReader(pages: Array(Self.pagesAroundTwelve.prefix(2)))
+        defer { two.close() }
+        XCTAssertTrue(two.hasSeveralPages)
+
+        let none = makePagedReader(pages: [])
+        defer { none.close() }
+        XCTAssertFalse(none.hasPages)
+        XCTAssertFalse(none.hasSeveralPages)
     }
 
     // MARK: - The Setting
@@ -936,6 +1006,13 @@ final class GoToPageTests: XCTestCase {
         defer { plain.close() }
         XCTAssertEqual(plain.whereAmIPageLabel, "")
         XCTAssertFalse(plain.buildBriefWhereAmI().contains(" of "))
+
+        // A book of one page says no page, which would be "Page 1 of 1".
+        let single = makePagedReader(pages: Self.onePage, settings: try makeIsolatedSettings("page-where-am-i-one"))
+        defer { single.close() }
+        single.currentCharacterOffset = 10
+        XCTAssertEqual(single.whereAmIPageLabel, "")
+        XCTAssertFalse(single.buildBriefWhereAmI().contains("Page 1"), single.buildBriefWhereAmI())
     }
 
     /// The setting is on until it is turned off, config.json names it, and

@@ -671,6 +671,34 @@ final class BrailleTranslatorTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
+    /// Stopping an export kills the running helper at once (TODO 3985), as
+    /// cancelling an import does: the BRF writer throws `CancellationError`,
+    /// as for a book stopped between its steps, long before the helper's
+    /// time limit, writes nothing, and leaves no child running.
+    func testStoppingAnExportStopsTheHelper() throws {
+        let hung = standIn("/bin/sleep", ["30"], seconds: 30)
+        let childrenBefore = WatchedProcess.runningChildCount
+        let cancellation = BookExportCancellation()
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) { cancellation.cancel() }
+        let document = ExportDocument(
+            book: ExportBookDetails(title: "Harbour Notes"),
+            blocks: [.paragraph([ExportRun("High water at noon.")])]
+        )
+        let url = work.appendingPathComponent("Harbour Notes.brf")
+        let started = Date()
+        try with(hung) {
+            XCTAssertThrowsError(try BRFExportWriter().write(
+                document, options: BrailleExportOptions(table: "en-ueb-g1.ctb"), to: url, cancellation: cancellation
+            )) {
+                XCTAssertTrue($0 is CancellationError, "\($0)")
+            }
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        assertWorkFolderEmpty()
+    }
+
     // MARK: - Limits
 
     /// The limits follow the measurements written beside them.

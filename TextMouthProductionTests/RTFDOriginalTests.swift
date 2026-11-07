@@ -33,6 +33,19 @@ final class RTFDOriginalTests: XCTestCase {
         XCTAssertFalse(imported.mayDeleteOriginal)
     }
 
+    /// The import says why its original is kept in the words it said before
+    /// the notice also came to cover the archive a DAISY book's audio was
+    /// imported from.
+    func testAnRTFDImportSaysWhyItsOriginalIsKeptInTheSameWords() throws {
+        let imported = try importedForTest(try copyOfFormatSample("rtfd/headings.rtfd"))
+
+        XCTAssertFalse(imported.tookOnlyPartOfOriginal)
+        XCTAssertEqual(
+            imported.originalKeptNotice,
+            "The original file was kept: it is a folder, and an import never deletes a folder."
+        )
+    }
+
     // MARK: - The Library
 
     /// Whatever the preference says, the library offers no deletion of an

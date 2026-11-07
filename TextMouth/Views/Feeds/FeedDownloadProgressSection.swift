@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - The Feed Downloads Section (FR10)
@@ -88,7 +92,7 @@ extension LibraryWindowView {
             now: now,
             cancelHint: library.feeds.cancelButtonHint()
         ) {
-            cancelFeedDownloads(of: library, in: NSApp.keyWindow)
+            cancelFeedDownloads(of: library, in: PlatformApplication.keyWindow)
         }
     }
 
@@ -99,7 +103,7 @@ extension LibraryWindowView {
     /// only then says what Cancel did, so the window's focus change never
     /// talks over it (REV13 item 3).
     @MainActor
-    static func cancelFeedDownloads(of library: LibraryViewModel, in window: NSWindow?) {
+    static func cancelFeedDownloads(of library: LibraryViewModel, in window: PlatformWindow?) {
         let said = library.cancelFeedDownloads()
         focusListAfterCancel(window) {
             VoiceOverAnnouncer.announce(said, from: window)
@@ -114,7 +118,7 @@ extension LibraryWindowView {
     /// within the moment waited again. With no window, `then` runs at once.
     /// A test listens in its place.
     @MainActor
-    static var focusListAfterCancel: @MainActor (NSWindow?, @escaping @MainActor () -> Void) -> Void = { window, then in
+    static var focusListAfterCancel: @MainActor (PlatformWindow?, @escaping @MainActor () -> Void) -> Void = { window, then in
         guard let window else {
             then()
             return

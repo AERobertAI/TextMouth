@@ -427,7 +427,7 @@ struct DuplicateFinderView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .toggleStyle(.checkbox)
+                    .checkboxToggleStyle()
                     .accessibilityLabel(filter.rawValue)
                     .accessibilityHint(filter.hint)
                 }
@@ -718,7 +718,7 @@ struct DuplicateGroupList: View {
                         Toggle(isOn: selectionBinding(for: book.id)) {
                             DuplicateBookLabel(book: book)
                         }
-                        .toggleStyle(.checkbox)
+                        .checkboxToggleStyle()
                         .padding(.horizontal)
                         .padding(.vertical, 6)
                         .background(selection.contains(book.id)

@@ -23,11 +23,14 @@ struct FFmpeg: Equatable, Sendable {
 
     /// The ffmpeg found first in `locations`, then in each folder of the
     /// PATH in `environment`: an executable file named ffmpeg. Nil when there
-    /// is none. Reads only file metadata.
+    /// is none. Reads only file metadata. On iOS always nil: an app there may
+    /// start no child process, even in the Simulator, which sees the Mac's
+    /// own files.
     static func locate(
         in locations: [String] = standardLocations,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> FFmpeg? {
+        #if os(macOS)
         let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/ffmpeg" }
         for candidate in locations + path where FileManager.default.isExecutableFile(atPath: candidate) {
             var isFolder: ObjCBool = false
@@ -35,6 +38,9 @@ struct FFmpeg: Equatable, Sendable {
             return FFmpeg(executable: URL(fileURLWithPath: candidate))
         }
         return nil
+        #else
+        return nil
+        #endif
     }
 
     // MARK: Commands
@@ -113,7 +119,8 @@ struct FFmpeg: Equatable, Sendable {
     }
 
     /// `chapters` as ffmpeg's metadata file holds them: a header, then one
-    /// section for each chapter, its times in milliseconds.
+    /// section for each chapter, its times in milliseconds, each rounded to
+    /// the nearest, and its title escaped (`escapeMetadata(_:)`).
     static func ffmetadata(chapters: [AudioRenderChapter]) -> String {
         var lines = [";FFMETADATA1"]
         for chapter in chapters {
@@ -124,17 +131,38 @@ struct FFmpeg: Equatable, Sendable {
         return lines.joined(separator: "\n") + "\n"
     }
 
-    /// `value` as an ffmetadata value: "=", ";", "#", the backslash, and a
-    /// line break each escaped with a backslash.
+    /// `value` as an ffmetadata value: "=", ";", "#", and the backslash each
+    /// escaped with a backslash, and every line break, whether a line feed,
+    /// a carriage return, or the pair of them Windows writes, as one escaped
+    /// line feed (a backslash, then a line feed), which ffmpeg's reader
+    /// takes as a line break within the value. Its reader ends a line at an
+    /// unescaped carriage return as at a line feed, and an escaped return
+    /// would still leave the line feed after it to end the line.
+    ///
+    /// The value is walked by Unicode scalar, as ffmpeg reads it byte by
+    /// byte: a Swift Character can hide what must be escaped, as CR LF is
+    /// one Character, and so is a backslash with a combining accent after it.
     static func escapeMetadata(_ value: String) -> String {
-        var escaped = ""
-        for character in value {
-            if ["=", ";", "#", "\\", "\n"].contains(character) {
+        var escaped = String.UnicodeScalarView()
+        // Whether the scalar before was a carriage return, whose line feed,
+        // when one follows, belongs to the same line break.
+        var afterReturn = false
+        for scalar in value.unicodeScalars {
+            switch scalar {
+            case "\n" where afterReturn:
+                // The line feed of a CR LF: its return wrote the line break.
+                break
+            case "\n", "\r":
+                escaped.append(contentsOf: "\\\n".unicodeScalars)
+            case "=", ";", "#", "\\":
                 escaped.append("\\")
+                escaped.append(scalar)
+            default:
+                escaped.append(scalar)
             }
-            escaped.append(character)
+            afterReturn = scalar == "\r"
         }
-        return escaped
+        return String(escaped)
     }
 
     // MARK: Running
@@ -145,6 +173,7 @@ struct FFmpeg: Equatable, Sendable {
     ///   `.ffmpegFailed` with its own words when it ends in failure, or
     ///   `CancellationError` when the task is cancelled, which stops it.
     func run(_ arguments: [String]) async throws {
+        #if os(macOS)
         let executable = self.executable
         let running = OSAllocatedUnfairLock<Int32?>(initialState: nil)
         let outcome: (status: Int32, errors: Data) = try await withTaskCancellationHandler {
@@ -181,6 +210,12 @@ struct FFmpeg: Equatable, Sendable {
         guard outcome.status == 0 else {
             throw AudioFilterError.ffmpegFailed(Self.describe(String(decoding: outcome.errors, as: UTF8.self), status: outcome.status))
         }
+        #else
+        // iOS cannot start a child process, and `FFmpeg.locate` returns nil
+        // there, so callers take their "no ffmpeg" path; this branch reports
+        // the same thing if one reaches it.
+        throw AudioFilterError.ffmpegMissing
+        #endif
     }
 
     /// What went wrong, in ffmpeg's own words from its standard error: its

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// What the Record window shows and does (FR04): the microphones and the
@@ -352,7 +356,13 @@ final class RecordingWindowModel: ObservableObject {
     /// Opens System Settings at the Microphone privacy list.
     func openPrivacySettings() {
         guard let url = AudioInputPermission.privacySettingsURL else { return }
+        #if os(macOS)
         NSWorkspace.shared.open(url)
+        #else
+        // Phase 1 opens this app's page in iOS Settings; until then there
+        // is nothing to open.
+        _ = url
+        #endif
     }
 
     /// Tries again to save the take that could not be saved, under the

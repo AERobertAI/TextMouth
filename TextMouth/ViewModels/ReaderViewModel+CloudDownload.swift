@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 
 // MARK: - FR02: Opening a Book That Is in the Cloud
@@ -479,6 +483,8 @@ extension ReaderViewModel {
         cloudPhase = phase
         announceCloud(message)
         discardAutoplayRequest()
+        // Said after the cloud message that gave the reason.
+        releaseSleepTimerHeld(forBook: book.id, afterTheReason: true)
     }
 
     // MARK: Downloading

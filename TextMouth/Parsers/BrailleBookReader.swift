@@ -5,12 +5,14 @@ import Foundation
 ///
 /// A braille book is a BRF, a BRL, or a PEF file. The reader puts the
 /// pieces the braille types provide in a row: `BrailleFileReader` reads the
-/// file's pages, `BraillePageAnalyzer` finds the headings and paragraphs,
-/// and `BrailleTranslator` turns each block's cells into print through
-/// liblouis in the braille helper, with the table the book was imported
-/// with, and with the emphasis liblouis reads from the braille's
-/// indicators. Both reading paths, the direct parse and the Markdown cache,
-/// call `markdown(of:table:)`, so they read the same text.
+/// file's pages, a BRF's or BRL's in the braille file characters the book
+/// records (`BrailleFileCode`, braillecodes; North American Braille ASCII
+/// for a book that records none), `BraillePageAnalyzer` finds the headings
+/// and paragraphs, and `BrailleTranslator` turns each block's cells into
+/// print through liblouis in the braille helper, with the table the book
+/// was imported with, and with the emphasis liblouis reads from the
+/// braille's indicators. Both reading paths, the direct parse and the
+/// Markdown cache, call `markdown(of:table:)`, so they read the same text.
 enum BrailleBookReader {
 
     // MARK: - The kind of file
@@ -50,6 +52,24 @@ enum BrailleBookReader {
         guard Int64(size) <= maximumFileBytes else { throw BrailleFileError.fileTooLarge }
     }
 
+    // MARK: - A code chosen
+
+    /// Refuses the braille file at `url` unless it reads with the braille
+    /// file characters `code` (braillecodes), as a re-read with other braille
+    /// file characters checks it before anything is written
+    /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`): a file
+    /// past `maximumFileBytes` before a byte of it is read, as `markdown`
+    /// refuses one, and then a file whose pages do not read in `code`. The
+    /// pages are read whole and let go; nothing is translated. A PEF's rows
+    /// are Unicode braille patterns, whatever `code` names.
+    /// - Throws: `BrailleFileError` for a file past the limit, or one that is
+    ///   not braille in `code`, and otherwise what the file's reading throws
+    ///   (`BrailleFileReader.read(_:as:code:)`).
+    static func requireReadable(_ url: URL, as code: BrailleFileCode) throws {
+        try requireSizeWithinLimit(of: url)
+        _ = try BrailleFileReader.read(url, as: kind(of: url), code: code)
+    }
+
     // MARK: - Reading
 
     /// Throws `BrailleTranslator.Failure.changedTable` when the book was read
@@ -64,6 +84,26 @@ enum BrailleBookReader {
         guard let recorded, BrailleTableSource.parse(table).source == .mac else { return }
         let now = BrailleTableCatalog.currentMacLiblouisVersion()
         guard now == recorded else { throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: now) }
+    }
+
+    /// The braille file code a file of `fileKind` is read in, from the id a
+    /// book stores (`stored`, braillecodes): for a BRF or BRL, the code that
+    /// id names (`BrailleFileCode.code(forStored:)`), North American Braille
+    /// ASCII for nil or an empty id. A PEF's rows are Unicode braille
+    /// patterns whatever a book stores, so its stored id, which none has, is
+    /// never looked at.
+    /// - Throws: `BrailleFileError.unknownFileCode` for a BRF or BRL whose id
+    ///   this TextMouth does not know: the book is refused by name, never
+    ///   read as another code, which would give wrong text with no error.
+    private static func readingCode(forStored stored: String?, of fileKind: BrailleFileKind) throws -> BrailleFileCode {
+        guard fileKind != .pef else { return .unicode }
+        guard let code = BrailleFileCode.code(forStored: stored) else {
+            // Nil and "" read as North American, so only an id that is not
+            // empty gets here: `stored` is never nil, and the default is
+            // only there to unwrap it.
+            throw BrailleFileError.unknownFileCode(stored ?? "")
+        }
+        return code
     }
 
     /// The Markdown of the braille book at `url`, translated to print with
@@ -100,6 +140,14 @@ enum BrailleBookReader {
     ///   - recordedVersion: The liblouis version of this Mac's tables the
     ///     book was read with (`Book.brailleTableVersion`), which a rebuild
     ///     requires them to have still (review R2); nil for a first reading.
+    ///   - fileCode: The braille file characters a BRF or BRL file is read
+    ///     in, by the id the book stores (`Book.brailleFileCode`,
+    ///     braillecodes): nil or empty for North American Braille ASCII, as
+    ///     every book that records none was read. An id this TextMouth does
+    ///     not know, such as a later TextMouth's, is refused by name, never
+    ///     read as another code, which would give wrong text with no error. A
+    ///     PEF's rows are Unicode braille patterns whatever it holds, and no
+    ///     PEF book records one.
     ///   - includesPages: Whether page markers are written (PG12): true for
     ///     every cache the app writes, which `MarkdownCacheService` asks for
     ///     by name; false writes what the reader wrote before pages, byte for
@@ -108,23 +156,29 @@ enum BrailleBookReader {
     ///     It is false unless asked for, unlike the other readers' option:
     ///     the cache is the one reading that wants pages, and every other
     ///     caller, such as the direct parse, wants the text alone.
-    /// - Throws: `BrailleFileError` for a file that is not braille or is
-    ///   larger than `maximumFileBytes`,
+    /// - Throws: `BrailleFileError` for a file that is not braille in its
+    ///   code or is larger than `maximumFileBytes`, and
+    ///   `BrailleFileError.unknownFileCode` for a BRF or BRL whose `fileCode`
+    ///   this TextMouth does not know, before the file is read;
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
     ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
     ///   translation that fails, and what the file's reading throws.
     static func markdown(
-        of url: URL, table: String, recordedVersion: String? = nil, includesPages: Bool = false
+        of url: URL, table: String, recordedVersion: String? = nil, fileCode: String? = nil,
+        includesPages: Bool = false
     ) throws -> String {
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
+        // A book whose braille file characters this TextMouth lacks is
+        // refused by name before anything is read (braillecodes).
+        let fileKind = kind(of: url)
+        let code = try readingCode(forStored: fileCode, of: fileKind)
         // A file past the limit is refused before a byte of it is read.
         try requireSizeWithinLimit(of: url)
         // The file's pages, then the blocks the pages hold (a BRL file has
         // no layout to read, so its analysis is not "formatted").
-        let fileKind = kind(of: url)
-        let pages = try BrailleFileReader.read(url, as: fileKind)
+        let pages = try BrailleFileReader.read(url, as: fileKind, code: code)
         let structure = BraillePageAnalyzer.structure(of: pages)
         guard !structure.blocks.isEmpty else { throw FileImportError.noTextToRead }
 
@@ -190,8 +244,19 @@ enum BrailleBookReader {
     /// - Parameters:
     ///   - title: The book's title.
     ///   - table: The table the book was imported with.
-    static func parse(url: URL, title: String, table: String, recordedVersion: String? = nil) throws -> DocumentContent {
-        let text = try markdown(of: url, table: table, recordedVersion: recordedVersion, includesPages: false)
+    ///   - recordedVersion: The liblouis version of this Mac's tables the
+    ///     book was read with, as `markdown(of:table:recordedVersion:fileCode:includesPages:)`
+    ///     takes it.
+    ///   - fileCode: The braille file characters the book records, by id,
+    ///     as `markdown(of:table:recordedVersion:fileCode:includesPages:)`
+    ///     takes them: nil for North American Braille ASCII, and an id this
+    ///     TextMouth does not know refuses the reading by name.
+    static func parse(
+        url: URL, title: String, table: String, recordedVersion: String? = nil, fileCode: String? = nil
+    ) throws -> DocumentContent {
+        let text = try markdown(
+            of: url, table: table, recordedVersion: recordedVersion, fileCode: fileCode, includesPages: false
+        )
         return try MarkdownDocParser.parse(markdown: text, title: title)
     }
 }

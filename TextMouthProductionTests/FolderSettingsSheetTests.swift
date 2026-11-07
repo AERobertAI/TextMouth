@@ -191,6 +191,70 @@ final class FolderSettingsSheetTests: XCTestCase {
         XCTAssertNil(world.library.library.folders.first { $0.id == id }?.listeningOptions)
     }
 
+    /// The folder's choice of window saves through the library and stores
+    /// nothing once it is "Use the global setting" again; the model names the
+    /// global setting, and the choice is available only while the folder's
+    /// books go on (0.2.5).
+    func testTheModelSavesTheChoiceOfWindowAndKnowsWhenItIsAvailable() throws {
+        let world = try makeWorld("FolderSettingsWindow")
+        let id = world.bookFolder.id
+        let model = makeModel(world, folderID: id)
+
+        XCTAssertNil(model.nextBookWindow)
+        XCTAssertEqual(model.globalNextBookWindow, .thisWindow, "the default")
+        world.preferences.set(NextBookWindow.newWindow.rawValue, forKey: SettingsPolicy.nextBookWindow.key)
+        XCTAssertEqual(model.globalNextBookWindow, .newWindow)
+
+        model.nextBookWindow = .thisWindow
+        XCTAssertEqual(world.library.listeningOptions(ofFolder: id), ListeningOptions(nextBookWindow: .thisWindow))
+        XCTAssertEqual(model.nextBookWindow, .thisWindow)
+
+        // The global behavior stops, so the books do not go on yet; Play
+        // the book below goes on.
+        XCTAssertFalse(model.continuesToAnotherBook)
+        model.continuation = .playBookBelow
+        XCTAssertTrue(model.continuesToAnotherBook)
+        model.continuation = .stop
+        XCTAssertFalse(model.continuesToAnotherBook)
+        XCTAssertEqual(model.nextBookWindow, .thisWindow, "the choice is kept while it is dimmed")
+
+        model.continuation = nil
+        model.nextBookWindow = nil
+        XCTAssertNil(world.library.listeningOptions(ofFolder: id), "standard choices must store nothing")
+    }
+
+    /// The hosted sheet draws the window pop-up with its three choices, the
+    /// first naming the global one, dimmed while the folder's books do not
+    /// go on, with its hint saying why.
+    func testTheSheetDrawsTheWindowPopUpDimmedWhileBooksDoNotGoOn() throws {
+        let world = try makeWorld("FolderSettingsWindowDrawn")
+        let model = makeModel(world, folderID: world.bookFolder.id)
+        let sheet = FolderSettingsSheet(model: model, onDone: {})
+
+        withHostedView(sheet, size: NSSize(width: 480, height: 420), until: {
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 2
+        }) { hosting in
+            let popUp = descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.count == 3 }
+            XCTAssertEqual(popUp?.itemTitles, [
+                "Use the global setting (This Window)", "This Window", "A New Window",
+            ])
+            XCTAssertEqual(popUp?.isEnabled, false, "the global behavior stops, so the folder's books do not go on")
+            if hostedWindowsExposeAccessibility() {
+                let picker = accessibleControls(in: hosting).first {
+                    $0.role == .popUpButton && $0.label == "Open the next book in"
+                }
+                XCTAssertEqual(picker?.hint, NextBookWindowWording.hint(.book, enabled: false))
+            }
+        }
+        model.continuation = .playBookBelow
+        withHostedView(sheet, size: NSSize(width: 480, height: 420), until: {
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 2
+        }) { hosting in
+            let popUp = descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.count == 3 }
+            XCTAssertEqual(popUp?.isEnabled, true)
+        }
+    }
+
     /// A choice another window makes shows in the model, as does a rename,
     /// and the model never touches the options of a folder it does not
     /// show.
@@ -236,10 +300,10 @@ final class FolderSettingsSheetTests: XCTestCase {
         let sheet = FolderSettingsSheet(model: model, onDone: {})
 
         withHostedView(sheet, size: NSSize(width: 480, height: 420), until: {
-            self.descendants(of: $0, as: NSPopUpButton.self).count == 1
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 2
         }) { hosting in
             let popUps = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(popUps.count, 1, "only When a book ends is a pop-up")
+            XCTAssertEqual(popUps.count, 2, "When a book ends and Open the next book in are the pop-ups")
             XCTAssertEqual(popUps.first?.itemTitles, [
                 "Use the global setting (Continue to Next Book)",
                 "Play the book below",
@@ -255,7 +319,7 @@ final class FolderSettingsSheetTests: XCTestCase {
 
             if hostedWindowsExposeAccessibility() {
                 let controls = accessibleControls(in: hosting)
-                let picker = controls.first { $0.role == .popUpButton }
+                let picker = controls.first { $0.role == .popUpButton && $0.label == "When a book ends" }
                 XCTAssertEqual(picker?.label, "When a book ends")
                 XCTAssertEqual(picker?.hint, ListeningOptionsWording.continuationHint(.book))
             }
@@ -276,9 +340,9 @@ final class FolderSettingsSheetTests: XCTestCase {
         let sheet = FolderSettingsSheet(model: model, onDone: {})
 
         try withHostedView(sheet, size: NSSize(width: 480, height: 420), until: {
-            self.descendants(of: $0, as: NSPopUpButton.self).count == 1
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 2
         }) { hosting in
-            let popUp = try XCTUnwrap(descendants(of: hosting, as: NSPopUpButton.self).first)
+            let popUp = try XCTUnwrap(descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.count == 4 })
             // Choosing a menu item runs the action SwiftUI gave the item;
             // the pop-up's own target and action are the second way.
             let chose = savesAfterTrying(

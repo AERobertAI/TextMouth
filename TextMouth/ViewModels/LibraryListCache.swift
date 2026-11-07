@@ -37,10 +37,17 @@ final class LibraryListCache {
     /// What one list is: where it is, the order it shows, and the search
     /// narrowing it.
     struct Key: Hashable {
-        /// The category shown.
-        let category: LibraryCategory
-        /// The folder shown in Folders; "" in every other category, whose
-        /// books do not depend on it.
+        /// The view shown.
+        let view: LibraryViewID
+        /// The view's filter, so a list whose filter changed is derived
+        /// again; nil for Folders and the Reading List.
+        let filter: LibraryViewFilter?
+        /// What the filter reads beyond the library's books (today's date,
+        /// the finished books, folders' paths), so a list derived before any
+        /// of it changed is derived again; nil without a filter.
+        let context: LibraryViewFilterContext?
+        /// The folder shown in Folders; "" in every other view, whose books
+        /// do not depend on it.
         let folderPath: String
         /// The field the books are sorted by.
         let field: LibrarySortField
@@ -57,14 +64,24 @@ final class LibraryListCache {
 
         /// The list at `location`, in `sort`'s order, narrowed by `search`
         /// (already lowercased; "" for none), holding the items of the feed
-        /// `feedID` when the folder shown is that feed's.
-        init(location: LibraryLocation, sort: LibrarySortState, search: String, feedID: UUID? = nil) {
-            category = location.category
-            folderPath = location.category == .folders ? location.folderPath : ""
+        /// `feedID` when the folder shown is that feed's, its filter reading
+        /// `context` (`LibraryViewModel.filterContext(for:)`).
+        init(
+            location: LibraryLocation,
+            sort: LibrarySortState,
+            search: String,
+            feedID: UUID? = nil,
+            context: LibraryViewFilterContext? = nil
+        ) {
+            let showsFolders = location.view.kind == .folders
+            view = location.view.id
+            filter = location.view.filter
+            self.context = context
+            folderPath = showsFolders ? location.folderPath : ""
             field = sort.field
             isAscending = sort.isAscending
             self.search = search
-            self.feedID = location.category == .folders ? feedID : nil
+            self.feedID = showsFolders ? feedID : nil
         }
     }
 
@@ -279,13 +296,16 @@ final class LibraryListCache {
 private extension Book {
     /// Whether `other` has the same value in every field a library list
     /// reads: its ID, folder, and feed link (membership: a feed's items are
-    /// listed by their feed, FR11), the fields sorts and the Recent category
-    /// order by, the title and author a search matches, and the file path
-    /// and content hash a measured size follows.
+    /// listed by their feed, FR11), its format (which a view's format
+    /// condition tests, and which tells an episode from an article), the
+    /// fields sorts and Recently Opened order by, the title and author a
+    /// search matches, and the file path and content hash a measured size
+    /// follows.
     func hasSameListFields(as other: Book) -> Bool {
         id == other.id
             && folderPath == other.folderPath
             && feedLink == other.feedLink
+            && format == other.format
             && title == other.title
             && author == other.author
             && dateAdded == other.dateAdded

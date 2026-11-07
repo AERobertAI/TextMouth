@@ -42,8 +42,10 @@ def main():
         if low:
             for w in low:
                 print(f"USAGE ALERT: {w['summary']}", flush=True)
+            # A window can report no figure; the alert must still end cleanly.
             for w in windows:
-                print(f"  {w['name']}: {w['left_pct']:.0f}% LEFT, resets in {w['reset_in_human']}", flush=True)
+                if w.get("left_pct") is not None:
+                    print(f"  {w['name']}: {w['left_pct']:.0f}% LEFT, resets in {w['reset_in_human']}", flush=True)
             return 0
         time.sleep(minutes * 60)
 

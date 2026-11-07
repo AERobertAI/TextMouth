@@ -391,3 +391,96 @@ struct ImportDecisionWording: Equatable {
         return text + "."
     }
 }
+
+/// What the library says about the new copies of duplicates, apart from the
+/// question itself (`ImportDecisionWording`): the launch's discard of a copy
+/// whose question was never answered, and the refusals of an answer that
+/// cannot keep a copy. Every sentence names the book, so several in a row
+/// are told apart, and none names a file the listener has never seen.
+enum DuplicateCopyWording {
+    /// What Keep Both and Replace Existing say, keeping the question, while
+    /// the library can't be reached (its drive dropped off while the question
+    /// waited): "The library can't be reached right now, so TextMouth can't
+    /// keep the new copy of “Atlas of Tides”. Answer again once the library
+    /// is back." The copy is intact, so Cancel is not offered.
+    static func libraryUnreachable(bookTitle: String) -> String {
+        "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. "
+            + "Answer again once the library is back."
+    }
+
+    /// What they say when the new copy's package is gone while its question
+    /// waited (taken by the launch of another Mac sharing the library, or in
+    /// Finder): "The files of the new copy of “Atlas of Tides” are no longer
+    /// in the library, so it can't be kept. Choose Cancel, then import the
+    /// file again." The file the copy came from, which an unanswered copy
+    /// never deletes, can be imported again.
+    static func copyGone(bookTitle: String) -> String {
+        "The files of the new copy of “\(bookTitle)” are no longer in the library, so it can't be kept. "
+            + "Choose Cancel, then import the file again."
+    }
+
+    /// What Keep Both says when the mark that the copy waits for an answer
+    /// could not be taken off it: "TextMouth could not keep the new copy of
+    /// “Atlas of Tides”. Choose Cancel to discard the copy, then import the
+    /// file again."
+    static func markerStays(bookTitle: String) -> String {
+        "TextMouth could not keep the new copy of “\(bookTitle)”. "
+            + "Choose Cancel to discard the copy, then import the file again."
+    }
+
+    /// The title of the alert that tells of copies the launch moved to the
+    /// Trash.
+    static let unansweredTrashedTitle = "Duplicate Copies Moved to the Trash"
+
+    /// What the launch says once it has moved the new copies of `titles`
+    /// to the Trash, because the question whether to keep each as a
+    /// duplicate was never answered: "TextMouth moved the new copy of Atlas
+    /// to the Trash, because the question whether to keep it as a duplicate
+    /// was never answered before TextMouth closed. To get it back, open the
+    /// Trash and choose Put Back." Up to three books are named; more are
+    /// counted.
+    static func unansweredTrashed(titles: [String]) -> String {
+        let one = titles.count == 1
+        let subject: String
+        switch titles.count {
+        case 1:
+            subject = "the new copy of “\(titles[0])”"
+        case 2...3:
+            subject = "the new copies of \(CountWording.list(titles.map { "“\($0)”" }))"
+        default:
+            subject = "\(titles.count) new copies of duplicate books"
+        }
+        return "TextMouth moved \(subject) to the Trash, because the \(one ? "question" : "questions") "
+            + "whether to keep \(one ? "it" : "them") as \(one ? "a duplicate" : "duplicates") "
+            + "\(one ? "was" : "were") never answered before TextMouth closed. "
+            + "To get \(one ? "it" : "them") back, open the Trash and choose Put Back."
+    }
+}
+
+/// What an import tells the listener of a DAISY archive whose audio it
+/// imported while the archive keeps something the book lacks.
+enum DAISYArchiveWording {
+    /// Said when "After Importing a Book" would have deleted the archive, or
+    /// asked, and the archive was kept: "The original file was kept:
+    /// TextMouth imported the audio of “Harbour Pilots” from the archive
+    /// “pilots.zip”, and the archive is the only copy of its text. The
+    /// archive also holds 2 other books that were not imported; unzip it to
+    /// import them." The second sentence is for an archive with other books,
+    /// and a talking book with no text, in an archive of other books, says
+    /// "TextMouth imported only the DAISY book “Harbour Pilots” from the
+    /// archive “pilots.zip”" in the first.
+    static func originalKept(bookTitle: String, leftovers: DAISYArchiveLeftovers) -> String {
+        let archive = "the archive “\(leftovers.archiveName)”"
+        let lead = leftovers.holdsText
+            ? "TextMouth imported the audio of “\(bookTitle)” from \(archive), and the archive is the only copy of its text"
+            : "TextMouth imported only the DAISY book “\(bookTitle)” from \(archive)"
+        var notice = "The original file was kept: \(lead)."
+        let others = leftovers.otherBookCount
+        if others > 0 {
+            let phrase = CountWording.phrase(others, singular: "other book", plural: "other books")
+            notice += " The archive also holds \(phrase) that \(others == 1 ? "was" : "were") not imported; "
+                + "unzip it to import \(others == 1 ? "it" : "them")."
+        }
+        return notice
+    }
+}

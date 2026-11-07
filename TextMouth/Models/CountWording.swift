@@ -160,7 +160,8 @@ enum CountWording {
     }
 
     /// How many of a list's rows are books of the library's own, episodes,
-    /// and articles (FR11).
+    /// and articles (FR11), told apart as a Library view tells them apart
+    /// (`Book.listedKind`).
     private struct ListCounts {
         /// Rows of the library's own books.
         var books = 0
@@ -172,12 +173,16 @@ enum CountWording {
         /// The counts of `rows`.
         init(_ rows: [Book]) {
             for row in rows {
-                if !row.isFeedItem {
+                switch row.listedKind {
+                case .books:
                     books += 1
-                } else if row.format.isAudio {
+                case .episodes:
                     episodes += 1
-                } else {
+                case .articles:
                     articles += 1
+                case .feeds:
+                    // Only a feed's own row is a feed, never a book's.
+                    break
                 }
             }
         }

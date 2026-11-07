@@ -89,6 +89,11 @@ final class BookFormatTests: XCTestCase {
         let viewModel = LibraryViewModel()
         let existing = makeBook(hash: "same-content")
         let duplicate = makeBook(hash: "same-content")
+        // The new copy's package is there, as an import publishes it before
+        // asking: Keep Both keeps no copy whose package is gone (TODO 3780).
+        let package = duplicate.tmbDirectory
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
         viewModel.library = Library(books: [existing])
         let source = try makeTemporarySourceFile()
         defer { try? FileManager.default.removeItem(at: source) }

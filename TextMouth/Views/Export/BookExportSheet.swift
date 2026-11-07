@@ -25,7 +25,7 @@ struct BookExportSheet: View {
     let close: () -> Void
     /// The sheet's own window, where the folder chooser opens and the
     /// export's announcement is posted from.
-    @State private var window: NSWindow?
+    @State private var window: PlatformWindow?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -93,7 +93,7 @@ struct BookExportSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Toggle(model.label(for: choice), isOn: checkedBinding(for: choice.kind))
-                    .toggleStyle(.checkbox)
+                    .checkboxToggleStyle()
                     .disabled(!choice.isAvailable || model.isExporting)
                     .accessibilityHint(model.hint(for: choice.kind))
                     .modifier(InitialVoiceOverFocusModifier(isTarget: choice.kind == model.choices.first?.kind))
@@ -208,7 +208,12 @@ struct BookExportSheet: View {
     /// and closes the dialog when everything asked was done; otherwise the
     /// dialog stays, with what could not be done.
     private func export() async {
+        #if os(macOS)
         let announcingWindow = window?.sheetParent ?? window
+        #else
+        // Phase 0 iOS: a UIKit window has no sheet parent.
+        let announcingWindow = window
+        #endif
         guard let outcome = await model.export(announcingFrom: announcingWindow) else { return }
         if BookExportModel.didEverything(outcome) {
             close()

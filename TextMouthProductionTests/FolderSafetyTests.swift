@@ -6,6 +6,8 @@ import XCTest
 final class FolderSafetyTests: XCTestCase {
     /// Old library indexes can predate folder-name validation. A destructive
     /// command must reject their root/traversal paths even when no books match.
+    /// The model starts no services, so the alert can only be the refusal's
+    /// own: a full startup's could be the legacy migration's.
     func testDeletionRejectsUnsafeLegacyFolderPaths() throws {
         XCTAssertTrue(TextMouthPaths.root.path.contains("TextMouthTests-"))
         try TextMouthPaths.ensureDirectoryStructure()
@@ -14,12 +16,17 @@ final class FolderSafetyTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: sentinel) }
         for name in ["", ".", ".."] {
             let folder = BookFolder(name: name)
-            let viewModel = LibraryViewModel()
+            let viewModel = LibraryViewModel(initializeServices: false)
             viewModel.library = Library(folders: [folder])
 
             viewModel.removeFolderAndEverything(folder)
 
-            XCTAssertTrue(viewModel.showError)
+            XCTAssertTrue(viewModel.showError, name)
+            XCTAssertEqual(
+                viewModel.errorMessage,
+                "Could not remove folder: its library path is invalid or has changed.",
+                name
+            )
             XCTAssertEqual(viewModel.library.folders.map(\.id), [folder.id])
             XCTAssertEqual(try String(contentsOf: sentinel), "Retain library")
         }
@@ -67,20 +74,28 @@ final class FolderSafetyTests: XCTestCase {
         XCTAssertEqual(library.folders.first?.fullPath, "Original")
     }
 
-    /// A colliding file makes directory creation fail without leaving a row.
+    /// A colliding file makes directory creation fail without leaving a row,
+    /// and the alert gives the file system's own reason. The model starts no
+    /// services, so the alert can only be this failure's.
     func testFailedDirectoryCreationDoesNotPublishFolder() throws {
         let name = "FolderCollision-\(UUID().uuidString)"
         let url = TextMouthPaths.libraryDir.appendingPathComponent(name)
         try TextMouthPaths.ensureDirectoryStructure()
         try Data("keep".utf8).write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
-        let viewModel = LibraryViewModel()
+        // The reason the file system gives for a folder where the file is.
+        var reason = ""
+        XCTAssertThrowsError(try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)) {
+            reason = $0.localizedDescription
+        }
+        let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library()
 
         viewModel.createFolder(name: name, parentPath: "")
 
         XCTAssertTrue(viewModel.library.folders.isEmpty)
         XCTAssertTrue(viewModel.showError)
+        XCTAssertEqual(viewModel.errorMessage, "Could not create folder: \(reason)")
         XCTAssertEqual(try String(contentsOf: url), "keep")
     }
 

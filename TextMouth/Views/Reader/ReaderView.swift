@@ -642,7 +642,7 @@ struct ReaderPanelCommands: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
                 // Only open in the focused reader window
-                if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                if let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow {
                     guard sourceWindow === viewModel.hostWindow else { return }
                 } else {
                     guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
@@ -656,9 +656,9 @@ struct ReaderPanelCommands: ViewModifier {
     /// reliable toggle while preserving correct routing between book windows.
     private func shouldAcceptPanelCommand(_ notification: Notification) -> Bool {
         WindowCommandRouting.shouldAccept(
-            sourceWindow: notification.userInfo?["sourceWindow"] as? NSWindow,
+            sourceWindow: notification.userInfo?["sourceWindow"] as? PlatformWindow,
             hostWindow: viewModel.hostWindow,
-            keyWindow: NSApp.keyWindow
+            keyWindow: PlatformApplication.keyWindow
         )
     }
 }
@@ -1283,9 +1283,10 @@ struct BookInfoBar: View {
         .onChange(of: viewModel.goToPageRequests) { _, _ in
             withAnimation(.easeInOut(duration: 0.15)) { expandedPanel = .page }
         }
-        // A book that no longer has pages has no page panel to leave open.
-        .onChange(of: viewModel.hasPages) { _, hasPages in
-            if !hasPages && expandedPanel == .page { expandedPanel = nil }
+        // A book that no longer has pages to move by has no page panel to
+        // leave open.
+        .onChange(of: viewModel.hasSeveralPages) { _, hasSeveralPages in
+            if !hasSeveralPages && expandedPanel == .page { expandedPanel = nil }
         }
     }
 
@@ -1311,8 +1312,8 @@ struct BookInfoBar: View {
             .accessibilityHint(percentButtonHint)
 
             // The page — click to open jump-to-page (PG03). Drawn for a book
-            // with pages while the setting that shows it is on.
-            if settingsViewModel.showsPageInReader && viewModel.hasPages {
+            // with more than one page while the setting that shows it is on.
+            if settingsViewModel.showsPageInReader && viewModel.hasSeveralPages {
                 Button {
                     togglePanel(.page)
                 } label: {

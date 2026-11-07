@@ -77,6 +77,35 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertEqual(sandbox.hiddenNames(in: package), [])
     }
 
+    /// The bytes of a Markdown book named like a package's text cache, with
+    /// CR LF line endings, which a text cache need not keep.
+    private static let cacheNamedBookText = "# Tide Tables\r\n\r\nHigh water at the north pier comes at six.\r\n"
+
+    /// A book whose file is named like the package's text cache, Content.md
+    /// here, moves into its package under a name of its own, as an import
+    /// stages it, so the cache the migration builds beside it never
+    /// replaces it: the copy keeps exactly the original's bytes, CR LF line
+    /// endings included, beside a separate content.md.
+    func testABookNamedLikeTheTextCacheMovesUnderANameOfItsOwn() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("Content.md", contents: Self.cacheNamedBookText)
+        let book = try sandbox.legacyBook("Named Like The Cache", original: original, format: .markdown)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        let package = sandbox.usualPackage(for: book)
+        let cache = TextMouthPaths.contentMarkdownPath(in: package)
+        XCTAssertEqual(migration.book.filePath, package.appendingPathComponent("content (book).md").path)
+        XCTAssertEqual(try Data(contentsOf: migration.book.bookFileURL), Data(Self.cacheNamedBookText.utf8))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: cache.path))
+        XCTAssertNotEqual(
+            FileIdentity(of: migration.book.bookFileURL), FileIdentity(of: cache),
+            "the cache was written over the book's own file"
+        )
+        XCTAssertTrue(migration.removedOriginal)
+        XCTAssertEqual(migration.warnings, [])
+    }
+
     /// An identical copy already in the book's own usual package, as an
     /// interrupted run leaves it, is used as it is rather than copied again,
     /// and the original is removed.
@@ -458,6 +487,30 @@ final class LegacyBookMigrationTests: XCTestCase {
 
         XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
         XCTAssertEqual(migration.book.filePath, package.appendingPathComponent("book.txt").path)
+        XCTAssertEqual(migration.warnings, [])
+    }
+
+    /// Such an interrupted move of a book named like the text cache is found
+    /// under the name the move gives the copy, content (book).md, and
+    /// finished, instead of the book being reported missing.
+    func testInterruptedMoveOfABookNamedLikeTheTextCacheIsFinished() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("Content.md", contents: Self.cacheNamedBookText)
+        let book = try sandbox.legacyBook("Interrupted Cache Name", original: original, format: .markdown)
+        let package = sandbox.usualPackage(for: book)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let copy = package.appendingPathComponent("content (book).md")
+        try Data(Self.cacheNamedBookText.utf8).write(to: copy)
+        var packaged = book
+        packaged.filePath = copy.path
+        packaged.tmbDirectoryName = package.lastPathComponent
+        try packaged.saveBookInfoThrowing()
+        try FileManager.default.removeItem(at: original)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
+        XCTAssertEqual(migration.book.filePath, copy.path)
         XCTAssertEqual(migration.warnings, [])
     }
 

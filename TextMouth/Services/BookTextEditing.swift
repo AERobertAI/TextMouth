@@ -830,6 +830,20 @@ final class BookTextEditSessions: Sendable {
         SavedFile.preserveUnusable(url, bytes: bytes, marker: TextMouthPaths.keptTextCopyMarker)
     }
 
+    /// Logs, as `TEXT_EDIT_KEPT`, that adding `book` back to the library
+    /// (Remove from Library Only, then its package opened) kept the text its
+    /// package's content.md held as `copy`, before reading the book's own
+    /// file wrote other text there: the marker of a book removed before
+    /// markers carried an edit records no fingerprint, so nothing else says
+    /// whether content.md held an edit. Names the title only, never text.
+    static func logAddBackKeptText(of book: Book, copy: URL) {
+        logLine(
+            "TEXT_EDIT_KEPT",
+            about: book,
+            "adding the book back replaced the text content.md held; kept as \(copy.lastPathComponent)"
+        )
+    }
+
     /// The end of a log line saying where an edit was kept: "; kept as
     /// content.md.edited-…", or that no copy could be made.
     private static func keptNote(_ keptCopy: URL?) -> String {

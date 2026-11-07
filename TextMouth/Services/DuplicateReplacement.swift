@@ -36,18 +36,26 @@ import Foundation
 /// hand-edited metadata: a text book's places and speed mean nothing to an
 /// audiobook.
 ///
+/// A BRF or BRL braille copy of the same file is read in the old copy's
+/// braille file characters, though, not in the Braille setting's its import
+/// read it in, so a choice the user made in Book Information survives the
+/// replacement (`brailleFileCodeToReadAgain(replacing:with:)`, braillecodes).
+///
 /// The work is in three parts, so that the old copy's package goes only
 /// once the new copy is committed:
-/// 1. `prepare(replacing:with:access:now:)` reads what is carried over,
-///    refusing before anything is written when part of it is only in the
-///    cloud, then writes it into the new copy's package and moves that
-///    package into the old copy's folder. The row it returns has the old
-///    copy's ID; the new package's record keeps the import's own until the
-///    library commits that row.
+/// 1. `prepare(replacing:with:access:now:)` first reads a braille copy
+///    again in the old copy's braille file characters, when it must be;
+///    then reads what is carried over, refusing before anything more is
+///    written when part of it is only in the cloud, and putting back what
+///    was read again; then writes it into the new copy's package and moves
+///    that package into the old copy's folder. The row it returns has the
+///    old copy's ID; the new package's record keeps the import's own until
+///    the library commits that row.
 /// 2. The library commits the new copy (`LibraryViewModel+Duplicates`): its
-///    record, then the index naming it, each on disk before the next step.
-///    A commit that fails undoes the first part (`Preparation.undo()`), and
-///    the question stays.
+///    record, then, once the marker saying it waits for this answer is off
+///    (`DuplicateQuestionMarker`), the index naming it, each on disk before
+///    the next step. A commit that fails undoes the first part
+///    (`Preparation.undo()`), and the question stays, its copy marked again.
 /// 3. The library removes the old copy's package
 ///    (`removeReplacedPackage(of:movesToTrash:)`). Nothing is undone then: a
 ///    package that cannot be removed stays, its record naming a listed
@@ -84,12 +92,19 @@ enum DuplicateReplacement {
         /// removes. It carries the re-read's own sentence
         /// (`LibraryViewModel.readingAgainRefusal(of:)`), said as it is.
         case readingAgain(String)
+        /// The new copy, a BRF or BRL braille book of the same file, could
+        /// not be read in the braille file characters the copy in the
+        /// library is read in (braillecodes): taken as its import read it,
+        /// it would undo a choice made in Book Information. It carries the
+        /// reading's own sentence (`readCopyAgain(_:in:access:)`), said as it
+        /// is.
+        case brailleCopyNotRead(String)
 
         /// The refusal as the question's sheet shows it and VoiceOver
         /// speaks it.
         var sentence: String {
             switch self {
-            case .readingAgain(let sentence):
+            case .readingAgain(let sentence), .brailleCopyNotRead(let sentence):
                 return sentence
             case .inUse(let use, let title):
                 return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry)
@@ -430,14 +445,22 @@ enum DuplicateReplacement {
         /// The names at the top of the new package before anything was
         /// carried into it.
         let namesBefore: Set<String>
+        /// The new copy read again in the old copy's braille file
+        /// characters, with its files as its import wrote them; nil when it
+        /// was not read again.
+        fileprivate let copyReadAgain: CopyReadAgain?
 
         /// Puts the new package back as its import published it, as a
         /// replacement that could not be committed must leave it: moved back
-        /// to where it was published, without anything carried into it.
-        /// Never called once the new copy is committed. What cannot be put
-        /// back is logged; the question stays either way.
+        /// to where it was published, without anything carried into it, and
+        /// with the text and record its import wrote, when it was read again
+        /// in the old copy's braille file characters. Never called once the
+        /// new copy is committed. What cannot be put back is logged; the
+        /// question stays either way.
         func undo() {
             DuplicateReplacement.undo(publishedAt: publishedAt, movedTo: movedTo, namesBefore: namesBefore)
+            // Once the package is back where its files were kept.
+            copyReadAgain?.putBack()
         }
     }
 
@@ -462,20 +485,38 @@ enum DuplicateReplacement {
     /// Makes the new copy `copy`'s package ready to take the place of
     /// `existing`, the library's copy, and returns the row it becomes.
     ///
-    /// Everything carried over is read first, without downloading anything
+    /// A BRF or BRL braille copy of the same file is first read again in the
+    /// braille file characters `existing` is read in, when its own are other
+    /// ones and its bytes did not say which they are
+    /// (`brailleFileCodeToReadAgain(replacing:with:)`, braillecodes). Its
+    /// import read it in the Braille setting's characters, so a choice the
+    /// user made in Book Information, such as Eurobraille for a book first
+    /// read as North American Braille ASCII, would otherwise be undone with
+    /// no error, the book read with wrong digits, punctuation, and
+    /// contractions. It is read as Book Information reads a book again
+    /// (`readCopyAgain(_:in:access:)`): its text written anew, and its
+    /// package record taking the code, with the new text's analysis, so its
+    /// row and record agree, and the places below move onto that text. A
+    /// copy that cannot be read so is refused, never taken as its import
+    /// read it.
+    ///
+    /// Everything carried over is read next, without downloading anything
     /// (`access`): the copies Edit Text kept, the old text when it holds text
     /// TextMouth did not write, the transcript when the new copy's audio is
     /// the audio transcribed, and both texts, for the places. Only then is
-    /// anything written: those files go into the new package, which then
-    /// moves into `existing`'s folder. A failure while writing undoes what
-    /// was written before it throws.
+    /// anything more written: those files go into the new package, which
+    /// then moves into `existing`'s folder. A failure while writing undoes
+    /// what was written before it throws, and any failure once the copy was
+    /// read again puts its text and record back as its import wrote them.
     ///
     /// - Throws: the deletion's own error for a row naming no package the
     ///   library manages (`FileImportService.managedPackageURLForDeletion`);
-    ///   `Refusal.filesInCloud` when something carried over is only in the
-    ///   cloud, before anything is written; `TextNotKept` when the old text
-    ///   could not be kept beside the new one; or the file system's error.
-    ///   The new package is then as its import published it.
+    ///   `Refusal.brailleCopyNotRead` when a braille copy could not be read
+    ///   in `existing`'s braille file characters; `Refusal.filesInCloud` when
+    ///   something carried over is only in the cloud, before anything is
+    ///   carried in; `TextNotKept` when the old text could not be kept beside
+    ///   the new one; or the file system's error. The new package is then as
+    ///   its import published it.
     static func prepare(
         replacing existing: Book,
         with copy: Book,
@@ -488,12 +529,24 @@ enum DuplicateReplacement {
         // to carry over, and its package could not be deleted after.
         _ = try FileImportService.managedPackageURLForDeletion(existing)
         let publishedAt = copy.tmbDirectory
-        let carried = try readCarried(from: existing, for: copy, access: access, now: now)
+        // The copy in the old copy's braille file characters, before its text
+        // is read for the places; from here on, the copy is this one.
+        let readAgain = try brailleFileCodeToReadAgain(replacing: existing, with: copy).map {
+            try readCopyAgain(copy, in: $0, access: access)
+        }
+        let newCopy = readAgain?.copy ?? copy
+        // Whatever fails from here puts the copy's files back as its import
+        // wrote them, after the catch below has undone what was carried in.
+        var isPrepared = false
+        defer {
+            if !isPrepared { readAgain?.putBack() }
+        }
+        let carried = try readCarried(from: existing, for: newCopy, access: access, now: now)
         // What the import published, listed before anything is carried in,
         // which an undo leaves: a package that cannot be listed fails here,
         // with nothing written, rather than give an undo nothing to keep.
         let namesBefore = Set(try FeedItemPackage.listedEntryNames(of: publishedAt))
-        let destination = TextMouthPaths.tmbPath(folderPath: existing.folderPath, tmbName: copy.tmbDirectoryName)
+        let destination = TextMouthPaths.tmbPath(folderPath: existing.folderPath, tmbName: newCopy.tmbDirectoryName)
         var movedTo = publishedAt
         var keptText: URL?
         do {
@@ -511,17 +564,21 @@ enum DuplicateReplacement {
         }
         let book = carriedBook(
             replacing: existing,
-            with: copy,
+            with: newCopy,
             places: carried.places,
-            location: location(of: copy, movedTo: movedTo, folderPath: existing.folderPath)
+            location: location(of: newCopy, movedTo: movedTo, folderPath: existing.folderPath)
         )
+        // Nothing fails from here: what was read again is the preparation's
+        // to put back, should the library not commit it.
+        isPrepared = true
         return Preparation(
             book: book,
             keptTranscript: carried.transcript != nil,
             keptText: keptText,
             publishedAt: publishedAt,
             movedTo: movedTo,
-            namesBefore: namesBefore
+            namesBefore: namesBefore,
+            copyReadAgain: readAgain
         )
     }
 
@@ -873,6 +930,10 @@ enum DuplicateReplacement {
         return keptText
     }
 
+    /// The tag of the debug log's lines naming what an undone replacement
+    /// could not put back in the new copy's package.
+    private static let undoneLogTag = "DUPLICATE_REPLACE_UNDONE"
+
     /// Puts the new package back as its import published it at
     /// `publishedAt`: moved back from `movedTo`, where it went, and holding
     /// only the names it held before (`namesBefore`), each other entry
@@ -887,7 +948,7 @@ enum DuplicateReplacement {
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "DUPLICATE_REPLACE_UNDONE: the new copy's package \(publishedAt.lastPathComponent) could not move back "
+                    "\(undoneLogTag): the new copy's package \(publishedAt.lastPathComponent) could not move back "
                         + "to where it was imported: \(error.localizedDescription)"
                 )
             }
@@ -901,10 +962,133 @@ enum DuplicateReplacement {
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "DUPLICATE_REPLACE_UNDONE: \(name) could not be removed from the new copy's package "
+                    "\(undoneLogTag): \(name) could not be removed from the new copy's package "
                         + "\(package.lastPathComponent): \(error.localizedDescription)"
                 )
             }
+        }
+    }
+
+    // MARK: A Braille Copy Read Again (braillecodes)
+
+    /// The braille file characters, by their id, that the new copy `copy`
+    /// is read in again before it takes the place of `existing` (braillecodes
+    /// review, finding 3), or nil when it keeps the reading its import gave
+    /// it. The import read it in the Braille setting's characters, while the
+    /// user may have chosen others for the library's copy in Book
+    /// Information, which a replacement must not undo. It is read again
+    /// when all of these hold, the new copy's bytes looked at last:
+    /// - both are BRF or BRL braille books (`Book.offersBrailleFileCodeChoice`),
+    ///   whose seven-bit codes no byte tells apart;
+    /// - their files are the same bytes (the same content hash, `md5Hash`),
+    ///   so the old copy's characters are known to be the new copy's file's;
+    /// - the characters that stand for the old copy, between its row and its
+    ///   record (`Book.recordedBrailleFileCode()`), are not the new copy's,
+    ///   each as its stored code names them (`codeID(ofStored:)`): none
+    ///   names North American Braille ASCII, and an id this TextMouth does
+    ///   not know names itself, which the reading then refuses by name;
+    /// - the new copy's bytes did not say which characters they are
+    ///   (`BrailleFileReader.certainCode(ofFileAt:)`): a file of Unicode
+    ///   braille patterns keeps them, whatever the old copy records, as a
+    ///   book whose code an earlier TextMouth dropped records none
+    ///   (`Book.brailleFileCodeForReading()`).
+    /// The id is explicit, North American Braille ASCII's included, as every
+    /// reading again records one.
+    static func brailleFileCodeToReadAgain(replacing existing: Book, with copy: Book) -> String? {
+        guard existing.offersBrailleFileCodeChoice, copy.offersBrailleFileCodeChoice,
+              !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return nil }
+        let standing = codeID(ofStored: existing.recordedBrailleFileCode())
+        guard standing != codeID(ofStored: copy.brailleFileCode),
+              BrailleFileReader.certainCode(ofFileAt: copy.bookFileURL) == nil else { return nil }
+        return standing
+    }
+
+    /// The id of the braille file characters the stored braille file code
+    /// `stored` names (`BrailleFileCode.code(forStored:)`): a known code's
+    /// own id, North American Braille ASCII's for none (nil or empty), and an
+    /// id this TextMouth does not know as it is stored.
+    private static func codeID(ofStored stored: String?) -> String? {
+        BrailleFileCode.code(forStored: stored)?.id ?? stored
+    }
+
+    /// Reads the new copy `copy` again in the braille file characters `id`
+    /// names, the old copy's (`brailleFileCodeToReadAgain(replacing:with:)`),
+    /// as Book Information reads a book again with other braille file
+    /// characters (`LibraryViewModel.rereadText(of:as:access:isOpenInReader:)`):
+    /// its file checked to read in them before anything is written, its
+    /// content.md written anew in them, and the code recorded as decided,
+    /// with the new text's analysis, in its package record, which still
+    /// names the copy's own ID. The replacement's later write of that record
+    /// keeps the code, a record's code standing over a row's
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`), and the row
+    /// returned holds it too, so the two agree. Nothing is downloaded
+    /// (`access`), no reader has the copy open, and the debug log says it as
+    /// a re-read's (BRAILLE_FILE_CODE_CHANGED).
+    /// - Returns: The copy as its package now records it, with its files as
+    ///   its import wrote them, to put back.
+    /// - Throws: `Refusal.brailleCopyNotRead`, with the reading's own
+    ///   sentence, when the copy could not be read in them; nothing changed
+    ///   then. An id this TextMouth does not know is refused by name before
+    ///   anything is read, as every reading of a book refuses it
+    ///   (`BrailleFileError.unknownFileCode`), in the words the re-read gives
+    ///   a reading that failed.
+    private static func readCopyAgain(_ copy: Book, in id: String, access: MaintenanceFileAccess) throws -> CopyReadAgain {
+        guard let code = BrailleFileCode.code(withID: id) else {
+            throw Refusal.brailleCopyNotRead(TextEncodingWording.failedRefusal(
+                bookTitle: copy.title, reason: BrailleFileError.unknownFileCode(id).localizedDescription
+            ))
+        }
+        // The files the re-read writes, as the import wrote them.
+        let filesBefore = [
+            MarkdownCacheService.cacheURL(for: copy),
+            TextMouthPaths.contentIndexPath(in: copy.tmbDirectory),
+            TextMouthPaths.bookInfoPath(in: copy.tmbDirectory),
+        ].map { PackageFileBeforeInstall($0) }
+        let reread = LibraryViewModel.rereadText(
+            of: copy, as: .brailleFileCode(code), access: access, isOpenInReader: { _ in false }
+        )
+        switch reread {
+        case .refused(let sentence):
+            throw Refusal.brailleCopyNotRead(sentence)
+        case let .readAgain(update, _, keptCopy):
+            DiagnosticLog.event(
+                .storage, LibraryViewModel.brailleFileCodeLogLine(title: copy.title, code: code, keptCopy: keptCopy)
+            )
+            // The row takes what the record now holds, as a library row takes
+            // a re-read's commit: the new text's analysis, and the code.
+            var readCopy = copy
+            update.summary?.apply(to: &readCopy)
+            return CopyReadAgain(copy: readCopy, filesBefore: filesBefore)
+        }
+    }
+
+    /// A braille copy read again in the old copy's braille file characters
+    /// (`readCopyAgain(_:in:access:)`), and its files as its import wrote
+    /// them, which a replacement that does not go ahead puts back.
+    fileprivate struct CopyReadAgain {
+        /// The new copy as its package now records it: read in the old
+        /// copy's braille file characters, with the new text's analysis.
+        let copy: Book
+        /// content.md, contentIndex.json, and bookInfo.json as the import
+        /// wrote them, before the copy was read again.
+        let filesBefore: [PackageFileBeforeInstall]
+
+        /// Puts back, with its bytes and dates, each of the copy's files
+        /// written since it was kept: by the re-read, or by a commit of the
+        /// replacement's record that failed after it, so the new package is
+        /// as its import published it. Called with the package where its
+        /// import published it, where the files were kept. What cannot be put
+        /// back is logged, and nothing is put back when a file the re-read
+        /// wrote over could not be kept (`PackageFileBeforeInstall.putBack`).
+        func putBack() {
+            // Each file's stamp now stands for the write to undo, so a file
+            // written since is put back, and one never written is left.
+            PackageFileBeforeInstall.putBack(
+                filesBefore.map { (file: $0, written: FileStamp(of: $0.url)) },
+                of: copy,
+                after: "the replacement",
+                logTag: DuplicateReplacement.undoneLogTag
+            )
         }
     }
 }
@@ -950,5 +1134,80 @@ extension Book {
             }
         }
         markEditedByHand(Set(edited))
+    }
+}
+
+// MARK: - A New Copy Waiting for Its Answer
+
+/// The hidden file a duplicate's new copy holds in its package while the
+/// question about it ("Duplicate Book Found") waits for the listener's
+/// answer (`LibraryViewModel.addBookCheckingDuplicate`).
+///
+/// The question lives only in memory, in the library's queue of import
+/// questions, while the new copy's package is already published in its
+/// library folder. A quit, a logout, or a crash before the answer leaves
+/// that package behind, and every later launch would take it for one an
+/// interrupted import left: hidden for good while the library refuses a
+/// second book with the same content, back as a book once the listener
+/// deletes the copy it matched, or adopted at once, a Keep Both never
+/// chosen, when the two copies matched only by the file they came from. So
+/// the marker is written before the question is asked; every answer that
+/// keeps the copy removes it just before the library's index names the
+/// copy, so no package the library lists ever holds it; Cancel discards
+/// the package with it; and no adoption of orphaned packages ever adopts a
+/// package holding it (`FileImportService.adoptOrphanedTMBPackages`). The
+/// launch's repair discards each such package whose question no longer
+/// waits (`LibraryViewModel.adoptOrphanedPackages`).
+///
+/// Only the file's presence counts, so it is empty: unlike
+/// `RemovedFromLibraryMarker`, it is never read back, and nothing in it
+/// needs keeping, since a copy's original file is deleted only once the
+/// copy is kept, never while its question waits.
+enum DuplicateQuestionMarker {
+    /// The marker's file name, at the top of the new copy's package. It is
+    /// hidden, so nothing takes it for the book's own content
+    /// (`FileImportService.isPackageContentName`).
+    static let fileName = ".awaitingDuplicateAnswer"
+
+    /// Where the marker is, or would be, in the package `package`.
+    static func url(in package: URL) -> URL {
+        package.appendingPathComponent(fileName)
+    }
+
+    /// Whether the package `package` holds the marker.
+    static func isHeld(by package: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url(in: package).path)
+    }
+
+    /// Writes the marker into the package `package`, replacing any earlier
+    /// one. The write is atomic, as `RemovedFromLibraryMarker`'s is, so the
+    /// marker is either absent or whole.
+    /// - Throws: why the marker could not be written.
+    static func write(into package: URL) throws {
+        try Data().write(to: url(in: package), options: .atomic)
+    }
+
+    /// Removes the marker from the package `package`, once an answer keeps
+    /// its copy. A package without one is left as it is.
+    /// - Throws: why a marker that is there could not be removed.
+    static func remove(from package: URL) throws {
+        let marker = url(in: package)
+        guard FileManager.default.fileExists(atPath: marker.path) else { return }
+        try FileManager.default.removeItem(at: marker)
+    }
+}
+
+/// The packages holding a `DuplicateQuestionMarker` that an adoption of
+/// orphaned packages passed over (`FileImportService.adoptOrphanedTMBPackages`),
+/// gathered for the launch's repair, which discards those whose questions
+/// no longer wait (`LibraryViewModel.adoptOrphanedPackages`). An adoption
+/// given none of these only passes such packages over.
+final class UnansweredDuplicates {
+    /// The packages passed over, in the order the adoption found them.
+    private(set) var packages: [URL] = []
+
+    /// Records the package at `package`.
+    func record(_ package: URL) {
+        packages.append(package)
     }
 }

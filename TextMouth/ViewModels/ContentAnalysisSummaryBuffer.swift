@@ -1,11 +1,15 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
 /// The analysis fields a batch committed to one book's package record,
 /// and the places a rebuild moved (T06's branch D) that the record took,
-/// and the encoding the record keeps for a text file, on their way to the
-/// book's library row.
+/// the encoding the record keeps for a text file, and the braille file code
+/// it keeps for a braille book, on their way to the book's library row.
 ///
 /// The row takes only the moves its record took, so a move never wins over a
 /// newer write another Mac left in the record: a moved place is dated at the
@@ -38,6 +42,13 @@ struct ContentAnalysisSummary: Sendable {
     /// Who decided `textEncoding`, as the record keeps it
     /// (`Book.textEncodingSource`, encodingchoice), taken back with it.
     let textEncodingSource: TextEncodingSource?
+    /// The braille file characters the book's package record keeps for its
+    /// BRF or BRL file (`Book.brailleFileCode`, braillecodes), by the
+    /// code's id, which a row that lags behind a re-read in other braille
+    /// file characters, or lost its own, takes back
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`). Nil when the
+    /// record names none, or names another book.
+    let brailleFileCode: String?
 
     /// The record's encoding and who decided it, as one.
     var textEncodingRecord: TextEncodingRecord {
@@ -56,6 +67,7 @@ struct ContentAnalysisSummary: Sendable {
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
         textEncoding = committed.textEncoding
         textEncodingSource = committed.textEncodingSource
+        brailleFileCode = committed.brailleFileCode
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -72,15 +84,22 @@ struct ContentAnalysisSummary: Sendable {
     /// `Book.recordedTextEncodingRecord()` takes them: a package record that
     /// names another book, as an old shared
     /// package's may, must never give this row that book's encoding, which
-    /// every later reading of this book would then use.
+    /// every later reading of this book would then use. The record's braille
+    /// file code is taken the same way, from this book's own record only,
+    /// and only for a braille book, as `Book.recordedBrailleFileCode()`
+    /// takes it.
     init(recovered: Book, record: Book) {
         bookID = recovered.id
         packageName = recovered.tmbDirectoryName
         fields = recovered.contentAnalysisFields
         movedPlaces = Self.placesMoved(to: record, from: recovered)
-        let ownRecord = record.id == recovered.id && recovered.format.usesTextFileDecoder
-        textEncoding = ownRecord ? record.textEncoding : nil
-        textEncodingSource = ownRecord ? record.textEncodingSource : nil
+        // Each counts only from this book's own record, and only for a
+        // format whose files are read in it.
+        let isOwnRecord = record.id == recovered.id
+        let takesEncoding = isOwnRecord && recovered.format.usesTextFileDecoder
+        textEncoding = takesEncoding ? record.textEncoding : nil
+        textEncodingSource = takesEncoding ? record.textEncodingSource : nil
+        brailleFileCode = isOwnRecord && recovered.format == .braille ? record.brailleFileCode : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -151,13 +170,19 @@ struct ContentAnalysisSummary: Sendable {
     /// with its new text before the row takes it (encodingchoice), so a row
     /// a stop left behind catches up when its analysis is recovered; or the
     /// record's guess, for a row that lost its own. A row that holds a guess
-    /// of its own otherwise keeps it.
+    /// of its own otherwise keeps it. The row takes the record's braille
+    /// file code (`brailleFileCode`) by the same rule
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`): the record's
+    /// whenever it names one, which a re-read in other braille file
+    /// characters writes with its new text before the row takes it
+    /// (braillecodes), and the row's own otherwise.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {
             book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
         }
         book.textEncodingRecord = .standing(row: book.textEncodingRecord, recorded: textEncodingRecord)
+        book.brailleFileCode = BrailleFileCodeRecord.standing(row: book.brailleFileCode, recorded: brailleFileCode)
     }
 }
 
@@ -204,11 +229,16 @@ final class ContentAnalysisSummaryBuffer {
         self.apply = apply
         // Delivered on the posting thread, the main thread, while AppKit
         // quits, so the flush is done before TextMouth exits.
+        // iOS ends an app without a guaranteed willTerminate notice, so
+        // phase 0 listens for none there (phase 1 flushes as the app goes
+        // to the background).
+        #if os(macOS)
         terminationSubscription = notificationCenter
             .publisher(for: NSApplication.willTerminateNotification)
             .sink { [weak self] _ in
                 MainActor.assumeIsolated { self?.flushForTermination() }
             }
+        #endif
     }
 
     /// How many summaries are waiting.

@@ -7,7 +7,8 @@ import SwiftUI
 /// language, code, and contraction pop-ups keep the labels of the Braille
 /// tab (`BrailleSettingsWording`), and its sentence for a refused Mac table,
 /// and have hints of their own, which speak of the book rather than of
-/// reading braille files.
+/// reading braille files; so does the braille file characters pop-up
+/// (braillecodes), whose hint speaks of the BRF file being exported.
 enum BrailleExportWording {
     /// What the language pop-up does, spoken after its label and value
     /// (October 20, 2026).
@@ -56,6 +57,14 @@ enum BrailleExportWording {
         case .lf: return lfName
         }
     }
+
+    /// What the braille file characters pop-up does (BRF only; its label is
+    /// `BrailleSettingsWording.fileCodeLabel`). A file in Eurobraille is read
+    /// as written only by German-style embossers and software, and a PEF
+    /// needs no such choice, so the hint points there for sharing
+    /// (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.9).
+    static let fileCodeHint =
+        "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
 
     /// What the options say when the Braille setting's table, `table`, is one
     /// of this Mac's that this Mac cannot use, and the export starts from
@@ -361,13 +370,16 @@ final class BrailleTableChoiceChecks: ObservableObject {
 /// Convert to picker while BRF or PEF is chosen: the language, the braille
 /// code and its contraction (the Braille tab's own pop-ups, so one of this
 /// Mac's tables can be chosen here too), the cells in a line, the lines on a
-/// page, whether pages are numbered, and (BRF only, since a PEF always ends a
-/// row with a line feed) the line end. Every control has a label, a hint,
-/// and a spoken value, and is reached by the keyboard.
+/// page, whether pages are numbered, and, for a BRF only, the line end and
+/// then the braille file characters, the code each cell is written in
+/// (braillecodes): a PEF always ends a row with a line feed and writes
+/// Unicode braille patterns. Every control has a label, a hint, and a
+/// spoken value, and is reached by the keyboard.
 struct BrailleExportOptionsView: View {
     /// The options the view sets.
     @Binding var options: BrailleExportOptions
-    /// Whether the line end is chosen here: a BRF's is, a PEF's is not.
+    /// Whether the line end and the braille file characters are chosen
+    /// here: a BRF's are, a PEF's are not.
     let choosesLineEnds: Bool
     /// The codes the table pop-ups offer (see `BrailleTablePickers`).
     var codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
@@ -409,10 +421,14 @@ struct BrailleExportOptionsView: View {
                 range: BraillePageFormat.linesPerPageRange
             )
             Toggle(BrailleExportWording.numbersLabel, isOn: $options.page.numbersPages)
-                .toggleStyle(.checkbox)
+                .checkboxToggleStyle()
                 .accessibilityHint(BrailleExportWording.numbersHint)
+            // A BRF's own two pop-ups come last, the braille file characters
+            // after the line ends, so every other control keeps its place in
+            // the reading order.
             if choosesLineEnds {
                 lineEndPicker
+                fileCodePicker
             }
         }
     }
@@ -444,14 +460,49 @@ struct BrailleExportOptionsView: View {
 
     /// The pop-up of line ends, CR LF and LF.
     private var lineEndPicker: some View {
-        Picker(BrailleExportWording.lineEndsLabel, selection: $options.lineEnd) {
-            ForEach([BrailleLineEnd.crlf, .lf], id: \.self) { lineEnd in
-                Text(BrailleExportWording.name(of: lineEnd)).tag(lineEnd)
+        menuPopUp(
+            label: BrailleExportWording.lineEndsLabel,
+            hint: BrailleExportWording.lineEndsHint,
+            selection: $options.lineEnd,
+            choices: [BrailleLineEnd.crlf, .lf],
+            name: BrailleExportWording.name(of:)
+        )
+    }
+
+    /// The pop-up of braille file characters: the codes of
+    /// `BrailleFileCode.all`, in that order, each listed by its name, which
+    /// is also the pop-up's spoken value, so VoiceOver says "North American
+    /// Braille ASCII, Braille file characters, pop-up button".
+    private var fileCodePicker: some View {
+        menuPopUp(
+            label: BrailleSettingsWording.fileCodeLabel,
+            hint: BrailleExportWording.fileCodeHint,
+            selection: $options.fileCode,
+            choices: BrailleFileCode.all,
+            name: \.name
+        )
+    }
+
+    /// A pop-up that sets `selection` to one of `choices`, each listed by
+    /// `name`, drawn as a menu at its own size, as the dialog draws its
+    /// Convert to picker, with `label` and `hint` for VoiceOver; the
+    /// selected choice's name is its value. A BRF's two pop-ups share it, so
+    /// they are drawn and spoken alike.
+    private func menuPopUp<Choice: Hashable>(
+        label: String,
+        hint: String,
+        selection: Binding<Choice>,
+        choices: [Choice],
+        name: @escaping (Choice) -> String
+    ) -> some View {
+        Picker(label, selection: selection) {
+            ForEach(choices, id: \.self) { choice in
+                Text(name(choice)).tag(choice)
             }
         }
         .pickerStyle(.menu)
         .fixedSize()
-        .accessibilityLabel(BrailleExportWording.lineEndsLabel)
-        .accessibilityHint(BrailleExportWording.lineEndsHint)
+        .accessibilityLabel(label)
+        .accessibilityHint(hint)
     }
 }

@@ -227,6 +227,16 @@ enum LibraryPersistenceService {
     /// (`booksWithCheckpointsAhead()`). The journal is noted before the
     /// record is written, so a crash between the two finds no record newer
     /// than library.json, and nothing to take.
+    ///
+    /// While an unreadable index is protected, library.json takes no
+    /// snapshot, but the record still takes the checkpoint, so the journal
+    /// names the book all the same. Only an index write clears the journal,
+    /// and none is made while the index is protected, so the book stays
+    /// named: the launch that reads the index again, once the user has put
+    /// it back, takes the newer position from the record, instead of opening
+    /// the book at the index's older one and saving that over it. While the
+    /// data directory is unavailable (FR02), the journal, which is kept
+    /// there, is neither read nor written.
     /// - Parameter delay: How long library.json may wait: tests pass a short
     ///   one.
     static func saveReadingCheckpoint(
@@ -236,6 +246,12 @@ enum LibraryPersistenceService {
     ) {
         saveQueue.async {
             if let hold = indexWriteHold() {
+                // The data directory is checked as well: when it becomes
+                // unavailable while the index is protected, the protected
+                // index is the hold named.
+                if hold == .unreadableIndex, !TextMouthPaths.isDataDirectoryUnavailable {
+                    ReadingCheckpointJournal.note(bookID)
+                }
                 noteSkippedIndexWrite(hold)
                 return
             }
@@ -626,8 +642,23 @@ enum LibraryPersistenceService {
     /// encoding the listener chose passes (encodingchoice), so the record
     /// never holds the new text beside the old encoding. It is a decision,
     /// which replaces the one the record holds (`Book.bookInfo(replacing:
-    /// contentIndex:revisionFloor:decidingTextEncoding:)`); nil keeps the
-    /// record's decision, or else the latest state's own encoding.
+    /// contentIndex:revisionFloor:decidingTextEncoding:decidingBrailleFileCode:)`);
+    /// nil keeps the record's decision, or else the latest state's own
+    /// encoding.
+    ///
+    /// `brailleFileCode` is the id of the braille file characters the
+    /// content.md was read in, which a re-read of a BRF or BRL book in other
+    /// braille file characters passes (braillecodes), so the record never
+    /// holds the new text beside the old code. It is a decision too, which
+    /// replaces the code the record holds; nil keeps the code that stands
+    /// between the latest state and the record
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`).
+    ///
+    /// The book returned holds what the record now holds of both decisions,
+    /// the encoding and the braille file code, even when the latest state it
+    /// was merged into (a waiting snapshot, a lagging row) held others, so
+    /// the row that takes it catches up (the review of October 30, finding
+    /// 2).
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
@@ -653,7 +684,8 @@ enum LibraryPersistenceService {
         movedPlaces: MovedPlaces? = nil,
         editedText: EditedText? = nil,
         pageReaderVersion: String?? = nil,
-        textEncoding: TextEncodingRecord? = nil
+        textEncoding: TextEncodingRecord? = nil,
+        brailleFileCode: String? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -682,17 +714,25 @@ enum LibraryPersistenceService {
             if let textEncoding {
                 merged.textEncodingRecord = textEncoding
             }
+            // The braille file characters the new text was read in.
+            if let brailleFileCode {
+                merged.brailleFileCode = brailleFileCode
+            }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
             if let movedPlaces {
                 merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
             }
-            guard try writeMerged(
-                merged, contentIndex: index, state: state, decidingTextEncoding: textEncoding != nil
+            guard let written = try writeMerged(
+                merged,
+                contentIndex: index,
+                state: state,
+                decidingTextEncoding: textEncoding != nil,
+                decidingBrailleFileCode: brailleFileCode != nil
             ) else { return nil }
             // The record holds the moved places now: the copy is no longer needed.
             movedPlaces?.discardSnapshot()
-            return merged
+            return takingDecisions(of: written, into: merged)
         }
     }
 
@@ -743,9 +783,11 @@ enum LibraryPersistenceService {
             }
             // A waiting snapshot keeps the content index it carries; with
             // none, the package keeps its own (a nil index is not written).
-            guard try writeMerged(merged, contentIndex: state.pendingContentIndex, state: state) else { return nil }
+            guard let written = try writeMerged(merged, contentIndex: state.pendingContentIndex, state: state) else {
+                return nil
+            }
             movedPlaces.discardSnapshot()
-            return merged
+            return takingDecisions(of: written, into: merged)
         }
     }
 
@@ -813,20 +855,28 @@ enum LibraryPersistenceService {
     }
 
     /// Writes `merged`, a merge into `state`, and settles what the write
-    /// replaces; reports whether it was written. A failed write throws here,
+    /// replaces; returns the metadata of the record written, nil when
+    /// nothing was (`writeBookInfo`). A failed write throws here,
     /// leaving any waiting snapshot to its own debounce, so the newer user
-    /// state outlives the lost result. `decidingTextEncoding` is passed on
-    /// to the record (`Book.bookInfo(replacing:contentIndex:revisionFloor:
-    /// decidingTextEncoding:)`). Must run on bookInfoSaveQueue.
+    /// state outlives the lost result. `decidingTextEncoding` and
+    /// `decidingBrailleFileCode` are passed on to the record
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:
+    /// decidingTextEncoding:decidingBrailleFileCode:)`). Must run on
+    /// bookInfoSaveQueue.
     private static func writeMerged(
         _ merged: Book,
         contentIndex: BookContentIndex?,
         state: LatestDurableState,
-        decidingTextEncoding: Bool = false
-    ) throws -> Bool {
-        guard try writeBookInfo(
-            merged, contentIndex: contentIndex, stored: state.stored, decidingTextEncoding: decidingTextEncoding
-        ) else { return false }
+        decidingTextEncoding: Bool = false,
+        decidingBrailleFileCode: Bool = false
+    ) throws -> BookMetadata? {
+        guard let written = try writeBookInfo(
+            merged,
+            contentIndex: contentIndex,
+            stored: state.stored,
+            decidingTextEncoding: decidingTextEncoding,
+            decidingBrailleFileCode: decidingBrailleFileCode
+        ) else { return nil }
         // The waiting snapshot is on disk now, merged: forget it, so its
         // debounce does not write it a second time.
         cancelQueuedWrites(for: state.book)
@@ -836,7 +886,21 @@ enum LibraryPersistenceService {
         if state.snapshotWaited {
             failureCenter.recordSuccess(.book(state.book.id))
         }
-        return true
+        return written
+    }
+
+    /// `book` with the decisions the record just written holds, its text
+    /// encoding and who decided it, and its braille file code, which a
+    /// merge into a lagging row or a waiting snapshot may not hold: the
+    /// record keeps the one that stands (`Book.bookInfo(replacing:...)`),
+    /// and a book returned to the library must say what was written, so
+    /// a rebuild's summary brings the row up to date (the review of
+    /// October 30, finding 2).
+    private static func takingDecisions(of written: BookMetadata, into book: Book) -> Book {
+        var book = book
+        book.textEncodingRecord = written.textEncodingRecord
+        book.brailleFileCode = written.brailleFileCode
+        return book
     }
 
     /// What changed about the content of `analyzed` by the time its analysis
@@ -916,7 +980,7 @@ enum LibraryPersistenceService {
     /// bookInfoSaveQueue.
     private static func writeQueuedBookInfo(_ book: Book, contentIndex: BookContentIndex?) {
         do {
-            guard try writeBookInfo(book, contentIndex: contentIndex) else { return }
+            guard try writeBookInfo(book, contentIndex: contentIndex) != nil else { return }
             failureCenter.recordSuccess(.book(book.id))
         } catch {
             guard !packageWasMovedOrRemoved(book) else {
@@ -982,8 +1046,10 @@ enum LibraryPersistenceService {
     }
 
     /// Writes one package's metadata unless Remove from Library Only retired
-    /// the package, or the record is only in the cloud (FR02), and reports
-    /// whether it was written. Debounced saves, the termination flush, and
+    /// the package, or the record is only in the cloud (FR02), and returns
+    /// the metadata of the record written, which holds the decisions that
+    /// stand, or nil when nothing was written. Debounced saves, the
+    /// termination flush, and
     /// analysis results all end here. Each write stores the next revision,
     /// and never one below the highest this process has written for the
     /// book, even when the stored record has lost its own. `stored` is the
@@ -991,8 +1057,10 @@ enum LibraryPersistenceService {
     /// downloading anything; otherwise it is read here, the same way
     /// (`storedRecord(of:)`), before anything else in the package is
     /// looked at. Only a write `decidingTextEncoding`, a re-read's, replaces
-    /// the decision about the text encoding the stored record holds
-    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:decidingTextEncoding:)`).
+    /// the decision about the text encoding the stored record holds, and
+    /// only a write `decidingBrailleFileCode`, a re-read's in other braille
+    /// file characters, the braille file code it holds
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:decidingTextEncoding:decidingBrailleFileCode:)`).
     /// Must run on bookInfoSaveQueue.
     ///
     /// Only bookInfo.json is read and, unless `contentIndex` is given,
@@ -1004,8 +1072,9 @@ enum LibraryPersistenceService {
         _ book: Book,
         contentIndex: BookContentIndex?,
         stored: StoredBookRecord? = nil,
-        decidingTextEncoding: Bool = false
-    ) throws -> Bool {
+        decidingTextEncoding: Bool = false,
+        decidingBrailleFileCode: Bool = false
+    ) throws -> BookMetadata? {
         let replaced: StoredBookRecord?
         if let stored {
             replaced = stored
@@ -1017,22 +1086,23 @@ enum LibraryPersistenceService {
                 // book's state at once rather than at a checkpoint's
                 // deadline (PERF15).
                 writePendingIndexSoon()
-                return false
+                return nil
             case .readable(let record):
                 replaced = record
             }
         }
-        guard !isRetired(book) else { return false }
+        guard !isRetired(book) else { return nil }
         let record = book.bookInfo(
             replacing: replaced,
             contentIndex: contentIndex,
             revisionFloor: bookInfoRevisions[book.id] ?? 0,
-            decidingTextEncoding: decidingTextEncoding
+            decidingTextEncoding: decidingTextEncoding,
+            decidingBrailleFileCode: decidingBrailleFileCode
         )
         try record.saveRecord(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision
         booksWithRecordsInCloud.remove(book.id)
-        return true
+        return record.metadata
     }
 
     // MARK: - Records Only in the Cloud (FR02)
@@ -1196,8 +1266,16 @@ enum LibraryPersistenceService {
                 return PackageRetirement(isPackageMarked: false, recordDeletionError: nil)
             }
             let package = book.tmbDirectory
+            // The marker keeps the braille file code and the text encoding
+            // that stand between the row and the record about to be deleted,
+            // not the row's alone, which may lag behind a re-read or have
+            // lost them to an earlier TextMouth (the review of October 30,
+            // finding 2); both are read without downloading anything.
+            var standing = book
+            standing.brailleFileCode = book.recordedBrailleFileCode()
+            standing.textEncodingRecord = book.recordedTextEncodingRecord()
             do {
-                try RemovedFromLibraryMarker(book: book, removedAt: removedAt).write(into: package)
+                try RemovedFromLibraryMarker(book: standing, removedAt: removedAt).write(into: package)
             } catch {
                 RemovedFromLibraryMarker.log(
                     "stays in the library: could not write the removal marker in \(package.path): \(error)",
@@ -1437,18 +1515,38 @@ enum LibraryPersistenceService {
     /// destroy the only copy of an index. Returns the preserved copy of the
     /// replaced file, or nil when there was no file to replace (the unreadable
     /// index was the legacy one, which stays untouched).
+    ///
+    /// Nor is an index that can be read again replaced, or left unread
+    /// behind the new one. The index a load would read now, library.json or
+    /// else the legacy index, is re-read first, since it may have changed
+    /// since the failed load: another Mac may have finished saving it, or
+    /// the user restored it from a backup while the recovery options were
+    /// open. When it decodes, as a load decodes it, it is the user's index
+    /// again, with the folders, manual order, and rows the rebuilt library
+    /// would lose, and Try Again uses it: nothing is written or preserved,
+    /// and index writes stay suspended.
+    /// - Throws: `LibraryIndexRecoveryError.indexReadableAgain` when that
+    ///   index can be read again, or `.couldNotPreserve` when library.json
+    ///   could not be preserved; nothing is written either way.
     @discardableResult
     static func replaceUnreadableIndex(with library: Library) throws -> URL? {
         try saveQueue.sync { () throws -> URL? in
             let indexURL = libraryFileURL
             var preservedCopy: URL?
+            // Re-read now, choosing the file as a load does
+            // (`loadLibraryIndex()`): it may have changed since the failed load.
             if FileManager.default.fileExists(atPath: indexURL.path) {
-                // Re-read now: the file may have changed since the failed load.
                 let currentBytes = try? Data(contentsOf: indexURL)
+                try refuseRebuildIfReadable(currentBytes, readFrom: indexURL)
                 preservedCopy = LibraryIndexQuarantine.preserve(indexURL, bytes: currentBytes)
                 guard preservedCopy != nil else {
                     throw LibraryIndexRecoveryError.couldNotPreserve(indexURL)
                 }
+            } else if let legacyURL = legacyLibraryFileURL, FileManager.default.fileExists(atPath: legacyURL.path) {
+                // The legacy index stays untouched, but a load would read
+                // the rebuilt library.json in its place from now on.
+                let legacyBytes = try? Data(contentsOf: legacyURL)
+                try refuseRebuildIfReadable(legacyBytes, readFrom: legacyURL)
             }
             try writeIndexFile(library)
             endIndexWriteSuspension()
@@ -1459,6 +1557,22 @@ enum LibraryPersistenceService {
             )
             return preservedCopy
         }
+    }
+
+    /// Refuses Rebuild Library Index when `bytes`, re-read from `url`, the
+    /// index a load would read now, decode as a library the way a load
+    /// decodes them (`decodeLibrary(from:)`): that index can be read again,
+    /// for Try Again to use. Bytes that could not be read refuse nothing.
+    /// Must run on saveQueue.
+    /// - Throws: `LibraryIndexRecoveryError.indexReadableAgain` when they
+    ///   decode.
+    private static func refuseRebuildIfReadable(_ bytes: Data?, readFrom url: URL) throws {
+        guard let bytes, (try? decodeLibrary(from: bytes)) != nil else { return }
+        logIndexEvent(
+            "did not rebuild the library index: \(url.path) can be read again, for Try Again to use; "
+                + "library index writes stay suspended"
+        )
+        throw LibraryIndexRecoveryError.indexReadableAgain
     }
 
     /// Must run on saveQueue. Anything captured during the suspension is stale.

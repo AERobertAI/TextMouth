@@ -574,6 +574,50 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         XCTAssertEqual(reader.currentCharacterOffset, 100)
     }
 
+    /// Next and Previous Bookmark go by where the bookmarks lie in the book,
+    /// not by their numbers, which follow the order they were made: bookmark
+    /// 2, made after bookmark 1 at an earlier place, comes first going
+    /// forward and last going back, and neither passes over the other. Each
+    /// says its own number, and a press with no bookmark beyond the cursor
+    /// neither moves it nor says anything.
+    func testNextAndPreviousBookmarkGoInBookOrderNotNumberOrder() {
+        let reader = makeNavigationReader(
+            bookmarks: [
+                Bookmark(number: 1, chapterIndex: 0, characterOffset: 700),
+                Bookmark(number: 2, chapterIndex: 0, characterOffset: 100),
+                Bookmark(number: 3, chapterIndex: 1, characterOffset: 50),
+            ],
+            laterChapters: [Chapter(title: "Two", text: String(repeating: "y", count: 200))]
+        )
+        defer { reader.close() }
+        // Where the cursor stands, as "chapter:offset".
+        func cursor() -> String { "\(reader.currentChapterIndex):\(reader.currentCharacterOffset)" }
+
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+        var places: [String] = []
+        let forward = recordingAnnouncements {
+            for _ in 0..<4 {
+                reader.goToNextBookmark()
+                places.append(cursor())
+            }
+        }
+        XCTAssertEqual(places, ["0:100", "0:700", "1:50", "1:50"], "Next Bookmark did not go in the book's order")
+        XCTAssertEqual(forward.announcements.map(\.message), ["Bookmark 2", "Bookmark 1", "Bookmark 3"])
+
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 200
+        places = []
+        let backward = recordingAnnouncements {
+            for _ in 0..<4 {
+                reader.goToPreviousBookmark()
+                places.append(cursor())
+            }
+        }
+        XCTAssertEqual(places, ["1:50", "0:700", "0:100", "0:100"], "Previous Bookmark did not go in the book's order")
+        XCTAssertEqual(backward.announcements.map(\.message), ["Bookmark 3", "Bookmark 1", "Bookmark 2"])
+    }
+
     /// An unavailable destination is not a navigation event and must not
     /// overwrite a previously useful Return point.
     func testMissingHeadingDestinationPreservesExistingReturnPosition() {
@@ -676,12 +720,17 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
 
     /// Construct a loaded, in-memory reader fixture with destinations on both
     /// sides of the starting cursor. The unique missing path prevents fixtures
-    /// from sharing persisted library state.
-    private func makeNavigationReader() -> ReaderViewModel {
-        let bookmarks = [
+    /// from sharing persisted library state. The book's first chapter holds
+    /// 1,000 characters with headings at 0 and 500, and `laterChapters`
+    /// follow it; its bookmarks are `bookmarks`, by default bookmark 1 at
+    /// 100 and bookmark 2 at 700 of the first chapter.
+    private func makeNavigationReader(
+        bookmarks: [Bookmark] = [
             Bookmark(number: 1, chapterIndex: 0, characterOffset: 100),
             Bookmark(number: 2, chapterIndex: 0, characterOffset: 700),
-        ]
+        ],
+        laterChapters: [Chapter] = []
+    ) -> ReaderViewModel {
         let book = Book(
             title: "Return Navigation",
             format: .txt,
@@ -709,7 +758,7 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
                         Heading(level: 1, text: "Middle", characterOffset: 500),
                     ]
                 ),
-            ]
+            ] + laterChapters
         )
         return reader
     }
