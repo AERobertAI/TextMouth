@@ -16,6 +16,11 @@ enum EPUBParserError: LocalizedError {
     /// the file's path inside the package; `reason` completes the sentence
     /// "The file is damaged or incomplete: …".
     case damagedFile(file: String, reason: String)
+    /// A file in the package that TextMouth will not read although it is not
+    /// damaged: it defines entities of its own, or is written in an encoding
+    /// the guard cannot see through (`XMLInputGuard`). `file` is the file's
+    /// path inside the package.
+    case unsafeFile(file: String, problem: XMLInputGuard.Problem)
     /// No chapter in the reading order holds text that could be read.
     /// `report` names each chapter that could not be read and why; when it
     /// names none, every chapter was blank or the spine held no documents.
@@ -30,6 +35,9 @@ enum EPUBParserError: LocalizedError {
         case .invalidOPF: return "The EPUB package document could not be parsed."
         case .missingSpine: return "The EPUB has no reading order (spine)."
         case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)"
+        case .unsafeFile(let file, let problem):
+            return XMLInputGuard.refusalSentence(
+                for: problem, file: file, in: EPUBParser.bookNameInMessages, original: "the book")
         case .damagedFile(let file, let reason):
             return PackageDamage.message(
                 file: file, reason: reason, container: EPUBParser.bookNameInMessages, original: "the book"
@@ -436,9 +444,15 @@ enum EPUBParser {
         _ xml: String, file: String, _ body: (XMLDocument) throws -> Result
     ) throws -> Result {
         // A tag the XML parser would take too long over is refused as damage
-        // before the parser reads it (`XMLInputGuard`).
-        if let problem = XMLInputGuard.problem(with: Data(xml.utf8)) {
-            throw EPUBParserError.damagedFile(file: file, reason: problem)
+        // before the parser reads it, and entities of its own or an encoding
+        // the guard cannot read in the sentence for those (`XMLInputGuard`).
+        // The text is decoded already, so its declared encoding is only read
+        // for its name.
+        if let problem = XMLInputGuard.problem(with: Data(xml.utf8), isDecodedText: true) {
+            if problem == .tooManyAttributes {
+                throw EPUBParserError.damagedFile(file: file, reason: XMLInputGuard.tooManyAttributesProblem)
+            }
+            throw EPUBParserError.unsafeFile(file: file, problem: problem)
         }
         let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
         defer { takeApart(document) }

@@ -25,32 +25,57 @@ class PackageSAXParser: NSObject, XMLParserDelegate {
     /// The file's path inside the package, named in every error it causes.
     let file: String
 
+    /// Builds a format's error for a file TextMouth will not read although it
+    /// is not damaged: it defines entities of its own, or is written in an
+    /// encoding the guard cannot see through (`XMLInputGuard.Problem`).
+    typealias RefusedXMLError = (_ file: String, _ problem: XMLInputGuard.Problem) -> Error
+
     /// Builds the error `parseDocument()` throws when the file is damaged.
     private let malformedXMLError: MalformedXMLError
+
+    /// Builds the error `parseDocument()` throws for a file it refuses
+    /// without its being damaged; nil for a format that reports every refusal
+    /// as damage (`malformedXMLError`).
+    private let refusedXMLError: RefusedXMLError?
 
     /// The first error the parser reported, with the position it reported.
     private var firstError: (code: Int, line: Int, column: Int)?
 
     /// Prepare to parse `data`, reporting problems under the name `file`
-    /// with the error `malformedXMLError` builds.
-    init(data: Data, file: String, malformedXMLError: @escaping MalformedXMLError) {
+    /// with the error `malformedXMLError` builds, and refusals with the error
+    /// `refusedXMLError` builds.
+    init(
+        data: Data,
+        file: String,
+        malformedXMLError: @escaping MalformedXMLError,
+        refusedXMLError: RefusedXMLError? = nil
+    ) {
         self.data = data
         self.file = file
         self.malformedXMLError = malformedXMLError
+        self.refusedXMLError = refusedXMLError
     }
 
     /// Stream the file through `XMLParser`, delivering events to this delegate.
-    /// - Throws: the format's malformed-XML error when the part has a tag
-    ///   with more attributes than `XMLInputGuard` allows, or when the parser
-    ///   stops before the end of the document. Events delivered before the stop
-    ///   stand, so a subclass may still inspect what it had read.
+    /// - Throws: the format's refusal when the part defines entities of its own
+    ///   or is in an encoding `XMLInputGuard` cannot see through, its
+    ///   malformed-XML error when the part has a tag with more attributes than
+    ///   it allows, or when the parser stops before the end of the document.
+    ///   Events delivered before the stop stand, so a subclass may still
+    ///   inspect what it had read.
     final func parseDocument() throws {
         // `XMLParser` takes time that grows with the square of the attributes
-        // in one start tag, so a hostile part could stall an import. No real
-        // part has a tag near the limit (`XMLInputGuard`), so a part that
-        // does is refused as damaged, before the parser reads it.
+        // in one start tag, so a hostile part could stall an import, and
+        // entities of its own or an encoding the guard cannot read hide the
+        // tags from it. No real part has any of them (`XMLInputGuard`), so a
+        // part that does is refused before the parser reads it: as damaged
+        // for the attributes, and in its own sentence for the others, which
+        // are no damage.
         if let problem = XMLInputGuard.problem(with: data) {
-            throw malformedXMLError(file, problem)
+            if problem != .tooManyAttributes, let refusedXMLError {
+                throw refusedXMLError(file, problem)
+            }
+            throw malformedXMLError(file, XMLInputGuard.tooManyAttributesProblem)
         }
 
         let parser = XMLParser(data: data)

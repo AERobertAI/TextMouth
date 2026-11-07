@@ -180,7 +180,7 @@ struct DAISYArchiveLeftovers: Equatable {
 
 /// The files a SMIL document's text elements name, which tell whether a
 /// DAISY book has text of its own beyond its navigation.
-private final class SMILTextSources: NSObject, XMLParserDelegate {
+final class SMILTextSources: NSObject, XMLParserDelegate {
     /// The `src` of each text element read, fragments included.
     private var sources: [String] = []
 

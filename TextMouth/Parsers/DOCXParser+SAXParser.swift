@@ -17,7 +17,8 @@ class DOCXSAXParser: PackageSAXParser {
         super.init(
             data: DOCXPictureAttribute.removingValues(from: data),
             file: file,
-            malformedXMLError: DOCXParserError.malformedXML
+            malformedXMLError: DOCXParserError.malformedXML,
+            refusedXMLError: DOCXParserError.unsafeXML
         )
     }
 }

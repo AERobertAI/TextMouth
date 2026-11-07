@@ -454,24 +454,57 @@ final class DOCXMalformedXMLTests: XCTestCase {
         }
     }
 
+    /// The error `DOCXParser.extractMarkdown(from:)` throws for `docx`: a part
+    /// that is not damaged, but that TextMouth will not read, with the part and
+    /// the problem, and the sentence a person hears.
+    private func unsafePart(
+        _ docx: URL, file: StaticString = #filePath, line: UInt = #line
+    ) -> (part: String, problem: XMLInputGuard.Problem, sentence: String)? {
+        do {
+            _ = try DOCXParser.extractMarkdown(from: docx)
+            XCTFail("The document was read", file: file, line: line)
+        } catch let DOCXParserError.unsafeXML(part, problem) {
+            return (part, problem, DOCXParserError.unsafeXML(file: part, problem: problem).localizedDescription)
+        } catch {
+            XCTFail("Another error: \(error)", file: file, line: line)
+        }
+        return nil
+    }
+
     /// A part with a document type that has definitions of its own, or in an
-    /// encoding the guard cannot see through (UTF-7 here), is refused as
-    /// damage naming the part, in the sentences of `XMLInputGuard`: the review
-    /// found that a declaration skipped to its first `>` hid a hostile tag, which
-    /// took 21.9 s to parse.
-    func testAPartWithOwnDefinitionsOrAStatefulEncodingIsRefusedAsDamage() throws {
+    /// encoding the guard cannot see through (UTF-7 here, and its alias
+    /// CSISO2022JP's kin, with a newline around the `=`), is refused as not
+    /// damaged, naming the part, in the sentences of `XMLInputGuard`: a
+    /// declaration skipped to its first `>` hid a hostile tag, which took
+    /// 21.9 s to parse. The sentences say what the matter is and what to do.
+    func testAPartWithOwnDefinitionsOrAStatefulEncodingIsRefusedInItsOwnSentence() throws {
         let intact = try XCTUnwrap(Self.intactParts[DOCXParser.Part.document])
         let range = try XCTUnwrap(intact.range(of: "<w:document"))
         let subset = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document [<!ENTITY e \"x>y<!--\">]><w:document")
         let docx = try makeDOCX(replacing: [DOCXParser.Part.document: Data(subset.utf8)])
-        let reason = malformedXMLReason(naming: DOCXParser.Part.document) { try DOCXParser.extractMarkdown(from: docx) }
-        XCTAssertEqual(reason, XMLInputGuard.ownDefinitionsProblem)
+        let refused = unsafePart(docx)
+        XCTAssertEqual(refused?.part, DOCXParser.Part.document)
+        XCTAssertEqual(refused?.problem, .ownDefinitions)
+        XCTAssertEqual(
+            refused?.sentence,
+            "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it defines "
+                + "entities of its own. Open the document in the program that made it, save it again, then import it again.")
 
-        let utf7 = intact.replacingOccurrences(of: "encoding=\"UTF-8\"", with: "encoding=\"UTF-7\"")
-        XCTAssertNotEqual(utf7, intact)
-        let docx7 = try makeDOCX(replacing: [DOCXParser.Part.document: Data(utf7.utf8)])
-        let reason7 = malformedXMLReason(naming: DOCXParser.Part.document) { try DOCXParser.extractMarkdown(from: docx7) }
-        XCTAssertEqual(reason7, XMLInputGuard.unreadableEncodingProblem)
+        // The encoding, spelled plainly, as an alias, and with a newline round the equals sign.
+        for (declared, spelling) in [
+            ("UTF-7", "encoding=\"UTF-7\""), ("UNICODE-1-1-UTF-7", "encoding=\"UNICODE-1-1-UTF-7\""),
+            ("CSISO2022JP", "encoding\n=\n'CSISO2022JP'"),
+        ] {
+            let changed = intact.replacingOccurrences(of: "encoding=\"UTF-8\"", with: spelling)
+            XCTAssertNotEqual(changed, intact)
+            let docxChanged = try makeDOCX(replacing: [DOCXParser.Part.document: Data(changed.utf8)])
+            let refusedEncoding = unsafePart(docxChanged)
+            XCTAssertEqual(refusedEncoding?.problem, .encoding(declared), declared)
+            XCTAssertEqual(
+                refusedEncoding?.sentence,
+                "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it is written "
+                    + "in the \(declared) encoding. Save it as UTF-8, then import it again.")
+        }
 
         // An external type, which a DTBook or NCX has, is no definition of its own.
         let external = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><w:document")

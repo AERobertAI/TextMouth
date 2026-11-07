@@ -103,20 +103,31 @@ final class EPUBStructureFailureTests: XCTestCase {
         }
     }
 
-    /// A container or package document with definitions of its own is refused
-    /// as damage naming the file, and one that names an external type is read.
+    /// A container or package document with definitions of its own, or in an
+    /// encoding the guard cannot see through, is refused (it is not damaged)
+    /// naming the file, in the EPUB's own sentences, and one that names an
+    /// external type is read.
     @MainActor
-    func testAnEPUBFileWithOwnDefinitionsIsRefusedAsDamage() throws {
+    func testAnEPUBFileWithOwnDefinitionsOrAStatefulEncodingIsRefused() throws {
         let subset = Self.container().replacingOccurrences(
             of: "<container", with: "<!DOCTYPE container [<!ENTITY e \"x>y<!--\">]><container")
         let epub = try makeEPUB(container: subset, packageDocument: Self.packageDocument())
         try assertRefused(
             epub,
-            throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
-                file: "META-INF/container.xml", reason: XMLInputGuard.ownDefinitionsProblem))),
-            saying: "The file \u{201C}META-INF/container.xml\u{201D} in this EPUB book is damaged or incomplete: "
-                + "it defines entities or attributes of its own, which TextMouth cannot read safely. "
-                + "Get a fresh copy of the book, then import it again.")
+            throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
+                file: "META-INF/container.xml", problem: .ownDefinitions))),
+            saying: "TextMouth can't safely read the file \u{201C}META-INF/container.xml\u{201D} in this EPUB book, because it "
+                + "defines entities of its own. Open the book in the program that made it, save it again, then import it again.")
+        let stateful = Self.packageDocument().replacingOccurrences(
+            of: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", with: "<?xml version=\"1.0\" encoding\n=\n\"UNICODE-1-1-UTF-7\"?>")
+        XCTAssertNotEqual(stateful, Self.packageDocument())
+        let statefulEPUB = try makeEPUB(container: Self.container(), packageDocument: stateful)
+        try assertRefused(
+            statefulEPUB,
+            throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
+                file: "OEBPS/content.opf", problem: .encoding("UNICODE-1-1-UTF-7")))),
+            saying: "TextMouth can't safely read the file \u{201C}OEBPS/content.opf\u{201D} in this EPUB book, because it is "
+                + "written in the UNICODE-1-1-UTF-7 encoding. Save it as UTF-8, then import it again.")
         let external = Self.packageDocument().replacingOccurrences(
             of: "<package", with: "<!DOCTYPE package PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><package")
         XCTAssertNoThrow(try EPUBParser.parseOPF(external))

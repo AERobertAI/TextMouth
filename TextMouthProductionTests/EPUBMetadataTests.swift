@@ -225,8 +225,8 @@ final class EPUBMetadataTests: XCTestCase {
 
     /// An EPUB whose package document and NCX declare an external entity
     /// naming a file on this Mac, and use it in the title, the author, a
-    /// description, and a heading's label, is refused as damaged, naming the
-    /// package document: the guard (`XMLInputGuard`) refuses a document type
+    /// description, and a heading's label, is refused naming the package
+    /// document: the guard (`XMLInputGuard`) refuses a document type
     /// with definitions of its own in any XML file of a book, so no reading
     /// (the metadata for the library, the book for the reader, nor the
     /// package Edit Metadata would write back into the EPUB) holds the file's
@@ -244,11 +244,11 @@ final class EPUBMetadataTests: XCTestCase {
 
         func assertRefused(_ label: String, _ body: () throws -> Void) {
             XCTAssertThrowsError(try body(), label) { error in
-                guard case let EPUBParserError.damagedFile(file, reason)? = error as? EPUBParserError else {
+                guard case let EPUBParserError.unsafeFile(file, problem)? = error as? EPUBParserError else {
                     return XCTFail("\(label): \(error)")
                 }
                 XCTAssertEqual(file, "OEBPS/package.opf", label)
-                XCTAssertEqual(reason, XMLInputGuard.ownDefinitionsProblem, label)
+                XCTAssertEqual(problem, .ownDefinitions, label)
                 XCTAssertFalse(error.localizedDescription.contains(Self.secretText), label)
             }
         }

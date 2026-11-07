@@ -14,6 +14,10 @@ enum DOCXParserError: LocalizedError {
     /// part's path inside the package; `reason` completes the sentence "The
     /// file is damaged or incomplete: …".
     case malformedXML(file: String, reason: String)
+    /// A part TextMouth will not read although it is not damaged: it defines
+    /// entities of its own, or is written in an encoding the guard cannot see
+    /// through (`XMLInputGuard`). `file` is the part's path inside the package.
+    case unsafeXML(file: String, problem: XMLInputGuard.Problem)
 
     var errorDescription: String? {
         switch self {
@@ -24,6 +28,8 @@ enum DOCXParserError: LocalizedError {
             return PackageDamage.message(
                 file: file, reason: reason, container: "this document", original: "the document"
             )
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: "this document", original: "the document")
         }
     }
 }
