@@ -89,11 +89,15 @@ enum MarkupGuard {
     }
 
     /// Whether SwiftSoup's automatic parse would choose its XML parser:
-    /// `looksLikeXml`, which skips what Swift calls whitespace, and compares
-    /// characters, not bytes. The guard chooses now, and asks for that parser by name.
+    /// `looksLikeXml`, which passes over its own idea of whitespace (not a
+    /// no-break space, say) and compares characters, not bytes. The guard
+    /// chooses now, and asks for that parser by name.
     static func opensAsXML(_ markup: String) -> Bool {
-        markup.drop(while: \.isWhitespace).hasPrefix("<?xml")
+        markup.drop { openingWhitespace.contains($0) }.hasPrefix("<?xml")
     }
+
+    /// What `Character.isWhitespace` means inside SwiftSoup, which has its own.
+    private static let openingWhitespace: Set<Character> = [" ", "\t", "\n", "\u{0C}", "\r", "\r\n"]
 
     // MARK: The Pass
 

@@ -98,18 +98,52 @@ final class MarkupGuardTests: XCTestCase {
             // A tag with a name.
             ("?a?", false), ("?a b=\"c\"?", false), ("?xml version=\"1.0\"?", false), ("?a/", false), ("?ab", false), ("!abc", false),
             // A quotation mark the last character was needed to end: the tag never ends.
-            ("?a b=\"c\"", true), ("?xml version=\"1.0\"", true), ("?a b='c?", true), ("?a b=\"", true),
+            ("?a b=\"c\"", true), ("?xml version=\"1.0\"", true), ("?a b='c?", true), ("?a b=\"x", true),
+            // A value that never begins: the tag ends at the ">".
+            ("?a b=\"", false),
             // Not a name.
             ("?1?", true), ("?=a", true), ("? a?", true), ("?/a?", true), ("??a?", true), ("?!a?", true),
             // A quotation mark in a name opens nothing.
             ("?a\"b?", false), ("?a \"b?", false),
             // A carriage return and a line feed are one character.
-            ("?a\r\n", true), ("?ab\r\n", false),
+            ("?\r\n", true), ("?a\r\n", false),
             // So is a letter and its accent, and "?" with an accent is not "?".
             ("?a\u{301}", true), ("?\u{301}a", false),
         ]
         for (data, traps) in table {
             XCTAssertEqual(MarkupDeclaration.wouldTrap(ArraySlice(data.utf8)), traps, data.debugDescription)
+        }
+    }
+
+    /// The guard chooses the parser SwiftSoup's automatic parse would choose, whatever comes before `<?xml`.
+    func testTheParserIsTheOneSwiftSoupWouldChoose() throws {
+        // `<br>` and `<b>` nest in the XML parser, and not in the HTML parser.
+        let markup = "<?xml version=\"1.0\"?><a><br><b>words"
+        for opening in ["", " ", "\n", "\r\n", "\t", "\u{0C}", "  \n ", "\u{0B}", "\u{A0}", "\u{85}", "\u{FEFF}", "\u{2028}", "\u{3000}", "x", "<!-- a -->"] {
+            let expected = try SwiftSoup.parse(opening + markup).outerHtml()
+            XCTAssertEqual(try MarkupGuard.parse(opening + markup).outerHtml(), expected, opening.debugDescription)
+        }
+        for close in ["<?xml", "<?XML", "<?xmlx", "<?xm", "<?xml\u{301}", "<?x\u{301}ml"] {
+            XCTAssertEqual(MarkupGuard.opensAsXML(close), close == "<?xml" || close == "<?xmlx", close.debugDescription)
+        }
+    }
+
+    /// Where XHTML and HTML part ways, the tree is the one SwiftSoup's automatic
+    /// parse makes, so a real book reads as it read: forcing the HTML parser would
+    /// put a self-closed element's end elsewhere, add a table's body, and close a paragraph at a block.
+    func testXHTMLIsParsedAsItEverWas() throws {
+        let bodies = [
+            "<head><title/></head><body><p>Words.</p></body>",
+            "<head><script src=\"a.js\"/><style/></head><body><p>Words.</p></body>",
+            "<body><a id=\"x\"/>Words.<div/>More.<span/>And.<textarea/>End.</body>",
+            "<body><table><tr><td>One</td></tr></table></body>",
+            "<body><p>Before<div>Inside</div>After</p></body>",
+            "<body><svg viewBox=\"0 0 1 1\"><textPath>Curved</textPath></svg><DIV>Upper</DIV></body>",
+            "<body><?page n=\"12\"?><p>Words.</p><![CDATA[Some <b>text</b>]]></body>",
+        ]
+        for body in bodies {
+            let markup = Self.declaration + "<html xmlns=\"http://www.w3.org/1999/xhtml\">\(body)</html>"
+            XCTAssertEqual(try MarkupGuard.parse(markup).outerHtml(), try SwiftSoup.parse(markup).outerHtml(), body)
         }
     }
 
@@ -360,7 +394,7 @@ final class MarkupGuardTests: XCTestCase {
             XCTAssertTrue(refused(String(repeating: "<?a?>", count: 1_001), as: dialect))
         }
         // A stray end tag of a paragraph makes a paragraph.
-        XCTAssertTrue(refused(String(repeating: "</p>", count: 501), as: .html) || refused(String(repeating: "</p>", count: 1_001), as: .html))
+        XCTAssertTrue(refused(String(repeating: "</p>", count: 501), as: .html))
         // Formatting made again costs what its element costs: 100 for each of 12 paragraphs.
         let formatting = "<p>" + (0..<100).map { "<b n=\($0)>" }.joined() + "</p>"
         XCTAssertTrue(refused(formatting + String(repeating: "<p>x</p>", count: 12), as: .html))
