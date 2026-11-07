@@ -271,6 +271,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// most attributes the guard lets through (1,024 each, 22,865 of them in
     /// 62 MB) took 8.5 s to read, so 4,096 between looks left Cancel waiting
     /// 1.5 s; a thousand leaves it under half a second.
+    private static let elementsBetweenCancellationChecks = 1_024
 
     /// The text of a run before a page start inside it.
     private struct RunPiece {
