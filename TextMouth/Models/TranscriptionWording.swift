@@ -458,6 +458,9 @@ enum TranscriptionWording {
     /// Why a file of another kind than WebVTT or SubRip was not attached.
     static let attachUnknownFormat = "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."
 
+    /// Why an item that is not a plain file (a named pipe, say) was not attached.
+    static let attachNotAFile = "That item isn't a plain file TextMouth can read."
+
     /// Why the file chosen was not attached, `reason` saying it in a
     /// sentence of its own: "“lecture.vtt” wasn't attached to Moby-Dick:
     /// The file isn't a WebVTT transcript TextMouth can read."

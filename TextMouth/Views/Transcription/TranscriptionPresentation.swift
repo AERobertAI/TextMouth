@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 #endif
+import os
 import SwiftUI
 
 // MARK: - A Window's Transcription Dialogs
@@ -75,11 +76,19 @@ final class TranscriptionPresenter: ObservableObject {
     /// until the transcript is saved (`replaceConfirmed(_:)`).
     @Published var attachReplacement: TranscriptAttachRequest? {
         didSet {
+            // Read here, on the main actor, and handed to the lock's closure
+            // as a value.
+            let askedBook = attachReplacement?.book.id
+            askedBookID.withLock { $0 = askedBook }
             if let oldValue, oldValue.book.id != attachReplacement?.book.id {
                 TranscriptAttachments.shared.end(oldValue.book.id)
             }
         }
     }
+    /// The book `attachReplacement` asks about, kept where the presenter's
+    /// deinitializer, which is not on the main actor, can read it
+    /// (`attachReplacement` itself it cannot).
+    private nonisolated let askedBookID = OSAllocatedUnfairLock<UUID?>(initialState: nil)
     /// The notice showing, or nil.
     @Published var notice: TranscriptionNotice?
     /// Whether Attach Transcript…'s Open panel shows on this window (FMT23).
@@ -116,6 +125,24 @@ final class TranscriptionPresenter: ObservableObject {
     ) {
         self.services = services
         self.cleanupServices = cleanupServices
+    }
+
+    /// A window that closes while its confirmation to replace a transcript
+    /// shows takes the presenter with it, and the alert's own dismissal may
+    /// never reach `attachReplacement` then, so the book would stay "being
+    /// attached to" for good: Attach Transcript… dimmed for it in every
+    /// window until TextMouth quits. A presenter going away with a
+    /// confirmation showing ends that book's attaching itself.
+    ///
+    /// A deinitializer is not on the main actor, so the ending is handed to
+    /// it with the book's ID alone, which is all it needs and is safe to
+    /// send. (Replace has its own task, which holds the presenter until the
+    /// transcript is saved, so a presenter is never released mid-save.)
+    deinit {
+        guard let bookID = askedBookID.withLock({ $0 }) else { return }
+        Task { @MainActor in
+            TranscriptAttachments.shared.end(bookID)
+        }
     }
 
     /// Opens the Transcribe Audio sheet for `books`, the books a command was
@@ -334,6 +361,12 @@ final class TranscriptionPresenter: ObservableObject {
         }
         guard let format = TimedTextFormat.cueFileFormat(forExtension: url.pathExtension) else {
             showAttachFailure(TranscriptionWording.attachUnknownFormat, fileAt: url, to: book)
+            return
+        }
+        // Nothing is opened that is not a regular file (a named pipe would
+        // wait for ever).
+        guard TranscriptAttachments.isReadableFile(at: url) else {
+            showAttachFailure(TranscriptionWording.attachNotAFile, fileAt: url, to: book)
             return
         }
         let document: TimedTextDocument

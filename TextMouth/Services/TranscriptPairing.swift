@@ -154,8 +154,10 @@ enum TranscriptPairing: Sendable, Equatable {
     ///   when none was, and for a book that is not an audiobook.
     static func attach(_ pairing: TranscriptPairing, to staged: Book, index: BookContentIndex) -> String? {
         guard staged.format.isAudio else { return nil }
-        let found = TranscriptionPlan.audioFileLocations(of: staged, index: index)
-            .compactMap { pairing.foundFile(forTrack: $0.path) }
+        let found = distinctFiles(
+            TranscriptionPlan.audioFileLocations(of: staged, index: index)
+                .compactMap { pairing.foundFile(forTrack: $0.path) }
+        )
         guard !found.isEmpty else { return nil }
         let setAside = attaching(found, to: staged, index: index).compactMap(\.asSetAside)
         for (file, refusal) in setAside {
@@ -165,6 +167,19 @@ enum TranscriptPairing: Sendable, Equatable {
             )
         }
         return notice(forSetAside: setAside.map { (fileName: $0.file.name, reason: $0.refusal.reason) })
+    }
+
+    /// `files`, the transcript files found beside a book's tracks in the
+    /// order it plays them, without a second track taking a file an earlier
+    /// track has. Two tracks share a transcript file when their names differ
+    /// only in their extension (01.mp3 and 01.flac both look for 01.vtt);
+    /// the file times the one that plays first, so its sentences are never
+    /// laid over two tracks, which would read the same passage twice in the
+    /// book's text. The other track simply has no transcript, as a track
+    /// with no file beside it has none.
+    static func distinctFiles(_ files: [FoundFile]) -> [FoundFile] {
+        var taken = Set<URL>()
+        return files.filter { taken.insert($0.url).inserted }
     }
 
     /// Attaches the files of `found`, the transcript files beside the tracks

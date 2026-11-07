@@ -344,6 +344,40 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(transcript.source?.fileName, "tone4.vtt")
     }
 
+    /// A window that closes while its confirmation shows takes its presenter
+    /// with it, and the alert's dismissal may never run: the book must not
+    /// stay "being attached to", which would dim Attach Transcript… for it in
+    /// every window until TextMouth quits. The transcript stays byte for
+    /// byte.
+    func testAPresenterGoingAwayWhileAskingEndsTheAttaching() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Window Closed")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let path = try XCTUnwrap(try TranscriptionPlan.make(for: book).files.first?.path)
+        try TranscriptStore.install(
+            try TranscriptFixtures.transcript(
+                of: book,
+                sentences: [path: [TranscriptFixtures.sentence("Gulls circle the lock gates.", from: 0, to: 1_800)]]
+            ),
+            for: book
+        )
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let before = try Data(contentsOf: transcriptFile)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        var presenter: TranscriptionPresenter? = TranscriptionPresenter(services: {
+            self.makeSheetServices(transcript: TranscriptStore.read(from: book.tmbDirectory))
+        })
+        await presenter?.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+        XCTAssertNotNil(presenter?.attachReplacement, "the replacement was not confirmed first")
+        XCTAssertTrue(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book stopped being attached to while asked")
+
+        // The window closes: nothing else is told.
+        presenter = nil
+
+        let ended = await eventuallyHolds { !TranscriptAttachments.shared.bookIDs.contains(book.id) }
+        XCTAssertTrue(ended, "the book is still being attached to after its window closed")
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), before, "the transcript changed without the listener's say")
+    }
+
     // MARK: - Refusals
 
     /// A .vtt file without its WEBVTT line is refused with the reader's own
@@ -381,6 +415,44 @@ final class TranscriptAttachTests: XCTestCase {
 
         XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
         XCTAssertEqual(presenter.notice?.message, "“lecture.vtt” wasn't attached to Four Tones: \(reason)")
+        assertNothingAttached(to: book, by: presenter)
+    }
+
+    /// Only a regular file, or a link to one, is read: a named pipe, which
+    /// would wait for ever, a folder, and nothing at all are not.
+    func testOnlyARegularFileIsRead() throws {
+        let folder = try makeSandboxDirectory("Attach Regular")
+        let file = folder.appendingPathComponent("lecture.vtt")
+        try Data("WEBVTT\n".utf8).write(to: file)
+        let link = folder.appendingPathComponent("link.vtt")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+        let pipe = folder.appendingPathComponent("pipe.vtt")
+        XCTAssertEqual(mkfifo(pipe.path, 0o600), 0)
+        let directory = folder.appendingPathComponent("folder.vtt", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+
+        XCTAssertTrue(TranscriptAttachments.isReadableFile(at: file))
+        XCTAssertTrue(TranscriptAttachments.isReadableFile(at: link))
+        XCTAssertFalse(TranscriptAttachments.isReadableFile(at: pipe))
+        XCTAssertFalse(TranscriptAttachments.isReadableFile(at: directory))
+        XCTAssertFalse(TranscriptAttachments.isReadableFile(at: folder.appendingPathComponent("missing.vtt")))
+    }
+
+    /// A folder named like a transcript is refused with its own reason, and
+    /// nothing is attached or left being attached to.
+    func testAFolderNamedLikeATranscriptIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Folder")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try makeSandboxDirectory("Attach Folder").appendingPathComponent("lecture.vtt", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(
+            presenter.notice?.message,
+            "“lecture.vtt” wasn't attached to Four Tones: That item isn't a plain file TextMouth can read."
+        )
         assertNothingAttached(to: book, by: presenter)
     }
 

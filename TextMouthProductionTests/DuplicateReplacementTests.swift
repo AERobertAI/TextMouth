@@ -462,6 +462,48 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(TranscriptStore.read(from: withoutTranscript.movedTo), .missing)
     }
 
+    /// A new copy given a transcript at its import, from a file beside its
+    /// audio (FMT23), keeps it over the old copy's own transcript, which the
+    /// listener never touched; an old transcript the listener edited still
+    /// goes with the same audio, as it is the listener's work.
+    func testATranscriptFileBroughtWithTheNewCopyIsNotReplacedByAnUntouchedOldOne() throws {
+        let scene = try makeScene()
+        let sound = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: sound, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: sound, toFolder: scene.shelf.path).book
+        var old = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "Earlier Tide.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        try TranscriptStore.write(old, into: existing.tmbDirectory)
+        let sameAudio = scene.sources.appendingPathComponent("Tide.wav")
+        try FileManager.default.copyItem(at: sound, to: sameAudio)
+        try Data("WEBVTT\n\n00:00.000 --> 00:00.800\nThe slip is clear.\n".utf8)
+            .write(to: scene.sources.appendingPathComponent("Tide.vtt"))
+        let copy = try FileImportService.importFileWithReport(from: sameAudio, toFolder: scene.imports.path).book
+        XCTAssertTrue(TranscriptStore.hasTranscript(of: copy), "the file beside the new copy was not attached")
+
+        let untouched = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+
+        guard case .found(let kept) = TranscriptStore.read(from: untouched.movedTo) else {
+            return XCTFail("the new copy lost its transcript")
+        }
+        XCTAssertEqual(kept.files.first?.sentences.map(\.text), ["The slip is clear."])
+        XCTAssertEqual(kept.source?.origin, TranscriptSource.Origin.imported.rawValue)
+
+        // The same, with the old transcript edited by the listener.
+        old.editedAt = TranscriptFixtures.date
+        try TranscriptStore.write(old, into: existing.tmbDirectory)
+        let secondCopy = try FileImportService.importFileWithReport(from: sameAudio, toFolder: scene.imports.path).book
+
+        let edited = try DuplicateReplacement.prepare(replacing: existing, with: secondCopy)
+
+        guard case .found(let carried) = TranscriptStore.read(from: edited.movedTo) else {
+            return XCTFail("the edited transcript did not go with the same audio")
+        }
+        XCTAssertEqual(carried.files.first?.sentences.map(\.text), ["The ferry waits at the slip."])
+        XCTAssertNotNil(carried.editedAt)
+    }
+
     // MARK: - Analyses on Their Way
 
     /// An analysis of the old copy still on its way when the new copy took
