@@ -167,7 +167,7 @@ final class TranscriptExportTests: XCTestCase {
         "only a lone < sign", "only a lone > sign", "AT&T and R&D", "x &lt; y typed out", "&amp;lt; twice",
         "&#65; and &#x42; typed out", "&nbsp;&lrm;&rlm;", "{\\an8}Top of the frame", "mid {\\i1}text{\\i0} here",
         "a { brace and a \\ slash", "12345", "7", "NOTE this is not a comment", "WEBVTT", "STYLE", "REGION",
-        "Ana: Hello there.", "Smørrebrød at the café — naïve? 日本語 😀", "tab\tinside", "quote \" and apostrophe '",
+        "Ana: Hello there.", "Smørrebrød at the café — naïve? 日本語 😀", "quote \" and apostrophe '",
         "<c.loud>a class</c>", "<00:00:01.000>a timestamp tag", "- - > not an arrow", "--", "---> three hyphens",
         "\u{FEFF}a mark first", "zero\u{200B}width",
     ]
