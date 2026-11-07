@@ -155,7 +155,7 @@ struct PhoneReaderView: View {
             perform: customActions(for: item),
             focusKind: item.focusKind,
             showsValue: item == .navigationUnit || item == .speed,
-            rotors: item == .play && Self.playRotorsEnabled ? { element in Self.playRotors(on: element, model: model) } : nil
+            rotors: rotors(for: item)
         )
         .frame(maxWidth: .infinity)
     }
@@ -207,6 +207,13 @@ struct PhoneReaderView: View {
             case .copyReadingPosition: model.copyReadingPosition()
             }
         }
+    }
+
+    /// `item`'s own rotors: Play's, while their flag is on; none otherwise.
+    private func rotors(for item: PhoneReaderControl) -> (@MainActor (UIView) -> [UIAccessibilityCustomRotor])? {
+        guard item == .play, Self.playRotorsEnabled else { return nil }
+        let model = model
+        return { element in Self.playRotors(on: element, model: model) }
     }
 
     /// What adjusting `item` up or down does: Play moves by the unit,
