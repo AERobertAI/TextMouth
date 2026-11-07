@@ -27,13 +27,8 @@ final class PhoneReaderModel {
     /// Collects what the shared code announces while `body` runs, instead of
     /// posting it.
     typealias Collector = @MainActor (_ body: () -> Void) -> [VoiceOverAnnouncement]
-    /// Runs `work` after `delay` seconds.
-    typealias Scheduler = @MainActor (_ delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> Void
-
-    /// How long an answer to an activation waits before it's announced: the
-    /// spec's 0.15 seconds, so SwiftUI's own layout notification after the
-    /// activation doesn't cut it off (reported by Paperback).
-    nonisolated static let answerDelay: TimeInterval = 0.15
+    /// Runs `work` after `delay` seconds, as `PhoneAnnouncer.schedule` does.
+    typealias Scheduler = @MainActor (_ delay: TimeInterval, _ work: @escaping @MainActor @Sendable () -> Void) -> Void
 
     // MARK: - What It Works With
 
@@ -41,9 +36,9 @@ final class PhoneReaderModel {
     private let currentReader: @MainActor () -> ReaderViewModel?
     /// Plays or pauses the screen's book, as the session does.
     private let playOrPause: @MainActor () -> Void
-    /// What a book of each kind moves by until it has a unit of its own
-    /// (Settings' two defaults).
-    private let kindDefault: @MainActor (_ isAudioBook: Bool) -> SkipUnit
+    /// Where Settings keeps what a book of each kind moves by until it has a
+    /// unit of its own (`PhoneDefaults`).
+    private let preferences: UserDefaults
     /// Collects what a move or a change says.
     private let collect: Collector
     /// Posts an announcement.
@@ -71,27 +66,27 @@ final class PhoneReaderModel {
     ///   - currentReader: The reader on the screen, or nil.
     ///   - readers: Each reader as it's made, to fill its hooks.
     ///   - playOrPause: Plays or pauses the screen's book.
-    ///   - kindDefault: What a book of each kind moves by until it has its
-    ///     own; by default the spec's Sentence and 15 seconds.
-    ///   - collect: Collects announcements; by default by swapping the
-    ///     shared announcer's poster for the call.
+    ///   - preferences: Where Settings keeps each kind's unit.
+    ///   - collect: Collects announcements; by default the foundation's
+    ///     `VoiceOverAnnouncer.collectingAnnouncements(during:)`.
     ///   - post: Posts one announcement; by default through the shared
-    ///     announcer.
-    ///   - schedule: Waits; by default on the main queue.
-    ///   - noteEngaged: Tells the session of a first move.
+    ///     announcer, at its own priority.
+    ///   - schedule: Waits; by default as `PhoneAnnouncer` does.
+    ///   - noteEngaged: Tells the session of a first move on the screen's
+    ///     book.
     init(
         currentReader: @escaping @MainActor () -> ReaderViewModel?,
         readers: AnyPublisher<ReaderViewModel?, Never>,
         playOrPause: @escaping @MainActor () -> Void,
-        kindDefault: @escaping @MainActor (_ isAudioBook: Bool) -> SkipUnit = PhoneReaderModel.fallbackUnit,
-        collect: @escaping Collector = PhoneReaderModel.collectThroughPoster,
+        preferences: UserDefaults = TextMouthRuntime.current.preferences,
+        collect: @escaping Collector = { body in VoiceOverAnnouncer.collectingAnnouncements(during: body) },
         post: @escaping @MainActor (VoiceOverAnnouncement) -> Void = PhoneReaderModel.postThroughAnnouncer,
-        schedule: @escaping Scheduler = PhoneReaderModel.scheduleOnMainQueue,
+        schedule: @escaping Scheduler = { delay, work in PhoneAnnouncer.schedule(delay, work) },
         noteEngaged: @escaping @MainActor () -> Void = {}
     ) {
         self.currentReader = currentReader
         self.playOrPause = playOrPause
-        self.kindDefault = kindDefault
+        self.preferences = preferences
         self.collect = collect
         self.post = post
         self.schedule = schedule
@@ -110,14 +105,16 @@ final class PhoneReaderModel {
         }
     }
 
-    /// A model for `session`'s readers. It holds the session weakly: the
-    /// session lives as long as the app does, and the model must never keep
-    /// it.
+    /// A model for `session`'s readers: the one on screen, and the one
+    /// listened to behind it, whose AirPods' moves take the phone's path
+    /// too. It holds the session weakly: the session lives as long as the
+    /// app does, and the model must never keep it.
     convenience init(session: PhoneSession) {
         self.init(
             currentReader: { [weak session] in session?.reader },
-            readers: session.$reader.eraseToAnyPublisher(),
-            playOrPause: { [weak session] in session?.togglePlayPause() }
+            readers: session.$reader.merge(with: session.$listeningReader).eraseToAnyPublisher(),
+            playOrPause: { [weak session] in session?.togglePlayPause() },
+            noteEngaged: { [weak session] in session?.noteBookEngaged() }
         )
     }
 
@@ -178,11 +175,11 @@ final class PhoneReaderModel {
 
     /// The unit `reader`'s moves go by.
     func unitInForce(of reader: ReaderViewModel) -> SkipUnit {
-        PhoneNavigationUnits.unitInForce(
+        PhoneDefaults.navigationUnit(
             ownRawValue: reader.book.localSkipForwardUnit ?? reader.book.localSkipBackwardUnit,
-            kindDefault: kindDefault(reader.isAudioBook),
+            isAudio: reader.isAudioBook,
             offered: offeredUnits(of: reader),
-            isAudioBook: reader.isAudioBook
+            in: preferences
         )
     }
 
@@ -273,7 +270,11 @@ final class PhoneReaderModel {
             reader.performSkip(unit: unit, forward: forward)
         }
         let after = (reader.currentChapterIndex, reader.currentCharacterOffset)
-        noteEngaged()
+        // A first move engages the book on screen; the book listened to
+        // behind it, which the AirPods move, has played already.
+        if reader === currentReader() {
+            noteEngaged()
+        }
 
         let feedback = PhoneMoveFeedback.deciding(PhoneMoveFeedback.Move(
             unit: unit,
@@ -423,11 +424,13 @@ final class PhoneReaderModel {
         announceLater(collected)
     }
 
-    /// Posts `announcements`, in order, after `answerDelay`.
+    /// Posts `announcements`, in order, after `PhoneAnnouncer.delay`, the spec's
+    /// 0.15 seconds, so SwiftUI's own layout notification after an activation
+    /// doesn't cut them off.
     private func announceLater(_ announcements: [VoiceOverAnnouncement]) {
         guard !announcements.isEmpty else { return }
         let post = post
-        schedule(Self.answerDelay) {
+        schedule(PhoneAnnouncer.delay) {
             for announcement in announcements {
                 post(announcement)
             }
@@ -436,35 +439,8 @@ final class PhoneReaderModel {
 
     // MARK: - Defaults
 
-    /// The spec's unit for each kind of book, until Settings' defaults are
-    /// read through `PhoneDefaults`.
-    static func fallbackUnit(isAudioBook: Bool) -> SkipUnit {
-        isAudioBook ? PhoneNavigationUnits.audiobookFallback : PhoneNavigationUnits.textBookFallback
-    }
-
-    /// Collects what the shared announcer is asked to say while `body` runs,
-    /// by swapping its poster for the call and putting it back after, so the
-    /// announcer itself doesn't change and the Mac doesn't either. A stand-in
-    /// for the foundation's `VoiceOverAnnouncer.collectingAnnouncements(during:)`
-    /// until it lands.
-    static func collectThroughPoster(_ body: () -> Void) -> [VoiceOverAnnouncement] {
-        var collected: [VoiceOverAnnouncement] = []
-        let previous = VoiceOverAnnouncer.poster
-        VoiceOverAnnouncer.poster = { announcement, _ in collected.append(announcement) }
-        defer { VoiceOverAnnouncer.poster = previous }
-        body()
-        return collected
-    }
-
     /// Posts `announcement` through the shared announcer, at its priority.
     static func postThroughAnnouncer(_ announcement: VoiceOverAnnouncement) {
         VoiceOverAnnouncer.announce(announcement.message, priority: announcement.priority)
-    }
-
-    /// Runs `work` on the main queue after `delay` seconds.
-    static func scheduleOnMainQueue(_ delay: TimeInterval, _ work: @escaping @MainActor () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            work()
-        }
     }
 }

@@ -42,6 +42,45 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// The controls of the grid under Play, row by row, three to a row:
     /// Where Am I? to Skip forward.
     static let grid: [PhoneReaderControl] = Array(allCases.drop { $0 != .whereAmI })
+
+    /// The kind `PhoneFocusRegistry` knows the control by, for focus on
+    /// arrival and on return from a sheet. The foundation's kinds don't yet
+    /// name the two heading buttons, so they have none: a landing on one
+    /// doesn't count as the listener's in `PhoneFocusPolicy` until they do.
+    var focusKind: PhoneControlKind? {
+        switch self {
+        case .bookContent: return .bookContent
+        case .play: return .play
+        case .whereAmI: return .whereAmI
+        case .navigationUnit: return .navigationUnit
+        case .speed: return .speed
+        case .previousHeading, .nextHeading: return nil
+        case .addBookmark: return .addBookmark
+        case .bookmarks: return .bookmarks
+        case .headings: return .headings
+        case .goTo: return .goTo
+        case .returnToPlace: return .returnToPlace
+        case .sleepTimer: return .sleepTimer
+        case .voice: return .voice
+        case .bookInfo: return .bookInfo
+        case .skipBackward: return .skipBackward
+        case .skipForward: return .skipForward
+        }
+    }
+
+    /// The sheet the control opens, if it opens one.
+    var sheet: PhoneReaderSheet? {
+        switch self {
+        case .navigationUnit: return .navigationUnit
+        case .bookmarks: return .bookmarks
+        case .headings: return .headings
+        case .goTo: return .goTo
+        case .sleepTimer: return .sleepTimer
+        case .voice: return .voice
+        case .bookInfo: return .bookInfo
+        default: return nil
+        }
+    }
 }
 
 /// What Where Am I?'s value is made of, as the reader stands (the spec, under

@@ -10,16 +10,11 @@ import Foundation
 /// differences: Sentence and Paragraph aren't offered for an audiobook, which
 /// has no text to stop at (its chapters are spaces, so on the Mac they do
 /// nothing, in silence), and Page isn't offered for a book of fewer than two
-/// pages, as on the Mac. A unit a book doesn't offer, from a saved choice or a
-/// default, falls to the book's default, never to a unit that would do
+/// pages, as on the Mac. Which unit is in force, from what's offered, is
+/// `PhoneDefaults.navigationUnit(ownRawValue:isAudio:offered:in:)`: a unit a
+/// book doesn't offer falls to its kind's default, never to one that would do
 /// nothing.
 enum PhoneNavigationUnits {
-    /// What each kind of book moves by when nothing else is chosen, the
-    /// spec's: Sentence for a text book.
-    static let textBookFallback: SkipUnit = .sentence
-    /// And 15 seconds for an audiobook.
-    static let audiobookFallback: SkipUnit = .seconds15
-
     /// The units a book offers, in the Mac's order (`SkipUnit.allCases`).
     ///
     /// - Parameters:
@@ -35,31 +30,6 @@ enum PhoneNavigationUnits {
             default: return true
             }
         }
-    }
-
-    /// The unit in force for a book: its own, if it offers that; otherwise
-    /// the default for its kind, if it offers that; otherwise the spec's
-    /// fallback for its kind, which every book of that kind offers.
-    ///
-    /// - Parameters:
-    ///   - ownRawValue: The book's own unit, as its record keeps it, or nil
-    ///     when it has none. A value naming no unit counts as none.
-    ///   - kindDefault: What Settings says a book of this kind moves by.
-    ///   - offered: What the book offers (`offered(isAudioBook:hasSeveralPages:)`).
-    ///   - isAudioBook: Whether the book is an audiobook.
-    static func unitInForce(
-        ownRawValue: String?,
-        kindDefault: SkipUnit,
-        offered: [SkipUnit],
-        isAudioBook: Bool
-    ) -> SkipUnit {
-        if let own = ownRawValue.flatMap(SkipUnit.init(rawValue:)), offered.contains(own) {
-            return own
-        }
-        if offered.contains(kindDefault) {
-            return kindDefault
-        }
-        return isAudioBook ? audiobookFallback : textBookFallback
     }
 
     /// The unit after `unit` among `offered` when adjusting up, or before it
