@@ -236,9 +236,9 @@ final class KF8RealBookTests: XCTestCase {
         // and kindlegen move out of the markup into a flow.
         let (source, readings) = try edge("svg-words")
         XCTAssertTrue(words(source).contains(where: { $0.hasPrefix("w5") }))
-        // kindlegen's hybrid declares a text length that leaves its SVG flows outside the text, so they are not
-        // read yet (a follow-up: read the text through the flow table's end). calibre's file is checked now.
-        for (what, chapters) in readings where what == "calibre AZW3" {
+        // kindlegen's hybrid declares a text length that leaves its SVG flows outside the declared text: they are
+        // read through the flow table's end.
+        for (what, chapters) in readings {
             XCTAssertEqual(words(chapters), words(source), "svg-words as \(what)")
         }
     }
