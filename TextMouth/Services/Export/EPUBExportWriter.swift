@@ -29,9 +29,13 @@ import ZIPFoundation
 /// text), styles, and the book's cover. Every string it writes is escaped for
 /// XML, and a character XML 1.0 forbids is dropped (`XMLEscaping`).
 struct EPUBExportWriter: TextExportWriter {
+    /// The writer's name in code, never shown.
     let id = "epub"
+    /// The name the Convert to picker lists and VoiceOver speaks.
     let name = "EPUB"
+    /// The extension of the files it makes.
     let fileExtension = "epub"
+    /// What the picker's hint says while this writer is chosen.
     let hint = "An e-book with the book's headings, contents, and page numbers where it has them, for Apple Books and other reading apps. It holds no pictures."
 
     /// The book's chapters and pages are kept as well as its words.
@@ -91,10 +95,25 @@ struct EPUBExportWriter: TextExportWriter {
         } catch {
             // Whatever began the file is not an EPUB: remove it, and say why.
             try? FileManager.default.removeItem(at: url)
-            if error is Archive.ArchiveError {
+            if error is Archive.ArchiveError || error is Data.DataError {
                 throw TextExportError("The EPUB file could not be written.")
             }
             throw error
+        }
+    }
+
+    /// The sentence for a write that failed with the system error `code` (the
+    /// `errno` the failed write left): the disk may be full for the errors a
+    /// full disk, a quota, or a size limit give, and, for a few others, the
+    /// system's own words ("Read-only file system"). Any other, or none, is
+    /// taken for a full disk, which is what the ZIP library's write failures
+    /// nearly always are.
+    static func writeFailureSentence(errno code: Int32) -> String {
+        switch code {
+        case EIO, EROFS, EACCES, EPERM, ESTALE, ENXIO, ENODEV, ETIMEDOUT:
+            return "The EPUB file could not be written: \(String(cString: strerror(code)))."
+        default:
+            return "The EPUB file could not be written, because the disk may be full."
         }
     }
 
@@ -114,14 +133,23 @@ struct EPUBExportWriter: TextExportWriter {
             cancellation: cancellation,
             afterEachFile: afterEachFile
         )
-        try builder.writePackage()
+        do {
+            try builder.writePackage()
+        } catch is Data.DataError {
+            // The ZIP library's failure to write a file's bytes: say why in a
+            // sentence, with the system's reason read before anything else
+            // can change it.
+            throw TextExportError(Self.writeFailureSentence(errno: errno))
+        }
         return builder.writtenPaths
     }
 
     /// Opens the file at `url` again and checks it holds exactly the entries
-    /// `paths`, in order, each with the checksum it was written with. The
-    /// ZIP library does not report a failure of its last flush, so a file cut
-    /// short without its central directory reads as nothing here.
+    /// `paths`, in order, each of which reads back whole and with the checksum
+    /// the archive stores for it (the ZIP library returns the checksum of what
+    /// it read and leaves the comparison to its caller). The ZIP library does
+    /// not report a failure of its last flush, so a file cut short without its
+    /// central directory reads as nothing here.
     static func verify(_ url: URL, holds paths: [String]) throws {
         let archive = try Archive(url: url, accessMode: .read)
         let entries = Array(archive)
@@ -129,7 +157,10 @@ struct EPUBExportWriter: TextExportWriter {
             throw TextExportError("The EPUB file could not be written.")
         }
         for entry in entries {
-            _ = try archive.extract(entry) { _ in }
+            let checksum = try archive.extract(entry) { _ in }
+            guard checksum == entry.checksum else {
+                throw TextExportError("The EPUB file could not be written.")
+            }
         }
     }
 
