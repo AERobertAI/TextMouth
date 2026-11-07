@@ -122,6 +122,7 @@ extension EPUBExportWriterTests {
         let url = try export("<!-- chapter: A -->\n<!-- a plain comment -->\n\n<!-- chapter: B -->\nWords.")
         XCTAssertEqual(try chapterPaths(of: url), ["OEBPS/chapter-1.xhtml"])
         XCTAssertTrue(try text("OEBPS/chapter-1.xhtml", in: url).contains("<title>B</title>"))
+        XCTAssertEqual(try navLinks("toc", in: url).map(\.text), ["B"], "no entry for a chapter that has nothing in it")
     }
 
     // MARK: - Pages in Table Cells (S3)
@@ -240,6 +241,15 @@ extension EPUBExportWriterTests {
         let second = try bodyLines("OEBPS/chapter-2.xhtml", in: url)
         XCTAssertTrue(try XCTUnwrap(second.first).contains("id=\"page_1\""), "\(second)")
         XCTAssertTrue(try XCTUnwrap(second.dropFirst().first).hasPrefix("<h2 "))
+    }
+
+    /// A page that is itself what passes the limit does not end the file before
+    /// the heading it belongs to: the file goes on, and the page is not left
+    /// as the last thing in a file whose words it does not begin.
+    func testAPageThatPassesTheLimitDoesNotEndTheFileBeforeItsHeading() throws {
+        let filler = String(repeating: "word ", count: 45)
+        let url = try export("# One\n\n\(filler)\n\n<!-- page: 2 -->\n## Two\n\nTail.", writer: Self.writer(maximumFileBytes: 300))
+        XCTAssertEqual(try chapterPaths(of: url).count, 1)
     }
 
     /// A run of only pages is not ended at, so the pages stay together in a
