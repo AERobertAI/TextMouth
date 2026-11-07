@@ -722,9 +722,12 @@ final class ContentIndexValidationTests: XCTestCase {
             )
         }
 
-        let found = try AudioBookParser.audioFiles(in: folder).map { $0.path.replacingOccurrences(of: folder.path + "/", with: "") }
+        // Compared by file name (all unique here), since the temporary
+        // folder may be reached through a link (/var is /private/var).
+        let found = try AudioBookParser.audioFiles(in: folder).map(\.lastPathComponent)
 
-        XCTAssertEqual(Set(found), Set(realNames))
+        XCTAssertEqual(Set(found), Set(realNames.map { ($0 as NSString).lastPathComponent }))
+        XCTAssertEqual(found.count, realNames.count, "a link was listed as a track")
     }
 
     /// The import's two walks over a folder pass over links the same way:
