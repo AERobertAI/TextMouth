@@ -39,7 +39,32 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
             Self.beginBackgroundTask(named: name)
         }
         PhoneAudioSession.install(session: model.session)
+        joinTheSlices(on: model)
         return true
+    }
+
+    /// Joins the work of the slices that meet only here, once, at launch,
+    /// before any scene connects, so that a launch in the background (for a
+    /// remote Play, with no scene) has them too:
+    /// - the life cycle's background work (Slice 6), with the audio session's
+    ///   deactivation (Slice 5) and the memory guard's check on look-ahead
+    ///   renders, which the two slices left to be joined where both are seen;
+    /// - the import copier (Slice 3), which takes the files other apps hand
+    ///   over, so a file sent at a cold launch is copied under its scope
+    ///   rather than imported directly;
+    /// - the reader's model (Slice 4), so the AirPods' and the lock screen's
+    ///   skips take the phone's one move path before the reader's screen has
+    ///   ever been shown.
+    private func joinTheSlices(on model: PhoneAppModel) {
+        PhoneBackgroundWork.deactivateAudioIfIdle = {
+            PhoneAudioSession.shared.deactivateIfIdle()
+        }
+        SpeechRenderCoordinator.shared.mayRenderAhead = {
+            PlaybackMemoryGuard.mayRenderAhead()
+        }
+        PhoneBackgroundWork.install(on: model)
+        PhoneImportCopier.shared.install()
+        _ = PhoneReaderModel.attached(to: model.session)
     }
 
     /// Names `TextMouthSceneDelegate` for every scene, in code. iOSApp/Info.plist
