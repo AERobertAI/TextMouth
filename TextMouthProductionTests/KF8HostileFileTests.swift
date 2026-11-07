@@ -1,0 +1,381 @@
+import XCTest
+@testable import TextMouth
+
+/// A KF8 book's file is untrusted input. Each test here builds or damages a
+/// book so that a table, a count, a place, or a length lies, and requires
+/// the reader to refuse it with a typed error (or read it) in well under a
+/// second, never to trap or to grow without bound.
+final class KF8HostileFileTests: XCTestCase {
+
+    // MARK: - Helpers
+
+    /// Reads `bytes` as a book and checks that it ended, in under a second, with a book or one of the
+    /// errors a Kindle book throws (never a trap). Returns the book, or nil when it threw.
+    @discardableResult
+    private func readQuickly(
+        _ bytes: [UInt8], hybrid: MOBIBook.HybridChoice = .kf8, _ what: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) -> MOBIBook? {
+        let started = Date()
+        defer { XCTAssertLessThan(Date().timeIntervalSince(started), 1.0, "\(what) took too long", file: file, line: line) }
+        do {
+            return try MOBIBook(bytes: bytes, hybrid: hybrid)
+        } catch is MOBIError {
+            return nil
+        } catch is DocumentTooLargeError {
+            return nil
+        } catch is FileImportError {
+            return nil
+        } catch {
+            XCTFail("\(what) threw \(error), which is not an error a Kindle book throws", file: file, line: line)
+            return nil
+        }
+    }
+
+    /// Requires that `bytes` are refused as damaged.
+    private func assertDamaged(_ bytes: [UInt8], _ what: String, file: StaticString = #filePath, line: UInt = #line) {
+        let started = Date()
+        XCTAssertThrowsError(try MOBIBook(bytes: bytes), what, file: file, line: line) {
+            guard case .damaged? = $0 as? MOBIError else { return XCTFail("\(what): \($0)", file: file, line: line) }
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 1.0, "\(what) took too long", file: file, line: line)
+    }
+
+    /// A book of one document of a body of `count` short paragraphs, the last
+    /// `cut` of them each cut out as a fragment.
+    private func paragraphs(_ count: Int, cut: Int) -> KF8Fixture {
+        let texts = (0..<count).map { "<p>Paragraph \($0).</p>" }
+        let html = "<html><head><title>T</title></head><body>" + texts.joined() + "</body></html>"
+        return KF8Fixture(documents: [KF8Fixture.Document(html: html, cutting: Array(texts.suffix(cut)))])
+    }
+
+    // MARK: - Places and lengths
+
+    func testASkeletonOutsideTheTextIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        let size = laid.text.count
+        for (offset, length) in [(size, 1), (size - 3, 100), (0, size + 1), (0x0FFF_FFFF, 10), (10, 0x0FFF_FFFF), (0x0FFF_FFFF, 0x0FFF_FFFF)] {
+            var fixture = sound
+            var rows = fixture.skeletonRows(laid)
+            rows[0].values[6] = [offset, length, offset, length]
+            fixture.skeletonRowsOverride = rows
+            assertDamaged(fixture.data(), "skeleton at \(offset) of \(length) in a text of \(size)")
+        }
+    }
+
+    func testAFragmentOutsideTheTextOrThePartIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        for (offset, length) in [(0x0FFF_FFFF, 5), (0, 0x0FFF_FFFF), (laid.text.count, 1), (50, laid.text.count)] {
+            var fixture = sound
+            var rows = fixture.fragmentRows(laid)
+            rows[0].values[6] = [offset, length]
+            fixture.fragmentRowsOverride = rows
+            assertDamaged(fixture.data(), "fragment at \(offset) of \(length)")
+        }
+    }
+
+    func testAFragmentThatGoesOutsideItsDocumentIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        // A place far past the end of the document built so far.
+        var fixture = sound
+        var rows = fixture.fragmentRows(laid)
+        rows[1].name = Array("9999999999".utf8)
+        fixture.fragmentRowsOverride = rows
+        assertDamaged(fixture.data(), "a fragment named for place 9999999999")
+        // A place inside the skeleton is where fragments go; a book may name any of them.
+        rows[1].name = Array("0000000001".utf8)
+        fixture.fragmentRowsOverride = rows
+        XCTAssertNotNil(readQuickly(fixture.data(), "a fragment named for place 1"))
+    }
+
+    func testAFragmentWhoseNameIsNotANumberIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        for name in ["", "abc", "12 34", "-5", "12345678901", "０１２"] {
+            var fixture = sound
+            var rows = fixture.fragmentRows(laid)
+            rows[0].name = Array(name.utf8)
+            fixture.fragmentRowsOverride = rows
+            assertDamaged(fixture.data(), "a fragment named \(name)")
+        }
+    }
+
+    func testRowsMissingTheirTagsAreDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        var noPlace = sound
+        var rows = noPlace.skeletonRows(laid)
+        rows[0].values[6] = nil
+        noPlace.skeletonRowsOverride = rows
+        assertDamaged(noPlace.data(), "a skeleton with no place")
+
+        var noCount = sound
+        rows = noCount.skeletonRows(laid)
+        rows[0].values[1] = nil
+        noCount.skeletonRowsOverride = rows
+        assertDamaged(noCount.data(), "a skeleton with no fragment count")
+
+        var shortPlace = sound
+        rows = shortPlace.skeletonRows(laid)
+        rows[0].values[6] = [0]
+        shortPlace.skeletonRowsOverride = rows
+        assertDamaged(shortPlace.data(), "a skeleton with half a place")
+
+        var noFragmentNumber = sound
+        rows = noFragmentNumber.fragmentRows(laid)
+        rows[0].values[4] = nil
+        noFragmentNumber.fragmentRowsOverride = rows
+        assertDamaged(noFragmentNumber.data(), "a fragment with no number")
+    }
+
+    func testAFragmentCountThatTheFragmentIndexCannotMeetIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let laid = sound.placed()
+        for count in [3, 100, 0x0FFF_FFFF] {
+            var fixture = sound
+            var rows = fixture.skeletonRows(laid)
+            rows[0].values[1] = [count, count]
+            fixture.skeletonRowsOverride = rows
+            assertDamaged(fixture.data(), "\(count) fragments claimed of 2")
+        }
+    }
+
+    func testDocumentsThatTogetherHoldMoreThanTheTextAreDamaged() {
+        // 3,000 skeleton rows that are all the whole of the markup: 3,000 times the text.
+        let sound = paragraphs(5, cut: 0)
+        let laid = sound.placed()
+        var fixture = sound
+        let row = sound.skeletonRows(laid)[0]
+        fixture.skeletonRowsOverride = Array(repeating: row, count: 3_000)
+        fixture.fragmentRowsOverride = []
+        assertDamaged(fixture.data(), "3,000 documents that are all the text")
+        // Fragments that all name the same range, many times over.
+        let cut = paragraphs(5, cut: 2)
+        let cutLaid = cut.placed()
+        var repeated = cut
+        var skeleton = repeated.skeletonRows(cutLaid)[0]
+        skeleton.values[1] = [2_000, 2_000]
+        repeated.skeletonRowsOverride = [skeleton]
+        repeated.fragmentRowsOverride = Array(repeating: repeated.fragmentRows(cutLaid)[0], count: 2_000)
+        assertDamaged(repeated.data(), "2,000 fragments that are one range")
+    }
+
+    func testTheFlowTableIsOnlyAnAid() {
+        // A flow table that is missing or has no magic leaves the book read all the same; one that says the
+        // markup ends before the documents do is a lie that is refused.
+        let bytes = paragraphs(5, cut: 2).data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let record0 = offsets[0]
+        let flowRecord = (0..<4).reduce(0) { $0 << 8 | Int(bytes[record0 + 192 + $1]) }
+
+        var noMagic = bytes
+        noMagic[offsets[flowRecord]] = 0x58
+        XCTAssertNotNil(readQuickly(noMagic, "a flow table with no magic"))
+
+        var farEnd = bytes
+        MOBIFixture.put32(&farEnd, offsets[flowRecord] + 16, 0xFFFF_FFFF)
+        XCTAssertNotNil(readQuickly(farEnd, "a flow table whose markup flow ends past the text"))
+
+        var shortEnd = bytes
+        MOBIFixture.put32(&shortEnd, offsets[flowRecord] + 16, 3)
+        assertDamaged(shortEnd, "a flow table whose markup flow ends at byte 3")
+
+        var none = bytes
+        MOBIFixture.put32(&none, record0 + 192, 0xFFFF_FFFF)
+        XCTAssertNotNil(readQuickly(none, "a book that names no flow table"))
+    }
+
+    // MARK: - Indexes
+
+    func testAnIndexThatClaimsMoreRecordsOrEntriesThanItHoldsIsDamaged() {
+        let bytes = paragraphs(5, cut: 2).data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let database = try? MOBIPalmDatabase(bytes: bytes)
+        let headers = try? MOBIHeaders(record0: try XCTUnwrap(database).record(0, "r0"), requiresMOBIHeader: true)
+        guard let skeleton = headers?.skeletonIndexRecord, let fragment = headers?.fragmentIndexRecord else { return XCTFail("no indexes") }
+        for record in [skeleton, fragment] {
+            // The record count in the index header (24), the string record count (52), and the entry count of the first data record (24).
+            for (target, field, value) in [(record, 24, 0x7FFF_FFFF), (record, 24, 5_000), (record, 52, 0x7FFF_FFFF), (record, 4, 0x7FFF_FFFF),
+                                           (record + 1, 24, 0xFFFF), (record + 1, 20, 0xFFFF_FFFF), (record + 1, 20, 3)] {
+                var damaged = bytes
+                MOBIFixture.put32(&damaged, offsets[target] + field, value)
+                assertDamaged(damaged, "index record \(target) field \(field) set to \(value)")
+            }
+        }
+    }
+
+    func testAnEntryWhoseControlByteClaimsOtherValuesThanItHoldsEndsCleanly() {
+        let bytes = paragraphs(5, cut: 2).data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        guard let database = try? MOBIPalmDatabase(bytes: bytes),
+              let headers = try? MOBIHeaders(record0: database.record(0, "r0"), requiresMOBIHeader: true),
+              let skeleton = headers.skeletonIndexRecord, let fragment = headers.fragmentIndexRecord else { return XCTFail("no index") }
+        // The control byte of the first entry of each index: after the entry's name length and name.
+        for record in [skeleton, fragment] {
+            let data = offsets[record + 1]
+            let entry = data + 192 + 1 + Int(bytes[data + 192])
+            for control in [0x00, 0x03, 0x0F, 0x55, 0xAA, 0xF0, 0xFF] {
+                var damaged = bytes
+                damaged[entry] = UInt8(control)
+                // Whether it reads or is refused, it ends at once and with a typed error.
+                readQuickly(damaged, "a control byte of \(control) in the index at record \(record)")
+            }
+        }
+        // A count of no values leaves a row with no place, which is refused.
+        var empty = bytes
+        let data = offsets[fragment + 1]
+        empty[data + 192 + 1 + Int(bytes[data + 192])] = 0
+        assertDamaged(empty, "a fragment with no values at all")
+    }
+
+    func testAnIndexRecordThatEndsInTheMiddleOfAnEntryIsDamaged() {
+        let sound = paragraphs(5, cut: 2)
+        let bytes = sound.data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        guard let database = try? MOBIPalmDatabase(bytes: bytes),
+              let headers = try? MOBIHeaders(record0: database.record(0, "r0"), requiresMOBIHeader: true),
+              let fragment = headers.fragmentIndexRecord else { return XCTFail("no index") }
+        // Cut the file in the first data record of the fragment index.
+        for cut in stride(from: offsets[fragment + 1] + 1, to: min(offsets[fragment + 1] + 260, bytes.count), by: 7) {
+            readQuickly(Array(bytes[..<cut]), "a file cut at \(cut)")
+        }
+    }
+
+    func testAMarkupNestedFarDeeperThanAnyBookIsDamaged() {
+        let depth = 5_000
+        let body = String(repeating: "<div>", count: depth) + "<p>Deep words.</p>" + String(repeating: "</div>", count: depth)
+        assertDamaged(KF8Fixture(body: body).data(), "\(depth) levels of nesting")
+        // The same words at the depth of a real book are read.
+        let shallow = String(repeating: "<div>", count: 40) + "<p>Deep words.</p>" + String(repeating: "</div>", count: 40)
+        XCTAssertNotNil(readQuickly(KF8Fixture(body: shallow).data(), "40 levels of nesting"))
+    }
+
+    // MARK: - Many pieces
+
+    func testAThousandEntriesAndTwentyThousandFragmentsAreReadInAMoment() throws {
+        var fixture = paragraphs(20_000, cut: 20_000)
+        fixture.entries = (0..<1_000).map { index in
+            KF8Fixture.Entry(label: "Entry \(index)", document: 0, fragment: index * 20, offset: 0, depth: index % 3)
+        }
+        let started = Date()
+        let book = try MOBIBook(bytes: fixture.data())
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3.0)
+        XCTAssertEqual(book.sections.count, 1)
+        XCTAssertEqual(book.sections[0].headingTargets.count, 999)   // the first entry names the whole document
+        XCTAssertEqual(book.sections[0].html.anchorsRemoved, fixture.documents[0].html)
+    }
+
+    func testReadingGrowsInStepWithTheFragments() throws {
+        func seconds(_ count: Int) throws -> TimeInterval {
+            let bytes = paragraphs(count, cut: count).data()
+            var least = TimeInterval.infinity
+            for _ in 0..<3 {
+                let started = Date()
+                _ = try MOBIBook(bytes: bytes)
+                least = min(least, Date().timeIntervalSince(started))
+            }
+            return least
+        }
+        let small = try seconds(2_000)
+        let large = try seconds(16_000)
+        XCTAssertLessThan(large, max(small * 24, 0.2), "2,000 took \(small) s and 16,000 took \(large) s")
+    }
+
+    func testOneHugeNumberOfAnchorsCostsNoMoreThanTheirNumber() throws {
+        // Entries for many places in one fragment: each gets one anchor.
+        let texts = (0..<3_000).map { "<p>Line \($0).</p>" }
+        let html = "<html><head><title>T</title></head><body>" + texts.joined() + "</body></html>"
+        var fixture = KF8Fixture(documents: [KF8Fixture.Document(html: html, cutting: [texts.joined()])])
+        var offset = 0
+        fixture.entries = texts.enumerated().map { index, text in
+            defer { offset += text.utf8.count }
+            return KF8Fixture.Entry(label: "Line \(index)", document: 0, fragment: 0, offset: offset, depth: 1)
+        }
+        let started = Date()
+        let book = try MOBIBook(bytes: fixture.data())
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3.0)
+        XCTAssertEqual(book.sections[0].headingTargets.count, 2_999)   // the first entry names the whole document
+    }
+
+    // MARK: - Damaged real files
+
+    /// A repeatable sequence of numbers, so a failure can be run again.
+    private struct SeededNumbers {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var z = state
+            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+            return z ^ (z >> 31)
+        }
+        mutating func below(_ limit: Int) -> Int { Int(next() % UInt64(limit)) }
+    }
+
+    func testTheKF8SampleCutAtManyLengthsEndsCleanly() throws {
+        let bytes = [UInt8](try Data(contentsOf: formatSampleURL("mobi/pg1952-yellow-wallpaper-kf8.mobi")))
+        var lengths = [0, 1, 2, 77, 78, 79, 100, 400, 1000, 4096, bytes.count - 1, bytes.count - 2]
+        lengths += stride(from: 0, to: bytes.count, by: bytes.count / 40).map { $0 }
+        for length in lengths where length < bytes.count {
+            readQuickly(Array(bytes[..<length]), "the sample cut at \(length)")
+        }
+    }
+
+    func testTheKF8SampleWithBytesFlippedEndsCleanly() throws {
+        let bytes = [UInt8](try Data(contentsOf: formatSampleURL("mobi/pg1952-yellow-wallpaper-kf8.mobi")))
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let database = try MOBIPalmDatabase(bytes: bytes)
+        let headers = try MOBIHeaders(record0: try database.record(0, "r0"), requiresMOBIHeader: true)
+        // The records that hold the tables: from the flow table to the guide index.
+        let tables = [headers.flowTableRecord, headers.skeletonIndexRecord, headers.fragmentIndexRecord, headers.indexRecord, headers.guideIndexRecord].compactMap { $0 }
+        let tableRange = offsets[tables.min() ?? 0]..<bytes.count.advanced(by: 0)
+        var random = SeededNumbers(state: 20261106)
+        for round in 0..<240 {
+            var damaged = bytes
+            // Half the rounds damage anywhere; half damage record 0 or the tables.
+            for _ in 0...random.below(3) {
+                let place: Int
+                switch round % 4 {
+                case 0: place = random.below(bytes.count)
+                case 1: place = offsets[0] + random.below(offsets[1] - offsets[0])
+                default: place = tableRange.lowerBound + random.below(min(tableRange.count, 6_000))
+                }
+                damaged[place] = UInt8(truncatingIfNeeded: random.next())
+            }
+            readQuickly(damaged, "the sample with bytes changed, round \(round)")
+        }
+    }
+
+    func testTheHybridSamplesWithTheirSecondHalfDamagedEndCleanly() throws {
+        for sample in ["mobi/pg8121-ghosts-hybrid.mobi", "mobi/libmobi-unicode-huffdic.mobi"] {
+            let bytes = [UInt8](try Data(contentsOf: formatSampleURL(sample)))
+            let database = try MOBIPalmDatabase(bytes: bytes)
+            let headers = try MOBIHeaders(record0: try database.record(0, "r0"), requiresMOBIHeader: true)
+            let boundary = try XCTUnwrap(headers.kf8BoundaryRecord, sample)
+            let offsets = MOBIFixture.recordOffsets(of: bytes)
+            var random = SeededNumbers(state: 1106)
+            for round in 0..<80 {
+                var damaged = bytes
+                damaged[offsets[boundary] + random.below(offsets[min(boundary + 1, offsets.count - 1)] - offsets[boundary])] = UInt8(truncatingIfNeeded: random.next())
+                readQuickly(damaged, "\(sample) with record 0 of the KF8 half damaged, round \(round)")
+            }
+        }
+    }
+}
+
+private extension String {
+    /// The string with every empty anchor (`<a id="filepos-N"></a>`) taken out.
+    var anchorsRemoved: String {
+        var result = ""
+        var rest = self[...]
+        while let start = rest.range(of: "<a id=\"filepos-") {
+            result += rest[..<start.lowerBound]
+            guard let end = rest.range(of: "</a>", range: start.upperBound..<rest.endIndex) else { break }
+            rest = rest[end.upperBound...]
+        }
+        return result + rest
+    }
+}
