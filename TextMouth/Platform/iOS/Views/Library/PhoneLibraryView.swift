@@ -108,6 +108,12 @@ struct PhoneLibraryView: View {
     var body: some View {
         ScrollViewReader { proxy in
             List {
+                // The Mac's Storage problems notice, as it is, at the top of
+                // the list while a write keeps failing: it observes only the
+                // failure center, and shows nothing until then. Each of its
+                // buttons keeps its own touch area in a row.
+                PersistenceFailureBanner(center: library.failureCenter)
+                    .buttonStyle(.borderless)
                 if !rows.isSearching {
                     if let continueRow = rows.continueRow {
                         PhoneContinueRowView(
