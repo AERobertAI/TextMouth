@@ -275,66 +275,76 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 ### Braille files
 
-- BRF files (.brf), BRL files (.brl), and PEF files (.pef).
-  - TextMouth translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
-  - A book keeps the code it was imported with, through Remove from Library Only and adding it back too, so changing the setting never changes what an imported book says.
-  - A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence: "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
-  - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
-  - A book that recorded no version is never refused for this.
-  - Book Info and Speak Info name the code (see [The Library window](library-window.md)).
+- TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
+- It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
+- A book keeps the code it was imported with, through Remove from Library Only and adding it back too, so changing the setting never changes what an imported book says.
+- A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence: "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
+- When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
+- A book that recorded no version is never refused for this.
+- Book Info and Speak Info name the code (see [The Library window](library-window.md)).
 
 #### Braille file characters
 
-- Braille file characters: a BRF or BRL file is read in one of three codes, which the book records.
+- A BRF or BRL file is read in one of three codes, which the book records:
   - North American Braille ASCII is the default and the code of nearly every file.
   - Eurobraille, six-dot (German-speaking countries) is the other seven-bit code.
   - Unicode braille patterns write each cell as a character from U+2800 to U+28FF, in UTF-8.
-  - TextMouth recognizes Unicode braille patterns by the file's bytes, from the first character after any blank lines in the first 64 KB, and reads such a file as them whatever the Braille tab says.
-  - It guesses nothing else, since every printable ASCII character is a cell in every seven-bit code: a file read in the wrong seven-bit code gives wrong numbers and punctuation, with no error.
-  - The Braille tab chooses the seven-bit code for the books you add from then on (see [Settings](settings.md)), and Book Information's Braille File Characters pop-up reads one book again with another code (see [The Library window](library-window.md)).
-  - A PEF always holds Unicode braille and needs no choice.
+- TextMouth recognizes Unicode braille patterns by the file's bytes, from the first character after any blank lines in the first 64 KB, and reads such a file as them whatever the Braille tab says.
+- It guesses nothing else, since every printable ASCII character is a cell in every seven-bit code: a file read in the wrong seven-bit code gives wrong numbers and punctuation, with no error.
+- The Braille tab chooses the seven-bit code for the books you add from then on (see [Settings](settings.md)), and Book Information's Braille File Characters pop-up reads one book again with another code (see [The Library window](library-window.md)).
+- A PEF always holds Unicode braille and needs no choice.
 
 #### Books that record no braille code
 
 - A book that records no code, as every book added before TextMouth recorded them, is read as North American Braille ASCII, unless its first character is a braille pattern, which can only be Unicode braille patterns: such a book is read as them.
-  - A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses; so it does a file of eight-bit computer braille, and a file in UTF-16, each by name (see [Adding books](adding-books.md) for the sentences).
+- A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses. So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](adding-books.md) for the sentences).
 
 #### What a BRF or BRL file holds
 
 - A BRF or BRL file holds one character for each braille cell, in the braille file characters above, in upper or lower case for braille ASCII, with each line ended by CR LF, LF, or CR.
-  - A tab counts as one blank cell.
-  - A BRF ends each page with a form feed, and a BRF with none is cut into pieces of 25 lines to read its layout (see Pages, below).
-  - A BRL has no layout, so each of its lines that is not blank is a paragraph and it has no headings.
-  - A PEF file must be six-dot braille: eight-dot PEF is refused.
+- A tab counts as one blank cell.
+- A BRF ends each page with a form feed, and a BRF with none is cut into pieces of 25 lines to read its layout (see Pages, below).
+- A BRL has no layout, so each of its lines that is not blank is a paragraph and it has no headings.
+- A PEF file must be six-dot braille: eight-dot PEF is refused.
 
 #### Braille layout
 
 - Headings, paragraphs, and list items are found from the layout, as BANA's Braille Formats (2016) lays it out.
-  - A centered line, or a centered run of lines, is a level-1 heading; a line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
-  - Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
-  - Page numbers are left out of the text, so they are never spoken.
+- A centered line, or a centered run of lines, is a level-1 heading.
+- A line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
+- Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
+- Page numbers are left out of the text, so they are never spoken.
 
 #### Braille emphasis
 
-- Emphasis: reading Unified English Braille (UEB) keeps what its emphasis signs say, and reading English Braille, American Edition (EBAE) keeps what its signs say where they are certain.
-  - In UEB, italic and bold come into the book's text as italic and bold, and both together as both; underline, script, and the typefaces a transcriber defines come in as italic, the nearest thing the text holds. As in the other text formats, the marks that show emphasis are never spoken.
-  - Contracted (Grade 2) UEB reads a whole-word contraction just before an emphasis end sign as the word it is: "people" comes back as "people", not "p", and "his" as "his", not a double quotation mark.
-  - In EBAE, italic and bold are read where the sign is certain: words that start with l or with n to z, capitals, numbers, and most contractions. A passage of several words ends where its last sign says. The signs liblouis writes for bold italic, which BANA's EBAE has not got, are not read as bold italic.
-  - No word of an EBAE book differs from before; the emphasis is what is new.
-    - Where a sign cannot be told from print, it is left as it was: an emphasized word that starts with a to j still reads with a stray period, as in ".cat" for an italic "cat", one that starts with k reads with an equals sign, as in "=ite" for "kite", and one that starts with m reads with µ, as in "µe" for "me", and the emphasis on those words is lost.
-    - TextMouth checks each paragraph against liblouis's own reading, and a paragraph whose words would differ in any character is read without emphasis.
-  - Most of this Mac's tables are read as plain braille, since liblouis cannot read their emphasis back exactly.
-    - The EBAE reading applies to a table of this Mac's that writes EBAE's signs and reads the sign alone as punctuation, as its English EBAE tables do.
-    - TextMouth's braille helper tests each table for this when the table is used, so none is picked out by name.
-  - liblouis's own faults in reading EBAE remain, as a decimal such as 3.5 that comes back as "3.e".
-  - A braille book is read again once at the first launch after the update of October 24, 2026, and gets this reading then.
-    - A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-    - Redo Text Extraction reads a book again at any time.
-  - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
+- Reading Unified English Braille (UEB) keeps what its emphasis signs say, and reading English Braille, American Edition (EBAE) keeps what its signs say where they are certain.
+- In UEB, italic and bold come into the book's text as italic and bold, and both together as both.
+- In UEB, underline, script, and the typefaces a transcriber defines come in as italic, the nearest thing the text holds.
+- As in the other text formats, the marks that show emphasis are never spoken.
+- Contracted (Grade 2) UEB reads a whole-word contraction just before an emphasis end sign as the word it is: "people" comes back as "people", not "p", and "his" as "his", not a double quotation mark.
+- In EBAE, italic and bold are read where the sign is certain: words that start with l or with n to z, capitals, numbers, and most contractions.
+- In EBAE, a passage of several words ends where its last sign says.
+- The signs liblouis writes for bold italic, which BANA's EBAE has not got, are not read as bold italic.
+- No word of an EBAE book differs from before. The emphasis is what is new.
+- Where a sign cannot be told from print, it is left as it was:
+  - An emphasized word that starts with a to j still reads with a stray period, as in ".cat" for an italic "cat".
+  - One that starts with k reads with an equals sign, as in "=ite" for "kite".
+  - One that starts with m reads with µ, as in "µe" for "me".
+  - The emphasis on those words is lost.
+- TextMouth checks each paragraph against liblouis's own reading, and a paragraph whose words would differ in any character is read without emphasis.
+- Most of this Mac's tables are read as plain braille, since liblouis cannot read their emphasis back exactly.
+- The EBAE reading applies to a table of this Mac's that writes EBAE's signs and reads the sign alone as punctuation, as its English EBAE tables do.
+- TextMouth's braille helper tests each table for this when the table is used, so none is picked out by name.
+- The faults of liblouis itself in reading EBAE remain, as a decimal such as 3.5 that comes back as "3.e".
+- A braille book is read again once at the first launch after the update of October 24, 2026, and gets this reading then.
+- A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Redo Text Extraction reads a book again at any time.
+- Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
 
 #### PEF titles and authors
 
-- A PEF names its book's title and author in its head, and the import reads them from the first 64 KB of the file. A BRF or BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
+- A PEF names its book's title and author in its head, and the import reads them from the first 64 KB of the file.
+- A BRF or BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
 
 #### Braille file limits
 
@@ -342,11 +352,13 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 #### Braille not read yet
 
-- Not read yet: running heads, Roman-numeral page numbers, and words divided at a line's end. A list laid out by another tool may read as plain paragraphs.
+- Running heads, Roman-numeral page numbers, and words divided at a line's end are not read yet.
+- A list laid out by another tool may read as plain paragraphs.
 
 #### The braille helper process
 
-- liblouis runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in liblouis costs that process and never TextMouth or the import. [Where TextMouth keeps your library](where-your-library-lives.md) gives its limits.
+- liblouis runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in liblouis costs that process and never TextMouth or the import.
+- [Where TextMouth keeps your library](where-your-library-lives.md) gives its limits.
 
 ### PDF files
 
