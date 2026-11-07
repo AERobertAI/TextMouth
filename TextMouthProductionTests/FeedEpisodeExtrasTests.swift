@@ -677,6 +677,41 @@ FEED_DOWNLOAD_FINISHED: x"
         XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_CANCELLED: \(title)").count, 1)
     }
 
+    /// The episode asked for again after Cancel Download stopped it while its
+    /// files came downloads whole, as if the cancel had not happened: its
+    /// audio from the start, its transcript this time, one book, and nothing
+    /// left in the holding folder by either.
+    func testAnEpisodeAskedForAgainAfterACancelDuringItsFilesDownloadsWhole() async throws {
+        let world = try FeedTestWorld(self, label: "FeedExtrasCancelAgain")
+        let title = uniqueTitle()
+        let feed = try await subscribe(world, title: title, transcripts: [("/t.vtt", "text/vtt")], chapters: nil)
+        try serveAudio(in: world, duration: 4)
+        // The first request for the transcript hangs; the second is answered.
+        world.server.serve(
+            "/t.vtt",
+            hanging(try sampleResponse("vtt/tone4.vtt", type: "text/vtt")),
+            try sampleResponse("vtt/tone4.vtt", type: "text/vtt")
+        )
+
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the transcript is asked for", timeout: 20) { !world.server.requests(to: "/t.vtt").isEmpty }
+        XCTAssertEqual(world.center.cancelDownload("guid:ep-1", of: feed.id), .stopped)
+        await waitFor("the download stops", timeout: 20) {
+            !world.center.downloads.isDownloading("guid:ep-1", of: feed.id)
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path), [])
+
+        world.center.download("guid:ep-1", of: feed.id)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(world.library.library.books.map(\.id), [book.id], "the episode is not in the library exactly once")
+        XCTAssertEqual(try foundTranscript(of: book).source, TranscriptSource(origin: .podcast, format: .webVTT))
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a").count, 2, "the audio was not downloaded again")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: world.downloadsFolder.path), [])
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_CANCELLED: \(title)").count, 1)
+        XCTAssertEqual(debugLogLines(containing: "FEED_DOWNLOAD_FINISHED: \(title)").count, 1)
+    }
+
     /// A quit while the files come imports nothing: the download is listed,
     /// and the next launch downloads the episode again, with its files.
     func testAQuitWhileTheFilesComeStartsTheEpisodeOverAtTheNextLaunch() async throws {
