@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Export of a transcript as captions (FMT23): the WebVTT and SubRip
@@ -716,6 +717,42 @@ final class TranscriptExportTests: XCTestCase {
             )]
         )
         XCTAssertEqual(plan.booksInCloud, [])
+    }
+
+    /// The Convert transcript to picker offers every text writer, EPUB 3
+    /// among them, and the EPUB writer makes an e-book of the transcript's
+    /// text alone, as every text writer does: one .epub, a sound package
+    /// (its mimetype first), whose chapters hold each track's sentences,
+    /// with the "&" escaped, and no transcript.json beside it.
+    func testATranscriptExportsAsAnEPUB() throws {
+        let world = try makeIntegrationWorld("Transcript Export EPUB")
+        let book = try makeTranscribedBook(in: world)
+        let destination = try makeSandboxDirectory("Transcript Export EPUB Destination")
+        let model = BookExportModel(books: [book])
+        XCTAssertTrue(
+            model.conversionChoices(for: .transcript).contains { $0.id == EPUBExportWriter().id },
+            "the transcript's picker leaves out EPUB"
+        )
+        let epub = BookExportConversion.text(TextExportConversion(EPUBExportWriter(), options: NoTextExportOptions()))
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)], kinds: [.transcript], conversions: [.transcript: epub], to: destination
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        let file = try XCTUnwrap(outcome.exported.first)
+        XCTAssertEqual(outcome.exported.map(\.pathExtension), ["epub"])
+        let archive = try Archive(url: file, accessMode: .read)
+        XCTAssertEqual(archive.map(\.path).first, "mimetype")
+        var xhtml = ""
+        for entry in archive where entry.path.hasSuffix(".xhtml") {
+            var bytes = Data()
+            _ = try archive.extract(entry) { bytes.append($0) }
+            xhtml += String(decoding: bytes, as: UTF8.self)
+        }
+        for sentence in ["Gulls argue over the net shed.", "Berths 4 &amp; 5 stay shut till noon.", "The pilot boat ties up at the slip."] {
+            XCTAssertTrue(xhtml.contains(sentence), "the e-book lacks “\(sentence)”")
+        }
     }
 
     /// Captions of a book whose transcript.json is only in the cloud, its
