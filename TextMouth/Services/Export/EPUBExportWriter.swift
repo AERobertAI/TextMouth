@@ -170,6 +170,8 @@ private struct EPUBPackageBuilder {
     private var files: [EPUBChapterFile] = []
     /// The contents: every heading, in reading order, linking its file.
     private var contents: [ExportContentsEntry] = []
+    /// Whether any chapter holds a heading of the book's own.
+    private var hasHeadings = false
     /// The page list: every page, in reading order, linking its file.
     private var pages: [ExportContentsEntry] = []
 
@@ -200,7 +202,7 @@ private struct EPUBPackageBuilder {
         }
         try add("\(Self.packageFolder)/\(Self.navigationDocumentName)", navigationDocument(), compressed: true)
         let packageDocument = Self.packageDocument(
-            for: document, files: files, hasHeadings: !contents.isEmpty,
+            for: document, files: files, hasHeadings: hasHeadings,
             hasPages: !pages.isEmpty, modified: date
         )
         try add("\(Self.packageFolder)/\(Self.packageDocumentName)", packageDocument, compressed: true)
@@ -253,16 +255,35 @@ private struct EPUBPackageBuilder {
         return result.isEmpty ? [Chapter(title: "", blocks: [])] : result
     }
 
+    /// How many times `maximumFileBytes` a file may grow while no heading
+    /// comes to end it at.
+    private static let hardLimitFactor = 4
+
+    /// The name of the next chapter file.
+    private var nextFileName: String {
+        "chapter-\(files.count + 1).xhtml"
+    }
+
     /// Writes `chapter` as one file, or more when it passes
-    /// `maximumFileBytes`: a file is ended after the block that passes the
-    /// limit, unless that block is the chapter's last.
+    /// `maximumFileBytes`. A file is ended after the block that passes the
+    /// limit when a heading comes next, so a heading begins each file that
+    /// follows (the reader gives a file that begins with other text a start
+    /// entry of its own); a chapter with no heading to end a file at goes on
+    /// until `hardLimitFactor` times the limit. A chapter with a title and
+    /// no heading is named in the contents, linking its first file.
     private mutating func writeChapter(_ chapter: Chapter) throws {
+        if !ExportBlock.headings(in: Array(chapter.blocks)).isEmpty {
+            hasHeadings = true
+        } else if let title = Self.name(chapter.title) {
+            contents.append(ExportContentsEntry(level: 1, title: title, address: nextFileName))
+        }
         var lines: [String] = []
         var byteCount = 0
         // What the lines so far hold, for the contents and the page list.
         var headings: [ExportHeading] = []
         var pageBreaks: [ExportPageBreak] = []
 
+        let following = Self.followingText(in: chapter.blocks)
         for (offset, block) in chapter.blocks.enumerated() {
             try cancellation.checkCancelled()
             let blockLines = markup.blockLines(block)
@@ -270,8 +291,14 @@ private struct EPUBPackageBuilder {
             byteCount += blockLines.reduce(0) { $0 + $1.utf8.count + 1 }
             headings += ExportBlock.headings(in: [block])
             pageBreaks += ExportBlock.pageBreaks(in: [block])
-            let isLast = offset == chapter.blocks.count - 1
-            if byteCount >= maximumFileBytes, !isLast {
+            let upcoming = following[offset]
+            let mustEnd = byteCount >= maximumFileBytes * Self.hardLimitFactor
+            // Not after a start of a page that a heading's page follows: the
+            // file ends before the pages, so they begin the next one.
+            var isPage = false
+            if case .pageBreak = block { isPage = true }
+            let endsAtHeading = byteCount >= maximumFileBytes && upcoming == .heading && !isPage
+            if upcoming != .nothing, endsAtHeading || mustEnd {
                 try writeChapterFile(titled: chapter.title, lines: lines, headings: headings, pages: pageBreaks)
                 lines = []
                 byteCount = 0
@@ -282,6 +309,33 @@ private struct EPUBPackageBuilder {
         try writeChapterFile(titled: chapter.title, lines: lines, headings: headings, pages: pageBreaks)
     }
 
+    /// What comes after a block, past the starts of pages.
+    private enum Following {
+        /// Nothing but, at most, starts of pages.
+        case nothing
+        /// A heading.
+        case heading
+        /// Any other text.
+        case other
+    }
+
+    /// For each block of `blocks`, what follows it past the starts of pages,
+    /// found in one pass from the end so a long run of pages costs nothing
+    /// more than any other run.
+    private static func followingText(in blocks: ArraySlice<ExportBlock>) -> [Following] {
+        var result = [Following](repeating: .nothing, count: blocks.count)
+        var next = Following.nothing
+        for (index, block) in blocks.enumerated().reversed() {
+            result[index] = next
+            switch block {
+            case .pageBreak: break
+            case .heading: next = .heading
+            default: next = .other
+            }
+        }
+        return result
+    }
+
     /// Writes one file of `lines`, and notes its headings and pages for the
     /// navigation document.
     private mutating func writeChapterFile(
@@ -290,7 +344,7 @@ private struct EPUBPackageBuilder {
         headings: [ExportHeading],
         pages pageBreaks: [ExportPageBreak]
     ) throws {
-        let name = "chapter-\(files.count + 1).xhtml"
+        let name = nextFileName
         let documentTitle = Self.name(title) ?? Self.name(document.book.title)
         let text = Self.xhtmlDocument(
             title: documentTitle ?? Self.untitled,

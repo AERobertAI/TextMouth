@@ -182,17 +182,26 @@ final class ExportDocumentWalkerStructureTests: XCTestCase {
 
     // MARK: - Chapters
 
-    /// The document says where each chapter begins in its blocks, counting
-    /// the heading a chapter without one is given.
+    /// The document says where each chapter begins in its blocks and what it
+    /// is called, and adds no heading to a chapter that has none: the words
+    /// are the book's. (A walk of the words alone gives such a chapter its
+    /// title as a heading, as the reader does.)
     func testChapterStartsAreTheIndexOfEachChaptersFirstBlock() throws {
-        let document = try walk("<!-- chapter: A -->\nOne.\n\n<!-- chapter: B -->\n# Bee\n\nTwo.\n\n<!-- chapter: C -->\nThree.")
+        let markdown = "<!-- chapter: A -->\nOne.\n\n<!-- chapter: B -->\n# Bee\n\nTwo.\n\n<!-- chapter: C -->\nThree."
+        let document = try walk(markdown)
         XCTAssertEqual(document.chapterStarts, [
             ExportChapterStart(blockIndex: 0, title: "A"),
-            ExportChapterStart(blockIndex: 2, title: "B"),
-            ExportChapterStart(blockIndex: 4, title: "C"),
+            ExportChapterStart(blockIndex: 1, title: "B"),
+            ExportChapterStart(blockIndex: 3, title: "C"),
         ])
-        XCTAssertEqual(document.blocks.count, 6)
-        XCTAssertEqual(ExportBlock.headings(in: document.blocks).map(\.plainText), ["A", "Bee", "C"])
+        XCTAssertEqual(document.blocks, [
+            paragraph("One."),
+            .heading(ExportHeading(level: 1, runs: [ExportRun("Bee")], id: "bee")),
+            paragraph("Two."),
+            paragraph("Three."),
+        ])
+        let plain = try walk(markdown, .plain)
+        XCTAssertEqual(ExportBlock.headings(in: plain.blocks).map(\.plainText), ["A", "Bee", "C"])
     }
 
     /// A book with no chapter marker is one chapter with no title.

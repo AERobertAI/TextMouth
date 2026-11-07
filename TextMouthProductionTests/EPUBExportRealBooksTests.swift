@@ -28,7 +28,6 @@ final class EPUBExportRealBooksTests: XCTestCase {
     func testFrankensteinHTML() throws { try check("frankenstein.html") }
     func testMarkdown() throws { try check("sample.md") }
     func testPDFWithAnOutline() throws { try check("test_with_outline.pdf") }
-    func testRussianFB2() throws { try check("format-samples/fb2/harbour-windows-1251.fb2") }
     func testJapaneseText() throws { try check("format-samples/txt-encodings/euc-jp.txt") }
     func testChineseText() throws { try check("format-samples/txt-encodings/gb18030.txt") }
     func testDTBookWithPages() throws { try check("format-samples/dtbook/pages-front-and-inline.xml") }

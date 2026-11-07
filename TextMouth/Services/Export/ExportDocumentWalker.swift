@@ -201,13 +201,17 @@ private struct Walk {
 
     /// The blocks of one chapter: `content` parsed as Markdown. A chapter that
     /// has a title but no heading of any depth begins with its title as a
-    /// level-1 heading, as the reader gives such a chapter its title.
+    /// level-1 heading, as the reader gives such a chapter its title. A walk
+    /// that keeps the chapters adds none: it says where each chapter begins
+    /// and what it is called (`ExportDocument.chapterStarts`), and the writer
+    /// that asked names the chapter in its contents without adding words the
+    /// book does not have.
     mutating func blocks(ofSectionTitled title: String, content: String) -> [ExportBlock] {
         let parsed = Markdown.Document(parsing: content)
         var blocks = self.blocks(in: parsed, nesting: 0, listDepth: 0)
         // Claimed after the blocks are made: they hold no heading, so the
         // order of ids is still the order of reading.
-        if !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
+        if !options.keepsChapters, !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
             blocks.insert(.heading(plainHeading(level: 1, title: title)), at: 0)
         }
         return blocks

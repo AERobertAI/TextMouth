@@ -314,13 +314,28 @@ final class EPUBExportWriterTests: XCTestCase {
         XCTAssertEqual(try bodyLines("OEBPS/chapter-1.xhtml", in: url), ["<p>First paragraph.</p>", "<p>Second paragraph.</p>"])
     }
 
-    /// A chapter with a title and no heading begins with its title as a
-    /// level-1 heading, as the reader gives such a chapter one; it is in the
-    /// contents.
-    func testAChapterWithATitleAndNoHeadingBeginsWithItsTitle() throws {
-        let url = try export("<!-- chapter: Departure -->\nPlain words.")
-        XCTAssertEqual(try bodyLines("OEBPS/chapter-1.xhtml", in: url), ["<h1 id=\"departure\">Departure</h1>", "<p>Plain words.</p>"])
-        XCTAssertEqual(try navLinks("toc", in: url).map(\.text), ["Departure"])
+    /// A chapter with a title and no heading is named in the contents,
+    /// linking its file, and holds no words the book does not have: no heading
+    /// is added to it. The book then states no structural navigation, since
+    /// it has no heading of its own.
+    func testAChapterWithATitleAndNoHeadingIsNamedInTheContentsAndGainsNoWords() throws {
+        let url = try export("<!-- chapter: Departure -->\nPlain words.\n\n<!-- chapter: Arrival -->\nMore words.")
+        XCTAssertEqual(try bodyLines("OEBPS/chapter-1.xhtml", in: url), ["<p>Plain words.</p>"])
+        XCTAssertEqual(try bodyLines("OEBPS/chapter-2.xhtml", in: url), ["<p>More words.</p>"])
+        let links = try navLinks("toc", in: url)
+        XCTAssertEqual(links.map(\.text), ["Departure", "Arrival"])
+        XCTAssertEqual(links.map(\.address), ["chapter-1.xhtml", "chapter-2.xhtml"])
+        XCTAssertEqual(
+            metas("schema:accessibilityFeature", in: try package(of: url)),
+            ["tableOfContents", "readingOrder"],
+            "the chapters are in the contents, but no heading is"
+        )
+    }
+
+    /// A chapter with a heading of its own is not also named in the contents.
+    func testAChapterWithAHeadingIsNotNamedBesidesIt() throws {
+        let url = try export("<!-- chapter: Departure -->\n# Leaving\n\nWords.")
+        XCTAssertEqual(try navLinks("toc", in: url).map(\.text), ["Leaving"])
     }
 
     /// One chapter of many: each chapter is a file whose `<title>` is its
@@ -534,10 +549,11 @@ final class EPUBExportWriterTests: XCTestCase {
 
     // MARK: - Long Books
 
-    /// A chapter past the file size goes on in another file: the text is
-    /// the same, in order, no file but the last is much past the limit, every
-    /// heading's link goes to the file that holds it, and the spine lists
-    /// them all.
+    /// A chapter past the file size goes on in another file, ending a file
+    /// where a heading begins: the text is the same, in order, no file but the
+    /// last is much past the limit, each file after the first begins with a
+    /// heading, every heading's link goes to the file that holds it, and the
+    /// spine lists them all.
     func testALongChapterGoesOnInAnotherFile() throws {
         var markdown = "# Start\n\n"
         for number in 1...60 {
@@ -553,6 +569,9 @@ final class EPUBExportWriterTests: XCTestCase {
         for file in files {
             let size = try text(file, in: url).utf8.count
             if file != files.last { XCTAssertLessThan(size, 1_000 + 600, "\(file) is far past the limit") }
+            if file != files.first {
+                XCTAssertTrue(try XCTUnwrap(bodyLines(file, in: url).first).hasPrefix("<h2 "), "\(file) begins with a heading")
+            }
             let body = try bodyLines(file, in: url).joined(separator: " ")
             words += body.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
                 .split(whereSeparator: \.isWhitespace).map(String.init)
@@ -569,6 +588,30 @@ final class EPUBExportWriterTests: XCTestCase {
             XCTAssertTrue(file.contains("id=\"\(parts[1])\""), "\(link.address) is not in its file")
         }
         try assertWellFormed(url)
+    }
+
+    /// Text with no heading to end a file at goes on in another file only
+    /// past four times the limit, and every word is kept in order.
+    func testTextWithNoHeadingIsSplitOnlyPastTheHardLimit() throws {
+        let paragraphs = (1...40).map { "Paragraph \($0) has a few plain words in it." }
+        let url = try export(paragraphs.joined(separator: "\n\n"), writer: Self.writer(maximumFileBytes: 300))
+        let files = try chapterPaths(of: url)
+        XCTAssertGreaterThan(files.count, 2)
+        var words: [String] = []
+        for file in files {
+            XCTAssertLessThan(try text(file, in: url).utf8.count, 4 * 300 + 400, "\(file) is far past four times the limit")
+            words += try bodyLines(file, in: url).joined(separator: " ")
+                .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+                .split(whereSeparator: \.isWhitespace).map(String.init)
+        }
+        XCTAssertEqual(words, paragraphs.joined(separator: " ").split(whereSeparator: \.isWhitespace).map(String.init))
+    }
+
+    /// A long run of page markers with no text between is written in a moment.
+    func testALongRunOfPagesIsWrittenQuickly() throws {
+        let markers = (1...5_000).map { "<!-- page: \($0) -->" }.joined(separator: "\n\n")
+        let url = try export("Words.\n\n\(markers)\n\n# End\n\nMore.", writer: Self.writer(maximumFileBytes: 2_000))
+        XCTAssertEqual(try navLinks("page-list", in: url).count, 5_000)
     }
 
     // MARK: - Stop and Failure
