@@ -87,13 +87,15 @@ final class PhoneImportCopier: ObservableObject {
     // MARK: - Installing
 
     /// Starts the copier, once: it takes the files other apps send from the
-    /// life cycle, follows the library's imports and questions, says what a
-    /// close stopped, and sweeps what an earlier run left.
+    /// life cycle, follows the library's imports and questions, and sweeps
+    /// what an earlier run left. Safe before any window exists, so the app
+    /// delegate may call it at launch; the root view calls it too, as it
+    /// first appears.
     ///
-    /// Called as the root view first appears. **Not verified:** a file sent
-    /// at a cold launch arrives in the scene's connection options before
-    /// that, and goes the foundation's way (imported directly, its scope
-    /// taken by the shared import) unless the app delegate calls this first.
+    /// **Not verified:** a file sent at a cold launch arrives in the scene's
+    /// connection options, before the root appears, and goes the
+    /// foundation's way (imported directly, its scope taken by the shared
+    /// import) unless the app delegate has called this first.
     func install() {
         guard !isInstalled else { return }
         isInstalled = true
@@ -127,10 +129,28 @@ final class PhoneImportCopier: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.releaseHeldFiles() }
         }
-        sayWhatACloseStopped()
         questionsChanged()
         updateUnderWay()
     }
+
+    /// Whether `rootAppeared()` has run.
+    private var hasRootAppeared = false
+
+    /// Takes the first appearance of the root view: the copier is installed
+    /// if it wasn't, and once VoiceOver has settled on the first screen,
+    /// what a close stopped importing is said.
+    func rootAppeared() {
+        install()
+        guard !hasRootAppeared else { return }
+        hasRootAppeared = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSentenceDelay) { [weak self] in
+            self?.sayWhatACloseStopped()
+        }
+    }
+
+    /// How long after the first screen appears what a close stopped is said:
+    /// time for VoiceOver to land on the screen and read it first.
+    private static let launchSentenceDelay: TimeInterval = 1.5
 
     // MARK: - Arriving
 

@@ -33,7 +33,7 @@ struct PhoneImportPresentations: ViewModifier {
                 }
             }
             .onAppear {
-                copier.install()
+                copier.rootAppeared()
             }
     }
 
