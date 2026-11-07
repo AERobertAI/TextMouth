@@ -12,7 +12,7 @@ import Foundation
 /// to delete an original file, since every original the shared import sees
 /// on the phone is a scratch copy the app made, which the spec says is never
 /// asked about; and the offer to transcribe, which the phone can't do yet.
-struct PhoneImportQuestion: Equatable {
+struct PhoneImportQuestion: Equatable, Identifiable {
     /// One choice in the list.
     struct Choice: Equatable, Identifiable {
         /// What the choice answers, with the folder name for Create Folder
@@ -46,6 +46,9 @@ struct PhoneImportQuestion: Equatable {
 
     /// The question it shows, whose answer must name it.
     let decisionID: ImportDecision.ID
+
+    /// Tells one question's sheet from the next one's.
+    var id: ImportDecision.ID { decisionID }
     /// The Mac's title, with its place among the questions waiting: the
     /// sheet's heading.
     let title: String

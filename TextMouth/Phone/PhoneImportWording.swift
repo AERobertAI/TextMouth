@@ -115,6 +115,27 @@ enum PhoneImportWording {
         return "“\(name)”"
     }
 
+    // MARK: - The Progress Card
+
+    /// The lines the phone's progress card shows under the Mac's title,
+    /// "Importing Books", at `now`: while a file is copied, "Downloading
+    /// “Dune”" for one coming down from iCloud and otherwise the Mac's first
+    /// step, "“Dune”, Reading the file"; once the shared import has it, the
+    /// Mac's own lines (`ImportProgressState.lines(at:)`). Empty lines are
+    /// left out.
+    static func cardLines(copying copy: PhoneImportCopyRun.Status?, state: ImportProgressState, at now: Date) -> [String] {
+        if let copy {
+            return [copy.isDownloading ? downloading(copy.name) : ImportProgressWording.book(copy.name, step: .readingSource)]
+        }
+        return state.lines(at: now).filter { !$0.isEmpty }
+    }
+
+    /// What VoiceOver reads for the card, when it asks: the Mac's title,
+    /// then each line as a sentence, as the Mac's overlay is read.
+    static func cardSummary(copying copy: PhoneImportCopyRun.Status?, state: ImportProgressState, at now: Date) -> String {
+        ImportProgressWording.spokenStatus(title: ImportProgressWording.title, lines: cardLines(copying: copy, state: state, at: now))
+    }
+
     // MARK: - The Library's Button
 
     /// The hint of the Library's Add to Library button on the phone, which

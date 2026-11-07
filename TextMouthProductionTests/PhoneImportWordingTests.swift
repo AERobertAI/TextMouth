@@ -122,6 +122,33 @@ final class PhoneImportWordingTests: XCTestCase {
         }
     }
 
+    // MARK: - The Progress Card
+
+    /// While a file comes down from iCloud the card says so; while a local
+    /// file is copied it says the Mac's first step; once the shared import
+    /// has it, the Mac's own lines; and VoiceOver reads the Mac's title
+    /// before them.
+    func testCardLines() {
+        let now = Date(timeIntervalSinceReferenceDate: 100)
+        let idle = ImportProgressState()
+        let downloading = PhoneImportCopyRun.Status(name: "Dune", isDownloading: true)
+        let local = PhoneImportCopyRun.Status(name: "Dune", isDownloading: false)
+
+        XCTAssertEqual(PhoneImportWording.cardLines(copying: downloading, state: idle, at: now), ["Downloading “Dune”"])
+        XCTAssertEqual(
+            PhoneImportWording.cardLines(copying: local, state: idle, at: now),
+            [ImportProgressWording.book("Dune", step: .readingSource)]
+        )
+        XCTAssertEqual(
+            PhoneImportWording.cardSummary(copying: downloading, state: idle, at: now),
+            "Importing Books: Downloading “Dune”."
+        )
+
+        let importing = ImportProgressState(book: "Dune.epub", at: now, step: .readingText)
+        XCTAssertEqual(PhoneImportWording.cardLines(copying: nil, state: importing, at: now), importing.lines(at: now))
+        XCTAssertEqual(PhoneImportWording.cardLines(copying: nil, state: idle, at: now), [], "An empty line is left out")
+    }
+
     // MARK: - The Library's Button
 
     /// The phone's hint offers only what its sheet does.
