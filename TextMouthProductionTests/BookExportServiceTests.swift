@@ -857,6 +857,33 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
     }
 
+    /// A copy whose close fails, as a write the file system deferred and then
+    /// failed can make it, has failed: what it made is removed and the
+    /// system's error thrown, rather than a file that may be cut short left
+    /// in the folder chosen.
+    func testACopyWhoseCloseFailsRemovesWhatItMade() throws {
+        let folder = try makeSandboxDirectory("Export Copy Close Fails")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("file.txt")
+        var closes = 0
+
+        XCTAssertThrowsError(
+            try BookExportService.copyExclusively(source, to: target, closeFile: { descriptor in
+                closes += 1
+                // The descriptor is closed all the same; only the result fails.
+                _ = Darwin.close(descriptor)
+                errno = EIO
+                return -1
+            })
+        ) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .EIO)
+        }
+        XCTAssertEqual(closes, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path), "a copy whose close failed was left")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new", "the source was touched")
+    }
+
     /// When another app's item takes the place of the one a failing copy
     /// made, the copy leaves it there: it removes only the item it created,
     /// known by its identity, for a file and for a folder alike.

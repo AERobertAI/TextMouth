@@ -1179,11 +1179,13 @@ enum BookExportService {
     /// the descriptor given, or a folder's items into it, given no
     /// descriptor. It exists only so a test can make a copy fail
     /// after `target` is made, and replace `target` with a file of its own
-    /// first.
+    /// first. `closeFile` stands for `close(2)`, which can report a write the
+    /// file system deferred and then failed, so a test can make it fail too.
     static func copyExclusively(
         _ source: URL,
         to target: URL,
-        copyContents: (_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws -> Void = copyIntoCreatedItem
+        copyContents: (_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws -> Void = copyIntoCreatedItem,
+        closeFile: (_ descriptor: Int32) -> Int32 = { close($0) }
     ) throws {
         if isFolder(source) {
             guard mkdir(target.path, S_IRWXU) == 0 else { throw creationError(errno, target: target) }
@@ -1205,11 +1207,17 @@ enum BookExportService {
         do {
             try copyContents(source, target, descriptor)
         } catch {
-            close(descriptor)
+            _ = closeFile(descriptor)
             removeItem(at: target, ifStill: made)
             throw error
         }
-        close(descriptor)
+        // A close that fails can mean the copy never fully reached the disk:
+        // the copy failed, and what it made goes.
+        guard closeFile(descriptor) == 0 else {
+            let code = errno
+            removeItem(at: target, ifStill: made)
+            throw posixError(code)
+        }
     }
 
     /// The copy `copyExclusively` makes into the item it created at
