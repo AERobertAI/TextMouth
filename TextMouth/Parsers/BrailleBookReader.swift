@@ -168,6 +168,11 @@ enum BrailleBookReader {
         of url: URL, table: String, recordedVersion: String? = nil, fileCode: String? = nil,
         includesPages: Bool = false
     ) throws -> String {
+        #if os(iOS)
+        // iOS has no braille helper to translate with, so the book is
+        // refused in the phone's words before a byte of it is read.
+        try PhoneImportRefusal.refuseBrailleBook()
+        #endif
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
         // A book whose braille file characters this TextMouth lacks is

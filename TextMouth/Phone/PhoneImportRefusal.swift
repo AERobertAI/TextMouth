@@ -38,6 +38,16 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         sentence(naming: nil)
     }
 
+    // MARK: - Braille
+
+    /// Throws `.braille`: the phone has no braille translator yet, so every
+    /// braille book is refused before it is read. A function rather than a
+    /// bare `throw`, so the reader's code after the call draws no warning
+    /// that it will never run.
+    static func refuseBrailleBook() throws {
+        throw PhoneImportRefusal.braille
+    }
+
     // MARK: - Audio
 
     /// Throws `.convertedAudio`, naming the kind of the first of `sources`,

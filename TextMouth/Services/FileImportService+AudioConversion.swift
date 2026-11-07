@@ -50,6 +50,10 @@ extension FileImportService {
             // The content decides, not the extension: a track named .m4a may hold Ogg or AC-3.
             let sources = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
             guard !sources.isEmpty else { return }
+            #if os(iOS)
+            // iOS has no converter: the book is refused, naming the kind.
+            try PhoneImportRefusal.refuseConversion(of: sources)
+            #endif
             let unnamed = try convertTracks(sources, inPackage: staging.directory, run: &run)
             // The sources' paths are read now, while they exist to be resolved.
             let sourceNames = unnamed.map { AudioBookParser.relativeName(of: $0.source, in: bookURL) }
@@ -59,6 +63,10 @@ extension FileImportService {
         } else {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
             guard !needed.isEmpty else { return }
+            #if os(iOS)
+            // iOS has no converter: the book is refused, naming the kind.
+            try PhoneImportRefusal.refuseConversion(of: needed)
+            #endif
             let unnamed = try convertTracks([bookURL], inPackage: staging.directory, run: &run)
             try disposeOfSources(
                 of: unnamed,
