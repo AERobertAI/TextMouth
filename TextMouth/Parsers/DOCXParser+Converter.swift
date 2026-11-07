@@ -267,8 +267,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var wasCancelled = false
 
     /// How many elements are read between two looks at whether the import was
-    /// cancelled: a few thousand, which costs nothing measurable.
-    private static let elementsBetweenCancellationChecks = 4_096
+    /// cancelled: a thousand, which costs nothing measurable. Elements of the
+    /// most attributes the guard lets through (1,024 each, 22,865 of them in
+    /// 62 MB) took 8.5 s to read, so 4,096 between looks left Cancel waiting
+    /// 1.5 s; a thousand leaves it under half a second.
 
     /// The text of a run before a page start inside it.
     private struct RunPiece {
