@@ -191,7 +191,7 @@ final class PhoneLibraryRows: ObservableObject {
 
     /// Whether `id` is a book's or a folder's row, which focus can land on in
     /// place of a row that left, rather than a sentence.
-    private static func isListed(_ id: PhoneRowID) -> Bool {
+    private nonisolated static func isListed(_ id: PhoneRowID) -> Bool {
         if case .note = id { return false }
         return true
     }
@@ -400,7 +400,7 @@ final class PhoneLibraryRows: ObservableObject {
                 id: "folders",
                 header: PhoneLibraryVocabulary.foldersHeader,
                 indexLabel: nil,
-                rows: contents.folders.map(folderRow)
+                rows: contents.folders.map { folderRow($0) }
             ))
         }
         if let note = contents.note {
