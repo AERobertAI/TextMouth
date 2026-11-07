@@ -6,7 +6,7 @@ import Foundation
 /// document holds text in several: Word marks a run of Macintosh text in a Windows document (and the
 /// reverse) with `sprmCChse`, and a run in a Cyrillic or Greek font is in that code page whatever the
 /// language of the document says. The rule, in order, for the text of a run:
-/// 1. text in the font named Symbol is in the Symbol encoding (its letters are Greek, its other characters
+/// 1. text in the font named Symbol (or a clone of it: `WordSymbolFontEncodings`) is in the Symbol encoding (its letters are Greek, its other characters
 ///    mathematical): `AdobeSymbolEncoding`. It is what Word shows (textutil does not decode it). A run that
 ///    holds a symbol of Insert Symbol is not: its "(" is a placeholder (`WordHTMLWriter`);
 /// 2. the run's own mark (`sprmCChse`): 256 is the Macintosh's (Mac Roman), else the FIB's mark for

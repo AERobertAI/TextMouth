@@ -200,6 +200,35 @@ final class WordDocumentSymbolFontTests: XCTestCase {
         XCTAssertEqual(table[0x3D], "\u{2019}")
     }
 
+    func testTheCodesTheRealTextSettlesAreInTheTablesAndTheRestAreNot() {
+        typealias Encodings = WordSymbolFontEncodings
+        // WP MathA 0x46 is a micro sign ("100 micrometres"), WP TypographicSymbols 0x43 an em dash.
+        guard case .table(let math) = Encodings.reading(ofFontNamed: "wp matha", characterSet: 0),
+              case .table(let typographic) = Encodings.reading(ofFontNamed: "wp typographicsymbols", characterSet: 0) else {
+            return XCTFail("tables were expected")
+        }
+        XCTAssertEqual(math[0x46], "\u{00B5}")
+        XCTAssertEqual(typographic[0x43], "\u{2014}")
+        // Not settled by the text around them: a space.
+        XCTAssertNil(typographic[0x37])
+        XCTAssertNil(typographic[0x23])
+        // SymbolPS is a Symbol clone; Zapf Humanist and Zapf Chancery are text fonts, Zapf Dingbats is pictures.
+        XCTAssertEqual(Encodings.reading(ofFontNamed: "symbolps", characterSet: 2), .adobeSymbol)
+        XCTAssertEqual(Encodings.reading(ofFontNamed: "zapfhumnst bt", characterSet: 0), .text)
+        XCTAssertEqual(Encodings.reading(ofFontNamed: "zapf chancery", characterSet: 0), .text)
+        XCTAssertEqual(Encodings.reading(ofFontNamed: "zapf dingbats", characterSet: 0), .pictures)
+    }
+
+    func testASymbolInAnOrdinaryNonLatinFontKeepsThatFontsCodePage() throws {
+        // Word 6: a Cyrillic font (character set 204) and code 0xE0, which Windows-1251 has as a Cyrillic a (not Symbol's
+        // table, not Windows-1252's a-grave): the placeholder is not stored as U+F0xx.
+        var builder = Builder()
+        builder.paragraphs = [Paragraph(runs: [Run("x"), symbol(font: 8, code: 0xE0), Run("y")])]
+        builder.fontNames = Self.fonts + ["Arial Cyr"]
+        builder.fontCharacterSets = Self.characterSets + [204]
+        XCTAssertEqual(try body(of: builder.build()), "<p>x\u{0430}y</p>\n")
+    }
+
     func testAnOrdinaryFontsCodeIsNilWhenItIsASpaceOrAControl() {
         XCTAssertNil(WordSymbolFontEncodings.scalar(forCode: 0x20, reading: .text))
         XCTAssertNil(WordSymbolFontEncodings.scalar(forCode: 0x09, reading: .text))
