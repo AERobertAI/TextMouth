@@ -63,13 +63,18 @@ struct XMLOpenElements {
 /// `<div><b a=1></div>` opens more each time, since `b` comes back inside the
 /// next `div` (the parser's reconstruction of formatting). So each rule is
 /// followed as the parser has it, and where its modes make that uncertain the
-/// model errs on the side of more elements open. Three things are set off by the
-/// parser's modes, and each is met as `HTMLOpenElements.tagsAreCertain` says.
+/// model errs on the side of more elements open. Where the parser's mode would
+/// read text differently from everywhere else (a page of frames, and text
+/// elements in a `noscript` of the head), the model stops trusting tags
+/// (`tagsAreCertain`) and the guard counts every one that could lie ahead.
 ///
 /// What it counts differs from the parser's stack by the `html` and `body`
 /// elements, which are never pushed here, and by the table parts it leaves out
-/// (`colgroup`, which holds only `col` and closes at anything else).
-/// `MarkupGuardFidelityTests` holds it against SwiftSoup's real trees.
+/// (`colgroup`, which holds only `col` and closes at anything else). The tree can
+/// go deeper than the stack, since the parser takes a `form` or an `a` off its
+/// stack from under what is above it: by no more than twice in thousands of random
+/// documents made for it. `MarkupGuardTests` holds the model against SwiftSoup's
+/// real trees, rule by rule and at random.
 struct HTMLOpenElements {
 
     // MARK: Elements

@@ -13,7 +13,7 @@ import Foundation
 /// quoted attribute, or a style sheet) is passed over exactly where SwiftSoup
 /// passes over it, and one that SwiftSoup reads oddly is read as oddly here:
 /// a declaration ends at its first `>`, quoted or not, and `<!DOCTYPE >` does
-/// not end at that `>`. `MarkupGuardFidelityTests` holds the two side by side.
+/// not end at that `>`. `MarkupGuardTests` holds the two side by side.
 ///
 /// Every byte is looked at a bounded number of times, so a pass is linear in
 /// the size of the markup whatever the markup holds.
@@ -822,8 +822,8 @@ struct MarkupScanner {
         return (starts, tags)
     }
 
-    /// Whether the name at `range` reads as text in lower case, with ASCII
-    /// letters alone changed, as SwiftSoup's HTML parser normalizes a name.
+    /// The name at `range` as text in lower case, with ASCII letters alone
+    /// changed, as SwiftSoup's HTML parser normalizes a name.
     func lowercasedName(_ range: Range<Int>) -> String {
         String(decoding: bytes[range].map(Ascii.lowercased), as: UTF8.self)
     }
