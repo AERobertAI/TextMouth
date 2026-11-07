@@ -103,7 +103,8 @@ final class PhoneAudioSession {
         // neither replaces the other.
         let askedBefore = reader.phoneHooks.audioMayStart
         reader.phoneHooks.audioMayStart = {
-            askedBefore() && PhoneAudioSession.shared.audioMayStart()
+            guard askedBefore() else { return false }
+            return PhoneAudioSession.shared.audioMayStart()
         }
         reader.nowPlayingService.installPhoneHandlers(NowPlayingService.PhoneHandlers(
             onInterruptionPause: { [weak reader] in reader?.pauseForAudioInterruption() },
