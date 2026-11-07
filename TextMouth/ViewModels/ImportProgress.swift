@@ -266,6 +266,18 @@ final class ImportProgress: ObservableObject {
         self.now = now
     }
 
+    #if os(iOS)
+    /// Whether a book plays now, which the phone's import sets: while one
+    /// does, the quarters of a batch are not said over it (the spec's
+    /// "Progress").
+    var isBookPlaying: @MainActor () -> Bool = { false }
+
+    /// How urgent what an import says unasked is on the phone: low, so it
+    /// waits for VoiceOver's own speech and never cuts into it (the
+    /// engineering review's F18).
+    static let unaskedPriority = NSAccessibilityPriorityLevel.low
+    #endif
+
     /// Shows `message` alone, under a bar that only spins: an import
     /// starting, or waiting for a data-directory move (TODO S04).
     func show(_ message: String) {
@@ -337,9 +349,16 @@ final class ImportProgress: ObservableObject {
         guard quarter > quarterReached else { return }
         quarterReached = quarter
         guard quarter < 4, !state.isCancelling, hasRunLong(at: date), let subject else { return }
+        #if os(iOS)
+        // On the phone a quarter is said only while no book plays, softly.
+        guard !isBookPlaying() else { return }
+        let priority = Self.unaskedPriority
+        #else
+        let priority = NSAccessibilityPriorityLevel.medium
+        #endif
         VoiceOverAnnouncer.announce(
             ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
-            priority: .medium
+            priority: priority
         )
     }
 
@@ -359,7 +378,11 @@ final class ImportProgress: ObservableObject {
     /// more.
     func end(_ ending: Ending) {
         if let words = endAnnouncement(for: ending) {
+            #if os(iOS)
+            VoiceOverAnnouncer.announce(words, priority: Self.unaskedPriority)
+            #else
             VoiceOverAnnouncer.announce(words)
+            #endif
         }
         clear()
     }
@@ -384,7 +407,14 @@ final class ImportProgress: ObservableObject {
                 failed: result.failures.count
             )
         case .book:
+            #if os(iOS)
+            // On the phone the end of one book is said however short its
+            // import was: focus stays where it was, and nothing else says
+            // the book is in.
+            return ImportProgressWording.finished(book: subject)
+            #else
             return ranLong ? ImportProgressWording.finished(book: subject) : nil
+            #endif
         case .failure:
             return ranLong ? ImportProgressWording.failed(subject) : nil
         }

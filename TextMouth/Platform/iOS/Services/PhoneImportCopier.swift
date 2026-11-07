@@ -103,6 +103,10 @@ final class PhoneImportCopier: ObservableObject {
         model.lifeCycle.onDidBecomeActive { [weak self] in
             self?.releaseHeldFiles()
         }
+        // A batch's quarters are said only while no book plays.
+        library.importProgress.isBookPlaying = { [weak session = model.session] in
+            session?.snapshot?.isPlaying == true
+        }
         // The library's own values, delivered on the main queue, a turn
         // after each change, as the team's rule asks.
         library.$isImporting
