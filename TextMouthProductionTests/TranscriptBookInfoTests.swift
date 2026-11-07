@@ -194,6 +194,70 @@ final class TranscriptBookInfoTests: XCTestCase {
         XCTAssertNil(forUnpackaged, "a book without a package has a line")
     }
 
+    // MARK: - The Model Behind Both Sheets
+
+    /// The model holds nothing until it has read, and nothing for no book;
+    /// it holds the line read for a book, and drops it when asked about
+    /// another book that has none, so one book's line never shows beside
+    /// another's. It asks the reader only for a book it was given.
+    func testTheModelHoldsTheLineOfTheBookItWasLastAskedAbout() async {
+        let asked = AskedBooks()
+        let model = TranscriptBookInfoModel(reader: { book in
+            await asked.add(book.title)
+            return book.title == "Has one" ? "Its line." : nil
+        })
+        XCTAssertNil(model.line, "a line before any read")
+
+        await model.load(for: nil)
+        let askedAboutNobody = await asked.titles
+        XCTAssertNil(model.line)
+        XCTAssertEqual(askedAboutNobody, [], "the reader was asked with no book")
+
+        await model.load(for: Book(title: "Has one", format: .audio, filePath: "/a.m4a", md5Hash: ""))
+        XCTAssertEqual(model.line, "Its line.")
+
+        await model.load(for: Book(title: "Has none", format: .audio, filePath: "/b.m4a", md5Hash: ""))
+        XCTAssertNil(model.line, "the first book's line stayed for the second")
+        let askedAbout = await asked.titles
+        XCTAssertEqual(askedAbout, ["Has one", "Has none"])
+    }
+
+    /// A read that finishes after the sheet moved on, its task cancelled, is
+    /// dropped: the model never shows a line nobody is waiting for.
+    func testAReadThatFinishesAfterItsTaskWasCancelledIsDropped() async {
+        let model = TranscriptBookInfoModel(reader: { _ in
+            // Waits for the cancellation, at most a few thousand turns.
+            for _ in 0..<5_000 where !Task.isCancelled { await Task.yield() }
+            return "A stale line."
+        })
+        let book = Book(title: "Slow", format: .audio, filePath: "/s.m4a", md5Hash: "")
+
+        let task = Task { await model.load(for: book) }
+        for _ in 0..<10 { await Task.yield() }
+        task.cancel()
+        await task.value
+
+        XCTAssertNil(model.line, "a cancelled read set the line")
+    }
+
+    /// With the reader the app uses, the model holds the line of a real
+    /// package's transcript, as the sheets show it, and the spoken detail
+    /// reads "Transcript: " and then the line.
+    func testTheModelReadsARealPackage() async throws {
+        let world = try makeIntegrationWorld("Transcript Book Info Model")
+        let book = try world.makeSilentAudioBook(title: "Harbour Captions", trackDurations: [1])
+        var transcript = TranscriptFixtures.twoFiles
+        transcript.source = TranscriptSource(origin: .podcast, format: .podcastJSON)
+        try TranscriptStore.write(transcript, into: book.tmbDirectory)
+        let model = TranscriptBookInfoModel()
+
+        await model.load(for: book)
+
+        let line = "The podcast's own transcript, downloaded with the episode on \(Self.day)."
+        XCTAssertEqual(model.line, line)
+        XCTAssertEqual(TranscriptionWording.bookInfoSpokenDetail(line), "Transcript: \(line)")
+    }
+
     // MARK: - The Sheets
 
     /// The editor of an audiobook in the library and the reader holds the
@@ -258,6 +322,16 @@ final class TranscriptBookInfoTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// The titles of the books a stub reader was asked about, in order.
+    private actor AskedBooks {
+        private(set) var titles: [String] = []
+
+        /// Notes that the book titled `title` was asked about.
+        func add(_ title: String) {
+            titles.append(title)
+        }
+    }
 
     /// The day of `TranscriptFixtures.date`, as the lines say it.
     private static var day: String { TranscriptionWording.day(TranscriptFixtures.date) }
