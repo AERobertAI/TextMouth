@@ -1122,7 +1122,7 @@ final class FeedEpisodeExtrasTests: XCTestCase {
         title: String,
         transcripts: [(path: String, type: String?)],
         chapters: String?,
-        audio: (path: String, type: String) = (/audio/1.m4a, audio/mp4)
+        audio: (path: String, type: String) = ("/audio/1.m4a", "audio/mp4")
     ) async throws -> Feed {
         await world.start()
         let transcriptLinks = transcripts.map { link in
