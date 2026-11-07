@@ -16,6 +16,32 @@ struct XHTMLMarkup {
     /// document to declare the `epub` prefix (EPUB's chapters do, the HTML
     /// writer's page does not).
     let usesEPUBTypes: Bool
+    /// An attribute written on the start tag of each block that has words,
+    /// such as ` dir="auto"` for a book whose language is unknown, so a
+    /// right-to-left paragraph is set right to left; empty for none.
+    let blockAttributes: String
+    /// Whether a heading with no word left once the characters XML forbids are
+    /// gone is written as a target only, so no screen reader meets an empty
+    /// heading. The HTML writer's page keeps its heading as it always was.
+    let writesEmptyHeadingsAsTargets: Bool
+    /// How the address of a link is written, or nil to write it as it is. The
+    /// closure answers nil for an address that cannot be a URL, which then
+    /// leaves the link's words without the link.
+    let linkAddress: (@Sendable (String) -> String?)?
+
+    /// Markup for `usesEPUBTypes`, with nothing else asked for: what the HTML
+    /// writer's page uses (but for the first flag).
+    init(
+        usesEPUBTypes: Bool,
+        blockAttributes: String = "",
+        writesEmptyHeadingsAsTargets: Bool = false,
+        linkAddress: (@Sendable (String) -> String?)? = nil
+    ) {
+        self.usesEPUBTypes = usesEPUBTypes
+        self.blockAttributes = blockAttributes
+        self.writesEmptyHeadingsAsTargets = writesEmptyHeadingsAsTargets
+        self.linkAddress = linkAddress
+    }
 
     // MARK: Blocks
 
@@ -25,28 +51,35 @@ struct XHTMLMarkup {
         case .heading(let heading):
             return [headingLine(heading)]
         case .paragraph(let runs):
-            return ["<p>\(runsMarkup(runs))</p>"]
+            return ["<p\(blockAttributes)>\(runsMarkup(runs))</p>"]
         case .list(let list):
             return listLines(list)
         case .blockQuote(let blocks):
-            return ["<blockquote>"] + blocks.flatMap(blockLines) + ["</blockquote>"]
+            return ["<blockquote\(blockAttributes)>"] + blocks.flatMap(blockLines) + ["</blockquote>"]
         case .codeBlock(let code):
             // Line feeds stay in the text, which `<pre>` keeps.
-            return ["<pre><code>\(XMLEscaping.text(code))</code></pre>"]
+            return ["<pre\(blockAttributes)><code>\(XMLEscaping.text(code))</code></pre>"]
         case .thematicBreak:
             return ["<hr/>"]
         case .table(let table):
             return tableLines(table)
         case .pageBreak(let page):
             return [pageBreakMarkup(page)]
+        case .navigationTarget(let target):
+            return [targetMarkup(target)]
         }
     }
 
     /// `heading` as one line: its level (kept within HTML's 1 to 6, since
-    /// the writer trusts no caller), its id, and its runs.
+    /// the writer trusts no caller), its id, and its runs. A heading with no
+    /// word to show is, where asked, an empty target of its id instead.
     private func headingLine(_ heading: ExportHeading) -> String {
+        let id = XMLEscaping.attribute(heading.id)
+        if writesEmptyHeadingsAsTargets, !XMLEscaping.cleaned(heading.plainText).contains(where: { !$0.isWhitespace }) {
+            return "<span id=\"\(id)\"></span>"
+        }
         let level = min(max(heading.level, 1), 6)
-        return "<h\(level) id=\"\(XMLEscaping.attribute(heading.id))\">\(runsMarkup(heading.runs))</h\(level)>"
+        return "<h\(level) id=\"\(id)\"\(blockAttributes)>\(runsMarkup(heading.runs))</h\(level)>"
     }
 
     /// `list` as a line opening it, a few lines per item, and a line closing it.
@@ -63,7 +96,7 @@ struct XHTMLMarkup {
     /// something does.
     private func itemLines(_ item: ExportListItem) -> [String] {
         var blocks = item.blocks[...]
-        var opening = "<li>"
+        var opening = "<li\(blockAttributes)>"
         if case .paragraph(let runs)? = blocks.first {
             opening += runsMarkup(runs)
             blocks = blocks.dropFirst()
@@ -77,25 +110,50 @@ struct XHTMLMarkup {
     /// `table` as lines: the header row inside `<thead>` when it has one,
     /// every other row inside `<tbody>` (left out when there is none).
     private func tableLines(_ table: ExportTable) -> [String] {
-        var rows = table.rows[...]
-        var lines = ["<table>"]
-        if table.hasHeaderRow, let header = rows.popFirst() {
-            lines += ["<thead>", rowLine(header, cellTag: "th"), "</thead>"]
+        var lines = ["<table\(blockAttributes)>"]
+        var body: [String] = []
+        for (index, cells) in table.rows.enumerated() {
+            let isHeader = table.hasHeaderRow && index == 0
+            let pages = table.cellPages.filter { $0.row == index }
+            let line = rowLine(cells, cellTag: isHeader ? "th" : "td", pages: pages)
+            if isHeader {
+                lines += ["<thead>", line, "</thead>"]
+            } else {
+                body.append(line)
+            }
         }
-        if !rows.isEmpty {
-            lines += ["<tbody>"] + rows.map { rowLine($0, cellTag: "td") } + ["</tbody>"]
+        if !body.isEmpty {
+            lines += ["<tbody>"] + body + ["</tbody>"]
         }
         lines.append("</table>")
         return lines
     }
 
-    /// One table row as a line, with the cells it has, each in `cellTag`.
-    private func rowLine(_ cells: [String], cellTag: String) -> String {
-        let markup = cells.map { "<\(cellTag)>\(XMLEscaping.text($0))</\(cellTag)>" }.joined()
+    /// One table row as a line, with the cells it has, each in `cellTag`;
+    /// `pages` are the pages that start in the row's cells.
+    private func rowLine(_ cells: [String], cellTag: String, pages: [ExportCellPage]) -> String {
+        let markup = cells.enumerated().map { column, text in
+            "<\(cellTag)\(blockAttributes)>\(cellMarkup(text, pages: pages.filter { $0.column == column }))</\(cellTag)>"
+        }.joined()
         return "<tr>\(markup)</tr>"
     }
 
-    // MARK: Pages
+    /// A cell's `text`, escaped, with the element of each of `pages` where its
+    /// page starts in it, that many Characters in.
+    private func cellMarkup(_ text: String, pages: [ExportCellPage]) -> String {
+        guard !pages.isEmpty else { return XMLEscaping.text(text) }
+        let characters = Array(text)
+        var markup = ""
+        var written = 0
+        for cellPage in pages.sorted(by: { $0.offset < $1.offset }) {
+            let offset = min(max(cellPage.offset, written), characters.count)
+            markup += XMLEscaping.text(String(characters[written..<offset])) + pageBreakMarkup(cellPage.page)
+            written = offset
+        }
+        return markup + XMLEscaping.text(String(characters[written...]))
+    }
+
+    // MARK: Places
 
     /// The start of `page`: an empty element that a reading system's page
     /// navigation finds by its role (`doc-pagebreak`, and in EPUB its
@@ -108,27 +166,37 @@ struct XHTMLMarkup {
             + "aria-label=\"\(label)\" title=\"\(label)\"></span>"
     }
 
+    /// A place the contents point at that is no heading: an empty element with
+    /// the id the contents link to, and nothing for a screen reader to meet.
+    func targetMarkup(_ target: ExportNavigationTarget) -> String {
+        "<span id=\"\(XMLEscaping.attribute(target.id))\"></span>"
+    }
+
     // MARK: Runs
 
     /// The markup of `runs`, which every block that has runs shares.
     /// Neighbouring runs with the same link, when that link may be a link,
     /// are one `<a>`; any other run stands alone, and a link that may not be
-    /// one (`ExportRun.isAllowedLinkAddress`) is written as plain text
-    /// (`linkGroups`, which the RTF writer shares).
+    /// one (`ExportRun.isAllowedLinkAddress`, and `linkAddress`) is written as
+    /// plain text (`linkGroups`, which the RTF writer shares).
     private func runsMarkup(_ runs: [ExportRun]) -> String {
         runs.linkGroups.map { group in
             let inner = group.runs.map(styledMarkup).joined()
             guard let address = group.link else { return inner }
-            return "<a href=\"\(XMLEscaping.attribute(address))\">\(inner)</a>"
+            guard let written = linkAddress.map({ $0(address) }) ?? address else { return inner }
+            return "<a href=\"\(XMLEscaping.attribute(written))\">\(inner)</a>"
         }.joined()
     }
 
     /// One run's text, escaped, each line feed a `<br/>`, wrapped from the
     /// inside out in `<code>`, `<em>`, and `<strong>`; or, for a run that
-    /// starts a page, that page's element.
+    /// marks a place, that place's element.
     private func styledMarkup(of run: ExportRun) -> String {
         if let page = run.pageBreak {
             return pageBreakMarkup(page)
+        }
+        if let target = run.navigationTarget {
+            return targetMarkup(target)
         }
         var markup = XMLEscaping.text(run.text).components(separatedBy: "\n").joined(separator: "<br/>")
         if run.isCode { markup = "<code>\(markup)</code>" }
@@ -154,12 +222,21 @@ struct ExportContentsEntry: Equatable, Sendable {
 /// contents and the EPUB's navigation document share.
 enum ExportContentsList {
     /// The lines of the nested ordered lists that link `entries`, from the
-    /// opening `<ol>` to the closing `</ol>`; none for no entries. A stack
-    /// holds the level of each open list; an entry deeper than the top opens
-    /// a list inside the open item, and a shallower one closes lists down to
-    /// the first whose level it does not go below (never past the outermost,
-    /// so a first entry of level 2 followed by one of level 1 stays one flat
-    /// list, and a skipped level opens only one list).
+    /// opening `<ol>` to the closing `</ol>`; none for no entries.
+    ///
+    /// Every item holds at most one list (EPUB 3.3, section 7.3). A stack
+    /// holds the level of each open list, and an entry is placed by it:
+    /// - deeper than the innermost list: a list inside the open item;
+    /// - the same level: the next item of that list;
+    /// - shallower, but deeper than the list around that one (a heading that
+    ///   rises out of a skipped level: 1, 3, 2): it joins the innermost list,
+    ///   whose level becomes the entry's, rather than opening a second list
+    ///   in the same item;
+    /// - shallower than the outermost list: that list's level lowers to the
+    ///   entry's, so a first entry deeper than the rest does not keep every
+    ///   later entry flat (3, 1, 2, 1, 2 nests the 2s under the 1s);
+    /// - otherwise the innermost list is closed and the entry is placed in
+    ///   the list around it.
     static func lines(of entries: [ExportContentsEntry]) -> [String] {
         var lines: [String] = []
         var levels: [Int] = []
@@ -175,23 +252,36 @@ enum ExportContentsList {
             }
         }
 
-        for (index, entry) in entries.enumerated() {
-            if index == 0 {
+        for entry in entries {
+            if levels.isEmpty {
                 lines.append("<ol>")
                 levels = [entry.level]
             } else {
-                // Close the lists the entry rises out of.
-                while levels.count > 1, let top = levels.last, entry.level < top {
-                    closeItem()
-                    lines.append("</ol>")
-                    levels.removeLast()
-                }
-                if let top = levels.last, entry.level > top {
-                    // A deeper entry: a list inside the open item.
-                    lines.append("<ol>")
-                    levels.append(entry.level)
-                } else {
-                    closeItem()
+                var isPlaced = false
+                while !isPlaced {
+                    let innermost = levels.count - 1
+                    if entry.level > levels[innermost] {
+                        // A deeper entry: a list inside the open item.
+                        lines.append("<ol>")
+                        levels.append(entry.level)
+                        isPlaced = true
+                    } else if entry.level == levels[innermost] {
+                        closeItem()
+                        isPlaced = true
+                    } else if innermost == 0 || entry.level > levels[innermost - 1] {
+                        // The entry joins this list: it was opened for a
+                        // deeper level that the entry rose out of, or it is
+                        // the outermost, which lowers to the entry's level.
+                        levels[innermost] = entry.level
+                        closeItem()
+                        isPlaced = true
+                    } else {
+                        // The entry rises above this list: close it, and
+                        // place the entry in the list around it.
+                        closeItem()
+                        lines.append("</ol>")
+                        levels.removeLast()
+                    }
                 }
             }
             let address = XMLEscaping.attribute(entry.address)

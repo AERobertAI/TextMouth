@@ -94,7 +94,7 @@ struct MarkdownExportWriter: TextExportWriter {
             return ["---"]
         case .table(let table):
             return tableLines(table)
-        case .pageBreak:
+        case .pageBreak, .navigationTarget:
             // content.md's own page markers are not Markdown to write: this
             // writer's document never keeps them, and one is left out.
             return []

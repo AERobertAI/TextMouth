@@ -181,7 +181,7 @@ struct RTFExportWriter: TextExportWriter {
             return [#"\pard\plain\s0\sa120\brdrb\brdrs\brdrw10\brsp20\f0\fs\#(bodySize)\par"#]
         case .table(let table):
             return tableLines(table, indent: indent)
-        case .pageBreak:
+        case .pageBreak, .navigationTarget:
             // RTF has no page target; this writer's document never keeps them.
             return []
         }

@@ -87,6 +87,34 @@ struct ExportPageBreak: Equatable, Sendable {
     var id: String
 }
 
+/// A place the book's contents point at that is no heading (B3): a heading
+/// annotation of content.md, which a converted book carries for a contents
+/// entry that names a styled paragraph, an anchor, or a deeper entry of a
+/// Kindle book. Kept with the pages (`ExportWalkOptions.keepsPageMarkers`):
+/// the writer makes an empty target of it and a contents entry at its level.
+struct ExportNavigationTarget: Equatable, Sendable {
+    /// The entry's level, 1 to 6.
+    var level: Int
+    /// The entry's words.
+    var text: String
+    /// The target's id, unique among the document's heading ids and targets'
+    /// (`ExportHeadingIDs`).
+    var id: String
+}
+
+/// One entry of a book's contents as the model finds it: a heading, or a
+/// target that is none (`ExportNavigationTarget`).
+struct ExportContentsItem: Equatable, Sendable {
+    /// The entry's level, 1 to 6.
+    var level: Int
+    /// The entry's words, as plain text.
+    var text: String
+    /// The id of the heading or the target.
+    var id: String
+    /// Whether it is a heading of the text, rather than a target.
+    var isHeading: Bool
+}
+
 // MARK: - The Book
 
 /// What an exported document says of its book besides its text: the title,
@@ -130,12 +158,17 @@ struct ExportBookDetails: Equatable, Sendable {
     static let maximumLanguageTagLength = 35
 
     /// `text` as a language tag, or nil when it is not one: trimmed, with an
-    /// underscore read as a hyphen ("en_US" is "en-US"), a primary subtag of
-    /// two or three ASCII letters, then any number of subtags of one to eight
-    /// ASCII letters or digits, each after a hyphen, and at most
-    /// `maximumLanguageTagLength` characters in all. A book's language comes
-    /// from its file, which is untrusted, and goes into attributes and
-    /// metadata, so anything else is left out rather than escaped.
+    /// underscore read as a hyphen ("en_US" is "en-US"), at most
+    /// `maximumLanguageTagLength` characters, and well-formed by the grammar
+    /// of BCP 47 (RFC 5646, section 2.1) for a language of two or three
+    /// letters: up to three three-letter extended language subtags, a script
+    /// of four letters, a region of two letters or three digits, variants,
+    /// extensions (a singleton other than "x" and one or more subtags of two
+    /// to eight letters or digits), and a private use part ("x" and one or
+    /// more subtags of one to eight). A book's language comes from its file,
+    /// which is untrusted, goes into attributes and metadata, and is checked
+    /// by EPUB's validator, so a tag that is not well-formed is left out
+    /// rather than escaped: HTML, EPUB, and PEF all say none.
     static func languageTag(_ text: String) -> String? {
         let tag = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "_", with: "-")
         guard !tag.isEmpty, tag.count <= maximumLanguageTagLength else { return nil }
@@ -144,10 +177,45 @@ struct ExportBookDetails: Equatable, Sendable {
               (2...3).contains(primary.count),
               primary.allSatisfy({ $0.isASCII && $0.isLetter })
         else { return nil }
-        let isSubtag = { (subtag: Substring) in
-            (1...8).contains(subtag.count) && subtag.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
+
+        func isAlphanumeric(_ subtag: Substring) -> Bool {
+            subtag.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
         }
-        return subtags.dropFirst().allSatisfy(isSubtag) ? tag : nil
+        func isLetters(_ subtag: Substring) -> Bool {
+            subtag.allSatisfy { $0.isASCII && $0.isLetter }
+        }
+        var index = 1
+        /// The subtag at `index`, when it has `lengths` characters and `kind`.
+        func next(_ lengths: ClosedRange<Int>, _ kind: (Substring) -> Bool) -> Bool {
+            guard index < subtags.count, lengths.contains(subtags[index].count), kind(subtags[index]) else {
+                return false
+            }
+            index += 1
+            return true
+        }
+        // Extended language subtags, then script and region.
+        var extensions = 0
+        while extensions < 3, next(3...3, isLetters) { extensions += 1 }
+        _ = next(4...4, isLetters)
+        if !next(2...2, isLetters) {
+            _ = next(3...3) { $0.allSatisfy { $0.isASCII && $0.isNumber } }
+        }
+        // Variants: five to eight letters or digits, or a digit and three.
+        while next(5...8, isAlphanumeric) || next(4...4, { isAlphanumeric($0) && $0.first?.isNumber == true }) {}
+        // Extensions: a singleton other than "x" and at least one subtag.
+        while index < subtags.count, subtags[index].count == 1, subtags[index].lowercased() != "x" {
+            guard isAlphanumeric(subtags[index]) else { return nil }
+            index += 1
+            guard next(2...8, isAlphanumeric) else { return nil }
+            while next(2...8, isAlphanumeric) {}
+        }
+        // Private use: "x" and at least one subtag.
+        if index < subtags.count, subtags[index].lowercased() == "x" {
+            index += 1
+            guard next(1...8, isAlphanumeric) else { return nil }
+            while next(1...8, isAlphanumeric) {}
+        }
+        return index == subtags.count ? tag : nil
     }
 }
 
@@ -174,6 +242,10 @@ enum ExportBlock: Equatable, Sendable {
     /// walked with `ExportWalkOptions.keepsPageMarkers`. A page that starts
     /// inside a paragraph is a run of it instead (`ExportRun.pageBreak`).
     case pageBreak(ExportPageBreak)
+    /// A place the contents point at, between two blocks (B3): only in a
+    /// document walked with `ExportWalkOptions.keepsPageMarkers`. One inside a
+    /// paragraph is a run of it instead (`ExportRun.navigationTarget`).
+    case navigationTarget(ExportNavigationTarget)
 
     /// The block's plain text, in reading order, as braille and any writer
     /// without styles read it:
@@ -202,7 +274,7 @@ enum ExportBlock: Equatable, Sendable {
             return blocks.map(\.plainText).joined(separator: "\n\n")
         case .codeBlock(let code):
             return code
-        case .thematicBreak, .pageBreak:
+        case .thematicBreak, .pageBreak, .navigationTarget:
             return ""
         case .table(let table):
             return table.rows.map { row in
@@ -222,14 +294,14 @@ enum ExportBlock: Equatable, Sendable {
                 return headings(in: quoted)
             case .list(let list):
                 return list.items.flatMap { headings(in: $0.blocks) }
-            case .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak:
+            case .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak, .navigationTarget:
                 return []
             }
         }
     }
 
-    /// Every start of a page in `blocks`, at any depth (as a block, or inside
-    /// a paragraph or heading as a run), in reading order.
+    /// Every start of a page in `blocks`, at any depth (as a block, inside a
+    /// paragraph or heading as a run, or in a table's cell), in reading order.
     static func pageBreaks(in blocks: [ExportBlock]) -> [ExportPageBreak] {
         blocks.flatMap { block -> [ExportPageBreak] in
             switch block {
@@ -243,7 +315,34 @@ enum ExportBlock: Equatable, Sendable {
                 return pageBreaks(in: quoted)
             case .list(let list):
                 return list.items.flatMap { pageBreaks(in: $0.blocks) }
-            case .codeBlock, .thematicBreak, .table:
+            case .table(let table):
+                return table.cellPages.map(\.page)
+            case .codeBlock, .thematicBreak, .navigationTarget:
+                return []
+            }
+        }
+    }
+
+    /// Every entry of the contents in `blocks`, at any depth: headings, and
+    /// the targets that are none (as blocks or inside a paragraph as runs),
+    /// in reading order.
+    static func contentsItems(in blocks: [ExportBlock]) -> [ExportContentsItem] {
+        func item(_ target: ExportNavigationTarget) -> ExportContentsItem {
+            ExportContentsItem(level: target.level, text: target.text, id: target.id, isHeading: false)
+        }
+        return blocks.flatMap { block -> [ExportContentsItem] in
+            switch block {
+            case .heading(let heading):
+                return [ExportContentsItem(level: heading.level, text: heading.plainText, id: heading.id, isHeading: true)]
+            case .navigationTarget(let target):
+                return [item(target)]
+            case .paragraph(let runs):
+                return runs.compactMap(\.navigationTarget).map(item)
+            case .blockQuote(let quoted):
+                return contentsItems(in: quoted)
+            case .list(let list):
+                return list.items.flatMap { contentsItems(in: $0.blocks) }
+            case .codeBlock, .thematicBreak, .table, .pageBreak:
                 return []
             }
         }
@@ -306,6 +405,28 @@ struct ExportTable: Equatable, Sendable {
     var rows: [[String]]
     /// Whether the first row is the table's header row.
     var hasHeaderRow: Bool
+    /// The pages that start inside a cell's words, in reading order (S3):
+    /// only in a document walked with `ExportWalkOptions.keepsPageMarkers`.
+    var cellPages: [ExportCellPage]
+
+    /// A table of `rows`, with the pages that start in its cells.
+    init(rows: [[String]], hasHeaderRow: Bool, cellPages: [ExportCellPage] = []) {
+        self.rows = rows
+        self.hasHeaderRow = hasHeaderRow
+        self.cellPages = cellPages
+    }
+}
+
+/// The start of a page inside a table cell's words.
+struct ExportCellPage: Equatable, Sendable {
+    /// The cell's row, an index into `ExportTable.rows`.
+    var row: Int
+    /// The cell's column.
+    var column: Int
+    /// How many Characters of the cell's text come before the page starts.
+    var offset: Int
+    /// The page.
+    var page: ExportPageBreak
 }
 
 // MARK: - Runs
@@ -332,16 +453,27 @@ struct ExportRun: Equatable, Sendable {
     /// `ExportWalkOptions.keepsPageMarkers`. A run that starts a page is never
     /// joined with its neighbours.
     var pageBreak: ExportPageBreak?
+    /// A place the contents point at, at this place in the block's text, for
+    /// a run that is only that: its text is empty (`ExportNavigationTarget`).
+    var navigationTarget: ExportNavigationTarget?
+
+    /// Whether the run only marks a place in the text (a page start or a
+    /// contents target) and holds no words.
+    var isPlace: Bool {
+        pageBreak != nil || navigationTarget != nil
+    }
 
     /// A run of `text` in the style given; plain by default. `pageBreak`
-    /// makes the run the start of a page, and `text` is then empty.
+    /// makes the run the start of a page, and `navigationTarget` a place the
+    /// contents point at; `text` is then empty.
     init(
         _ text: String,
         isEmphasis: Bool = false,
         isStrong: Bool = false,
         isCode: Bool = false,
         link: String? = nil,
-        pageBreak: ExportPageBreak? = nil
+        pageBreak: ExportPageBreak? = nil,
+        navigationTarget: ExportNavigationTarget? = nil
     ) {
         self.text = text
         self.isEmphasis = isEmphasis
@@ -349,13 +481,14 @@ struct ExportRun: Equatable, Sendable {
         self.isCode = isCode
         self.link = link
         self.pageBreak = pageBreak
+        self.navigationTarget = navigationTarget
     }
 
     /// Whether `other` has this run's style and link, so the two, side by
-    /// side, are one run. A run that starts a page has no such neighbour:
+    /// side, are one run. A run that marks a place has no such neighbour:
     /// two pages that follow each other are two pages.
     func hasSameStyle(as other: ExportRun) -> Bool {
-        pageBreak == nil && other.pageBreak == nil
+        !isPlace && !other.isPlace
             && isEmphasis == other.isEmphasis && isStrong == other.isStrong && isCode == other.isCode
             && link == other.link
     }
