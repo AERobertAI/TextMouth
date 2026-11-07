@@ -393,6 +393,55 @@ final class PhoneFolderSheetModelTests: XCTestCase {
         XCTAssertNil(notDelete.deleteEverything(), "only Delete Folder deletes everything")
     }
 
+    // MARK: - Arrival and Requests
+
+    /// Only New Folder and Rename Folder have a name field, each with the
+    /// Mac's spoken label, and focus lands on it there; elsewhere it lands on
+    /// the folder row. Rename's name, which starts as the folder's own, is
+    /// selected as the field takes the keyboard, so typing replaces it.
+    func testFocusLandsOnTheNameFieldWhereThereIsOne() {
+        let library = Self.library(folders: ["A"])
+        let folder = Self.folder("A", in: library)
+
+        let newFolder = PhoneFolderSheetModel(task: .newFolder(parentPath: ""), library: library)
+        XCTAssertEqual(newFolder.nameLabel, "Folder name")
+        XCTAssertEqual(newFolder.arrival, .nameField)
+        XCTAssertFalse(newFolder.selectsNameOnArrival)
+
+        let rename = PhoneFolderSheetModel(task: .renameFolder(folder), library: library)
+        XCTAssertEqual(rename.nameLabel, "New folder name")
+        XCTAssertEqual(rename.arrival, .nameField)
+        XCTAssertTrue(rename.selectsNameOnArrival)
+
+        let others: [PhoneFolderSheetTask] = [.moveFolder(folder), .moveBooks([Self.book("Dune", in: "")]), .deleteFolder(folder)]
+        for task in others {
+            let model = PhoneFolderSheetModel(task: task, library: library)
+            XCTAssertNil(model.nameLabel, model.title)
+            XCTAssertEqual(model.arrival, .folderRow, model.title)
+            XCTAssertFalse(model.selectsNameOnArrival, model.title)
+        }
+    }
+
+    /// The folders are offered as the choice sheet's choices, each by its
+    /// path, labelled as the Mac's pop-up labels it.
+    func testTheFoldersAreOfferedAsChoicesByPath() {
+        let library = Self.library(folders: ["A", "A/B"])
+        let model = PhoneFolderSheetModel(task: .moveBooks([Self.book("Dune", in: "")]), library: library)
+
+        XCTAssertEqual(model.destinationChoices.map(\.id), ["", "A", "A/B"])
+        XCTAssertEqual(model.destinationChoices.map(\.label), ["Library Root", "A", "A/B"])
+        XCTAssertTrue(model.destinationChoices.allSatisfy(\.isEnabled))
+    }
+
+    /// Two requests for the same sheet are told apart, so a second opens a
+    /// sheet of its own.
+    func testEachRequestHasAnIdentityOfItsOwn() {
+        let first = PhoneFolderSheetRequest(task: .newFolder(parentPath: ""))
+        let second = PhoneFolderSheetRequest(task: .newFolder(parentPath: ""))
+
+        XCTAssertNotEqual(first.id, second.id)
+    }
+
     // MARK: - The Folder Row
 
     /// The folder row says the folder chosen as the list labels it, Library

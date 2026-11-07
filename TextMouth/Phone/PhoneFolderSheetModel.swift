@@ -41,6 +41,25 @@ enum PhoneFolderSheetResult: Equatable {
     case deletedFolder(id: UUID, contentsMovedTo: String?)
 }
 
+/// A folder sheet to present: its task, with an identity of its own, so the
+/// Library presents every folder sheet through one `sheet(item:)`, and a
+/// second request opens a sheet of its own rather than reusing the first.
+struct PhoneFolderSheetRequest: Identifiable {
+    /// Tells two requests apart.
+    let id = UUID()
+    /// Which sheet, and what it acts on.
+    let task: PhoneFolderSheetTask
+}
+
+/// Where VoiceOver's focus lands as a folder sheet's form arrives: on what
+/// the sheet is for (the spec, "Focus on arrival and return").
+enum PhoneFolderSheetArrival: Hashable, Sendable {
+    /// The name field, which also takes the keyboard.
+    case nameField
+    /// The row choosing the folder.
+    case folderRow
+}
+
 /// Delete Folder...'s first step, which the Mac takes the same way.
 enum PhoneFolderDeleteStart: Equatable {
     /// The folder held nothing, so it was removed at once, with no question.
@@ -98,11 +117,6 @@ struct PhoneFolderOperations {
 /// typed or chosen clears it.
 @MainActor
 final class PhoneFolderSheetModel: ObservableObject {
-    /// How long a failure waits before it is said, in seconds: the spec's
-    /// timing for an announcement after an activation, since SwiftUI's own
-    /// layout notification can cut off one posted at once ("Announcements").
-    nonisolated static let afterActivationDelay: TimeInterval = 0.15
-
     /// Which sheet this is, and what it acts on.
     let task: PhoneFolderSheetTask
 
@@ -141,7 +155,11 @@ final class PhoneFolderSheetModel: ObservableObject {
     private let announceAfterClosing: @MainActor (String) -> Void
 
     /// A model for `task` over `library`. The calls, and the two ways of
-    /// speaking, are the app's own unless a test hands in others.
+    /// speaking, are the app's own unless a test hands in others: a failure
+    /// is said a moment after the button that caused it, so SwiftUI's own
+    /// layout notification can't cut it off (`PhoneAnnouncer.say`), and the
+    /// sentence after is said once the sheet has closed, as the Mac's Library
+    /// window says it (`VoiceOverAnnouncer.announceAfterSheetCloses`).
     init(
         task: PhoneFolderSheetTask,
         library: LibraryViewModel,
@@ -152,7 +170,7 @@ final class PhoneFolderSheetModel: ObservableObject {
         self.task = task
         self.library = library
         self.operations = operations ?? .calling(library)
-        self.announce = announce ?? Self.announceAfterActivation
+        self.announce = announce ?? { PhoneAnnouncer.say($0) }
         self.announceAfterClosing = announceAfterClosing ?? { VoiceOverAnnouncer.announceAfterSheetCloses($0, from: nil) }
         _name = Published(initialValue: Self.initialName(for: task))
         _destination = Published(initialValue: Self.initialDestination(for: task, in: library))
@@ -192,6 +210,32 @@ final class PhoneFolderSheetModel: ObservableObject {
         case .moveBooks(let books): return PhoneFolderVocabulary.movingBooks(count: books.count)
         case .deleteFolder: return PhoneFolderVocabulary.movingContents
         }
+    }
+
+    /// The name field's spoken label, as the Mac's: "Folder name" in New
+    /// Folder and "New folder name" in Rename Folder; nil for a sheet with no
+    /// name field. Its placeholder is "Folder name" in both, as on the Mac.
+    var nameLabel: String? {
+        switch task {
+        case .newFolder: return PhoneFolderVocabulary.folderName
+        case .renameFolder: return PhoneFolderVocabulary.newFolderName
+        case .moveFolder, .moveBooks, .deleteFolder: return nil
+        }
+    }
+
+    /// Where VoiceOver's focus lands as the form arrives: the name field
+    /// where there is one, and otherwise the row choosing the folder.
+    var arrival: PhoneFolderSheetArrival {
+        nameLabel == nil ? .folderRow : .nameField
+    }
+
+    /// Whether the name is selected as the field takes the keyboard, so that
+    /// typing replaces it, as a Mac text field selects its text when it takes
+    /// the keyboard: Rename Folder's, which starts as the folder's name. New
+    /// Folder's starts empty.
+    var selectsNameOnArrival: Bool {
+        if case .renameFolder = task { return true }
+        return false
     }
 
     /// The folder row's visible caption, as the Mac's pop-up's title, or nil
@@ -276,6 +320,12 @@ final class PhoneFolderSheetModel: ObservableObject {
             let deleting = currentPath(of: folder)
             return LibraryFolderOption.options(in: folders) { !Self.isFolder($0.fullPath, atOrInside: deleting) }
         }
+    }
+
+    /// The folders offered, as the choices of `PhoneChoiceSheet` (the spec,
+    /// "Choices"): each by its path, labelled as the Mac's pop-up labels it.
+    var destinationChoices: [PhoneChoice<String>] {
+        destinationOptions.map { PhoneChoice(id: $0.path, label: $0.label) }
     }
 
     /// The words the folder row shows and speaks as its value: the chosen
@@ -452,11 +502,4 @@ final class PhoneFolderSheetModel: ObservableObject {
         }
     }
 
-    /// Says `message` a moment after the activation that caused it, so
-    /// SwiftUI's own layout notification can't cut it off.
-    private static func announceAfterActivation(_ message: String) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + afterActivationDelay) {
-            VoiceOverAnnouncer.announce(message)
-        }
-    }
 }
