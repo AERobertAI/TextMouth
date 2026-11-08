@@ -67,6 +67,13 @@ final class PhoneSession: ObservableObject {
     /// listener in the Library stays there.
     let showReaderRequests = PassthroughSubject<UUID, Never>()
 
+    /// Tells of each reader once, as the session makes it, before anything can
+    /// play it and whichever slot it takes. The parts of the phone that give a
+    /// reader its hooks (the audio session, the life cycle's background hold)
+    /// join here, so that none can miss a reader that goes straight behind the
+    /// screen, as the next book of a hand-over does.
+    let readerMade = PassthroughSubject<ReaderViewModel, Never>()
+
     /// Begins a hold that keeps the app running for work the system must let
     /// finish, and returns what ends it: `PhoneAppModel` passes its life
     /// cycle's, a background task on iOS.
@@ -311,6 +318,7 @@ final class PhoneSession: ObservableObject {
             lastOpenedBookIDBefore: lastOpenedBookID
         )
         follow(opened)
+        readerMade.send(made)
         return opened
     }
 

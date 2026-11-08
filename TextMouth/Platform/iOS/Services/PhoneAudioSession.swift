@@ -86,6 +86,12 @@ final class PhoneAudioSession {
             reopened.nowPlayingService.updateNowPlayingInfo(title: book.title, author: book.author, isPlaying: false)
         }
 
+        // Each reader is attached once as the session makes it, whichever slot
+        // it takes; the slots' publishers below only watch for readers leaving.
+        session.readerMade.sink { reader in
+            PhoneAudioSession.shared.attach(reader)
+        }
+        .store(in: &audio.readerSubscriptions)
         // Each publisher tells of a reader as it is about to be set, a new one
         // or nil, while the session still holds the one before it.
         session.$reader.sink { [weak session] reader in
@@ -98,15 +104,12 @@ final class PhoneAudioSession {
         .store(in: &audio.readerSubscriptions)
     }
 
-    /// One of the session's readers changes from `old` to `new`: a new reader
-    /// is attached, and a reader that has closed by the end of this turn may
+    /// One of the session's readers changes from `old` to `new`: a reader that
+    /// has closed by the end of this turn may
     /// let the session go (`deactivateAfterAReaderCloses(in:)`). One that only
     /// moved behind the book on screen, or came forward, keeps it: the
     /// engineer's review (F1) has only a close deactivate.
     private func readerChanges(to new: ReaderViewModel?, from old: ReaderViewModel?, in session: PhoneSession?) {
-        if let new {
-            attach(new)
-        }
         guard let session, let old, old !== new else { return }
         DispatchQueue.main.async { [weak old] in
             guard old == nil || old?.hasClosed == true else { return }

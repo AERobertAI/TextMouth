@@ -436,6 +436,33 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertTrue(first.hasClosed)
     }
 
+    /// Every reader the session makes is announced once, whichever slot it
+    /// takes: the opened book, and the next book that goes straight behind
+    /// the screen, which the life cycle's hooks once missed.
+    func testEveryReaderMadeIsAnnouncedOnceWhateverSlotItTakes() throws {
+        let folder = try makeFolderWorld("PhoneReaderMade")
+        let session = makeSession(in: folder.world)
+        var made: [ReaderViewModel] = []
+        session.readerMade.sink { made.append($0) }.store(in: &subscriptions)
+        let first = try XCTUnwrap(session.open(folder.first))
+        waitForReaderToLoad(first)
+        session.togglePlayPause()
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The first never played")
+        let onScreen = try XCTUnwrap(session.open(folder.third))
+        waitForReaderToLoad(onScreen)
+
+        first.handleEndOfBook()
+
+        XCTAssertTrue(
+            eventually(within: 30) { session.listeningReader?.book.id == folder.second.id },
+            "The next book did not take the place behind"
+        )
+        let behind = try XCTUnwrap(session.listeningReader)
+        XCTAssertEqual(made.count, 3, "Each reader is announced once")
+        XCTAssertTrue(made.contains { $0 === behind }, "The next book behind the screen was not announced")
+        XCTAssertTrue(made.contains { $0 === onScreen })
+    }
+
     /// A running sleep timer goes on with the next book.
     func testASleepTimerGoesOnWithTheNextBook() throws {
         preserveSharedSleepTimer()
