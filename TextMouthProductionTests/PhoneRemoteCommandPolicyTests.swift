@@ -98,6 +98,7 @@ final class PhoneRemoteCommandPolicyTests: XCTestCase {
     /// With the phone's unit in force filled in, the policy follows it and
     /// ignores the shared skip units, whose default is 15 seconds: a text
     /// book that moves a sentence offers no skip interval.
+    @MainActor
     func testTheUnitInForceWinsOverTheSharedSkipUnits() {
         let policy = PhoneRemoteCommandPolicy(unitInForce: { .sentence }, forward: .seconds15, backward: .seconds15)
         XCTAssertFalse(policy.isEnabled(.skipForward))
@@ -109,6 +110,7 @@ final class PhoneRemoteCommandPolicyTests: XCTestCase {
     }
 
     /// Without it, as on the Mac, the two shared units stand.
+    @MainActor
     func testWithoutAUnitInForceTheSharedUnitsStand() {
         let policy = PhoneRemoteCommandPolicy(unitInForce: nil, forward: .seconds30, backward: .sentence)
         XCTAssertEqual(policy.skipForwardSeconds, 30)
