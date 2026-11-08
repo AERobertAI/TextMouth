@@ -315,7 +315,7 @@ enum SpeechRefusalWording {
     static let heading = "Speech Stopped"
 
     /// What happened, in one plain sentence, and what Play does now.
-    static let summary = summary(onPhone: runsOnPhone)
+    static let summary = summaryText(onPhone: runsOnPhone)
 
     /// Whether this build is the iPhone app, which words the report for the
     /// iPhone (the spec, "Words that say Mac"). A parameter of the functions
@@ -330,7 +330,7 @@ enum SpeechRefusalWording {
 
     /// `summary` for the Mac, or for the iPhone, which has "The iPhone's
     /// speech engine".
-    static func summary(onPhone: Bool) -> String {
+    static func summaryText(onPhone: Bool) -> String {
         "The \(onPhone ? "iPhone" : "Mac")'s speech engine refused to speak the text here, twice, so speech stopped. "
             + "Play tries again from the same place."
     }

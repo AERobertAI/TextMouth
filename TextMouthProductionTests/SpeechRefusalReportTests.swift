@@ -457,11 +457,11 @@ final class SpeechRefusalReportTests: XCTestCase {
     /// that say Mac"), and the Mac's stay as they were.
     func testTheIPhoneHasItsOwnWordsAndTheMacKeepsItsOwn() {
         XCTAssertEqual(
-            SpeechRefusalWording.summary(onPhone: false),
+            SpeechRefusalWording.summaryText(onPhone: false),
             "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
         )
         XCTAssertEqual(
-            SpeechRefusalWording.summary(onPhone: true),
+            SpeechRefusalWording.summaryText(onPhone: true),
             "The iPhone's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
         )
         XCTAssertEqual(SpeechRefusalWording.deviceHeading(onPhone: false), "This Mac")
@@ -474,6 +474,6 @@ final class SpeechRefusalReportTests: XCTestCase {
     /// Mac's test host is the Mac.
     func testTheBuildUsesItsOwnPlatformsWords() {
         XCTAssertFalse(SpeechRefusalWording.runsOnPhone)
-        XCTAssertEqual(SpeechRefusalWording.summary, SpeechRefusalWording.summary(onPhone: false))
+        XCTAssertEqual(SpeechRefusalWording.summary, SpeechRefusalWording.summaryText(onPhone: false))
     }
 }
