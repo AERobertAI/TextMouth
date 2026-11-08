@@ -64,10 +64,10 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: Self.patience), "No Settings button")
         app.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: Self.patience), "Settings never opened")
-        // Dynamic Type is reported and not failed here: at this size the
-        // audit flagged only rows the list builds lazily and pushes off the
-        // screen as it enlarges the text (an unverified cause), and
-        // `LargeTextUITests` checks those rows in place at the largest size.
+        // Dynamic Type is reported and not failed here: the audit flags the
+        // lower rows (a slider's value and caption, the switch) as "partially
+        // unsupported" and the cause is not known. `LargeTextUITests` audits
+        // Settings at the largest size, scrolled, and fails on what it finds.
         try audit(app, screen: "Settings", informing: .dynamicType, accepting: [.navigationTitle("Settings")])
     }
 
@@ -143,8 +143,9 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         ], in: elements)
         // No timer runs, so there is no Current Timer section.
         XCTAssertFalse(elements.contains { $0.label == "Current Timer" }, "Current Timer shows with no timer running")
-        // Dynamic Type is reported and not failed: the audit flagged the
-        // stepper's label, which the system draws (see Settings).
+        // Dynamic Type is reported and not failed: the audit flags the
+        // stepper's label, a system control's; the cause is not known (see
+        // Settings).
         try audit(app, screen: "Sleep Timer sheet", informing: .dynamicType, accepting: [.navigationTitle("Sleep Timer"), .barItem("Close")])
     }
 
@@ -190,8 +191,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         let app = try launchIntoTheReader()
         let elements = try openReaderSheet("Book Info", titled: "Book Information", waitingFor: "Cancel", in: app)
         assertOrder(["Book Information", "Cancel", "Save", "Book title", "Author", "Publisher", "Publication date", "Format", "Added", "Last Opened", "Word Count"], in: elements)
-        // Dynamic Type is reported and not failed: the audit flagged only the
-        // read-only rows at the bottom, the list's last (see Settings).
+        // Dynamic Type is reported and not failed: the audit flags the
+        // read-only rows at the bottom; the cause is not known (see Settings).
         try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")])
     }
 
