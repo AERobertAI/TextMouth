@@ -65,11 +65,8 @@ struct PhoneSpeechRefusalSheet: View {
         .padding()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button(PhoneAppWording.close) {
-                    reader.closeSpeechRefusalReport()
-                }
-                .accessibilityHint(SpeechRefusalWording.closeHint)
+            PhoneSheetButton(title: PhoneAppWording.close, hint: SpeechRefusalWording.closeHint) {
+                reader.closeSpeechRefusalReport()
             }
         }
         // VoiceOver moves to the heading once the sheet has come up, so the

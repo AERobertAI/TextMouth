@@ -33,10 +33,12 @@ class TextMouthUITestCase: XCTestCase {
     /// imports the book and opens it, and Play waits unpressed.
     /// With `textSize`, the launch uses that content size category (as in
     /// `Self.largestText`), as the Larger Text setting would.
-    func launch(sendingTheBook: Bool, textSize: String? = nil) throws -> XCUIApplication {
+    /// `environment` adds launch variables to the app's.
+    func launch(sendingTheBook: Bool, textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
+        app.launchEnvironment.merge(environment) { _, new in new }
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
@@ -55,8 +57,8 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches with the book and waits for the reader it opens, with the
     /// book loaded: Play is there, and its value no longer says "Loading".
-    func launchIntoTheReader(textSize: String? = nil) throws -> XCUIApplication {
-        let app = try launch(sendingTheBook: true, textSize: textSize)
+    func launchIntoTheReader(textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
+        let app = try launch(sendingTheBook: true, textSize: textSize, environment: environment)
         let play = app.buttons["Play"]
         XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.

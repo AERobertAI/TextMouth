@@ -65,10 +65,8 @@ struct PhoneSleepTimerSheet: View {
             .navigationTitle(PhoneSleepTimerVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, so VoiceOver reads the title first.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.close) { dismiss() }
-                        .accessibilityHint(PhoneSleepTimerVocabulary.closeHint)
+                PhoneSheetButton(title: PhoneAppWording.close, hint: PhoneSleepTimerVocabulary.closeHint) {
+                    dismiss()
                 }
             }
             // Only whether a timer runs, never its seconds, and on the main

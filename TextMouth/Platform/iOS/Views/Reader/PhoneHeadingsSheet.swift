@@ -74,10 +74,8 @@ struct PhoneHeadingsSheet: View {
             .navigationTitle(PhoneHeadingsVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, so VoiceOver reads the title first.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneHeadingsVocabulary.backToBook) { dismiss() }
-                        .accessibilityHint(PhoneHeadingsVocabulary.backToBookHint)
+                PhoneSheetButton(title: PhoneHeadingsVocabulary.backToBook, hint: PhoneHeadingsVocabulary.backToBookHint) {
+                    dismiss()
                 }
             }
             .sheet(item: $choosing, onDismiss: returnFocusFromChoices) { choosing in

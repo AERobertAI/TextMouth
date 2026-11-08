@@ -49,10 +49,7 @@ struct PhoneGoToSheet: View {
             .navigationTitle(PhoneGoToModel.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, so VoiceOver reads the title first.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
-                }
+                PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
             }
             .task {
                 await focusOpeningField()
@@ -68,8 +65,8 @@ struct PhoneGoToSheet: View {
     private func fieldSection(_ field: PhoneGoToField) -> some View {
         Section {
             // No prompt: a long one ("Percent through the book") was found
-            // clipped at large sizes by the audit, and the name is the
-            // section's heading above and the field's label for VoiceOver.
+            // clipped at large sizes by the audit. The name is shown above
+            // for sight and is the field's label for VoiceOver.
             TextField("", text: text(of: field), selection: selection(of: field)) // lint-ok: named by the .accessibilityLabel below
                 .keyboardType(.numbersAndPunctuation)
                 .submitLabel(.go)

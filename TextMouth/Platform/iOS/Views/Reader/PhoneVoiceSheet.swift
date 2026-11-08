@@ -117,10 +117,7 @@ struct PhoneVoiceSheet: View {
             .navigationTitle(BookSettingsWording.heading(isAudioBook: shown.isAudioBook))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, so VoiceOver reads the title first.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.close) { dismiss() }
-                }
+                PhoneSheetButton(title: PhoneAppWording.close) { dismiss() }
             }
             .sheet(item: $choosing, onDismiss: afterChoosing) { list in
                 choices(for: list)

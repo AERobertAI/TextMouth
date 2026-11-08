@@ -17,7 +17,8 @@ private enum PhoneFolderFormElement: Hashable, Sendable {
 /// holds no decision: `PhoneFolderSheetModel` makes each, so the Mac's test
 /// host tests them.
 ///
-/// VoiceOver's order: Cancel, the title (a heading), the confirm button, then
+/// VoiceOver's order: the title (a heading), Cancel, the confirm button (the
+/// bar's buttons are trailing, `PhoneSheetButton`), then
 /// the explanation, the name field, the folder row, Move to Folder's New
 /// Folder..., and the failure. Focus
 /// lands on the name field, which takes the keyboard, or else on the folder
@@ -166,18 +167,11 @@ struct PhoneFolderSheetForm: View {
     @ToolbarContentBuilder
     private var toolbarButtons: some ToolbarContent {
         if showsCancel {
-            ToolbarItem(placement: .cancellationAction) {
-                Button(model.cancelTitle) {
-                    finish(nil)
-                }
-                .accessibilityHint(model.cancelHint ?? "")
-                .disabled(model.isWorking)
+            PhoneSheetButton(title: model.cancelTitle, hint: model.cancelHint ?? "", isEnabled: !model.isWorking) {
+                finish(nil)
             }
         }
-        ToolbarItem(placement: .confirmationAction) {
-            Button(model.confirmTitle, action: confirm)
-                .disabled(!model.canConfirm)
-        }
+        PhoneSheetButton(title: model.confirmTitle, isEnabled: model.canConfirm, action: confirm)
     }
 
     /// Does the sheet's work, and closes the sheet once it has worked. After a

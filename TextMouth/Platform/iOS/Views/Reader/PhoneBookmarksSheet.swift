@@ -107,12 +107,10 @@ struct PhoneBookmarksSheet: View {
             .navigationTitle(PhoneBookmarksVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, in this order, so VoiceOver reads the title,
-                // then Done, then Add Bookmark.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneBookmarksVocabulary.done) { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+                // In this order, so VoiceOver reads the title, then Done, then
+                // Add Bookmark.
+                PhoneSheetButton(title: PhoneBookmarksVocabulary.done) { dismiss() }
+                ToolbarItem(placement: PhoneSheetButtonPlacement.placement) {
                     Button {
                         // The place is taken now, not at Add.
                         noteSheet = .add(PhoneBookmarkPlace(readingIn: reader))

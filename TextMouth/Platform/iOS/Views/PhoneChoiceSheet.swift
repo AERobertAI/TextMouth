@@ -43,14 +43,7 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, as every sheet's buttons are, and not in
-                // `.cancellationAction`, whose button the simulator's tree
-                // did not show as "Cancel". The label is given outright so
-                // that VoiceOver and braille say the spec's word.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
-                        .accessibilityLabel(PhoneAppWording.cancel)
-                }
+                PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
             }
         }
     }

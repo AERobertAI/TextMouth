@@ -206,9 +206,7 @@ private struct PhoneUnbuiltSheet: View {
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(PhoneAppWording.close) { dismiss() }
-                    }
+                    PhoneSheetButton(title: PhoneAppWording.close) { dismiss() }
                 }
         }
     }

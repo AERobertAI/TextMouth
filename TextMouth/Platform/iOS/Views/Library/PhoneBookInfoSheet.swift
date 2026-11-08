@@ -204,21 +204,11 @@ private struct PhoneBookInfoForm<Fields: View>: View {
             .navigationTitle(PhoneLibraryVocabulary.bookInformation)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Both trailing, in this order, so VoiceOver reads the title,
-                // then Cancel, then Save, as the other sheets' buttons are
-                // placed. Not in `.cancellationAction` and `.confirmationAction`:
-                // the simulator's tree did not show the first as "Cancel", so
-                // the labels are given outright as well.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
-                        .accessibilityLabel(PhoneAppWording.cancel)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: PhoneAppWording.save) {
-                        save { dismiss() }
-                    }
-                    .accessibilityLabel(PhoneAppWording.save)
-                    .disabled(!canSave)
+                // In this order, so VoiceOver reads the title, then Cancel,
+                // then Save (the spec).
+                PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
+                PhoneSheetButton(title: PhoneAppWording.save, isEnabled: canSave) {
+                    save { dismiss() }
                 }
             }
         }

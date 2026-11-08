@@ -57,10 +57,7 @@ struct PhoneAddToLibrarySheet: View {
             .navigationTitle(AddToLibraryWording.sheetTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // After the title, as the spec's order has it.
-                ToolbarItem(placement: .topBarTrailing) {
-                    PhoneActionButton(title: AddToLibraryWording.cancel) { dismiss() }
-                }
+                PhoneSheetButton(title: AddToLibraryWording.cancel) { dismiss() }
             }
             .fileImporter(
                 isPresented: $isPickerPresented,

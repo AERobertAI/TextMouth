@@ -9,8 +9,9 @@ import SwiftUI
 /// - Delete Everything Permanently asks the Mac's second question, as an
 ///   alert, before the folder and everything in it go.
 ///
-/// VoiceOver's order: Cancel, the title "Delete Folder?" (a heading), the
-/// question's text, Move Contents Out, then Delete Everything Permanently.
+/// VoiceOver's order: the title "Delete Folder?" (a heading), Cancel (the bar's
+/// buttons are trailing, `PhoneSheetButton`), the question's text, Move
+/// Contents Out, then Delete Everything Permanently.
 /// Focus lands on the question's text, as on the phone's import question.
 ///
 /// Nothing here has run on iOS: where focus lands, and where it returns as
@@ -47,10 +48,8 @@ struct PhoneFolderDeleteQuestion: View {
         .navigationTitle(model.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button(PhoneAppWording.cancel) {
-                    finish(nil)
-                }
+            PhoneSheetButton(title: PhoneAppWording.cancel) {
+                finish(nil)
             }
         }
         // The Mac's Move Contents sheet, as a screen of this sheet's own.
