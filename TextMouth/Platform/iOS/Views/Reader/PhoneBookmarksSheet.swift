@@ -124,7 +124,7 @@ struct PhoneBookmarksSheet: View {
                 isPresented: isAskingToRemove,
                 presenting: removing
             ) { bookmark in
-                Button(PhoneBookmarksWording.remove, role: .destructive) { delete(bookmark) }
+                Button(PhoneReaderWording.remove, role: .destructive) { delete(bookmark) }
                 Button(PhoneAppWording.cancel, role: .cancel) {}
             } message: { bookmark in
                 Text(bookmark.label)

@@ -82,7 +82,7 @@ final class PhoneBookmarksModelTests: XCTestCase {
     /// The phone's own words are the spec's.
     func testThePhonesWordsAreTheSpecs() {
         XCTAssertEqual(PhoneBookmarksWording.removeQuestion(number: 3), "Remove Bookmark 3?")
-        XCTAssertEqual(PhoneBookmarksWording.remove, "Remove")
+        XCTAssertEqual(PhoneReaderWording.remove, "Remove")
         XCTAssertEqual(PhoneBookmarksWording.jumpAnnouncement(to: madeThird), "Bookmark 3")
         XCTAssertEqual(PhoneBookmarksWording.emptyHelp, "Add Bookmark adds one at the current position.")
     }
