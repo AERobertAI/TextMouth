@@ -40,8 +40,16 @@ final class LibraryUITests: TextMouthUITestCase {
     /// with its format, under the Mac's "Books (1)".
     func testABookSentIsListedByItsRow() throws {
         let app = try launchIntoTheReader()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: Self.patience), "Back didn't reach the Library")
+        let back = app.navigationBars.buttons.element(boundBy: 0)
+        let backLabel = back.label
+        back.tap()
+        if !app.navigationBars["Library"].waitForExistence(timeout: Self.patience) {
+            // What came instead: the order, and the bars by identifier.
+            let bars = app.navigationBars.allElementsBoundByIndex.map(\.identifier)
+            let order = try elementsInOrder(of: app).map { "\($0.type.rawValue):\($0.label)" }
+            XCTFail("Back (\"\(backLabel)\") didn't reach the Library. Bars: \(bars). Order: \(order.joined(separator: " | "))")
+            return
+        }
 
         let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
