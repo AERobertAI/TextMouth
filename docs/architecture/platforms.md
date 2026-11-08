@@ -155,3 +155,56 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - Whichever let go first let the screen lock for the other.
 - `PhoneScreenSleep`, in `Platform/iOS/Services`, holds the one keeper, whose `apply` sets the flag. Nothing else sets the flag.
 - The keeper imports no UIKit, so the Mac's tests decide every case.
+
+### The announcement priorities on iOS
+
+- Apple's header (`UIAccessibilityConstants.h`) says the default priority interrupts existing speech but can itself be interrupted. It says the low priority is queued and spoken after other speech has finished.
+  - The first draft had these reversed, so every shared high or medium word cut off what VoiceOver was saying.
+- `VoiceOverAnnouncer.postThroughAccessibility` now maps the shared priorities on iOS this way:
+  - high and medium post at iOS's default priority, so they interrupt;
+  - low posts at iOS's low priority, so it waits its turn.
+- iOS's own high priority cannot be interrupted once started. The shared announcer never posts it. `PhoneAnnouncer.important` posts it by a path of its own (`VoiceOverAnnouncer.postToVoiceOver`).
+  - In a process hosting tests, `important` goes through the announcer's poster at high priority, so a test reads it.
+- `PhoneAnnouncer` is what the phone's own code says to VoiceOver:
+  - `say` posts at low, after a delay of 0.15 seconds, so the words follow VoiceOver's own speech about what just changed.
+  - `joined` runs several messages into one announcement. It adds a full stop to a message that ends in no sentence mark, so the voice pauses, and it returns a lone message as it is.
+  - `say(inOrder:)` says a run of messages as one announcement, because a run posted one by one would cut each other off.
+  - `combined` joins announcements posted together into one, at the highest priority among them.
+  - `important` interrupts at once.
+- `VoiceOverAnnouncer.collectingAnnouncements(during:)` returns what a synchronous call announced, instead of posting it. A move uses it to sort what it says (`PhoneMoveFeedback`) before anything is heard.
+- Words that should follow VoiceOver's speech go through `say`: the sheets' farewell words, a folder's arrival words, and import results.
+
+### Book content: PhonePassagePolicy
+
+- `PhonePassagePolicy` decides what passage Book content holds and when it changes. It is a plain type, so the Mac's tests cover every rule.
+- `placeToShow(chapter:offset:chapterCount:hasWords:)` says where the passage is taken from.
+  - If the reading place's chapter has words to say, the passage is taken from that place.
+  - If not, it is taken from the start of the next chapter that has words, which is where Play would begin reading.
+  - If no chapter from there on has words, the answer is nil, and Book content keeps its stand-in.
+- It is needed because a Project Gutenberg EPUB opens at its "Cover", a chapter that is only an image, and Book content was blank there.
+  - `hasWords` uses `ReaderViewModel.hasSpeakableText`, which is playback's own rule.
+  - The search is `ReaderViewModel.nextSpeakableChapterIndex`, the same forward-only search that playback makes over silent chapters.
+  - The Mac's Book content still shows nothing at such a chapter. Whether the Mac should do the same is an open question to the user.
+- `turnEffect(isPlaying:)` says what a page turn does. A page turn comes from the three-finger swipe or from VoiceOver's Read All.
+  - Paused, it is `movesPlaceAndText`: the place moves to the new page, then the text shows it. Stopping Read All therefore leaves the place where the reading got to.
+  - Playing, it is `movesTextOnly`: the book plays on where it is, and only the text moves.
+- Read All works through the page-turn trait.
+  - `PhoneBookTextView` adds `causesPageTurn` to its traits.
+  - At the end of the passage, VoiceOver calls `accessibilityScroll(.next)` and reads on from the next passage.
+  - At the book's end the scroll returns false, which ends the reading.
+- `changesPassage(on:hasFocus:isPlaying:followsInBraille:)` decides when the text changes. A focused text view must not change under a reader, in speech or in braille.
+  - A move made while the book plays does not swap the text under a reader who has focus on it, unless Follow in Braille is on. Paused, a move always shows.
+  - The ten-second tick follows the book only while it plays and Book content has no focus, or Follow in Braille is on.
+  - The book loading, focus leaving, and the listener's own request always change it.
+
+### PhoneEscapePolicy
+
+- VoiceOver's escape gesture is the two-finger scrub.
+  - The system already pops a pushed screen (the reader, a folder) through the navigation stack's Back.
+  - It closes a sheet unless the sheet turned off its interactive dismissal.
+- The import question turns it off (`interactiveDismissDisabled(true)`), so only an answer settles it. A scrub on the question must leave it open.
+- A search is the one place where the system does not know what "back" means, so `PhoneEscapePolicy.libraryOutcome(isSearching:isFolderScreen:)` says. It returns one of three outcomes:
+  - `clearSearch`, if the search field holds text, wherever the screen is. The field is emptied and focus goes to it.
+  - `goBack`, if the screen is a folder's and no search is in progress.
+  - `nothing`, at the top of the Library, which has nowhere to go back to.
+- `PhoneLibraryView` attaches it as `.accessibilityAction(.escape)`.
