@@ -4,6 +4,47 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.2 (November 8, 2026)
+### Export a text book as spoken audio
+- A text book's Export dialog has a checkbox, "Text as spoken audio", that speaks the book with its voice into one audio file, M4B, M4A, or MP3, with a chapter at each heading (see [Exporting books](exporting-books.md)).
+- Its options are Format, From and To (the book's headings), Speed, and Pitch, which start at the book's own speed and pitch, and a line naming the voice and one about Apple's licence. They have no group of their own, so VoiceOver reaches them right after the checkbox.
+- The dialog reads the book's headings only once spoken audio is checked, so it opens at once.
+- An MP3 has chapters for its first 255 headings only. Past 255, a line after the Format pop-up says so and suggests M4B, and the end of the export says so too.
+- A chapter the voice can't speak fails the export with a sentence saying so: "The voice made no sound for “Chapter 3”. Check that the book's voice speaks the book's language."
+- Progress says which chapter is being spoken. Stop keeps the chapters already spoken, and exporting the same range at the same speed and pitch goes on from there, until TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.
+- Quitting TextMouth during an export stops it as Stop does, waiting at most 5 seconds, then quits. The next launch clears the chapters it had spoken, as it clears all kept chapters.
+- A Personal Voice, no voice, too little disk space, a second export at once, and a range with nothing to speak are each refused with a sentence saying why.
+- Every kind of export now refuses the folder where TextMouth keeps spoken chapters: "Export can't write into the folder where TextMouth keeps spoken chapters, since TextMouth empties it. Choose another folder."
+- A real voice (Samantha) was exported to an M4B, an M4A, and an MP3, each with three chapters.
+- Caution: while a spoken-audio export runs, listening to a book in TextMouth hasn't been tested. If the reading jumps back to words it has already said, stop the export or pause the reading.
+- Not done yet: time ranges, a selection, and WAV, AIFF, CAF, Apple Lossless, and FLAC. Kept chapters are not swept at launch on iOS.
+
+### Transcripts that come with podcasts and audiobooks
+- Book > Attach Transcript… gives an audiobook a transcript from a WebVTT (.vtt) or SubRip (.srt) file, on any macOS, with nothing transcribed. It asks first before replacing a transcript the book has, and says so if you edited or cleaned it up (see [Transcribing an audiobook](transcribing.md)).
+- An audiobook imported with a .vtt or .srt file beside its audio, named as a track is with its extension changed (01.vtt beside 01.mp3), takes that file as the track's transcript, whether the book came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then. A file that can't be used is named once the import is done, and never fails it.
+- A downloaded podcast episode brings its own transcript and chapters, for every feed (see [Podcasts and article feeds](feeds.md)). The chapters become its headings when its audio has none.
+- Downloading an episode again replaces its own transcript with the new one, unless you made, edited, or cleaned up the transcript.
+- Book Information has a read-only Transcript detail that says where a transcript came from and when, as in "Attached from “lecture.vtt” on October 30, 2026."
+- Transcribe Audio… is dimmed for a book while a transcript is being attached to it, and says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes." from any other route.
+- Export's Transcript checkbox has a "Convert transcript to" pop-up that adds WebVTT and SubRip captions, one file for the book, timed from the start of its audio. SubRip writes a few strings as character references so that they read back as written, and other players may show those as written.
+- A Transcript item that holds no timed transcript can't be written as captions, and the export says so: "The book has no timed transcript to write as captions."
+- Replace Existing keeps a transcript that recognition made, or that you edited or cleaned up, over the transcript file the new copy brought. An untouched transcript from outside, attached or a podcast's, gives way to the file. The duplicate question says which will happen, and afterwards VoiceOver names a file that wasn't used and points to Attach Transcript… (see [Adding books](adding-books.md)).
+- Fixed in the same work: a speaker was misnamed after a cue that changes voice partway; a 20 MB file of blank lines took 640 MB and now takes 80 MB; SubRip writing lost cues on re-read; a window closing during the Replace confirmation left Attach Transcript… dimmed until quit; two tracks with the same name, such as 01.mp3 and 01.flac, both took 01.vtt; Attach reads only a plain file, so a named pipe can't hang it; and a chapter title is cut to 200 characters.
+
+### Symbols in Word documents
+- A Word document (.docx) and Word 2003 XML now read symbols, as .doc has since 0.4.1: a w:sym is read by its font, and text typed in a symbol font is read the same way (see [What TextMouth reads](what-textmouth-reads.md)).
+- A check box in Wingdings, a font of pictures, reads as a space, where the words either side ran together. A bullet typed in Symbol reads as a bullet, and a greater-or-equal sign as itself.
+- Of 2,244 real files compared before and after, 9 read differently and 2,235 the same. No real Word 2003 XML file holds a symbol, so that half is proved by tests alone.
+- Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts.
+
+### A book nested deeply can no longer crash TextMouth
+- A book or page nested however deeply can no longer crash TextMouth. The markup guard now parses, checks, and releases a tree on a thread with a 490 MiB stack, which holds a million levels, where the import's own stack held about a thousand.
+- It costs about 55 microseconds a chapter. A 300-chapter book takes about 7 ms more.
+- Untested on an iPhone: if the system refuses that stack, the guard falls back to 122 MiB, then 30 MiB, then the thread it was called from.
+
+### Older versions
+- The first time this version opens, every .docx and .wordml book is read again once, for the symbols it now reads (page reader line 1.3.0). Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
+
 ## 0.4.1 (November 7, 2026)
 ### Commands that said nothing now say what happened
 - Move Book Up and Move Book Down (Library menu) now say why when they can't move a book, where they used to say nothing. In a folder in Folders that is not sorted by Manual Order: "Books can be moved only in a folder sorted by Manual Order, and this folder is not. Choose Manual Order in the Sort menu, then try again." In any other view, which mixes the books of many folders and has no order you arrange: "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again." With no book selected: "No book is selected. Select the book to move, then try again." With several: "Several books are selected, and a move shifts one book at a time. Select just one book, then try again." A book already at the top or the bottom says "Dune can't move up." (see [The Library window](library-window.md)).

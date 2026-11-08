@@ -92,6 +92,10 @@ protocol FeedLibraryHost: AnyObject {
     func feedItemRows(of feedID: UUID) -> FeedItemRows
     /// Lists a book a feed download published, and saves the library.
     func addFeedBook(_ book: Book)
+    /// The transcript fetched with an episode was saved into its package
+    /// (FMT25): the library row says "Transcribed", and an open reader shows
+    /// `text`.
+    func feedTranscriptAttached(bookID: UUID, text: TranscriptText)
     /// Removes the files of the feed items `books` through `remove`, once
     /// each record that keeps the listener's state and the feeds' indexes
     /// are on disk, keeping each package that holds something of the

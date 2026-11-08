@@ -209,6 +209,29 @@ extension XCTestCase {
         )
         return debugLogLines(containing: DiagnosticLog.loggablePath(url))
     }
+
+    /// The debug log's lines written while `body` runs, in the order they were
+    /// written: the bytes the log gained meanwhile, after every queued write.
+    /// It reads bytes rather than comparing lines, because a line's time is
+    /// to the second only. Two exports that end alike within one second write
+    /// the same line twice, and a comparison of lines would take the second
+    /// for the first. A log rotated meanwhile starts a new file that holds only
+    /// the new lines.
+    ///
+    /// For work that awaits, as `DOCXMalformedXMLTests` and
+    /// `ReadingStatsDayAttributionTests` read the log for work that doesn't.
+    /// The log's folder must not change while `body` runs: call
+    /// `TextMouthPaths.ensureDirectoryStructure()` first.
+    func debugLogLines(writtenWhile body: () async throws -> Void) async rethrows -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        try await body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
+    }
 }
 
 /// Writes, as each test ends, a config.json save the test left waiting

@@ -1051,9 +1051,10 @@ enum FileImportService {
             // finds, and the book records it. Every other way a book comes to
             // the library (a package, a feed, a recording, text typed in) reads
             // as it always did, and so does every later reading of this book.
+            // An audio file's transcript beside it is attached (FMT23).
             var imported = try publishReadableBook(
                 staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true,
-                guessingEncoding: true
+                guessingEncoding: true, pairingTranscripts: format.isAudio ? .besideFile(sourceURL) : nil
             )
             // A DAISY package is copied file by file from its folder; an RTFD
             // is a folder, whole, which no import deletes.
@@ -1408,6 +1409,7 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: folder,
+                pairingIn: folder,
                 run: &run
             )
             // The folder holds files that were not copied (a cover, lyrics,
@@ -1497,13 +1499,20 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: playlist,
+                pairingIn: folder,
                 run: &run
             )
             // The tracks and the playlist belong to the listener's music
             // folders, so none is deleted or offered for deletion, whatever
             // "After Importing a Book" says.
             imported.isFromFolder = true
-            imported.notice = PlaylistImportWording.notice(playlistName: playlist.lastPathComponent, skipped: skipped)
+            // The transcripts not attached (FMT23), then the entries skipped,
+            // as one message; nil when neither has anything to tell.
+            let notices = [
+                imported.notice,
+                PlaylistImportWording.notice(playlistName: playlist.lastPathComponent, skipped: skipped),
+            ].compactMap { $0 }
+            imported.notice = notices.isEmpty ? nil : notices.joined(separator: " ")
             return imported
         }
     }
@@ -1635,7 +1644,11 @@ enum FileImportService {
     /// of a file lists it by its file name until its text is read.
     /// `guessingEncoding` is passed on to
     /// `readableContent(of:run:refusingBlankText:adoptingDocumentNames:guessingEncoding:)`
-    /// and set by that import alone (FMT16).
+    /// and set by that import alone (FMT16). With `pairingTranscripts`, which
+    /// the imports of a file, a folder of tracks, a playlist, and an audio
+    /// ZIP give, an audiobook's transcript files found beside its audio are
+    /// attached once its content reads (`TranscriptPairing.attach`, FMT23),
+    /// and the book returned carries the notice of those that were not.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1645,6 +1658,7 @@ enum FileImportService {
         refusingBlankText: Bool = false,
         adoptingDocumentNames: Bool = false,
         guessingEncoding: Bool = false,
+        pairingTranscripts pairing: TranscriptPairing? = nil,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
@@ -1658,6 +1672,9 @@ enum FileImportService {
             of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames,
             guessingEncoding: guessingEncoding
         )
+        // A transcript beside the audio goes into the staged package before
+        // its record is written; attaching one never fails the import.
+        let notice = pairing.flatMap { TranscriptPairing.attach($0, to: staged, index: content.index) }
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1665,7 +1682,7 @@ enum FileImportService {
 
         try run.begin(.publishing, in: staging.directory)
         try publish(staging)
-        return ImportedBook(book: book, report: content.report)
+        return ImportedBook(book: book, report: content.report, notice: notice)
     }
 
     /// What reading a book's content as the reader will produced: the index
@@ -2750,6 +2767,7 @@ enum FileImportService {
                 progress: extraction
             )
 
+            // A transcript file in the archive lies beside its track.
             return try publishTracks(
                 titled: zipName,
                 in: audioDirectory,
@@ -2759,6 +2777,7 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: zipURL,
+                pairingIn: audioDirectory,
                 run: &run
             )
         }
@@ -2774,6 +2793,11 @@ enum FileImportService {
     /// reader's discovery rules (wrapper folders count; Finder metadata
     /// named like audio does not), so a folder with no playable track fails
     /// there, and the book is published once it reads as the reader will.
+    /// A WebVTT or SubRip file named as a track is, found in
+    /// `transcriptFolder`, the folder the tracks' paths lead from (the
+    /// archive's extraction, the folder chosen, or the playlist's own
+    /// folder), becomes the book's transcript (`TranscriptPairing.inFolder`,
+    /// FMT23).
     private static func publishTracks(
         titled title: String,
         in audioDirectory: URL,
@@ -2783,6 +2807,7 @@ enum FileImportService {
         folderPath: String,
         dateAdded: Date,
         source: URL,
+        pairingIn transcriptFolder: URL,
         run: inout ImportRun
     ) throws -> ImportedBook {
         var title = title
@@ -2805,7 +2830,7 @@ enum FileImportService {
             staging: staging,
             source: source
         )
-        return try publishReadableBook(staged, from: staging, run: &run)
+        return try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
     }
 
     /// Creates the folder an audio archive's tracks go in, inside `staging`.

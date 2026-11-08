@@ -700,6 +700,104 @@ final class MarkupGuardTests: XCTestCase {
         )
     }
 
+    // MARK: - The Big Stack
+
+    /// The stack for the deepest tree the memory limit lets through is sized
+    /// from the per-level cost measured in SwiftSoup (at most about 200 bytes a
+    /// level, in debug and Release), with a margin of at least two, and is a
+    /// whole number of megabytes, which every page size divides.
+    func testTheBigStackHoldsTheDeepestTreeThePassLetsThrough() {
+        let memoryLimit = MarkupGuard.Limits.standard.mostMemoryUnits
+        XCTAssertEqual(MarkupGuard.deepestTreeParsed, memoryLimit, "every node takes at least one unit")
+        let bytes = MarkupGuard.stackBytes(forTreeDepth: MarkupGuard.deepestTreeParsed)
+        XCTAssertGreaterThanOrEqual(bytes, MarkupGuard.deepestTreeParsed * 200 * 2)
+        XCTAssertEqual(bytes % (1 << 20), 0)
+        // Small trees round up to a whole megabyte, never to nothing.
+        XCTAssertEqual(MarkupGuard.stackBytes(forTreeDepth: 0), 1 << 20)
+        XCTAssertGreaterThan(MarkupGuard.stackBytes(forTreeDepth: 4_000), 4_000 * 200)
+    }
+
+    /// The body runs on a thread of its own with the stack asked for, not on
+    /// the caller's thread; what it returns (a tree that is not `Sendable`)
+    /// and what it throws reach the caller, and the caller waits for it.
+    func testTheBodyRunsOnAThreadWithTheBigStackAndItsResultComesBack() throws {
+        let caller = pthread_self()
+        let wanted = MarkupGuard.stackBytes(forTreeDepth: MarkupGuard.deepestTreeParsed)
+        let (sameThread, stack) = try MarkupGuard.onLargeStack { (pthread_equal(pthread_self(), caller) != 0, pthread_get_stacksize_np(pthread_self())) }
+        XCTAssertFalse(sameThread)
+        XCTAssertGreaterThanOrEqual(stack, wanted)
+
+        let tree = try MarkupGuard.onLargeStack { try SwiftSoup.parseBodyFragment("<p>Words</p>") }
+        XCTAssertEqual(try tree.body()?.text(), "Words")
+
+        XCTAssertThrowsError(try MarkupGuard.onLargeStack { () throws -> Int in throw MarkupRefusal.tooMuchMarkup }) {
+            XCTAssertEqual($0 as? MarkupRefusal, .tooMuchMarkup)
+        }
+    }
+
+    /// Parsing from a worker thread, whose stack is 512 KiB, still works and
+    /// gives the same tree as SwiftSoup alone, in each of the three parsers.
+    func testAParseFromAWorkerThreadReadsAsSwiftSoupDoes() throws {
+        let html = "<!DOCTYPE html><html><head><title>T</title></head><body><ol><li>One<li>Two<ol><li>Three</ol></ol></body></html>"
+        let xml = xhtml("<ol><li>One</li><li>Two</li></ol>")
+        let fragment = "<p>Words <b>bold</b></p>"
+        let results = try XCTUnwrap(onWorkerSizedStack { () -> [Result<[String], Error>] in
+            [
+                Result { [try MarkupGuard.parse(html).outerHtml(), try SwiftSoup.parse(html).outerHtml()] },
+                Result { [try MarkupGuard.parseXML(xml).outerHtml(), try SwiftSoup.parse(xml, "", Parser.xmlParser()).outerHtml()] },
+                Result { [try MarkupGuard.parseBodyFragment(fragment).outerHtml(), try SwiftSoup.parseBodyFragment(fragment).outerHtml()] },
+            ]
+        })
+        for result in results {
+            let pair = try result.get()
+            XCTAssertEqual(pair[0], pair[1])
+        }
+    }
+
+    /// The second layer's limit can be set apart from the first layer's count
+    /// (`deepestTree`), as the child-process proofs do to see trees the count
+    /// let through refused after the parse; it is the count's limit when not
+    /// set. A 60-level tree is shallow enough to build in the test host.
+    func testTheSecondLayerHasALimitOfItsOwnWhenOneIsSet() throws {
+        let markup = "<html><body>" + String(repeating: "<div>", count: 60) + "words"
+        var limits = MarkupGuard.Limits.standard
+        limits.deepestNesting = .max
+        // Not set: the first layer's limit, lifted, is the second's too.
+        XCTAssertEqual(limits.deepestParsedTree, .max)
+        XCTAssertNoThrow(try MarkupGuard.$limits.withValue(limits) { try MarkupGuard.parse(markup) })
+        // Set: the tree is refused after the parse, with the second layer's limit in the sentence.
+        limits.deepestTree = 40
+        XCTAssertEqual(limits.deepestParsedTree, 40)
+        for parse in [
+            { try MarkupGuard.parse(markup) },
+            { try MarkupGuard.parseXML("<r>" + String(repeating: "<div>", count: 60)) },
+            { try MarkupGuard.parseBodyFragment(String(repeating: "<div>", count: 60)) },
+        ] {
+            try MarkupGuard.$limits.withValue(limits) {
+                XCTAssertThrowsError(try parse()) { XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: 40)) }
+            }
+        }
+    }
+
+    /// Every call into SwiftSoup's parsers inside the guard sits in a closure
+    /// run by `onLargeStack`, so the parse never runs on the caller's stack;
+    /// and it is the argument of the depth check in that same closure, so a
+    /// tree the check refuses is released on the big stack too, never on the
+    /// caller's.
+    func testEverySwiftSoupParseInTheGuardRunsOnTheBigStack() throws {
+        let source = try XCTUnwrap(AppSourceFile.all().first { $0.name == "MarkupGuard.swift" })
+        // The code without its comments.
+        let code = source.text.components(separatedBy: .newlines).map { $0.components(separatedBy: "//").first ?? $0 }.joined(separator: "\n")
+        let parses = try NSRegularExpression(pattern: #"SwiftSoup\.parse"#).numberOfMatches(in: code, range: NSRange(code.startIndex..., in: code))
+        // A depth check moved out of the closure, with the parse left in it,
+        // would release a refused tree on the caller's stack: the November 8
+        // check found the looser pattern let that pass.
+        let onTheBigStack = try NSRegularExpression(pattern: #"onLargeStack\s*\{\s*try\s+requireDepth\(of:\s*SwiftSoup\.parse"#)
+            .numberOfMatches(in: code, range: NSRange(code.startIndex..., in: code))
+        XCTAssertEqual(parses, 3, "the guard's three parsers")
+        XCTAssertEqual(onTheBigStack, parses, "each parse is the argument of requireDepth, inside an onLargeStack closure")
+    }
+
     // MARK: - One Way In
 
     /// Nothing in the app reaches SwiftSoup's parsers but through the guard, so a

@@ -8,9 +8,11 @@ import SwiftUI
 /// book's text in the user's own editor (`BookTextEditor`), and are
 /// available only while the reader's book has text to edit. Its Transcribe
 /// Audio… opens the Transcribe Audio sheet on the reader for an audiobook,
-/// Clean Up Transcript (Experimental)… opens the Clean Up sheet for a
-/// transcribed one, and Delete Transcript… asks to delete a transcribed
-/// audiobook's transcript. Its Edit Audio… opens an audiobook in the audio
+/// Attach Transcript… asks for a WebVTT or SubRip file to make an
+/// audiobook's transcript instead (FMT23), Clean Up Transcript
+/// (Experimental)… opens the Clean Up sheet for a transcribed one, and
+/// Delete Transcript… asks to delete a transcribed audiobook's
+/// transcript. Its Edit Audio… opens an audiobook in the audio
 /// editor (FR04), which first asks this reader to close, since editing
 /// changes the audio it plays. Its Move to Library… opens Move to Library…'s
 /// sheet for an episode or article in its feed (FR11, branch D), and the
@@ -18,9 +20,12 @@ import SwiftUI
 ///
 /// ReaderView attaches this in one line, as it attaches each of its parts,
 /// so that its body stays well clear of the type checker's limit (board
-/// #829). The reader itself is not observed, so a playing reader's frequent
-/// publishes never draw this again; only the settings it shows, and which
-/// books are transcribed, are.
+/// #829); for the same reason, the commands this takes and the scene values
+/// it publishes are steps of their own (`takingCommands(_:)`,
+/// `publishingSceneValues(_:)`). The reader itself is not observed, so a
+/// playing reader's frequent publishes never draw this again; only the
+/// settings it shows, which books are transcribed, and which a transcript
+/// is being attached to, are.
 struct ReaderBookCommandsSupport: ViewModifier {
     /// The reader whose book the commands act on.
     let viewModel: ReaderViewModel
@@ -42,6 +47,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
     /// Which audiobooks play a folder of tracks, whose manifest can be
     /// edited (FR17).
     @ObservedObject private var trackFolderBooks = TrackFolderBooks.shared
+    /// Which audiobooks a transcript is being attached to (FMT23), observed
+    /// so Attach Transcript… is dimmed for the reader's book while one is.
+    @ObservedObject private var attachments = TranscriptAttachments.shared
 
     /// The commands of `viewModel`'s book, opening the Export dialog through
     /// `exportModel`, Move to Library…'s sheet through `moveToLibrary`
@@ -61,7 +69,7 @@ struct ReaderBookCommandsSupport: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        content
+        publishingSceneValues(takingCommands(content))
             .toolbar {
                 if settings.showExportInReaderToolbar {
                     ToolbarItem {
@@ -69,6 +77,25 @@ struct ReaderBookCommandsSupport: ViewModifier {
                     }
                 }
             }
+            .sheet(item: $exportModel) { model in
+                BookExportSheet(model: model, close: { exportModel = nil })
+            }
+            // What the move did is said once the sheet has closed (REV11 F6).
+            .modifier(MoveToLibrarySheetPresentation(
+                request: $moveToLibrary,
+                library: viewModel.libraryViewModel,
+                say: { [weak viewModel] message in VoiceOverAnnouncer.announce(message, from: viewModel?.hostWindow) }
+            ))
+            .modifier(TranscriptionPresentation(presenter: transcription))
+    }
+
+    /// `view` taking the File and Book menus' commands for this reader, each
+    /// when the reader's window, or a sheet over it, is key
+    /// (`takesCommand`), and closing as the audio editor opens on its book.
+    /// A step of its own, which the type checker reads apart from the rest
+    /// of the body, so the body stays well clear of its limit (board #829).
+    private func takingCommands(_ view: some View) -> some View {
+        view
             .onReceive(NotificationCenter.default.publisher(for: .exportBooks)) { notification in
                 guard takesCommand(notification) else { return }
                 openExport()
@@ -93,6 +120,10 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard takesCommand(notification) else { return }
                 transcribe()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .attachBookTranscript)) { notification in
+                guard takesCommand(notification) else { return }
+                attachTranscript()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .cleanUpBookTranscript)) { notification in
                 guard takesCommand(notification) else { return }
                 cleanUpTranscript()
@@ -114,10 +145,16 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 guard notification.object as? UUID == viewModel.book.id else { return }
                 viewModel.hostWindow?.performClose(nil)
             }
-            // Scene values, published whenever this reader's window is key,
-            // even while none of its views has keyboard focus, as when
-            // VoiceOver reads its text: a focused value would leave the Book
-            // menu's commands unavailable then.
+    }
+
+    /// `view` publishing which of the Book menu's commands the reader's book
+    /// takes, as scene values: published whenever this reader's window is
+    /// key, even while none of its views has keyboard focus, as when
+    /// VoiceOver reads its text, since a focused value would leave the Book
+    /// menu's commands unavailable then. A step of its own, as
+    /// `takingCommands(_:)` is.
+    private func publishingSceneValues(_ view: some View) -> some View {
+        view
             .focusedSceneValue(
                 \.canEditBookText,
                 BookTextEditor.canEditText(of: viewModel.book, isTranscribed: transcribedBooks.contains(viewModel.book.id))
@@ -126,7 +163,15 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 \.canEditBookManifest,
                 BookManifestEditing.canEditManifest(of: viewModel.book, isTrackFolder: trackFolderBooks.contains(viewModel.book.id))
             )
-            .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
+            // Dimmed while a transcript is being attached to the book.
+            .focusedSceneValue(
+                \.canTranscribeBookAudio,
+                TranscriptAttachments.canTranscribe(viewModel.book, attaching: attachments.bookIDs)
+            )
+            .focusedSceneValue(
+                \.canAttachBookTranscript,
+                TranscriptAttachments.canAttach(viewModel.book, attaching: attachments.bookIDs)
+            )
             // A transcribed audiobook's transcript is cleaned up, an episode's
             // in its feed included: the transcript is the listener's own work.
             .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
@@ -135,16 +180,6 @@ struct ReaderBookCommandsSupport: ViewModifier {
             // An episode or article in its feed moves into the library
             // (FR11, branch D); once it has, it is the library's own.
             .focusedSceneValue(\.canMoveBookToLibrary, viewModel.book.isFeedItem)
-            .sheet(item: $exportModel) { model in
-                BookExportSheet(model: model, close: { exportModel = nil })
-            }
-            // What the move did is said once the sheet has closed (REV11 F6).
-            .modifier(MoveToLibrarySheetPresentation(
-                request: $moveToLibrary,
-                library: viewModel.libraryViewModel,
-                say: { [weak viewModel] message in VoiceOverAnnouncer.announce(message, from: viewModel?.hostWindow) }
-            ))
-            .modifier(TranscriptionPresentation(presenter: transcription))
     }
 
     /// Whether the reader's book is a transcribed audiobook, whose
@@ -160,6 +195,14 @@ struct ReaderBookCommandsSupport: ViewModifier {
         let library = viewModel.libraryViewModel
         let book = library.bookByID(viewModel.book.id) ?? viewModel.book
         transcription.transcribe([book], library: library, window: viewModel.hostWindow)
+    }
+
+    /// Asks for a WebVTT or SubRip file to make the reader's audiobook's
+    /// transcript, as the library holds the book now (FMT23).
+    private func attachTranscript() {
+        let library = viewModel.libraryViewModel
+        let book = library.bookByID(viewModel.book.id) ?? viewModel.book
+        transcription.chooseTranscriptFile(for: book, library: library, window: viewModel.hostWindow)
     }
 
     /// Opens the Clean Up sheet for the reader's audiobook's transcript, as
