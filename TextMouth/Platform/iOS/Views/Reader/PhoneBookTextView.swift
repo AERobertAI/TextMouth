@@ -180,10 +180,19 @@ final class PhoneBookTextView: UITextView {
         let next: Shown
         if let state = model?.state, let standIn = PhoneReaderControls.bookContentStandIn(in: state) {
             next = Shown(bookID: reader.book.id, chapter: nil, range: 0..<0, text: standIn)
-        } else if let chapters = reader.content?.chapters, chapters.indices.contains(chapter) {
-            let text = chapters[chapter].text
-            let range = PhonePassagePolicy.passage(in: text, at: offset, maximumLength: ReaderViewModel.maxDisplayChars)
-            next = Shown(bookID: reader.book.id, chapter: chapter, range: range, text: Self.substring(of: text, range))
+        } else if let chapters = reader.content?.chapters,
+                  // A place in a chapter with no text (a cover that is only an
+                  // image) shows the next chapter's first passage, as Play
+                  // would read it, rather than an empty Book content.
+                  let place = PhonePassagePolicy.placeToShow(
+                      chapter: chapter,
+                      offset: offset,
+                      chapterCount: chapters.count,
+                      hasWords: { ReaderViewModel.hasSpeakableText(chapters[$0].text) }
+                  ) {
+            let text = chapters[place.chapter].text
+            let range = PhonePassagePolicy.passage(in: text, at: place.offset, maximumLength: ReaderViewModel.maxDisplayChars)
+            next = Shown(bookID: reader.book.id, chapter: place.chapter, range: range, text: Self.substring(of: text, range))
         } else {
             return
         }

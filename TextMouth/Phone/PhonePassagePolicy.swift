@@ -66,6 +66,39 @@ enum PhonePassagePolicy {
         }
     }
 
+    /// Where Book content's passage is taken from, given the reading place
+    /// `offset` in chapter `chapter`: that place when its chapter has words to
+    /// say, and otherwise the start of the next chapter that has, where Play
+    /// would begin reading. A book whose first chapter is only an image (a
+    /// Project Gutenberg EPUB's "Cover") is placed there when it's new, and
+    /// would otherwise open to an empty Book content.
+    ///
+    /// Nil when no chapter from `chapter` on has words, so Book content has
+    /// nothing to show and keeps its stand-in.
+    ///
+    /// - Parameters:
+    ///   - chapter: The chapter of the reading place.
+    ///   - offset: The place in that chapter, as a UTF-16 offset.
+    ///   - chapterCount: How many chapters the book has.
+    ///   - hasWords: Whether chapter `index` has anything to say, by the same
+    ///     rule as playback's (`ReaderViewModel.hasSpeakableText`).
+    static func placeToShow(
+        chapter: Int,
+        offset: Int,
+        chapterCount: Int,
+        hasWords: (Int) -> Bool
+    ) -> (chapter: Int, offset: Int)? {
+        guard chapter >= 0, chapter < chapterCount else { return nil }
+        if hasWords(chapter) { return (chapter: chapter, offset: offset) }
+        // The same forward-only search that playback makes over silent
+        // chapters, so Book content shows what Play would read.
+        return ReaderViewModel.nextSpeakableChapterIndex(
+            from: chapter + 1,
+            chapterCount: chapterCount,
+            isSpeakable: hasWords
+        ).map { (chapter: $0, offset: 0) }
+    }
+
     /// The passage of `text` for a reading position at `offset`, as UTF-16
     /// offsets: from the start of the sentence holding `offset`, at most
     /// `maximumLength` long, ending on a whole word.
