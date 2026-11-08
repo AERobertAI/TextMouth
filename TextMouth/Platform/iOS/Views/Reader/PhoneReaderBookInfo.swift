@@ -44,8 +44,10 @@ struct PhoneReaderBookInfo: View {
                 .navigationTitle(PhoneLibraryVocabulary.bookInformation)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(PhoneAppWording.cancel) { dismiss() }
+                    // Trailing, as the form's are (see `PhoneBookInfoForm`).
+                    ToolbarItem(placement: .topBarTrailing) {
+                        PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
+                            .accessibilityLabel(PhoneAppWording.cancel)
                     }
                 }
         }

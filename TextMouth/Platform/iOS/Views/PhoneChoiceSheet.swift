@@ -43,8 +43,13 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(PhoneAppWording.cancel) { dismiss() }
+                // Trailing, as every sheet's buttons are, and not in
+                // `.cancellationAction`, whose button the simulator's tree
+                // did not show as "Cancel". The label is given outright so
+                // that VoiceOver and braille say the spec's word.
+                ToolbarItem(placement: .topBarTrailing) {
+                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
+                        .accessibilityLabel(PhoneAppWording.cancel)
                 }
             }
         }
@@ -75,6 +80,7 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
         } label: {
             HStack {
                 Text(choice.label)
+                    .phonePrimaryText()
                 Spacer()
                 if choice.id == selected {
                     Image(systemName: "checkmark")

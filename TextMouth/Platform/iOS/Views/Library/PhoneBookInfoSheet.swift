@@ -204,13 +204,20 @@ private struct PhoneBookInfoForm<Fields: View>: View {
             .navigationTitle(PhoneLibraryVocabulary.bookInformation)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(PhoneAppWording.cancel) { dismiss() }
+                // Both trailing, in this order, so VoiceOver reads the title,
+                // then Cancel, then Save, as the other sheets' buttons are
+                // placed. Not in `.cancellationAction` and `.confirmationAction`:
+                // the simulator's tree did not show the first as "Cancel", so
+                // the labels are given outright as well.
+                ToolbarItem(placement: .topBarTrailing) {
+                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
+                        .accessibilityLabel(PhoneAppWording.cancel)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(PhoneAppWording.save) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    PhoneActionButton(title: PhoneAppWording.save) {
                         save { dismiss() }
                     }
+                    .accessibilityLabel(PhoneAppWording.save)
                     .disabled(!canSave)
                 }
             }
@@ -272,13 +279,17 @@ private struct PhoneBookInfoFacts: View {
     var body: some View {
         Section {
             PhoneBookInfoRow(PhoneLibraryVocabulary.formatRow, value: book.format.displayName)
-            LabeledContent(PhoneLibraryVocabulary.addedRow) {
-                Text(book.dateAdded, style: .date)
+            LabeledContent {
+                Text(book.dateAdded, style: .date).phoneSecondaryText()
+            } label: {
+                Text(PhoneLibraryVocabulary.addedRow).phonePrimaryText()
             }
             .accessibilityElement(children: .combine)
             if let lastOpened = book.lastOpened {
-                LabeledContent(PhoneLibraryVocabulary.lastOpenedRow) {
-                    Text(lastOpened, style: .date)
+                LabeledContent {
+                    Text(lastOpened, style: .date).phoneSecondaryText()
+                } label: {
+                    Text(PhoneLibraryVocabulary.lastOpenedRow).phonePrimaryText()
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -302,7 +313,7 @@ private struct PhoneBookInfoRow: View {
 
     var body: some View {
         if !value.isEmpty {
-            LabeledContent(name, value: value)
+            PhoneValueRow(name: name, value: value)
                 .accessibilityElement(children: .combine)
         }
     }
