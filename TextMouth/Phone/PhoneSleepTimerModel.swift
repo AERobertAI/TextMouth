@@ -10,8 +10,9 @@ import Foundation
 /// `PhoneSleepTimerVocabularyTests` reads the Mac's source and requires each
 /// word to be there as it is.
 enum PhoneSleepTimerVocabulary {
-    /// The sheet's title, read as its heading.
-    static let title = "Sleep Timer"
+    /// The sheet's title, read as its heading: the name of the button that
+    /// opens it.
+    static let title = PhoneReaderVocabulary.sleepTimer
     /// What Close does.
     static let closeHint = "Close the sleep timer and return to the book"
     /// The heading over the timer running.

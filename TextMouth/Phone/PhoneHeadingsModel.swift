@@ -10,8 +10,9 @@ import Foundation
 /// apart. Words the Mac's view already offers as statics are called there,
 /// not copied here.
 enum PhoneHeadingsVocabulary {
-    /// The sheet's title, read as its heading.
-    static let title = "Headings"
+    /// The sheet's title, read as its heading: the name of the button that
+    /// opens it.
+    static let title = PhoneReaderVocabulary.headings
     /// The toolbar button that closes the sheet.
     static let backToBook = "Back to Book"
     /// What Back to Book does.

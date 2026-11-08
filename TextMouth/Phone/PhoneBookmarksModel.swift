@@ -8,8 +8,9 @@ import Foundation
 /// Bookmarks sheet"). `PhoneBookmarksVocabularyTests` reads the Mac's source
 /// and requires each word to be there as it is.
 enum PhoneBookmarksVocabulary {
-    /// The sheet's title, read as its heading.
-    static let title = "Bookmarks"
+    /// The sheet's title, read as its heading: the name of the button that
+    /// opens it.
+    static let title = PhoneReaderVocabulary.bookmarks
     /// The toolbar button that closes the sheet.
     static let done = "Done"
     /// The Add Bookmark button's visible word, and the Add sheet's title.

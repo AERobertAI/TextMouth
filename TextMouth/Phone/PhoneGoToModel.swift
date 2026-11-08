@@ -55,7 +55,7 @@ enum PhoneGoToField: Hashable, CaseIterable, Sendable {
 @MainActor
 struct PhoneGoToModel {
     /// The sheet's title, read as its heading: the spec's "Go To".
-    static let title = "Go To"
+    static let title = PhoneReaderWording.goTo
 
     /// Whether the book is an audiobook, whose time is its recording's.
     let isAudioBook: Bool
