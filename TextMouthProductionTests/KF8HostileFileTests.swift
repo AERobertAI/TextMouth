@@ -9,17 +9,80 @@ final class KF8HostileFileTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// The file the import tests write each damaged copy over (one file for the whole test, so a test of
+    /// hundreds of copies makes one folder).
+    private var importFile: URL!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        importFile = try writeMOBI([], named: "hostile.azw3")
+    }
+
+    /// What importing a damaged book came to.
+    private enum ImportOutcome: Sendable, Equatable {
+        /// The book read, to this many chapters.
+        case read(chapters: Int)
+        /// The markup guard refused a section's markup, when it was converted.
+        case refused(MarkupRefusal)
+        /// The book ended in an error a person can be told: ours, the size limit's, or the no-text refusal.
+        case rejected
+        /// Any other error, which a Kindle book must never throw.
+        case failed(String)
+    }
+
+    /// Imports `bytes` as the library does: `MOBIParser.prepareBook(url:)` on a file, on the stack an import
+    /// has, which cuts the book into sections and hands each through `MarkupGuard` to the converter. It is
+    /// here, not in `MOBIBook(bytes:)`, that the markup's nesting is judged. Returns nil, after a failure is
+    /// recorded, when the import did not end.
+    @discardableResult
+    private func importQuickly(
+        _ bytes: [UInt8], hybrid: MOBIBook.HybridChoice = .kf8, timeLimit: TimeInterval = 5, _ what: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) -> ImportOutcome? {
+        do { try Data(bytes).write(to: importFile) } catch {
+            XCTFail("\(what): the file was not written: \(error)", file: file, line: line)
+            return nil
+        }
+        let url: URL = importFile
+        guard let (outcome, seconds) = onWorkerSizedStack(timeout: 60, {
+            let started = Date()
+            let outcome: ImportOutcome
+            do {
+                outcome = .read(chapters: try MOBIParser.prepareBook(url: url, hybrid: hybrid).chapters.count)
+            } catch let refusal as MarkupRefusal {
+                outcome = .refused(refusal)
+            } catch is MOBIError {
+                outcome = .rejected
+            } catch is DocumentTooLargeError {
+                outcome = .rejected
+            } catch is FileImportError {
+                outcome = .rejected
+            } catch {
+                outcome = .failed("\(error)")
+            }
+            return (outcome, Date().timeIntervalSince(started))
+        }) else { return nil }
+        XCTAssertLessThan(seconds, timeLimit, "\(what) took too long to import", file: file, line: line)
+        if case .failed(let message) = outcome {
+            XCTFail("\(what) imported with \(message), which is not an error a Kindle book throws", file: file, line: line)
+        }
+        return outcome
+    }
+
     /// Reads `bytes` as a book and checks that it ended, in under a second, with a book or one of the
-    /// errors a Kindle book throws (never a trap). Returns the book, or nil when it threw.
+    /// errors a Kindle book throws (never a trap). A book that opens is then imported, since the
+    /// converter and the markup guard run only there (`andImport` false skips that). Returns the book, or
+    /// nil when it threw.
     @discardableResult
     private func readQuickly(
-        _ bytes: [UInt8], hybrid: MOBIBook.HybridChoice = .kf8, _ what: String,
+        _ bytes: [UInt8], hybrid: MOBIBook.HybridChoice = .kf8, andImport: Bool = true, _ what: String,
         file: StaticString = #filePath, line: UInt = #line
     ) -> MOBIBook? {
         let started = Date()
         defer { XCTAssertLessThan(Date().timeIntervalSince(started), 1.0, "\(what) took too long", file: file, line: line) }
+        let book: MOBIBook
         do {
-            return try MOBIBook(bytes: bytes, hybrid: hybrid)
+            book = try MOBIBook(bytes: bytes, hybrid: hybrid)
         } catch is MOBIError {
             return nil
         } catch is DocumentTooLargeError {
@@ -30,6 +93,8 @@ final class KF8HostileFileTests: XCTestCase {
             XCTFail("\(what) threw \(error), which is not an error a Kindle book throws", file: file, line: line)
             return nil
         }
+        if andImport { importQuickly(bytes, hybrid: hybrid, what, file: file, line: line) }
+        return book
     }
 
     /// Requires that `bytes` are refused as damaged.
@@ -311,13 +376,23 @@ final class KF8HostileFileTests: XCTestCase {
         }
     }
 
-    func testAMarkupNestedFarDeeperThanAnyBookIsDamaged() {
+    func testAMarkupNestedFarDeeperThanAnyBookIsRefusedByTheGuardWhenItIsConverted() {
         let depth = 5_000
         let body = String(repeating: "<div>", count: depth) + "<p>Deep words.</p>" + String(repeating: "</div>", count: depth)
-        assertDamaged(KF8Fixture(body: body).data(), "\(depth) levels of nesting")
-        // The same words at the depth of a real book are read.
+        // The guard's own count of the markup, which builds no tree: past its limit.
+        let limits = MarkupGuard.Limits.standard
+        XCTAssertThrowsError(try MarkupGuard.inspect(Array(body.utf8), as: .html, limits: limits)) {
+            XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: limits.deepestNesting))
+        }
+        // The book's structure is sound, so it opens; the import refuses it where the markup is converted,
+        // with the guard's sentence, and no tree of 5,000 levels is ever built.
+        let deep = KF8Fixture(body: body).data()
+        XCTAssertNotNil(readQuickly(deep, andImport: false, "\(depth) levels of nesting, opened"))
+        XCTAssertEqual(importQuickly(deep, "\(depth) levels of nesting"), .refused(.nestedTooDeeply(limit: limits.deepestNesting)))
+        // The same words at the depth of a real book are read (the converter is run in this host at 40 levels
+        // at most: a debug build overflows its stack well before the limit).
         let shallow = String(repeating: "<div>", count: 40) + "<p>Deep words.</p>" + String(repeating: "</div>", count: 40)
-        XCTAssertNotNil(readQuickly(KF8Fixture(body: shallow).data(), "40 levels of nesting"))
+        XCTAssertEqual(importQuickly(KF8Fixture(body: shallow).data(), "40 levels of nesting"), .read(chapters: 1))
     }
 
     // MARK: - Many pieces
@@ -412,7 +487,8 @@ final class KF8HostileFileTests: XCTestCase {
                 }
                 damaged[place] = UInt8(truncatingIfNeeded: random.next())
             }
-            readQuickly(damaged, "the sample with bytes changed, round \(round)")
+            // Every fourth copy that opens is imported too: converting a whole book is the slow part.
+            readQuickly(damaged, andImport: round % 4 == 0, "the sample with bytes changed, round \(round)")
         }
     }
 
@@ -427,7 +503,8 @@ final class KF8HostileFileTests: XCTestCase {
             for round in 0..<80 {
                 var damaged = bytes
                 damaged[offsets[boundary] + random.below(offsets[min(boundary + 1, offsets.count - 1)] - offsets[boundary])] = UInt8(truncatingIfNeeded: random.next())
-                readQuickly(damaged, "\(sample) with record 0 of the KF8 half damaged, round \(round)")
+                // Every eighth copy that opens is imported too (both halves are whole books).
+                readQuickly(damaged, andImport: round % 8 == 0, "\(sample) with record 0 of the KF8 half damaged, round \(round)")
             }
         }
     }
