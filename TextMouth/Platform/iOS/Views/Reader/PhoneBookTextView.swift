@@ -70,7 +70,7 @@ final class PhoneBookTextView: UITextView {
     /// Here; forgotten when the passage changes.
     private var rotorSentence: Int?
     /// Whether this view turned off the screen's sleep, which it puts back.
-    private var keepsScreenAwake = false
+    private var endScreenHold: (@MainActor () -> Void)?
     /// The 10-second tick while the app is active and the view on screen.
     private var tick: Timer?
     /// The app's activity observers.
@@ -180,10 +180,19 @@ final class PhoneBookTextView: UITextView {
         let next: Shown
         if let state = model?.state, let standIn = PhoneReaderControls.bookContentStandIn(in: state) {
             next = Shown(bookID: reader.book.id, chapter: nil, range: 0..<0, text: standIn)
-        } else if let chapters = reader.content?.chapters, chapters.indices.contains(chapter) {
-            let text = chapters[chapter].text
-            let range = PhonePassagePolicy.passage(in: text, at: offset, maximumLength: ReaderViewModel.maxDisplayChars)
-            next = Shown(bookID: reader.book.id, chapter: chapter, range: range, text: Self.substring(of: text, range))
+        } else if let chapters = reader.content?.chapters,
+                  // A place in a chapter with no text (a cover that is only an
+                  // image) shows the next chapter's first passage, as Play
+                  // would read it, rather than an empty Book content.
+                  let place = PhonePassagePolicy.placeToShow(
+                      chapter: chapter,
+                      offset: offset,
+                      chapterCount: chapters.count,
+                      hasWords: { ReaderViewModel.hasSpeakableText(chapters[$0].text) }
+                  ) {
+            let text = chapters[place.chapter].text
+            let range = PhonePassagePolicy.passage(in: text, at: place.offset, maximumLength: ReaderViewModel.maxDisplayChars)
+            next = Shown(bookID: reader.book.id, chapter: place.chapter, range: range, text: Self.substring(of: text, range))
         } else {
             return
         }
@@ -366,17 +375,17 @@ final class PhoneBookTextView: UITextView {
 
     // MARK: - The Screen's Sleep
 
-    /// Keeps the screen awake while the text has focus.
+    /// Keeps the screen awake while the text has focus, by a hold on the
+    /// app's one keeper of the screen's sleep (`PhoneScreenSleep`).
     private func keepScreenAwake() {
-        guard !keepsScreenAwake else { return }
-        keepsScreenAwake = true
-        UIApplication.shared.isIdleTimerDisabled = true
+        guard endScreenHold == nil else { return }
+        endScreenHold = PhoneScreenSleep.hold()
     }
 
-    /// Lets the screen sleep again, if this view kept it awake.
+    /// Lets the screen sleep again, if this view kept it awake. Only this
+    /// view's hold is let go: another owner's (the import's) stays.
     private func allowScreenSleep() {
-        guard keepsScreenAwake else { return }
-        keepsScreenAwake = false
-        UIApplication.shared.isIdleTimerDisabled = false
+        endScreenHold?()
+        endScreenHold = nil
     }
 }

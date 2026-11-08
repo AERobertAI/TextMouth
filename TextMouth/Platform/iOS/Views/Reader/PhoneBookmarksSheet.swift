@@ -14,6 +14,9 @@ struct PhoneBookmarksSheet: View {
     let reader: ReaderViewModel
     /// What the sheet leaves to say once it has closed.
     let farewell: PhoneSheetFarewell
+    /// Tells the session the book was moved here, so it counts as opened
+    /// (`PhoneReaderModel.noteJumped`).
+    let noteJumped: @MainActor () -> Void
 
     /// The rows, in book order.
     @State private var model: PhoneBookmarksModel
@@ -33,9 +36,10 @@ struct PhoneBookmarksSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     /// A sheet over `reader`, farewell words kept in `farewell`.
-    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell) {
+    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell, noteJumped: @escaping @MainActor () -> Void) {
         self.reader = reader
         self.farewell = farewell
+        self.noteJumped = noteJumped
         _model = State(initialValue: PhoneBookmarksModel(reader: reader))
         _openedAt = State(initialValue: PhoneBookmarkPlace(readingIn: reader))
     }
@@ -198,6 +202,7 @@ struct PhoneBookmarksSheet: View {
             reader.navigateToBookmark(bookmark)
         }
         farewell.keep([PhoneBookmarksWording.jumpAnnouncement(to: bookmark)] + said.map(\.message))
+        noteJumped()
         dismiss()
     }
 

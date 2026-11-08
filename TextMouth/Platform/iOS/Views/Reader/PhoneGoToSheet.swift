@@ -12,6 +12,9 @@ struct PhoneGoToSheet: View {
     let reader: ReaderViewModel
     /// What the sheet leaves to say once it has closed.
     let farewell: PhoneSheetFarewell
+    /// Tells the session the book was moved here, so it counts as opened
+    /// (`PhoneReaderModel.noteJumped`).
+    let noteJumped: @MainActor () -> Void
 
     /// What the sheet offers, and the refusals it shows.
     @State private var model: PhoneGoToModel
@@ -27,9 +30,10 @@ struct PhoneGoToSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     /// A sheet over `reader`, farewell words kept in `farewell`.
-    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell) {
+    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell, noteJumped: @escaping @MainActor () -> Void) {
         self.reader = reader
         self.farewell = farewell
+        self.noteJumped = noteJumped
         let model = PhoneGoToModel(reader: reader)
         _model = State(initialValue: model)
         _texts = State(initialValue: model.startingTexts)
@@ -134,6 +138,7 @@ struct PhoneGoToSheet: View {
             dismiss()
         case .jumped:
             farewell.keep(said.map(\.message))
+            noteJumped()
             dismiss()
         case .refused(let problem):
             PhoneAnnouncer.say(problem)

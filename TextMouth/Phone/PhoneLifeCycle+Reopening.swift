@@ -19,7 +19,8 @@ extension PhoneLifeCycle {
         /// Whether the reader's screen was pushed over the Library.
         let showsReader: Bool
         /// What VoiceOver says with low priority, `wordsDelay` seconds later:
-        /// the book's title, or the crash guard's sentence; nil for nothing.
+        /// the crash guard's sentence; nil for nothing. (A reopened reader's
+        /// title is said by the reader's own arrival, never here.)
         let lowPriorityWords: String?
 
         /// Nothing reopened, and nothing to say.
@@ -76,7 +77,9 @@ extension PhoneLifeCycle {
             guard session.open(reopening.book) != nil else { return .nothing }
             model.showReader()
             DiagnosticLog.event(.app, "PHONE_REOPEN_READER: \(reopening.book.title)")
-            return LaunchReopened(showsReader: true, lowPriorityWords: reopening.book.title)
+            // The reader's screen says the title itself at the end of its
+            // arrival (`PhoneReaderView.arrive`), so it isn't said here too.
+            return LaunchReopened(showsReader: true, lowPriorityWords: nil)
         }
     }
 }

@@ -145,7 +145,10 @@ struct PhoneLibraryView: View {
                         }
                     } header: {
                         if let header = section.header {
+                            // The primary label color, for contrast; the
+                            // heading's text style still scales.
                             Text(header)
+                                .foregroundStyle(Color.primary)
                                 .accessibilityAddTraits(.isHeader)
                         }
                     }
@@ -154,9 +157,13 @@ struct PhoneLibraryView: View {
                 }
                 if !rows.isSearching, let summary = rows.summary {
                     // One static element, built with the rows.
+                    // A text style (it scales with Dynamic Type), wrapping to
+                    // as many lines as it needs rather than cutting off, in
+                    // the primary label color for contrast.
                     Text(summary)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .onAppear {
@@ -214,7 +221,15 @@ struct PhoneLibraryView: View {
         Button {
             open(.libraryView, from: .libraryView)
         } label: {
-            LabeledContent(PhoneRowWording.libraryViewLabel, value: rows.location.view.name)
+            // The system's label colors, not the button's tint, which
+            // `LabeledContent` would take inside a Button.
+            LabeledContent {
+                Text(rows.location.view.name)
+                    .foregroundStyle(Color.secondary)
+            } label: {
+                Text(PhoneRowWording.libraryViewLabel)
+                    .foregroundStyle(Color.primary)
+            }
         }
         .accessibilityLabel(PhoneRowWording.libraryViewLabel)
         .accessibilityValue(rows.location.view.name)
@@ -484,7 +499,7 @@ struct PhoneLibraryView: View {
             let foundNothing = counts.books == 0 && counts.folders == 0
             guard !(foundNothing && saidNoMatches) else { return }
             saidNoMatches = foundNothing
-            PhoneAnnouncer.low(PhoneRowWording.searchCount(books: counts.books, folders: counts.folders))
+            PhoneAnnouncer.say(PhoneRowWording.searchCount(books: counts.books, folders: counts.folders))
         }
     }
 

@@ -7,14 +7,26 @@ import XCTest
 final class PhonePassagePolicyTests: XCTestCase {
     // MARK: - When It Changes
 
-    /// Loading, a paused move, focus leaving, and the listener's own request
-    /// always change the passage.
+    /// Loading, focus leaving, and the listener's own request always change
+    /// the passage.
     func testTheseEventsAlwaysChangeThePassage() {
-        for event in [PhonePassagePolicy.Event.loaded, .movedWhilePaused, .focusLeft, .followAsked] {
+        for event in [PhonePassagePolicy.Event.loaded, .focusLeft, .followAsked] {
             for hasFocus in [false, true] {
                 XCTAssertTrue(changes(event, hasFocus: hasFocus, isPlaying: true), "\(event)")
             }
         }
+    }
+
+    /// A move changes the passage, except while the book plays and Book
+    /// content has focus, when only Follow in Braille lets it (the spec, "when
+    /// it has focus and the book plays, never, unless the Follow in Braille
+    /// switch").
+    func testAMoveDoesNotReplaceTheTextUnderAFocusedReaderWhileItPlays() {
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: false, isPlaying: true))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: false, isPlaying: false))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: true, isPlaying: false))
+        XCTAssertFalse(changes(.movedWhilePaused, hasFocus: true, isPlaying: true))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: true, isPlaying: true, follows: true))
     }
 
     /// A pause changes it unless Book content has focus.
@@ -134,6 +146,47 @@ final class PhonePassagePolicyTests: XCTestCase {
         XCTAssertNil(PhonePassagePolicy.sentence(in: passage, from: 0, forward: false))
         // From inside a sentence, back goes to its own start.
         XCTAssertEqual(PhonePassagePolicy.sentence(in: passage, from: 12, forward: false), 9..<21)
+    }
+
+    // MARK: - The Place to Show
+
+    /// Whether each of `chapters` has words, by playback's own rule.
+    private func place(_ chapters: [String], chapter: Int, offset: Int) -> (chapter: Int, offset: Int)? {
+        PhonePassagePolicy.placeToShow(
+            chapter: chapter,
+            offset: offset,
+            chapterCount: chapters.count,
+            hasWords: { ReaderViewModel.hasSpeakableText(chapters[$0]) }
+        )
+    }
+
+    /// A place in a chapter with words stays where it is.
+    func testAPlaceInAChapterWithWordsStays() {
+        let shown = place(["", "One. Two."], chapter: 1, offset: 5)
+        XCTAssertEqual(shown?.chapter, 1)
+        XCTAssertEqual(shown?.offset, 5)
+    }
+
+    /// A new Project Gutenberg EPUB: the place is the start of a "Cover"
+    /// chapter that holds only an image, so Book content shows the first
+    /// passage of the next chapter with words, the one Play would read.
+    func testAPlaceInAChapterWithNoTextMovesToTheNextWithWords() {
+        let shown = place(["", " \n ", "Chapter I. It began.", "More."], chapter: 0, offset: 0)
+        XCTAssertEqual(shown?.chapter, 2)
+        XCTAssertEqual(shown?.offset, 0)
+    }
+
+    /// When no later chapter has words, there's nothing to show, and the
+    /// search never goes back or wraps around.
+    func testNothingToShowWhenNoLaterChapterHasWords() {
+        XCTAssertNil(place(["Words.", "", " "], chapter: 1, offset: 0))
+    }
+
+    /// A chapter outside the book gives nothing, however the place got there.
+    func testAChapterOutsideTheBookGivesNothing() {
+        XCTAssertNil(place(["Words."], chapter: 3, offset: 0))
+        XCTAssertNil(place(["Words."], chapter: -1, offset: 0))
+        XCTAssertNil(place([], chapter: 0, offset: 0))
     }
 
     // MARK: - Helpers

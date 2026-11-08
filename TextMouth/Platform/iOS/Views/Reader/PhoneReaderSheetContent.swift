@@ -15,6 +15,9 @@ struct PhoneReaderSheetContent: View {
     let sheet: PhoneReaderSheet
     /// The reader the sheet is over.
     let reader: ReaderViewModel
+    /// Tells the session a jump from a sheet moved the book, so it counts as
+    /// opened.
+    let noteJumped: @MainActor () -> Void
 
     /// What the sheet leaves to say, and to start, once it has closed.
     @State private var farewell = PhoneSheetFarewell()
@@ -33,11 +36,11 @@ struct PhoneReaderSheetContent: View {
     private var panel: some View {
         switch sheet {
         case .headings:
-            PhoneHeadingsSheet(reader: reader, farewell: farewell)
+            PhoneHeadingsSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .goTo:
-            PhoneGoToSheet(reader: reader, farewell: farewell)
+            PhoneGoToSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .bookmarks:
-            PhoneBookmarksSheet(reader: reader, farewell: farewell)
+            PhoneBookmarksSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .sleepTimer:
             PhoneSleepTimerSheet(reader: reader, farewell: farewell)
         case .voice:
@@ -66,7 +69,9 @@ struct PhoneReaderSheetContent: View {
 /// either would cut off words posted with the closing. So the words wait for
 /// the Mac's moment after a sheet closes (`VoiceOverAnnouncer.afterSheetDelay`,
 /// longer than the reader's 0.35 seconds before returning focus), and are
-/// said at the priority that waits for current speech (`PhoneAnnouncer.say`).
+/// said at iOS's low priority, which Apple's header says is "queued and spoken
+/// when other speech utterances have completed" (`PhoneAnnouncer.say`), as one
+/// announcement so that none cuts off the next.
 /// A book to start waits for the last of them to be said, or for
 /// `PhoneSleepTimerModel.longestWaitBeforePlaying`, whichever comes first.
 ///
@@ -109,9 +114,8 @@ final class PhoneSheetFarewell {
     /// For a sheet that stays open, as the sleep timer does when Settings
     /// say so, as well as for one that has closed.
     static func say(_ words: [String], thenRun start: (@MainActor () -> Void)?) {
-        for word in words {
-            PhoneAnnouncer.say(word)
-        }
+        // One announcement, so that no word cuts off the one before it.
+        PhoneAnnouncer.say(inOrder: words)
         guard let start else { return }
         guard let last = words.last, UIAccessibility.isVoiceOverRunning else {
             start()
