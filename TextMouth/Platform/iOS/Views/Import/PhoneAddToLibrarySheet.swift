@@ -57,10 +57,7 @@ struct PhoneAddToLibrarySheet: View {
             .navigationTitle(AddToLibraryWording.sheetTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // After the title, as the spec's order has it.
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(AddToLibraryWording.cancel) { dismiss() }
-                }
+                PhoneSheetButton(title: AddToLibraryWording.cancel) { dismiss() }
             }
             .fileImporter(
                 isPresented: $isPickerPresented,
@@ -89,10 +86,10 @@ struct PhoneAddToLibrarySheet: View {
             isPickerPresented = true
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                Text(choice.title)
+                Text(choice.title).phonePrimaryText()
                 Text(summary)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .phoneSecondaryText()
             }
         }
         .accessibilityLabel(choice.title)

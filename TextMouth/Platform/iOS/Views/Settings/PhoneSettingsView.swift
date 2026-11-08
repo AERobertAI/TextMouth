@@ -87,6 +87,7 @@ struct PhoneSettingsView: View {
                         // The header trait is what the Headings rotor moves
                         // by (the spec, under "Lists").
                         Text(section.title)
+                            .phoneSecondaryText()
                             .accessibilityAddTraits(.isHeader)
                     }
                 }
@@ -129,7 +130,7 @@ struct PhoneSettingsView: View {
             choiceRow(.language, value: PhoneSettingsModel.languageName(settings.selectedLanguage))
             let offer = voiceOffer
             choiceRow(.voice, value: offer.rowValue, isEnabled: offer.canOpen)
-            Button(Words.previewVoice.rawValue, action: previewVoice)
+            PhoneActionButton(title: Words.previewVoice.rawValue, action: previewVoice)
                 .accessibilityLabel(Words.previewSelectedVoice.rawValue)
             sliderRow(.defaultSpeed, value: noted($settings.wordsPerMinute))
             sliderRow(.defaultPitch, value: noted($settings.pitchMultiplier))
@@ -160,7 +161,7 @@ struct PhoneSettingsView: View {
             // row has a hint of its own, so this isn't said as one.
             Text(EndOfBookWording.playOnAFinishedBookCaption)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .phoneSecondaryText()
         case .sleepTimer:
             stepperRow(.fadeOutDuration, value: noted($settings.sleepFadeOutDuration))
             switchRow(.closeSleepTimerSheet, isOn: noted($settings.sleepTimerAutoClose))
@@ -188,7 +189,7 @@ struct PhoneSettingsView: View {
         Button {
             open(row)
         } label: {
-            LabeledContent(row.title, value: value)
+            PhoneValueRow(name: row.title, value: value)
         }
         .disabled(!isEnabled)
         .accessibilityLabel(row.label)
@@ -202,7 +203,7 @@ struct PhoneSettingsView: View {
     /// VoiceOver hears each of those once, from the slider itself.
     private func sliderRow(_ adjustment: PhoneSettingsAdjustment, value: Binding<Double>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            LabeledContent(adjustment.label, value: adjustment.words(value.wrappedValue))
+            PhoneValueRow(name: adjustment.label, value: adjustment.words(value.wrappedValue))
                 .accessibilityHidden(true)
             Slider(value: value, in: adjustment.range, step: adjustment.step) {
                 Text(adjustment.label)
@@ -221,7 +222,7 @@ struct PhoneSettingsView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Stepper(value: value, in: adjustment.range, step: adjustment.step) {
-                LabeledContent(adjustment.label, value: adjustment.words(value.wrappedValue))
+                PhoneValueRow(name: adjustment.label, value: adjustment.words(value.wrappedValue))
             }
             .modifier(SteppedAdjustment(adjustment: adjustment, value: value, isEnabled: isEnabled))
             caption(adjustment.hint)
@@ -248,7 +249,7 @@ struct PhoneSettingsView: View {
     private func caption(_ words: String) -> some View {
         Text(words)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .phoneSecondaryText()
             .accessibilityHidden(true)
     }
 
@@ -263,7 +264,7 @@ struct PhoneSettingsView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .onDisappear { returnFocus(to: row) }
         } label: {
-            Text(row.title)
+            Text(row.title).phonePrimaryText()
         }
         .accessibilityFocused($focusedRow, equals: row)
         .id(row)
@@ -273,14 +274,14 @@ struct PhoneSettingsView: View {
     /// (`CFBundleShortVersionString`, read by `BuildIdentity`): one element,
     /// with the name and the value together.
     private var versionRow: some View {
-        LabeledContent(PhoneSettingsWording.version, value: BuildIdentity.current.version)
+        PhoneValueRow(name: PhoneSettingsWording.version, value: BuildIdentity.current.version)
             .accessibilityElement(children: .combine)
     }
 
     /// The button that gathers the logs and offers them to the share sheet.
     private var shareLogsRow: some View {
         let row = PhoneSettingsRow.shareLogs
-        return Button(row.title, action: shareLogs)
+        return PhoneActionButton(title: row.title, action: shareLogs)
             .accessibilityHint(row.hint ?? "")
             .accessibilityFocused($focusedRow, equals: row)
             .id(row)

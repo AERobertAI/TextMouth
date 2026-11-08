@@ -74,10 +74,8 @@ struct PhoneHeadingsSheet: View {
             .navigationTitle(PhoneHeadingsVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, so VoiceOver reads the title first.
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneHeadingsVocabulary.backToBook) { dismiss() }
-                        .accessibilityHint(PhoneHeadingsVocabulary.backToBookHint)
+                PhoneSheetButton(title: PhoneHeadingsVocabulary.backToBook, hint: PhoneHeadingsVocabulary.backToBookHint) {
+                    dismiss()
                 }
             }
             .sheet(item: $choosing, onDismiss: returnFocusFromChoices) { choosing in
@@ -94,13 +92,13 @@ struct PhoneHeadingsSheet: View {
     private var filters: some View {
         Section {
             if model.showsLevelFilter {
-                Button(HeadingNavigatorView.levelFilterLabel) { open(.levels) }
+                PhoneActionButton(title: HeadingNavigatorView.levelFilterLabel) { open(.levels) }
                     .accessibilityValue(model.levelFilterValue)
                     .accessibilityHint(HeadingNavigatorView.levelFilterHint)
                     .accessibilityFocused($focus, equals: .levels)
                     .id(Focus.levels)
             }
-            Button(PhoneHeadingsVocabulary.displayLabel) { open(.display) }
+            PhoneActionButton(title: PhoneHeadingsVocabulary.displayLabel) { open(.display) }
                 .accessibilityValue(model.displayValue)
                 .accessibilityFocused($focus, equals: .display)
                 .id(Focus.display)
@@ -183,9 +181,10 @@ struct PhoneHeadingsSheet: View {
                 Text(row.heading.text)
                     .padding(.leading, CGFloat(max(row.heading.level - 1, 0) * 12))
                     .strikethrough(row.isSkipped)
+                    .phonePrimaryText()
                 Spacer()
                 Text(row.infoText)
-                    .foregroundStyle(.secondary)
+                    .phoneSecondaryText()
             }
         }
         .accessibilityLabel(row.label)

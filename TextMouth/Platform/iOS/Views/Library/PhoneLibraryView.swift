@@ -147,10 +147,10 @@ struct PhoneLibraryView: View {
                         }
                     } header: {
                         if let header = section.header {
-                            // The primary label color, for contrast; the
-                            // heading's text style still scales.
+                            // Full contrast (`PhoneTextColor`); the heading's
+                            // text style still scales.
                             Text(header)
-                                .foregroundStyle(Color.primary)
+                                .phoneSecondaryText()
                                 .accessibilityAddTraits(.isHeader)
                         }
                     }
@@ -168,7 +168,7 @@ struct PhoneLibraryView: View {
                     // grow.
                     Text(summary)
                         .font(.subheadline)
-                        .foregroundStyle(Color.primary)
+                        .phoneSecondaryText()
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -236,11 +236,11 @@ struct PhoneLibraryView: View {
                 // Full contrast (the audit found the secondary color not
                 // enough); the label stays distinct by its semibold weight.
                 Text(rows.location.view.name)
-                    .foregroundStyle(Color.primary)
+                    .phoneSecondaryText()
             } label: {
                 Text(PhoneRowWording.libraryViewLabel)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.primary)
+                    .phonePrimaryText()
             }
         }
         .accessibilityLabel(PhoneRowWording.libraryViewLabel)

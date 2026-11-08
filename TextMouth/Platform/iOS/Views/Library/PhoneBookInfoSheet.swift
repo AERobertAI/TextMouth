@@ -204,14 +204,11 @@ private struct PhoneBookInfoForm<Fields: View>: View {
             .navigationTitle(PhoneLibraryVocabulary.bookInformation)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(PhoneAppWording.cancel) { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(PhoneAppWording.save) {
-                        save { dismiss() }
-                    }
-                    .disabled(!canSave)
+                // In this order, so VoiceOver reads the title, then Cancel,
+                // then Save (the spec).
+                PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
+                PhoneSheetButton(title: PhoneAppWording.save, isEnabled: canSave) {
+                    save { dismiss() }
                 }
             }
         }
@@ -259,7 +256,17 @@ private struct PhoneBookInfoField: View {
     }
 
     var body: some View {
-        TextField(title, text: $text)
+        // A field that grows to as many lines as its text needs, up to six,
+        // so that a long title or date is never cut at a large text size (the
+        // audit found a one-line field clipped). Its value is still one line:
+        // Return, which would start another, is dropped, and so is a newline
+        // in pasted text.
+        TextField(title, text: $text, axis: .vertical)
+            .lineLimit(1...6)
+            .onChange(of: text) { _, newText in
+                guard newText.contains(where: \.isNewline) else { return }
+                text = newText.filter { !$0.isNewline }
+            }
             .accessibilityLabel(MetadataEditorWording.fieldLabel(label, for: field, in: book.handEdits))
     }
 }
@@ -272,13 +279,17 @@ private struct PhoneBookInfoFacts: View {
     var body: some View {
         Section {
             PhoneBookInfoRow(PhoneLibraryVocabulary.formatRow, value: book.format.displayName)
-            LabeledContent(PhoneLibraryVocabulary.addedRow) {
-                Text(book.dateAdded, style: .date)
+            LabeledContent {
+                Text(book.dateAdded, style: .date).phoneSecondaryText()
+            } label: {
+                Text(PhoneLibraryVocabulary.addedRow).phonePrimaryText()
             }
             .accessibilityElement(children: .combine)
             if let lastOpened = book.lastOpened {
-                LabeledContent(PhoneLibraryVocabulary.lastOpenedRow) {
-                    Text(lastOpened, style: .date)
+                LabeledContent {
+                    Text(lastOpened, style: .date).phoneSecondaryText()
+                } label: {
+                    Text(PhoneLibraryVocabulary.lastOpenedRow).phonePrimaryText()
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -302,7 +313,7 @@ private struct PhoneBookInfoRow: View {
 
     var body: some View {
         if !value.isEmpty {
-            LabeledContent(name, value: value)
+            PhoneValueRow(name: name, value: value)
                 .accessibilityElement(children: .combine)
         }
     }

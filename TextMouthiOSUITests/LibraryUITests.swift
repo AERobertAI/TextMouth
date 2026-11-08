@@ -69,6 +69,11 @@ final class LibraryUITests: TextMouthUITestCase {
         let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "No row for the book")
-        try audit(app, screen: "Library with a book", accepting: Self.systemParts)
+        // Dynamic Type is reported and not failed: the audit flags the
+        // summary row, the list's last, as "partially unsupported", and its
+        // cause is not known (the row is a plain text style that scales).
+        // `LargeTextUITests` audits that row in place at the largest size,
+        // and fails on it until the cause is found.
+        try audit(app, screen: "Library with a book", informing: .dynamicType, accepting: Self.systemParts)
     }
 }

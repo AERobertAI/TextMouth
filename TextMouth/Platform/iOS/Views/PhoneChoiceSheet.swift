@@ -43,9 +43,7 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(PhoneAppWording.cancel) { dismiss() }
-                }
+                PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
             }
         }
     }
@@ -75,6 +73,7 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
         } label: {
             HStack {
                 Text(choice.label)
+                    .phonePrimaryText()
                 Spacer()
                 if choice.id == selected {
                     Image(systemName: "checkmark")

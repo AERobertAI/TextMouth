@@ -107,12 +107,10 @@ struct PhoneBookmarksSheet: View {
             .navigationTitle(PhoneBookmarksVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Trailing, in this order, so VoiceOver reads the title,
-                // then Done, then Add Bookmark.
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneBookmarksVocabulary.done) { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+                // In this order, so VoiceOver reads the title, then Done, then
+                // Add Bookmark.
+                PhoneSheetButton(title: PhoneBookmarksVocabulary.done) { dismiss() }
+                ToolbarItem(placement: PhoneSheetButtonPlacement.placement) {
                     Button {
                         // The place is taken now, not at Add.
                         noteSheet = .add(PhoneBookmarkPlace(readingIn: reader))
@@ -158,7 +156,7 @@ struct PhoneBookmarksSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(PhoneBookmarksVocabulary.empty)
             Text(PhoneBookmarksWording.emptyHelp)
-                .foregroundStyle(.secondary)
+                .phoneSecondaryText()
         }
         .accessibilityElement(children: .combine)
     }
@@ -171,14 +169,14 @@ struct PhoneBookmarksSheet: View {
             go(to: row.bookmark)
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.shownTitle)
+                Text(row.shownTitle).phonePrimaryText()
                 if let heading = row.headingText {
-                    Text(heading).foregroundStyle(.secondary)
+                    Text(heading).phoneSecondaryText()
                 }
                 if !row.bookmark.label.isEmpty {
-                    Text(row.bookmark.label).italic()
+                    Text(row.bookmark.label).italic().phonePrimaryText()
                 }
-                Text(row.bookmark.dateText).foregroundStyle(.secondary)
+                Text(row.bookmark.dateText).phoneSecondaryText()
             }
         }
         .accessibilityLabel(row.label)
