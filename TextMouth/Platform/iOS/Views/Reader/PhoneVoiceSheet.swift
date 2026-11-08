@@ -17,6 +17,9 @@ struct PhoneVoiceSheet: View {
     let reader: ReaderViewModel
     /// What the sheet leaves to say once it has closed.
     let farewell: PhoneSheetFarewell
+    /// Pauses the book that plays for Preview Voice, and gives what plays it
+    /// on (`PhoneSession.pauseBookForPreview`).
+    let pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook?
 
     /// The voices and choices offered.
     @State private var model: PhoneVoiceModel
@@ -32,15 +35,22 @@ struct PhoneVoiceSheet: View {
     @State private var choiceFarewell = PhoneSheetFarewell()
     /// Where VoiceOver's focus is asked to go.
     @AccessibilityFocusState private var focus: Choosing?
-    /// Speaks Preview Voice, made at the first preview.
-    @State private var previewSynthesizer: AVSpeechSynthesizer?
+    /// Speaks Preview Voice, made at the first preview and kept so that a
+    /// second one takes the first's place, as Settings' preview does.
+    @State private var preview: PhoneSettingsVoicePreview?
     /// Closes the sheet.
     @Environment(\.dismiss) private var dismiss
 
-    /// A sheet over `reader`, farewell words kept in `farewell`.
-    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell) {
+    /// A sheet over `reader`, farewell words kept in `farewell`, its preview
+    /// pausing the book with `pauseBookForPreview`.
+    init(
+        reader: ReaderViewModel,
+        farewell: PhoneSheetFarewell,
+        pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook? = nil
+    ) {
         self.reader = reader
         self.farewell = farewell
+        self.pauseBookForPreview = pauseBookForPreview
         _model = State(initialValue: PhoneVoiceModel(reader: reader))
         _shown = State(initialValue: Shown(reader))
     }
@@ -115,6 +125,10 @@ struct PhoneVoiceSheet: View {
             .sheet(item: $choosing, onDismiss: afterChoosing) { list in
                 choices(for: list)
             }
+            // A preview still speaking as the sheet closes stops, and the
+            // book it paused plays on, rather than staying paused for a
+            // preview nobody hears out.
+            .onDisappear { preview?.stop() }
             .task {
                 guard !shown.isAudioBook else { return }
                 VoiceCatalog.shared.loadIfNeeded()
@@ -140,7 +154,7 @@ struct PhoneVoiceSheet: View {
                     label: PhoneVoiceVocabulary.voiceLabel,
                     value: model.voiceValue(identifier: shown.voiceIdentifier) ?? ""
                 )
-                Button(PhoneVoiceVocabulary.previewTitle, action: preview)
+                Button(PhoneVoiceVocabulary.previewTitle, action: previewVoice)
                     .accessibilityLabel(PhoneVoiceVocabulary.previewLabel)
             }
         }
@@ -337,21 +351,21 @@ struct PhoneVoiceSheet: View {
         shown = Shown(reader)
     }
 
-    /// Speaks the Mac's sample in the voice, speed, and pitch chosen, with
-    /// the sheet's own synthesizer, as the Mac's Preview Voice does.
-    ///
-    /// The spec asks that a playing book pause for the preview and play on
-    /// after, as Settings' preview does (`PhoneSettingsVoicePreview`, on the
-    /// Settings slice's branch); until the two branches meet, this speaks as
-    /// the Mac's does, over a book that plays.
-    private func preview() {
-        let synthesizer = previewSynthesizer ?? AVSpeechSynthesizer()
-        previewSynthesizer = synthesizer
-        synthesizer.stopSpeaking(at: .immediate)
+    /// Speaks the Mac's sample in the voice, speed, and pitch chosen, as the
+    /// Mac's Preview Voice does, through the same speaker as Settings'
+    /// (`PhoneSettingsVoicePreview`): it asks the audio session first, as a
+    /// reader's Play does, pauses the book that plays, and plays it on once
+    /// the sample ends.
+    private func previewVoice() {
+        let speaker = preview ?? PhoneSettingsVoicePreview(
+            pauseBook: pauseBookForPreview,
+            audioMayStart: { PhoneAudioSession.shared.audioMayStart() }
+        )
+        preview = speaker
         let utterance = AVSpeechUtterance(string: PhoneVoiceVocabulary.previewSentence)
         utterance.voice = reader.speechService.currentVoice
         utterance.rate = SpeechService.rateForWPM(reader.speechService.wordsPerMinute)
         utterance.pitchMultiplier = Float(SpeechService.clampedPitch(reader.speechService.pitchMultiplier))
-        synthesizer.speak(utterance)
+        speaker.speak(utterance)
     }
 }

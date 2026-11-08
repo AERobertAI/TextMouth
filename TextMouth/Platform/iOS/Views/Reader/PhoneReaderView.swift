@@ -60,6 +60,18 @@ struct PhoneReaderView: View {
             } message: { bookmark in
                 Text(bookmark.label)
             }
+            // The Mac's error alert, and the Speech Stopped sheet, which waits
+            // while a panel, an alert, or the error alert is over the reader.
+            .modifier(PhoneReaderErrorAlert(
+                alert: session.snapshot?.errorAlert,
+                reader: session.reader,
+                closed: errorAlertClosed
+            ))
+            .sheet(isPresented: speechRefusalShows, onDismiss: speechRefusalDismissed) {
+                if let reader = session.reader {
+                    PhoneSpeechRefusalSheet(reader: reader)
+                }
+            }
             // Once per arrival, never per book: the next book keeps the
             // screen, and focus stays where the listener put it.
             .task {
@@ -247,23 +259,76 @@ struct PhoneReaderView: View {
                 onChoose: { model.choose($0) }
             )
         } else if let reader = session.reader {
-            PhoneReaderSheetContent(sheet: shown, reader: reader, noteJumped: { [model] in model.noteJumped() })
+            PhoneReaderSheetContent(
+                sheet: shown,
+                reader: reader,
+                noteJumped: { [model] in model.noteJumped() },
+                library: session.library,
+                pauseBookForPreview: { [session] in session.pauseBookForPreview() }
+            )
         }
     }
 
     /// A sheet closed: the text follows a jump made in it, and focus returns
-    /// to the control that opened it, after 0.35 seconds, by a layout change
-    /// with that control as its argument. Sheets don't return focus by
-    /// themselves.
+    /// to the control that opened it.
     private func sheetClosed() {
         model.invalidate()
         model.placeDidMove?()
         guard let kind = sheetOpener?.focusKind else { return }
         sheetOpener = nil
+        returnFocus(to: kind)
+    }
+
+    /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
+    /// change with that control as its argument. Sheets and alerts don't
+    /// return focus by themselves. `unless` is asked then, and a true answer
+    /// leaves focus where it is.
+    private func returnFocus(to kind: PhoneControlKind, unless skip: @escaping @MainActor () -> Bool = { false }) {
         DispatchQueue.main.asyncAfter(deadline: .now() + PhoneFocusPolicy.screenChangedDelay) {
+            guard !skip() else { return }
             guard let view = PhoneFocusRegistry.shared.view(for: kind) else { return }
             UIAccessibility.post(notification: .layoutChanged, argument: view)
         }
+    }
+
+    /// The Speech Stopped sheet went away: focus returns to Play (the spec,
+    /// "While the book is loading, or can't load"), unless the sheet was only
+    /// put aside, for a panel or the report is still kept, since focus is
+    /// then on what came over it.
+    private func speechRefusalDismissed() {
+        returnFocus(to: .play) { [session] in
+            sheet != nil || session.snapshot?.hasSpeechRefusalReport == true
+        }
+    }
+
+    /// The error alert closed: focus returns to Play unless a retry that
+    /// failed again has presented a fresh alert, which VoiceOver is on
+    /// (`PhoneErrorAlertPlan.returnsFocusToPlay`).
+    private func errorAlertClosed() {
+        returnFocus(to: .play) { [session] in
+            !PhoneErrorAlertPlan.returnsFocusToPlay(errorAlertNow: session.snapshot?.errorAlert)
+        }
+    }
+
+    /// Whether the Speech Stopped sheet shows: while the reader keeps a
+    /// report and nothing else is over the reader. Closed by its own Close,
+    /// or by the system putting it away, which closes the report too.
+    private var speechRefusalShows: Binding<Bool> {
+        Binding(
+            get: {
+                PhoneSpeechRefusalPresentation.shows(
+                    hasReport: session.snapshot?.hasSpeechRefusalReport == true,
+                    panelSheetShows: sheet != nil,
+                    errorAlertShows: session.snapshot?.errorAlert != nil,
+                    otherAlertShows: bookmarkToRemove != nil
+                )
+            },
+            set: { shown in
+                // Put aside for a panel or an alert, SwiftUI doesn't call
+                // this; a swipe down does, and closes the report.
+                if !shown { session.reader?.closeSpeechRefusalReport() }
+            }
+        )
     }
 
     // MARK: - Arrival

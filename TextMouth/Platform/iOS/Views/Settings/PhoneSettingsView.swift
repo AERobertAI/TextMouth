@@ -22,6 +22,8 @@ struct PhoneSettingsView: View {
     @ObservedObject private var removal: RemovalPreferencesModel
     /// Pauses the open book for a preview, given by `PhoneSession`.
     private let pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook?
+    /// Asks whether the audio session may be active, before a preview speaks.
+    private let audioMayStart: PhoneSettingsVoicePreview.AudioMayStart?
 
     /// The row whose sheet is open.
     @State private var openRow: PhoneSettingsRow?
@@ -58,14 +60,19 @@ struct PhoneSettingsView: View {
     ///   - pauseBookForPreview: Pauses the open book while Preview Voice
     ///     speaks, and gives what resumes it. With none, the preview just
     ///     speaks.
+    ///   - audioMayStart: Asks, before a preview speaks, whether the app's
+    ///     audio session may be active, as a reader's Play does. With none,
+    ///     the preview asks nothing.
     init(
         settings: SettingsViewModel,
         removal: RemovalPreferencesModel = .shared,
-        pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook? = nil
+        pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook? = nil,
+        audioMayStart: PhoneSettingsVoicePreview.AudioMayStart? = nil
     ) {
         _settings = ObservedObject(wrappedValue: settings)
         _removal = ObservedObject(wrappedValue: removal)
         self.pauseBookForPreview = pauseBookForPreview
+        self.audioMayStart = audioMayStart
     }
 
     var body: some View {
@@ -374,7 +381,7 @@ struct PhoneSettingsView: View {
     /// Speaks the preview in the voice, speed, and pitch chosen, cutting off
     /// the last one, as the Mac's does, with the book paused while it speaks.
     private func previewVoice() {
-        let speaker = preview ?? PhoneSettingsVoicePreview(pauseBook: pauseBookForPreview)
+        let speaker = preview ?? PhoneSettingsVoicePreview(pauseBook: pauseBookForPreview, audioMayStart: audioMayStart)
         preview = speaker
         speaker.speak(
             PhoneSettingsModel.previewUtterance(
