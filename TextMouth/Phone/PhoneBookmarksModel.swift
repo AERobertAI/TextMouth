@@ -28,8 +28,6 @@ enum PhoneBookmarksVocabulary {
     static let noteLabel = "Bookmark note"
     /// The Add sheet's field's hint.
     static let addNoteHint = "Optional note to describe this bookmark"
-    /// The button that leaves the Add or Edit sheet unchanged.
-    static let cancel = "Cancel"
     /// The Add sheet's button that adds the bookmark.
     static let add = "Add"
     /// The Edit sheet's button that saves the note.

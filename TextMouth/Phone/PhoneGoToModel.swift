@@ -10,8 +10,6 @@ import Foundation
 enum PhoneGoToVocabulary {
     /// Each field's button, as it shows.
     static let jump = "Jump"
-    /// The toolbar button that closes the sheet.
-    static let cancel = "Cancel"
 
     /// What a refusal under a field reads, as in "Error: There is no page
     /// 400 in this book. Its pages run from i to 300."

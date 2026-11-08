@@ -109,7 +109,7 @@ final class PhoneBookmarksVocabularyTests: XCTestCase {
             "TextField(\"\(PhoneBookmarksVocabulary.editNoteField)\", text: $noteText)",
             ".accessibilityLabel(\"\(PhoneBookmarksVocabulary.noteLabel)\")",
             ".accessibilityHint(\"\(PhoneBookmarksVocabulary.addNoteHint)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.cancel)\")",
+            "Button(\"\(PhoneAppWording.cancel)\")",
             "Button(\"\(PhoneBookmarksVocabulary.add)\")",
             "Button(\"\(PhoneBookmarksVocabulary.save)\")",
             "Text(\"Edit Bookmark \\(bookmark.number)\")",

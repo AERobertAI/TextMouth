@@ -72,9 +72,6 @@ enum PhoneReaderWording {
     /// The question's button that removes the bookmark.
     static let remove = "Remove"
 
-    /// The question's button that keeps it: the Mac's word in every sheet.
-    static let cancel = "Cancel"
-
     /// The name of Book content's rotor that moves by sentence.
     static let sentencesRotor = "Sentences"
 

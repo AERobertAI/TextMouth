@@ -13,6 +13,11 @@ final class PhoneAppWordingTests: XCTestCase {
         XCTAssertTrue(macView.contains("libraryViewModel.errorMessage ?? \"\(PhoneAppWording.unknownError)\""))
     }
 
+    /// Every phone sheet and question says one "Cancel", the Mac's word.
+    func testCancelIsTheMacsWord() {
+        XCTAssertEqual(PhoneAppWording.cancel, "Cancel")
+    }
+
     /// The Play button's words are PlaybackControlsView's, by its rule: Pause
     /// while the book plays, and Play otherwise.
     func testThePlayButtonSaysWhatTheMacsSays() throws {

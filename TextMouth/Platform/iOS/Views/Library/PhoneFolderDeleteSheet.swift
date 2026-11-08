@@ -48,7 +48,7 @@ struct PhoneFolderDeleteQuestion: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button(PhoneFolderVocabulary.cancel) {
+                Button(PhoneAppWording.cancel) {
                     finish(nil)
                 }
             }
@@ -70,7 +70,7 @@ struct PhoneFolderDeleteQuestion: View {
             Button(wording?.buttonTitle ?? "", role: .destructive) {
                 finish(model.deleteEverything())
             }
-            Button(PhoneFolderVocabulary.cancel, role: .cancel) {}
+            Button(PhoneAppWording.cancel, role: .cancel) {}
         } message: {
             Text(wording?.confirmationMessage ?? "")
         }

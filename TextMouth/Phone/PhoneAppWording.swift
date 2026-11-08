@@ -14,6 +14,12 @@ enum PhoneAppWording {
     /// The alert's message, when the library gives none.
     static let unknownError = "An unknown error occurred."
 
+    // MARK: Every Sheet and Question
+
+    /// The button that closes a sheet or answers a question with nothing
+    /// done or changed: the Mac's "Cancel", said once for every phone view.
+    static let cancel = "Cancel"
+
     // MARK: The First Screen (the spec's)
 
     /// The navigation title of the Library.

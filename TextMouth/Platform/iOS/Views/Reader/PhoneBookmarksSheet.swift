@@ -125,7 +125,7 @@ struct PhoneBookmarksSheet: View {
                 presenting: removing
             ) { bookmark in
                 Button(PhoneBookmarksWording.remove, role: .destructive) { delete(bookmark) }
-                Button(PhoneBookmarksVocabulary.cancel, role: .cancel) {}
+                Button(PhoneAppWording.cancel, role: .cancel) {}
             } message: { bookmark in
                 Text(bookmark.label)
             }
@@ -319,7 +319,7 @@ private struct PhoneBookmarkNoteSheet: View {
                     .accessibilityFocused($fieldHasVoiceOver)
                     .accessibilityLabel(PhoneBookmarksVocabulary.noteLabel)
                     .accessibilityHint(hint ?? "")
-                Button(PhoneBookmarksVocabulary.cancel) {
+                Button(PhoneAppWording.cancel) {
                     onCancel()
                     dismiss()
                 }

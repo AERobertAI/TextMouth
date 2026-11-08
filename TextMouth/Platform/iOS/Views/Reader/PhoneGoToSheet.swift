@@ -47,7 +47,7 @@ struct PhoneGoToSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneGoToVocabulary.cancel) { dismiss() }
+                    Button(PhoneAppWording.cancel) { dismiss() }
                 }
             }
             .task {

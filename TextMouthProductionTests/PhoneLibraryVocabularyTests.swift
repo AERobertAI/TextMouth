@@ -11,7 +11,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
 
         XCTAssertTrue(macView.contains("Text(\"\(PhoneLibraryVocabulary.foldersHeader)\")"))
         XCTAssertTrue(macView.contains("prompt: \"\(PhoneLibraryVocabulary.searchPrompt)\""))
-        XCTAssertTrue(macView.contains("Label(\"\(PhoneLibraryVocabulary.newFolderTitle)\", systemImage:"))
+        XCTAssertTrue(macView.contains("Label(\"\(PhoneFolderVocabulary.newFolderTitle)\", systemImage:"))
         XCTAssertTrue(macView.contains(".accessibilityLabel(\"\(PhoneLibraryVocabulary.newFolderLabel)\")"))
         XCTAssertTrue(macView.contains("Label(\"\(PhoneLibraryVocabulary.sortTitle)\", systemImage:"))
         XCTAssertTrue(macView.contains("Text(\"\(PhoneLibraryVocabulary.applySortToSubfolders)\")"))
@@ -45,7 +45,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
     func testRemovalsCancelIsTheMacs() throws {
         let macView = try Self.source("Views/ContentView.swift")
 
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneLibraryVocabulary.cancel)\", role: .cancel)"))
+        XCTAssertTrue(macView.contains("Button(\"\(PhoneAppWording.cancel)\", role: .cancel)"))
     }
 
     /// Book Info's words are the Mac's simple Book Information sheet's, and
@@ -64,7 +64,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.lastOpenedRow)\")"))
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.wordCountRow)\")"))
         XCTAssertTrue(sheet.contains("Button(\"\(PhoneLibraryVocabulary.save)\")"))
-        XCTAssertTrue(sheet.contains("Button(\"\(PhoneLibraryVocabulary.cancel)\")"))
+        XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.cancel)\")"))
         XCTAssertTrue(reader.contains("announceToVoiceOver(\"\(PhoneLibraryVocabulary.metadataUpdated)\")"))
     }
 

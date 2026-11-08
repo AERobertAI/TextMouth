@@ -271,7 +271,7 @@ final class PhoneFolderSheetModel: ObservableObject {
     /// named apart from the Move sheet's own Cancel.
     var cancelTitle: String {
         if case .newFolderForMove = task { return LibraryFolderPicker.cancelNewFolderTitle }
-        return PhoneFolderVocabulary.cancel
+        return PhoneAppWording.cancel
     }
 
     /// What that button does, where the Mac says it: Cancel New Folder's
