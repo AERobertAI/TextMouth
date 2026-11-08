@@ -99,6 +99,8 @@ final class PhoneHeadingsModelTests: XCTestCase {
         let rows = headingsModel.rows(from: items(for: headingsModel))
 
         XCTAssertEqual(rows.filter(\.isCurrent).map(\.id), [chapterOne.id])
+        // Fewer rows than two fail here, never trap below.
+        guard rows.count >= 2 else { return XCTFail("At least two rows, not \(rows.count)") }
         XCTAssertEqual(rows[1].label, "The Battle (current heading) - level 2, 1 hour, 3 minutes")
         XCTAssertEqual(rows[0].label, "Part One - level 1, 1 hour, 3 minutes")
     }
@@ -108,6 +110,8 @@ final class PhoneHeadingsModelTests: XCTestCase {
     func testASkippedRowSaysSoAndOffersToIncludeIt() {
         let headingsModel = model(atChapter: 0, offset: 0, skipped: [sectionOne.id])
         let rows = headingsModel.rows(from: items(for: headingsModel))
+        // Fewer rows than three fail here, never trap below.
+        guard rows.count >= 3 else { return XCTFail("At least three rows, not \(rows.count)") }
 
         XCTAssertEqual(rows[2].label, "Skipped, Dawn - level 3, 1 hour, 3 minutes")
         XCTAssertEqual(rows[2].toggleSkipActionName, "Include Section")

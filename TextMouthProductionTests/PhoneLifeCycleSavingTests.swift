@@ -16,6 +16,13 @@ final class PhoneLifeCycleSavingTests: XCTestCase {
     /// How many holds were ended.
     private var holdsEnded = 0
 
+    /// The clock's next reading. Should the code read the clock more often
+    /// than the test gave readings, it reads the real clock instead, so the
+    /// test fails on its timing rather than trapping on an empty list.
+    private func nextReading() -> ContinuousClock.Instant {
+        readings.isEmpty ? .now : readings.removeFirst()
+    }
+
     /// The flush runs once, and its time is what the clock read around it.
     func testTheFlushRunsOnceAndIsTimed() {
         let start = ContinuousClock.now
@@ -23,8 +30,8 @@ final class PhoneLifeCycleSavingTests: XCTestCase {
 
         let took = PhoneLifeCycle.flushPendingWrites(
             because: "test",
-            flush: { [unowned self] in self.flushes += 1 },
-            now: { [unowned self] in self.readings.removeFirst() }
+            flush: { [weak self] in self?.flushes += 1 },
+            now: { [weak self] in self?.nextReading() ?? .now }
         )
 
         XCTAssertEqual(flushes, 1)
@@ -45,9 +52,9 @@ final class PhoneLifeCycleSavingTests: XCTestCase {
         let world = try makeIntegrationWorld("PhoneMemoryWarning")
         let session = makeSession(in: world)
         let lifeCycle = PhoneLifeCycle()
-        lifeCycle.beginHold = { [unowned self] name in
-            self.holds.append(name)
-            return { [unowned self] in self.holdsEnded += 1 }
+        lifeCycle.beginHold = { [weak self] name in
+            self?.holds.append(name)
+            return { [weak self] in self?.holdsEnded += 1 }
         }
 
         lifeCycle.memoryWarningReceived(in: session, isInBackground: false)

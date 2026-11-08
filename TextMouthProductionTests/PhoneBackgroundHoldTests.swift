@@ -17,17 +17,19 @@ final class PhoneBackgroundHoldTests: XCTestCase {
 
     /// A hold over the test's stand-ins.
     private func makeHold() -> PhoneBackgroundHold {
+        // Weak, so a closure the hold keeps can never reach a test case
+        // that's gone: it then records nothing, and a test fails, not traps.
         PhoneBackgroundHold(
-            beginHold: { [unowned self] name in
-                self.begun.append(name)
-                self.events.append("begin \(name)")
-                return { [unowned self] in
-                    self.ended.append(name)
-                    self.events.append("end \(name)")
+            beginHold: { [weak self] name in
+                self?.begun.append(name)
+                self?.events.append("begin \(name)")
+                return { [weak self] in
+                    self?.ended.append(name)
+                    self?.events.append("end \(name)")
                 }
             },
-            isInBackground: { [unowned self] in self.inBackground },
-            flush: { [unowned self] in self.events.append("flush") }
+            isInBackground: { [weak self] in self?.inBackground ?? false },
+            flush: { [weak self] in self?.events.append("flush") }
         )
     }
 

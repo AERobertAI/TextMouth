@@ -33,6 +33,8 @@ final class PhoneBookmarksModelTests: XCTestCase {
     /// Each row reads the Mac's label, its heading named where there is one.
     func testEachRowReadsTheMacsLabel() {
         let rows = model.rows
+        // Fewer rows than three fail here, never trap below.
+        guard rows.count >= 3 else { return XCTFail("Three rows, not \(rows.count)") }
 
         XCTAssertEqual(rows[0].label, "Bookmark 3, The Battle, added \(madeThird.dateText)")
         XCTAssertEqual(rows[2].label, "Bookmark 1, Note: Check this, added \(madeFirst.dateText)")

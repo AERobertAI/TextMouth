@@ -360,8 +360,8 @@ final class PhoneLibraryRowsTests: XCTestCase {
         let books = ["Almanac", "Bestiary", "Codex"].map { PhoneLibraryFixture.book($0) }
         let rows = PhoneLibraryFixture.rows(of: PhoneLibraryFixture.model(books: books))
 
-        XCTAssertEqual(rows.neighbor(of: .book(books[0].id)), .book(books[1].id))
-        XCTAssertEqual(rows.neighbor(of: .book(books[2].id)), .book(books[1].id))
+        XCTAssertEqual(rows.neighbor(of: .book(books[0].id)), .book(books[1].id)) // lint-ok: books is the three-title literal above
+        XCTAssertEqual(rows.neighbor(of: .book(books[2].id)), .book(books[1].id)) // lint-ok: books is the three-title literal above
         XCTAssertNil(rows.neighbor(of: .book(UUID())))
     }
 
@@ -419,7 +419,7 @@ final class PhoneLibraryRowsTests: XCTestCase {
     /// subscriptions put the library's changes there.
     private func drainMainQueue(file: StaticString = #filePath, line: UInt = #line) {
         let drained = expectation(description: "the main queue ran")
-        DispatchQueue.main.async { drained.fulfill() }
+        DispatchQueue.main.async { drained.fulfill() } // lint-ok: one block, so fulfilled once
         wait(for: [drained], timeout: 5)
     }
 }

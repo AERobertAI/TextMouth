@@ -96,14 +96,19 @@ final class PhoneNavigationUnitsTests: XCTestCase {
                         XCTAssertTrue(offered.contains(PhoneNavigationUnits.unit(after: unit, up: up, in: offered)))
                     }
                 }
+                // No unit offered fails here, never traps below.
+                guard let first = offered.first else {
+                    XCTFail("No unit offered, audio \(isAudioBook), pages \(hasPages)")
+                    continue
+                }
                 var visited: [SkipUnit] = []
-                var unit = offered[0]
+                var unit = first
                 for _ in offered {
                     visited.append(unit)
                     unit = PhoneNavigationUnits.unit(after: unit, up: true, in: offered)
                 }
                 XCTAssertEqual(visited, offered)
-                XCTAssertEqual(unit, offered[0])
+                XCTAssertEqual(unit, first)
             }
         }
     }
