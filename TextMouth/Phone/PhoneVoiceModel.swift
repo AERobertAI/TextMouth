@@ -74,6 +74,12 @@ struct PhoneVoiceOption: Hashable, Sendable {
     /// the app can't render one.
     let isPersonalVoice: Bool
 
+    /// The voice as its choice and the Voice row say it: "Samantha, Enhanced
+    /// quality".
+    var choiceLabel: String {
+        PhoneVoiceVocabulary.voiceChoice(name: name, quality: qualityLabel)
+    }
+
     /// The two-letter code the language filter goes by, as "en".
     var languageCode: String {
         String(language.prefix(2))

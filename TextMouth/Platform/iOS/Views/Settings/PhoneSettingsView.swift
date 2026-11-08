@@ -406,9 +406,9 @@ struct PhoneSettingsView: View {
     /// What the Voice row offers and says, from the model's voices.
     private var voiceOffer: PhoneSettingsVoiceOffer {
         PhoneSettingsVoiceOffer(
-            current: settings.selectedVoice.map { PhoneSettingsVoice($0) },
-            forLanguage: settings.availableVoices.map { PhoneSettingsVoice($0) },
-            installed: settings.voiceCatalog.voices.map { PhoneSettingsVoice($0) },
+            current: settings.selectedVoice.map { PhoneVoiceOption($0) },
+            forLanguage: settings.availableVoices.map { PhoneVoiceOption($0) },
+            installed: settings.voiceCatalog.voices.map { PhoneVoiceOption($0) },
             hasListed: settings.voiceCatalog.isLoaded
         )
     }

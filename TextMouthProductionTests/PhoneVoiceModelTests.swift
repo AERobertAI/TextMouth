@@ -157,4 +157,10 @@ final class PhoneVoiceVocabularyTests: XCTestCase {
         }
         XCTAssertEqual(PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"), "Samantha, Enhanced quality")
     }
+
+    /// A voice option reads its own choice label, which the Voice sheet and
+    /// Settings' Voice row both say.
+    func testAVoiceOptionSaysItsOwnChoiceLabel() {
+        XCTAssertEqual(samantha.choiceLabel, "Samantha, Enhanced quality")
+    }
 }

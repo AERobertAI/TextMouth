@@ -291,47 +291,6 @@ struct PhoneSettingsSwitch: Sendable {
 
 // MARK: - Voices
 
-/// One voice, as the Voice row needs to know it, so what is offered can be
-/// tested with voices of any kind, which the system can't be asked to make.
-struct PhoneSettingsVoice: Equatable, Sendable {
-    /// The system's identifier, which is what the settings keep.
-    let identifier: String
-    /// The voice's name, such as "Samantha".
-    let name: String
-    /// Its quality, in the Mac's words, such as "Enhanced".
-    let quality: String
-    /// Whether it's a Personal Voice, the person's own, which rendering can't
-    /// use: `write` can't take one, and would play it aloud (the spec, under
-    /// "Which speech path"). The header says these are listed only once the
-    /// person has allowed the app to use them, which the app never asks, so
-    /// leaving them out is a second guard.
-    let isPersonal: Bool
-
-    /// A voice of the given parts.
-    init(identifier: String, name: String, quality: String, isPersonal: Bool = false) {
-        self.identifier = identifier
-        self.name = name
-        self.quality = quality
-        self.isPersonal = isPersonal
-    }
-
-    /// The system's `voice`.
-    init(_ voice: AVSpeechSynthesisVoice) {
-        self.init(
-            identifier: voice.identifier,
-            name: voice.name,
-            quality: voice.qualityLabel,
-            isPersonal: voice.voiceTraits.contains(.isPersonalVoice)
-        )
-    }
-
-    /// The voice as its choice and the Voice row say it: "Samantha, Enhanced
-    /// quality".
-    var choiceLabel: String {
-        PhoneSettingsVocabulary.voiceChoice(name: name, quality: quality)
-    }
-}
-
 /// What the Voice row offers, and what it says.
 struct PhoneSettingsVoiceOffer {
     /// The voices to choose from, each by its identifier, in the order given.
@@ -350,16 +309,16 @@ struct PhoneSettingsVoiceOffer {
     ///     first list arrives, an empty list means nothing, so the row still
     ///     opens, and its sheet fills as the list arrives.
     init(
-        current: PhoneSettingsVoice?,
-        forLanguage: [PhoneSettingsVoice],
-        installed: [PhoneSettingsVoice],
+        current: PhoneVoiceOption?,
+        forLanguage: [PhoneVoiceOption],
+        installed: [PhoneVoiceOption],
         hasListed: Bool
     ) {
-        let usableForLanguage = forLanguage.filter { !$0.isPersonal }
+        let usableForLanguage = forLanguage.filter { !$0.isPersonalVoice }
         // A language with no voices of its own still offers the other
         // languages' voices. Saying none are installed would be false, and a
         // sheet with nothing in it would be a dead end.
-        let offered = usableForLanguage.isEmpty ? installed.filter { !$0.isPersonal } : usableForLanguage
+        let offered = usableForLanguage.isEmpty ? installed.filter { !$0.isPersonalVoice } : usableForLanguage
         let hasNothingToOffer = hasListed && offered.isEmpty
 
         choices = offered.map { PhoneChoice(id: $0.identifier, label: $0.choiceLabel) }

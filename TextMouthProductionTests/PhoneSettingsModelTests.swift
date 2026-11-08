@@ -459,11 +459,11 @@ final class PhoneSettingsModelTests: XCTestCase {
         guard let voice = AVSpeechSynthesisVoice.speechVoices().first else {
             throw XCTSkip("This Mac has no voices")
         }
-        let read = PhoneSettingsVoice(voice)
+        let read = PhoneVoiceOption(voice)
         XCTAssertEqual(read.identifier, voice.identifier)
         XCTAssertEqual(read.name, voice.name)
-        XCTAssertEqual(read.quality, voice.qualityLabel)
-        XCTAssertEqual(read.isPersonal, voice.voiceTraits.contains(.isPersonalVoice))
+        XCTAssertEqual(read.qualityLabel, voice.qualityLabel)
+        XCTAssertEqual(read.isPersonalVoice, voice.voiceTraits.contains(.isPersonalVoice))
     }
 
     // MARK: - What Applies Now
@@ -517,15 +517,28 @@ final class PhoneSettingsModelTests: XCTestCase {
     // MARK: - Support
 
     /// A voice of the language chosen.
-    private static let samantha = PhoneSettingsVoice(identifier: "samantha", name: "Samantha", quality: "Enhanced")
+    private static let samantha = PhoneVoiceOption(
+        identifier: "samantha",
+        name: "Samantha",
+        qualityLabel: "Enhanced",
+        language: "en-US",
+        isPersonalVoice: false
+    )
     /// A voice of another language.
-    private static let thomas = PhoneSettingsVoice(identifier: "thomas", name: "Thomas", quality: "Standard")
+    private static let thomas = PhoneVoiceOption(
+        identifier: "thomas",
+        name: "Thomas",
+        qualityLabel: "Standard",
+        language: "fr-FR",
+        isPersonalVoice: false
+    )
     /// The person's own voice.
-    private static let personal = PhoneSettingsVoice(
+    private static let personal = PhoneVoiceOption(
         identifier: "personal",
         name: "My Voice",
-        quality: "Standard",
-        isPersonal: true
+        qualityLabel: "Standard",
+        language: "en-US",
+        isPersonalVoice: true
     )
 
     /// A Settings model of this test's own, in this test's sandbox, offering
