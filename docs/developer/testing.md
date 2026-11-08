@@ -157,15 +157,17 @@ The iPhone app is tested in two places: on the Mac's test host, for everything t
 - `TextMouthiOSTests` is a unit-test bundle hosted in the iPhone app. It has 16 tests, and all 16 pass.
   - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
   - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
-- `TextMouthiOSUITests` is an XCUITest bundle that drives the app from outside, in the simulator. It has 18 tests.
+- `TextMouthiOSUITests` is an XCUITest bundle that drives the app from outside, in the simulator. It has 22 tests.
   - Each test launches the app with a library of its own and, usually, a public-domain book sent to it: Alice's Adventures in Wonderland, Project Gutenberg #11, from `TestData/alice.epub` (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
   - `ReaderUITests` (4 tests): the reader's order, its first values, 44-point controls, and its audit.
   - `LibraryUITests` (4 tests): the Library's words and order, empty and with a book, and the audit of each.
   - `ScreenOrderUITests` (10 tests): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
+  - `LargeTextUITests` (3 tests): see LargeTextUITests, below.
+  - `ToolbarPlacementProbeUITests` (1 test): see The probe test, below.
   - They read what VoiceOver would be given: each element's label, value, and traits, in the order of the accessibility tree, as a depth-first walk of one snapshot.
   - No wait lasts longer than 60 seconds.
 - To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, and `run_locked.py`. A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle. The repository does not record the exact command line the iPhone team used.
-- At the last pass on November 8, 2026, 16 of 16 unit tests passed, and 8 of 18 UI tests. See the open findings below.
+- At the last pass on November 8, 2026 (pass 3 of the sheet-button round, on 6a3ac9a4, whose later commit changes only a comment), 16 of 16 unit tests passed, and 17 of 22 UI tests. The five that fail are the open findings below.
 
 ### The audit and its accepted findings
 
@@ -173,26 +175,67 @@ The iPhone app is tested in two places: on the Mac's test host, for everything t
 - On iOS the audit only inspects. The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
 - A finding is accepted only when it is about a part iOS draws, which the app cannot change. It is matched by the audit's type and the element's exact label, and it is kept with the results, with its reason. Only three kinds are accepted.
   - **The search field.** The audit's clipped-text finding on "Search books" is accepted because the system's search field clips its placeholder at the largest text sizes, and VoiceOver and braille read it whole.
-  - **A bar item.** The Dynamic Type finding on a button in the bar at the bottom ("Settings", "Add to Library") is accepted because iOS does not grow bar items with Dynamic Type, and shows them in the Large Content Viewer instead.
+  - **A bar item.** The Dynamic Type finding on a button in a bar is accepted because iOS draws the button and does not grow bar items with Dynamic Type. It shows them in the Large Content Viewer instead. Two bars count:
+    - the bar at the bottom of the Library ("Settings", "Add to Library");
+    - the top bar of a sheet: Cancel, Close, Done, Save, and Back to Book. This is `Accepted.barItem(label)`, and each sheet's test names its own buttons.
   - **A navigation title.** The clipped-text finding on a screen's title is accepted because iOS truncates a long title at large sizes, and VoiceOver and braille read it whole. It is accepted for the reader (the book's title) and the sheets: Add to Library, Settings, Bookmarks, Headings, Go To, Sleep Timer, "Voice & Speed for This Book", Book Information, and "Navigation unit".
 - Any other finding fails its test. To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
 
+#### Audits that report without failing
+
+- `audit(_:screen:types:informing:accepting:)` takes `informing`, a kind of finding that is kept with the results and does not fail the test. The note is an attachment named "<screen>: findings reported, not failed".
+- It is for a kind that another test checks, or whose cause is not known. Four audits use it, all for Dynamic Type at the normal text size:
+  - the Library with a book (`testTheLibraryWithABookPassesTheAudit`), for its summary row;
+  - Settings (`testSettingsPassesTheAudit`), for the lower rows: a slider's value and caption, and the switch;
+  - Sleep Timer, for its stepper's label, a system control's;
+  - Book Information, for the read-only rows at the bottom.
+- A test that reports is not proof that the screen passes. The Library with a book passes its test only because of this. `LargeTextUITests` audits the same screens at the largest size, and fails on what it finds.
+- Every other kind of finding on those screens still fails.
+
+#### LargeTextUITests
+
+- It audits for Dynamic Type and clipped text only (`sizeFindings`), at the largest size iOS offers, Accessibility Extra Extra Extra Large. A bigger size does not exist.
+- The size is set at launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` (`TextMouthUITestCase.largestText`), as the Larger Text setting would. Nothing changes the simulator's own settings.
+- Its three tests, with the last pass:
+  - `testTheLibraryWithABookHoldsAtTheLargestText` audits the Library with a book, as it first appears and then scrolled once, since the summary row is below the first screen at this size. It fails on the summary row: "partially unsupported" Dynamic Type, even scrolled into view and audited in place. This is a real finding with no known cause.
+  - `testSettingsHoldsAtTheLargestText` audits Settings as it first appears and then scrolled two screens down. It fails on 1 Dynamic Type finding and 1 clipped-text finding, neither naming an element. In an earlier screenshot "Fade out duration" broke in the middle of a word beside its value. `PhoneValueRow` now stacks the value under the name at these sizes, and no run has shown whether that fixed it.
+  - `testAddToLibraryHoldsAtTheLargestText` audits the Add to Library sheet. It passes.
+- Nothing is pressed but a book's Back, Settings, and Add to Library, and nothing is typed.
+
+#### The probe test
+
+- `ToolbarPlacementProbeUITests.testWhatTheSystemShowsForACancellationAction` records what iOS shows in a sheet's bar for a button in `.cancellationAction`. It launches the app with `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT=1` (see [Building TextMouth](building.md)), opens Book Information from the reader, and keeps a note of every bar's buttons, the sheet's order, and a screenshot.
+- It records and does not judge. It fails only when the sheet never opens, and it passes.
+- Its answer is in `PhoneSheetButton.swift` and in [The two apps and the platform folders](../architecture/platforms.md): the buttons were there, labeled "Cancel" and "Save", and came before the title.
+- The test and the variable can be removed together once the answer is read.
+
+#### Book Information's test expects "Author"
+
+- `testTheBookInformationSheetHasTheSpecsOrder` expects the order "Book Information", "Cancel", "Save", "Book title", "Author", "Publisher", "Publication date", "Format", "Added", "Last Opened", "Word Count".
+- The book is an EPUB. Its form uses the Mac's metadata editor's words, so its author field is "Author". A book with no more than a title and author has "Book author". The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
+
 #### The findings still open
 
-These are not accepted. They are what the last pass on November 8, 2026 found, and the next round of the iPhone interface fixes them.
+These are not accepted. They are what the last pass on November 8, 2026 found. Five UI tests fail on them. The fixes of that round cleared the Cancel and Voice findings, and cut the findings of contrast from about 50 to 2.
 
-- **The audits, by screen:**
-  - Settings: 14 findings (10 of contrast, 4 of Dynamic Type), mostly its secondary descriptions.
-  - Headings: 23 findings (22 of contrast).
-  - Go To: 6 findings, including 1 of element detection, the one to look at first, and 2 of clipped text.
-  - Add to Library: 5 findings.
-  - Sleep Timer: 4 findings.
-  - Bookmarks: 2 findings.
-  - The Library with a book: 1 finding, its summary's Dynamic Type, "partially unsupported". Nothing in the code caps its size, so the cause needs a look at the largest text sizes.
-- **Book Information and the navigation unit's choice** show no Cancel where the spec puts one.
-- **The Voice sheet** never showed "Speed" in the test.
-- **Back from the reader** once failed to find a bar identified "Library", though the Library's rows appeared. It passed in the next pass, and the test now prints what it finds.
-- Apple's audit says iOS's secondary gray only nearly passes contrast. The Library's text is full contrast now; Settings and the sheets are not yet. Whether all the phone's text should be full contrast is a question to the user.
+- **Go To** (`testTheGoToSheetHasTheSpecsOrder`): 1 finding of element detection, "potentially inaccessible text".
+  - Its cause is not found. Showing each field's name to VoiceOver as a heading did not clear it, so that change was reverted and the spec's single reading of the name stands.
+  - The clipped-text findings are gone: the field has an empty prompt, since its long ones ("Percent through the book") were what was clipped.
+  - Reading the names twice would be the price of clearing the finding, if that turns out to be the cause. That is a decision for the user.
+- **Settings** (`testSettingsPassesTheAudit`): 1 finding of contrast, on the "Voice" header, the first section header under the bar.
+  - The Library's "Books (1)" header has the same style and passes. The text is black in the screenshot, so this is probably a false positive. It could not be resolved.
+- **Sleep Timer** (`testTheSleepTimerSheetHasTheSpecsOrder`): 1 finding of contrast, on "New Timer", also the first section header under the bar. The same reasoning applies.
+- **The Library with a book at the largest size** (`LargeTextUITests`): the summary row, "partially unsupported". A real finding. Nothing in the code caps its size.
+- **Settings at the largest size, scrolled** (`LargeTextUITests`): 1 Dynamic Type finding and 1 clipped-text finding, neither naming an element.
+- **Dynamic Type at the normal size** on Settings, Sleep Timer, Book Information, and the Library's summary is reported and not failed (see Audits that report without failing, above). No code cause was found.
+  - The only pattern: the captions on Settings are hidden from VoiceOver with `accessibilityHidden`, and the Library's summary is not.
+- **Not verified:**
+  - the disabled controls' text contrast (`PhoneTextColor.disabled` keeps the system gray);
+  - the stacking of `PhoneValueRow` at the accessibility sizes;
+  - the Return key in Book Information's multi-line fields (a Return is dropped, so the value stays on one line);
+  - anything that needs VoiceOver.
+- **Back from the reader** once failed to find a bar identified "Library", though the Library's rows appeared. It passed in the next pass, and the test prints what it finds.
+- **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)). That follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`, which the user has not answered. Undoing it is one line.
 
 ### In the simulator, never press Play and never type
 
