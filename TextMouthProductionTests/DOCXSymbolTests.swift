@@ -119,12 +119,45 @@ final class DOCXSymbolTests: XCTestCase {
         XCTAssertEqual(try heard(between(symbol("", "F061"))), "a b")
     }
 
+    /// A hostile `w:char` never traps, in a symbol font, an ordinary font, or a font of pictures: a code
+    /// of no character, half of a surrogate pair, a sign, nothing, too many digits (a hundred thousand of
+    /// them), or digits of another script. The words on either side are still read.
+    func testAHostileSymbolCharacterNeverTraps() throws {
+        let characters = ["0000", "D800", "DFFF", "FFFF", "F0FF", "-0", "+FFF", "", "FFFFF",
+                          String(repeating: "F", count: 100_000), "\u{0661}\u{0662}"]
+        for character in characters {
+            for font in ["Symbol", "Arial", "Wingdings"] {
+                let words = try heard(between(symbol(font, character)))
+                XCTAssertTrue(words.hasPrefix("a") && words.hasSuffix("b"), "\(font), \(character.prefix(8)): \(words)")
+            }
+        }
+    }
+
     /// A symbol in hidden text is not read, and one in a footnote is.
     func testASymbolInHiddenTextIsNotReadAndOneInANoteIs() throws {
         XCTAssertEqual(try heard(between(symbol("Symbol", "F061", properties: "<w:vanish/>"))), "ab")
         let footnote = "<w:footnote w:id=\"1\"><w:p><w:r><w:footnoteRef/></w:r><w:r><w:t> See </w:t></w:r><w:r><w:sym w:font=\"Symbol\" w:char=\"F061\"/></w:r></w:p></w:footnote>"
         let body = docxParagraph(docxRun("Text") + "<w:r><w:footnoteReference w:id=\"1\"/></w:r>")
         XCTAssertTrue(try heard(body, footnotes: docxNotesXML(root: "footnotes", footnote)).hasSuffix("See \u{03B1}"))
+    }
+
+    /// A symbol in a note's custom mark (the runs Word shows in place of the note's number, after a
+    /// reference with `w:customMarkFollows`) is skipped with the mark, as the mark's text is; the note's
+    /// own words are still read.
+    func testASymbolInANotesCustomMarkIsSkippedWithTheMark() throws {
+        let markStyle = "<w:rStyle w:val=\"FootnoteReference\"/>"
+        let footnote = "<w:footnote w:id=\"1\"><w:p>\(symbol("Symbol", "F061", properties: markStyle))<w:r><w:t> See</w:t></w:r></w:p></w:footnote>"
+        let reference = "<w:r><w:rPr>\(markStyle)</w:rPr><w:footnoteReference w:customMarkFollows=\"1\" w:id=\"1\"/></w:r>"
+        let body = docxParagraph(docxRun("Text") + reference)
+        XCTAssertEqual(try heard(body, footnotes: docxNotesXML(root: "footnotes", footnote)), "Text See")
+    }
+
+    /// A symbol in a tracked deletion, or in text moved away from its place, is not read: neither is in
+    /// the document as it now reads.
+    func testASymbolInADeletionOrAMoveAwayIsNotRead() throws {
+        let alpha = symbol("Symbol", "F061")
+        XCTAssertEqual(try heard(between("<w:del w:id=\"1\" w:author=\"A\">\(alpha)</w:del>")), "ab")
+        XCTAssertEqual(try heard(between("<w:moveFrom w:id=\"1\" w:author=\"A\">\(alpha)</w:moveFrom>")), "ab")
     }
 
     // MARK: - Text typed in a symbol font
@@ -212,6 +245,25 @@ final class DOCXSymbolTests: XCTestCase {
         XCTAssertEqual(try heard(docxParagraph(docxRun("a") + run + docxRun("b")), styles: styles), "a b")
         // A paragraph style that names no font leaves the document defaults', not the default style's.
         XCTAssertEqual(try heard(docxParagraph(docxRun("a") + run + docxRun("b"), style: "Other"), styles: styles), "a\u{03B1}b")
+    }
+
+    /// Styles based on each other in a loop of two, of either kind, end as a style based on itself does,
+    /// and a font one of them names is still found through the other.
+    func testStylesBasedOnEachOtherInALoopEnd() throws {
+        let styles = stylesPart("""
+            <w:style w:type="paragraph" w:styleId="ParaA"><w:name w:val="ParaA"/><w:basedOn w:val="ParaB"/></w:style>
+            <w:style w:type="paragraph" w:styleId="ParaB"><w:name w:val="ParaB"/><w:basedOn w:val="ParaA"/></w:style>
+            <w:style w:type="paragraph" w:styleId="ParaSelf"><w:name w:val="ParaSelf"/><w:basedOn w:val="ParaSelf"/></w:style>
+            <w:style w:type="character" w:styleId="CharA"><w:name w:val="CharA"/><w:basedOn w:val="CharB"/></w:style>
+            <w:style w:type="character" w:styleId="CharB"><w:name w:val="CharB"/><w:basedOn w:val="CharA"/><w:rPr><w:rFonts w:ascii="Symbol"/></w:rPr></w:style>
+            """)
+        let alpha = docxRun("\u{F061}")
+        // Paragraph styles in a loop name no font, so the character stays as it is.
+        XCTAssertEqual(try heard(docxParagraph(docxRun("a") + alpha + docxRun("b"), style: "ParaA"), styles: styles), "a\u{F061}b")
+        XCTAssertEqual(try heard(docxParagraph(docxRun("a") + alpha + docxRun("b"), style: "ParaSelf"), styles: styles), "a\u{F061}b")
+        // CharA is based on CharB, which names Symbol.
+        let styled = docxRun("\u{F061}", "<w:rStyle w:val=\"CharA\"/>")
+        XCTAssertEqual(try heard(docxParagraph(docxRun("a") + styled + docxRun("b")), styles: styles), "a\u{03B1}b")
     }
 
     /// The properties from before a tracked change (`w:rPrChange`) say nothing of the text as it stands.
