@@ -185,7 +185,7 @@ final class KF8RealBookTests: XCTestCase {
         }
     }
 
-    func testGhostsReadFromItsKF8HalfHasItsNamesAndFiveChapters() throws {
+    func testGhostsReadFromItsKF8HalfHasItsNamesAndFourChapters() throws {
         let book = try prepared("mobi/pg8121-ghosts-hybrid.mobi")
         XCTAssertEqual(book.title, "Ghosts")
         XCTAssertEqual(book.author, "Henrik Ibsen")

@@ -239,7 +239,8 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertTrue(debugLogLines(containing: "PAGES_REPLACED_TEXT: \(row.title)").isEmpty)
         XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .mobi))
         let content = try MarkdownCacheService.loadFromCache(for: row)
-        XCTAssertEqual(content.chapters.count, 5, "the book is read from its KF8 half now")
+        // Four: the license piece at the end has no heading and repeats the title before it, so it goes on with ACT THIRD (S4).
+        XCTAssertEqual(content.chapters.count, 4, "the book is read from its KF8 half now")
         assertPlaces(of: row, areAt: Self.ghostsPlaces, in: content)
     }
 
