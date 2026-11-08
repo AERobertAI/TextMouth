@@ -86,7 +86,7 @@ enum MOBIMarkup {
     /// letter, `/`, `!`, or `?`; any other `<` is text. A quoted attribute
     /// value (the quote right after `=`) may hold a `>`, and a comment ends
     /// at `-->`. A tag that never ends runs to the end of the range.
-    private static func forEachTag(in text: [UInt8], within range: Range<Int>, _ body: (Range<Int>) -> Void) {
+    static func forEachTag(in text: [UInt8], within range: Range<Int>, _ body: (Range<Int>) -> Void) {
         var position = range.lowerBound
         let end = range.upperBound
         while position < end {
@@ -281,6 +281,141 @@ enum MOBIMarkup {
         }
         copy(to: range.upperBound)
         return output
+    }
+
+    // MARK: Soft Hyphens
+
+    /// `text` without its soft hyphens (U+00AD): the character itself, and
+    /// every way markup spells it (`&shy;`, and a numeric reference to 173
+    /// in decimal or hexadecimal with any letter case and any number of
+    /// leading zeros, with or without its semicolon). A publisher puts them
+    /// inside words to say where a line may break; a person reading sees none
+    /// in the middle of a line, and a speech engine or a braille display
+    /// should not meet one in the middle of a word. Used for the markup of a
+    /// KF8 book and for its contents' labels, so there is one rule.
+    static func removingSoftHyphens(_ text: String) -> String {
+        let bytes = Array(text.utf8)
+        // The common case, no soft hyphen at all, costs one scan and no copy.
+        var first: Int?
+        var position = 0
+        while position < bytes.count {
+            if softHyphenLength(in: bytes, at: position) != nil { first = position; break }
+            position += 1
+        }
+        guard let start = first else { return text }
+        var result = Array(bytes[..<start])
+        result.reserveCapacity(bytes.count)
+        position = start
+        while position < bytes.count {
+            if let length = softHyphenLength(in: bytes, at: position) {
+                position += length
+            } else {
+                result.append(bytes[position])
+                position += 1
+            }
+        }
+        return String(decoding: result, as: UTF8.self)
+    }
+
+    /// The length in bytes of the soft hyphen that begins at `position` in
+    /// UTF-8 `bytes`, or nil when none does.
+    private static func softHyphenLength(in bytes: [UInt8], at position: Int) -> Int? {
+        let byte = bytes[position]
+        // The character: C2 AD.
+        if byte == 0xC2 { return position + 1 < bytes.count && bytes[position + 1] == 0xAD ? 2 : nil }
+        guard byte == UInt8(ascii: "&"), position + 1 < bytes.count else { return nil }
+        // &shy;
+        if matches(shyName, in: bytes, at: position + 1) { return 1 + shyName.count }
+        // &#173; &#xAD; and their spellings.
+        guard bytes[position + 1] == UInt8(ascii: "#") else { return nil }
+        var cursor = position + 2
+        var radix = 10
+        if cursor < bytes.count, bytes[cursor] == UInt8(ascii: "x") || bytes[cursor] == UInt8(ascii: "X") {
+            radix = 16
+            cursor += 1
+        }
+        var value = 0
+        var digits = 0
+        while cursor < bytes.count, digits < 12, let digit = digitValue(bytes[cursor], radix: radix) {
+            value = value * radix + digit
+            digits += 1
+            cursor += 1
+        }
+        guard digits > 0, value == 0xAD else { return nil }
+        if cursor < bytes.count, bytes[cursor] == UInt8(ascii: ";") { cursor += 1 }
+        return cursor - position
+    }
+
+    private static let shyName = Array("shy;".utf8)
+
+    /// The value of the digit `byte` in `radix` (10 or 16), or nil.
+    private static func digitValue(_ byte: UInt8, radix: Int) -> Int? {
+        switch byte {
+        case UInt8(ascii: "0")...UInt8(ascii: "9"): return Int(byte - UInt8(ascii: "0"))
+        case UInt8(ascii: "a")...UInt8(ascii: "f") where radix == 16: return Int(byte - UInt8(ascii: "a")) + 10
+        case UInt8(ascii: "A")...UInt8(ascii: "F") where radix == 16: return Int(byte - UInt8(ascii: "A")) + 10
+        default: return nil
+        }
+    }
+
+    // MARK: Words
+
+    /// Whether `markup` holds a word a listener could hear: a letter or
+    /// digit in its text, or in the `alt` of a picture. The markup of a
+    /// head, a style sheet, or a script is not looked through, but a book
+    /// of only blank documents holds none either way, and that is all this is
+    /// asked: a KF8 half with no words at all falls back to the MOBI 6 half.
+    static func hasWords(_ markup: [UInt8]) -> Bool {
+        var position = 0
+        var inTag = false
+        var quote: UInt8 = 0
+        var inHead = false
+        while position < markup.count {
+            let byte = markup[position]
+            if inTag {
+                if quote != 0 {
+                    if byte == quote { quote = 0 }
+                } else if byte == UInt8(ascii: "\"") || byte == UInt8(ascii: "'") {
+                    quote = byte
+                } else if byte == UInt8(ascii: ">") {
+                    inTag = false
+                }
+                // A picture's description counts.
+                if !inHead, byte == UInt8(ascii: "a"), matches(altEquals, in: markup, at: position),
+                   position > 0, isSpace(markup[position - 1]) {
+                    let valueStart = position + altEquals.count + (position + altEquals.count < markup.count
+                        && (markup[position + altEquals.count] == UInt8(ascii: "\"") || markup[position + altEquals.count] == UInt8(ascii: "'")) ? 1 : 0)
+                    var cursor = valueStart
+                    while cursor < markup.count, cursor < valueStart + 256, !isTagEnd(markup[cursor]) {
+                        if isAlphanumeric(markup[cursor]) { return true }
+                        cursor += 1
+                    }
+                }
+            } else if byte == UInt8(ascii: "<"), position + 1 < markup.count, startsTag(markup[position + 1]) {
+                inTag = true
+                // The head holds the title, which is not the book's words.
+                if matches(headName, in: markup, at: position + 1, endsName: true) { inHead = true }
+                if matches(headEndName, in: markup, at: position + 1, endsName: true) { inHead = false }
+            } else if !inHead, isAlphanumeric(byte) {
+                return true
+            }
+            position += 1
+        }
+        return false
+    }
+
+    private static let altEquals = Array("alt=".utf8)
+    private static let headName = Array("head".utf8)
+
+    /// Whether `byte` ends an attribute value that is not quoted, or the tag.
+    private static func isTagEnd(_ byte: UInt8) -> Bool {
+        byte == UInt8(ascii: "\"") || byte == UInt8(ascii: "'") || byte == UInt8(ascii: ">")
+    }
+
+    /// Whether `byte` is a letter or digit of ASCII, or a byte of a multibyte
+    /// character (which is a letter, a digit, or a symbol; a book of only symbols is not one anyone reads).
+    private static func isAlphanumeric(_ byte: UInt8) -> Bool {
+        isLetter(byte) || isDigit(byte) || byte >= 0x80
     }
 
     // MARK: Bytes

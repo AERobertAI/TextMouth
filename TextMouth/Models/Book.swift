@@ -130,9 +130,10 @@ enum BookFormat: String, Codable, CaseIterable {
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
                 + ImportAudioConverter.coreAudioExtensions.sorted()
         // .prc is a Palm database, which a Kindle book of the first
-        // generation was named, and .azw is an Amazon Kindle book; both are
-        // read by the book's own headers (`MOBIPalmDatabase`), not by the name.
-        case .mobi: return ["mobi", "prc", "azw"]
+        // generation was named, .azw is an Amazon Kindle book, and .azw3 is
+        // one in the newer KF8 format (FMT48); all are read by the book's own
+        // headers (`MOBIPalmDatabase`), not by the name.
+        case .mobi: return ["mobi", "prc", "azw", "azw3"]
         // .kfx is a KFX container; .azw8 is the same container as Kindle for
         // iOS and Mac name it; .kfx-zip is calibre's bundle of a book's
         // containers. .kpf is a Kindle Create package, which is taken only

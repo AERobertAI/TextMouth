@@ -113,12 +113,6 @@ final class MOBIReaderTests: XCTestCase {
             sentence: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.")
     }
 
-    func testTheKF8SampleIsRefusedAsKF8() throws {
-        assertRefused(
-            try copyOfFormatSample("mobi/pg1952-yellow-wallpaper-kf8.mobi"), .kf8Only,
-            sentence: "This Kindle book is in the newer KF8 format, which TextMouth can't read yet.")
-    }
-
     // MARK: - The metadata
 
     func testTheMetadataOfEachSampleReadsWithoutTheText() throws {
@@ -137,12 +131,13 @@ final class MOBIReaderTests: XCTestCase {
     func testKindleBooksAreRecognizedByTheirExtensions() throws {
         XCTAssertEqual(BookFormat.mobi.rawValue, "mobi")
         XCTAssertEqual(BookFormat.mobi.displayName, "Kindle Book (MOBI)")
-        for name in ["a.mobi", "a.MOBI", "a.prc", "a.azw"] {
+        // An .azw3 is a Kindle book in KF8 (FMT48), which the same reader reads.
+        for name in ["a.mobi", "a.MOBI", "a.prc", "a.azw", "a.azw3", "a.AZW3"] {
             XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/\(name)")), .mobi, name)
         }
-        // AZW3 is KF8, the next format (FMT48), not this one.
-        XCTAssertNil(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/a.azw3")))
-        XCTAssertNil(PageReaderVersions.current(for: .mobi))
+        // A MOBI 6 book has no print pages, a KF8 book (FMT48) has its EPUB's page-break
+        // elements, and both are the format "mobi": its page reader is 1.0.0.
+        XCTAssertEqual(PageReaderVersions.current(for: .mobi), "1.0.0")
     }
 
     func testThePanelOffersKindleBooks() {
@@ -150,7 +145,7 @@ final class MOBIReaderTests: XCTestCase {
     }
 
     func testTheFinderOffersTextMouthForKindleBooks() throws {
-        for fileExtension in ["mobi", "prc", "azw"] {
+        for fileExtension in ["mobi", "prc", "azw", "azw3"] {
             let type = try XCTUnwrap(documentType(listing: fileExtension), fileExtension)
             XCTAssertEqual(type["CFBundleTypeRole"] as? String, "Viewer")
             XCTAssertEqual(type["LSHandlerRank"] as? String, "Alternate")
@@ -174,7 +169,7 @@ final class MOBIReaderTests: XCTestCase {
         ])
         XCTAssertTrue(spaced(allText(of: content)).contains("It is very seldom that mere ordinary people"))
         XCTAssertTrue(content.pages.breaks.isEmpty, "a Kindle book has no print pages")
-        XCTAssertNil(imported.book.pageReaderVersion)
+        XCTAssertEqual(imported.book.pageReaderVersion, "1.0.0")
     }
 
     func testAnImportedKindleBookReadsTheSameFromItsSourceAfterItsTextIsRemoved() throws {
@@ -190,12 +185,10 @@ final class MOBIReaderTests: XCTestCase {
         ])
     }
 
-    func testImportingTheProtectedAndKF8SamplesFailsWithTheirSentences() throws {
+    func testImportingTheProtectedSampleFailsWithItsSentence() throws {
         for (sample, sentence) in [
             ("mobi/yellow-wallpaper-drm-flagged-synthetic.mobi",
              "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."),
-            ("mobi/pg1952-yellow-wallpaper-kf8.mobi",
-             "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."),
         ] {
             let url = try copyOfFormatSample(sample)
             XCTAssertThrowsError(try FileImportService.importFileWithReport(from: url), sample) {

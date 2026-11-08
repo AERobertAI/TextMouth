@@ -33,7 +33,7 @@ struct MOBIHuffman {
     private static let maximumEntries = 1 << 20
 
     /// The file the entries' ranges lie in.
-    private let bytes: [UInt8]
+    private let bytes: Data
     /// For each value of a codeword's first byte: whether that byte alone
     /// settles the code (bit 7), the code's length (bits 0 to 4), and the
     /// value its index is counted from (the rest).

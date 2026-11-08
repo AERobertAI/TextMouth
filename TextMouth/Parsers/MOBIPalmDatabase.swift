@@ -8,19 +8,30 @@ import Foundation
 /// The window shares the file's storage (arrays copy on write), so a record
 /// is a range, never a copy.
 struct MOBIView {
-    /// The whole file, shared by every window onto it.
-    let bytes: [UInt8]
+    /// The whole file, shared by every window onto it. A file that is read
+    /// from disk is memory-mapped (`Data(contentsOf:options:)` with
+    /// `.alwaysMapped`), so a book of a hundred megabytes with its pictures
+    /// costs no allocation of that size: only the records read are paged in.
+    /// Its first index is 0.
+    let bytes: Data
     /// The part of `bytes` this window shows.
     let range: Range<Int>
 
+    /// A window onto all of `data`.
+    init(_ data: Data) {
+        // A slice of a larger Data keeps its indexes; a window counts from 0.
+        let whole = data.startIndex == 0 ? data : Data(data)
+        self.bytes = whole
+        self.range = 0..<whole.count
+    }
+
     /// A window onto all of `bytes`.
     init(_ bytes: [UInt8]) {
-        self.bytes = bytes
-        self.range = 0..<bytes.count
+        self.init(Data(bytes))
     }
 
     /// A window onto `range` of `bytes`, which the caller has checked.
-    fileprivate init(bytes: [UInt8], range: Range<Int>) {
+    fileprivate init(bytes: Data, range: Range<Int>) {
         self.bytes = bytes
         self.range = range
     }
@@ -124,12 +135,17 @@ struct MOBIPalmDatabase {
     private static let headerSize = 78
 
     /// Reads the database in `bytes`.
+    init(bytes: [UInt8]) throws {
+        try self.init(data: Data(bytes))
+    }
+
+    /// Reads the database in `data`, which may be a file mapped into memory.
     /// - Throws: `MOBIError.notAKindleBook` when the type and creator are
     ///   neither of the two a book has, and `.damaged` for a record table
     ///   that does not fit the file or records whose offsets do not ascend
     ///   inside it.
-    init(bytes: [UInt8]) throws {
-        let file = MOBIView(bytes)
+    init(data: Data) throws {
+        let file = MOBIView(data)
         guard file.count >= Self.headerSize else { throw MOBIError.notAKindleBook }
         self.file = file
 
@@ -172,6 +188,29 @@ struct MOBIPalmDatabase {
         records = try (0..<recordCount).map {
             try file.window(starts[$0], starts[$0 + 1] - starts[$0], "Record \($0)")
         }
+    }
+
+    /// A database made of `records` of another one, under the same names.
+    private init(of other: MOBIPalmDatabase, records: [MOBIView]) {
+        file = other.file
+        name = other.name
+        type = other.type
+        creator = other.creator
+        self.records = records
+    }
+
+    /// The database as it is seen from record `first` on: its record 0 is
+    /// this one's record `first`, and every record number a header in it
+    /// names counts from there. This is how the KF8 half of a hybrid file
+    /// (a MOBI 6 book first, then a boundary, then a KF8 book) is read: its
+    /// headers, text, and indexes number their records from the half's own
+    /// first record.
+    /// - Throws: `MOBIError.damaged` when the book has no record `first`.
+    func starting(atRecord first: Int) throws -> MOBIPalmDatabase {
+        guard records.indices.contains(first) else {
+            throw MOBIError.damaged("the second part of the book begins at record \(first), and the book has only \(records.count)")
+        }
+        return MOBIPalmDatabase(of: self, records: Array(records[first...]))
     }
 
     /// How many records the database holds.

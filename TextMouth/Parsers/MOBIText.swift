@@ -37,12 +37,21 @@ enum MOBIText {
     ///   `DocumentTooLargeError` for a text that declares
     ///   more than `DocumentByteLimit` allows; `FileImportError.noTextToRead`
     ///   for a book that declares none.
-    static func bytes(of database: MOBIPalmDatabase, headers: MOBIHeaders) throws -> [UInt8] {
+    ///
+    /// - Parameter extent: Where the text is known to end when that is past
+    ///   the length the header declares: kindlegen's KF8 headers declare only
+    ///   the markup, and the SVG flows its flow table names lie after it in
+    ///   the same records. The text is then read through `extent` (so far as
+    ///   the records hold it), never less than the declared length. 0, as for
+    ///   every other book, reads the declared length and no more.
+    static func bytes(of database: MOBIPalmDatabase, headers: MOBIHeaders, through extent: Int = 0) throws -> [UInt8] {
         let declared = headers.textLength
         guard declared > 0, headers.textRecordCount > 0 else { throw FileImportError.noTextToRead }
-        // The decompressed size is held to its declared size, and that to an
+        // What is read: the declared length, or the extent when that is more.
+        let wanted = max(declared, extent)
+        // The decompressed size is held to its wanted size, and that to an
         // absolute cap, before any record is read.
-        try DocumentByteLimit.check(byteCount: Int64(declared))
+        try DocumentByteLimit.check(byteCount: Int64(wanted))
 
         // The records the text lies in follow record 0. A count that passes
         // the records the book has is a truncated book, or a hostile one.
@@ -55,21 +64,21 @@ enum MOBIText {
         var text: [UInt8] = []
         // Room for what the records can plausibly hold, never for what the
         // header merely claims: a hostile header may claim 64 MB of a file of 4 KB.
-        text.reserveCapacity(min(declared, lastTextRecord * 8192))
+        text.reserveCapacity(min(wanted, lastTextRecord * 8192))
         for index in 1...lastTextRecord {
             let record = try database.record(index, "A text record")
             let length = try usableLength(of: record, flags: headers.extraDataFlags)
             let bytes = record.bytes
             let start = record.range.lowerBound
-            try decompress(bytes, start..<(start + length), &text, declared)
-            if text.count >= declared { break }
+            try decompress(bytes, start..<(start + length), &text, wanted)
+            if text.count >= wanted { break }
         }
         // A book may decompress to a little more than it declares (padding
         // in its last record): the declared length is the text. One that
         // decompresses to less has lost part of its text, as a download that
         // stopped short does, and is not read as if it were whole.
-        if text.count > declared { text.removeLast(text.count - declared) }
-        guard text.count == declared else {
+        if text.count > wanted { text.removeLast(text.count - wanted) }
+        guard text.count >= declared else {
             throw MOBIError.damaged("its text records hold \(text.count) bytes of the \(declared) it says the text has")
         }
         return text
@@ -78,7 +87,7 @@ enum MOBIText {
     /// A function that decompresses one record's bytes (`bytes[range]`),
     /// appending to the text so far, which it brings to no more than the
     /// limit it is given, the book's declared length.
-    typealias Decompressor = ([UInt8], Range<Int>, inout [UInt8], Int) throws -> Void
+    typealias Decompressor = (Data, Range<Int>, inout [UInt8], Int) throws -> Void
 
     /// The decompressor for the book's compression type.
     /// - Throws: `MOBIError.unsupportedCompression` for a type this reader
@@ -149,7 +158,7 @@ enum MOBIText {
     /// high bit set, and the size counts the number's own bytes. It is at
     /// most 4 bytes long.
     /// - Throws: `MOBIError.damaged` when no byte in the last four starts a number.
-    private static func trailingEntrySize(endingAt end: Int, in bytes: [UInt8], from lowerBound: Int) throws -> Int {
+    private static func trailingEntrySize(endingAt end: Int, in bytes: Data, from lowerBound: Int) throws -> Int {
         var value = 0
         var shift = 0
         var position = end - 1
@@ -179,7 +188,9 @@ enum MOBIText {
     /// before this record's first byte of output, is refused, as is a record
     /// that ends in the middle of a run or a reference.
     /// - Throws: `MOBIError.damaged` for such a record.
-    static func decompressPalmDOC(_ bytes: [UInt8], _ range: Range<Int>, into output: inout [UInt8], limit: Int) throws {
+    static func decompressPalmDOC<Bytes: RandomAccessCollection>(
+        _ bytes: Bytes, _ range: Range<Int>, into output: inout [UInt8], limit: Int
+    ) throws where Bytes.Element == UInt8, Bytes.Index == Int {
         // A reference counts back from the record's own output, never the
         // earlier records'.
         let recordStart = output.count

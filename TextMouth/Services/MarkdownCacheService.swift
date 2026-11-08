@@ -352,10 +352,15 @@ enum MarkdownCacheService {
     /// changed by hand, and needs to know when the run for the pages failed
     /// (PG16). It extracts exactly as a generation does, and writes nothing:
     /// no content.md, no snapshot, no record.
+    /// - Parameter kindleHalf: For a Kindle book that is a hybrid file, the half read:
+    ///   nil for the one a generation reads now (the KF8 half), `.mobi6` for the text an
+    ///   older TextMouth stored, which the upgrade of an unstamped book compares with.
     /// - Returns: The text; nil for a book with no text cache (an audio
     ///   book, or one without a package).
     /// - Throws: why the file could not be read, as a generation does.
-    static func extractedText(for book: Book, includesPages: Bool) throws -> ExtractedText? {
+    static func extractedText(
+        for book: Book, includesPages: Bool, kindleHalf: MOBIBook.HybridChoice? = nil
+    ) throws -> ExtractedText? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
@@ -364,7 +369,7 @@ enum MarkdownCacheService {
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
                 brailleFileCode: current.brailleFileCodeForReading(),
-                encodingPolicy: encodingPolicy(of: current), includesPages: includesPages
+                encodingPolicy: encodingPolicy(of: current), includesPages: includesPages, kindleHalf: kindleHalf
             )
             return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
         }
@@ -654,7 +659,8 @@ enum MarkdownCacheService {
     ///   which PG09 compares against to find text changed by hand.
     private static func extractCache(
         from url: URL, format: BookFormat, brailleTable: String?, brailleTableVersion: String?,
-        brailleFileCode: String?, encodingPolicy: TextFileDecoder.EncodingPolicy, includesPages: Bool
+        brailleFileCode: String?, encodingPolicy: TextFileDecoder.EncodingPolicy, includesPages: Bool,
+        kindleHalf: MOBIBook.HybridChoice? = nil
     ) throws -> ExtractedCache {
         let markdown: String
         var guessedEncoding: String?
@@ -701,7 +707,8 @@ enum MarkdownCacheService {
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
         case .mobi:
-            return extractFromKindle(try MOBIParser.prepareBook(url: url))
+            return extractFromKindle(try MOBIParser.prepareBook(
+                url: url, includesPages: includesPages, hybrid: kindleHalf ?? MOBIBook.hybridChoice))
         case .kfx:
             return extractFromKindle(try KFXParser.prepareBook(url: url, includesPages: includesPages))
         case .pdf:
@@ -731,9 +738,9 @@ enum MarkdownCacheService {
     /// A Kindle book (FMT42, FMT52) read by `MOBIParser` or `KFXParser`:
     /// chapter markers preserve its chapters, and heading annotations its
     /// deeper entries, without inserting any extra text into the book, as an
-    /// EPUB's do. A MOBI book has no print pages, so none are written
-    /// whatever `includesPages` says; a KFX book's own print page list is
-    /// written as pages with it.
+    /// EPUB's do. A MOBI 6 book has no print pages, so none are written
+    /// whatever `includesPages` says; a KF8 book's page-break elements and a
+    /// KFX book's own print page list are written as pages with it.
     private static func extractFromKindle(_ book: MOBIParser.PreparedBook) -> ExtractedCache {
         let markdown = book.chapters.map { prepared in
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"

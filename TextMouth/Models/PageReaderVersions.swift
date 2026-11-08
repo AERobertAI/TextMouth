@@ -124,6 +124,14 @@ enum PageReaderVersions {
             // feed between words: each is read again once, its content.md
             // byte for byte as before, and then stamped.
             return "1.0.0"
+        case .mobi:
+            // A Kindle book of the MOBI family has pages when it is in KF8
+            // (FMT48): that format keeps the page-break elements of the EPUB
+            // it was made from, and they are read as pages. A MOBI 6 book
+            // has none. A hybrid file is read from its KF8 half from
+            // "1.0.0", which keeps the headings at the levels the author gave
+            // them, so every .mobi book is read again once.
+            return "1.0.0"
         case .kfx:
             // A KFX book (FMT52) has pages when it carries a print page
             // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and
