@@ -162,6 +162,27 @@ enum PhonePassagePolicy {
         return before.map { (chapter: $0, offset: max(0, chapters[$0].utf16Length - maximumLength)) }
     }
 
+    /// What a page turn does to the reading place and to the text.
+    enum TurnEffect: Equatable, Sendable {
+        /// Paused: the place moves to the new page, then the text shows it, so
+        /// that stopping VoiceOver's Read All leaves the place where the
+        /// reading got to.
+        case movesPlaceAndText
+        /// Playing: the book plays on where it is, and only the text moves.
+        case movesTextOnly
+    }
+
+    /// What a page turn does, whether it comes from the three-finger swipe or
+    /// from VoiceOver's Read All, which turns the page by itself when it
+    /// reaches the passage's end (Apple's `UIAccessibilityTraitCausesPageTurn`
+    /// header: VoiceOver calls `accessibilityScroll(.next)` and stops when the
+    /// content hasn't changed).
+    ///
+    /// - Parameter isPlaying: Whether the book plays.
+    static func turnEffect(isPlaying: Bool) -> TurnEffect {
+        isPlaying ? .movesTextOnly : .movesPlaceAndText
+    }
+
     /// Where Listen from Here plays from, as an offset in the chapter:
     /// VoiceOver's cursor in the text, found in the spec's order. First the
     /// text view's selection, if VoiceOver or a braille display's router key
