@@ -151,7 +151,16 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         let app = try launchIntoTheReader()
         let elements = try openReaderSheet("Voice", titled: "Voice & Speed for This Book", waitingFor: "Close", in: app)
         // Voices load a moment after the sheet opens: Speed is always there.
-        XCTAssertTrue(app.sliders["Speed"].waitForExistence(timeout: Self.patience), "The sheet never showed Speed")
+        if !app.sliders["Speed"].waitForExistence(timeout: Self.patience) {
+            // What the sheet showed in its place: every slider by label,
+            // identifier, and value, and the whole order with each type.
+            let sliders = app.sliders.allElementsBoundByIndex.map {
+                "label \"\($0.label)\" id \"\($0.identifier)\" value \"\(String(describing: $0.value))\""
+            }
+            let order = try elementsInOrder(of: app).map { "\($0.type.rawValue):\($0.label)" }
+            XCTFail("The sheet never showed Speed. Sliders: \(sliders). Order (type:label): \(order.joined(separator: " | "))")
+            return
+        }
         let settled = try elementsOfSheet(titled: "Voice & Speed for This Book", in: app)
         let hasVoices = !settled.contains { $0.label.hasPrefix("No voices are installed") }
         let voiceRows = hasVoices ? ["Voice language filter", "Select voice for this book", "Preview selected voice"] : []
@@ -208,7 +217,10 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         XCTAssertTrue(opener.waitForExistence(timeout: Self.patience), "No \(control) control:\n\(app.debugDescription)")
         opener.tap()
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: Self.patience), "The \(control) sheet never opened:\n\(app.debugDescription)")
-        XCTAssertTrue(app.buttons[element].waitForExistence(timeout: Self.patience), "The \(control) sheet has no \(element):\n\(app.debugDescription)")
+        XCTAssertTrue(
+            app.buttons[element].waitForExistence(timeout: Self.patience),
+            "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
+        )
         return try elementsOfSheet(titled: title, in: app)
     }
 

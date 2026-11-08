@@ -24,14 +24,22 @@ class TextMouthUITestCase: XCTestCase {
 
     // MARK: - Launching
 
+    /// The largest text size iOS offers, Accessibility Extra Extra Extra Large.
+    static let largestText = "UICTContentSizeCategoryAccessibilityXXXL"
+
     /// Launches the app with an empty library of its own (TEXTMOUTH_UI_TEST),
     /// sending it the book when `sendingTheBook`, as another app would at a
     /// cold launch (TEXTMOUTH_OPEN_AT_LAUNCH). With no book playing, the app
     /// imports the book and opens it, and Play waits unpressed.
-    func launch(sendingTheBook: Bool) throws -> XCUIApplication {
+    /// With `textSize`, the launch uses that content size category (as in
+    /// `Self.largestText`), as the Larger Text setting would.
+    func launch(sendingTheBook: Bool, textSize: String? = nil) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
+        if let textSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
+        }
         if sendingTheBook {
             app.launchEnvironment["TEXTMOUTH_OPEN_AT_LAUNCH"] = try Self.bookPath()
         }
@@ -47,8 +55,8 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches with the book and waits for the reader it opens, with the
     /// book loaded: Play is there, and its value no longer says "Loading".
-    func launchIntoTheReader() throws -> XCUIApplication {
-        let app = try launch(sendingTheBook: true)
+    func launchIntoTheReader(textSize: String? = nil) throws -> XCUIApplication {
+        let app = try launch(sendingTheBook: true, textSize: textSize)
         let play = app.buttons["Play"]
         XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
@@ -67,6 +75,9 @@ class TextMouthUITestCase: XCTestCase {
         let label: String
         let value: String?
         let frame: CGRect
+        /// The accessibility identifier, which iOS sometimes gives a control
+        /// that its label does not name (a toolbar button, for one).
+        let identifier: String
     }
 
     /// Every element of `app` with a label, in the order of the accessibility
@@ -79,12 +90,34 @@ class TextMouthUITestCase: XCTestCase {
         while let snapshot = stack.popLast() {
             if !snapshot.label.isEmpty {
                 let value = snapshot.value.map { "\($0)" }
-                found.append(Element(type: snapshot.elementType, label: snapshot.label, value: value, frame: snapshot.frame))
+                found.append(Element(
+                    type: snapshot.elementType, label: snapshot.label, value: value,
+                    frame: snapshot.frame, identifier: snapshot.identifier
+                ))
             }
             // Pushed last child first, so the first child is read next.
             stack.append(contentsOf: snapshot.children.reversed())
         }
         return found
+    }
+
+    /// The elements as one line: each one's label, with its identifier where
+    /// that is not the label (a button iOS names by an identifier alone shows
+    /// here), and "(button)" after a button.
+    static func describe(_ elements: [Element]) -> String {
+        elements.map { element in
+            var text = element.label
+            if !element.identifier.isEmpty, element.identifier != element.label { text += " [id \(element.identifier)]" }
+            return element.type == .button ? "\(text) (button)" : text
+        }.joined(separator: " | ")
+    }
+
+    /// The buttons of every navigation bar showing, by label and identifier:
+    /// what to print when a button the test expects is missing.
+    func barButtons(of app: XCUIApplication) -> String {
+        app.navigationBars.buttons.allElementsBoundByIndex.map {
+            "label \"\($0.label)\" id \"\($0.identifier)\""
+        }.joined(separator: "; ")
     }
 
     /// Fails unless each of `expected` is the label of an element of
@@ -96,7 +129,7 @@ class TextMouthUITestCase: XCTestCase {
                 ? { $0.label.hasPrefix(String(label.dropLast())) }
                 : { $0.label == label }
             guard let index = elements[from...].firstIndex(where: matches) else {
-                let order = elements.map(\.label).joined(separator: " | ")
+                let order = Self.describe(elements)
                 XCTFail("\"\(label)\" is not after \"\(expected.first ?? "")\"… in the order: \(order)", file: file, line: line)
                 return
             }
@@ -141,13 +174,14 @@ class TextMouthUITestCase: XCTestCase {
     func audit(
         _ app: XCUIApplication,
         screen: String,
+        types: XCUIAccessibilityAuditType = .all,
         accepting accepted: [Accepted] = [],
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
         var findings: [String] = []
         var acceptedFindings: [String] = []
-        try app.performAccessibilityAudit(for: .all) { issue in
+        try app.performAccessibilityAudit(for: types) { issue in
             let label = issue.element?.label ?? ""
             let element = issue.element.map { "\($0.elementType.rawValue) \"\(label)\"" } ?? "no element"
             let said = "[\(Self.name(of: issue.auditType))] \(element): \(issue.compactDescription). \(issue.detailedDescription)"
