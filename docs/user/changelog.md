@@ -42,7 +42,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A .mobi file that holds a book twice, in MOBI 6 and in KF8, is read from its KF8 half. When the KF8 half can't be read, it is read from its MOBI 6 half.
 - A copy-protected book is still refused, in either half of such a file: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." TextMouth never tries to remove copy protection.
 - A book's contents decides its chapters: an entry that names a whole page titles that chapter, and an entry inside a page is a heading there.
-- A piece of a book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it, whatever its title says. A heading is never made from a title. This puts back together the chapters that calibre cuts into pieces.
+- A piece of a book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it only when its title repeats the previous piece's, or is the heading the next piece opens with. This puts back together the chapters that calibre cuts into pieces: Pride and Prejudice no longer has the end of a chapter headed with the next chapter's name, and the Project Gutenberg licence is one section.
 - A page of links that a converter added to the end of a book, headed "Table of Contents", is left out, so it is not read aloud at the end. Soft hyphens are left out.
 - KF8 keeps no page list, so its pages are the page breaks in its text, when it has them.
 - A book whose file is damaged says so: "This Kindle book is damaged or incomplete: …"

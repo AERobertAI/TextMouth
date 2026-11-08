@@ -250,7 +250,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - An entry in the book's table of contents that names a whole page titles that chapter.
 - An entry that names a place inside a page is a heading there, at the level the book gives it, and in at most six levels.
 - A chapter with no entry is titled by the title in its page's head, unless that repeats the book's own title, and otherwise "Chapter" and its number.
-- A piece of a KF8 book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it, whatever its title says. No heading is ever made from a page's title.
+- A piece of a KF8 book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it only when it has the same title as the piece before it, or its title is the heading the next piece opens with. A piece that joins adds no heading of its own. Any other such piece is a chapter of its own, named by its title, and the book's first piece with words never joins anything.
 - Tools such as calibre cut a long chapter into several pieces, and this rule puts the pieces back together. A paragraph that was cut in two is read as one paragraph.
 - A page of links that a converter added to the end of a book, headed "Table of Contents", is left out, so it is not read aloud at the end. A last page that an author wrote, with words of its own, is always read.
 - A contents or a guide that is damaged is left out, and the book is read without it.
