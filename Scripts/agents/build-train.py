@@ -7,13 +7,18 @@ schedule or something every 30 minutes and have the agents pool there work
 into each build". So agents no longer build on their own:
 
 - An agent commits its work on its branch and asks the train to test it
-  (`request`), naming the test classes and areas it needs.
-- Every 30 minutes (`loop`), the train takes every waiting request, merges
-  each requested branch onto a shared base in a worktree of its own, builds
-  once in one build folder of its own (kept between trains, so each build is
-  incremental, and with half of xcodebuild's usual jobs, so it needs about
-  half the memory), runs the union of the classes and areas asked for, and
-  posts each agent its result on the message board.
+  (`request`), naming the test classes and areas it needs. The train tests the
+  commit the branch was at when the agent asked; an agent that commits more
+  before the train leaves asks again, and the newest request for a branch wins.
+- Every hour, on the hour (`loop`), the train waits for the Mac's heavy-work
+  lock, first in line, then takes every waiting request, merges each requested
+  commit onto a shared base in a worktree of its own, builds once in one build
+  folder of its own (kept between trains, so each build is incremental, and
+  with half of xcodebuild's usual jobs, so it needs about half the memory),
+  runs the union of the classes and areas asked for, and posts each agent its
+  result on the message board. It left every 30 minutes until November 8,
+  2026, when the user, finding the builds took a lot of CPU, asked for "the
+  builds every hour and putting them one after the other".
 - A branch that conflicts with the base or with a branch merged before it is
   left out of that train, and its agent is told which files conflicted.
 - When the build fails to compile and every compile error is in a file that
@@ -26,12 +31,15 @@ into each build". So agents no longer build on their own:
   train's build. When the merged tree has that script, the train then counts
   the iOS errors left in it (a census, under the same lock) and tells each
   agent the ones in the files its branch changes (November 3, 2026).
+- The train never runs without that lock. While it waits, no other job takes
+  the lock before it; a train that waits LOCK_WAIT_MINUTES leaves its requests
+  queued for the next train and tells the orchestrator who held the lock.
 
 Usage:
   build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]
   build-train.py status
   build-train.py run [--base REF]
-  build-train.py loop [--every MINUTES] [--hours HOURS] [--base REF]
+  build-train.py loop [--every MINUTES (default 60)] [--hours HOURS] [--base REF]
 
 Paths are absolute, so any worktree's agent can call it. Requests, trains,
 and results live in the main checkout's gitignored build/orchestrator/train/.
@@ -78,6 +86,11 @@ XCODEGEN = "/opt/homebrew/bin/xcodegen"
 DEFAULT_BASE = "train/base"
 # The fewest gigabytes free on the data volume for a train to start.
 MIN_FREE_GB = 3
+# How long a train waits for the heavy-work lock before it gives up until the
+# next train: less than the hour between trains, so the next leaves on time.
+LOCK_WAIT_MINUTES = 50
+# Where a running train says what it is doing, for `status`.
+STATE = LOCK / "state.txt"
 # The board's limit on a post's topic.
 TOPIC_LIMIT = 200
 
@@ -168,10 +181,11 @@ def command_request(args):
 
 
 def command_status(_args):
-    """Prints the waiting requests, the next train's time, and whether one is running."""
+    """Prints the waiting requests, the next train's time, and what a running train is doing."""
     waiting = sorted(QUEUE.glob("*.json")) if QUEUE.exists() else []
     print(f"next train: {NEXT.read_text().strip() if NEXT.exists() else 'not scheduled'}")
-    print(f"running now: {'yes' if LOCK.exists() else 'no'}")
+    state = running_train()
+    print(f"running now: {'yes, ' + state if state else 'no'}")
     print(f"waiting requests: {len(waiting)}")
     for path in waiting:
         request = json.loads(path.read_text())
@@ -182,21 +196,45 @@ def command_status(_args):
 
 # MARK: - A Train
 
+def train_alive():
+    """Whether the process named in the train's lock is running."""
+    try:
+        os.kill(int((LOCK / "pid").read_text()), 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def running_train():
+    """What the running train says it is doing, or None when no live train holds
+    the lock (a train killed mid-run leaves its lock behind, and the next takes it over)."""
+    if not train_alive():
+        return None
+    try:
+        return STATE.read_text().strip() or "starting"
+    except OSError:
+        return "starting"
+
+
+def set_state(text):
+    """Records what the running train is doing, for `status` to print."""
+    try:
+        STATE.write_text(text + "\n")
+    except OSError:
+        pass  # Only `status` reads it, so a train never stops over it.
+
+
 def take_lock():
     """Takes the train's lock, or returns False when a live train holds it."""
     TRAIN_DIR.mkdir(parents=True, exist_ok=True)
     try:
         LOCK.mkdir()
     except FileExistsError:
-        pid_file = LOCK / "pid"
-        try:
-            pid = int(pid_file.read_text())
-            os.kill(pid, 0)
+        if train_alive():
             return False
-        except (OSError, ValueError):
-            # Its owner is gone: take the lock over.
-            shutil.rmtree(LOCK, ignore_errors=True)
-            LOCK.mkdir()
+        # Its owner is gone: take the lock over.
+        shutil.rmtree(LOCK, ignore_errors=True)
+        LOCK.mkdir()
     (LOCK / "pid").write_text(str(os.getpid()))
     return True
 
@@ -239,11 +277,14 @@ def regenerate_project():
 
 
 def merge_requests(requests, log):
-    """Merges each request's branch into the train; returns (merged, conflicts by agent)."""
+    """Merges the commit each request asked for into the train, not its branch's
+    newest, so the train tests what its agent asked for even when the agent has
+    committed since; returns (merged, conflicts by agent)."""
     merged, conflicts = [], {}
     for request in requests:
-        result = git("merge", "--no-ff", "--no-edit", "-q", request["branch"], cwd=WORKTREE, check=False)
-        log.write(f"merge {request['branch']}: exit {result.returncode}\n{result.stdout}{result.stderr}\n")
+        title = f"{request['branch']} at {request['head'][:8]}"
+        result = git("merge", "--no-ff", "-q", "-m", f"Merge {title}", request["head"], cwd=WORKTREE, check=False)
+        log.write(f"merge {title}: exit {result.returncode}\n{result.stdout}{result.stderr}\n")
         if result.returncode == 0:
             merged.append(request)
             continue
@@ -260,16 +301,16 @@ def merge_requests(requests, log):
     return merged, conflicts
 
 
-def changed_files(base, branch):
-    """The files `branch` changes since it left `base`."""
-    return set(git("diff", "--name-only", f"{base}...{branch}", check=False).stdout.split())
+def changed_files(base, commit):
+    """The files `commit` changes since its branch left `base`."""
+    return set(git("diff", "--name-only", f"{base}...{commit}", check=False).stdout.split())
 
 
-def errors_in_branch(errors, base, branch):
-    """The compile errors (summarize's "ERROR …" lines) that name a file `branch`
-    changes since it left `base`. The lines give a file by its name alone, so
-    a name is matched wherever the branch's file is."""
-    names = {Path(path).name for path in changed_files(base, branch)}
+def errors_in_branch(errors, base, commit):
+    """The compile errors (summarize's "ERROR …" lines) that name a file `commit`
+    changes since its branch left `base`. The lines give a file by its name
+    alone, so a name is matched wherever the branch's file is."""
+    names = {Path(path).name for path in changed_files(base, commit)}
     return [error for error in errors if any(name in error for name in names)]
 
 
@@ -402,7 +443,7 @@ def without_broken_branches(base, train_id, train_dir, merged, conflicts, output
     _, executed, _, errors, _ = summarize(output)
     if not errors or executed != "no tests ran":
         return merged, conflicts, output, []
-    blamed = [(request, errors_in_branch(errors, base, request["branch"])) for request in merged]
+    blamed = [(request, errors_in_branch(errors, base, request["head"])) for request in merged]
     broken = [(request, mine) for request, mine in blamed if mine]
     kept = [request for request, mine in blamed if not mine]
     explained = {error for _, mine in broken for error in mine}
@@ -493,8 +534,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
     for request in merged:
         agent = request["agent"]
         mine = [f for f in failures if failure_class(f) in request["classes"]]
-        touched = changed_files(base, request["branch"])
-        my_errors = errors_in_branch(errors, base, request["branch"])
+        touched = changed_files(base, request["head"])
+        my_errors = errors_in_branch(errors, base, request["head"])
         lines = [f"# {agent}: train {train_id}", "", f"- Your branch: {request['branch']} at {request['head'][:8]}",
                  f"- Verdict of the whole train: {verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
@@ -535,7 +576,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
 
 
 def command_run(args):
-    """Runs one train now, if anything waits; returns 0 when it ran or had nothing to do."""
+    """Runs one train now, if anything waits; returns 0 when it ran, had nothing
+    to do, or gave up waiting for the heavy-work lock (its requests then wait)."""
     waiting = list(QUEUE.glob("*.json")) if QUEUE.exists() else []
     if not waiting:
         print("build-train: nothing waits")
@@ -548,29 +590,45 @@ def command_run(args):
         print("build-train: a train is running")
         return 0
     try:
-        train_id = datetime.now().strftime("%m%d-%H%M")
-        train_dir = TRAINS / train_id
-        train_dir.mkdir(parents=True, exist_ok=True)
-        requests = take_requests(train_dir)
-        prepare_worktree(args.base, train_id)
-        with open(train_dir / "merge.log", "w") as log:
-            merged, conflicts = merge_requests(requests, log)
-        if merged and regenerate_project():
-            git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
-            git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
-        output, census, broken = "", None, []
-        if merged:
-            def waiting(owner):
-                post("orchestrator", f"build-train: train {train_id} waits for the heavy-work lock, held by "
-                                     f"{(owner or {}).get('name', '?')}", tag="notice")
-            # The train is the priority: after 20 minutes it goes on without the lock.
-            with heavy_lock.held("build-train", 1200, waiting):
+        def on_wait(holder):
+            holder = holder or {}
+            set_state(f"waiting for the heavy-work lock, held by {holder.get('name', '?')}")
+            post("orchestrator", f"build-train: a train waits for the heavy-work lock, held by "
+                                 f"{holder.get('name', '?')} since {holder.get('since', '?')}", tag="notice")
+        set_state("waiting for the heavy-work lock")
+        # One heavy job at a time, as the user asked: the train waits its turn,
+        # first in line, and never runs beside another heavy job.
+        with heavy_lock.held("build-train", LOCK_WAIT_MINUTES * 60, on_wait, first=True) as taken:
+            if not taken:
+                holder = heavy_lock.owner() or {}
+                message = (f"build-train: the heavy-work lock stayed busy for {LOCK_WAIT_MINUTES} minutes, held by "
+                           f"{holder.get('name', '?')} since {holder.get('since', '?')}; "
+                           f"its requests wait for the next train")
+                print(message)
+                post("orchestrator", message, tag="notice")
+                return 0
+            # The requests are taken only now, so those made while the train
+            # waited for the lock go with it.
+            train_id = datetime.now().strftime("%m%d-%H%M")
+            train_dir = TRAINS / train_id
+            train_dir.mkdir(parents=True, exist_ok=True)
+            set_state(f"train {train_id}: merging")
+            requests = take_requests(train_dir)
+            prepare_worktree(args.base, train_id)
+            with open(train_dir / "merge.log", "w") as log:
+                merged, conflicts = merge_requests(requests, log)
+            if merged and regenerate_project():
+                git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
+                git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
+            output, census, broken = "", None, []
+            if merged:
+                set_state(f"train {train_id}: building and testing "
+                          + ", ".join(f"{r['branch']} ({r['agent']})" for r in merged))
                 output = run_tests(merged, train_dir)
                 # The compiler stops at the first files it can't build, so a second
                 # broken branch shows only once the first is out: on November 7 one
                 # such branch kept every agent's tests from running. So retry, up
                 # to three times, while each pass finds branches to leave out.
-                broken = []
                 for _ in range(3):
                     merged, conflicts, output, more = without_broken_branches(
                         args.base, train_id, train_dir, merged, conflicts, output)
@@ -585,7 +643,10 @@ def command_run(args):
 
 
 def command_loop(args):
-    """Runs a train every `--every` minutes, on the half hour, for `--hours` hours."""
+    """Runs a train every `--every` minutes, at whole multiples of that period (on
+    the hour for the default 60, on the hour and the half hour for 30), for
+    `--hours` hours. A train still running at its successor's time makes that
+    one wait for the next multiple, so trains never overlap."""
     deadline = time.time() + args.hours * 3600
     while time.time() < deadline:
         now = time.time()
@@ -615,7 +676,7 @@ def main(argv):
     run = sub.add_parser("run", help="run one train now")
     run.add_argument("--base", default=DEFAULT_BASE)
     loop = sub.add_parser("loop", help="run a train on a schedule")
-    loop.add_argument("--every", type=int, default=30)
+    loop.add_argument("--every", type=int, default=60)
     loop.add_argument("--hours", type=float, default=12)
     loop.add_argument("--base", default=DEFAULT_BASE)
     args = parser.parse_args(argv)
