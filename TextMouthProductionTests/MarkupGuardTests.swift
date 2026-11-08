@@ -780,16 +780,22 @@ final class MarkupGuardTests: XCTestCase {
     }
 
     /// Every call into SwiftSoup's parsers inside the guard sits in a closure
-    /// run by `onLargeStack`, so the parse never runs on the caller's stack.
+    /// run by `onLargeStack`, so the parse never runs on the caller's stack;
+    /// and it is the argument of the depth check in that same closure, so a
+    /// tree the check refuses is released on the big stack too, never on the
+    /// caller's.
     func testEverySwiftSoupParseInTheGuardRunsOnTheBigStack() throws {
         let source = try XCTUnwrap(AppSourceFile.all().first { $0.name == "MarkupGuard.swift" })
         // The code without its comments.
         let code = source.text.components(separatedBy: .newlines).map { $0.components(separatedBy: "//").first ?? $0 }.joined(separator: "\n")
         let parses = try NSRegularExpression(pattern: #"SwiftSoup\.parse"#).numberOfMatches(in: code, range: NSRange(code.startIndex..., in: code))
-        let onTheBigStack = try NSRegularExpression(pattern: #"onLargeStack\s*\{[^{}]*SwiftSoup\.parse"#)
+        // A depth check moved out of the closure, with the parse left in it,
+        // would release a refused tree on the caller's stack: the November 8
+        // check found the looser pattern let that pass.
+        let onTheBigStack = try NSRegularExpression(pattern: #"onLargeStack\s*\{\s*try\s+requireDepth\(of:\s*SwiftSoup\.parse"#)
             .numberOfMatches(in: code, range: NSRange(code.startIndex..., in: code))
         XCTAssertEqual(parses, 3, "the guard's three parsers")
-        XCTAssertEqual(onTheBigStack, parses)
+        XCTAssertEqual(onTheBigStack, parses, "each parse is the argument of requireDepth, inside an onLargeStack closure")
     }
 
     // MARK: - One Way In
