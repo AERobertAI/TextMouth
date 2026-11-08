@@ -229,10 +229,11 @@ enum MarkupGuard {
     /// - Priority. The thread has the caller's quality of service, so a caller
     ///   of high priority does not wait on a thread of low.
     /// - No thread. If the system refuses the stack asked for (no thread was
-    ///   started), a stack a quarter the size is tried, and so on while it is
-    ///   at least `smallestStack`, which holds a tree 16,000 levels deep; only
-    ///   then does the body run on the caller's own thread, as it did before,
-    ///   with the first layer's count as the only guard.
+    ///   started), a stack a quarter the size, in whole megabytes, is tried,
+    ///   and so on while it is at least `smallestStack`: with today's limits,
+    ///   490 MiB, then 122 and 30 MiB, the last holding a tree of about 59,000
+    ///   levels. Only then does the body run on the caller's own thread, as it
+    ///   did before, with the first layer's count as the only guard.
     static func onLargeStack<Value>(_ body: @escaping () throws -> Value) throws -> Value {
         var outcome: Result<Value, any Error>?
         let job = StackJob { outcome = Result { try body() } }
@@ -260,8 +261,8 @@ enum MarkupGuard {
         return try (outcome ?? Result { try body() }).get()
     }
 
-    /// The smallest stack `onLargeStack` tries before it runs the body on the
-    /// caller's thread.
+    /// The floor under the stacks `onLargeStack` tries: none smaller is asked
+    /// for, and the body runs on the caller's thread instead.
     private static let smallestStack = 8 << 20
 
     // MARK: Which Parser
