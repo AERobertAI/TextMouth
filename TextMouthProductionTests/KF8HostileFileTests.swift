@@ -395,6 +395,26 @@ final class KF8HostileFileTests: XCTestCase {
         XCTAssertEqual(importQuickly(KF8Fixture(body: shallow).data(), "40 levels of nesting"), .read(chapters: 1))
     }
 
+    /// The review's B1 and B2 inputs, as a KF8 part holds them. Both are the guard's to settle (it reads the
+    /// declarations that trapped SwiftSoup's XML parser as nothing, and refuses a nesting the converter's
+    /// stack could not hold, before any parse), and `MarkupGuardTests` shows each in a MOBI 6 book; these
+    /// show them in a KF8 part, which is joined from fragments and opens as XML.
+    func testTheReviewsDeclarationAndNestingInputsAreSettledByTheGuardInAKF8Part() {
+        let declaration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+        // B1: a part that opens as XML and holds `<?a>` (it trapped SwiftSoup's XML parser): read.
+        let broken = KF8Fixture(documents: [KF8Fixture.Document(html: declaration + "<html><body><?a><p>The words.</p></body></html>")])
+        XCTAssertEqual(importQuickly(broken.data(), "a broken declaration in a part that opens as XML"), .read(chapters: 1))
+        // B2: end tags that close nothing, and void tags counted as nothing (5,000 each): refused, by the guard's count.
+        let limit = MarkupRefusal.nestedTooDeeply(limit: MarkupGuard.Limits.standard.deepestNesting)
+        for hostile in [
+            "<html><body><p>Some words.</p>" + String(repeating: "<div></x>", count: 5_000) + "</body></html>",
+            declaration + "<p>Some words.</p>" + String(repeating: "<br>", count: 5_000),
+        ] {
+            let book = KF8Fixture(documents: [KF8Fixture.Document(html: hostile)])
+            XCTAssertEqual(importQuickly(book.data(), String(hostile.prefix(60))), .refused(limit))
+        }
+    }
+
     // MARK: - Many pieces
 
     func testAThousandEntriesAndTwentyThousandFragmentsAreReadInAMoment() throws {
