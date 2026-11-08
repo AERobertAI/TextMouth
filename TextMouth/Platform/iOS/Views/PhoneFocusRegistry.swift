@@ -28,10 +28,13 @@ final class PhoneFocusRegistry {
         views[kind]?.view
     }
 
-    /// Which control `element` is, as VoiceOver reports a landing on it; nil
-    /// for anything else, such as the Back button or the title.
-    func kind(of element: Any?) -> PhoneControlKind? {
-        guard let landed = element as? UIView else { return nil }
-        return views.first { $0.value.view === landed }?.key
+    /// Which control the element with identity `id` is, as VoiceOver reports
+    /// a landing on it; nil for anything else, such as the Back button or the
+    /// title. Taken by identity because that's what crosses from the
+    /// notification's queue to the main actor (an `ObjectIdentifier` is
+    /// Sendable, a view isn't).
+    func kind(ofElementWithID id: ObjectIdentifier?) -> PhoneControlKind? {
+        guard let id else { return nil }
+        return views.first { $0.value.view.map(ObjectIdentifier.init) == id }?.key
     }
 }

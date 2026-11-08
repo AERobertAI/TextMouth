@@ -242,8 +242,7 @@ struct PhoneReaderView: View {
         if shown == .navigationUnit, let reader = session.reader {
             PhoneChoiceSheet(
                 title: PhoneReaderVocabulary.navigationUnit,
-                choices: PhoneNavigationUnits.offered(isAudioBook: reader.isAudioBook, hasSeveralPages: reader.hasSeveralPages)
-                    .map { PhoneChoice(id: $0, label: $0.rawValue) },
+                choices: model.offeredUnits(of: reader).map { PhoneChoice(id: $0, label: $0.rawValue) },
                 selected: model.unitInForce(of: reader),
                 onChoose: { model.choose($0) }
             )
@@ -372,11 +371,6 @@ private final class PhoneReaderArrival {
     /// VoiceOver's focus landed on the element with identity `id`: once on
     /// any reader control, the arrival is over.
     private func landed(onElementWithID id: ObjectIdentifier?) {
-        let kind = id.flatMap { id in
-            PhoneControlKind.allCases.first { kind in
-                PhoneFocusRegistry.shared.view(for: kind).map(ObjectIdentifier.init) == id
-            }
-        }
-        policy.focusLanded(on: kind)
+        policy.focusLanded(on: PhoneFocusRegistry.shared.kind(ofElementWithID: id))
     }
 }
