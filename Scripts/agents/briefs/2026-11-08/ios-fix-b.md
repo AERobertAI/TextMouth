@@ -13,7 +13,7 @@ One commit for each, with its tests, in this order:
 3. **From the first run in the simulator: Book content is blank when the place is in a chapter with no text.** A Project Gutenberg EPUB starts with a "Cover" chapter holding only an image, so a new book opens on an empty Book content, and VoiceOver reads "Book content" with nothing after it. Show the passage from the next sentence after the place, which is in the next chapter with text, as Play would read it. The decision belongs in the plain type (`PhonePassagePolicy`), with tests on the Mac, and `PhoneBookTextView.show(passageOf:chapter:at:)` uses it. Say what the Mac's reader shows in the same case.
 4. **Finding 9 (minor):** a move while the book plays doesn't replace Book content under a reader who has focus on it.
 5. **Findings 6, 12, and 13 (minor):** a jump from the Headings, Bookmarks, or Go To sheet counts the book as opened; the title isn't said twice when a launch reopens the reader; and "Loading…" isn't said as the listener leaves.
-6. **The review's small duplicates in your files:** the Follow in Braille key, kept twice; `PhoneFocusRegistry.kind(of:)`, which nothing calls while the arrival repeats its lookup; and `PhoneReaderView.sheetView`, which works out the units again instead of calling `model.offeredUnits(of:)`.
+6. **The review's small duplicates in your files:** `PhoneFocusRegistry.kind(of:)`, which nothing calls while the arrival repeats its lookup; and `PhoneReaderView.sheetView`, which works out the units again instead of calling `model.offeredUnits(of:)`. (The Follow in Braille key, kept twice, was folded by `iosdry` and is on `ios/lead-1108` now.)
 
 ## Your files
 
