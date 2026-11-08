@@ -63,6 +63,49 @@ struct DOCXStyles {
     /// The ID of the default table style (`w:default` on a table style): the
     /// style a table that names none takes. Nil when the part names none.
     var defaultTableStyle: String?
+
+    /// The font each paragraph style names (`w:rFonts`, its `w:ascii`, else
+    /// its `w:hAnsi`, in the style's own run properties), or else the first
+    /// style it is based on that names one, through styles of the same kind.
+    /// A style that names none is absent.
+    var paragraphFonts: [String: String] = [:]
+
+    /// The font each character style names, resolved the same way.
+    var characterFonts: [String: String] = [:]
+
+    /// The font the document defaults name (`w:rFonts` in
+    /// `w:docDefaults`): nil when they name none.
+    var documentDefaultsFont: String?
+
+    /// What the font table declares of the fonts (`word/fontTable.xml`),
+    /// for reading a symbol in its font (`WordXMLFonts`). Set by the caller
+    /// that reads the font table; empty when the package has none.
+    var fonts = WordXMLFonts()
+
+    /// The name of the font of a run: the font the run itself names
+    /// (`direct`), else its character style's, else its paragraph style's,
+    /// else the document defaults', each through the styles it is based on,
+    /// as the Word 97 reader settles it (`WordStyleSheet.fontIndex`); nil
+    /// when none names one. Table styles are not asked.
+    /// - Parameter paragraphStyle: the paragraph's style ID (the default
+    ///   paragraph style's when the paragraph names none).
+    func fontName(paragraphStyle: String, characterStyle: String, direct: String?) -> String? {
+        if let direct { return direct }
+        if let font = characterFonts[characterStyle] { return font }
+        let style = paragraphStyle.isEmpty ? (defaultParagraphStyle ?? "") : paragraphStyle
+        return paragraphFonts[style] ?? documentDefaultsFont
+    }
+}
+
+/// The font a `w:rFonts` element names for text typed in Latin letters and
+/// symbols: its `w:ascii`, else its `w:hAnsi` (Word stores the characters
+/// of a symbol font, U+F020 to U+F0FF, under either; a font named by a
+/// theme only is none).
+enum DOCXRunFonts {
+    /// The font the attributes of a `w:rFonts` name, or nil when they name none.
+    static func name(in attributes: [String: String]) -> String? {
+        WordXMLFonts.name(in: attributes, keys: ["w:ascii", "w:hAnsi"])
+    }
 }
 
 /// Whether the `w:val` of an on/off property (`w:pageBreakBefore`) turns it
@@ -131,6 +174,9 @@ class DOCXStylesParser: DOCXSAXParser {
         /// (`w:vanish`); nil when they say nothing, so the style it is based
         /// on decides.
         var ownHidden: Bool?
+        /// The font the style's own run properties name (`w:rFonts`); nil
+        /// when they name none, so the style it is based on decides.
+        var ownFont: String?
         /// The style's kind (`w:type`): "paragraph", "character", "table",
         /// or "numbering".
         var type: String
@@ -147,6 +193,7 @@ class DOCXStylesParser: DOCXSAXParser {
     private var currentOutlineLevel: DOCXOutlineLevel?
     private var currentPageBreakBefore: Bool?
     private var currentHidden: Bool?
+    private var currentFont: String?
     private var currentStyleType = "paragraph"
 
     /// The names of the elements being read, outermost first: `w:vanish`
@@ -171,6 +218,9 @@ class DOCXStylesParser: DOCXSAXParser {
         styles.paragraphHiding = hiding.filter { declarations[$0.key]?.type == "paragraph" }
         styles.characterHiding = hiding.filter { declarations[$0.key]?.type == "character" }
         styles.tableHiding = hiding.filter { declarations[$0.key]?.type == "table" }
+        let fonts = Self.inherited(through: declarations, own: \.ownFont)
+        styles.paragraphFonts = fonts.filter { declarations[$0.key]?.type == "paragraph" }
+        styles.characterFonts = fonts.filter { declarations[$0.key]?.type == "character" }
         return styles
     }
 
@@ -192,6 +242,7 @@ class DOCXStylesParser: DOCXSAXParser {
             currentOutlineLevel = nil
             currentPageBreakBefore = nil
             currentHidden = nil
+            currentFont = nil
             // A style that names no type is a paragraph style (ST_StyleType).
             currentStyleType = attributes["w:type"] ?? "paragraph"
             inStyle = true
@@ -210,6 +261,12 @@ class DOCXStylesParser: DOCXSAXParser {
         case "vanish" where !inStyle && trackedChangeDepth == 0 && Self.isDocumentDefaultRunProperty(elementStack):
             // Every run is hidden by default, unless turned off
             styles.documentDefaultsHiding = DOCXOnOff.isOn(attributes["w:val"])
+        case "rFonts" where inStyle && trackedChangeDepth == 0 && Self.isStyleRunProperty(elementStack):
+            // The font of the style's text (a symbol is read in it)
+            currentFont = DOCXRunFonts.name(in: attributes)
+        case "rFonts" where !inStyle && trackedChangeDepth == 0 && Self.isDocumentDefaultRunProperty(elementStack):
+            // The font of all text that no style or run names another for
+            styles.documentDefaultsFont = DOCXRunFonts.name(in: attributes)
         case "pageBreakBefore" where inStyle && trackedChangeDepth == 0:
             // The style's paragraphs begin a page (PG07), unless turned off
             currentPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
@@ -246,6 +303,7 @@ class DOCXStylesParser: DOCXSAXParser {
                 basedOn: currentBasedOn,
                 ownPageBreakBefore: currentPageBreakBefore,
                 ownHidden: currentHidden,
+                ownFont: currentFont,
                 type: currentStyleType
             )
 
@@ -438,5 +496,43 @@ enum DOCXHiding {
         if let paragraph { hidden = paragraph }
         if character == true { hidden.toggle() }
         return hidden
+    }
+}
+
+// MARK: - Fonts
+
+/// SAX parser for word/fontTable.xml: the character set each font declares
+/// (`w:charset`), which says whether a code of the font is a picture's or a
+/// character of a code page (`WordSymbolFontEncodings`).
+class DOCXFontTableParser: DOCXSAXParser {
+    private var fonts = WordXMLFonts()
+    /// The name of the font being read (`w:font`), nil outside one.
+    private var currentFont: String?
+
+    /// Read every font's declared character set.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   truncated or not well-formed (the caller reads the symbols without
+    ///   the sets then).
+    func parse() throws -> WordXMLFonts {
+        try parseDocument()
+        return fonts
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        switch ParserUtilities.stripNamespacePrefix(elementName) {
+        case "font":
+            currentFont = attributes["w:name"]
+        case "charset":
+            if let currentFont { fonts.declare(font: currentFont, characterSet: attributes["w:val"]) }
+        default:
+            break
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        if ParserUtilities.stripNamespacePrefix(elementName) == "font" { currentFont = nil }
     }
 }

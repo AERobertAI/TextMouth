@@ -67,19 +67,21 @@ extension XCTestCase {
 
     /// The package at a new `.docx` file holding the given parts, in a
     /// folder the test removes. `document` is required; the others are left
-    /// out of the package when nil.
+    /// out of the package when nil. `otherParts` are further parts by path.
     func makeDOCXPackage(
         document: String,
         styles: String? = nil,
         numbering: String? = nil,
         footnotes: String? = nil,
-        endnotes: String? = nil
+        endnotes: String? = nil,
+        otherParts: [String: String] = [:]
     ) throws -> URL {
         var parts: [String: Data] = [DOCXParser.Part.document: Data(document.utf8)]
         if let styles { parts[DOCXParser.Part.styles] = Data(styles.utf8) }
         if let numbering { parts[DOCXParser.Part.numbering] = Data(numbering.utf8) }
         if let footnotes { parts[DOCXParser.Part.footnotes] = Data(footnotes.utf8) }
         if let endnotes { parts[DOCXParser.Part.endnotes] = Data(endnotes.utf8) }
+        for (path, text) in otherParts { parts[path] = Data(text.utf8) }
         let zip = try makeTemporaryZip(prefix: "TextMouthDOCXPackage", entries: parts)
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouthDOCXPackage-\(UUID().uuidString)", isDirectory: true)

@@ -40,12 +40,11 @@ struct WordFontTable {
     /// speak (the caller reads a space): the code through the font's own layout. A font not in the table
     /// is read as pictures.
     func symbolScalar(forCode code: Int, inFont font: Int, isPrivateUse: Bool = false) -> Unicode.Scalar? {
-        guard let reading = reading(ofFont: font) else { return nil }
-        // An ordinary font's code is a character of the code page of the font's own character set.
-        let page = WordLegacyCharacters.codePage(ofFontCharacterSet: characterSets[font]).flatMap {
-            WordLegacyCharacters.encoding(named: $0)
-        }
-        return WordSymbolFontEncodings.scalar(forCode: code, reading: reading, codePage: page, isPrivateUse: isPrivateUse)
+        guard names.indices.contains(font), characterSets.indices.contains(font) else { return nil }
+        // The one place a font and a code become a character (`WordSymbolFontEncodings`), shared with the
+        // readers of DOCX and Word 2003 XML.
+        return WordSymbolFontEncodings.scalar(
+            forCode: code, inFontNamed: names[font], characterSet: characterSets[font], isPrivateUse: isPrivateUse)
     }
 
     // MARK: Reading
