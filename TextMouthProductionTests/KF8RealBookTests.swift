@@ -111,13 +111,15 @@ final class KF8RealBookTests: XCTestCase {
         // The same headings at the same levels as that EPUB's.
         XCTAssertEqual(headings(chapters), [
             "2: The Project Gutenberg eBook of The Yellow Wallpaper", "1: The Yellow Wallpaper",
-            "2: By Charlotte Perkins Gilman", "1: THE FULL PROJECT GUTENBERG™ LICENSE",
-            "2: THE FULL PROJECT GUTENBERG™ LICENSE",
+            "2: By Charlotte Perkins Gilman", "2: THE FULL PROJECT GUTENBERG™ LICENSE",
         ])
         // calibre cut the EPUB's two documents into four, and added a contents page at the end that is not read.
+        // The piece of the license that opens with no heading goes on with the license before it, so the
+        // license is one section, with no heading made from the title calibre gave the piece (the EPUB reader,
+        // which reads each document whole, has the license twice).
         XCTAssertEqual(chapters.map(\.title), [
             "The Project Gutenberg eBook of The Yellow Wallpaper", "By Charlotte Perkins Gilman",
-            "THE FULL PROJECT GUTENBERG™ LICENSE", "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "THE FULL PROJECT GUTENBERG™ LICENSE",
         ])
         XCTAssertFalse(chapters.contains { $0.title == "Table of Contents" })
     }

@@ -359,6 +359,29 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.text), ["Real heading"])
     }
 
+    /// An EPUB 3 navigation document in the spine, whose only headings are in its lists (so the duplicate-navigation
+    /// rule cannot strip it by the headings outside): calibre writes its lists' `epub:type` as a bare `type`, and the
+    /// book must read as the same book with the prefix, whose page list and landmarks are never read aloud.
+    func testANavigationDocumentReadsAsItDoesWithTheEPUBTypePrefixCalibreStrips() throws {
+        func book(typeAttribute: String) throws -> MOBIParser.PreparedBook {
+            let navigation = "<nav \(typeAttribute)=\"toc\"><h1>Contents</h1><ol><li><a href=\"#x\">Entry one</a></li></ol></nav>"
+                + "<nav \(typeAttribute)=\"page-list\"><h2>Pages</h2><ol><li><a href=\"#x\">Page label</a></li></ol></nav>"
+                + "<nav \(typeAttribute)=\"landmarks\"><h2>Guide</h2><ol><li><a href=\"#x\">Begin Reading</a></li></ol></nav>"
+            return try prepared(KF8Fixture(documents: [
+                document(title: "Navigation", body: navigation),
+                document(title: "Chapter", body: "<h1>Chapter One</h1><p>Real words.</p>"),
+            ]))
+        }
+        let stripped = try book(typeAttribute: "type")
+        let prefixed = try book(typeAttribute: "epub:type")
+        XCTAssertEqual(words(stripped), words(prefixed))
+        XCTAssertEqual(stripped.chapters.map(\.chapter.title), prefixed.chapters.map(\.chapter.title))
+        XCTAssertEqual(stripped.chapters.flatMap { $0.chapter.headings.map(\.text) }, prefixed.chapters.flatMap { $0.chapter.headings.map(\.text) })
+        for unread in ["Page label", "Begin Reading"] {
+            XCTAssertFalse(words(stripped).joined(separator: " ").contains(unread), "\(unread) is read aloud")
+        }
+    }
+
     func testOnlyAWholeTypeAttributeOfThoseNamesIsPutBack() throws {
         let html = try opened(KF8Fixture(
             body: "<span data-type=\"pagebreak\">a</span><p xtype=\"toc\">b</p><ol type=\"1\"><li>c</li></ol>"
@@ -392,22 +415,41 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertEqual(words(book).joined(separator: " "), "First Alpha one. Alpha two. Second Beta. Beta two.")
     }
 
-    func testAPieceIsNotAContinuationWhenItIsNamedOpensWithAHeadingOrHasAnotherTitle() throws {
+    func testAPieceIsNotAContinuationWhenItIsNamedOrOpensWithAHeading() throws {
         // Named by the contents.
         var named = try pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"])
         named.entries = [KF8Fixture.Entry(label: "First", document: 0), KF8Fixture.Entry(label: "Second part", document: 1)]
         XCTAssertEqual(try prepared(named).chapters.count, 2)
         // Opens with a heading.
         XCTAssertEqual(try prepared(pieces(["<h1>First</h1><p>One.</p>", "<h3>Heading</h3><p>Two.</p>"])).chapters.count, 2)
-        // Another title.
-        XCTAssertEqual(
-            try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"])).chapters.count, 2)
-        // No title at all in either.
+        // The book's first piece has no chapter before it, with a heading or not.
+        let headless = try prepared(pieces(["<p>One.</p>", "<p>Two.</p>"]))
+        XCTAssertEqual(headless.chapters.count, 1)
+        XCTAssertEqual(words(headless), ["One.", "Two."])
+    }
+
+    /// A piece that opens with no heading and that nothing names goes on with the chapter before it, whatever
+    /// its <title> is: calibre gives the piece the title of the file it was cut from, which is often the next
+    /// chapter's. (The Pride and Prejudice case: the words that end chapter X, titled "CHAPTER XI".)
+    func testAPieceWithNoHeadingGoesOnWithTheChapterBeforeWhateverItsTitleSays() throws {
+        let book = try prepared(pieces([
+            "<h1>CHAPTER X</h1><p>Words of ten.</p>",
+            "<p>The words that end chapter ten.</p>",
+            "<h1>CHAPTER XI</h1><p>Words of eleven.</p>",
+        ], titles: ["CHAPTER X", "CHAPTER XI", "CHAPTER XI"]))
+        XCTAssertEqual(book.chapters.count, 2)
+        XCTAssertEqual(book.chapters.flatMap { $0.chapter.headings.map(\.text) }, ["CHAPTER X", "CHAPTER XI"], "exactly two headings")
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["CHAPTER X", "CHAPTER XI"])
+        XCTAssertTrue(book.chapters[0].chapter.text.contains("The words that end chapter ten."), "read under CHAPTER X")
+        XCTAssertFalse(book.chapters[1].chapter.text.contains("The words that end chapter ten."))
+        // Whatever the titles are, or if there are none.
         let untitled = KF8Fixture(documents: [
             KF8Fixture.Document(html: "<html><head></head><body><h1>First</h1><p>One.</p></body></html>", cutting: ["<h1>First</h1><p>One.</p>"]),
             KF8Fixture.Document(html: "<html><head></head><body><p>Two.</p></body></html>", cutting: ["<p>Two.</p>"]),
         ])
-        XCTAssertEqual(try prepared(untitled).chapters.count, 2)
+        XCTAssertEqual(try prepared(untitled).chapters.count, 1)
+        XCTAssertEqual(
+            try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"])).chapters.count, 1)
     }
 
     func testACutInTheMiddleOfAParagraphJoinsWithNoBreakAndOtherCutsBreakTheParagraph() throws {
@@ -431,13 +473,15 @@ final class KF8ReviewFixTests: XCTestCase {
     }
 
     func testAnUntitledChapterIsNumberedByItsDocumentAndUnknownIsNoHeading() throws {
-        // The first document is a cover with no words, so the second is the book's second document.
-        let bodies = ["<img alt=\"\"/>", "<p>Words one.</p>", "<p>Words two.</p>"]
+        // The first document is a cover with no words, so the second is the book's first with words (it stands
+        // alone, and is not a continuation of the cover); the third opens with a heading.
+        let bodies = ["<img alt=\"\"/>", "<p>Words one.</p>", "<h2>Heading two</h2><p>Words two.</p>"]
         let fixture = KF8Fixture(documents: try bodies.enumerated().map { index, body in
-            try document(title: ["Cover", "Fixture KF8 Book", "Unknown"][index], body: body)
+            try document(title: ["Cover", "Unknown", "Fixture KF8 Book"][index], body: body)
         })
         let book = try prepared(fixture)
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 2", "Chapter 3"])
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 2", "Heading two"])
+        XCTAssertEqual(book.chapters[0].chapter.headings.map(\.text), ["Chapter 2"], "\"Unknown\" is not made a heading")
     }
 
     // MARK: - S5: a contents or guide that does not read
