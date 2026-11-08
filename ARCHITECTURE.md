@@ -26,7 +26,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
 - [Saving failures](docs/architecture/state/saving-failures.md)
-- [Imports](docs/architecture/state/imports.md)
+- [Imports](docs/architecture/state/imports.md) (including the Kindle readers: MOBIBook, KF8Layout and KF8Book for MOBI 6 and KF8, and the KFX files)
 - [Feeds](docs/architecture/state/feeds.md)
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)

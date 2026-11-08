@@ -11,7 +11,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 ## For people using TextMouth
 
 - [Changelog](docs/user/changelog.md): every version of TextMouth, newest first, and what changed for you in each.
-- [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
+- [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays, among them Kindle books in MOBI, KF8 (.azw3), and KFX.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, which orders, titles, groups, and paces a ZIP or folder of audio tracks, and Edit Manifest, which changes it after import.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder… for DAISY books and folders of tracks, New from Text.
 - [The Library window](docs/user/library-window.md): the View pop-up and the views you arrange and make, folders, sorting, searching, and the commands on books.
