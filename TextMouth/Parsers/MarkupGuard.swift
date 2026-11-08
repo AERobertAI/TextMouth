@@ -253,6 +253,9 @@ enum MarkupGuard {
             bytes /= 4
             bytes -= bytes % (1 << 20)
         }
+        // The thread was handed `job` as an address that holds no reference,
+        // so the job is kept alive here, explicitly, until the join above.
+        withExtendedLifetime(job) {}
         // A thread that ran has set `outcome`; if none could be made, the body runs here.
         return try (outcome ?? Result { try body() }).get()
     }
