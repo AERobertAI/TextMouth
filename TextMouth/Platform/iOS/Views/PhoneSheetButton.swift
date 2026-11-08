@@ -4,15 +4,20 @@ import SwiftUI
 /// the placement is decided, so changing it back is one line.
 ///
 /// **Why not `.cancellationAction` and `.confirmationAction`.** In the iOS
-/// simulator's tests (iPhone 17, iOS 26), the buttons of those two placements
-/// were the only toolbar buttons the tests did not find under their words:
-/// Book Information's and the choice sheet's Cancel were missed, where Go To's
-/// Cancel in `.topBarTrailing` was found. iOS 26 draws those two placements
-/// itself, in its own glass style, and the tests did not find the word
-/// "Cancel" in the tree. What the tree showed in its place is
-/// **RECORDED BELOW** by `ToolbarPlacementProbeUITests`, which sets
-/// `PhoneSheetButtonPlacement.probeVariable` so that this file uses
-/// `.cancellationAction` again and the test reads the bar.
+/// simulator's tests (iPhone 17, iOS 26), Book Information's and the choice
+/// sheet's Cancel were reported missing, where Go To's Cancel, in
+/// `.topBarTrailing`, was found. `ToolbarPlacementProbeUITests` put every
+/// button back in `.cancellationAction` (the probe variable below) and read
+/// the sheet's tree on November 8, 2026. **What it showed:** the buttons are
+/// there, as ordinary buttons labeled "Cancel" and "Save" (the labels this
+/// file gives; the probe did not try them without), with no identifier, drawn
+/// as text pills (66 and 51 points wide, 36 tall) and not as an xmark, and not
+/// "Close". **What was wrong was their place in the order:** they come
+/// *before* the title, in the tree as in the bar ("Cancel, Save, Book
+/// Information"), because those placements are the bar's leading side. The
+/// spec's order is the title, then Cancel, then the confirm button, and the
+/// tests read a sheet from its title on, so they found no Cancel after it.
+/// `.topBarTrailing` puts the title first, as the other sheets already did.
 ///
 /// Every sheet's buttons are trailing, in the order the spec gives after the
 /// title: Cancel (or Close, or Done), then the confirming button. Each is
