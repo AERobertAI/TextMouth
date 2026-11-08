@@ -111,7 +111,6 @@ enum KF8Book {
         sections.reserveCapacity(layout.parts.count)
         // The SVG flows already put back; each is put back once.
         var inlinedFlows: Set<Int> = []
-        var previousTitle: String?
         var previousEndsMidParagraph = false
         var anyWords = false
         for (index, part) in layout.parts.enumerated() {
@@ -123,14 +122,18 @@ enum KF8Book {
                 continue
             }
             let markup = rewritingTags(in: joined, layout: layout, text: text, inlinedFlows: &inlinedFlows)
+            // Whether a piece with words came before this one: a chapter for this piece to go on with.
+            let hasChapterBefore = anyWords
             anyWords = anyWords || MOBIMarkup.hasWords(markup)
 
-            // A document of the EPUB that calibre cut into pieces: a piece that no contents entry names,
-            // that opens with no heading, and whose <title> is the piece before it's, goes on with
-            // that piece's chapter (the headings and words are the document's own).
+            // A document of the EPUB that calibre cut into pieces: a piece that no contents entry names and
+            // that opens with no heading of its own goes on with the chapter before it, whatever its <title>
+            // says (calibre gives such a piece the title of the file it was cut from, often the next
+            // chapter's, so a title is never made a heading for it). Only the book's first piece with words,
+            // which has no chapter before it (a cover of pictures does not count), stands alone.
             let rawTitle = rawDocumentTitle(in: text[part.skeleton], encoding: headers.encoding)
             let start = documentOpening(of: markup)
-            let continues = titles[index] == nil && !start.hasHeading && rawTitle != nil && rawTitle == previousTitle
+            let continues = titles[index] == nil && !start.hasHeading && hasChapterBefore
             sections.append(MOBIBook.Section(
                 title: titles[index] ?? displayTitle(of: rawTitle, differentFrom: bookTitle),
                 html: MOBIMarkup.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
@@ -140,7 +143,6 @@ enum KF8Book {
                 continuesPrevious: continues,
                 joinsParagraph: continues && previousEndsMidParagraph && start.hasSplitMarker
             ))
-            previousTitle = rawTitle
             previousEndsMidParagraph = endsMidParagraph(markup)
         }
         guard anyWords else { throw FileImportError.noTextToRead }
