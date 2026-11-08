@@ -60,6 +60,12 @@ struct PhoneReaderView: View {
             } message: { bookmark in
                 Text(bookmark.label)
             }
+            // The Mac's error alert.
+            .modifier(PhoneReaderErrorAlert(
+                alert: session.snapshot?.errorAlert,
+                reader: session.reader,
+                closed: errorAlertClosed
+            ))
             // Once per arrival, never per book: the next book keeps the
             // screen, and focus stays where the listener put it.
             .task {
@@ -258,17 +264,33 @@ struct PhoneReaderView: View {
     }
 
     /// A sheet closed: the text follows a jump made in it, and focus returns
-    /// to the control that opened it, after 0.35 seconds, by a layout change
-    /// with that control as its argument. Sheets don't return focus by
-    /// themselves.
+    /// to the control that opened it.
     private func sheetClosed() {
         model.invalidate()
         model.placeDidMove?()
         guard let kind = sheetOpener?.focusKind else { return }
         sheetOpener = nil
+        returnFocus(to: kind)
+    }
+
+    /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
+    /// change with that control as its argument. Sheets and alerts don't
+    /// return focus by themselves. `unless` is asked then, and a true answer
+    /// leaves focus where it is.
+    private func returnFocus(to kind: PhoneControlKind, unless skip: @escaping @MainActor () -> Bool = { false }) {
         DispatchQueue.main.asyncAfter(deadline: .now() + PhoneFocusPolicy.screenChangedDelay) {
+            guard !skip() else { return }
             guard let view = PhoneFocusRegistry.shared.view(for: kind) else { return }
             UIAccessibility.post(notification: .layoutChanged, argument: view)
+        }
+    }
+
+    /// The error alert closed: focus returns to Play unless a retry that
+    /// failed again has presented a fresh alert, which VoiceOver is on
+    /// (`PhoneErrorAlertPlan.returnsFocusToPlay`).
+    private func errorAlertClosed() {
+        returnFocus(to: .play) { [session] in
+            !PhoneErrorAlertPlan.returnsFocusToPlay(errorAlertNow: session.snapshot?.errorAlert)
         }
     }
 
