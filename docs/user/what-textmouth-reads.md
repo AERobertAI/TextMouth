@@ -199,8 +199,9 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 ### Kindle books in the MOBI format
 
 - TextMouth reads Kindle books in the MOBI format (.mobi, .prc, and .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
-- It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8, and the MOBI 6 part of a book that holds both, as many .mobi files made for the Kindle do.
-- A book only in the newer KF8 format, as an .azw3 is, is refused for now.
+- It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8.
+- It also reads the newer format, KF8, which is what an .azw3 is (see Kindle books in the KF8 format, below).
+- The Library window names all of them "Kindle Book (MOBI)".
 - A copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](adding-books.md) for the sentences).
 
 #### MOBI chapters
@@ -227,6 +228,43 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 - A PalmDOC book (.prc), the plain-text Palm format that MOBI grew from, is read as paragraphs of text in Windows-1252, unless its text is HTML, as an early Mobipocket book's is.
 - A PalmDOC book whose text is HTML is read like any other Kindle book, so its markup is never spoken.
+
+### Kindle books in the KF8 format
+
+- TextMouth reads Kindle books in the KF8 format (.azw3, and a KF8 book named .mobi or .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
+- The book's own headers decide the format, never its name.
+- A KF8 book is made of the web pages of an EPUB, so it is read like one: a chapter for each page, with the headings the book's contents names.
+- A copy-protected book is refused, never read (see [Adding books](adding-books.md) for the sentences).
+
+#### Hybrid Kindle books
+
+- Many .mobi files made for the Kindle hold a book twice: in MOBI 6, and in KF8.
+- TextMouth reads such a file from its KF8 half, which keeps the book's structure and the levels its author gave the headings.
+- The MOBI 6 half of such a file puts every heading at level 1 when calibre made it, and has no pages.
+- When the KF8 half can't be read, for any reason except copy protection, TextMouth reads the MOBI 6 half instead.
+- Copy protection is checked in both halves, so a book that is protected in either is refused.
+
+#### KF8 chapters
+
+- Chapters come from the book's own pages: each page that holds words is a chapter.
+- An entry in the book's table of contents that names a whole page titles that chapter.
+- An entry that names a place inside a page is a heading there, at the level the book gives it, and in at most six levels.
+- A chapter with no entry is titled by the title in its page's head, unless that repeats the book's own title, and otherwise "Chapter" and its number.
+- A piece of a KF8 book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it, whatever its title says. No heading is ever made from a page's title.
+- Tools such as calibre cut a long chapter into several pieces, and this rule puts the pieces back together. A paragraph that was cut in two is read as one paragraph.
+- A page of links that a converter added to the end of a book, headed "Table of Contents", is left out, so it is not read aloud at the end. A last page that an author wrote, with words of its own, is always read.
+- A contents or a guide that is damaged is left out, and the book is read without it.
+
+#### KF8 text and emphasis
+
+- The title, author, and language come from the book's own record of them, and a hybrid file is named from the half that is read.
+- Bold and italic text keeps its emphasis, and lists and tables are read as in the other text formats.
+- A picture's description, when it has one, is read like the words around it, and a picture without one is silent.
+- The words in a picture drawn as SVG, which the Kindle's tools keep apart from the page, are read once, where the picture stood.
+- Soft hyphens are left out of the text and of the headings.
+- Lists of links that only help a person move through the book (its page list, its landmarks, and its contents) are not read aloud.
+- Links are kept as written and never read aloud, and pictures, fonts, and style sheets are not read.
+- A book with no text to read, such as one made only of pictures, is refused with "This file has no text to read."
 
 ### Kindle books in the KFX format
 
@@ -590,6 +628,12 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Kindle books in the MOBI format have no pages.
 - The Kindle keeps a book's page numbers in a separate .apnx file beside it, which TextMouth does not read yet.
 
+#### Pages in KF8 books
+
+- In Kindle books in the KF8 format, pages are the page breaks the book kept from the EPUB it was made from, when it has them.
+- KF8 keeps no page list, so a book that has page breaks in its text has pages, and one without them has none.
+- A book that holds both MOBI 6 and KF8 has pages from its KF8 half only.
+
 #### Pages in KFX books
 
 - In Kindle books in the KFX format, pages are the book's print page list, when it has one and a person made it.
@@ -602,6 +646,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 ### The 64 MB limit
 
 - A rich text, Word 97-2003, OpenDocument, or Word 2003 XML document, a web archive, an SSML file, a DTBook on its own, or a Kindle book that holds more than 64 MB is refused, since that is the most TextMouth reads from one document.
+- For a Kindle book the limit is on its text. A hybrid file that holds its pictures twice can be larger than 64 MB, and is read, up to 512 MB in all.
 - For an .rtfd the limit is on its text file, TXT.rtf, alone: the attachments are not read, and do not count toward it.
 
 ### How the Library window names a format
@@ -612,7 +657,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   - "Word 97-2003 Document" for a .doc or .dot.
   - "OpenDocument Text" for an .odt or .ott.
   - "Word 2003 XML", "Web Archive", and "SSML" for those formats.
-  - "Kindle Book (MOBI)" for a .mobi, .prc, or .azw.
+  - "Kindle Book (MOBI)" for a .mobi, .prc, .azw, or .azw3.
   - "Kindle Book (KFX)" for a .kfx, .kfx-zip, or .azw8.
   - "Braille" for a BRF, BRL, or PEF.
 - A Word template or macro document says "Word Document", and a DTBook says "DAISY".
