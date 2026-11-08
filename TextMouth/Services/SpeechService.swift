@@ -321,15 +321,22 @@ enum DirectSpeechFadePlanner {
 /// competing with the chapter Play waits for, and lets a render that went
 /// stale, or is too long, be refused before it starts.
 ///
-/// Overlapping writes are not unsafe in themselves, though this comment once
-/// called write() a shared resource whose calls must never overlap (July 12,
-/// 2026, with nothing recorded to show it). Measured on November 7, 2026:
-/// two and three writes at once, in one voice (Samantha) and in two
-/// (Samantha and the Eloquence voice Eddy), each wrote the very samples it
-/// wrote alone, digest for digest; the outside review saw the same in Flo.
-/// So the speech export (FMT43), whose writes run for hours, writes beside
-/// the reader's renders, through synthesizers of its own, and never waits
-/// here. Premium and neural voices are unmeasured.
+/// Overlapping writes don't change what each one writes. Measured on
+/// November 7, 2026: two and three writes at once, in one voice (Samantha)
+/// and in two (Samantha and the Eloquence voice Eddy), each wrote the very
+/// samples it wrote alone, digest for digest; the outside review saw the
+/// same in Flo. So the speech export (FMT43), whose writes run for hours,
+/// writes beside the reader's renders, through synthesizers of its own, and
+/// never waits here.
+///
+/// Not measured: a write beside the reader speaking aloud in direct mode.
+/// On March 23, 2026 (62fc142e) a background write of a very long chapter
+/// made direct mode's speak() loop back to text it had already spoken at a
+/// chunk's change, about 30 seconds in, which is why a text over
+/// `maximumTextLength` is never rendered; and on July 12 (5ca5535f) this
+/// comment called write() a shared resource whose calls must never overlap.
+/// Whether an export's writes bring that looping back is still open, as are
+/// premium and neural voices.
 ///
 /// It holds its serial queue and, under a lock, the voices it has warmed up,
 /// so the compiler checks that it is `Sendable`; state added later needs a
