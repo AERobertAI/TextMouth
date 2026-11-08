@@ -157,6 +157,33 @@ The iPhone app is tested in two places: on the Mac's test host, for everything t
 - To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, and `run_locked.py`. A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle. The repository does not record the exact command line the iPhone team used.
 - At the last pass on November 8, 2026, 16 of 16 unit tests passed, and 8 of 18 UI tests. See the open findings below.
 
+### The audit and its accepted findings
+
+- Each UI test that audits runs Apple's accessibility audit on the screen showing, `performAccessibilityAudit(for: .all)`, and fails once with every finding that is not accepted. Each finding is listed with its type, its element, and Apple's words, so one run shows them all. A screenshot of the audited screen is kept with the results.
+- On iOS the audit only inspects. The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
+- A finding is accepted only when it is about a part iOS draws, which the app cannot change. It is matched by the audit's type and the element's exact label, and it is kept with the results, with its reason. Only three kinds are accepted.
+  - **The search field.** The audit's clipped-text finding on "Search books" is accepted because the system's search field clips its placeholder at the largest text sizes, and VoiceOver and braille read it whole.
+  - **A bar item.** The Dynamic Type finding on a button in the bar at the bottom ("Settings", "Add to Library") is accepted because iOS does not grow bar items with Dynamic Type, and shows them in the Large Content Viewer instead.
+  - **A navigation title.** The clipped-text finding on a screen's title is accepted because iOS truncates a long title at large sizes, and VoiceOver and braille read it whole. It is accepted for the reader (the book's title) and the sheets: Add to Library, Settings, Bookmarks, Headings, Go To, Sleep Timer, "Voice & Speed for This Book", Book Information, and "Navigation unit".
+- Any other finding fails its test. To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
+
+#### The findings still open
+
+These are not accepted. They are what the last pass on November 8, 2026 found, and the next round of the iPhone interface fixes them.
+
+- **The audits, by screen:**
+  - Settings: 14 findings (10 of contrast, 4 of Dynamic Type), mostly its secondary descriptions.
+  - Headings: 23 findings (22 of contrast).
+  - Go To: 6 findings, including 1 of element detection, the one to look at first, and 2 of clipped text.
+  - Add to Library: 5 findings.
+  - Sleep Timer: 4 findings.
+  - Bookmarks: 2 findings.
+  - The Library with a book: 1 finding, its summary's Dynamic Type, "partially unsupported". Nothing in the code caps its size, so the cause needs a look at the largest text sizes.
+- **Book Information and the navigation unit's choice** show no Cancel where the spec puts one.
+- **The Voice sheet** never showed "Speed" in the test.
+- **Back from the reader** once failed to find a bar identified "Library", though the Library's rows appeared. It passed in the next pass, and the test now prints what it finds.
+- Apple's audit says iOS's secondary gray only nearly passes contrast. The Library's text is full contrast now; Settings and the sheets are not yet. Whether all the phone's text should be full contrast is a question to the user.
+
 ## The performance baselines
 
 PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
