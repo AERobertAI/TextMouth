@@ -147,7 +147,7 @@ final class PhoneAudioSession {
         ))
         // Each publisher tells as its value is about to change, so the commands
         // are read a turn later, on the main queue, when the change is in.
-        let units = Publishers.Merge(
+        let units = Publishers.Merge3(
             reader.$book.map { _ in () },
             reader.settingsViewModel.objectWillChange.map { _ in () },
             // Settings keeps each kind's unit in the preferences, not in the
