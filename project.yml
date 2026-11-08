@@ -48,7 +48,7 @@ settings:
 # MARKETING_VERSION line, and the Mac app and the iOS app share it.
 settingGroups:
   appVersion:
-    MARKETING_VERSION: "0.4.0"
+    MARKETING_VERSION: "0.4.1"
     CURRENT_PROJECT_VERSION: "1"
 
 # The two C libraries both apps link, each defined once and built for each
@@ -287,6 +287,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
+        # The document types "Open in TextMouth" offers, which Xcode merges
+        # into the plist it generates. Derived from the Mac's plist by
+        # Scripts/ios/sync-info-plist.py, and checked by IOSInfoPlistTests.
+        INFOPLIST_FILE: TextMouth/Platform/iOS/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: TextMouth
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true

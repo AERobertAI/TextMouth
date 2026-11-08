@@ -218,13 +218,14 @@ enum TextPipelineFixtures {
             heldBack[name] = "read by name in DOCXRealFileTests instead of a golden"
         }
         for name in wordFollowUpSamples {
-            heldBack[name] = "pinned by WordDocumentReaderTests and compared with textutil's reading in WordDocumentComparisonTests instead of a golden"
+            heldBack[name] = "pinned by WordDocumentReaderTests and WordDocumentLegacyTests and compared with textutil's reading in WordDocumentComparisonTests (Word 97-2003) or WordDocumentLegacyComparisonTests (Word 6 and Word 95) instead of a golden"
         }
         return heldBack
     }()
 
     /// The Word 97-2003 samples added with the reader's follow-ups; see `formatSamplesHeldBack`.
     private static let wordFollowUpSamples = [
+        "format-samples/doc/libreoffice-tdf150197_anlv2ListFormat.doc",
         "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
         "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf112535.doc",

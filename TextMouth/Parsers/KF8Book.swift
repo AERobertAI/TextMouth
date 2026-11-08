@@ -1,5 +1,4 @@
 import Foundation
-import SwiftSoup
 
 /// A KF8 book's text cut into the sections the shared reading path turns
 /// into chapters: one for each XHTML document the book was made from, as
@@ -118,7 +117,6 @@ enum KF8Book {
             // A very large book is cancelled between its documents.
             try checkCancellation()
             let joined = try layout.markup(of: part, in: text, anchors: anchors)
-            try MOBIMarkup.requireShallowNesting(of: joined)
             if index == contentsPageCandidate,
                isGeneratedContents(joined, labels: contents.labels, encoding: headers.encoding) {
                 continue

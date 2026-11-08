@@ -180,13 +180,16 @@ struct DAISYArchiveLeftovers: Equatable {
 
 /// The files a SMIL document's text elements name, which tell whether a
 /// DAISY book has text of its own beyond its navigation.
-private final class SMILTextSources: NSObject, XMLParserDelegate {
+final class SMILTextSources: NSObject, XMLParserDelegate {
     /// The `src` of each text element read, fragments included.
     private var sources: [String] = []
 
     /// The `src` of each text element in `data`, in order, up to the point
     /// a damaged document stops the read; the sources found stand.
     static func scan(_ data: Data) -> [String] {
+        // A SMIL file with a tag the parser would take too long over names no source
+        // (`XMLInputGuard`).
+        guard XMLInputGuard.problem(with: data) == nil else { return [] }
         let scanner = SMILTextSources()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false

@@ -199,6 +199,9 @@ enum TextutilSourceCheck {
               let manifest = try? ArchiveEntryReader.read(entry, in: archive, limit: DocumentByteLimit.current).data
         else { return false }
 
+        // A manifest that the parser would take too long over (`XMLInputGuard`)
+        // is not read, and is taken for one with no encryption data.
+        guard XMLInputGuard.problem(with: manifest) == nil else { return false }
         let finder = EncryptionDataFinder()
         let parser = XMLParser(data: manifest)
         parser.delegate = finder

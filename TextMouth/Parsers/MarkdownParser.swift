@@ -270,7 +270,7 @@ private struct PlainTextExtractor: MarkupWalker {
     /// always has. So does any HTML block inside such a rest
     /// (`isReadingRestOfMarkerLine`): the re-parsing goes one level deep.
     mutating func visitHTMLBlock(_ html: HTMLBlock) {
-        if !isReadingRestOfMarkerLine, let (markers, rest) = Self.leadingMarkers(of: html.rawHTML) {
+        if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: html.rawHTML) {
             if includeNavigationHeadings {
                 for marker in markers { record(marker) }
             }
@@ -279,28 +279,14 @@ private struct PlainTextExtractor: MarkupWalker {
             isReadingRestOfMarkerLine = true
             descendInto(Document(parsing: String(rest)))
             isReadingRestOfMarkerLine = false
-        } else if includeNavigationHeadings, let marker = Self.marker(in: html.rawHTML) {
+        } else if includeNavigationHeadings, let marker = MarkdownMarker.decode(html.rawHTML) {
             record(marker)
         }
     }
 
-    /// A navigation marker of ours: a heading annotation or a page marker.
-    private enum Marker {
-        case heading(MarkdownHeadingAnnotation)
-        case page(MarkdownPageMarker)
-    }
-
-    /// The marker a complete comment holds, or nil for any other text.
-    private static func marker(in comment: String) -> Marker? {
-        if let annotation = MarkdownHeadingAnnotation.decode(comment) {
-            return .heading(annotation)
-        }
-        return MarkdownPageMarker.decode(comment).map(Marker.page)
-    }
-
     /// Note `marker` at the current place in the reading. It names the same
     /// place as the block after it (PG01), so the block boundary comes first.
-    private mutating func record(_ marker: Marker) {
+    private mutating func record(_ marker: MarkdownMarker) {
         separateBlock()
         switch marker {
         case .heading(let annotation):
@@ -308,31 +294,6 @@ private struct PlainTextExtractor: MarkupWalker {
         case .page(let page):
             pages.append((page.label, utf16Length))
         }
-    }
-
-    /// The markers of ours that an HTML block begins with, in order, and the
-    /// Markdown after them (ST05); nil unless at least one marker is followed
-    /// by something other than whitespace. A marker is a comment from `<!--`
-    /// to its first `-->`; markers are separated only by spaces or tabs, and
-    /// the block may be indented up to three spaces, as CommonMark allows.
-    /// The markers are peeled in a loop, never by recursion, so a line of ten
-    /// thousand of them cannot deepen the stack.
-    private static func leadingMarkers(of rawHTML: String) -> (markers: [Marker], rest: Substring)? {
-        var rest = Substring(rawHTML)
-        // At most three leading spaces precede an HTML block's first character.
-        var indent = 0
-        while indent < 3, rest.first == " " {
-            rest = rest.dropFirst()
-            indent += 1
-        }
-        var markers: [Marker] = []
-        while rest.hasPrefix("<!--"), let close = rest.firstRange(of: "-->"),
-              let found = marker(in: String(rest[..<close.upperBound])) {
-            markers.append(found)
-            rest = rest[close.upperBound...].drop(while: { $0 == " " || $0 == "\t" })
-        }
-        guard !markers.isEmpty, rest.contains(where: { !$0.isWhitespace }) else { return nil }
-        return (markers, rest)
     }
 
     /// Inline anchors and page markers keep their precise location within the

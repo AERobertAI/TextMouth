@@ -28,7 +28,7 @@ struct WordSections {
     /// Reads the PlcfSed at `range` in `table`; the properties of each
     /// section are in the `WordDocument` stream.
     /// - Throws: `OLEDamage` when the table or a section's properties do not fit.
-    init(range: Range<Int>, table: OLEBytes, document: OLEBytes) throws {
+    init(range: Range<Int>, table: OLEBytes, document: OLEBytes, dialect: WordSprm.Dialect = .modern) throws {
         // A PLC of n+1 character positions and n descriptors of 12 bytes.
         let length = range.count
         guard length >= 4, (length - 4) % 16 == 0 else { throw OLEDamage(reason: "the section table is \(length) bytes long") }
@@ -40,7 +40,7 @@ struct WordSections {
             ends[try table.u32(range.lowerBound + (index + 1) * 4)] = index
             // The descriptor: 2 bytes, the offset of the properties, 6 more.
             let propertiesOffset = try table.u32(range.lowerBound + (count + 1) * 4 + index * 12 + 2)
-            beginsOnNewPage.append(try Self.beginsOnNewPage(propertiesAt: propertiesOffset, in: document))
+            beginsOnNewPage.append(try Self.beginsOnNewPage(propertiesAt: propertiesOffset, in: document, dialect: dialect))
         }
         self.sectionEndingBefore = ends
         self.beginsOnNewPage = beginsOnNewPage
@@ -49,12 +49,12 @@ struct WordSections {
     /// Whether the section whose properties are at `offset` in `document`
     /// begins on a new page. A section with no properties (offset
     /// 0xFFFFFFFF) does; so does one that does not say.
-    private static func beginsOnNewPage(propertiesAt offset: Int, in document: OLEBytes) throws -> Bool {
+    private static func beginsOnNewPage(propertiesAt offset: Int, in document: OLEBytes, dialect: WordSprm.Dialect) throws -> Bool {
         guard offset != 0xFFFF_FFFF else { return true }
         // The properties: a 16-bit size and the modifiers.
         let size = try document.u16(offset)
         var kind = 2
-        WordSprm.forEach(in: try document.slice(offset: offset + 2, length: size)) { opcode, operand in
+        WordSprm.forEach(in: try document.slice(offset: offset + 2, length: size), dialect: dialect) { opcode, operand in
             if opcode == WordSprm.sectionBreakKind, let value = operand.first { kind = Int(value) }
         }
         // 0 is continuous and 1 a new column; 2, 3, and 4 are a new page, an

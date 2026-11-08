@@ -403,6 +403,143 @@ final class DOCXMalformedXMLTests: XCTestCase {
         }
     }
 
+    // MARK: - A Tag With Too Many Attributes
+
+    /// The intact package with the first `opening` of `part` replaced by
+    /// `hostile`, in which "MANY" stands for 200,000 attributes (the parser
+    /// takes time that grows with the square of them: 11 to 17 s).
+    private func makeDOCX(replacing part: String, opening: String, with hostile: String) throws -> URL {
+        let text = try XCTUnwrap(Self.intactParts[part], "No fixture part at \(part)")
+        let range = try XCTUnwrap(text.range(of: opening), "\(part) has no \(opening)")
+        let many = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let replaced = text.replacingCharacters(in: range, with: hostile.replacingOccurrences(of: "MANY", with: many))
+        return try makeDOCX(replacing: [part: Data(replaced.utf8)])
+    }
+
+    /// A tag of more than 1,024 attributes (`XMLInputGuard.mostAttributesInATag`,
+    /// 27 times the most in any of 3.98 million real start tags) in any part
+    /// TextMouth reads is refused as damage, naming the part, in a few
+    /// milliseconds: the parser took 11 to 17 seconds over 200,000. A bound of
+    /// five seconds is far above the refusal and far below the parser. The
+    /// core properties never fail an import: they are logged, and the file's
+    /// name is used.
+    func testATagWithTooManyAttributesIsRefusedAsDamageNamingThePart() throws {
+        let cases: [(part: String, opening: String, hostile: String)] = [
+            (DOCXParser.Part.document, "<w:p>", "<w:p MANY>"),
+            (DOCXParser.Part.styles, "<w:style w:type", "<w:style MANY w:type"),
+            (DOCXParser.Part.numbering, "<w:num w:numId", "<w:num MANY w:numId"),
+            (DOCXParser.Part.documentRelationships, "<Relationship Id", "<Relationship MANY Id"),
+            (DOCXParser.Part.coreProperties, "<dc:title>", "<dc:title MANY>"),
+        ]
+        for testCase in cases {
+            let docx = try makeDOCX(replacing: testCase.part, opening: testCase.opening, with: testCase.hostile)
+            let clock = ContinuousClock()
+            let start = clock.now
+            if testCase.part == DOCXParser.Part.coreProperties {
+                // Only `readMetadata` opens the core properties.
+                var reported: [DOCXParserError] = []
+                let metadata = try DOCXParser.readMetadata(from: docx) { reported.append($0) }
+                XCTAssertNil(metadata)
+                guard case .malformedXML(let file, let reason)? = reported.first, reported.count == 1 else {
+                    XCTFail("Expected one report for the core properties, got \(reported)")
+                    continue
+                }
+                XCTAssertEqual(file, testCase.part)
+                XCTAssertEqual(reason, XMLInputGuard.tooManyAttributesProblem)
+            } else {
+                let reason = malformedXMLReason(naming: testCase.part) { try DOCXParser.extractMarkdown(from: docx) }
+                XCTAssertEqual(reason, XMLInputGuard.tooManyAttributesProblem, testCase.part)
+            }
+            XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.part) took too long")
+        }
+    }
+
+    /// The error `DOCXParser.extractMarkdown(from:)` throws for `docx`: a part
+    /// that is not damaged, but that TextMouth will not read, with the part and
+    /// the problem, and the sentence a person hears.
+    private func unsafePart(
+        _ docx: URL, file: StaticString = #filePath, line: UInt = #line
+    ) -> (part: String, problem: XMLInputGuard.Problem, sentence: String)? {
+        do {
+            _ = try DOCXParser.extractMarkdown(from: docx)
+            XCTFail("The document was read", file: file, line: line)
+        } catch let DOCXParserError.unsafeXML(part, problem) {
+            return (part, problem, DOCXParserError.unsafeXML(file: part, problem: problem).localizedDescription)
+        } catch {
+            XCTFail("Another error: \(error)", file: file, line: line)
+        }
+        return nil
+    }
+
+    /// A part with a document type that has definitions of its own, or in an
+    /// encoding the guard cannot see through (UTF-7 here, and its alias
+    /// CSISO2022JP's kin, with a newline around the `=`), is refused as not
+    /// damaged, naming the part, in the sentences of `XMLInputGuard`: a
+    /// declaration skipped to its first `>` hid a hostile tag, which took
+    /// 21.9 s to parse. The sentences say what the matter is and what to do.
+    func testAPartWithOwnDefinitionsOrAStatefulEncodingIsRefusedInItsOwnSentence() throws {
+        let intact = try XCTUnwrap(Self.intactParts[DOCXParser.Part.document])
+        let range = try XCTUnwrap(intact.range(of: "<w:document"))
+        let subset = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document [<!ENTITY e \"x>y<!--\">]><w:document")
+        let docx = try makeDOCX(replacing: [DOCXParser.Part.document: Data(subset.utf8)])
+        let refused = unsafePart(docx)
+        XCTAssertEqual(refused?.part, DOCXParser.Part.document)
+        XCTAssertEqual(refused?.problem, .ownDefinitions)
+        XCTAssertEqual(
+            refused?.sentence,
+            "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it defines "
+                + "entities of its own. Open the document in the program that made it, save it again, then import it again.")
+
+        // The encoding, spelled plainly, as an alias, and with a newline round the equals sign.
+        for (declared, spelling) in [
+            ("UTF-7", "encoding=\"UTF-7\""), ("UNICODE-1-1-UTF-7", "encoding=\"UNICODE-1-1-UTF-7\""),
+            ("CSISO2022JP", "encoding\n=\n'CSISO2022JP'"),
+        ] {
+            let changed = intact.replacingOccurrences(of: "encoding=\"UTF-8\"", with: spelling)
+            XCTAssertNotEqual(changed, intact)
+            let docxChanged = try makeDOCX(replacing: [DOCXParser.Part.document: Data(changed.utf8)])
+            let refusedEncoding = unsafePart(docxChanged)
+            XCTAssertEqual(refusedEncoding?.problem, .encoding(declared), declared)
+            XCTAssertEqual(
+                refusedEncoding?.sentence,
+                "TextMouth can't safely read the file \u{201C}word/document.xml\u{201D} in this document, because it is written "
+                    + "in the \(declared) encoding. Save it as UTF-8, then import it again.")
+        }
+
+        // An external type, which a DTBook or NCX has, is no definition of its own.
+        let external = intact.replacingCharacters(in: range, with: "<!DOCTYPE w:document PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><w:document")
+        let docxExternal = try makeDOCX(replacing: [DOCXParser.Part.document: Data(external.utf8)])
+        XCTAssertNoThrow(try DOCXParser.extractMarkdown(from: docxExternal))
+    }
+
+    /// The refusal reads as the other damage does: it names the part, says
+    /// what is wrong in words a listener can use, and says what to do.
+    func testTheRefusalOfATagWithTooManyAttributesIsInTheSentenceOfAnyDamagedPart() {
+        let error = DOCXParserError.malformedXML(file: "word/document.xml", reason: XMLInputGuard.tooManyAttributesProblem)
+        XCTAssertEqual(
+            error.errorDescription,
+            "The file \u{201C}word/document.xml\u{201D} in this document is damaged or incomplete: "
+                + "it has a tag with too many attributes for TextMouth to read safely. "
+                + "Get a fresh copy of the document, then import it again.")
+    }
+
+    /// A document text whose group holds a picture in one attribute
+    /// (`o:gfxdata`, a base64 ZIP of the shape, as Word writes it for a photo
+    /// in a group): a real SAMHSA postcard has one of 267,106 characters in a
+    /// tag of 267,352 bytes. The attribute is no hazard, whatever its length,
+    /// so the words before and after it are read.
+    func testALongPictureAttributeIsNoHazardAndTheWordsAroundItAreRead() throws {
+        let picture = String(repeating: "UEsDBBQAAAAIAA==", count: 20_000)
+        XCTAssertGreaterThan(picture.utf8.count, 300_000)
+        let body = docxParagraph(docxRun("Before the picture."))
+            + "<w:p><w:r><w:pict><v:group xmlns:o=\"urn:schemas-microsoft-com:office:office\" o:gfxdata=\"\(picture)\"/></w:pict></w:r></w:p>"
+            + docxParagraph(docxRun("After the picture."))
+        let docx = try makeDOCXPackage(document: docxDocumentXML(body))
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false)
+        let heard = try MarkdownDocParser.parseChapter(markdown: markdown).text
+        XCTAssertEqual(heard.split(whereSeparator: \.isWhitespace).joined(separator: " "), "Before the picture. After the picture.")
+    }
+
     /// Markup after the document's root element comes after all of its text,
     /// so every word is kept, exactly as from the intact part, and the damage
     /// is still reported.

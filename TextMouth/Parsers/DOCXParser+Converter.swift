@@ -267,8 +267,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var wasCancelled = false
 
     /// How many elements are read between two looks at whether the import was
-    /// cancelled: a few thousand, which costs nothing measurable.
-    private static let elementsBetweenCancellationChecks = 4_096
+    /// cancelled: a thousand, which costs nothing measurable. Elements of the
+    /// most attributes the guard lets through (1,024 each, 22,865 of them in
+    /// 62 MB) took 8.5 s to read, so 4,096 between looks left Cancel waiting
+    /// 1.5 s; a thousand leaves it under half a second.
+    private static let elementsBetweenCancellationChecks = 1_024
 
     /// The text of a run before a page start inside it.
     private struct RunPiece {
@@ -496,6 +499,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             paragraph.isInHyperlink = true
             paragraph.hyperlinkRelId = attributes["r:id"] ?? ""
             paragraph.linkLine = StyledLine()
+        case "tblStyle" where elementStack.suffix(3) == ["tbl", "tblPr", "tblStyle"] && !tables.isEmpty:
+            // The innermost table's style, which may hide its text (not the
+            // style of a record of a change, which is nested deeper)
+            tables[tables.count - 1].style = attributes["w:val"] ?? ""
         case "tbl":
             // A table may begin a section, and a page pending when an
             // outermost one begins is written before it (PG07)
@@ -1041,23 +1048,24 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runIsHidden || deletionDepth > 0
     }
 
-    /// Settle whether the run being read is hidden, by the toggle rule of
-    /// ECMA-376 17.7.3 for `w:vanish`: the run's own properties, when they
-    /// say anything, decide; otherwise the paragraph style and the character
-    /// style each hide the run or not (each through the styles they are based
-    /// on), and the run is hidden when exactly one of them does, so a hidden
-    /// character style in a hidden paragraph shows the text again. Called at
-    /// the start of the run and again as its style and `w:vanish` are read,
-    /// which come before any of its text.
+    /// Settle whether the run being read is hidden, by its own toggle alone:
+    /// a run's levels (its table style, paragraph style, and character style),
+    /// the document defaults, and its own `w:vanish`, by the rule of
+    /// `DOCXHiding`. A row marked hidden (`w:trPr/w:hidden`) hides nothing of
+    /// its own (the hidden row rule of `DOCXHiding`). Called at the start of the run and again as its style and `w:vanish`
+    /// are read, which come before any of its text.
     private func updateRunHidden() {
-        if let explicit = paragraph.runExplicitlyHidden {
-            paragraph.runIsHidden = explicit
-            return
-        }
-        // A paragraph that names no style takes the default paragraph style.
+        // A paragraph that names no style takes the default paragraph style,
+        // and a table that names none the default table style.
         let paragraphStyle = paragraph.style.isEmpty ? (styles.defaultParagraphStyle ?? "") : paragraph.style
-        let paragraphHides = styles.hiddenParagraphStyles.contains(paragraphStyle)
-        paragraph.runIsHidden = paragraphHides != styles.hiddenCharacterStyles.contains(paragraph.runStyle)
+        let tableStyle = tables.last.map { $0.style.isEmpty ? (styles.defaultTableStyle ?? "") : $0.style } ?? ""
+        paragraph.runIsHidden = DOCXHiding.isHidden(
+            documentDefaults: styles.documentDefaultsHiding,
+            table: styles.tableHiding[tableStyle],
+            paragraph: styles.paragraphHiding[paragraphStyle],
+            character: styles.characterHiding[paragraph.runStyle],
+            direct: paragraph.runExplicitlyHidden
+        )
     }
 
     /// Apply formatting to the run text and append to paragraph
@@ -1203,6 +1211,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var table = ReadTable()
         var row: ReadTable.Row?
         var cell: ReadTable.Cell?
+        /// The table's style (`w:tblStyle`), empty when it names none.
+        var style = ""
     }
 
     /// Start a row in the innermost table, finishing any row left open.
