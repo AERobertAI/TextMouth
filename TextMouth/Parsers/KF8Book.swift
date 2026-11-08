@@ -1,4 +1,5 @@
 import Foundation
+import SwiftSoup
 
 /// A KF8 book's text cut into the sections the shared reading path turns
 /// into chapters: one for each XHTML document the book was made from, as
