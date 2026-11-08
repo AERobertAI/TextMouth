@@ -67,7 +67,10 @@ struct PhoneGoToSheet: View {
     @ViewBuilder
     private func fieldSection(_ field: PhoneGoToField) -> some View {
         Section {
-            TextField(model.label(of: field), text: text(of: field), selection: selection(of: field))
+            // No prompt: a long one ("Percent through the book") was found
+            // clipped at large sizes by the audit, and the name is the
+            // section's heading above and the field's label for VoiceOver.
+            TextField("", text: text(of: field), selection: selection(of: field)) // lint-ok: named by the .accessibilityLabel below
                 .keyboardType(.numbersAndPunctuation)
                 .submitLabel(.go)
                 .autocorrectionDisabled()
@@ -84,10 +87,13 @@ struct PhoneGoToSheet: View {
             PhoneActionButton(title: PhoneGoToVocabulary.jump) { take(field) }
                 .accessibilityLabel(field.jumpLabel)
         } header: {
-            // For sight: VoiceOver hears the name once, as the field's label.
+            // The name, shown and read as a heading: hidden from VoiceOver
+            // while shown, the audit found it "potentially inaccessible
+            // text". The field repeats it as its label, since focus lands in
+            // the field on arrival.
             Text(model.label(of: field))
                 .phoneSecondaryText()
-                .accessibilityHidden(true)
+                .accessibilityAddTraits(.isHeader)
         }
     }
 
