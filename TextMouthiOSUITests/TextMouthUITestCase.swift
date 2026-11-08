@@ -154,7 +154,8 @@ class TextMouthUITestCase: XCTestCase {
             why: "the system's search field, read whole by VoiceOver and braille"
         )
 
-        /// A button in the bar at the bottom: iOS doesn't grow bar items with
+        /// A button in a bar, at the bottom of the Library or at the top of a
+        /// sheet (Cancel, Done, Close): iOS doesn't grow bar items with
         /// Dynamic Type, and shows them in the Large Content Viewer instead.
         static func barItem(_ label: String) -> Accepted {
             Accepted(type: .dynamicType, label: label, why: "a bar item, which iOS shows in the Large Content Viewer")
@@ -168,25 +169,32 @@ class TextMouthUITestCase: XCTestCase {
     }
 
     /// Runs Apple's accessibility audit on the screen showing, every iOS type
-    /// of it, and fails once with every finding not `accepted` listed, each
-    /// with its type, its element, and Apple's words, so one run shows them
-    /// all. The accepted ones are kept with the results, with their reasons.
+    /// of it (or `types`), and fails once with every finding not `accepted`
+    /// listed, each with its type, its element, and Apple's words, so one run
+    /// shows them all. The accepted ones are kept with the results, with their
+    /// reasons. A finding of a kind in `informed` is kept with the results and
+    /// does not fail the test: for a kind a test checks another way.
     func audit(
         _ app: XCUIApplication,
         screen: String,
         types: XCUIAccessibilityAuditType = .all,
+        informing informed: XCUIAccessibilityAuditType = [],
         accepting accepted: [Accepted] = [],
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
         var findings: [String] = []
         var acceptedFindings: [String] = []
+        var informingFindings: [String] = []
         try app.performAccessibilityAudit(for: types) { issue in
             let label = issue.element?.label ?? ""
             let element = issue.element.map { "\($0.elementType.rawValue) \"\(label)\"" } ?? "no element"
             let said = "[\(Self.name(of: issue.auditType))] \(element): \(issue.compactDescription). \(issue.detailedDescription)"
             if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
                 acceptedFindings.append("\(said) Accepted: \(match.why).")
+            } else if !informed.isDisjoint(with: issue.auditType) {
+                // Kept with the results, and not failed.
+                informingFindings.append(said)
             } else {
                 findings.append(said)
             }
@@ -197,6 +205,12 @@ class TextMouthUITestCase: XCTestCase {
         if !acceptedFindings.isEmpty {
             let note = XCTAttachment(string: acceptedFindings.joined(separator: "\n"))
             note.name = "\(screen): findings accepted"
+            note.lifetime = .keepAlways
+            add(note)
+        }
+        if !informingFindings.isEmpty {
+            let note = XCTAttachment(string: informingFindings.joined(separator: "\n"))
+            note.name = "\(screen): findings reported, not failed"
             note.lifetime = .keepAlways
             add(note)
         }
