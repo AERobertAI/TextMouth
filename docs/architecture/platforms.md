@@ -229,3 +229,15 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - `PhoneSession.pauseBookForPreview` gives it both readers, once each. It pauses without the pause sound, since the preview is about to speak.
   - `PhoneSettingsVoicePreview` asks `audioMayStart` first. It pauses the book only at the first of a run of previews, and resumes it once, when the last preview ends, is cancelled, is refused by the speech engine, or is stopped.
   - Settings and the reader's Voice sheet both use it.
+
+## What is left
+
+- These are not done: the rotors on Play, Book content's language, Search in Book, the Files drop folder, sounds, and `PhoneSession.closeBook(id:)`. [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
+- Phase 1 left these places empty or approximate, and the first run has not settled them:
+  - the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
+  - a recording backend, if recording comes to iOS;
+  - a writer for the EPUB metadata, which needs a serializer and a decision on whether to match Foundation's output;
+  - the window passed through shared code, which is nil on iOS, since `PlatformApplication` names no key or main window.
+- The iOS app has a bundle identifier of its own, `com.textmouth.TextMouth.iOS`, so the question phase 0 left open is settled.
+- Everything that sounds or needs VoiceOver can be checked only on a phone, with the spec's hand-check list.
+- A change to shared code has a second check. Compile it for iOS with `make typecheck-ios`, and show it leaves the Mac as it was with `make mac-projection`, besides the hosted test suite, which tests the Mac only. The type-checks do not compile tests (see [Testing TextMouth](../developer/testing.md)).
