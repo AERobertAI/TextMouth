@@ -18,6 +18,11 @@ struct PhoneReaderSnapshot: Equatable, Sendable {
     let isPlaying: Bool
     /// Whether the book is still loading.
     let isLoading: Bool
+    /// The error to show as an alert over the loaded book, the Mac's
+    /// (`ReaderViewModel.errorAlert`), or nil while there is none. So the
+    /// reader's screen redraws as an error comes or goes, never as the place
+    /// moves.
+    let errorAlert: ReaderViewModel.ErrorAlert?
 
     /// What `reader` shows now.
     @MainActor
@@ -26,5 +31,6 @@ struct PhoneReaderSnapshot: Equatable, Sendable {
         title = reader.book.title
         isPlaying = reader.isPlaybackActivelyAdvancing
         isLoading = reader.isLoading
+        errorAlert = reader.errorAlert
     }
 }
