@@ -212,14 +212,16 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         return try elementsOfSheet(titled: title, in: app)
     }
 
-    /// The elements of the sheet whose navigation bar is titled `title`, in
-    /// order: everything from that bar on. The screen under a sheet may still
-    /// be in the tree before it, and a control there can share the sheet's
-    /// name ("Bookmarks", "Navigation unit"), so the last such bar is where
-    /// the sheet begins.
+    /// The elements of the sheet titled `title`, in order: everything from its
+    /// title on. A sheet's navigation bar is known by its identifier and
+    /// carries no label, so the order holds its title as the text inside it.
+    /// The screen under a sheet may still be in the tree before it, and a
+    /// control there can share the sheet's name ("Bookmarks", "Navigation
+    /// unit"), but that is a button: the last titled element that isn't one
+    /// is where the sheet begins.
     private func elementsOfSheet(titled title: String, in app: XCUIApplication) throws -> [Element] {
         let elements = try elementsInOrder(of: app)
-        guard let start = elements.lastIndex(where: { $0.type == .navigationBar && $0.label == title }) else {
+        guard let start = elements.lastIndex(where: { $0.label == title && $0.type != .button }) else {
             XCTFail("No navigation bar titled \"\(title)\" in: \(elements.map(\.label).joined(separator: " | "))")
             return []
         }
