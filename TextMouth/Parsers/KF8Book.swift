@@ -486,65 +486,64 @@ enum KF8Book {
 
     // MARK: Where A Document Begins And Ends
 
+    /// The first heading (`h1` to `h6`) a document opens with: whether one comes before any word, and the
+    /// bytes between its start and end tag when the end tag is also within `length` bytes of where the
+    /// words begin. Tags that are not headings (a `div`, an `img`, a comment) are passed over; a word before
+    /// the first heading ends the search.
+    private static func openingHeadingBounds(of markup: [UInt8], within length: Int) -> (found: Bool, text: Range<Int>?) {
+        let start = bodyStart(of: markup)
+        let window = start..<min(markup.count, start + length)
+        var cursor = start
+        var found = false
+        var ended = false
+        // Where the heading's text begins, the name of the end tag that ends it, and where it ends.
+        var textStart = 0
+        var endName = ""
+        var textEnd: Int?
+        MOBIMarkup.forEachTag(in: markup, within: window) { tag in
+            guard !ended else { return }
+            if !found {
+                // Words before the first heading: the document does not open with one.
+                if hasWord(markup[cursor..<tag.lowerBound]) { ended = true; return }
+                cursor = tag.upperBound
+                if let name = tagName(markup, tag), name.count == 2, name.first == "h",
+                   let level = name.last?.wholeNumberValue, (1...6).contains(level) {
+                    found = true
+                    textStart = tag.upperBound
+                    endName = "/" + name
+                }
+            } else if tagName(markup, tag) == endName {
+                textEnd = tag.lowerBound
+                ended = true
+            }
+        }
+        guard found, let textEnd, textStart <= textEnd else { return (found, nil) }
+        return (found, textStart..<textEnd)
+    }
+
     /// How a document's markup begins: whether a heading comes before any word, and whether the first
     /// element is one calibre's cut left (its `id` begins `calibre_pb_`).
     private static func documentOpening(of markup: [UInt8]) -> (hasHeading: Bool, hasSplitMarker: Bool) {
         let start = bodyStart(of: markup)
-        let window = start..<min(markup.count, start + 4_096)
-        var decided: Bool?
-        var cursor = start
-        MOBIMarkup.forEachTag(in: markup, within: window) { tag in
-            guard decided == nil else { return }
-            if hasWord(markup[cursor..<tag.lowerBound]) { decided = false; return }
-            cursor = tag.upperBound
-            if let name = tagName(markup, tag), name.count == 2, name.first == "h", let level = name.last?.wholeNumberValue,
-               (1...6).contains(level) {
-                decided = true
-            }
-        }
         let marked = markup[start..<min(markup.count, start + 600)].indices.contains { index in
             markup[index] == UInt8(ascii: "c") && markup[index...].starts(with: Array("calibre_pb_".utf8))
         }
-        return (decided ?? false, marked)
+        return (openingHeadingBounds(of: markup, within: 4_096).found, marked)
     }
 
-    /// The text of the heading (`h1` to `h6`) a document opens with, read as a `<title>` is
-    /// (`readableLabel`: character references read, soft hyphens left out, white space collapsed, case kept),
-    /// so the two compare equal when they are the same words; nil when a word comes before the first
-    /// heading, there is none near the start, or it holds no letter or digit.
+    /// The text of the heading a document opens with, read as a `<title>` is (`readableLabel`: character
+    /// references read, soft hyphens left out, white space collapsed, case kept), so the two compare equal
+    /// when they are the same words; nil when the document does not open with a heading, its end tag is not
+    /// near, or it holds no letter or digit. Tags inside the heading add no words.
     private static func openingHeading(of markup: [UInt8], encoding: Int) -> String? {
-        let start = bodyStart(of: markup)
-        let window = start..<min(markup.count, start + 8_192)
-        var cursor = start
-        // Where the heading's text begins, and the name of the end tag that ends it.
-        var textStart: Int?
-        var endName = ""
-        var textEnd: Int?
-        var failed = false
-        MOBIMarkup.forEachTag(in: markup, within: window) { tag in
-            guard !failed, textEnd == nil else { return }
-            guard let name = tagName(markup, tag) else { return }
-            if textStart == nil {
-                // Words before the first heading: the document does not open with one.
-                if hasWord(markup[cursor..<tag.lowerBound]) { failed = true; return }
-                cursor = tag.upperBound
-                if name.count == 2, name.first == "h", let level = name.last?.wholeNumberValue, (1...6).contains(level) {
-                    textStart = tag.upperBound
-                    endName = "/" + name
-                }
-            } else if name == endName {
-                textEnd = tag.lowerBound
-            }
-        }
-        guard !failed, let textStart, let textEnd, textStart <= textEnd else { return nil }
-        // The words between the tags of the heading (an inline tag in it adds none).
+        guard let text = openingHeadingBounds(of: markup, within: 8_192).text else { return nil }
         var words: [UInt8] = []
-        var position = textStart
-        MOBIMarkup.forEachTag(in: markup, within: textStart..<textEnd) { tag in
+        var position = text.lowerBound
+        MOBIMarkup.forEachTag(in: markup, within: text) { tag in
             words.append(contentsOf: markup[position..<tag.lowerBound])
             position = tag.upperBound
         }
-        words.append(contentsOf: markup[position..<textEnd])
+        words.append(contentsOf: markup[position..<text.upperBound])
         let heading = readableLabel(MOBIText.decode(words, encoding: encoding))
         return heading.contains(where: { $0.isLetter || $0.isNumber }) ? heading : nil
     }

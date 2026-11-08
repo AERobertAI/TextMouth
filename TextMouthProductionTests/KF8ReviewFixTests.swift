@@ -403,12 +403,17 @@ final class KF8ReviewFixTests: XCTestCase {
         })
     }
 
+    /// The chapters of `book` as a message: each one's title and the headings in it, so a failure shows what was found.
+    private func chapters(of book: MOBIParser.PreparedBook) -> String {
+        book.chapters.map { "\"\($0.chapter.title)\" \($0.chapter.headings.map(\.text))" }.joined(separator: "; ")
+    }
+
     func testAPieceThatNothingNamesAndThatOpensWithNoHeadingContinuesTheChapterBefore() throws {
         let book = try prepared(pieces([
             "<h1>First</h1><p>Alpha one.</p>", "<p>Alpha two.</p>", "<h2>Second</h2><p>Beta.</p>", "<p>Beta two.</p>",
         ]))
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["First", "Second"])
-        XCTAssertEqual(book.chapters[0].chapter.headings.map(\.text), ["First"], "no heading is added for the piece")
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["First", "Second"], chapters(of: book))
+        XCTAssertEqual(book.chapters[0].chapter.headings.map(\.text), ["First"], "no heading is added for the piece: \(chapters(of: book))")
         XCTAssertTrue(book.chapters[0].chapter.text.contains("Alpha one."))
         XCTAssertTrue(book.chapters[0].chapter.text.contains("Alpha two."))
         XCTAssertTrue(book.chapters[1].chapter.text.contains("Beta two."))
@@ -416,25 +421,41 @@ final class KF8ReviewFixTests: XCTestCase {
     }
 
     func testAPieceIsNotAContinuationWhenItIsNamedOpensWithAHeadingOrHasAnotherTitle() throws {
-        // Named by the contents.
+        // Named by the contents, though its title repeats the piece before it.
         var named = try pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"])
         named.entries = [KF8Fixture.Entry(label: "First", document: 0), KF8Fixture.Entry(label: "Second part", document: 1)]
-        XCTAssertEqual(try prepared(named).chapters.count, 2)
-        // Opens with a heading.
-        XCTAssertEqual(try prepared(pieces(["<h1>First</h1><p>One.</p>", "<h3>Heading</h3><p>Two.</p>"])).chapters.count, 2)
+        let namedBook = try prepared(named)
+        XCTAssertEqual(namedBook.chapters.count, 2, "named: \(chapters(of: namedBook))")
+        // Opens with a heading, though its title repeats the piece before it.
+        let headed = try prepared(pieces(["<h1>First</h1><p>One.</p>", "<h3>Heading</h3><p>Two.</p>"]))
+        XCTAssertEqual(headed.chapters.count, 2, "opens with a heading: \(chapters(of: headed))")
         // Another title, which no neighbour shares.
-        XCTAssertEqual(
-            try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"])).chapters.count, 2)
+        let other = try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"]))
+        XCTAssertEqual(other.chapters.count, 2, "another title: \(chapters(of: other))")
         // No title at all in either.
         let untitled = KF8Fixture(documents: [
             KF8Fixture.Document(html: "<html><head></head><body><h1>First</h1><p>One.</p></body></html>", cutting: ["<h1>First</h1><p>One.</p>"]),
             KF8Fixture.Document(html: "<html><head></head><body><p>Two.</p></body></html>", cutting: ["<p>Two.</p>"]),
         ])
-        XCTAssertEqual(try prepared(untitled).chapters.count, 2)
+        let untitledBook = try prepared(untitled)
+        XCTAssertEqual(untitledBook.chapters.count, 2, "no title: \(chapters(of: untitledBook))")
         // The book's first piece has no chapter before it to go on with, with a heading or not.
         let headless = try prepared(pieces(["<p>One.</p>", "<p>Two.</p>"]))
-        XCTAssertEqual(headless.chapters.count, 1, "the second piece shares the first's title, so it goes on")
+        XCTAssertEqual(headless.chapters.count, 1, "the second piece shares the first's title, so it goes on: \(chapters(of: headless))")
         XCTAssertEqual(words(headless), ["One.", "Two."])
+    }
+
+    /// The first piece with words never continues, even when its title is the next piece's heading: a cover of
+    /// pictures before it is no chapter to go on with.
+    func testTheFirstPieceWithWordsNeverContinues() throws {
+        let fixture = KF8Fixture(documents: try [
+            ("Cover", "<img alt=\"\"/>"), ("Preface", "<p>Preface words.</p>"), ("Preface", "<h1>Preface</h1><p>Body words.</p>"),
+        ].map { try document(title: $0.0, body: $0.1) })
+        let book = try prepared(fixture)
+        // Were the piece taken to go on with the cover, the first chapter would be titled "Cover".
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Preface", "Preface"], chapters(of: book))
+        XCTAssertTrue(book.chapters[0].chapter.text.contains("Preface words."), chapters(of: book))
+        XCTAssertFalse(book.chapters[0].chapter.text.contains("Body words."), chapters(of: book))
     }
 
     /// A piece that opens with no heading and that nothing names goes on with the chapter before it when its
@@ -447,24 +468,46 @@ final class KF8ReviewFixTests: XCTestCase {
             "<p>The words that end chapter ten.</p>",
             "<h1>CHAPTER XI</h1><p>Words of eleven.</p>",
         ], titles: ["CHAPTER X", "CHAPTER XI", "CHAPTER XI"]))
-        XCTAssertEqual(book.chapters.count, 2)
-        XCTAssertEqual(book.chapters.flatMap { $0.chapter.headings.map(\.text) }, ["CHAPTER X", "CHAPTER XI"], "exactly two headings")
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["CHAPTER X", "CHAPTER XI"])
-        XCTAssertTrue(book.chapters[0].chapter.text.contains("The words that end chapter ten."), "read under CHAPTER X")
-        XCTAssertFalse(book.chapters[1].chapter.text.contains("The words that end chapter ten."))
-        // The heading is compared as a title is: character references read, white space collapsed, case kept.
-        let spelled = try prepared(pieces([
-            "<h1>CHAPTER X</h1><p>Words of ten.</p>",
-            "<p>The words that end chapter ten.</p>",
-            "<h1>Tom <i>&amp;</i>\n  Jerry</h1><p>Words of eleven.</p>",
-        ], titles: ["CHAPTER X", "Tom & Jerry", "Tom & Jerry"]))
-        XCTAssertEqual(spelled.chapters.count, 2)
-        let otherCase = try prepared(pieces([
-            "<h1>CHAPTER X</h1><p>Words of ten.</p>",
-            "<p>The words that end chapter ten.</p>",
-            "<h1>CHAPTER XI</h1><p>Words of eleven.</p>",
-        ], titles: ["CHAPTER X", "Chapter xi", "CHAPTER XI"]))
-        XCTAssertEqual(otherCase.chapters.count, 3, "a title of other letters is not the heading")
+        XCTAssertEqual(book.chapters.count, 2, chapters(of: book))
+        XCTAssertEqual(book.chapters.flatMap { $0.chapter.headings.map(\.text) }, ["CHAPTER X", "CHAPTER XI"], "exactly two headings: \(chapters(of: book))")
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["CHAPTER X", "CHAPTER XI"], chapters(of: book))
+        XCTAssertTrue(book.chapters[0].chapter.text.contains("The words that end chapter ten."), "read under CHAPTER X: \(chapters(of: book))")
+        XCTAssertFalse(book.chapters[1].chapter.text.contains("The words that end chapter ten."), chapters(of: book))
+    }
+
+    /// The heading is compared with the title as titles are compared: character references read, soft hyphens
+    /// left out, white space collapsed, tags inside the heading adding no words, case kept; and the heading must
+    /// be what the next piece opens with.
+    func testTheNextPiecesHeadingMustMatchTheTitleExactlyAndBeWhatThePieceOpensWith() throws {
+        /// Whether the headless middle piece, titled `title`, went on with the first chapter in a book whose
+        /// third piece begins with `third` (and has the title too); and what the book came to.
+        func middleGoesOn(title: String, third: String) throws -> (goesOn: Bool, message: String) {
+            let book = try prepared(pieces([
+                "<h1>CHAPTER X</h1><p>Words of ten.</p>", "<p>The words that end chapter ten.</p>",
+                third + "<p>Words of eleven.</p>",
+            ], titles: ["CHAPTER X", title, title]))
+            return (book.chapters[0].chapter.text.contains("The words that end chapter ten."), chapters(of: book))
+        }
+        // The same words after reading: references, tags, a soft hyphen, a line break and spaces, a comment before it.
+        for (title, third) in [
+            ("Tom & Jerry", "<h1>Tom <i>&amp;</i>\n  Jerry</h1>"),
+            ("CHAPTER XI", "<h1>CHAP&shy;TER XI</h1>"),
+            ("CHAPTER XI", "<h1>CHAP\u{AD}TER XI</h1>"),
+            ("CHAPTER XI", "<!-- a note --><div><h2>CHAPTER   XI</h2></div>"),
+        ] {
+            let found = try middleGoesOn(title: title, third: third)
+            XCTAssertTrue(found.goesOn, "\(title) / \(third) should go on with the chapter before: \(found.message)")
+        }
+        // Not the same words, or not what the piece opens with: the piece keeps its own chapter.
+        for (title, third) in [
+            ("Chapter xi", "<h1>CHAPTER XI</h1>"),
+            ("CHAPTER XI", "<h1>CHAPTER XII</h1>"),
+            ("CHAPTER XI", "<p>Some words first.</p><h1>CHAPTER XI</h1>"),
+            ("CHAPTER XI", "<div>CHAPTER XI</div>"),
+        ] {
+            let found = try middleGoesOn(title: title, third: third)
+            XCTAssertFalse(found.goesOn, "\(title) / \(third) should keep its own chapter: \(found.message)")
+        }
     }
 
     /// A headless piece whose title is no neighbour's keeps its own chapter, headed by its title (Project
@@ -476,8 +519,8 @@ final class KF8ReviewFixTests: XCTestCase {
             "<p>The essay words.</p>",
             "<h2>THE FULL LICENSE</h2><p>License words.</p>",
         ], titles: ["The Project Gutenberg eBook", "A Modest Proposal", "THE FULL LICENSE"]))
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["The Project Gutenberg eBook", "A Modest Proposal", "THE FULL LICENSE"])
-        XCTAssertEqual(book.chapters[1].chapter.headings.map(\.text), ["A Modest Proposal"])
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["The Project Gutenberg eBook", "A Modest Proposal", "THE FULL LICENSE"], chapters(of: book))
+        XCTAssertEqual(book.chapters[1].chapter.headings.map(\.text), ["A Modest Proposal"], chapters(of: book))
         XCTAssertTrue(book.chapters[1].chapter.text.contains("The essay words."))
         XCTAssertFalse(book.chapters[0].chapter.text.contains("The essay words."))
     }
@@ -492,8 +535,8 @@ final class KF8ReviewFixTests: XCTestCase {
             fixture.entries = [KF8Fixture.Entry(label: "Heading 1", document: 0), KF8Fixture.Entry(label: "Heading 2", document: 1)]
             if guided { fixture.guide = [(type: "toc", document: 2)] }
             let book = try prepared(fixture)
-            XCTAssertEqual(book.chapters.map(\.chapter.title), ["Heading 1", "Heading 2", "Epilogue"], "guide \(guided)")
-            XCTAssertEqual(book.chapters[2].chapter.headings.map(\.text), ["Epilogue"], "guide \(guided)")
+            XCTAssertEqual(book.chapters.map(\.chapter.title), ["Heading 1", "Heading 2", "Epilogue"], "guide \(guided): \(chapters(of: book))")
+            XCTAssertEqual(book.chapters[2].chapter.headings.map(\.text), ["Epilogue"], "guide \(guided): \(chapters(of: book))")
         }
     }
 
