@@ -77,18 +77,34 @@ struct PhoneActionButton: View {
 /// A row of a list or form that shows a name and its value, in place of
 /// `LabeledContent(name, value:)`, whose value iOS draws in gray: the name
 /// takes `PhoneTextColor.primary` (it is a button's label in a choice row),
-/// and the value `PhoneTextColor.secondary`.
+/// and the value `PhoneTextColor.secondary`. At the accessibility text sizes
+/// the value goes under the name.
 struct PhoneValueRow: View {
     /// The row's name.
     let name: String
     /// The row's value.
     let value: String
 
+    /// Whether the text size is one of the accessibility sizes.
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        LabeledContent {
-            Text(value).phoneSecondaryText()
-        } label: {
-            Text(name).phonePrimaryText()
+        if typeSize.isAccessibilitySize {
+            // Side by side, the name was broken in the middle of a word
+            // ("dura-tion") beside its value at the largest size (the
+            // simulator's screenshot): one above the other, each takes the
+            // whole width.
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name).phonePrimaryText()
+                Text(value).phoneSecondaryText()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            LabeledContent {
+                Text(value).phoneSecondaryText()
+            } label: {
+                Text(name).phonePrimaryText()
+            }
         }
     }
 }

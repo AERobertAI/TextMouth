@@ -87,13 +87,13 @@ struct PhoneGoToSheet: View {
             PhoneActionButton(title: PhoneGoToVocabulary.jump) { take(field) }
                 .accessibilityLabel(field.jumpLabel)
         } header: {
-            // The name, shown and read as a heading: hidden from VoiceOver
-            // while shown, the audit found it "potentially inaccessible
-            // text". The field repeats it as its label, since focus lands in
-            // the field on arrival.
+            // For sight: VoiceOver hears the name once, as the field's label.
+            // (Showing it to VoiceOver as a heading did not clear the
+            // audit's one "potentially inaccessible text" finding, so the
+            // spec's single reading stands.)
             Text(model.label(of: field))
                 .phoneSecondaryText()
-                .accessibilityAddTraits(.isHeader)
+                .accessibilityHidden(true)
         }
     }
 

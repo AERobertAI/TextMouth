@@ -266,7 +266,17 @@ private struct PhoneBookInfoField: View {
     }
 
     var body: some View {
-        TextField(title, text: $text)
+        // A field that grows to as many lines as its text needs, up to six,
+        // so that a long title or date is never cut at a large text size (the
+        // audit found a one-line field clipped). Its value is still one line:
+        // Return, which would start another, is dropped, and so is a newline
+        // in pasted text.
+        TextField(title, text: $text, axis: .vertical)
+            .lineLimit(1...6)
+            .onChange(of: text) { _, newText in
+                guard newText.contains(where: \.isNewline) else { return }
+                text = newText.filter { !$0.isNewline }
+            }
             .accessibilityLabel(MetadataEditorWording.fieldLabel(label, for: field, in: book.handEdits))
     }
 }
