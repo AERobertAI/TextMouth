@@ -119,6 +119,17 @@ struct TextMouthRuntime: @unchecked Sendable {
         processIdentifier: Int32,
         temporaryDirectory: URL
     ) -> TextMouthRuntime {
+        #if os(iOS)
+        #if DEBUG
+        // The iPhone app a UI test launches runs as a hosted test does, in a
+        // sandbox of its own, when it asks to (PhoneLaunchRequest): XCTest
+        // names its configuration only in a process hosting a test bundle.
+        var environment = environment
+        if PhoneLaunchRequest.runsInSandbox(environment) {
+            environment[testConfigurationVariable] = PhoneLaunchRequest.sandboxVariable
+        }
+        #endif
+        #endif
         guard environment[testConfigurationVariable] != nil else {
             return TextMouthRuntime(isHostedTest: false, homeDirectory: realHomeDirectory, preferences: .standard)
         }
@@ -142,10 +153,20 @@ struct TextMouthRuntime: @unchecked Sendable {
     /// The user's real home directory, read from the user database so that
     /// neither an app sandbox nor a changed `HOME` variable can redirect it.
     static var realHomeDirectory: URL {
+        #if os(iOS)
+        // On iOS the sandbox redirecting the home is exactly what is wanted:
+        // an app may write only inside its own container, which
+        // NSHomeDirectory() names. The user database names the wrong place on
+        // every iOS: /var/mobile on an iPhone, which the sandbox refuses, and,
+        // in the Simulator, which runs as the Mac's user, that user's real
+        // home, whose ~/.TextMouth is the live library of the Mac app.
+        return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+        #else
         if let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir {
             return URL(fileURLWithPath: String(cString: directory), isDirectory: true)
         }
         return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+        #endif
     }
 
     // MARK: - Sandboxed Preferences

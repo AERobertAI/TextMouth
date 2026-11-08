@@ -450,4 +450,30 @@ final class SpeechRefusalReportTests: XCTestCase {
         speech._directUtteranceRecorderForTesting = { _ in }
         return speech
     }
+
+    // MARK: - The iPhone's Words
+
+    /// The sentences that said "Mac" have an iPhone version (the spec, "Words
+    /// that say Mac"), and the Mac's stay as they were.
+    func testTheIPhoneHasItsOwnWordsAndTheMacKeepsItsOwn() {
+        XCTAssertEqual(
+            SpeechRefusalWording.summaryText(onPhone: false),
+            "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
+        )
+        XCTAssertEqual(
+            SpeechRefusalWording.summaryText(onPhone: true),
+            "The iPhone's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
+        )
+        XCTAssertEqual(SpeechRefusalWording.deviceHeading(onPhone: false), "This Mac")
+        XCTAssertEqual(SpeechRefusalWording.deviceHeading(onPhone: true), "This iPhone")
+        XCTAssertEqual(SpeechRefusalWording.systemLine(version: "Version 1", onPhone: false), "macOS: Version 1")
+        XCTAssertEqual(SpeechRefusalWording.systemLine(version: "Version 1", onPhone: true), "iOS: Version 1")
+    }
+
+    /// This build uses the version for the platform it runs on, and the
+    /// Mac's test host is the Mac.
+    func testTheBuildUsesItsOwnPlatformsWords() {
+        XCTAssertFalse(SpeechRefusalWording.runsOnPhone)
+        XCTAssertEqual(SpeechRefusalWording.summary, SpeechRefusalWording.summaryText(onPhone: false))
+    }
 }

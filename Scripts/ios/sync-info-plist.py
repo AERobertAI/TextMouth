@@ -10,7 +10,7 @@ keys that mean nothing there. The iOS plist is now a file of its own
 (TextMouth/Platform/iOS/Info.plist, named by INFOPLIST_FILE in project.yml),
 which Xcode merges into the plist it generates (GENERATE_INFOPLIST_FILE). It is
 the Mac's plist, so the two cannot drift apart by hand, less what iOS refuses
-or has no use for, and with one addition. This script writes it.
+or has no use for, and with what only iOS needs. This script writes it.
 
 What iOS leaves out, and why. iOS goes by the types a document type names
 (`LSItemContentTypes`) and the extensions that the declarations of those types
@@ -31,11 +31,18 @@ is left out by name, with the declaration of any type nothing else names:
 - The keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which
   are macOS's.
 
-What iOS adds: ".azw3" beside the extensions of the Kindle MOBI type and its
-declaration. The Mac's list does not name it yet. `readers/azw3` adds it to
-`BookFormat` and to the Mac's plist, which overlaps `ADDED_EXTENSION` below
-(adding an extension already there changes nothing, so the merge is safe); the
-orchestrator settles which stays at the merge.
+What iOS adds:
+- ".azw3" beside the extensions of the Kindle MOBI type and its declaration.
+  The Mac's list does not name it yet. `readers/azw3` adds it to `BookFormat`
+  and to the Mac's plist, which overlaps `ADDED_EXTENSION` below (adding an
+  extension already there changes nothing, so the merge is safe); the
+  orchestrator settles which stays at the merge.
+- The keys only iOS has (`IOS_ONLY_KEYS`): the audio background mode, without
+  which every book stops as the screen locks, and a scene manifest of one
+  scene at a time, also on an iPad, since one reading session cannot serve two
+  windows. The scene's delegate is named in code, by TextMouthAppDelegate, so
+  the manifest names no configuration. project.yml leaves out Xcode's
+  generated manifest, which would allow several scenes.
 
 Everything else is the Mac's, including the Kindle MOBI and KFX types, the
 network settings feeds need, and the build identity.
@@ -68,6 +75,13 @@ REFUSED = {
 MAC_ONLY_KEYS = {
     "LSMinimumSystemVersion",
     "NSAppleEventsUsageDescription",
+}
+
+# The keys iOS needs and the Mac's plist cannot have, with their values (the
+# docstring says why each is there). IOSInfoPlistTests pins both.
+IOS_ONLY_KEYS = {
+    "UIBackgroundModes": ["audio"],
+    "UIApplicationSceneManifest": {"UIApplicationSupportsMultipleScenes": False},
 }
 
 # The Kindle MOBI type: its document type's name, and its type's identifier.
@@ -111,6 +125,13 @@ def ios_plist(mac):
             declaration["UTTypeTagSpecification"] = tags
         imported.append(declaration)
     result["UTImportedTypeDeclarations"] = imported
+
+    # The keys only iOS has. The Mac's plist holding one of them would be a
+    # mistake there, and the iOS value would hide it, so stop instead.
+    clash = sorted(set(IOS_ONLY_KEYS) & set(mac))
+    if clash:
+        sys.exit(f"{MAC_PLIST} holds keys only iOS should have: {', '.join(clash)}")
+    result.update(IOS_ONLY_KEYS)
     return result
 
 

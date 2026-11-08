@@ -74,12 +74,27 @@ struct ImportFailure: LocalizedError {
     /// What went wrong, without the file's name: "Reading its text failed:
     /// …". A ZIP batch's summary lists it after the name of the file.
     var reason: String {
+        #if os(iOS)
+        // A file the phone can't import yet is told as the spec words it,
+        // naming the file and the next step, never as a failed step.
+        if let refusal = underlying as? PhoneImportRefusal {
+            return refusal.sentence(naming: PhoneImportWording.displayName(ofFileNamed: fileName))
+        }
+        return "\(step.activity) failed: \(Self.description(of: underlying))"
+        #else
         "\(step.activity) failed: \(Self.description(of: underlying))"
+        #endif
     }
 
     /// The whole sentence an alert reads: the file, then the reason.
     var errorDescription: String? {
+        #if os(iOS)
+        // The refusal's sentence names the file itself.
+        if underlying is PhoneImportRefusal { return reason }
+        return "Could not import “\(fileName)”. \(reason)"
+        #else
         "Could not import “\(fileName)”. \(reason)"
+        #endif
     }
 
     /// The single debug-log line recording this failure:

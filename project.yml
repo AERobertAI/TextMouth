@@ -284,16 +284,28 @@ targets:
       base:
         PRODUCT_NAME: TextMouth
         PRODUCT_MODULE_NAME: TextMouth
-        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
+        # An identifier of its own: a free team registers it, the background
+        # task identifiers must begin with it, and an iOS app running on a
+        # Mac would otherwise collide with the Mac app's container and
+        # preferences.
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
-        # The document types "Open in TextMouth" offers, which Xcode merges
-        # into the plist it generates. Derived from the Mac's plist by
-        # Scripts/ios/sync-info-plist.py, and checked by IOSInfoPlistTests.
+        # Merged with the INFOPLIST_KEY_ settings below into the plist Xcode
+        # generates. Written from the Mac's plist by
+        # Scripts/ios/sync-info-plist.py: the Mac's keys, display name, and
+        # document types, less what iOS cannot read, with the keys only iOS
+        # needs (the background audio mode, one scene at a time). It holds no
+        # key that a setting below also sets, since Apple does not say which
+        # would win, and IOSInfoPlistTests checks both.
         INFOPLIST_FILE: TextMouth/Platform/iOS/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: TextMouth
+        # A file from another app arrives where it is, as the Files app holds
+        # it, rather than as a copy in Documents/Inbox.
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: true
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        # No INFOPLIST_KEY_UIApplicationSceneManifest_Generation: the scene
+        # manifest it writes allows several scenes, and the plist above holds
+        # a manifest of one scene at a time instead.
         CODE_SIGN_STYLE: Automatic
         # The LAME, exception-catcher, and braille-protocol modules, as the
         # Mac target finds them.
@@ -305,6 +317,15 @@ targets:
         product: Markdown
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
+    # The iPhone app's scheme, committed, so that `xcodebuild test -scheme
+    # TextMouthiOS` runs both of its test bundles in the simulator: the one
+    # Xcode made by itself held only the UI tests. The Mac's schemes are
+    # still Xcode's own, made when none is committed for a target.
+    scheme:
+      testTargets:
+        - TextMouthiOSTests
+        - TextMouthiOSUITests
+      gatherCoverageData: false
   # liblouis 3.39.0, the braille translator (FMT21), vendored in
   # Vendor/liblouis and built as a static library that only the braille
   # helper links: liblouis is C that reads untrusted braille and text, it has
@@ -458,3 +479,52 @@ targets:
         SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
     dependencies:
       - target: TextMouth
+  # The iPhone app's own tests, run in the iOS simulator by
+  # `xcodebuild test -scheme TextMouthiOS`: what only iOS compiles, the UIKit
+  # code under TextMouth/Platform/iOS/ that the Mac's test host never sees.
+  # Hosted in the iPhone app, so `@testable import TextMouth` reaches its
+  # types, and TextMouthRuntime gives the hosting process a sandboxed library
+  # of its own, as on the Mac. The plain types in TextMouth/Phone/ stay tested
+  # on the Mac's host, with the rest of the suite.
+  TextMouthiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - TextMouthiOSTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSTests
+        GENERATE_INFOPLIST_FILE: true
+        # Both apps' products are TextMouth.app, and the scheme Xcode made for
+        # the iPhone app by itself left this bundle out of its tests: the
+        # iPhone app's own scheme, in the TextMouthiOS target, names it.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/TextMouth"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+    dependencies:
+      - target: TextMouthiOS
+  # The iPhone app driven from outside, in the simulator, by XCUITest: what
+  # VoiceOver would be given on the Library and the reader (each element's
+  # label, value, and traits, and their order), and Apple's accessibility
+  # audit of each screen. Each test launches the app with a library of its
+  # own and a public-domain book sent to it (PhoneLaunchRequest). Nothing in
+  # it presses Play, or anything else that makes a sound.
+  TextMouthiOSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - TextMouthiOSUITests
+      # Alice's Adventures in Wonderland, Project Gutenberg #11, the sample
+      # the Mac's tests read too: the book each UI test sends the app.
+      - path: TestData/alice.epub
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSUITests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: TextMouthiOS
+    dependencies:
+      - target: TextMouthiOS

@@ -13,7 +13,20 @@ enum TextMouthPaths {
 
     /// The default data directory inside `home`.
     static func defaultRoot(in home: URL) -> URL {
+        #if os(iOS)
+        // On iOS, `home` is the app's container, whose top level is not a
+        // place to write: Apple documents Documents, Library, and tmp. The
+        // library goes in Library/Application Support, backed up and hidden
+        // from the Files app, so library.json and the book packages cannot be
+        // touched by a stray flick there. The folder keeps its name with the
+        // dot: `legacyApplicationSupportDirectory(in:)` names
+        // Library/Application Support/TextMouth, without it, and the legacy
+        // migration would read a library there as an old one.
+        home.appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(dataDirectoryName, isDirectory: true)
+        #else
         home.appendingPathComponent(dataDirectoryName, isDirectory: true)
+        #endif
     }
 
     /// The default location: .TextMouth in this process's home directory,

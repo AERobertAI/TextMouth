@@ -490,6 +490,15 @@
 	<string>$(TEXTMOUTH_BUILD_DATE)</string>
 	<key>TextMouthGitCommit</key>
 	<string>$(TEXTMOUTH_GIT_COMMIT)</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

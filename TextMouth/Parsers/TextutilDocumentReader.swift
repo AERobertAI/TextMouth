@@ -228,6 +228,12 @@ enum TextutilDocumentReader {
             return Source(html: own, isOwnReading: true)
         }
 
+        #if os(iOS)
+        // iOS has no textutil: a Word document TextMouth's own reader leaves
+        // to it is a Word 6 or Word 95 one, refused in the phone's words.
+        if format == .doc { throw PhoneImportRefusal.wordSixOrNinetyFive }
+        #endif
+
         return try withWorkingFolder(for: url) { folder in
             let html = try TextutilConverter.html(of: url, as: format, workingIn: folder)
             guard includesPages else { return Source(html: html) }

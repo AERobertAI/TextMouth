@@ -165,6 +165,25 @@ final class SleepTimerService: ObservableObject {
     /// and halting the fade would leave audio at an arbitrary low volume.
     private var isCountdownPausedByPlayback = false
 
+    #if os(iOS)
+    /// The countdown's deadline on the iPhone while it runs: set as the
+    /// countdown is armed, at its start and at each resume, and cleared as it
+    /// halts, runs out, or the timer stops. Each tick reads what is left from
+    /// it (`PhoneSleepDeadline`), so a late tick loses no time, where the
+    /// Mac's countdown takes one second off at each tick. The Mac has no such
+    /// property, and its ticks stay as they are.
+    private var phoneDeadline: PhoneSleepDeadline?
+    /// Begins holding the iPhone app awake for a timer that has run out, and
+    /// gives back what ends the hold. The phone's life cycle sets it to a
+    /// background task: with the screen locked, the fade's last step is the
+    /// last audio, and iOS may suspend an app with no audio almost at once,
+    /// before the book's place is saved and flushed. Nil holds nothing, as in
+    /// tests.
+    var phoneExpiryHold: (@MainActor () -> (@MainActor () -> Void))?
+    /// What ends the hold begun as the timer ran out, until it has ended.
+    private var endPhoneExpiryHold: (@MainActor () -> Void)?
+    #endif
+
     /// Production uses the shared instance. The internal initializer remains
     /// injectable so hosted tests can use disposable preferences storage.
     init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences) {
@@ -389,6 +408,9 @@ final class SleepTimerService: ObservableObject {
         let fadeCancellation = endFade()
         timer?.invalidate()
         timer = nil
+        #if os(iOS)
+        phoneDeadline = nil
+        #endif
         isActive = false
         remainingSeconds = 0
         duration = nil
@@ -418,6 +440,11 @@ final class SleepTimerService: ObservableObject {
         fadeTimer = nil
         isFadingOut = false
         pendingFadeCompletion = false
+        #if os(iOS)
+        // A fade cancelled, or a timer stopped, puts nobody to sleep: the
+        // phone's hold for the expiry, if one was begun, has nothing to wait for.
+        endPhoneExpiryHoldIfBegun()
+        #endif
         return cancellation
     }
 
@@ -625,6 +652,11 @@ final class SleepTimerService: ObservableObject {
         if isFadingOut { cancelFadeForRestart() }
         if case .minutes(let minutes) = duration {
             remainingSeconds = minutes * 60
+            #if os(iOS)
+            // A countdown still running counts the full duration from now: its
+            // ticks read the deadline, not the seconds just set.
+            rebasePhoneDeadlineIfCounting()
+            #endif
         }
         timerLog(.event, "RESTART_HELD kind=\(duration?.displayName ?? "none")")
         return true
@@ -815,6 +847,11 @@ final class SleepTimerService: ObservableObject {
         }
         activeTimer.invalidate()
         timer = nil
+        #if os(iOS)
+        // The seconds left are read from the deadline as the countdown halts,
+        // and kept, as the Mac keeps its count, for the resume to count from.
+        haltPhoneDeadline()
+        #endif
         isCountdownPausedByPlayback = true
         timerLog(.event, "COUNTDOWN_PAUSED caller=\(Self.ownerToken(callerID))")
     }
@@ -931,6 +968,12 @@ final class SleepTimerService: ObservableObject {
     // MARK: - Internal Countdown / Fade
 
     private func startCountdown() {
+        #if os(iOS)
+        // Set before the tick timer is made, so every tick comes a whole
+        // second or more after the deadline's start, and shows what the Mac's
+        // tick would.
+        phoneDeadline = PhoneSleepDeadline(secondsLeft: remainingSeconds, from: ContinuousClock.now)
+        #endif
         let gen = generation
         // Ensure timer runs on main thread for @Published safety
         let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -950,6 +993,9 @@ final class SleepTimerService: ObservableObject {
     /// deterministic while retaining the same production execution path.
     private func advanceCountdown() {
         guard timer != nil, isActive, case .minutes = duration else { return }
+        #if os(iOS)
+        advancePhoneCountdown()
+        #else
         if remainingSeconds > 0 {
             remainingSeconds -= 1
         }
@@ -962,6 +1008,7 @@ final class SleepTimerService: ObservableObject {
         if remainingSeconds <= 0 {
             expire()
         }
+        #endif
     }
 
     /// Notes that the timer ran out under its owner, and when; a timer that
@@ -985,6 +1032,12 @@ final class SleepTimerService: ObservableObject {
         timer?.invalidate()
         timer = nil
         timerLog(.event, "EXPIRE_REACHED_ZERO fadeSeconds=\(fadeOutDuration)")
+        #if os(iOS)
+        // The countdown is over; the app is held awake from here, through any
+        // fade, to the owner's pause and the save after it.
+        phoneDeadline = nil
+        beginPhoneExpiryHold()
+        #endif
 
         if fadeOutDuration > 0 && !isFadingOut {
             startFadeOut()
@@ -993,6 +1046,9 @@ final class SleepTimerService: ObservableObject {
             noteExpiry()
             timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=instant")
             onTimerExpired?()
+            #if os(iOS)
+            endPhoneExpiryHoldIfBegun()
+            #endif
         } else {
             timerLog(.event, "EXPIRE_IGNORED reason=fade-already-running")
         }
@@ -1035,6 +1091,9 @@ final class SleepTimerService: ObservableObject {
                     self.timerLog(.event, "FADE_COMPLETED finalVolume=\(volume)")
                     self.timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=fade")
                     self.onTimerExpired?()
+                    #if os(iOS)
+                    self.endPhoneExpiryHoldIfBegun()
+                    #endif
                 }
             }
         }
@@ -1123,3 +1182,95 @@ final class SleepTimerService: ObservableObject {
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }
 }
+
+#if os(iOS)
+// MARK: - The iPhone's Countdown
+
+/// The sleep timer's iOS branch (spec: "The sleep timer on a phone"): the
+/// countdown of minutes keeps a deadline (`PhoneSleepDeadline`) and each tick
+/// reads what is left from it; the milestones are logged and never spoken; a
+/// return to running checks the deadline at once; and a timer that runs out is
+/// held awake until the book is paused and its place saved. The rule that the
+/// countdown halts while the book is paused is the Mac's, unchanged, so nothing
+/// needs to fire while the app is suspended. Nothing here has run on an iPhone.
+extension SleepTimerService {
+    /// One tick of the iPhone's countdown: the seconds left read from the
+    /// deadline, a late tick and the milestones passed written to the timer's
+    /// log, and the timer run out once nothing is left. The milestones are not
+    /// spoken on the phone (spec: "Announcements"), so `announceIfMilestone()`
+    /// is never called here.
+    fileprivate func advancePhoneCountdown() {
+        guard let deadline = phoneDeadline else {
+            // An armed countdown always has a deadline (`startCountdown()`);
+            // should a path not foreseen arm one without, it counts from what
+            // is shown rather than standing still.
+            timerLog(.event, "DEADLINE_MISSING action=set-from-shown")
+            phoneDeadline = PhoneSleepDeadline(secondsLeft: remainingSeconds, from: ContinuousClock.now)
+            return
+        }
+        let tick = deadline.tick(at: ContinuousClock.now, after: remainingSeconds)
+        remainingSeconds = tick.secondsLeft
+        if tick.skippedSeconds > 0 {
+            timerLog(.event, "COUNTDOWN_LATE_TICK skippedSeconds=\(tick.skippedSeconds)")
+        }
+        for milestone in tick.milestonesPassed {
+            timerLog(.event, "MILESTONE_PASSED seconds=\(milestone) spoken=false")
+        }
+        if tick.isWorthTracing {
+            timerLog(.trace, "COUNTDOWN_PROGRESS")
+        }
+        if tick.hasRunOut {
+            expire()
+        }
+    }
+
+    /// Checks a running countdown against its deadline at once, as the app
+    /// comes back to running, before anything else happens: a timer whose time
+    /// passed while its ticks could not run expires now, and its owner pauses
+    /// the book and says the Mac's "Sleep timer expired. Playback paused."
+    /// (`ReaderViewModel.sleepTimerExpiredAnnouncement`). A countdown that is
+    /// halted, or a timer waiting for a place in the book, has nothing to
+    /// check.
+    func checkPhoneDeadline() {
+        guard timer != nil, isActive, case .minutes = duration else { return }
+        timerLog(.event, "DEADLINE_CHECKED reason=returned-to-running")
+        advanceCountdown()
+    }
+
+    /// Halts the deadline as the countdown pauses: the seconds left are read
+    /// from it and kept, and the resume sets a new one from them.
+    fileprivate func haltPhoneDeadline() {
+        guard let deadline = phoneDeadline else { return }
+        remainingSeconds = deadline.tick(at: ContinuousClock.now, after: remainingSeconds).secondsLeft
+        phoneDeadline = nil
+    }
+
+    /// Sets the deadline again from the seconds shown, while the countdown
+    /// runs: a restart of the held timer sets its full duration while its tick
+    /// timer goes on.
+    fileprivate func rebasePhoneDeadlineIfCounting() {
+        guard timer != nil else { return }
+        phoneDeadline = PhoneSleepDeadline(secondsLeft: remainingSeconds, from: ContinuousClock.now)
+    }
+
+    /// Begins the hold that keeps the app awake while the timer that ran out
+    /// puts the book to sleep, unless one is held already, as when a second
+    /// expiry finds the fade running.
+    fileprivate func beginPhoneExpiryHold() {
+        guard endPhoneExpiryHold == nil, let begin = phoneExpiryHold else { return }
+        endPhoneExpiryHold = begin()
+        timerLog(.event, "EXPIRY_HOLD_BEGUN")
+    }
+
+    /// Ends the hold begun as the timer ran out, once: after its owner has
+    /// paused the book, or as a fade is cancelled or the timer stopped. What
+    /// the hold does as it ends (save, flush, let the app be suspended) is the
+    /// life cycle's.
+    fileprivate func endPhoneExpiryHoldIfBegun() {
+        guard let end = endPhoneExpiryHold else { return }
+        endPhoneExpiryHold = nil
+        end()
+        timerLog(.event, "EXPIRY_HOLD_ENDED")
+    }
+}
+#endif

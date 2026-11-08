@@ -68,6 +68,12 @@ extension ReaderViewModel {
                 awaitedSpeech = inputs
             }
         }
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         // The book plays again, so it no longer rests finished at its end; a
         // book with nothing left to say ended again above instead.
         hasFinishedBook = false
@@ -218,6 +224,12 @@ extension ReaderViewModel {
     }
 
     private func resumeAudioPlayback() {
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
@@ -245,6 +257,12 @@ extension ReaderViewModel {
     }
 
     private func resumeSpeechPlayback() {
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
@@ -573,6 +591,9 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+        #if os(iOS)
+        phoneHooks.audioEnded?()
+        #endif
     }
 
     /// Speak from the cursor, passing over text with nothing to say.
@@ -1256,6 +1277,15 @@ extension ReaderViewModel {
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
 
+        #if os(iOS)
+        // The iPhone's life cycle holds look-ahead renders off when memory is
+        // short or the phone is hot (`SpeechRenderCoordinator.mayRenderAhead`).
+        guard SpeechRenderCoordinator.shared.mayRenderAhead() else {
+            DiagnosticLog.trace(.playback, "preRender: held off by the phone's memory or thermal state")
+            return
+        }
+        #endif
+
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
         guard case .found(let speech) = search else { return }
@@ -1627,6 +1657,10 @@ extension ReaderViewModel {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )
+        #if os(iOS)
+        // Nothing plays while the speech is prepared off the main thread.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Start the play that waited for its chapter's speech, now that the
@@ -1646,6 +1680,15 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks or sounds its end; starting it once they are over")
             return
         }
+        #if os(iOS)
+        // Speech starts after a silent wait: asked first, as at a chapter after
+        // its pause, which ends the phone's hold. Refused, the book pauses while
+        // the wait still counts as playing, so the pause settles it.
+        guard phoneHooks.audioMayStart() else {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterSpeechCache.awaitedByPlay = nil
         switch searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay) {
         case .found(let start):
@@ -2331,6 +2374,11 @@ extension ReaderViewModel {
         chapterStartAfterPause = start
         DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) starts after a pause of \(seconds) s")
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: start)
+        #if os(iOS)
+        // Nothing plays during the pause, a manifest's among them, and a
+        // suspended app would never start the chapter: the phone holds it.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// The pause before the cursor's chapter has passed: the chapter plays
@@ -2340,6 +2388,16 @@ extension ReaderViewModel {
     /// one waits, still counted as playing. It plays once the announcement's
     /// end sound has passed (`startPlayHeldByWhereAmI()`).
     private func startChapterAfterPause() {
+        #if os(iOS)
+        // The chapter's audio starts after a silent gap: asked first, as every
+        // start asks, which also ends the phone's hold for the gap. Refused, as
+        // when a call came during the pause, the book pauses where it is, at
+        // the chapter's start, while the wait still counts as playing.
+        if !hasClosed, !isWhereAmISpeakingOrSoundingItsEnd, !phoneHooks.audioMayStart() {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterStartAfterPause = nil
         guard !hasClosed else { return }
         guard !isWhereAmISpeakingOrSoundingItsEnd else {
@@ -2417,8 +2475,14 @@ extension ReaderViewModel {
     /// (B07): "Playback stopped because TextMouth's memory grew to 3.2 GB
     /// while the audio played, a fault in macOS's audio."
     nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
+        #if os(iOS)
+        // The spec's "Words that say Mac": the phone's audio is the system's.
+        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
+            + "while the audio played, a fault in the system's audio."
+        #else
         "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
             + "while the audio played, a fault in macOS's audio."
+        #endif
     }
 
     /// Stop playback because TextMouth's memory grew to `footprint` bytes
@@ -2759,6 +2823,13 @@ extension ReaderViewModel {
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(announcement)
+        #if os(iOS)
+        // Nothing follows: other apps may have the audio back, and the item
+        // stays, shown paused at the end, so a Play from the lock screen still
+        // reaches this book (the engineer's review, F1).
+        phoneHooks.audioEnded?()
+        nowPlayingService.deactivatePhoneSessionIfIdle()
+        #endif
     }
 
     // MARK: - Resting at the End (TODO P07)
@@ -2945,6 +3016,11 @@ extension ReaderViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
             handOver.askForNextBookIfNotYetAsked()
         }
+        #if os(iOS)
+        // Nothing plays until the next book is asked for, half a second on,
+        // and the phone's session holds the app from then until it has loaded.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Whether a Play that reaches this reader goes to the hand-over to the
@@ -3430,6 +3506,10 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+        #if os(iOS)
+        // Paused, the book needs nothing held for it in the background.
+        phoneHooks.audioEnded?()
+        #endif
     }
 
     /// Stops an audiobook waiting to play, so that nothing starts it later:
@@ -3809,3 +3889,68 @@ final class NextBookHandOver {
 /// which stops it (`stopPlaybackForMemoryRunaway(footprint:)`) or saves its
 /// place (`savePosition()`) as TextMouth's memory runs away.
 extension ReaderViewModel: MemoryGuardedReader {}
+
+#if os(iOS)
+// MARK: - The iPhone's Audio Session
+
+/// What the iPhone's audio session asks of a reader (`PhoneAudioSession.attach(_:)`,
+/// `NowPlayingService.PhoneHandlers`).
+extension ReaderViewModel {
+    /// The system took the audio away for an interruption (a call, an alarm,
+    /// Siri, a navigation prompt): the book counts as paused where it stopped,
+    /// and its place is saved, as any pause saves it, with no pause sound,
+    /// which would ask for the audio the interruption holds.
+    ///
+    /// A text book's next Play starts cold at the cursor, since whether the
+    /// synthesizer or a stopped engine can go on afterwards is unknown on a
+    /// phone. An audiobook resumes its player, which AVFoundation pauses and
+    /// resumes across an interruption itself (Apple's guide, Table 3-2).
+    func pauseForAudioInterruption() {
+        if !isAudioBook {
+            invalidatePlaybackBackendForAudioRouteChange()
+        }
+        pause(playingPauseSound: false)
+    }
+
+    /// The session is about to be let go while this book isn't playing: its
+    /// next Play starts cold, and its speech engine stops running, so no audio
+    /// runs as the session deactivates (the engineer's review, F8).
+    func prepareForAudioSessionDeactivation() {
+        invalidatePlaybackBackendForAudioRouteChange()
+        if !isAudioBook {
+            speechService.pauseEngineForSessionDeactivation()
+        }
+    }
+
+    /// What the lock screen shows beside the title and author
+    /// (`PhoneNowPlayingInfo`): for an audiobook, its speed and the chapter's
+    /// clock, from the chapter's placeholder text, whose length is the
+    /// chapter's duration in tenths of a second (`AudioBookParser`); for
+    /// speech, nothing, since any figure would be an estimate.
+    var phoneNowPlayingDetails: PhoneNowPlayingDetails {
+        guard isAudioBook else { return .none }
+        guard let content, content.chapters.indices.contains(currentChapterIndex) else {
+            return PhoneNowPlayingDetails(speed: audioSpeed, chapterTime: nil)
+        }
+        let chapterLength = content.chapters[currentChapterIndex].text.utf16Length
+        return PhoneNowPlayingDetails(
+            speed: audioSpeed,
+            chapterTime: PhoneNowPlayingDetails.ChapterTime(
+                elapsed: AudioBookParser.time(forCharacterOffset: currentCharacterOffset),
+                duration: AudioBookParser.time(forCharacterOffset: chapterLength)
+            )
+        )
+    }
+
+    /// The media commands this book's units allow (`PhoneRemoteCommandPolicy`).
+    var phoneRemoteCommandPolicy: PhoneRemoteCommandPolicy {
+        // The phone moves by one unit in force, filled by its reader model;
+        // the lock screen must promise what a press does.
+        PhoneRemoteCommandPolicy(
+            unitInForce: phoneHooks.unitInForce,
+            forward: playbackSkipForwardUnit,
+            backward: playbackSkipBackwardUnit
+        )
+    }
+}
+#endif

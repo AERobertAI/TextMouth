@@ -47,6 +47,11 @@ extension ReaderViewModel {
             replaceWhereAmISynthesizer()
             speakWhereAmISummary(replacement)
         case .speak(let summary):
+            #if os(iOS)
+            // The announcement speaks through the app's audio session, which
+            // must be the app's first (the engineer's review, F7).
+            guard phoneHooks.audioMayStart() else { return }
+            #endif
             pauseBookForWhereAmI()
             speakWhereAmISummary(summary)
         }
@@ -305,8 +310,9 @@ extension ReaderViewModel {
     }
 
     /// Time left in `heading` from the live cursor at the current speed, or
-    /// nil when the heading spans no text to measure.
-    private func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
+    /// nil when the heading spans no text to measure. The iPhone's Where Am
+    /// I? value reads it too.
+    func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
         let totalHeadingChars = estimatedCharsInHeading(heading)
         guard totalHeadingChars > 0 else { return nil }
         let headingStart = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
@@ -595,6 +601,11 @@ extension ReaderViewModel {
         }
         // The window opens; the work below closes it.
         isWhereAmIEndSoundPlaying = true
+        #if os(iOS)
+        // Nothing of the book plays while the end sound does, and the book it
+        // paused resumes only after it.
+        phoneHooks.silentGapBegan?()
+        #endif
         afterWhereAmIEndSound { [weak self] in
             self?.resumeAfterWhereAmIEndSound()
         }

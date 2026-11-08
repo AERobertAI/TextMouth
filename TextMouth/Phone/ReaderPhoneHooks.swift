@@ -1,0 +1,42 @@
+import Foundation
+
+/// The iPhone's hooks into a reader: closures the phone's own code fills, which
+/// the reader calls at a few fixed points, each under `#if os(iOS)`. So a slice
+/// changes what a reader does on the phone by filling a closure, never by
+/// editing the reader's functions again. The reader keeps them in `phoneHooks`,
+/// which exists on iOS alone; the Mac compiles this type and never uses it.
+///
+/// Every default leaves the reader doing what it does on the Mac.
+struct ReaderPhoneHooks {
+    /// Asked before the reader's audio starts, speech or an audiobook: false
+    /// keeps it from starting, as when the audio session cannot be made active.
+    /// The audio slice adds the places that ask, in `ReaderViewModel+Playback`.
+    var audioMayStart: @MainActor () -> Bool = { true }
+
+    /// Moves forward by the reader's unit in place of `skipForward()`, for a
+    /// system command's skip (the AirPods' double press, Control Center), so
+    /// that every move on the phone takes one path. Nil keeps `skipForward()`.
+    var moveForward: (@MainActor () -> Void)?
+
+    /// Moves back by the reader's unit in place of `skipBackward()`, as
+    /// `moveForward` does. Nil keeps `skipBackward()`.
+    var moveBackward: (@MainActor () -> Void)?
+
+    /// Told when the book's audio has ended or gone silent for good, so the
+    /// phone can let go of what it held for it. The places that tell are the
+    /// audio slice's to add. Nil tells no one.
+    var audioEnded: (@MainActor () -> Void)?
+
+    /// Told when the book goes silent for a moment while it still plays: the
+    /// pause between chapters, the wait before the next book, a wait for a
+    /// chapter's speech. The phone holds the app running through it, until
+    /// audio may start again or ends. The places that tell are the audio
+    /// slice's to add. Nil tells no one.
+    var silentGapBegan: (@MainActor () -> Void)?
+
+    /// The unit the phone's moves go by for this reader now (its book's own,
+    /// else its kind's from Settings). The lock screen's skip commands are
+    /// built from it, so that they never promise 15 seconds and move a
+    /// sentence. Nil, as on the Mac, keeps the shared skip units.
+    var unitInForce: (@MainActor () -> SkipUnit)?
+}
