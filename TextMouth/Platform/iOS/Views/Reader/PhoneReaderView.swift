@@ -318,7 +318,7 @@ struct PhoneReaderView: View {
 
     /// Whether Settings' Follow in Braille is on, read from preferences.
     private static var followsInBraille: Bool {
-        TextMouthRuntime.current.preferences.bool(forKey: PhoneReaderModel.followInBrailleKey)
+        TextMouthRuntime.current.preferences.bool(forKey: PhoneDefaults.followInBrailleKey)
     }
 }
 
