@@ -208,3 +208,24 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - `goBack`, if the screen is a folder's and no search is in progress.
   - `nothing`, at the top of the Library, which has nowhere to go back to.
 - `PhoneLibraryView` attaches it as `.accessibilityAction(.escape)`.
+
+### The error alert plan, Speech Stopped, and the preview's pause
+
+- `PhoneErrorAlertPlan` decides what the error alert over the reader shows and does. It is the Mac's `ReaderViewModel.ErrorAlert`, with the Mac's buttons.
+  - An error that can be retried gets "Retry", or "Try Again" for a chapter that could not be got from the cloud, and "Cancel".
+  - An error that cannot be retried gets "OK" alone.
+  - Every button closes the alert and forgets the error in the reader.
+  - Retry then calls `retryAudioPlayback()` on the next turn of the main queue. A retry that fails again can then present a fresh alert, instead of having the closing alert clear its message.
+  - `returnsFocusToPlay(errorAlertNow:)` is true only when no alert is showing once the alert has closed, so focus is never taken from a fresh alert.
+  - `PhoneReaderErrorAlert` presents the alert from the session's snapshot (`snapshot.errorAlert`), which changes only when the alert comes or goes.
+- The Speech Stopped sheet is `PhoneSpeechRefusalSheet`, over the Mac's `SpeechRefusalReport` and `SpeechRefusalWording`. Its words say iPhone where the Mac's say Mac.
+  - The summary reads "The iPhone's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
+  - The report's device heading is "This iPhone", and its system line starts "iOS:".
+  - `SpeechRefusalWording.runsOnPhone` chooses the words, and each function takes an `onPhone` parameter, so the Mac's tests reach both.
+  - The sheet has no Show Logs in Finder. VoiceOver's order is the heading with what happened, the Details text area, Copy Details, and Close in the toolbar.
+  - `PhoneSpeechRefusalPresentation.shows` decides when it shows. A screen presents one sheet or alert at a time, so the report waits while a panel sheet, the error alert, or another alert is over the reader. It shows as the last of them closes.
+- Preview Voice pauses a playing book. `PhonePreviewPause.pause` pauses each reader that plays, and returns a closure that plays on the readers it paused, or nil if none was playing.
+  - The closure leaves alone a book that plays by then, because a second Play would only restart it.
+  - `PhoneSession.pauseBookForPreview` gives it both readers, once each. It pauses without the pause sound, since the preview is about to speak.
+  - `PhoneSettingsVoicePreview` asks `audioMayStart` first. It pauses the book only at the first of a run of previews, and resumes it once, when the last preview ends, is cancelled, is refused by the speech engine, or is stopped.
+  - Settings and the reader's Voice sheet both use it.
