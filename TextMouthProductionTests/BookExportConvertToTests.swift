@@ -143,7 +143,7 @@ final class BookExportConvertToTests: XCTestCase {
             Array(choices.dropFirst()),
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
-        for kind in BookExportKind.allCases where kind != .markdown {
+        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript {
             XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }

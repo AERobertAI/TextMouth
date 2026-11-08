@@ -247,6 +247,41 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(ImportDecisionWording.replacingKeepsAudioSentence, Self.audioKeptWords)
     }
 
+    /// When the new copy of an audiobook brought a transcript from a file
+    /// beside its audio (FMT23), the question says exactly which transcript
+    /// replacing keeps (B1): the existing copy's, recognized or touched by
+    /// the listener, rather than the file's; or the file's, in place of an
+    /// untouched transcript from outside. With nothing to choose, it says
+    /// what it always said.
+    func testAnAudiobooksDuplicateQuestionSaysWhichTranscriptReplacingKeeps() {
+        let existing = Book(title: "Earlier Tide", format: .audio, filePath: "/library/a.m4b", md5Hash: "tide")
+        let copy = Book(title: "Tide", format: .audio, filePath: "/library/b.m4b", md5Hash: "tide")
+        func message(_ outcome: DuplicateReplacement.TranscriptOutcome) -> String {
+            let duplicate = ImportDecision.DuplicateBook(
+                book: copy, existing: existing, originalURL: nil, warning: nil, transcriptOutcome: outcome
+            )
+            let question = ImportDecision(kind: .duplicate(duplicate), request: ImportRequest())
+            return ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: true).message
+        }
+        let choice = "“Tide” matches “Earlier Tide”, which is already in your library. "
+            + "Replace the existing copy, or keep both as separate books?\n\n"
+        let keepsExisting = "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
+            + "and place on the reading list, and its transcript when the audio is the same, rather than "
+            + "the transcript file found beside the new copy's audio. Edits of its audio or of its manifest are not kept."
+        let broughtReplaces = "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
+            + "and place on the reading list. The transcript file found beside the new copy's audio replaces "
+            + "the existing copy's transcript. Edits of its audio or of its manifest are not kept."
+
+        XCTAssertEqual(message(.asBefore), choice + Self.audioKeptWords + " " + Self.trashWords)
+        XCTAssertEqual(message(.keepsExisting), choice + keepsExisting + " " + Self.trashWords)
+        XCTAssertEqual(message(.broughtReplacesExisting), choice + broughtReplaces + " " + Self.trashWords)
+        // A text book's question has no transcript to choose.
+        XCTAssertEqual(
+            ImportDecisionWording.replacingKeepsSentence(existing: .epub, new: .epub, transcript: .keepsExisting),
+            Self.textKeptWords
+        )
+    }
+
     /// When one copy is an audiobook and the other is not, the question
     /// says replacing keeps only the book's place in the library, and not
     /// its position, bookmarks with their notes, or settings, whichever copy

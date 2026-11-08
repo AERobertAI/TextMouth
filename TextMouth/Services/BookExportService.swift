@@ -69,9 +69,10 @@ struct BookExportFile: Equatable, Sendable {
         /// The file at `from`, made into another by the conversion `by`, for
         /// the book `book` (FMT18): a text book's content.md, walked and
         /// written by a text writer, or spoken into one audio file by a speech
-        /// export (FMT43). (Every kind is written to a scratch file and moved
-        /// into place once whole, so no half-written file is ever left in the
-        /// folder chosen.)
+        /// export (FMT43). An audiobook's transcript.json, written as
+        /// captions, is one too (FMT23). (Every kind is written to a scratch
+        /// file and moved into place once whole, so no half-written file is
+        /// ever left in the folder chosen.)
         case converted(from: URL, book: ExportBookDetails, by: BookExportConversion)
 
         /// The package file whose bytes are read.
@@ -109,6 +110,12 @@ struct BookExportItem: Equatable, Sendable {
     /// only in the cloud (FR02); nil when every one is on this Mac. Such an
     /// item is never exported, since copying it would download it.
     let fileInCloud: URL?
+    /// A transcript's transcript.json when it is only in the cloud (FMT23):
+    /// its Markdown, on this Mac, is offered and exported as text, but
+    /// captions are made of the transcript.json, so captions of this book
+    /// are refused as an item in the cloud is, never left out in silence
+    /// (`BookExportService.plan`). Nil for every other item.
+    var transcriptInCloud: URL? = nil
 
     /// The item's size in bytes: its files' sizes together.
     var byteCount: Int64 {
@@ -245,6 +252,8 @@ extension BookExportKind {
 /// - Speech (FMT43): a text book's content.md, or a range of its headings,
 ///   spoken by its voice into one audio file with a chapter per heading by
 ///   `SpeechExportJob`, as the request asks.
+/// - Captions (FMT23): an audiobook's transcript.json, written as WebVTT or
+///   SubRip, one file for the book, timed from the start of its audio.
 ///
 /// Another audio kind (FMT30) can gain a case of its own the same way.
 enum BookExportConversion: Sendable, Equatable {
@@ -255,6 +264,11 @@ enum BookExportConversion: Sendable, Equatable {
     /// and pitch, the format, and the file's name and tags (FMT43). It makes
     /// the file of "Text as spoken audio" alone.
     case speech(SpeechExportRequest)
+
+    /// A transcript's transcript.json, written as captions in the format
+    /// (FMT23): one file for the book, timed from the start of its audio
+    /// (`Transcript.bookTimelineCues`).
+    case timedText(TranscriptExportFormat)
 
     /// The Markdown an export writes of a text book (and of an audiobook's
     /// transcript): written afresh from the walk of its content.md with only
@@ -271,19 +285,25 @@ enum BookExportConversion: Sendable, Equatable {
             return conversion.fileExtension
         case .speech(let request):
             return request.format.fileExtension
+        case .timedText(let format):
+            return format.fileExtension
         }
     }
 
     /// Whether the conversion can make the files of `kind`: a text
-    /// conversion makes those of a kind whose `convertsText` is true, a
-    /// speech conversion those of "Text as spoken audio" alone, and each is
-    /// ignored for any other.
+    /// conversion makes those of a kind whose `convertsText` is true, and a
+    /// transcript's text, its Markdown (TODO 3984); a speech conversion those
+    /// of "Text as spoken audio" alone; captions a transcript's alone
+    /// (FMT23). Each is ignored for any other kind.
     func applies(to kind: BookExportKind) -> Bool {
         switch self {
         case .text:
-            return kind.convertsText
+            return kind.convertsText || kind == .transcript
         case .speech:
             return kind == .spokenAudio
+        case .timedText:
+            // Captions are made of a transcript alone.
+            return kind == .transcript
         }
     }
 
@@ -296,6 +316,8 @@ enum BookExportConversion: Sendable, Equatable {
             return conversion.name
         case .speech(let request):
             return request.format.title
+        case .timedText(let format):
+            return format.name
         }
     }
 }
@@ -423,14 +445,19 @@ enum BookExportService {
     ) -> BookExportItem? {
         var files: [BookExportFile] = []
         let transcript = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
-        if access.presence(of: transcript) == .present {
+        let presence = access.presence(of: transcript)
+        if presence == .present {
             files.append(copy(transcript, as: "\(stem) - Transcript.json"))
         }
         if book.format.isAudio, let markdown {
             files.append(markdownFile(of: book, from: markdown, as: "\(stem) - Transcript.md"))
         }
         guard !files.isEmpty else { return nil }
-        return standaloneItem(.transcript, files: files, access: access)
+        var item = standaloneItem(.transcript, files: files, access: access)
+        if presence == .inCloud {
+            item.transcriptInCloud = transcript
+        }
+        return item
     }
 
     /// An item of `kind` whose `files` are exported each as itself, in the
@@ -779,7 +806,13 @@ enum BookExportService {
         var exporting: [(book: Book, items: [BookExportItem])] = []
         for offer in offers where !kinds.isEmpty {
             let chosen = offer.items.filter { kinds.contains($0.kind) }
-            if offer.isPackageInCloud || chosen.contains(where: \.isInCloud) {
+            // Captions are made of a transcript.json, so one only in the
+            // cloud leaves the book in the cloud for them (FMT23, S4).
+            let captionsInCloud = chosen.contains { item in
+                guard case .timedText? = conversions[item.kind] else { return false }
+                return item.transcriptInCloud != nil
+            }
+            if offer.isPackageInCloud || chosen.contains(where: \.isInCloud) || captionsInCloud {
                 cloud.noteInCloud(BookExportBookName(offer.book))
             }
             let onThisMac = chosen.filter { !$0.isInCloud && !$0.files.isEmpty }
@@ -819,6 +852,12 @@ enum BookExportService {
     /// conversion's extension (FMT18). Reading text is left as it is, and a
     /// spoken placeholder is left out. "Text as spoken audio" is planned by
     /// its speech conversion alone (`spokenFiles`).
+    /// Captions (FMT23) are made of the transcript's transcript.json alone,
+    /// "Moby-Dick - Transcript.json" becoming "Moby-Dick - Transcript.vtt":
+    /// the Markdown written from it is not exported with them. A text
+    /// writer, the other way about, writes the transcript's text alone (TODO
+    /// 3984), "Moby-Dick - Transcript.md" becoming "Moby-Dick -
+    /// Transcript.html", and its transcript.json is not exported.
     private static func files(
         of item: BookExportItem,
         for book: Book,
@@ -831,7 +870,16 @@ enum BookExportService {
             return item.files
         }
         let details = ExportBookDetails(book)
-        return item.files.compactMap { file -> BookExportFile? in
+        var toConvert = item.files
+        // Captions are made of the transcript.json alone (FMT23).
+        if case .timedText = conversion {
+            toConvert = item.files.filter(isTranscriptFile)
+        }
+        // A text writer writes the transcript's text alone (TODO 3984).
+        if case .text = conversion, item.kind == .transcript {
+            toConvert = item.files.filter { !isTranscriptFile($0) }
+        }
+        return toConvert.compactMap { file -> BookExportFile? in
             let url: URL
             switch file.source {
             case .copy(let source), .converted(let source, _, _):
@@ -884,6 +932,34 @@ enum BookExportService {
         }
     }
 
+    /// The captions asked of `offers` that cannot be made, each a failure
+    /// a listener hears with the export's end (S4): a book whose Transcript
+    /// item holds its Markdown but no transcript.json, as when its
+    /// transcript was set aside as unusable, has no timed transcript to
+    /// write, and would otherwise be skipped in silence. One whose
+    /// transcript.json is only in the cloud is left in the cloud instead
+    /// (`plan`), and one in the cloud as a whole is not asked here.
+    private static func captionsWithoutATranscript(
+        _ offers: [BookExportOffer],
+        kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion]
+    ) -> [BookExportFailure] {
+        guard kinds.contains(.transcript), let conversion = conversions[.transcript],
+              case .timedText = conversion else { return [] }
+        return offers.compactMap { offer in
+            guard !offer.isPackageInCloud, let item = offer.item(.transcript), !item.isInCloud,
+                  item.transcriptInCloud == nil, !item.files.contains(where: isTranscriptFile) else { return nil }
+            let name = "\(fileNameStem(for: offer.book.title)) - Transcript.\(conversion.fileExtension)"
+            return BookExportFailure(name: name, reason: BookExportWording.noTimedTranscriptReason)
+        }
+    }
+
+    /// Whether `file` is made from a transcript's transcript.json, which
+    /// captions are made of and a text writer leaves out (FMT23).
+    private static func isTranscriptFile(_ file: BookExportFile) -> Bool {
+        file.source.url.lastPathComponent == TextMouthPaths.transcriptFileName
+    }
+
     /// Exports the `kinds` chosen of `offers` into `destination`, as `plan`
     /// lays them out, and says what it did.
     ///
@@ -924,6 +1000,7 @@ enum BookExportService {
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
         var outcome = BookExportOutcome(destination: destination, booksInCloud: booksInCloud)
+        outcome.failures += captionsWithoutATranscript(offers, kinds: kinds, conversions: conversions)
         // One token for the whole export, so a conversion has one to check
         // even when the caller passed none.
         let token = cancellation ?? BookExportCancellation()
@@ -1020,13 +1097,16 @@ enum BookExportService {
     /// `writeThroughScratchFile` moves to `target` once whole. A text
     /// conversion walks them into a document and writes it with its writer;
     /// a speech conversion (FMT43) has `SpeechExportJob` speak them, as its
-    /// request asks, through `speech`, and encode them into the scratch file.
+    /// request asks, through `speech`, and encode them into the scratch file;
+    /// a transcript's captions (FMT23) are made of the transcript its bytes
+    /// hold instead of a walk (`Transcript.exportable(from:)`).
     /// Stop is checked after the read, all through the walk and the writing
     /// or the speaking and the encoding, and once more before the move.
     /// - Throws: `CancellationError` when stopped; the walk's or the
     ///   writer's error, or the speech export's (a refusal, such as a
     ///   Personal Voice, or a chapter that could not be spoken or encoded);
-    ///   and the move's, which fails rather than replace a file that
+    ///   `TranscriptExportError.unusable` for a transcript that can't be
+    ///   read; and the move's, which fails rather than replace a file that
     ///   appeared since the plan.
     private static func writeConverted(
         _ source: URL,
@@ -1069,6 +1149,12 @@ enum BookExportService {
                     cancellation: cancellation,
                     deliver: { try moveScratchFile(scratch, to: target, cancellation: cancellation) }
                 )
+            }
+        case .timedText(let format):
+            let transcript = try Transcript.exportable(from: bytes)
+            try cancellation.checkCancelled()
+            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+                try format.fileBytes(of: transcript.bookTimelineCues).write(to: scratch, options: .withoutOverwriting)
             }
         }
     }

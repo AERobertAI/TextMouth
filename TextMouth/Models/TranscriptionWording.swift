@@ -149,7 +149,50 @@ enum TranscriptionWording {
     /// English (United States). Transcribing again replaces this
     /// transcript."
     static func alreadyTranscribed(on date: Date, languageName: String) -> String {
-        "Transcribed on \(day(date)), in \(languageName). Transcribing again replaces this transcript."
+        "\(transcribedOn(date, languageName: languageName)) \(transcribingAgainReplaces)"
+    }
+
+    /// The sentence saying when and in which language recognition made a
+    /// transcript: "Transcribed on October 4, 2026, in English (United
+    /// States)." The sheet's line and Book Information's both begin with it.
+    private static func transcribedOn(_ date: Date, languageName: String) -> String {
+        "Transcribed on \(day(date)), in \(languageName)."
+    }
+
+    /// The line naming a transcript the book has from outside TextMouth's
+    /// recognizer (FMT23, FMT25), which transcribing again replaces: one
+    /// sentence of where it came from and when, as in "Attached from
+    /// “lecture.vtt” on October 30, 2026. Transcribing again replaces this
+    /// transcript."
+    static func outsideTranscript(_ source: TranscriptSource, on date: Date) -> String {
+        "\(cameFrom(source, on: day(date))) \(transcribingAgainReplaces)"
+    }
+
+    /// What each line naming the book's transcript ends with.
+    private static let transcribingAgainReplaces = "Transcribing again replaces this transcript."
+
+    /// Where a transcript from outside came from, as one sentence ending with
+    /// `day`, the day the book was given it: attached from a file, named
+    /// when one file was read and otherwise by its format; found when the
+    /// book was imported; or the podcast's own. An origin a later TextMouth
+    /// wrote, which this one cannot name, is said only to be attached.
+    private static func cameFrom(_ source: TranscriptSource, on day: String) -> String {
+        let quotedName = source.fileName.map { "“\($0)”" }
+        let formatName = source.knownFormat?.name
+        switch source.knownOrigin {
+        case .attached:
+            if let quotedName { return "Attached from \(quotedName) on \(day)." }
+            if let formatName { return "Attached from a \(formatName) file on \(day)." }
+            return "Attached from a file on \(day)."
+        case .imported:
+            // One file by its name; several by their format, when known.
+            let files = quotedName ?? formatName.map { "\($0) files" } ?? "files"
+            return "Attached from \(files) when the book was imported, on \(day)."
+        case .podcast:
+            return "The podcast's own transcript, downloaded with the episode on \(day)."
+        case nil:
+            return "Attached on \(day)."
+        }
     }
 
     /// The line warning that transcribing again replaces the user's own
@@ -185,8 +228,11 @@ enum TranscriptionWording {
 
     /// The line for a transcript written in a layout this TextMouth does
     /// not read.
-    static let transcriptFromLaterVersion = "This book has a transcript made by a later version of TextMouth. "
-        + "Transcribing again replaces it."
+    static let transcriptFromLaterVersion = "\(laterVersionSentence) Transcribing again replaces it."
+
+    /// The sentence saying a book's transcript is a later TextMouth's, which
+    /// the sheet's line and Book Information's both begin with.
+    private static let laterVersionSentence = "This book has a transcript made by a later version of TextMouth."
 
     /// The line saying another book is being transcribed, which keeps
     /// Transcribe unavailable until it finishes.
@@ -280,8 +326,7 @@ enum TranscriptionWording {
     /// Moby-Dick: 7,077 words in 51 seconds." The count is written with the
     /// user's grouping, as in "7,077".
     static func finished(bookTitle: String, wordCount: Int, seconds: TimeInterval) -> String {
-        let words = "\(wordCount.formatted()) \(wordCount == 1 ? "word" : "words")"
-        return "Transcribed \(bookTitle): \(words) in \(TimeFormatting.spoken(seconds))."
+        "Transcribed \(bookTitle): \(words(wordCount)) in \(TimeFormatting.spoken(seconds))."
     }
 
     /// Why a transcription stopped, as `TranscriptionError` words it, or as
@@ -353,10 +398,15 @@ enum TranscriptionWording {
     /// What the confirmation explains, saying when the user's own edits go
     /// too.
     static func deleteConfirmationMessage(isEdited: Bool) -> String {
-        let message = "The transcript and the text made from it are deleted. The audiobook's audio, your place, "
-            + "and your bookmarks stay as they are, and the book can be transcribed again."
+        let message = "The transcript and the text made from it are deleted. \(whatStays), "
+            + "and the book can be transcribed again."
         return isEdited ? message + " Your edits to the transcript are deleted too." : message
     }
+
+    /// What a confirmation before a transcript goes, deleted or replaced,
+    /// promises stays: "The audiobook's audio, your place, and your
+    /// bookmarks stay as they are", the same words in each.
+    private static let whatStays = "The audiobook's audio, your place, and your bookmarks stay as they are"
 
     /// The confirmation's deleting button.
     static let deleteButtonTitle = "Delete Transcript"
@@ -376,8 +426,177 @@ enum TranscriptionWording {
 
     /// Why Delete Transcript waits while the same book is transcribed.
     static func deleteWhileTranscribing(bookTitle: String) -> String {
-        "\(bookTitle) is being transcribed. Cancel the transcription first, or delete the transcript once it finishes."
+        whileTranscribing(bookTitle: bookTitle, orElse: "delete the transcript")
     }
+
+    /// Why a command waits while the same book is transcribed, as Delete
+    /// Transcript and Attach Transcript say it: "Moby-Dick is being
+    /// transcribed. Cancel the transcription first, or `action` once it
+    /// finishes."
+    private static func whileTranscribing(bookTitle: String, orElse action: String) -> String {
+        "\(bookTitle) is being transcribed. Cancel the transcription first, or \(action) once it finishes."
+    }
+
+    // MARK: Attach Transcript
+
+    /// The command that gives an audiobook a transcript from a WebVTT or
+    /// SubRip file instead of transcribing it, in the reader's Book menu
+    /// (FMT23).
+    static let attachCommandTitle = "Attach Transcript…"
+
+    /// What the Open panel asks for: "Choose a WebVTT (.vtt) or SubRip
+    /// (.srt) transcript of Moby-Dick. Its times count from the start of the
+    /// book's audio." A book of several tracks takes one file for the whole
+    /// book, its times running on across the tracks.
+    static func attachPanelMessage(bookTitle: String) -> String {
+        "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle). "
+            + "Its times count from the start of the book's audio."
+    }
+
+    /// The Open panel's button, which attaches the file chosen.
+    static let attachPanelPrompt = "Attach"
+
+    /// The title of the alert saying why Attach Transcript did nothing, or
+    /// why the file chosen was not attached.
+    static let attachNoticeTitle = "Attach Transcript"
+
+    /// The title of the notice saying why Transcribe Audio did nothing.
+    static let transcribeNoticeTitle = "Transcribe Audio"
+
+    /// Why Transcribe Audio waits while a transcript is being attached to
+    /// the same book (follow-up 7): "A transcript is being attached to
+    /// Moby-Dick. Transcribe it once that finishes."
+    static func transcribeWhileAttaching(bookTitle: String) -> String {
+        "A transcript is being attached to \(bookTitle). Transcribe it once that finishes."
+    }
+
+    /// Why Attach Transcript waits while the same book is transcribed.
+    static func attachWhileTranscribing(bookTitle: String) -> String {
+        whileTranscribing(bookTitle: bookTitle, orElse: "attach the transcript")
+    }
+
+    /// Why a file of another kind than WebVTT or SubRip was not attached.
+    static let attachUnknownFormat = "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."
+
+    /// Why an item that is not a plain file (a named pipe, say) was not attached.
+    static let attachNotAFile = "That item isn't a plain file TextMouth can read."
+
+    /// Why the file chosen was not attached, `reason` saying it in a
+    /// sentence of its own: "“lecture.vtt” wasn't attached to Moby-Dick:
+    /// The file isn't a WebVTT transcript TextMouth can read."
+    static func attachFailed(fileName: String, bookTitle: String, reason: String) -> String {
+        "“\(fileName)” wasn't attached to \(bookTitle): \(reason)"
+    }
+
+    /// The title of the confirmation before a transcript from a file
+    /// replaces the book's own: "Replace the Transcript of Moby-Dick?"
+    static func replaceConfirmationTitle(bookTitle: String) -> String {
+        "Replace the Transcript of \(bookTitle)?"
+    }
+
+    /// What the confirmation explains: the transcript from the file named
+    /// `fileName` replaces the book's and its text, while the audio, the
+    /// place, and the bookmarks stay; then whether the user's own edits of
+    /// the transcript go too, and whether its cleanup does.
+    static func replaceConfirmationMessage(fileName: String, isEdited: Bool, isCleanedUp: Bool) -> String {
+        var message = "The transcript from “\(fileName)” replaces the book's transcript and the text made from it. "
+            + "\(whatStays)."
+        if isEdited {
+            message += " Your edits to the transcript are replaced too."
+        }
+        if isCleanedUp {
+            message += " Its cleanup is replaced too."
+        }
+        return message
+    }
+
+    /// The confirmation's replacing button.
+    static let replaceButtonTitle = "Replace Transcript"
+
+    /// What VoiceOver hears as the file's transcript begins to be saved,
+    /// the book's audio measured and fingerprinted, which takes seconds for
+    /// a long book: "Attaching “lecture.vtt” to Moby-Dick.", in the words a
+    /// transcription's start is said in ("Transcribing Moby-Dick.").
+    static func attaching(fileName: String, bookTitle: String) -> String {
+        "Attaching “\(fileName)” to \(bookTitle)."
+    }
+
+    /// What VoiceOver hears once the file is attached: "Attached
+    /// “lecture.vtt” to Moby-Dick: 7,077 words.", the count written with the
+    /// user's grouping, as a finished transcription says it; then, when
+    /// `skipped` of the file's timed passages could not be read, how many
+    /// were left out: " 1 timed passage couldn't be read and was left out."
+    static func attached(fileName: String, bookTitle: String, wordCount: Int, skipped: Int) -> String {
+        let sentence = "Attached “\(fileName)” to \(bookTitle): \(words(wordCount))."
+        guard skipped > 0 else { return sentence }
+        let leftOut = grouped(
+            skipped,
+            singular: "timed passage couldn't be read and was left out",
+            plural: "timed passages couldn't be read and were left out"
+        )
+        return "\(sentence) \(leftOut)."
+    }
+
+    // MARK: Book Information
+
+    /// The label of the read-only detail in Book Information that says where
+    /// a book's transcript came from.
+    static let bookInfoLabel = "Transcript"
+
+    /// What VoiceOver says for the editor's Transcript detail whose line is
+    /// `line`: "Transcript: Attached from “lecture.vtt” on October 30, 2026."
+    /// (Details of the read-only sheet are spoken by `FeedInfoValue`.)
+    static func bookInfoSpokenDetail(_ line: String) -> String {
+        "\(bookInfoLabel): \(line)"
+    }
+
+    /// What Book Information's detail says of a book's transcript, from what
+    /// a read of it found: nil when the book has none the sheet could name
+    /// (none, or one set aside as unusable, as the Transcribe Audio sheet
+    /// counts them), and otherwise one line, with no word about
+    /// transcribing again, which Book Information does not offer.
+    static func bookInfoLine(for lookup: TranscriptStore.Lookup) -> String? {
+        switch lookup {
+        case .missing, .unusable:
+            return nil
+        case .inCloud:
+            return transcriptDetailsInCloud
+        case .unsupportedVersion:
+            return laterVersionSentence
+        case .found(let transcript):
+            return bookInfoLine(of: transcript)
+        }
+    }
+
+    /// The line for a transcript that was read: where it came from and when
+    /// (from outside, as the sheet words it, or from recognition, with its
+    /// language), then, when the listener changed it, when they edited it
+    /// and when they cleaned it up.
+    static func bookInfoLine(of transcript: Transcript) -> String {
+        var sentences: [String]
+        if let source = transcript.source {
+            // A transcript from outside names no language worth saying; as
+            // in the sheet, where it came from is said instead.
+            sentences = [cameFrom(source, on: day(transcript.createdAt))]
+        } else {
+            let language = TranscriptionLanguage.name(of: transcript.locale)
+            sentences = [transcribedOn(transcript.createdAt, languageName: language)]
+        }
+        if let edited = transcript.editedAt {
+            sentences.append("You edited it on \(day(edited)).")
+        }
+        if let cleaned = transcript.cleanedUp?.cleanedAt {
+            sentences.append("You cleaned it up on \(day(cleaned)).")
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// The line for a book whose transcript is only in the cloud, which Book
+    /// Information does not download, so none of its details can be told
+    /// yet: "in the cloud", as the app says it of every cloud drive, not
+    /// iCloud alone.
+    private static let transcriptDetailsInCloud =
+        "The transcript is only in the cloud. Its details appear once the book is downloaded."
 
     // MARK: The Library Row
 
@@ -397,6 +616,19 @@ enum TranscriptionWording {
     /// `date` as a day in the user's own words: "October 4, 2026".
     static func day(_ date: Date) -> String {
         date.formatted(date: .long, time: .omitted)
+    }
+
+    /// `count` words, the count written with the user's grouping: "1 word",
+    /// "7,077 words".
+    private static func words(_ count: Int) -> String {
+        grouped(count, singular: "word", plural: "words")
+    }
+
+    /// `count`, written with the user's grouping, followed by `singular`
+    /// after exactly one and `plural` after every other count, as
+    /// `CountWording.phrase` counts but with "7,077" in place of "7077".
+    private static func grouped(_ count: Int, singular: String, plural: String) -> String {
+        "\(count.formatted()) \(count == 1 ? singular : plural)"
     }
 }
 

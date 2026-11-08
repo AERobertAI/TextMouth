@@ -748,7 +748,14 @@ final class FeedDownloadManager {
 
     /// Downloads an episode's file and imports it as an audiobook: as the
     /// book `kept` was, when the item's package was kept after an earlier
-    /// download's file went.
+    /// download's file went. The transcript and chapters its feed links
+    /// beside it come with it (FMT25, `FeedEpisodeExtras`), once its file has
+    /// arrived: the chapters go into its package before it is read, and the
+    /// transcript becomes the book's once it is listed. Neither can fail the
+    /// download. They are fetched while it is still the download under way,
+    /// so its progress still shows it, and Cancel Download stops them as it
+    /// stops the file; a quit meanwhile starts the episode over at the next
+    /// launch, as a quit during its import does.
     private func downloadEpisode(
         _ item: FeedItem,
         enclosure: FeedEnclosure,
@@ -814,9 +821,53 @@ final class FeedDownloadManager {
             throw FeedDownloadError.unsupportedFile(downloaded.mimeType ?? enclosure.mimeType ?? enclosure.url.pathExtension)
         }
         let fileName = FeedEpisodeImporter.fileName(title: item.title, fileExtension: fileExtension)
+        let extras = await FeedEpisodeExtras.fetch(
+            for: item,
+            of: feed,
+            network: environment.network,
+            discretionary: request.origin == .window
+        )
+        // Stopped while they came, the download stops here, before its book
+        // is imported, as it does when stopped as its file arrived.
+        try Task.checkCancellation()
+        guard !isStoppedForQuit else { throw FeedDownloadError.transfer(.cancelled) }
         let now = environment.now()
-        return try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
-            try FeedEpisodeImporter.importEpisode(holding, named: fileName, item: item, of: feed, dateAdded: now, restoring: kept)
+        let book = try await importAndCommit(request, restoringKeptPackage: FeedEpisodeImporter.restoresKeptPackage(kept)) {
+            try FeedEpisodeImporter.importEpisode(
+                holding,
+                named: fileName,
+                item: item,
+                of: feed,
+                dateAdded: now,
+                restoring: kept,
+                chapters: extras.chapters
+            )
+        }
+        if let transcript = extras.transcript {
+            await attachTranscript(transcript, to: book, item: item, of: feed)
+        }
+        return book
+    }
+
+    /// Makes `document`, the transcript fetched with the episode `item` of
+    /// `feed`, the transcript of `book`, the book it just became, on the
+    /// import queue, so it never interleaves with a rule's removal of the
+    /// episode's files (`FeedEpisodeExtras.attach(_:to:)`). The library row
+    /// then says the book is transcribed, and an open reader shows the text.
+    /// A transcript that cannot be used leaves the book as it is, with one
+    /// line in the debug log. It is done before the download ends, so a
+    /// reader the download opens shows the text at once.
+    private func attachTranscript(_ document: TimedTextDocument, to book: Book, item: FeedItem, of feed: Feed) async {
+        let episode = "\(item.title) (\(feed.title))"
+        let listed = library()?.feedBook(withID: book.id) ?? book
+        let attached = await runBesideImports { Result { try FeedEpisodeExtras.attach(document, to: listed) } }
+        switch attached {
+        case .success(let attached):
+            library()?.feedTranscriptAttached(bookID: book.id, text: attached.installation.text)
+            let words = CountWording.phrase(attached.wordCount, singular: "word", plural: "words")
+            DiagnosticLog.event(.feeds, "FEED_TRANSCRIPT_ATTACHED: \(episode): \(document.format.name), \(words)")
+        case .failure(let error):
+            DiagnosticLog.event(.feeds, "FEED_TRANSCRIPT_NOT_ATTACHED: \(episode): \(FeedEpisodeExtras.logReason(of: error))")
         }
     }
 

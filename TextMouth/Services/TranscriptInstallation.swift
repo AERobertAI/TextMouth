@@ -52,18 +52,41 @@ extension TranscriptStore {
     /// waits for, and blocks while it reads and writes; call it off the main
     /// thread. Pass the book as the library holds it now: a transcription
     /// takes minutes, and the book may have moved meanwhile.
+    /// - Parameter keepingExisting: Keeps a transcript the book has already:
+    ///   when its package holds a transcript.json, on this Mac or only in
+    ///   iCloud (`hasTranscript(of:)`, a look that never downloads), nothing
+    ///   is read or written, and `OutsideTranscriptError.alreadyTranscribed`
+    ///   is thrown. The podcast fetch (FMT25) passes true, so a transcript
+    ///   the listener has, one they made or changed, is never replaced;
+    ///   only the podcast's own, untouched, gives way to the one fetched
+    ///   (`FeedEpisodeExtras.attach(_:to:)`). The look is made inside the storage
+    ///   work, at the book's package as it is now, before anything is read,
+    ///   so no data-directory move comes between it and the install's write;
+    ///   installs are not made one at a time, though, so another install of
+    ///   the same book at the same moment still could.
+    /// - Parameter givingWayToAnUntouchedPodcastTranscript: With
+    ///   `keepingExisting`, a transcript that is the podcast's own and that
+    ///   the listener has neither edited nor cleaned up
+    ///   (`holdsUntouchedPodcastTranscript(in:)`) is not kept but replaced
+    ///   (FMT25). It is looked at in the same storage work as the transcript
+    ///   being there at all, so an edit saved while the caller measured the
+    ///   audio, seconds before, makes the transcript the listener's, and it
+    ///   is kept.
     /// - Parameter saveIndex: Saves the book's audio index, with the text's
     ///   layer, through the book's record, returning the book as the record
     ///   holds it then (`LibraryPersistenceService.saveContentAnalysis`);
     ///   tests pass one that fails.
     /// - Throws: `TranscriptionError.notAnAudiobook`, `.audioChanged` when a
     ///   file of the book is no longer the one transcribed,
-    ///   `TranscriptTextError.textOnlyInCloud` or `.textNotKept`, and the
-    ///   error that kept a file from being written.
+    ///   `OutsideTranscriptError.alreadyTranscribed` when the book has a
+    ///   transcript to keep, `TranscriptTextError.textOnlyInCloud` or
+    ///   `.textNotKept`, and the error that kept a file from being written.
     @discardableResult
     static func install(
         _ transcript: Transcript,
         for book: Book,
+        keepingExisting: Bool = false,
+        givingWayToAnUntouchedPodcastTranscript: Bool = false,
         hasher: FingerprintHasher = .md5,
         isDataless: @escaping (URL) -> Bool = DatalessFiles.isDataless,
         keepCopy: @escaping (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:),
@@ -80,6 +103,13 @@ extension TranscriptStore {
             let book = boundary.rebasedToCurrent(book)
             guard FileManager.default.fileExists(atPath: book.tmbDirectory.path) else {
                 throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: book.tmbDirectory.lastPathComponent])
+            }
+            // A transcript the book has, kept when asked, before anything
+            // is read or written: unless it is the podcast's own, untouched,
+            // when asked to give way to that, as it stands now.
+            if keepingExisting, hasTranscript(of: book),
+               !(givingWayToAnUntouchedPodcastTranscript && holdsUntouchedPodcastTranscript(in: book.tmbDirectory)) {
+                throw OutsideTranscriptError.alreadyTranscribed
             }
             var audioIndex = try BookContentAnalysisService.load(book: book).index
             // The text the book's transcript wrote last: other text in
@@ -155,6 +185,89 @@ extension TranscriptStore {
                 throw error
             }
         }
+    }
+}
+
+// MARK: - Whether a Book Has a Transcript
+
+extension TranscriptStore {
+    /// Whether `book`'s package holds a transcript, transcript.json, on this
+    /// Mac or only in iCloud: a look at the package's folder, never a read,
+    /// so nothing is downloaded, and whether the transcript can be read is
+    /// not known from it. An install that keeps a transcript the book has
+    /// looks with it (`install`'s `keepingExisting`), and so does an import
+    /// deciding whether to offer to transcribe its book
+    /// (`TranscriptionOffers`).
+    static func hasTranscript(of book: Book) -> Bool {
+        FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path)
+    }
+
+    /// What transcript.json says of where its transcript came from and of
+    /// whether the listener has touched it, decoded without its sentences.
+    struct Provenance: Decodable, Equatable {
+        /// The transcript's layout version.
+        let version: Int
+        /// Where the transcript came from, when recognition did not make it.
+        let source: TranscriptSource?
+        /// Whether the listener edited it or cleaned it up.
+        let isTouched: Bool
+
+        private enum CodingKeys: String, CodingKey {
+            case version, source, editedAt, cleanedUp
+        }
+
+        /// Reads the fields above, and no others. Whether the listener
+        /// touched the transcript is whether either field is there at all,
+        /// whatever it holds: transcript.json leaves each out until then.
+        init(from decoder: Decoder) throws {
+            let fields = try decoder.container(keyedBy: CodingKeys.self)
+            version = try fields.decode(Int.self, forKey: .version)
+            source = try fields.decodeIfPresent(TranscriptSource.self, forKey: .source)
+            isTouched = fields.contains(.editedAt) || fields.contains(.cleanedUp)
+        }
+
+        /// Whether the transcript is of the layout this TextMouth writes,
+        /// whose fields it can vouch for.
+        var isOfThisLayout: Bool {
+            version == Transcript.currentVersion
+        }
+    }
+
+    /// Whether the transcript in the package at `package` is a podcast's
+    /// own, fetched with its episode (FMT25), that the listener has neither
+    /// edited nor cleaned up: one nothing of the listener's would be lost
+    /// with. Read without downloading anything. Any doubt answers false, so
+    /// the transcript is taken for the listener's: no transcript, one only
+    /// in the cloud, one that cannot be read, one of another layout, and one
+    /// of an origin this TextMouth does not know. It is only a read: a file
+    /// that cannot be used is left where it is, as a read for the reader
+    /// would not leave it.
+    ///
+    /// The main thread asks this before a removal, for an unopened episode
+    /// holding nothing else of the listener's. A long transcript runs to
+    /// megabytes, so its sentences are never decoded for the question
+    /// (`Provenance`).
+    static func holdsUntouchedPodcastTranscript(
+        in package: URL,
+        using reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Bool {
+        guard let provenance = provenance(in: package, using: reader) else { return false }
+        return provenance.isOfThisLayout && provenance.source?.knownOrigin == .podcast && !provenance.isTouched
+    }
+
+    /// Where the transcript in the package at `package` came from, and
+    /// whether the listener touched it (`Provenance`), read without its
+    /// sentences and without downloading anything; nil for no transcript,
+    /// one only in the cloud, and one that cannot be read. A file that
+    /// cannot be used is left where it is.
+    static func provenance(
+        in package: URL,
+        using reader: SavedFile.Reader = SavedFile.readWithoutDownloading
+    ) -> Provenance? {
+        guard case .contents(let bytes) = SavedFile.read(TextMouthPaths.transcriptPath(in: package), using: reader) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(Provenance.self, from: bytes)
     }
 }
 
