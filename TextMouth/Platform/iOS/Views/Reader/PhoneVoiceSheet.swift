@@ -171,7 +171,8 @@ struct PhoneVoiceSheet: View {
             ) {
                 Text(PhoneVoiceVocabulary.speedLabel)
             }
-            .accessibilityLabel(PhoneVoiceVocabulary.speedLabel)
+            // The label closure above is the label: given again, as the
+            // simulator showed, it is read "Speed, Speed".
             .accessibilityValue(PhoneVoiceVocabulary.speedValue(wordsPerMinute: shown.wordsPerMinute))
         }
         Section {
@@ -182,7 +183,6 @@ struct PhoneVoiceSheet: View {
             ) {
                 Text(PhoneVoiceVocabulary.pitchLabel)
             }
-            .accessibilityLabel(PhoneVoiceVocabulary.pitchLabel)
             .accessibilityValue(SpeechService.pitchLabel(shown.pitch))
         }
     }
@@ -199,7 +199,6 @@ struct PhoneVoiceSheet: View {
             ) {
                 Text(BookSettingsWording.audioSpeedLabel)
             }
-            .accessibilityLabel(BookSettingsWording.audioSpeedLabel)
             .accessibilityValue(AudioSpeed.spokenLabel(for: shown.audioSpeed))
             .accessibilityHint(AudioSpeed.stepHint(AudioSpeed.fineStep))
         }
