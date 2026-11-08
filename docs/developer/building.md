@@ -40,9 +40,10 @@ project.yml defines two apps over one source folder. `TextMouth` is the Mac app,
 - It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
 - It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has the Mac app's bundle identifier. It takes the same three Swift packages (ZIPFoundation, SwiftSoup, and swift-markdown's Markdown) and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`. project.yml defines each library once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
-- It shows one placeholder screen, which says the iPhone app is still being built. Phase 0 makes the shared code compile for iOS; it builds nothing for an iPhone's user.
-- No shared scheme is committed, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
+- It is the iPhone app: the Library, the reader, Settings, and importing, built from IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)). It first ran in the iOS simulator on November 8, 2026. Nothing has run on a phone.
+- Its scheme, `TextMouthiOS`, is committed. The Mac's schemes are still Xcode's own, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
 - Xcode builds it only once its iOS platform is downloaded (see What you need, above). Until then, `make typecheck-ios` is how its code is checked.
+- Building it for the simulator is the next section.
 
 The three make targets run the scripts in `Scripts/ios`. They read a commit, so run them on committed work.
 
@@ -53,6 +54,46 @@ The three make targets run the scripts in `Scripts/ios`. They read a commit, so 
 The two type-checks print their result and write it to `build/typecheck/results/` in the main checkout, which git ignores, in a folder for each run, named by who ran it, the platform, the mode, the commit, and the time. The folder holds `summary.md` (the result, the errors and warnings in the app, the link, the errors by file, and the kinds of error), `errors.txt`, `warnings.txt`, and `build.log`, and the last line of the output names it. A run exits with status 0 when the build succeeded, 1 when it found errors, 2 when it could not set up, and 3 when the lock stayed busy for the whole wait.
 
 **The heavy-work lock.** The Mac has 8 GB of memory, and on October 31, 2026 it froze under several builds at once, so one heavy job runs on it at a time. The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time. A job that finds it held says whom it waits for and since when, and waits, by default up to 60 minutes. A lock whose owner has ended, from a crash or a killed agent, is taken over. So a type-check started while the train builds waits for the train, and the reverse.
+
+### Building TextMouthiOS for the simulator
+
+The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xcode 26.0.1 installs. This is how the iPhone team builds and runs the app there.
+
+- **The scheme.**
+  - `TextMouthiOS` is committed at `TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme`. XcodeGen writes it from the `scheme:` block of the `TextMouthiOS` target in project.yml.
+  - It runs both iOS test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests` (see [Testing TextMouth](testing.md)), and gathers no code coverage.
+  - The scheme Xcode made by itself held only the UI tests, which is why this one is committed.
+- **One build folder.**
+  - Every simulator build puts its products in `build/DerivedData-ios.noindex`, with `-derivedDataPath build/DerivedData-ios.noindex`. The folder is in `build/`, which git ignores.
+  - The name ends in `.noindex` so that Spotlight does not index it.
+  - It was 792 MB after the first build and run.
+  - It is not the Mac's `build/DerivedData`. The two never share a folder.
+- **iPhone 17 only.**
+  - Every run uses the iPhone 17 simulator, as in `-destination 'platform=iOS Simulator,name=iPhone 17'`. Make no new simulator devices.
+  - The first boot of a device adds about 2.1 GB of disk. The iPhone 17's data is 2.5 GB in all.
+  - The disk is tight, so these two costs count against the free space before a run.
+- **The heavy-work lock.**
+  - Every simulator build or test run goes through `run_locked.py`. It takes the heavy-work lock (see The heavy-work lock, above), runs one command, and exits with the command's status: `python3 -I build/orchestrator/followups1105/run_locked.py NAME COMMAND...`. NAME says who holds the lock.
+  - It waits up to three hours for the lock, and exits with status 3 if it never gets it.
+  - `run_locked.py` is in `build/orchestrator/` of the main checkout, which git ignores, so a fresh clone does not have it. Run it with `python3 -I`, so that its own folder is left out of the import path.
+  - Never wrap `make typecheck-ios` or `make typecheck-mac` in it. They take the same lock themselves, and would wait on their own parent.
+- **No clean builds.**
+  - Never run `xcodebuild clean`, and never delete the build folder. The build is incremental, and a clean one compiles every file again, under the lock, on a Mac with 8 GB of memory.
+  - Nobody deletes anything during an agent run, so the next build overwrites a stale build and does not clear it.
+- **A build.**
+  - `build-for-testing` compiles the app and both test bundles without running them. Its command has this shape, run under `run_locked.py`: `xcodebuild build-for-testing -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`.
+  - The repository does not record the command line the iPhone team used, so check this shape against `xcodebuild -help` before relying on it.
+- **Installing and launching.**
+  - The app's bundle identifier is `com.textmouth.TextMouth.iOS`, and the product is TextMouth.app.
+  - `xcrun simctl install` puts the built app on the booted device, and `xcrun simctl launch` starts it. `xcrun simctl io booted screenshot FILE` takes a screenshot, and the app's log is the other way to see what it did.
+  - Afterward run `xcrun simctl shutdown all`, since the Mac has 8 GB of memory.
+- **The `SIMCTL_CHILD_` launch variables.**
+  - `xcrun simctl launch` passes an environment variable to the app when its name starts with `SIMCTL_CHILD_`, and drops that prefix.
+  - The app reads two variables, `TEXTMOUTH_UI_TEST` and `TEXTMOUTH_OPEN_AT_LAUNCH`, in Debug builds only (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
+  - `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1` gives the launch a library of its own, in a sandbox. Without it, a run uses the simulator app's real container.
+  - `SIMCTL_CHILD_TEXTMOUTH_OPEN_AT_LAUNCH=/absolute/path/to/book.epub` sends the app that file at launch, as another app would. The path must be absolute. The app copies the file and never moves or deletes the original.
+  - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
+- **Never press Play.** The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio, and nothing types, since the keyboard's clicks are sounds too.
 
 ## Versions
 
