@@ -305,6 +305,10 @@ The book's text, as the Mac's reader has it just above the playback controls. Th
 - **Element:** a read-only text view. As a text view it gets Lines, Words, and Characters on the rotor, a cursor on a braille display, and panning, without further code.
 - **Label:** "Book content", the Mac's.
 - **Value:** the passage: up to 20,000 characters of the chapter (the Mac's limit), **starting at the start of the sentence at the reading position**. The Mac centers its text around the place. On the phone, the first thing read is the place, so a person who pauses and moves to it hears the sentence just spoken. It keeps whole words at its end, by the Mac's rules.
+- **A chapter with no words.** Some books open at a chapter that has nothing to say, such as a Project Gutenberg EPUB's "Cover", which is only an image.
+  - Book content then shows the next chapter that has words, from its start. That is the chapter Play reads, by the same forward-only search playback makes over silent chapters (`PhonePassagePolicy.placeToShow`).
+  - Nothing is left blank. If no chapter from the place on has words, Book content keeps its stand-in.
+  - The Mac's Book content shows nothing at such a chapter. Whether the Mac should do the same is a question to the user.
 - **Hint,** computed when asked: while paused, "Plays from here."; while playing, "Brings the text to the sentence being spoken."
 - **Traits:** static text. Text context narrative, and the book's language if it's known.
 - **Actions:** none, or VoiceOver would say "Actions available" after it.
