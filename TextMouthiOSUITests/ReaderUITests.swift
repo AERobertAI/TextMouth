@@ -68,6 +68,6 @@ final class ReaderUITests: TextMouthUITestCase {
     /// The reader passes Apple's audit, with the book loaded and paused.
     func testTheReaderPassesTheAudit() throws {
         let app = try launchIntoTheReader()
-        try audit(app, screen: "reader")
+        try audit(app, screen: "reader", accepting: [.navigationTitle(Self.bookTitle)])
     }
 }

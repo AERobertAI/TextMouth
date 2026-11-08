@@ -28,8 +28,12 @@ final class LibraryUITests: TextMouthUITestCase {
     func testTheEmptyLibraryPassesTheAudit() throws {
         let app = try launch(sendingTheBook: false)
         XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: Self.patience))
-        try audit(app, screen: "empty Library")
+        try audit(app, screen: "empty Library", accepting: Self.systemParts)
     }
+
+    /// The Library's findings on the parts iOS draws: the search field, and
+    /// the bar at the bottom's buttons with words.
+    static let systemParts: [Accepted] = [.searchField, .barItem("Settings"), .barItem("Add to Library")]
 
     /// A book sent to the app is imported and opened; Back leaves it for the
     /// Library, whose row for it begins with its title and author and ends
@@ -57,6 +61,6 @@ final class LibraryUITests: TextMouthUITestCase {
         let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "No row for the book")
-        try audit(app, screen: "Library with a book")
+        try audit(app, screen: "Library with a book", accepting: Self.systemParts)
     }
 }

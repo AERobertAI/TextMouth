@@ -106,18 +106,66 @@ class TextMouthUITestCase: XCTestCase {
 
     // MARK: - The Audit and the Record
 
+    /// A finding the audit makes of a part of iOS the app doesn't draw, which
+    /// the app can't change, matched by the audit's type and the element's
+    /// label, with the reason it's accepted.
+    struct Accepted {
+        let type: XCUIAccessibilityAuditType
+        let label: String
+        let why: String
+
+        /// The system's search field: iOS clips its placeholder at the
+        /// largest text sizes, and VoiceOver and braille read it whole.
+        static let searchField = Accepted(
+            type: .textClipped, label: "Search books",
+            why: "the system's search field, read whole by VoiceOver and braille"
+        )
+
+        /// A button in the bar at the bottom: iOS doesn't grow bar items with
+        /// Dynamic Type, and shows them in the Large Content Viewer instead.
+        static func barItem(_ label: String) -> Accepted {
+            Accepted(type: .dynamicType, label: label, why: "a bar item, which iOS shows in the Large Content Viewer")
+        }
+
+        /// The navigation bar's title: iOS truncates a long title at large
+        /// sizes, and VoiceOver and braille read it whole.
+        static func navigationTitle(_ title: String) -> Accepted {
+            Accepted(type: .textClipped, label: title, why: "the navigation bar's title, read whole by VoiceOver and braille")
+        }
+    }
+
     /// Runs Apple's accessibility audit on the screen showing, every iOS type
-    /// of it, and fails once with every finding listed, each with its type,
-    /// its element, and Apple's words, so one run shows them all.
-    func audit(_ app: XCUIApplication, screen: String, file: StaticString = #filePath, line: UInt = #line) throws {
+    /// of it, and fails once with every finding not `accepted` listed, each
+    /// with its type, its element, and Apple's words, so one run shows them
+    /// all. The accepted ones are kept with the results, with their reasons.
+    func audit(
+        _ app: XCUIApplication,
+        screen: String,
+        accepting accepted: [Accepted] = [],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
         var findings: [String] = []
+        var acceptedFindings: [String] = []
         try app.performAccessibilityAudit(for: .all) { issue in
-            let element = issue.element.map { "\($0.elementType.rawValue) \"\($0.label)\"" } ?? "no element"
-            findings.append("[\(Self.name(of: issue.auditType))] \(element): \(issue.compactDescription). \(issue.detailedDescription)")
+            let label = issue.element?.label ?? ""
+            let element = issue.element.map { "\($0.elementType.rawValue) \"\(label)\"" } ?? "no element"
+            let said = "[\(Self.name(of: issue.auditType))] \(element): \(issue.compactDescription). \(issue.detailedDescription)"
+            if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
+                acceptedFindings.append("\(said) Accepted: \(match.why).")
+            } else {
+                findings.append(said)
+            }
             // Handled here, listed below.
             return true
         }
         keepScreenshot(of: app, named: "\(screen) audited")
+        if !acceptedFindings.isEmpty {
+            let note = XCTAttachment(string: acceptedFindings.joined(separator: "\n"))
+            note.name = "\(screen): findings accepted"
+            note.lifetime = .keepAlways
+            add(note)
+        }
         XCTAssertTrue(
             findings.isEmpty,
             "The \(screen)'s audit found \(findings.count):\n" + findings.joined(separator: "\n"),
