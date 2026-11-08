@@ -10,7 +10,7 @@ import Foundation
 enum PhoneBookmarksVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title = PhoneReaderVocabulary.bookmarks
+    static let title: String = PhoneReaderVocabulary.bookmarks
     /// The toolbar button that closes the sheet.
     static let done = "Done"
     /// The Add Bookmark button's visible word, and the Add sheet's title.

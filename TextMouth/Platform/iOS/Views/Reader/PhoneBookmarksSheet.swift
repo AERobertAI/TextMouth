@@ -120,8 +120,8 @@ struct PhoneBookmarksSheet: View {
                 }
             }
             .alert(
-                removing.map { PhoneBookmarksWording.removeQuestion(number: $0.number) } ?? "",
-                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                removeQuestionTitle,
+                isPresented: isAskingToRemove,
                 presenting: removing
             ) { bookmark in
                 Button(PhoneBookmarksWording.remove, role: .destructive) { delete(bookmark) }
@@ -130,6 +130,21 @@ struct PhoneBookmarksSheet: View {
                 Text(bookmark.label)
             }
         }
+    }
+
+    // MARK: The removal question
+
+    /// The removal question's title, or "" while no bookmark is being removed.
+    /// Held apart from `body` so the compiler type-checks each piece alone.
+    private var removeQuestionTitle: String {
+        guard let bookmark = removing else { return "" }
+        return PhoneBookmarksWording.removeQuestion(number: bookmark.number)
+    }
+
+    /// Whether the removal question shows: while a bookmark is being removed,
+    /// and cleared when the question is answered or dismissed.
+    private var isAskingToRemove: Binding<Bool> {
+        Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })
     }
 
     // MARK: The list

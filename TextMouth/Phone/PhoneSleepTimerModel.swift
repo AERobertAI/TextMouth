@@ -12,7 +12,7 @@ import Foundation
 enum PhoneSleepTimerVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title = PhoneReaderVocabulary.sleepTimer
+    static let title: String = PhoneReaderVocabulary.sleepTimer
     /// What Close does.
     static let closeHint = "Close the sleep timer and return to the book"
     /// The heading over the timer running.

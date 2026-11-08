@@ -12,7 +12,7 @@ import Foundation
 enum PhoneHeadingsVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title = PhoneReaderVocabulary.headings
+    static let title: String = PhoneReaderVocabulary.headings
     /// The toolbar button that closes the sheet.
     static let backToBook = "Back to Book"
     /// What Back to Book does.
