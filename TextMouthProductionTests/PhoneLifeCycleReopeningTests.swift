@@ -42,10 +42,15 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
     /// After the app ended while opening a book, the book is not opened, and
     /// the crash guard's sentence is what is said.
     func testABookThatClosedTheAppWhileOpeningIsNotOpenedAndIsNamed() throws {
-        let parts = try makeParts("PhoneReopenCrash")
-        let book = try parts.world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        // The last run's mark is on disk before this run's session is made.
+        var opening: Book?
+        let parts = try makeParts("PhoneReopenCrash") { world, preferences in
+            let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+            preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
+            opening = book
+        }
+        let book = try XCTUnwrap(opening)
         keep(book, showingItsScreen: true, in: parts)
-        parts.preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
         let model = makeModel(parts)
 
         let reopened = model.lifeCycle.reopenAtLaunch(in: model)
@@ -119,13 +124,21 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
     }
 
     /// Private parts for a model, whose readers close as the test ends.
-    private func makeParts(_ label: String) throws -> Parts {
+    /// `beforeTheSession` runs on the world and the preferences before the
+    /// session is made, as a launch finds what the last run left on disk: the
+    /// session reads its crash guard (`PhoneSession.openingBookKey`) as it is
+    /// made, so a mark written later is this run's own.
+    private func makeParts(
+        _ label: String,
+        beforeTheSession: (IntegrationWorld, UserDefaults) throws -> Void = { _, _ in }
+    ) throws -> Parts {
         let world = try makeIntegrationWorld(label)
         let sounds = SoundEffectService(
             preferences: makeSandboxedPreferences("\(label) Sounds"),
             player: HeldSoundEffectPlayer(holding: false)
         )
         let preferences = makeSandboxedPreferences(label)
+        try beforeTheSession(world, preferences)
         let media = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
         let session = PhoneSession(
             library: world.library,
