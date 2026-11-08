@@ -89,10 +89,21 @@ The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xc
   - Afterward run `xcrun simctl shutdown all`, since the Mac has 8 GB of memory.
 - **The `SIMCTL_CHILD_` launch variables.**
   - `xcrun simctl launch` passes an environment variable to the app when its name starts with `SIMCTL_CHILD_`, and drops that prefix.
-  - The app reads two variables, `TEXTMOUTH_UI_TEST` and `TEXTMOUTH_OPEN_AT_LAUNCH`, in Debug builds only (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
+  - The app reads three variables, `TEXTMOUTH_UI_TEST`, `TEXTMOUTH_OPEN_AT_LAUNCH`, and `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, in Debug builds only. The first two are described in PhoneLaunchRequest, and the third in PhoneSheetButton, both in [The two apps and the platform folders](../architecture/platforms.md).
   - `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1` gives the launch a library of its own, in a sandbox. Without it, a run uses the simulator app's real container.
   - `SIMCTL_CHILD_TEXTMOUTH_OPEN_AT_LAUNCH=/absolute/path/to/book.epub` sends the app that file at launch, as another app would. The path must be absolute. The app copies the file and never moves or deletes the original.
   - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
+- **The placement probe.**
+  - `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT=1` makes every sheet button take the system's `.cancellationAction` in place of `.topBarTrailing`, so that a test can read what iOS shows for that placement. It is read in Debug builds only (`#if DEBUG` in `PhoneSheetButtonPlacement`). A Release build ignores it.
+  - Any other value, or none, leaves the buttons where `PhoneSheetButtonPlacement.placement` puts them.
+  - `ToolbarPlacementProbeUITests` sets it through the UI test's `launchEnvironment`, which needs no `SIMCTL_CHILD_` prefix. To set it by hand, use `SIMCTL_CHILD_TEXTMOUTH_PROBE_SYSTEM_PLACEMENT=1 xcrun simctl launch`.
+  - The test opens Book Information from the reader and records, in a note kept with its results and printed in the log on a line starting `TOOLBAR-PROBE`:
+    - each navigation bar's identifier, and each button in it by label, identifier, and frame;
+    - the sheet's whole accessibility order, with each button marked;
+    - each element's type and label;
+    - a screenshot, "Book Information with .cancellationAction".
+  - It judges nothing and fails only when the sheet never opens. It passed on November 8, 2026, and its answer is in PhoneSheetButton's comment: the buttons exist, and they come before the title (see PhoneSheetButton in [The two apps and the platform folders](../architecture/platforms.md)).
+  - Once the answer is read, the test and the variable can be removed together.
 - **Never press Play.** The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio, and nothing types, since the keyboard's clicks are sounds too.
 
 ## Versions

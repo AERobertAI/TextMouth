@@ -132,6 +132,12 @@ Unless a section says otherwise, an element shows its label, its value, and Voic
 
 Picking from a list of choices (a library view, a sort, a navigation unit, a language, a voice, a folder) is a small sheet of the app's own, `PhoneChoiceSheet`: a list where each choice is a row, the current one has the selected trait and has focus on arrival, and choosing closes the sheet. SwiftUI's `Menu`, and a `Picker` shown as one, aren't used, since a menu doesn't return focus when it closes and `AccessibilityFocusState` can't bring it back.
 
+### A sheet's buttons
+
+- Every sheet's buttons (Cancel, Close, Done, Save, and Back to Book) are in the trailing end of its bar, and come after the title: VoiceOver reads the title, then Cancel (or Close, or Done, or Back to Book), then the confirming button.
+- They are placed by `PhoneSheetButton`, in `.topBarTrailing`, and not by `.cancellationAction` and `.confirmationAction`. Those are the bar's leading side, and the accessibility tree read the buttons before the title.
+- Each button has its label given outright, so that VoiceOver and braille say the Mac's word whatever the system draws.
+
 ## The Library
 
 The Library is three kinds of screen with one shape: the top of the Folders view, a folder, and any other view such as All Items. What a person came for comes first; what's used less sits in the bar at the bottom, reached by a four-finger tap near the bottom.
@@ -210,7 +216,7 @@ All Items, Unopened, Recently Opened, Reading List, and views the user makes on 
 
 ### Folder sheets
 
-New Folder, Rename Folder, Move Folder, Move to Folder, and Delete Folder are small sheets rebuilt for the phone, with the Mac's words and over the Mac's model calls: a `Form` in a `NavigationStack`, with the sheet's title and the Mac's Cancel and confirm buttons in the toolbar. The Mac's own sheets can't be wrapped: their buttons are in their bodies, they don't scroll, and a `Picker` in them is a menu here. Each one's text field has the keyboard and VoiceOver's cursor on arrival. A folder is chosen through `PhoneChoiceSheet`. Failures show under the field as the Mac's "Error: " and the reason, and are announced once.
+New Folder, Rename Folder, Move Folder, Move to Folder, and Delete Folder are small sheets rebuilt for the phone, with the Mac's words and over the Mac's model calls: a `Form` in a `NavigationStack`, with the sheet's title and, after it, the Mac's Cancel and confirm buttons in the toolbar. The Mac's own sheets can't be wrapped: their buttons are in their bodies, they don't scroll, and a `Picker` in them is a menu here. Each one's text field has the keyboard and VoiceOver's cursor on arrival. A folder is chosen through `PhoneChoiceSheet`. Failures show under the field as the Mac's "Error: " and the reason, and are announced once.
 
 ### The Continue row
 
@@ -569,7 +575,7 @@ For a text book. Title: the Mac's "Voice & Speed for This Book". VoiceOver's ord
 
 ### The Book Info sheet
 
-Rebuilt for the phone, with the Mac's words. VoiceOver's order: the title "Book Information", a heading; Cancel and Save in the toolbar; "Book title"; "Book author"; then the read-only rows, each one element, its label and its value: "Format", "Added", "Last Opened", "Word Count". An EPUB adds "Publisher" and "Publication date" as fields, then "ISBN", "Language", "Identifier", and "EPUB Version". An audiobook has the Mac's "Artist or narrator", "Album name", "Genre", and "Year", then "Duration". The Mac's "edited by hand" follows a field's label where it applies. The Mac's "Also write to the library's copy of the EPUB file" isn't there: on iOS it can't write. Save closes the sheet, focus returns to Book Info, and VoiceOver says the Mac's "Metadata updated".
+Rebuilt for the phone, with the Mac's words. VoiceOver's order: the title "Book Information", a heading; Cancel and Save in the toolbar, after the title; the title field, "Book title"; the author field, whose label depends on the kind of book (below); then the read-only rows, each one element, its label and its value: "Format", "Added", "Last Opened", "Word Count". An EPUB adds "Publisher" and "Publication date" as fields, then "ISBN", "Language", "Identifier", and "EPUB Version". An audiobook has the Mac's "Artist or narrator", "Album name", "Genre", and "Year", then "Duration". The Mac's "edited by hand" follows a field's label where it applies. The author field is labeled by the kind of book, as the code shows it: a book with no more than a title and an author, "Book author"; an EPUB, "Author", the Mac's metadata editor's word; an audiobook, "Artist or narrator". The title field is "Book title" for all three. The Mac's "Also write to the library's copy of the EPUB file" isn't there: on iOS it can't write. Save closes the sheet, focus returns to Book Info, and VoiceOver says the Mac's "Metadata updated".
 
 ### Coming back the next day
 
