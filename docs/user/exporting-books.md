@@ -127,7 +127,7 @@ Part of version 0.4.2. A text book can be spoken by its voice into one audio fil
 - The end says what was kept: "Kept 5 of 12 chapters: export the same range at the same speed and pitch to go on from chapter 6, before TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change." There is a form for all chapters and one for a single chapter.
 - Kept chapters live in this Mac's Caches folder, in a folder named Speech Export. TextMouth empties it at the next launch.
 - Quitting TextMouth during an export stops it as Stop does, then quits. It waits at most 5 seconds. The chapters already made stay until the next launch empties them.
-- Nothing is exported in the Export dialog's own folder if the file can't be put there: the spoken chapters are not deleted until the finished file is in the folder.
+- The spoken chapters are deleted only after the finished file is in the chosen folder, so a file that can't be put there loses no chapters.
 
 ### When a book can't be spoken
 
