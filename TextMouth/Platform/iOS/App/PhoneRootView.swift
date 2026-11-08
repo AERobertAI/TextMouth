@@ -33,10 +33,14 @@ struct PhoneRootView: View {
                     case .folder(let path):
                         PhoneLibraryView(model: model, location: LibraryLocation(category: .folders, folderPath: path))
                     case .settings:
-                        // Slice 9's screen. Its voice preview doesn't yet pause
-                        // a playing book: the session's closure for that is a
-                        // follow-up, and with none the preview just speaks.
-                        PhoneSettingsView(settings: model.settings)
+                        // Preview Voice asks the audio session first, then
+                        // pauses the book that plays, whichever reader it is
+                        // in, and plays it on after.
+                        PhoneSettingsView(
+                            settings: model.settings,
+                            pauseBookForPreview: { [session] in session.pauseBookForPreview() },
+                            audioMayStart: { PhoneAudioSession.shared.audioMayStart() }
+                        )
                     }
                 }
         }

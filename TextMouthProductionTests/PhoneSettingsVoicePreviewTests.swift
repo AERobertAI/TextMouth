@@ -208,4 +208,70 @@ final class PhoneSettingsVoicePreviewTests: XCTestCase {
 
         XCTAssertNotNil(recorders.made.first?.delegate)
     }
+
+    // MARK: - The Audio Session
+
+    /// The preview asks whether the audio session may be active before it
+    /// pauses or speaks anything, as a reader's Play does.
+    func testThePreviewAsksTheAudioSessionBeforeItSpeaks() {
+        let book = Book(isPlaying: true)
+        let recorders = Recorders()
+        var asked = 0
+        let preview = PhoneSettingsVoicePreview(
+            pauseBook: { book.pauseForPreview() },
+            audioMayStart: {
+                asked += 1
+                // Nothing has been paused yet when the question is asked.
+                XCTAssertEqual(book.pauses, 0)
+                return true
+            },
+            makingSynthesizersWith: { recorders.make() }
+        )
+
+        preview.speak(sentence())
+
+        XCTAssertEqual(asked, 1)
+        XCTAssertEqual(recorders.spoken.count, 1)
+        XCTAssertEqual(book.pauses, 1)
+    }
+
+    /// An audio session that may not start (during a call, say) leaves the
+    /// book playing and the preview unspoken.
+    func testARefusedAudioSessionPausesAndSpeaksNothing() {
+        let book = Book(isPlaying: true)
+        let recorders = Recorders()
+        let preview = PhoneSettingsVoicePreview(
+            pauseBook: { book.pauseForPreview() },
+            audioMayStart: { false },
+            makingSynthesizersWith: { recorders.make() }
+        )
+
+        preview.speak(sentence())
+
+        XCTAssertEqual(book.pauses, 0)
+        XCTAssertTrue(book.isPlaying)
+        XCTAssertFalse(preview.isSpeaking)
+        XCTAssertTrue(recorders.spoken.isEmpty)
+    }
+
+    /// A refusal while a preview already speaks leaves that one speaking and
+    /// the book paused for it.
+    func testARefusalDuringAPreviewLeavesItSpeaking() {
+        let book = Book(isPlaying: true)
+        let recorders = Recorders()
+        var allowed = true
+        let preview = PhoneSettingsVoicePreview(
+            pauseBook: { book.pauseForPreview() },
+            audioMayStart: { allowed },
+            makingSynthesizersWith: { recorders.make() }
+        )
+        preview.speak(sentence())
+        allowed = false
+
+        preview.speak(sentence())
+
+        XCTAssertTrue(preview.isSpeaking)
+        XCTAssertEqual(recorders.spoken.count, 1)
+        XCTAssertEqual(book.resumes, 0)
+    }
 }

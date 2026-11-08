@@ -86,7 +86,7 @@ final class PhoneSession: ObservableObject {
     typealias ReaderMaker = @MainActor (Book) -> ReaderViewModel
 
     /// The library the books come from.
-    private let library: LibraryViewModel
+    let library: LibraryViewModel
     /// Plays each reader's sounds.
     private let soundEffects: SoundEffectService
     /// Makes each reader.
@@ -505,6 +505,27 @@ final class PhoneSession: ObservableObject {
             opened.playOrResume()
         }
         return true
+    }
+
+    /// Pauses the book that plays, whichever of the two readers it is, for
+    /// Preview Voice, and returns what plays it on (`PhonePreviewPause`), or
+    /// nil when none plays. The pause is the reader's own, without its pause
+    /// sound, since the preview is about to speak.
+    func pauseBookForPreview() -> (@MainActor () -> Void)? {
+        // The two may be one reader; it is paused once.
+        var seen: [ObjectIdentifier] = []
+        let readers = [listening, current].compactMap { $0?.reader }.filter { reader in
+            let id = ObjectIdentifier(reader)
+            defer { seen.append(id) }
+            return !seen.contains(id)
+        }
+        return PhonePreviewPause.pause(readers.map { reader in
+            PhonePreviewPause.Reader(
+                isPlaying: { reader.isPlaybackActivelyAdvancing },
+                pause: { reader.pause(playingPauseSound: false) },
+                resume: { reader.playOrResume() }
+            )
+        })
     }
 
     /// Whether any open book plays, the one on screen or the one behind it.

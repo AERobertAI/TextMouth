@@ -17,15 +17,22 @@ import Foundation
 final class PhoneSettingsVoicePreview {
     /// Pauses the open book if it's playing, and returns what resumes it, or
     /// nil when nothing was playing. `PhoneSession` gives it. It's called just
-    /// before each run of previews speaks, so it's also where the audio
-    /// session is made active first, whether or not a book plays, as the
-    /// engineering review's F7 asks of the phone's Preview Voice. The resume
-    /// is called once, at the end, and should leave alone a book the listener
-    /// has started or stopped in the meantime.
+    /// before each run of previews speaks. The resume is called once, at the
+    /// end, and should leave alone a book the listener has started or stopped
+    /// in the meantime.
     typealias PauseBook = @MainActor () -> (@MainActor () -> Void)?
+
+    /// Whether the app's audio session could be made active, which the
+    /// preview asks before it speaks or pauses anything, whether or not a
+    /// book plays, as the engineering review's F7 asks of the phone's Preview
+    /// Voice: the same question a reader's Play asks (`audioMayStart`). A
+    /// refusal has been said to the listener by the one who answers.
+    typealias AudioMayStart = @MainActor () -> Bool
 
     /// Pauses the book for a preview, when there is one to pause.
     private let pauseBook: PauseBook?
+    /// Asks whether the audio session may be active; nil asks nothing.
+    private let audioMayStart: AudioMayStart?
     /// Makes the synthesizers the preview speaks through: the app's own,
     /// unless a test gives recorders that play nothing.
     private let synthesizerFactory: @MainActor () -> any LibraryInfoSynthesizing
@@ -39,13 +46,16 @@ final class PhoneSettingsVoicePreview {
     /// Resumes the book the first preview of a run paused, once the last ends.
     private var resumeBook: (@MainActor () -> Void)?
 
-    /// A preview pausing the book with `pauseBook`, when given, and speaking
-    /// through the synthesizers `factory` makes.
+    /// A preview asking `audioMayStart` first, when given, pausing the book
+    /// with `pauseBook`, when given, and speaking through the synthesizers
+    /// `factory` makes.
     init(
         pauseBook: PauseBook?,
+        audioMayStart: AudioMayStart? = nil,
         makingSynthesizersWith factory: @escaping @MainActor () -> any LibraryInfoSynthesizing = { AVSpeechSynthesizer() }
     ) {
         self.pauseBook = pauseBook
+        self.audioMayStart = audioMayStart
         synthesizerFactory = factory
     }
 
@@ -55,8 +65,10 @@ final class PhoneSettingsVoicePreview {
     }
 
     /// Speaks `utterance` in place of any preview speaking, pausing the book
-    /// first when nothing was speaking.
+    /// first when nothing was speaking. Nothing is paused or spoken when the
+    /// audio session may not be active; a preview already speaking goes on.
     func speak(_ utterance: AVSpeechUtterance) {
+        guard audioMayStart?() ?? true else { return }
         let replacesOneSpeaking = speaking != nil
         if !replacesOneSpeaking {
             resumeBook = pauseBook?()
