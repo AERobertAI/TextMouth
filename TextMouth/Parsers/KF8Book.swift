@@ -111,6 +111,7 @@ enum KF8Book {
         sections.reserveCapacity(layout.parts.count)
         // The SVG flows already put back; each is put back once.
         var inlinedFlows: Set<Int> = []
+        var previousTitle: String?
         var previousEndsMidParagraph = false
         var anyWords = false
         for (index, part) in layout.parts.enumerated() {
@@ -127,13 +128,24 @@ enum KF8Book {
             anyWords = anyWords || MOBIMarkup.hasWords(markup)
 
             // A document of the EPUB that calibre cut into pieces: a piece that no contents entry names and
-            // that opens with no heading of its own goes on with the chapter before it, whatever its <title>
-            // says (calibre gives such a piece the title of the file it was cut from, often the next
-            // chapter's, so a title is never made a heading for it). Only the book's first piece with words,
-            // which has no chapter before it (a cover of pictures does not count), stands alone.
+            // that opens with no heading of its own goes on with the chapter before it (and no heading is made
+            // of its <title>) in two cases, and only these:
+            // - its <title> is the title of the piece before it (the pieces of one file share the file's title);
+            // - its <title> is the heading the next piece opens with: calibre gave the first piece of a file
+            //   the file's title, but the piece holds the end of the chapter before, and the chapter the title
+            //   names begins with the next piece's heading.
+            // Any other piece stands alone, titled as it always was. Only the book's first piece with words,
+            // which has no chapter before it (a cover of pictures does not count), is never a continuation.
             let rawTitle = rawDocumentTitle(in: text[part.skeleton], encoding: headers.encoding)
             let start = documentOpening(of: markup)
-            let continues = titles[index] == nil && !start.hasHeading && hasChapterBefore
+            var continues = false
+            if titles[index] == nil, !start.hasHeading, hasChapterBefore, let title = rawTitle {
+                continues = title == previousTitle
+                if !continues, index + 1 < layout.parts.count {
+                    let next = try layout.markup(of: layout.parts[index + 1], in: text, anchors: anchors)
+                    continues = openingHeading(of: next, encoding: headers.encoding) == title
+                }
+            }
             sections.append(MOBIBook.Section(
                 title: titles[index] ?? displayTitle(of: rawTitle, differentFrom: bookTitle),
                 html: MOBIMarkup.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
@@ -143,6 +155,7 @@ enum KF8Book {
                 continuesPrevious: continues,
                 joinsParagraph: continues && previousEndsMidParagraph && start.hasSplitMarker
             ))
+            previousTitle = rawTitle
             previousEndsMidParagraph = endsMidParagraph(markup)
         }
         guard anyWords else { throw FileImportError.noTextToRead }
@@ -493,6 +506,47 @@ enum KF8Book {
             markup[index] == UInt8(ascii: "c") && markup[index...].starts(with: Array("calibre_pb_".utf8))
         }
         return (decided ?? false, marked)
+    }
+
+    /// The text of the heading (`h1` to `h6`) a document opens with, read as a `<title>` is
+    /// (`readableLabel`: character references read, soft hyphens left out, white space collapsed, case kept),
+    /// so the two compare equal when they are the same words; nil when a word comes before the first
+    /// heading, there is none near the start, or it holds no letter or digit.
+    private static func openingHeading(of markup: [UInt8], encoding: Int) -> String? {
+        let start = bodyStart(of: markup)
+        let window = start..<min(markup.count, start + 8_192)
+        var cursor = start
+        // Where the heading's text begins, and the name of the end tag that ends it.
+        var textStart: Int?
+        var endName = ""
+        var textEnd: Int?
+        var failed = false
+        MOBIMarkup.forEachTag(in: markup, within: window) { tag in
+            guard !failed, textEnd == nil else { return }
+            guard let name = tagName(markup, tag) else { return }
+            if textStart == nil {
+                // Words before the first heading: the document does not open with one.
+                if hasWord(markup[cursor..<tag.lowerBound]) { failed = true; return }
+                cursor = tag.upperBound
+                if name.count == 2, name.first == "h", let level = name.last?.wholeNumberValue, (1...6).contains(level) {
+                    textStart = tag.upperBound
+                    endName = "/" + name
+                }
+            } else if name == endName {
+                textEnd = tag.lowerBound
+            }
+        }
+        guard !failed, let textStart, let textEnd, textStart <= textEnd else { return nil }
+        // The words between the tags of the heading (an inline tag in it adds none).
+        var words: [UInt8] = []
+        var position = textStart
+        MOBIMarkup.forEachTag(in: markup, within: textStart..<textEnd) { tag in
+            words.append(contentsOf: markup[position..<tag.lowerBound])
+            position = tag.upperBound
+        }
+        words.append(contentsOf: markup[position..<textEnd])
+        let heading = readableLabel(MOBIText.decode(words, encoding: encoding))
+        return heading.contains(where: { $0.isLetter || $0.isNumber }) ? heading : nil
     }
 
     /// Where the words of a document begin: after its `<body>` tag, else after its head, else at the start.
