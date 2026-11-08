@@ -29,7 +29,8 @@ The two apps share one vocabulary. Every word a person can hear or feel in brail
 - Run `make typecheck-ios` and `make typecheck-mac` on committed work, one at a time, in the Bash tool's background mode. Each takes the machine's lock itself and waits its turn: never wrap them in `run_locked.py`. Both must end with 0 errors and 0 warnings before you report.
 - Then send your branch through the train with your own test classes and the classes your change can break: `python3 -I Scripts/agents/build-train.py request --agent <slug> --branch <branch> --areas phone --classes <C,D>`, and wait in the background with `python3 -I Scripts/agents/wait-for-result.py --agent <slug>`. The train pools every pending branch, so never queue a deliberately broken one.
 - You don't run xcodebuild or the simulator: the lead runs the simulator, one build at a time, in one build folder. Say in your report what the lead should check there.
-- Before each check, run `df -h /System/Volumes/Data`. Under 4 GB free, stop, and tell the lead with SendMessage to `ioslead`.
+- Before each check, run `df -h /System/Volumes/Data`. Under 4 GB free, don't start the check: commit what you have, and end with your report saying which checks didn't run. The lead runs them.
+- The lead can't be reached by SendMessage under the name `ioslead`. Your final message reaches the lead, and so does a `question --to ioslead` on the board, which the lead reads between checks.
 
 ## Code
 
@@ -48,7 +49,7 @@ The two apps share one vocabulary. Every word a person can hear or feel in brail
 - Start: `bbs register <slug> --role "ONE LINE" --branch <branch> --files <your files and globs>`, then `bbs claims`.
 - During: read `bbs inbox <slug> --unread` before every check and every commit. Post `commit` after each commit with `--topic "$(git log -1 --format='%h %s')"`.
 - A problem in a file you don't own: post a `finding --file <path>`, and don't fix it.
-- A decision your prompt doesn't settle: ask the lead with SendMessage to `ioslead`, and carry on with the safest choice meanwhile. Ask the user nothing.
+- A decision your prompt doesn't settle: post a `question --to ioslead` on the board, and carry on with the safest choice meanwhile. Ask the user nothing.
 - End: post `done: <branch>`, then `bbs release <slug> --all`.
 
 ## Rules that every agent follows (word for word)
