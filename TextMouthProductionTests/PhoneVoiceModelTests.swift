@@ -147,7 +147,7 @@ final class PhoneVoiceVocabularyTests: XCTestCase {
             "Picker(\"\(PhoneVoiceVocabulary.endOfBookTitle)\"",
             ".accessibilityLabel(\"\(PhoneVoiceVocabulary.endOfBookLabel)\")",
             "Button(\"\(PhoneVoiceVocabulary.useGlobalDefault)\")",
-            "Button(\"\(PhoneVoiceVocabulary.close)\")",
+            "Button(\"\(PhoneAppWording.close)\")",
             ".accessibilityLabel(\"\\(voice.name), \\(voiceQualityLabel(voice)) quality\")",
             ".accessibilityValue(\"\\(Int(viewModel.speechService.wordsPerMinute)) words per minute\")",
         ]

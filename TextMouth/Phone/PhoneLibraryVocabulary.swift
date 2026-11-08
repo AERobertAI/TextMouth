@@ -63,8 +63,6 @@ enum PhoneLibraryVocabulary {
     static let lastOpenedRow = "Last Opened"
     /// The read-only row of the book's word count.
     static let wordCountRow = "Word Count"
-    /// The button that saves the sheet.
-    static let save = "Save"
     /// What VoiceOver says once Book Info is saved (the Mac's reader's).
     static let metadataUpdated = "Metadata updated"
 

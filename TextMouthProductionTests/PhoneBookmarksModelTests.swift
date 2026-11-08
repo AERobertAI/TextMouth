@@ -111,7 +111,7 @@ final class PhoneBookmarksVocabularyTests: XCTestCase {
             ".accessibilityHint(\"\(PhoneBookmarksVocabulary.addNoteHint)\")",
             "Button(\"\(PhoneAppWording.cancel)\")",
             "Button(\"\(PhoneBookmarksVocabulary.add)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.save)\")",
+            "Button(\"\(PhoneAppWording.save)\")",
             "Text(\"Edit Bookmark \\(bookmark.number)\")",
         ]
 

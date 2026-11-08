@@ -201,7 +201,7 @@ private struct PhoneUnbuiltSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(PhoneSleepTimerVocabulary.close) { dismiss() }
+                        Button(PhoneAppWording.close) { dismiss() }
                     }
                 }
         }

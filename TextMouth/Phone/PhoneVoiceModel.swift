@@ -33,8 +33,6 @@ enum PhoneVoiceVocabulary {
     static let endOfBookLabel = "End of book behavior for this book"
     /// The end-of-book choice that follows the global setting.
     static let useGlobalDefault = "Use Global Default"
-    /// The toolbar button that closes the sheet.
-    static let close = "Close"
 
     /// A voice's choice as VoiceOver reads it, as in "Samantha, Enhanced
     /// quality".

@@ -30,8 +30,6 @@ enum PhoneBookmarksVocabulary {
     static let addNoteHint = "Optional note to describe this bookmark"
     /// The Add sheet's button that adds the bookmark.
     static let add = "Add"
-    /// The Edit sheet's button that saves the note.
-    static let save = "Save"
 
     /// The Edit sheet's title, as in "Edit Bookmark 3".
     static func editTitle(number: Int) -> String {
@@ -47,9 +45,6 @@ enum PhoneBookmarksWording {
     /// The empty list's help: the Mac's, with no keys named, since the phone
     /// has none (the spec, "Words that say Mac").
     static let emptyHelp = BookmarkPanelView.emptyListHelp(keys: [])
-
-    /// The button that removes a bookmark once asked.
-    static let remove = "Remove"
 
     /// The title of the question asked before a bookmark with a note is
     /// removed, as in "Remove Bookmark 3?". Its message is the note.

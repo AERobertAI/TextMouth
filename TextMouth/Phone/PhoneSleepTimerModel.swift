@@ -12,8 +12,6 @@ import Foundation
 enum PhoneSleepTimerVocabulary {
     /// The sheet's title, read as its heading.
     static let title = "Sleep Timer"
-    /// The toolbar button that closes the sheet.
-    static let close = "Close"
     /// What Close does.
     static let closeHint = "Close the sleep timer and return to the book"
     /// The heading over the timer running.

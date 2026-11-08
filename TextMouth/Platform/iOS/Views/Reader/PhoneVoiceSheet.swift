@@ -109,7 +109,7 @@ struct PhoneVoiceSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneVoiceVocabulary.close) { dismiss() }
+                    Button(PhoneAppWording.close) { dismiss() }
                 }
             }
             .sheet(item: $choosing, onDismiss: afterChoosing) { list in

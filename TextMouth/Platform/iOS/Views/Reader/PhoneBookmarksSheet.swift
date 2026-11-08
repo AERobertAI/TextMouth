@@ -238,7 +238,7 @@ struct PhoneBookmarksSheet: View {
                 field: PhoneBookmarksVocabulary.editNoteField,
                 hint: nil,
                 startingNote: bookmark.label,
-                doneTitle: PhoneBookmarksVocabulary.save,
+                doneTitle: PhoneAppWording.save,
                 onCancel: { focusAfterNoteSheet = Focus(model.focus(after: .edit(bookmark.id))) },
                 onDone: { note in save(note: note, for: bookmark) }
             )

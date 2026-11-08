@@ -18,6 +18,12 @@ final class PhoneAppWordingTests: XCTestCase {
         XCTAssertEqual(PhoneAppWording.cancel, "Cancel")
     }
 
+    /// Close and Save are the Mac's words, said once for every phone sheet.
+    func testCloseAndSaveAreTheMacsWords() {
+        XCTAssertEqual(PhoneAppWording.close, "Close")
+        XCTAssertEqual(PhoneAppWording.save, "Save")
+    }
+
     /// The Play button's words are PlaybackControlsView's, by its rule: Pause
     /// while the book plays, and Play otherwise.
     func testThePlayButtonSaysWhatTheMacsSays() throws {

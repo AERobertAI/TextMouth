@@ -63,7 +63,7 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.addedRow)\")"))
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.lastOpenedRow)\")"))
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.wordCountRow)\")"))
-        XCTAssertTrue(sheet.contains("Button(\"\(PhoneLibraryVocabulary.save)\")"))
+        XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.save)\")"))
         XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.cancel)\")"))
         XCTAssertTrue(reader.contains("announceToVoiceOver(\"\(PhoneLibraryVocabulary.metadataUpdated)\")"))
     }

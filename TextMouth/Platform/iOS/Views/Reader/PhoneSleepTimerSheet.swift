@@ -67,7 +67,7 @@ struct PhoneSleepTimerSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneSleepTimerVocabulary.close) { dismiss() }
+                    Button(PhoneAppWording.close) { dismiss() }
                         .accessibilityHint(PhoneSleepTimerVocabulary.closeHint)
                 }
             }
