@@ -7,14 +7,26 @@ import XCTest
 final class PhonePassagePolicyTests: XCTestCase {
     // MARK: - When It Changes
 
-    /// Loading, a paused move, focus leaving, and the listener's own request
-    /// always change the passage.
+    /// Loading, focus leaving, and the listener's own request always change
+    /// the passage.
     func testTheseEventsAlwaysChangeThePassage() {
-        for event in [PhonePassagePolicy.Event.loaded, .movedWhilePaused, .focusLeft, .followAsked] {
+        for event in [PhonePassagePolicy.Event.loaded, .focusLeft, .followAsked] {
             for hasFocus in [false, true] {
                 XCTAssertTrue(changes(event, hasFocus: hasFocus, isPlaying: true), "\(event)")
             }
         }
+    }
+
+    /// A move changes the passage, except while the book plays and Book
+    /// content has focus, when only Follow in Braille lets it (the spec, "when
+    /// it has focus and the book plays, never, unless the Follow in Braille
+    /// switch").
+    func testAMoveDoesNotReplaceTheTextUnderAFocusedReaderWhileItPlays() {
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: false, isPlaying: true))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: false, isPlaying: false))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: true, isPlaying: false))
+        XCTAssertFalse(changes(.movedWhilePaused, hasFocus: true, isPlaying: true))
+        XCTAssertTrue(changes(.movedWhilePaused, hasFocus: true, isPlaying: true, follows: true))
     }
 
     /// A pause changes it unless Book content has focus.

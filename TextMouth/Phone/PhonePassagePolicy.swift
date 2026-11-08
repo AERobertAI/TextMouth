@@ -19,7 +19,9 @@ enum PhonePassagePolicy {
         /// The book paused or stopped: the passage starts at the sentence just
         /// spoken.
         case paused
-        /// The place moved while paused: by Play, a skip, a jump, a page.
+        /// The place moved: by Play, a skip, a jump, a page. (Named for the
+        /// paused case; while the book plays and Book content has focus, it
+        /// changes the passage only for Follow in Braille.)
         case movedWhilePaused
         /// The 10-second tick while the book plays.
         case playingTick
@@ -53,8 +55,13 @@ enum PhonePassagePolicy {
         followsInBraille: Bool
     ) -> Bool {
         switch event {
-        case .loaded, .movedWhilePaused, .focusLeft, .followAsked:
+        case .loaded, .focusLeft, .followAsked:
             return true
+        case .movedWhilePaused:
+            // A move made while the book plays (an AirPods skip) must not
+            // swap the text under a reader who has focus on it; it follows
+            // only when Follow in Braille is on. Paused, the move always shows.
+            return !(hasFocus && isPlaying) || followsInBraille
         case .paused:
             return !hasFocus
         case .playingTick:
