@@ -415,23 +415,33 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertEqual(words(book).joined(separator: " "), "First Alpha one. Alpha two. Second Beta. Beta two.")
     }
 
-    func testAPieceIsNotAContinuationWhenItIsNamedOrOpensWithAHeading() throws {
+    func testAPieceIsNotAContinuationWhenItIsNamedOpensWithAHeadingOrHasAnotherTitle() throws {
         // Named by the contents.
         var named = try pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"])
         named.entries = [KF8Fixture.Entry(label: "First", document: 0), KF8Fixture.Entry(label: "Second part", document: 1)]
         XCTAssertEqual(try prepared(named).chapters.count, 2)
         // Opens with a heading.
         XCTAssertEqual(try prepared(pieces(["<h1>First</h1><p>One.</p>", "<h3>Heading</h3><p>Two.</p>"])).chapters.count, 2)
-        // The book's first piece has no chapter before it, with a heading or not.
+        // Another title, which no neighbour shares.
+        XCTAssertEqual(
+            try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"])).chapters.count, 2)
+        // No title at all in either.
+        let untitled = KF8Fixture(documents: [
+            KF8Fixture.Document(html: "<html><head></head><body><h1>First</h1><p>One.</p></body></html>", cutting: ["<h1>First</h1><p>One.</p>"]),
+            KF8Fixture.Document(html: "<html><head></head><body><p>Two.</p></body></html>", cutting: ["<p>Two.</p>"]),
+        ])
+        XCTAssertEqual(try prepared(untitled).chapters.count, 2)
+        // The book's first piece has no chapter before it to go on with, with a heading or not.
         let headless = try prepared(pieces(["<p>One.</p>", "<p>Two.</p>"]))
-        XCTAssertEqual(headless.chapters.count, 1)
+        XCTAssertEqual(headless.chapters.count, 1, "the second piece shares the first's title, so it goes on")
         XCTAssertEqual(words(headless), ["One.", "Two."])
     }
 
-    /// A piece that opens with no heading and that nothing names goes on with the chapter before it, whatever
-    /// its <title> is: calibre gives the piece the title of the file it was cut from, which is often the next
-    /// chapter's. (The Pride and Prejudice case: the words that end chapter X, titled "CHAPTER XI".)
-    func testAPieceWithNoHeadingGoesOnWithTheChapterBeforeWhateverItsTitleSays() throws {
+    /// A piece that opens with no heading and that nothing names goes on with the chapter before it when its
+    /// <title> is the heading the next piece opens with: calibre gave the first piece of a file the file's
+    /// title, but the piece holds the end of the chapter before. (The Pride and Prejudice case: the words that
+    /// end chapter X, titled "CHAPTER XI", before the piece that opens with the heading CHAPTER XI.)
+    func testAPieceTitledForTheNextPiecesHeadingGoesOnWithTheChapterBefore() throws {
         let book = try prepared(pieces([
             "<h1>CHAPTER X</h1><p>Words of ten.</p>",
             "<p>The words that end chapter ten.</p>",
@@ -442,14 +452,49 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["CHAPTER X", "CHAPTER XI"])
         XCTAssertTrue(book.chapters[0].chapter.text.contains("The words that end chapter ten."), "read under CHAPTER X")
         XCTAssertFalse(book.chapters[1].chapter.text.contains("The words that end chapter ten."))
-        // Whatever the titles are, or if there are none.
-        let untitled = KF8Fixture(documents: [
-            KF8Fixture.Document(html: "<html><head></head><body><h1>First</h1><p>One.</p></body></html>", cutting: ["<h1>First</h1><p>One.</p>"]),
-            KF8Fixture.Document(html: "<html><head></head><body><p>Two.</p></body></html>", cutting: ["<p>Two.</p>"]),
-        ])
-        XCTAssertEqual(try prepared(untitled).chapters.count, 1)
-        XCTAssertEqual(
-            try prepared(pieces(["<h1>First</h1><p>One.</p>", "<p>Two.</p>"], titles: ["One", "Two"])).chapters.count, 1)
+        // The heading is compared as a title is: character references read, white space collapsed, case kept.
+        let spelled = try prepared(pieces([
+            "<h1>CHAPTER X</h1><p>Words of ten.</p>",
+            "<p>The words that end chapter ten.</p>",
+            "<h1>Tom <i>&amp;</i>\n  Jerry</h1><p>Words of eleven.</p>",
+        ], titles: ["CHAPTER X", "Tom & Jerry", "Tom & Jerry"]))
+        XCTAssertEqual(spelled.chapters.count, 2)
+        let otherCase = try prepared(pieces([
+            "<h1>CHAPTER X</h1><p>Words of ten.</p>",
+            "<p>The words that end chapter ten.</p>",
+            "<h1>CHAPTER XI</h1><p>Words of eleven.</p>",
+        ], titles: ["CHAPTER X", "Chapter xi", "CHAPTER XI"]))
+        XCTAssertEqual(otherCase.chapters.count, 3, "a title of other letters is not the heading")
+    }
+
+    /// A headless piece whose title is no neighbour's keeps its own chapter, headed by its title (Project
+    /// Gutenberg's "A Modest Proposal": the essay is a document with no heading tag, between the header page and
+    /// the license).
+    func testAHeadlessPieceTitledLikeNoNeighbourKeepsItsOwnChapterAndHeading() throws {
+        let book = try prepared(pieces([
+            "<h2>The Project Gutenberg eBook</h2><p>Header words.</p>",
+            "<p>The essay words.</p>",
+            "<h2>THE FULL LICENSE</h2><p>License words.</p>",
+        ], titles: ["The Project Gutenberg eBook", "A Modest Proposal", "THE FULL LICENSE"]))
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["The Project Gutenberg eBook", "A Modest Proposal", "THE FULL LICENSE"])
+        XCTAssertEqual(book.chapters[1].chapter.headings.map(\.text), ["A Modest Proposal"])
+        XCTAssertTrue(book.chapters[1].chapter.text.contains("The essay words."))
+        XCTAssertFalse(book.chapters[0].chapter.text.contains("The essay words."))
+    }
+
+    /// The last document, with no heading and a title of its own, keeps its chapter, whether or not the guide
+    /// names it (the review's toc-epilogue book: the guide names the epilogue). The guide does not decide it.
+    func testAHeadlessLastPieceTheGuideNamesKeepsItsChapter() throws {
+        for guided in [false, true] {
+            var fixture = try pieces([
+                "<h1>Heading 1</h1><p>First words.</p>", "<h1>Heading 2</h1><p>Second words.</p>", "<p>The epilogue words.</p>",
+            ], titles: ["Heading 1", "Heading 2", "Epilogue"])
+            fixture.entries = [KF8Fixture.Entry(label: "Heading 1", document: 0), KF8Fixture.Entry(label: "Heading 2", document: 1)]
+            if guided { fixture.guide = [(type: "toc", document: 2)] }
+            let book = try prepared(fixture)
+            XCTAssertEqual(book.chapters.map(\.chapter.title), ["Heading 1", "Heading 2", "Epilogue"], "guide \(guided)")
+            XCTAssertEqual(book.chapters[2].chapter.headings.map(\.text), ["Epilogue"], "guide \(guided)")
+        }
     }
 
     func testACutInTheMiddleOfAParagraphJoinsWithNoBreakAndOtherCutsBreakTheParagraph() throws {

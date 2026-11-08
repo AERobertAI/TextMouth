@@ -180,19 +180,11 @@ final class KF8BookTests: XCTestCase {
     }
 
     func testABookWithNoContentsStillHasItsDocumentsAsChapters() throws {
-        // Documents that open with a heading are each a chapter, the contents or not.
-        let headed = KF8Fixture(documents: (1...3).map { number in
-            KF8Fixture.Document(html: "<html><body><h1>Part \(number)</h1><p>Words \(number).</p></body></html>")
-        })
-        XCTAssertEqual(try prepared(headed).chapters.map(\.chapter.title), ["Part 1", "Part 2", "Part 3"])
-        // Documents with no heading and no contents entry go on with the chapter before them, the first
-        // of which is numbered by its document.
-        let headless = KF8Fixture(documents: (1...3).map { number in
+        let fixture = KF8Fixture(documents: (1...3).map { number in
             KF8Fixture.Document(html: "<html><body><p>Words \(number).</p></body></html>")
         })
-        let book = try prepared(headless)
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 1"])
-        XCTAssertTrue(book.chapters[0].chapter.text.contains("Words 3."))
+        let book = try prepared(fixture)
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 1", "Chapter 2", "Chapter 3"])
     }
 
     // MARK: - The guide
