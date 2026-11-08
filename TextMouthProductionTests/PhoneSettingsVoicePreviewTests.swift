@@ -8,7 +8,11 @@ import XCTest
 @MainActor
 final class PhoneSettingsVoicePreviewTests: XCTestCase {
     /// A book that counts its pauses and resumes, standing in for the reader
-    /// `PhoneSession` holds.
+    /// `PhoneSession` holds. On the main actor, as the preview's `PauseBook`
+    /// and the closure it returns are: a nested class isn't the test case's
+    /// main actor by itself, and Swift 6 refuses its `self` in a main-actor
+    /// closure ("sending 'self' risks causing data races").
+    @MainActor
     private final class Book {
         /// Whether it's playing.
         var isPlaying: Bool
