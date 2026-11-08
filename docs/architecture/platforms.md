@@ -56,7 +56,7 @@ On November 4 the projection read 105 changed Swift files, of which 92 are uncha
   - Helper programs: WatchedProcess throws `IOSUnavailable` from `run` and `runCapturingOutput` and has no memory reading; OrphanedConversionSweep does nothing. The only document reading that needs textutil, and so a helper, is a compound-file Word document older than Word 6, which iOS therefore refuses with "Converting this kind of file is not available on iPhone yet." Every other document format reads on iOS through TextMouth's own readers, which are shared code with no AppKit and no process: rich text and RTFD, Word 6 to Word 2003, Word, OpenDocument text, Word 2003 XML, MOBI, and KFX (see [Imports](state/imports.md)). OpenDocument text and Word 2003 XML read the same on the Mac since 0.4.0, and Word 6 and Word 95 documents since 0.4.1.
   - Editing in another app: PackageFileEditing's workspace opener throws, and BookTextEditor and BookManifestEditor start no session (`canEditText` is false).
   - Windows and keys: WindowAccessor reports no window; SilentKeyEquivalent takes no key; SwitchedWindowFocus does nothing; FrontWindowKind is always nil; LogsInFinder says showing the logs in Finder is not available on iPhone yet; `FunctionKeyConstants+iOS` gives the 72 function-key constants NSEvent.h defines, with its values, so config.json's key names (pageDown, f5, and the rest) read the same.
-  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping high, medium, and low priority to `.high`, `.default`, and `.low`; `NSAccessibilityPriorityLevel` exists on iOS as an enum.
+  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping the shared high and medium priorities to iOS's default and low to iOS's low (see "The announcement priorities on iOS", below); `NSAccessibilityPriorityLevel` exists on iOS as an enum.
   - Text: ReadOnlyTextArea is a read-only, selectable `UITextView` with the Mac's label.
   - Recording and editing audio: the Record window and audio editor controllers and the audio editor launcher do nothing; the capture backend's `start` throws `IOSUnavailable` for "Recording"; FFmpeg's `run` throws that ffmpeg is missing.
   - Now Playing: audio-device queries answer "no device", and the device listeners are never installed.
@@ -80,15 +80,45 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 - `PortableXMLDifferentialTests` is what makes the tree trustworthy. It reads 104 documents with Foundation's `XMLDocument` and with the portable tree, strictly and tidied: the 16 XML documents of the five test EPUBs, 27 feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`. It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use (a scan test confirms every XPath string in them is one the comparison makes). The trees agree except where `knownDifferences` lists a difference, 14 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test. Some differences are accepted and hidden on purpose: attribute order within an element, `*` selecting a processing instruction in Foundation, the DTD node and XML declaration not being nodes, and the depth bound.
 - `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write. On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
 
-## What iOS does now, and where phase 1 starts
+## The iPhone app
 
-- The iOS app builds nothing for the iPhone's user. It shows one screen, the app's name as a heading and a sentence saying the iPhone app is still being built, and `make typecheck-ios` ends BUILD SUCCEEDED with 0 errors and 0 warnings where the first count, on the evening of November 3, found 817 errors in 99 files. Nothing has run on an iPhone or in the simulator, and the stand-ins have no tests of their own.
-- Phase 1 builds the first iPhone reader on the shared engine (see "A plan in phases" in the research file). It starts from the stand-ins above, and from these places phase 0 left empty or approximate:
-  - the interface itself, which replaces the placeholder: the library, the reader, settings, and importing;
-  - the audio session, route changes in Now Playing, and the lifecycle;
-  - real VoiceOver focus and announcements on iOS (the stand-ins above do the least);
-  - the empty file and folder pickers, and the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
-  - a recording backend, if recording comes to iOS, and a writer for the EPUB metadata (it needs a serializer and a decision on whether to match Foundation's output);
-  - the window passed through shared code, which is nil on iOS: `PlatformApplication` names no key or main window until phase 1 finds the scene's;
-  - the one bundle identifier both apps share, which phase 1 decides whether to keep.
-- A change to shared code now has a second check. Compile it for iOS with `make typecheck-ios`, and show it leaves the Mac as it was with `make mac-projection`, besides the hosted test suite, which tests the Mac only.
+The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes branch `ios/lead-1108` at 1fefa2cf, which is not yet merged into main.
+
+### The frame
+
+- The iPhone app runs on UIKit's life cycle, not SwiftUI's `App`. `TextMouthAppDelegate` is the `@main` type, and the app's one window is `MagicTapWindow`, a subclass that is the reliable home for the magic tap.
+- `PhoneAppModel` holds everything the app keeps for as long as it runs: the library, the settings, the sounds, the session, the life cycle, and the navigation path.
+  - `TextMouthAppDelegate.model` makes it once for the process, never once per scene.
+  - The reason is that iOS may disconnect a scene while a book plays on behind a locked screen, and a second model would be a second library over the same files.
+- `PhoneSession` owns the open readers, above the navigation. Leaving a reader's screen does not close the book.
+  - At most two readers are open: the one on screen (`reader`), and one that goes on behind it (`listeningReader`).
+- `PhoneLifeCycle` is the one place where every slice joins the system's calls. The scene delegate only calls it, and each slice registers what it does there, so no slice edits the delegate.
+- The code is split by what it imports:
+  - `TextMouth/Phone/` holds the plain types: the session, the models, the policies, and the words. They import no UIKit, both apps compile them, and the Mac's tests decide every case (the `phone` test area).
+  - `TextMouth/Platform/iOS/` holds the UIKit and SwiftUI parts: the delegates, the views, and the services that touch the audio session and the screen.
+- A reader reaches the phone through `ReaderPhoneHooks`.
+  - These are closures that the phone fills and the shared reader calls at a few fixed points, each under `#if os(iOS)`.
+  - Every default leaves the reader doing what it does on the Mac.
+
+### PhoneLaunchRequest
+
+- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has two variables.
+  - `TEXTMOUTH_UI_TEST` set to exactly "1" gives the launch a library and preferences in a sandbox of its own, as a hosted test has. An empty or mistyped value leaves the app as it is.
+  - `TEXTMOUTH_OPEN_AT_LAUNCH` set to an absolute path sends the app that file, as another app would send one at a cold launch. A relative path is ignored.
+- It acts in debug builds only.
+  - The type itself is shared code, and the Mac's tests cover it (`PhoneLaunchRequestTests`).
+  - The two places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox, and the scene delegate, which opens the file.
+  - A release build ignores both variables.
+- A UI test needs it because XCTest names its configuration (`XCTestConfigurationFilePath`) only in a process that hosts a test bundle, and the app a UI test drives does not host one. Without the sandbox, each test would find what the last one left in the app's real container.
+- The book comes in the way a person's would: held until the library starts, copied by the import's copier, imported, and opened. The file is never moved or deleted.
+- From a shell, `xcrun simctl launch` passes each variable with the prefix `SIMCTL_CHILD_` (see [Building TextMouth](../developer/building.md)).
+
+### PhoneSession.readerMade
+
+- `PhoneSession.readerMade` is a Combine subject that sends each reader once, as the session makes it. It does so before anything can play the reader, and whichever slot the reader takes.
+- The parts of the phone that give a reader its hooks join there: `PhoneAudioSession.attach`, and `PhoneBackgroundWork`'s hold for the life cycle.
+- Before it, each part watched the two slots its own way, and one missed a slot.
+  - A next book that goes straight behind the screen, as a hand-over does, got none of the hooks.
+  - Its silent gaps then held nothing, and its pause in the background was never flushed.
+- A new part that needs a hook on every reader subscribes to `readerMade`. It does not subscribe to the two slots.
+- `PhoneBackgroundWork` also gives its hooks to the readers that were open before it ran, in either slot.
