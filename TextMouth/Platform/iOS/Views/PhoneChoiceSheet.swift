@@ -44,7 +44,7 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(PhoneAppWording.cancel) { dismiss() }
                 }
             }
         }

@@ -143,7 +143,7 @@ final class PhoneGoToVocabularyTests: XCTestCase {
         )
 
         XCTAssertTrue(macView.contains("Button(\"\(PhoneGoToVocabulary.jump)\", action: take)"))
-        XCTAssertTrue(macView.contains("Button(\"\(PhoneGoToVocabulary.cancel)\", action: onCancel)"))
+        XCTAssertTrue(macView.contains("Button(\"\(PhoneAppWording.cancel)\", action: onCancel)"))
         XCTAssertTrue(macView.contains(".accessibilityLabel(\"Error: \\(errorMessage)\")"))
         XCTAssertEqual(PhoneGoToVocabulary.refusal("Enter a percent."), "Error: Enter a percent.")
     }

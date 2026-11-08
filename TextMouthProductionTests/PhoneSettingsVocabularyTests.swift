@@ -49,8 +49,8 @@ final class PhoneSettingsVocabularyTests: XCTestCase {
     func testASpeedIsSaidAsTheMacsSliderSaysIt() throws {
         let sources = try Self.macSettingsSources()
         XCTAssertTrue(sources.contains(#".accessibilityValue("\(Int(settingsViewModel.wordsPerMinute)) words per minute")"#))
-        XCTAssertEqual(PhoneSettingsVocabulary.wordsPerMinute(200), "200 words per minute")
-        XCTAssertEqual(PhoneSettingsVocabulary.wordsPerMinute(650), "650 words per minute")
+        XCTAssertEqual(PhoneVoiceVocabulary.speedValue(wordsPerMinute: 200), "200 words per minute")
+        XCTAssertEqual(PhoneVoiceVocabulary.speedValue(wordsPerMinute: 650), "650 words per minute")
     }
 
     /// A voice's words are the Mac's: its list of voices names each one by
@@ -61,7 +61,7 @@ final class PhoneSettingsVocabularyTests: XCTestCase {
             sources.contains(#".accessibilityLabel("\(voice.name), \(settingsViewModel.voiceQualityLabel(voice)) quality")"#)
         )
         XCTAssertEqual(
-            PhoneSettingsVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
+            PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
             "Samantha, Enhanced quality"
         )
     }

@@ -22,10 +22,6 @@ enum PhoneReaderWording {
     /// Navigation unit's hint.
     static let navigationUnitHint = "Chooses what Play and the skip buttons move by."
 
-    /// A text book's speed control's label. An audiobook's is the Mac's
-    /// `BookSettingsWording.audioSpeedLabel`.
-    static let speedLabel = "Speed"
-
     /// A text book's speed control's hint, naming the Mac's step of 25 words
     /// per minute (`ReaderViewModel.speechSpeedStep`). An audiobook's is the
     /// Mac's `AudioSpeed.stepHint(_:)`. On the main actor, where the reader's
@@ -71,9 +67,6 @@ enum PhoneReaderWording {
 
     /// The question's button that removes the bookmark.
     static let remove = "Remove"
-
-    /// The question's button that keeps it: the Mac's word in every sheet.
-    static let cancel = "Cancel"
 
     /// The name of Book content's rotor that moves by sentence.
     static let sentencesRotor = "Sentences"

@@ -29,7 +29,7 @@ final class PhoneReaderVocabularyTests: XCTestCase {
         XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.headings)\""))
         XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.bookmarks)\""))
         XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.sleepTimer)\""))
-        XCTAssertTrue(macView.contains("\"\(PhoneReaderVocabulary.bookInfo)\","))
+        XCTAssertTrue(macView.contains("\"\(PhoneLibraryVocabulary.bookInfo)\","))
         XCTAssertTrue(macView.contains("ProgressView(\"\(PhoneReaderVocabulary.loadingBook)\")"))
         XCTAssertEqual(PhoneReaderVocabulary.loading("Emma"), "Loading Emma")
         XCTAssertTrue(macView.contains(".accessibilityLabel(\"Loading \\(viewModel.book.title)\")"))

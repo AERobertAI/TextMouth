@@ -147,7 +147,7 @@ final class PhoneVoiceVocabularyTests: XCTestCase {
             "Picker(\"\(PhoneVoiceVocabulary.endOfBookTitle)\"",
             ".accessibilityLabel(\"\(PhoneVoiceVocabulary.endOfBookLabel)\")",
             "Button(\"\(PhoneVoiceVocabulary.useGlobalDefault)\")",
-            "Button(\"\(PhoneVoiceVocabulary.close)\")",
+            "Button(\"\(PhoneAppWording.close)\")",
             ".accessibilityLabel(\"\\(voice.name), \\(voiceQualityLabel(voice)) quality\")",
             ".accessibilityValue(\"\\(Int(viewModel.speechService.wordsPerMinute)) words per minute\")",
         ]
@@ -156,5 +156,11 @@ final class PhoneVoiceVocabularyTests: XCTestCase {
             XCTAssertTrue(macView.contains(word), "The Mac's voice sheet no longer says \(word)")
         }
         XCTAssertEqual(PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"), "Samantha, Enhanced quality")
+    }
+
+    /// A voice option reads its own choice label, which the Voice sheet and
+    /// Settings' Voice row both say.
+    func testAVoiceOptionSaysItsOwnChoiceLabel() {
+        XCTAssertEqual(samantha.choiceLabel, "Samantha, Enhanced quality")
     }
 }

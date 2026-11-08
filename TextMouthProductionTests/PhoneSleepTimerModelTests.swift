@@ -97,7 +97,7 @@ final class PhoneSleepTimerVocabularyTests: XCTestCase {
         )
         let words = [
             "Text(\"\(PhoneSleepTimerVocabulary.title)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.close)\")",
+            "Button(\"\(PhoneAppWording.close)\")",
             ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.closeHint)\")",
             "Text(\"\(PhoneSleepTimerVocabulary.currentTimer)\")",
             "Button(\"\(PhoneSleepTimerVocabulary.resetTimer)\")",

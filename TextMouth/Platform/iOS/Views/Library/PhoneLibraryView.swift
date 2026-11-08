@@ -194,7 +194,7 @@ struct PhoneLibraryView: View {
             Button(PhoneRowWording.removalDeleteButton, role: .destructive) {
                 remove(book)
             }
-            Button(PhoneLibraryVocabulary.cancel, role: .cancel) {}
+            Button(PhoneAppWording.cancel, role: .cancel) {}
         } message: { _ in
             Text(PhoneRowWording.removalMessage)
         }
@@ -255,7 +255,7 @@ struct PhoneLibraryView: View {
             Button {
                 open(.folder(.newFolder(parentPath: rows.location.folderPath)), from: .newFolder)
             } label: {
-                Label(PhoneLibraryVocabulary.newFolderTitle, systemImage: "folder.badge.plus")
+                Label(PhoneFolderVocabulary.newFolderTitle, systemImage: "folder.badge.plus")
             }
             .accessibilityLabel(PhoneLibraryVocabulary.newFolderLabel)
             .accessibilityFocused($focus, equals: .newFolder)

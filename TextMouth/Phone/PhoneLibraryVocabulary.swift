@@ -15,8 +15,6 @@ enum PhoneLibraryVocabulary {
     static let foldersHeader = "Folders"
     /// The search field's prompt.
     static let searchPrompt = "Search books"
-    /// New Folder's visible title.
-    static let newFolderTitle = "New Folder"
     /// New Folder's spoken label.
     static let newFolderLabel = "Create new folder"
     /// Sort's visible title.
@@ -65,8 +63,6 @@ enum PhoneLibraryVocabulary {
     static let lastOpenedRow = "Last Opened"
     /// The read-only row of the book's word count.
     static let wordCountRow = "Word Count"
-    /// The button that saves the sheet.
-    static let save = "Save"
     /// What VoiceOver says once Book Info is saved (the Mac's reader's).
     static let metadataUpdated = "Metadata updated"
 
@@ -100,9 +96,4 @@ enum PhoneLibraryVocabulary {
     static let yearField = "Year"
     /// An audiobook's read-only row of its duration.
     static let durationRow = "Duration"
-
-    // MARK: Removing a Book (the Mac's ContentView)
-
-    /// The removal question's button that removes nothing.
-    static let cancel = "Cancel"
 }

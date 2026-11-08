@@ -95,7 +95,7 @@ enum PhoneReaderControls {
             return voice(in: state)
         case .bookInfo:
             return PhoneControlDescription(
-                label: PhoneReaderVocabulary.bookInfo,
+                label: PhoneLibraryVocabulary.bookInfo,
                 // The phone's library holds no feed items, so a book's
                 // information is always its own to read.
                 hint: FeedItemBookInfoWording.readerButtonLabel(readOnly: true),
@@ -151,7 +151,7 @@ enum PhoneReaderControls {
             )
         }
         return PhoneControlDescription(
-            label: PhoneReaderWording.speedLabel,
+            label: PhoneVoiceVocabulary.speedLabel,
             value: PhoneReaderVocabulary.wordsPerMinute(state.wordsPerMinute),
             hint: PhoneReaderWording.textSpeedHint,
             traits: .adjustable

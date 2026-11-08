@@ -205,10 +205,10 @@ private struct PhoneBookInfoForm<Fields: View>: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(PhoneLibraryVocabulary.cancel) { dismiss() }
+                    Button(PhoneAppWording.cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(PhoneLibraryVocabulary.save) {
+                    Button(PhoneAppWording.save) {
                         save { dismiss() }
                     }
                     .disabled(!canSave)

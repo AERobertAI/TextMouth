@@ -55,14 +55,6 @@ final class PhoneSettingsModelTests: XCTestCase {
         }
     }
 
-    /// The sentence for no voices is the spec's, word for word.
-    func testTheSentenceForNoVoicesIsTheSpecs() {
-        XCTAssertEqual(
-            PhoneSettingsWording.noVoicesInstalled,
-            "No voices are installed. Add voices in Settings, Accessibility, Read & Speak."
-        )
-    }
-
     // MARK: - What Sliders and Steppers Say
 
     /// Each control is called what the spec calls it, and says its value with
@@ -402,7 +394,7 @@ final class PhoneSettingsModelTests: XCTestCase {
     /// With no voices at all, the row says so, and doesn't open an empty sheet.
     func testWithNoVoicesTheRowSaysSoAndDoesntOpen() {
         let offer = PhoneSettingsVoiceOffer(current: nil, forLanguage: [], installed: [], hasListed: true)
-        XCTAssertEqual(offer.rowValue, PhoneSettingsWording.noVoicesInstalled)
+        XCTAssertEqual(offer.rowValue, PhoneVoiceWording.noVoices)
         XCTAssertFalse(offer.canOpen)
         XCTAssertTrue(offer.choices.isEmpty)
     }
@@ -416,7 +408,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             installed: [Self.personal],
             hasListed: true
         )
-        XCTAssertEqual(offer.rowValue, PhoneSettingsWording.noVoicesInstalled)
+        XCTAssertEqual(offer.rowValue, PhoneVoiceWording.noVoices)
         XCTAssertFalse(offer.canOpen)
     }
 
@@ -459,11 +451,11 @@ final class PhoneSettingsModelTests: XCTestCase {
         guard let voice = AVSpeechSynthesisVoice.speechVoices().first else {
             throw XCTSkip("This Mac has no voices")
         }
-        let read = PhoneSettingsVoice(voice)
+        let read = PhoneVoiceOption(voice)
         XCTAssertEqual(read.identifier, voice.identifier)
         XCTAssertEqual(read.name, voice.name)
-        XCTAssertEqual(read.quality, voice.qualityLabel)
-        XCTAssertEqual(read.isPersonal, voice.voiceTraits.contains(.isPersonalVoice))
+        XCTAssertEqual(read.qualityLabel, voice.qualityLabel)
+        XCTAssertEqual(read.isPersonalVoice, voice.voiceTraits.contains(.isPersonalVoice))
     }
 
     // MARK: - What Applies Now
@@ -517,15 +509,28 @@ final class PhoneSettingsModelTests: XCTestCase {
     // MARK: - Support
 
     /// A voice of the language chosen.
-    private static let samantha = PhoneSettingsVoice(identifier: "samantha", name: "Samantha", quality: "Enhanced")
+    private static let samantha = PhoneVoiceOption(
+        identifier: "samantha",
+        name: "Samantha",
+        qualityLabel: "Enhanced",
+        language: "en-US",
+        isPersonalVoice: false
+    )
     /// A voice of another language.
-    private static let thomas = PhoneSettingsVoice(identifier: "thomas", name: "Thomas", quality: "Standard")
+    private static let thomas = PhoneVoiceOption(
+        identifier: "thomas",
+        name: "Thomas",
+        qualityLabel: "Standard",
+        language: "fr-FR",
+        isPersonalVoice: false
+    )
     /// The person's own voice.
-    private static let personal = PhoneSettingsVoice(
+    private static let personal = PhoneVoiceOption(
         identifier: "personal",
         name: "My Voice",
-        quality: "Standard",
-        isPersonal: true
+        qualityLabel: "Standard",
+        language: "en-US",
+        isPersonalVoice: true
     )
 
     /// A Settings model of this test's own, in this test's sandbox, offering

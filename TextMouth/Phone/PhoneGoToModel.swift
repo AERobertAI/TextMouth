@@ -10,8 +10,6 @@ import Foundation
 enum PhoneGoToVocabulary {
     /// Each field's button, as it shows.
     static let jump = "Jump"
-    /// The toolbar button that closes the sheet.
-    static let cancel = "Cancel"
 
     /// What a refusal under a field reads, as in "Error: There is no page
     /// 400 in this book. Its pages run from i to 300."
@@ -57,7 +55,7 @@ enum PhoneGoToField: Hashable, CaseIterable, Sendable {
 @MainActor
 struct PhoneGoToModel {
     /// The sheet's title, read as its heading: the spec's "Go To".
-    static let title = "Go To"
+    static let title: String = PhoneReaderWording.goTo
 
     /// Whether the book is an audiobook, whose time is its recording's.
     let isAudioBook: Bool

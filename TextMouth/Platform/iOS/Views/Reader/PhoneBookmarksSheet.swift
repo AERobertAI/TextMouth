@@ -120,16 +120,31 @@ struct PhoneBookmarksSheet: View {
                 }
             }
             .alert(
-                removing.map { PhoneBookmarksWording.removeQuestion(number: $0.number) } ?? "",
-                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                removeQuestionTitle,
+                isPresented: isAskingToRemove,
                 presenting: removing
             ) { bookmark in
-                Button(PhoneBookmarksWording.remove, role: .destructive) { delete(bookmark) }
-                Button(PhoneBookmarksVocabulary.cancel, role: .cancel) {}
+                Button(PhoneReaderWording.remove, role: .destructive) { delete(bookmark) }
+                Button(PhoneAppWording.cancel, role: .cancel) {}
             } message: { bookmark in
                 Text(bookmark.label)
             }
         }
+    }
+
+    // MARK: The removal question
+
+    /// The removal question's title, or "" while no bookmark is being removed.
+    /// Held apart from `body` so the compiler type-checks each piece alone.
+    private var removeQuestionTitle: String {
+        guard let bookmark = removing else { return "" }
+        return PhoneBookmarksWording.removeQuestion(number: bookmark.number)
+    }
+
+    /// Whether the removal question shows: while a bookmark is being removed,
+    /// and cleared when the question is answered or dismissed.
+    private var isAskingToRemove: Binding<Bool> {
+        Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })
     }
 
     // MARK: The list
@@ -238,7 +253,7 @@ struct PhoneBookmarksSheet: View {
                 field: PhoneBookmarksVocabulary.editNoteField,
                 hint: nil,
                 startingNote: bookmark.label,
-                doneTitle: PhoneBookmarksVocabulary.save,
+                doneTitle: PhoneAppWording.save,
                 onCancel: { focusAfterNoteSheet = Focus(model.focus(after: .edit(bookmark.id))) },
                 onDone: { note in save(note: note, for: bookmark) }
             )
@@ -319,7 +334,7 @@ private struct PhoneBookmarkNoteSheet: View {
                     .accessibilityFocused($fieldHasVoiceOver)
                     .accessibilityLabel(PhoneBookmarksVocabulary.noteLabel)
                     .accessibilityHint(hint ?? "")
-                Button(PhoneBookmarksVocabulary.cancel) {
+                Button(PhoneAppWording.cancel) {
                     onCancel()
                     dismiss()
                 }

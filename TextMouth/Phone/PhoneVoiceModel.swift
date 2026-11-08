@@ -33,8 +33,6 @@ enum PhoneVoiceVocabulary {
     static let endOfBookLabel = "End of book behavior for this book"
     /// The end-of-book choice that follows the global setting.
     static let useGlobalDefault = "Use Global Default"
-    /// The toolbar button that closes the sheet.
-    static let close = "Close"
 
     /// A voice's choice as VoiceOver reads it, as in "Samantha, Enhanced
     /// quality".
@@ -73,6 +71,12 @@ struct PhoneVoiceOption: Hashable, Sendable {
     /// Whether it's a Personal Voice, which the phone doesn't list, since
     /// the app can't render one.
     let isPersonalVoice: Bool
+
+    /// The voice as its choice and the Voice row say it: "Samantha, Enhanced
+    /// quality".
+    var choiceLabel: String {
+        PhoneVoiceVocabulary.voiceChoice(name: name, quality: qualityLabel)
+    }
 
     /// The two-letter code the language filter goes by, as "en".
     var languageCode: String {

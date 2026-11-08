@@ -502,13 +502,6 @@ final class PhoneReaderModel {
         }
     }
 
-    // MARK: - Defaults
-
-    /// The preference that holds Settings' Follow in Braille switch, which
-    /// Book content reads at each tick: the key the settings slice keeps it
-    /// under (`PhoneSettingsDefaults.followInBraille` on `ios/s9-settings`).
-    nonisolated static let followInBrailleKey = "phoneFollowInBraille"
-
     /// Posts `announcement` through the shared announcer, at its priority.
     static func postThroughAnnouncer(_ announcement: VoiceOverAnnouncement) {
         VoiceOverAnnouncer.announce(announcement.message, priority: announcement.priority)

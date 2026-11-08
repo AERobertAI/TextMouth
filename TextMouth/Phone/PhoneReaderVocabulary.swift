@@ -51,9 +51,6 @@ enum PhoneReaderVocabulary {
     /// The Sleep Timer button's title.
     static let sleepTimer = "Sleep Timer"
 
-    /// The Book Info button's title.
-    static let bookInfo = "Book Info"
-
     /// What the reader shows while the book loads.
     static let loadingBook = "Loading book..."
 

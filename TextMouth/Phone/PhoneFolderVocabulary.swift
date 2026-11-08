@@ -21,14 +21,9 @@ import Foundation
 /// Folder...") and New Folder's button ("Create new folder") are the Library's
 /// controls, so they belong to the Library's vocabulary, not this one.
 enum PhoneFolderVocabulary {
-    // MARK: Every Sheet
-
-    /// The button that closes a sheet with nothing changed.
-    static let cancel = "Cancel"
-
     // MARK: New Folder (the Mac's `NewFolderSheet`)
 
-    /// The New Folder sheet's title.
+    /// New Folder's title: the sheet's, and the Library's menu item's.
     static let newFolderTitle = "New Folder"
     /// The new folder's name field: its placeholder and its spoken label.
     static let folderName = "Folder name"
