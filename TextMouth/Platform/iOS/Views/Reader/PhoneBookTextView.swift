@@ -249,6 +249,17 @@ final class PhoneBookTextView: UITextView {
         set {}
     }
 
+    /// The text view's own traits with the page-turn trait added: at the end
+    /// of the passage, VoiceOver's Read All (a two-finger swipe down) calls
+    /// `accessibilityScroll(.next)` and reads on from the next passage, and
+    /// stops when the content doesn't change (UIKit's
+    /// `UIAccessibilityTraitCausesPageTurn`). At the book's end the scroll
+    /// returns false, which ends the reading.
+    override var accessibilityTraits: UIAccessibilityTraits {
+        get { super.accessibilityTraits.union(.causesPageTurn) }
+        set { super.accessibilityTraits = newValue }
+    }
+
     /// While paused, "Plays from here."; while playing, "Brings the text to
     /// the sentence being spoken.", computed when asked.
     override var accessibilityHint: String? {
@@ -319,12 +330,11 @@ final class PhoneBookTextView: UITextView {
                   forward: forward,
                   maximumLength: ReaderViewModel.maxDisplayChars
               ) else { return false }
-        if reader.isPlaybackUnderWay {
-            show(passageOf: reader, chapter: target.chapter, at: target.offset)
-        } else {
+        // What the turn does is the policy's: paused, it moves the place too.
+        if PhonePassagePolicy.turnEffect(isPlaying: reader.isPlaybackUnderWay) == .movesPlaceAndText {
             model.turnPage(toChapter: target.chapter, offset: target.offset)
-            show(passageOf: reader, chapter: target.chapter, at: target.offset)
         }
+        show(passageOf: reader, chapter: target.chapter, at: target.offset)
         UIAccessibility.post(notification: .pageScrolled, argument: pageStatus(of: reader, chapter: target.chapter, offset: target.offset))
         return true
     }
