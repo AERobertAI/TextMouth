@@ -55,14 +55,6 @@ final class PhoneSettingsModelTests: XCTestCase {
         }
     }
 
-    /// The sentence for no voices is the spec's, word for word.
-    func testTheSentenceForNoVoicesIsTheSpecs() {
-        XCTAssertEqual(
-            PhoneSettingsWording.noVoicesInstalled,
-            "No voices are installed. Add voices in Settings, Accessibility, Read & Speak."
-        )
-    }
-
     // MARK: - What Sliders and Steppers Say
 
     /// Each control is called what the spec calls it, and says its value with
@@ -402,7 +394,7 @@ final class PhoneSettingsModelTests: XCTestCase {
     /// With no voices at all, the row says so, and doesn't open an empty sheet.
     func testWithNoVoicesTheRowSaysSoAndDoesntOpen() {
         let offer = PhoneSettingsVoiceOffer(current: nil, forLanguage: [], installed: [], hasListed: true)
-        XCTAssertEqual(offer.rowValue, PhoneSettingsWording.noVoicesInstalled)
+        XCTAssertEqual(offer.rowValue, PhoneVoiceWording.noVoices)
         XCTAssertFalse(offer.canOpen)
         XCTAssertTrue(offer.choices.isEmpty)
     }
@@ -416,7 +408,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             installed: [Self.personal],
             hasListed: true
         )
-        XCTAssertEqual(offer.rowValue, PhoneSettingsWording.noVoicesInstalled)
+        XCTAssertEqual(offer.rowValue, PhoneVoiceWording.noVoices)
         XCTAssertFalse(offer.canOpen)
     }
 

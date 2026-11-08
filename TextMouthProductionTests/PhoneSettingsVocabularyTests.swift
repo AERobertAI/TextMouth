@@ -61,7 +61,7 @@ final class PhoneSettingsVocabularyTests: XCTestCase {
             sources.contains(#".accessibilityLabel("\(voice.name), \(settingsViewModel.voiceQualityLabel(voice)) quality")"#)
         )
         XCTAssertEqual(
-            PhoneSettingsVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
+            PhoneVoiceVocabulary.voiceChoice(name: "Samantha", quality: "Enhanced"),
             "Samantha, Enhanced quality"
         )
     }

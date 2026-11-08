@@ -99,10 +99,4 @@ enum PhoneSettingsVocabulary: String, CaseIterable {
     static func wordsPerMinute(_ wordsPerMinute: Double) -> String {
         "\(Int(wordsPerMinute)) words per minute"
     }
-
-    /// A voice as the Mac's list of voices says it: "Samantha, Enhanced
-    /// quality".
-    static func voiceChoice(name: String, quality: String) -> String {
-        "\(name), \(quality) quality"
-    }
 }

@@ -323,7 +323,7 @@ struct PhoneSettingsVoiceOffer {
 
         choices = offered.map { PhoneChoice(id: $0.identifier, label: $0.choiceLabel) }
         canOpen = !hasNothingToOffer
-        rowValue = hasNothingToOffer ? PhoneSettingsWording.noVoicesInstalled : current?.choiceLabel ?? ""
+        rowValue = hasNothingToOffer ? PhoneVoiceWording.noVoices : current?.choiceLabel ?? ""
     }
 }
 

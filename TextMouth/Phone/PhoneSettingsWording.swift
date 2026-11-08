@@ -45,11 +45,4 @@ enum PhoneSettingsWording {
     static let shareLogs = "Share Logs…"
     /// What sharing the logs does.
     static let shareLogsHint = "Shares TextMouth's recent logs as a text file. They hold no book text."
-
-    // MARK: Voices
-
-    /// What the Voice row says when no voice can be offered. Unverified: the
-    /// path's wording in the iPhone's Settings, which the spec lists for a
-    /// first run.
-    static let noVoicesInstalled = "No voices are installed. Add voices in Settings, Accessibility, Read & Speak."
 }
