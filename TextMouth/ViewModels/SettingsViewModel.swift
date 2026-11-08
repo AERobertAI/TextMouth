@@ -1070,7 +1070,15 @@ final class SettingsViewModel: ObservableObject {
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
         // The Library window's views, every one, as the views store keeps them.
         config.libraryViews = LibraryViewDefinitionStore.preference.read(from: preferences).fileEntries
+        #if os(iOS)
+        // The iPhone bundles no tables, so the Mac's default is not one it
+        // accepts: config.json would keep it, and decoding would repair it to
+        // empty and log it at every launch. Empty is the file's "keep the
+        // current choice".
+        config.brailleTable = PhoneDefaults.configBrailleTable(for: BraillePreferences.table.read(from: preferences))
+        #else
         config.brailleTable = BraillePreferences.table.read(from: preferences)
+        #endif
         config.brailleFileCode = BraillePreferences.fileCode.read(from: preferences)
     }
 
