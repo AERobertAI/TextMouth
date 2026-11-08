@@ -317,6 +317,15 @@ targets:
         product: Markdown
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
+    # The iPhone app's scheme, committed, so that `xcodebuild test -scheme
+    # TextMouthiOS` runs both of its test bundles in the simulator: the one
+    # Xcode made by itself held only the UI tests. The Mac's schemes are
+    # still Xcode's own, made when none is committed for a target.
+    scheme:
+      testTargets:
+        - TextMouthiOSTests
+        - TextMouthiOSUITests
+      gatherCoverageData: false
   # liblouis 3.39.0, the braille translator (FMT21), vendored in
   # Vendor/liblouis and built as a static library that only the braille
   # helper links: liblouis is C that reads untrusted braille and text, it has
@@ -487,6 +496,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSTests
         GENERATE_INFOPLIST_FILE: true
+        # Both apps' products are TextMouth.app, and the scheme Xcode made for
+        # the iPhone app by itself left this bundle out of its tests: the
+        # iPhone app's own scheme, in the TextMouthiOS target, names it.
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
         # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
