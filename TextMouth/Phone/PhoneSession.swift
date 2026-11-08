@@ -98,6 +98,13 @@ final class PhoneSession: ObservableObject {
     /// The configuration whose last opened book a reader records as it opens.
     private let config: ConfigService
 
+    /// The book that was being opened when the app last ended, read and cleared
+    /// as the session is made, which is at launch, before any reader exists.
+    /// Read there rather than at the first activation, since a lock-screen Play
+    /// that wakes the app opens a book first, and its own mark would be taken
+    /// for a crash. `takeReopeningAtLaunch` acts on it.
+    private var openingBookAtLastEnd: String?
+
     /// The reader `reader` is, with what is followed of it.
     private var current: OpenReader?
     /// The reader `listeningReader` is, with what is followed of it.
@@ -129,6 +136,9 @@ final class PhoneSession: ObservableObject {
         makeReader: ReaderMaker? = nil
     ) {
         let requests = autoplayRequests ?? .shared
+        // Before anything can write its own mark (`openingBookKey`).
+        openingBookAtLastEnd = preferences.string(forKey: Self.openingBookKey)
+        preferences.removeObject(forKey: Self.openingBookKey)
         self.library = library
         self.soundEffects = soundEffects
         self.autoplayRequests = requests
@@ -284,9 +294,8 @@ final class PhoneSession: ObservableObject {
             open(book)
             return
         }
-        let endHold = beginHold("Going on to the next book")
         let opened = makeOpenReader(for: book)
-        opened.endHoldOnLoad = endHold
+        opened.holdUntilLoaded(beginHold("Going on to the next book"))
         opened.reader.nowPlayingService.updateNowPlayingInfo(
             title: book.title,
             author: book.author,
@@ -330,7 +339,9 @@ final class PhoneSession: ObservableObject {
     /// was opened by mistake, and the Continue row must not name it. Any other
     /// book stays open, playing or not.
     func leaveReader() {
-        guard let current, !current.hasPlayed else { return }
+        // A book the listener pressed Play on while it loaded is about to play:
+        // Back leaves it open.
+        guard let current, !current.hasPlayed, !playWhenLoaded else { return }
         if let listening {
             close(current)
             setListening(nil)
@@ -363,11 +374,7 @@ final class PhoneSession: ObservableObject {
     /// reader's own saving would otherwise change.
     private func close(_ opened: OpenReader) {
         opened.stopFollowing()
-        opened.endHoldOnLoad?()
-        opened.endHoldOnLoad = nil
-        if preferences.string(forKey: Self.openingBookKey) == opened.bookID.uuidString {
-            preferences.removeObject(forKey: Self.openingBookKey)
-        }
+        endOpening(opened)
         opened.reader.close()
         guard !opened.isEngaged else { return }
         if library.bookByID(opened.bookID)?.lastOpened != opened.lastOpenedBefore {
@@ -380,9 +387,28 @@ final class PhoneSession: ObservableObject {
         }
     }
 
-    /// Makes `opened` the reader on screen, publishing it and its snapshot.
+    /// `opened` is no longer being opened, because its load ended or it
+    /// closed: its mark in the crash guard goes, if it is still the one
+    /// written, and any hold begun for the wait ends.
+    private func endOpening(_ opened: OpenReader) {
+        if preferences.string(forKey: Self.openingBookKey) == opened.bookID.uuidString {
+            preferences.removeObject(forKey: Self.openingBookKey)
+        }
+        opened.endHoldOnLoad?()
+        opened.endHoldOnLoad = nil
+    }
+
+    /// Makes `opened` the reader on screen, publishing it and its snapshot, ending
+    /// a press that waited for the book before it, and making it the target of
+    /// a remote Play.
     private func setCurrent(_ opened: OpenReader?) {
         current = opened
+        // A press that waited belonged to the book that was on screen.
+        playWhenLoaded = false
+        // One rule for which book a remote Play reaches: the one on screen,
+        // as the magic tap does. Nothing else on iOS focuses a reader
+        // (`NowPlayingSession.focus()`).
+        opened?.reader.nowPlayingService.focus()
         reader = opened?.reader
         snapshot = opened?.latest
     }
@@ -429,6 +455,7 @@ final class PhoneSession: ObservableObject {
             playWhenLoaded = false
         } else {
             playWhenLoaded.toggle()
+            if playWhenLoaded { noteBookEngaged() }
         }
     }
 
@@ -438,6 +465,7 @@ final class PhoneSession: ObservableObject {
         guard let reader else { return }
         if reader.isLoading {
             playWhenLoaded = true
+            noteBookEngaged()
         } else {
             reader.playOrResume()
         }
@@ -460,13 +488,30 @@ final class PhoneSession: ObservableObject {
             togglePlayPause()
             return true
         }
-        guard let book = bookInReach, let opened = open(book) else { return false }
-        if opened.isLoading {
+        guard let book = bookInReach else { return false }
+        // A Play that wakes a killed app opens the book in the background; the
+        // app is held until it has loaded, as a hand-over's is (`goOn`).
+        let endHold = beginHold("Playing from the lock screen")
+        guard let opened = open(book) else {
+            endHold()
+            return false
+        }
+        if opened.isLoading, let holder = current {
+            holder.holdUntilLoaded(endHold)
             playWhenLoaded = true
+            noteBookEngaged()
         } else {
+            endHold()
             opened.playOrResume()
         }
         return true
+    }
+
+    /// Whether any open book plays, the one on screen or the one behind it.
+    /// Both snapshots are read: with one book playing behind an unplayed one,
+    /// the screen's snapshot alone says nothing plays.
+    var isAnyBookPlaying: Bool {
+        snapshot?.isPlaying == true || listeningSnapshot?.isPlaying == true
     }
 
     /// The book a press reaches with no reader to press: the open reader's
@@ -540,11 +585,7 @@ final class PhoneSession: ObservableObject {
     /// hand-over's hold ends, and a press of Play that waited plays the book on
     /// screen, if it loaded; one that failed has nothing to play.
     private func loadEnded(_ opened: OpenReader) {
-        if preferences.string(forKey: Self.openingBookKey) == opened.bookID.uuidString {
-            preferences.removeObject(forKey: Self.openingBookKey)
-        }
-        opened.endHoldOnLoad?()
-        opened.endHoldOnLoad = nil
+        endOpening(opened)
         guard opened === current, playWhenLoaded else { return }
         playWhenLoaded = false
         guard opened.reader.loadErrorMessage == nil else { return }
@@ -558,9 +599,7 @@ final class PhoneSession: ObservableObject {
     /// screen's has not been played.
     private func rememberForReopening() {
         guard let kept = listening ?? current else {
-            for key in [Self.reopenBookKey, Self.reopenShowsReaderKey, Self.reopenFromReadingListKey] {
-                preferences.removeObject(forKey: key)
-            }
+            forgetReopening()
             return
         }
         preferences.set(kept.bookID.uuidString, forKey: Self.reopenBookKey)
@@ -580,7 +619,7 @@ final class PhoneSession: ObservableObject {
     /// while the app ended opening a book, and none once that book has left the
     /// library. It changes nothing; `takeReopeningAtLaunch(fileOpened:)` does.
     var bookToReopenAtLaunch: Book? {
-        guard preferences.string(forKey: Self.openingBookKey) == nil,
+        guard openingBookAtLastEnd == nil,
               let saved = preferences.string(forKey: Self.reopenBookKey),
               let bookID = UUID(uuidString: saved) else { return nil }
         return library.bookByID(bookID)
@@ -590,8 +629,8 @@ final class PhoneSession: ObservableObject {
     /// once: it clears what should not be tried again. A file opened at launch
     /// wins over reopening.
     func takeReopeningAtLaunch(fileOpened: Bool) -> PhoneLaunchReopening {
-        if let opening = preferences.string(forKey: Self.openingBookKey) {
-            preferences.removeObject(forKey: Self.openingBookKey)
+        if let opening = openingBookAtLastEnd {
+            openingBookAtLastEnd = nil
             forgetReopening()
             let title = UUID(uuidString: opening).flatMap { library.bookByID($0) }?.title
             return title.map { .closedWhileOpening(PhoneAppWording.closedWhileOpening($0)) } ?? .nothing
@@ -653,8 +692,19 @@ private final class OpenReader {
     var isEngaged = false
     /// Whether the book has played since it opened.
     var hasPlayed = false
-    /// Ends the hold a hand-over began, once the book has loaded.
+    /// Ends the holds begun for the wait until the book has loaded.
     var endHoldOnLoad: (@MainActor () -> Void)?
+
+    /// Keeps `endHold`, to run once the book has loaded; a hold kept already
+    /// ends too, so a book asked for twice during its load holds the app once
+    /// for each and releases both.
+    func holdUntilLoaded(_ endHold: @escaping @MainActor () -> Void) {
+        let before = endHoldOnLoad
+        endHoldOnLoad = {
+            before?()
+            endHold()
+        }
+    }
 
     init(reader: ReaderViewModel, lastOpenedBefore: Date?, lastOpenedBookIDBefore: String) {
         self.reader = reader

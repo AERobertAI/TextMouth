@@ -414,6 +414,112 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertFalse(shownItems[firstOfNext...].contains { $0 == nil }, "The system showed nothing after the next book")
     }
 
+    // MARK: - A Play That Wakes the App, the Press That Waits, and Focus
+
+    /// A lock-screen Play that opens the book in reach holds the app until the
+    /// book has loaded, as a hand-over does, and the hold ends with the load.
+    func testARemotePlayThatOpensABookHoldsTheAppUntilItLoads() throws {
+        let world = try makeIntegrationWorld("PhoneRemoteHold")
+        preserveLastOpenedBook()
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
+        ConfigService.shared.config.lastOpenedBookID = book.id.uuidString
+        let session = makeSession(in: world)
+        var holds: [String] = []
+        var ended = 0
+        session.beginHold = { name in
+            holds.append(name)
+            return { ended += 1 }
+        }
+
+        XCTAssertTrue(session.togglePlayPauseFromAnywhere())
+
+        XCTAssertEqual(holds.count, 1, "The load was not held")
+        XCTAssertEqual(ended, 0, "The hold ended before the load")
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "Never played")
+        XCTAssertTrue(eventually { ended == 1 }, "The hold never ended, or ended twice")
+    }
+
+    /// A Play with no book to open begins no hold that is left running.
+    func testARemotePlayWithNoBookInReachLeavesNoHold() throws {
+        let world = try makeIntegrationWorld("PhoneRemoteNoHold")
+        preserveLastOpenedBook()
+        let session = makeSession(in: world)
+        ConfigService.shared.config.lastOpenedBookID = UUID().uuidString
+        var begun = 0
+        var ended = 0
+        session.beginHold = { _ in
+            begun += 1
+            return { ended += 1 }
+        }
+
+        XCTAssertFalse(session.togglePlayPauseFromAnywhere())
+
+        XCTAssertEqual(begun, ended, "A hold was left running")
+    }
+
+    /// The guard against a book that closes the app is read as the session is
+    /// made: the mark a run writes for its own opening is never taken for a
+    /// crash, as a lock-screen Play's was before the first activation.
+    func testAnOpeningThisRunIsNotTakenForACrash() throws {
+        let world = try makeIntegrationWorld("PhoneOwnMark")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
+        let preferences = makeSandboxedPreferences("PhoneOwnMark")
+        let session = makeSession(in: world, preferences: preferences)
+
+        _ = try XCTUnwrap(session.open(book))
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.openingBookKey), book.id.uuidString)
+
+        XCTAssertEqual(session.takeReopeningAtLaunch(fileOpened: true), .nothing)
+        XCTAssertEqual(
+            preferences.string(forKey: PhoneSession.openingBookKey), book.id.uuidString,
+            "This run's mark was cleared as a crash"
+        )
+    }
+
+    /// A press that waits for the load keeps the book open through Back.
+    func testBackKeepsABookWhosePlayWaitsForTheLoad() throws {
+        let world = try makeIntegrationWorld("PhoneBackWaiting")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5, 5])
+        let session = makeSession(in: world)
+        let reader = try XCTUnwrap(session.open(book))
+        XCTAssertTrue(reader.isLoading)
+
+        session.togglePlayPause()
+        session.leaveReader()
+
+        XCTAssertTrue(session.reader === reader, "Back closed the book that was to play")
+        XCTAssertFalse(reader.hasClosed)
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true }, "The press was lost")
+    }
+
+    /// The book on screen is the one a remote Play reaches, not an older book
+    /// behind it.
+    func testTheBookOnScreenIsTheFocusedOwnerOfRemotePlay() throws {
+        let folder = try makeFolderWorld("PhoneFocus")
+        let media = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let session = makeSession(in: folder.world, nowPlaying: media)
+        let first = try XCTUnwrap(session.open(folder.first))
+        waitForReaderToLoad(first)
+        session.togglePlayPause()
+        XCTAssertTrue(eventually(within: 30) { session.snapshot?.isPlaying == true })
+
+        let second = try XCTUnwrap(session.open(folder.second))
+        XCTAssertEqual(media.focusedOwnerID, second.nowPlayingService.ownerID, "The new book on screen is not focused")
+
+        session.leaveReader()
+        XCTAssertEqual(media.focusedOwnerID, first.nowPlayingService.ownerID, "The book that came back is not focused")
+    }
+
+    // MARK: - Is Any Book Playing
+
+    /// A book playing behind an unplayed one counts: both snapshots are read.
+    func testAnyBookPlayingReadsBothSnapshots() throws {
+        let pair = try makePlayingPair("PhonePlayingAny")
+
+        XCTAssertNotEqual(pair.session.snapshot?.isPlaying, true)
+        XCTAssertTrue(pair.session.isAnyBookPlaying, "The book behind was not counted")
+    }
+
     /// A book going on behind the one on screen goes on there: the next book
     /// takes its place behind, and the book on screen stays.
     func testTheNextBookOfTheBookBehindGoesOnBehind() throws {
