@@ -278,7 +278,9 @@ def main(argv):
     parser.add_argument("--census", action="store_true", help="read import AppKit as import UIKit (iOS only)")
     parser.add_argument("--ref", default="HEAD", help="the commit to check (committed work only)")
     parser.add_argument("--agent", default=os.environ.get("BBS_AGENT", "someone"), help="who runs it, for the lock and the results' folder")
-    parser.add_argument("--wait", type=float, default=60, help="minutes to wait for the heavy-work lock")
+    # Three hours, as run_locked.py waits: since November 8, 2026 heavy jobs run strictly one
+    # after the other, with an hourly train first in line, so a wait of an hour could run out.
+    parser.add_argument("--wait", type=float, default=180, help="minutes to wait for the heavy-work lock")
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--ios-target", default="26.0")
     parser.add_argument("--no-lock", action="store_true", help="for a caller that already holds the lock (the build train)")
