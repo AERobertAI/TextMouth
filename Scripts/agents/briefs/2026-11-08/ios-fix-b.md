@@ -15,6 +15,13 @@ One commit for each, with its tests, in this order:
 5. **Findings 6, 12, and 13 (minor):** a jump from the Headings, Bookmarks, or Go To sheet counts the book as opened; the title isn't said twice when a launch reopens the reader; and "Loading…" isn't said as the listener leaves.
 6. **The review's small duplicates in your files:** `PhoneFocusRegistry.kind(of:)`, which nothing calls while the arrival repeats its lookup; and `PhoneReaderView.sheetView`, which works out the units again instead of calling `model.offeredUnits(of:)`. (The Follow in Braille key, kept twice, was folded by `iosdry` and is on `ios/lead-1108` now.)
 
+7. **From Apple's accessibility audit in the simulator** (`TextMouthiOSUITests`, `LibraryUITests`): the Library's own drawing.
+   - A book row's second line ("Lewis Carroll, 0%") fails contrast. The row is a button, so its secondary text takes the tint and comes out light blue.
+   - Contrast "nearly passed" for the row's title, "Library view", the section heading "Books (1)", the summary, and the empty Library's note.
+   - Dynamic Type is "partially unsupported" for the summary ("1 book. 2 hours, 27 minutes, 50 seconds total remaining at current speed").
+
+   Make the rows' text the system's primary and secondary label colors, not the tint, and check each of the others in `PhoneLibraryView` and `PhoneLibraryRowViews`. These are for a sighted helper and for low vision: no word changes. The audit's findings on parts iOS draws (the search field, the bar's buttons, the navigation title) are accepted in the tests with their reasons, so leave those.
+
 ## Your files
 
 `TextMouth/Phone/PhoneAnnouncer.swift`, `TextMouth/Phone/PhonePassagePolicy.swift`, `TextMouth/Phone/PhoneReaderSheet*.swift`, `TextMouth/Phone/PhoneFocus*.swift`, `TextMouth/Phone/PhoneReaderModel.swift` (only what findings 3 and 9 need), the `#if os(iOS)` branch of `VoiceOverAnnouncer.swift`, `TextMouth/Platform/iOS/Views/**`, a new keeper of the screen's sleep in `TextMouth/Platform/iOS/Services/`, `PhoneImportCopier.swift` (only its use of the screen's sleep), and their tests. Another worker, `iosfixa`, has the session, audio, the background work, and the app delegate at the same time: leave those to them, and if you must touch one of their files, tell the lead first.
