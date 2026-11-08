@@ -247,7 +247,13 @@ struct PhoneReaderView: View {
                 onChoose: { model.choose($0) }
             )
         } else if let reader = session.reader {
-            PhoneReaderSheetContent(sheet: shown, reader: reader, noteJumped: { [model] in model.noteJumped() })
+            PhoneReaderSheetContent(
+                sheet: shown,
+                reader: reader,
+                noteJumped: { [model] in model.noteJumped() },
+                library: session.library,
+                pauseBookForPreview: { [session] in session.pauseBookForPreview() }
+            )
         }
     }
 

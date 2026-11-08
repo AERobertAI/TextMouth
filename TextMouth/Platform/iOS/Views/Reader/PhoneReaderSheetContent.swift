@@ -18,6 +18,11 @@ struct PhoneReaderSheetContent: View {
     /// Tells the session a jump from a sheet moved the book, so it counts as
     /// opened.
     let noteJumped: @MainActor () -> Void
+    /// The library Book Info saves to.
+    let library: LibraryViewModel
+    /// Pauses the book that plays for the Voice sheet's Preview Voice
+    /// (`PhoneSession.pauseBookForPreview`).
+    let pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook?
 
     /// What the sheet leaves to say, and to start, once it has closed.
     @State private var farewell = PhoneSheetFarewell()
@@ -44,13 +49,10 @@ struct PhoneReaderSheetContent: View {
         case .sleepTimer:
             PhoneSleepTimerSheet(reader: reader, farewell: farewell)
         case .voice:
-            PhoneVoiceSheet(reader: reader, farewell: farewell)
+            PhoneVoiceSheet(reader: reader, farewell: farewell, pauseBookForPreview: pauseBookForPreview)
         case .bookInfo:
-            // The Library's slice has built the phone's Book Info sheet
-            // (`PhoneBookInfoSheet`, on its branch); once the branches meet,
-            // this shows it. Until then, the sheet's title, in the spec's
-            // words.
-            PhoneUnbuiltSheet(title: "Book Information")
+            // The Library's Book Info sheet, for the reader's book.
+            PhoneReaderBookInfo(reader: reader, library: library)
         case .navigationUnit:
             // The Navigation unit's list is the reader's slice's, through
             // `PhoneChoiceSheet`; this shows its name, the Mac's, until then.
