@@ -119,6 +119,17 @@ struct TextMouthRuntime: @unchecked Sendable {
         processIdentifier: Int32,
         temporaryDirectory: URL
     ) -> TextMouthRuntime {
+        #if os(iOS)
+        #if DEBUG
+        // The iPhone app a UI test launches runs as a hosted test does, in a
+        // sandbox of its own, when it asks to (PhoneLaunchRequest): XCTest
+        // names its configuration only in a process hosting a test bundle.
+        var environment = environment
+        if PhoneLaunchRequest.runsInSandbox(environment) {
+            environment[testConfigurationVariable] = PhoneLaunchRequest.sandboxVariable
+        }
+        #endif
+        #endif
         guard environment[testConfigurationVariable] != nil else {
             return TextMouthRuntime(isHostedTest: false, homeDirectory: realHomeDirectory, preferences: .standard)
         }

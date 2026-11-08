@@ -27,7 +27,13 @@ final class TextMouthSceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = UIHostingController(rootView: PhoneRootView(model: model))
         self.window = window
         window.makeKeyAndVisible()
-        model.lifeCycle.sceneOpened(connectionOptions.urlContexts.map(\.url))
+        var opened = connectionOptions.urlContexts.map(\.url)
+        #if DEBUG
+        // A UI test, or a run in the simulator, sends a book by its path, as
+        // another app would at a cold launch (PhoneLaunchRequest).
+        opened += PhoneLaunchRequest.filesToOpen(ProcessInfo.processInfo.environment)
+        #endif
+        model.lifeCycle.sceneOpened(opened)
     }
 
     /// Opens files another app sends while the scene is connected.
