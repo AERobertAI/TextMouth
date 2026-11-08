@@ -82,7 +82,7 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 
 ## The iPhone app
 
-The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes branch `ios/lead-1108` at 1fefa2cf, which is not yet merged into main.
+The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes branch `ios/lead-1108` at 1fefa2cf, which is in main, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below), merged into `integration/iosfixc` at 3d4d6b98, which goes to main once its suite passes.
 
 ### The frame
 
@@ -229,6 +229,49 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - `PhoneSession.pauseBookForPreview` gives it both readers, once each. It pauses without the pause sound, since the preview is about to speak.
   - `PhoneSettingsVoicePreview` asks `audioMayStart` first. It pauses the book only at the first of a run of previews, and resumes it once, when the last preview ends, is cancelled, is refused by the speech engine, or is stopped.
   - Settings and the reader's Voice sheet both use it.
+
+### PhoneTextStyle: the phone's text at full contrast
+
+- `TextMouth/Platform/iOS/Views/PhoneTextStyle.swift` holds the colors of the phone's words in one place.
+  - The reason is Apple's accessibility audit. It finds iOS's secondary gray only "nearly" enough contrast, and the tint a button draws its words in no better.
+  - So the phone draws every word in the primary label color, and tells the kinds apart by font, weight, and position.
+  - The Library did this first for its rows (`PhoneRowLines`). Settings, Headings, Go To, Sleep Timer, Bookmarks, the Voice sheet, Add to Library, Book Information, and the choice sheet use the same style now, with no word changed.
+- `PhoneTextColor` names three colors:
+  - `secondary`, for captions, details, values, and section headings: the words a design would draw in gray.
+  - `primary`, for the words of a button or of a row that is one, which iOS would draw in the tint. It is kept apart from `secondary` because a tint fails the audit on its own account, whatever is decided about gray.
+  - `disabled`, for words that do nothing now. It is `Color.secondary`, the system's gray, so that a dimmed button or row still looks dimmed. Whether the audit lets a disabled control's text pass is unverified.
+- Two view modifiers apply them: `phoneSecondaryText()` and `phonePrimaryText()`. Each draws the color while the control is enabled, and `disabled` while it is not, by reading the `isEnabled` environment value.
+  - They name a color outright and not a hierarchical style, because inside a button the hierarchical styles take the button's tint.
+- `PhoneActionButton` is a `Button` whose plain words take `phonePrimaryText()`. Use it in place of `Button(title, action:)`. VoiceOver reads the same label. It takes an optional `ButtonRole`.
+- `PhoneValueRow` shows a name and its value in place of `LabeledContent(name, value:)`, whose value iOS draws in gray. The name takes `primary` and the value `secondary`.
+  - At the accessibility text sizes (`typeSize.isAccessibilitySize`) the value goes under the name, in a `VStack`. Side by side, the name broke in the middle of a word beside its value at the largest size ("Fade out duration" in Settings).
+  - The stacking has no test of its own, and the test that would show it, `LargeTextUITests`, still fails on Settings (see [Testing TextMouth](../developer/testing.md)).
+- Full contrast for all of the phone's text follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`. The user has not answered. Until they do, the work follows the recommendation: yes, for people with low vision.
+- To undo it, make one line say `static let secondary = Color.secondary` in `PhoneTextColor`. Button words stay at full contrast, since `primary` is a separate line.
+- The contrast result: the audit's findings of contrast fell from about 50 to 2 on the sheets tested. Both remaining ones are on the first section header under the bar ("Voice" in Settings, "New Timer" in Sleep Timer), whose text is black in the screenshots, so they are probably false positives.
+
+### PhoneSheetButton: where a sheet's buttons go
+
+- `TextMouth/Platform/iOS/Views/PhoneSheetButton.swift` holds `PhoneSheetButtonPlacement` and `PhoneSheetButton`. Every sheet's Cancel, Close, Done, Save, and Back to Book comes from it, and no sheet places one itself.
+  - The sheets: Book Information (and its loading state), the choice sheet, both folder sheets (the form and Delete Folder), the stand-in sheet for a panel not built yet (`PhoneUnbuiltSheet`), Speech Stopped, Go To, Headings, Sleep Timer, Voice, Bookmarks, and Add to Library.
+- `PhoneSheetButtonPlacement.placement` is the one place the placement is decided. It is `.topBarTrailing`. Changing it back is one line.
+- A `PhoneSheetButton` is a `ToolbarContent`, used in a `.toolbar` in place of a `ToolbarItem` with a `Button`. It takes:
+  - `title`, the button's words, drawn at full contrast through `PhoneActionButton`;
+  - `label`, what VoiceOver and braille call it when that is not the title, and the title if none is given;
+  - `hint`, which is none by default;
+  - `isEnabled`, which is true by default, and a button that is not enabled is dimmed;
+  - the `action`.
+- The order is the title, then Cancel (or Close, or Done), then the confirming button. VoiceOver reads the title, then Cancel, then the confirm button, as the spec orders them.
+  - A sheet lists its Cancel before its confirm button in its toolbar, and the trailing placement keeps that order.
+  - The two folder sheets had Cancel before the title. They follow the spec now.
+- Why not the system's places, `.cancellationAction` and `.confirmationAction`:
+  - In the simulator's tests (iPhone 17, iOS 26), Book Information's and the choice sheet's Cancel were reported missing, though Go To's, in `.topBarTrailing`, was found.
+  - `ToolbarPlacementProbeUITests` put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026. The buttons were never missing. They were ordinary buttons labeled "Cancel" and "Save", with no identifier, drawn as text pills 66 and 51 points wide, and not as an xmark or "Close".
+  - What was wrong was their order. Those places are the bar's leading side, so the accessibility tree read "Cancel, Save, Book Information", with the buttons before the title. The tests read a sheet from its title on, so they found no Cancel after it. The earlier reports of a missing Cancel were an order problem.
+  - Limit: the probe gave the buttons explicit labels, so the unlabeled case was not observed. This is written in the helper's comment.
+- The probe is `PhoneSheetButtonPlacement.probeVariable`, the launch variable `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`. In a debug build, when it is "1", every sheet button takes `.cancellationAction`. It is read under `#if DEBUG` only (see [Building TextMouth](../developer/building.md)).
+- Not verified: the order on a phone with VoiceOver, since VoiceOver does not run in the simulator. The simulator's tree is what the tests read.
+- A related fix from the same round: a `Slider` in the Voice sheet is labeled by its label closure alone. A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
 ## What is left
 
