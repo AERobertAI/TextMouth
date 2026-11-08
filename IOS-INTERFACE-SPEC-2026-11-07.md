@@ -305,6 +305,10 @@ The book's text, as the Mac's reader has it just above the playback controls. Th
 - **Element:** a read-only text view. As a text view it gets Lines, Words, and Characters on the rotor, a cursor on a braille display, and panning, without further code.
 - **Label:** "Book content", the Mac's.
 - **Value:** the passage: up to 20,000 characters of the chapter (the Mac's limit), **starting at the start of the sentence at the reading position**. The Mac centers its text around the place. On the phone, the first thing read is the place, so a person who pauses and moves to it hears the sentence just spoken. It keeps whole words at its end, by the Mac's rules.
+- **A chapter with no words.** Some books open at a chapter that has nothing to say, such as a Project Gutenberg EPUB's "Cover", which is only an image.
+  - Book content then shows the next chapter that has words, from its start. That is the chapter Play reads, by the same forward-only search playback makes over silent chapters (`PhonePassagePolicy.placeToShow`).
+  - Nothing is left blank. If no chapter from the place on has words, Book content keeps its stand-in.
+  - The Mac's Book content shows nothing at such a chapter. Whether the Mac should do the same is a question to the user.
 - **Hint,** computed when asked: while paused, "Plays from here."; while playing, "Brings the text to the sentence being spoken."
 - **Traits:** static text. Text context narrative, and the book's language if it's known.
 - **Actions:** none, or VoiceOver would say "Actions available" after it.
@@ -1072,6 +1076,21 @@ To follow with VoiceOver on the iPhone once the iOS platform is there. Order mat
 55. Launch time with a large library. Flick speed in a list of 700 rows.
 56. Settings, Reading Statistics, the Voice sheet, Book Info, and the folder sheets, each in order.
 57. Share Logs from Settings, and send them over. They hold the first run's answers.
+
+### Read All and the scrub
+
+Read All is VoiceOver's two-finger swipe down. The scrub is its escape gesture, a two-finger Z-shaped stroke, or Dots 1-2 on a braille display, as item 36 has it.
+
+58. Pause, focus Book content, and Read All. Does it read on past the end of the passage into the next one by itself, without a swipe? Does it say a page-scrolled status at each turn?
+59. Stop Read All partway, with a two-finger tap. Is the place where the reading got to? Does Play start from there? Does Return still go back to the place from before?
+60. Read All to the end of a chapter, into the next, and at the end of the book. Does it end at the book's end, with VoiceOver's boundary sound and no error?
+61. Start the book, then Read All in Book content. Does the book play on where it is, with only the text moving?
+62. Scrub in the reader. Do you go back to the Library with the book still playing, and does focus land on the book's row?
+63. Scrub in a folder. Do you go back to its parent? Scrub at the top of the Library: does nothing happen, and nothing break?
+64. Type a search, then scrub. Is the search cleared, the list back, and focus on the field? Search inside a folder and scrub twice: does the first clear the search and the second go back?
+65. Scrub on each sheet: Add to Library, Settings, Bookmarks, Headings, Go To, Sleep Timer, Voice & Speed, Book Information, and the folder sheets. Does each close, and does focus return to the button that opened it?
+66. Scrub on the import question. It must stay open: only an answer settles it. Scrub on a folder sheet while it works: it must stay open too.
+67. Scrub with a braille display (Dots 1-2) in each of those places. Is it the same as the gesture?
 
 ## The open questions
 

@@ -139,6 +139,78 @@ The scripts in `Scripts/test/` run part of the hosted suite, check what a branch
   - `Scripts/test/import-fuzz.sh [--seed N] [--docs a,b] [--pdf]` damages each book in TestData under 300 KB in seeded ways (truncated, emptied, bytes flipped, a window zeroed, removed, or doubled, random bytes added, a ZIP's ends corrupted, NULs or invalid UTF-8 put into text, a megabyte line, deeply nested HTML) and imports every copy as the library does: 103 copies of 6 books, in 3 seconds of tests. It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs; a damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`. The textfmt team's run over those 21 made 351 damaged copies, and no check broke. It checks that each import finishes, refuses cleanly, or gives a book that loads, that a refused import leaves nothing behind, and that the damaged file is left alone. `--pdf` adds the two small PDFs. A crash of the test host is a finding, not a script failure; the script exits 1 when a case breaks one of those checks and 3 when the test host crashed or the sweep did not finish.
   - `Scripts/test/storage-drill.sh` unplugs or fills a small disk image part-way through an import, a library save, and a data-directory move, checks by checksum that the original files and the previous library survive every reported failure, and says whether any image is left attached: about 20 seconds of tests. Each test makes a disk image of 3 to 16 MB in the test host's sandbox, in the temporary folder, and deletes it when the test ends. It never touches `~/.TextMouth`, the preferences, or any volume but its own images: the fill that makes a disk full writes only to an image's own mounted volume, and throws when the image is not attached. Its last line is the verdict. `Storage drill: PASSED` means at least one drill test ran and not every one skipped, none failed, and no image is left attached. `Storage drill: FAILED` means a test failed or an image is left attached. `Storage drill: NOT RUN: ...` means no drill test ran, as with `--dry-run`, `--list`, or `--clean`, or when every test skipped. It exits 0 only for PASSED, 1 for FAILED, and 2 for a setup error and for NOT RUN. `Scripts/test/storage-drill-selftest.sh`, which `make check-selftest` runs, tests those verdicts in a second, without building, with stand-ins for `run-area.py` and `hdiutil`.
 
+## Testing the iPhone app
+
+The iPhone app is tested in two places: on the Mac's test host, for everything that does not need iOS, and in the iOS simulator, for what only iOS compiles. See [The two apps and the platform folders](../architecture/platforms.md) for how the code is divided, and [Building TextMouth](building.md) for how the simulator is built.
+
+### The phone area
+
+- The `phone` area of `Scripts/test/areas.conf` holds the iPhone app's tests as far as the Mac's test host can reach it. It has 53 classes of TextMouthProductionTests: the session, the models, the routes, the words, the policies, `IOSInfoPlistTests`, and the iOS branches of shared code (`IOSBranchTests`).
+- Most of the iPhone's logic is in plain types under `TextMouth/Phone/` that import no UIKit, so this area decides nearly every rule: `PhoneSessionTests`, `PhonePassagePolicyTests`, `PhoneEscapePolicyTests`, `PhoneScreenHoldsTests`, `PhoneLaunchRequestTests`, and the rest.
+- Three classes for the error alert, Speech Stopped, and the preview's pause are listed in the `settings` area and not in `phone`: `PhoneErrorAlertPlanTests`, `PhonePreviewPauseTests`, and `PhoneSpeechRefusalPresentationTests`. Name them, or the `settings` area, when a change touches those parts.
+- It runs like any area: `make test-area AREAS="phone"`, `Scripts/test/run-area.py phone`, or a train request with `--areas phone` (see Reusable test tools, above).
+- It tests the Mac's build. A rule written under `#if os(iOS)` that has no plain type behind it is not reached here.
+
+### The two iOS test targets
+
+- Both are in the committed `TextMouthiOS` scheme, which runs them together in the iOS simulator. The Mac's schemes do not run them.
+- `TextMouthiOSTests` is a unit-test bundle hosted in the iPhone app. It has 16 tests, and all 16 pass.
+  - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
+  - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
+- `TextMouthiOSUITests` is an XCUITest bundle that drives the app from outside, in the simulator. It has 18 tests.
+  - Each test launches the app with a library of its own and, usually, a public-domain book sent to it: Alice's Adventures in Wonderland, Project Gutenberg #11, from `TestData/alice.epub` (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)).
+  - `ReaderUITests` (4 tests): the reader's order, its first values, 44-point controls, and its audit.
+  - `LibraryUITests` (4 tests): the Library's words and order, empty and with a book, and the audit of each.
+  - `ScreenOrderUITests` (10 tests): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
+  - They read what VoiceOver would be given: each element's label, value, and traits, in the order of the accessibility tree, as a depth-first walk of one snapshot.
+  - No wait lasts longer than 60 seconds.
+- To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, and `run_locked.py`. A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle. The repository does not record the exact command line the iPhone team used.
+- At the last pass on November 8, 2026, 16 of 16 unit tests passed, and 8 of 18 UI tests. See the open findings below.
+
+### The audit and its accepted findings
+
+- Each UI test that audits runs Apple's accessibility audit on the screen showing, `performAccessibilityAudit(for: .all)`, and fails once with every finding that is not accepted. Each finding is listed with its type, its element, and Apple's words, so one run shows them all. A screenshot of the audited screen is kept with the results.
+- On iOS the audit only inspects. The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
+- A finding is accepted only when it is about a part iOS draws, which the app cannot change. It is matched by the audit's type and the element's exact label, and it is kept with the results, with its reason. Only three kinds are accepted.
+  - **The search field.** The audit's clipped-text finding on "Search books" is accepted because the system's search field clips its placeholder at the largest text sizes, and VoiceOver and braille read it whole.
+  - **A bar item.** The Dynamic Type finding on a button in the bar at the bottom ("Settings", "Add to Library") is accepted because iOS does not grow bar items with Dynamic Type, and shows them in the Large Content Viewer instead.
+  - **A navigation title.** The clipped-text finding on a screen's title is accepted because iOS truncates a long title at large sizes, and VoiceOver and braille read it whole. It is accepted for the reader (the book's title) and the sheets: Add to Library, Settings, Bookmarks, Headings, Go To, Sleep Timer, "Voice & Speed for This Book", Book Information, and "Navigation unit".
+- Any other finding fails its test. To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
+
+#### The findings still open
+
+These are not accepted. They are what the last pass on November 8, 2026 found, and the next round of the iPhone interface fixes them.
+
+- **The audits, by screen:**
+  - Settings: 14 findings (10 of contrast, 4 of Dynamic Type), mostly its secondary descriptions.
+  - Headings: 23 findings (22 of contrast).
+  - Go To: 6 findings, including 1 of element detection, the one to look at first, and 2 of clipped text.
+  - Add to Library: 5 findings.
+  - Sleep Timer: 4 findings.
+  - Bookmarks: 2 findings.
+  - The Library with a book: 1 finding, its summary's Dynamic Type, "partially unsupported". Nothing in the code caps its size, so the cause needs a look at the largest text sizes.
+- **Book Information and the navigation unit's choice** show no Cancel where the spec puts one.
+- **The Voice sheet** never showed "Speed" in the test.
+- **Back from the reader** once failed to find a bar identified "Library", though the Library's rows appeared. It passed in the next pass, and the test now prints what it finds.
+- Apple's audit says iOS's secondary gray only nearly passes contrast. The Library's text is full contrast now; Settings and the sheets are not yet. Whether all the phone's text should be full contrast is a question to the user.
+
+### In the simulator, never press Play and never type
+
+- Never press Play, or anything else that makes a sound. The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio.
+- Never type. The keyboard's clicks are sounds too. `TextMouthUITestCase` says so, and no test types.
+- A test that needs a book is sent one at launch (`TEXTMOUTH_OPEN_AT_LAUNCH`) and finds Play unpressed.
+- No test may trap, hang, or play sound aloud, and every wait has a limit.
+- VoiceOver does not run in the simulator. XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type. Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
+
+### Type-checks do not compile tests
+
+- `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own. They compile no test file.
+- So a compile error in a test file is found only by a build that builds the tests.
+  - For `TextMouthProductionTests`, that is the build train.
+  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
+- This happened. On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+- After changing a test file, request a train for it, and do not take a clean type-check as a sign that its tests compile.
+
 ## The performance baselines
 
 PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
