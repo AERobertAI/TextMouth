@@ -122,3 +122,36 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - Its silent gaps then held nothing, and its pause in the background was never flushed.
 - A new part that needs a hook on every reader subscribes to `readerMade`. It does not subscribe to the two slots.
 - `PhoneBackgroundWork` also gives its hooks to the readers that were open before it ran, in either slot.
+
+### ReaderPhoneHooks.unitInForce
+
+- `unitInForce` is a closure in `ReaderPhoneHooks`. It answers the unit that the phone's moves go by for this reader now: the book's own unit, else its kind's unit from Settings.
+- `PhoneReaderModel` fills it. If the model or the reader is gone, it answers `PhoneDefaults.textNavigationUnitDefault`, the sentence.
+- The lock screen and Control Center build their skip commands from it.
+  - `ReaderViewModel.phoneRemoteCommandPolicy` calls `PhoneRemoteCommandPolicy(unitInForce:forward:backward:)`.
+  - That initializer uses the unit in force when the phone has filled it in, and otherwise the Mac's shared skip units.
+- Without it, a text book's lock screen offered 15 seconds while each press moved one sentence. That breaks the spec's rule that the lock screen never promises 15 seconds and moves a heading.
+- The policy is read again when the book changes, when the settings model changes, and when the preferences change. Settings keeps each kind's unit in the preferences, not in the settings model.
+  - `PhoneAudioSession.attach` merges the three and calls `phoneRemoteCommandsMayHaveChanged()`.
+- On the Mac the closure is nil, and the shared units apply as they did.
+
+### The crash guard
+
+- `PhoneSession.openingBookKey` (`phone.openingBookID`) is a preference. It is written before a reader is made and removed once the reader's load ends. If it is still there at launch, the app ended while opening that book.
+- The session reads and clears it in its initializer, which runs at launch, before any reader exists.
+  - It keeps what it read in `openingBookAtLastEnd`.
+  - `takeReopeningAtLaunch(fileOpened:)` acts on it at the first activation.
+- It used to be read at the first activation. A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
+- When the guard finds a crash, the book is not reopened, and the listener hears "TextMouth closed while opening <title>, so it wasn't reopened." (`PhoneAppWording.closedWhileOpening`).
+- A file opened at launch wins over reopening. A book that crashes on loading therefore cannot do so at every launch.
+- A lock-screen Play that opens a book takes a hold on the app for the load ("Playing from the lock screen", through `PhoneSession.beginHold`), as going on to the next book does.
+
+### PhoneScreenHolds
+
+- `PhoneScreenHolds` is the one keeper of the screen's sleep. Each owner takes a hold with `begin()`, which returns a closure that lets go. Letting go twice does nothing.
+- The keeper tells its `apply` closure whether the screen should stay awake, once per change. The screen should stay awake while any hold is in force.
+- `UIApplication.isIdleTimerDisabled` is one app-wide flag.
+  - The import copier and Book content each used to set it and clear it.
+  - Whichever let go first let the screen lock for the other.
+- `PhoneScreenSleep`, in `Platform/iOS/Services`, holds the one keeper, whose `apply` sets the flag. Nothing else sets the flag.
+- The keeper imports no UIKit, so the Mac's tests decide every case.
