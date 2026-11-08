@@ -333,9 +333,7 @@ struct PhoneVoiceSheet: View {
     /// reads the settings again.
     private func sayAfterwards(_ change: () -> Void) {
         let said = VoiceOverAnnouncer.collectingAnnouncements(during: change)
-        for announcement in said {
-            PhoneAnnouncer.say(announcement.message)
-        }
+        PhoneAnnouncer.say(inOrder: said.map(\.message))
         shown = Shown(reader)
     }
 

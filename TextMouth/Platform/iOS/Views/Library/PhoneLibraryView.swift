@@ -484,7 +484,7 @@ struct PhoneLibraryView: View {
             let foundNothing = counts.books == 0 && counts.folders == 0
             guard !(foundNothing && saidNoMatches) else { return }
             saidNoMatches = foundNothing
-            PhoneAnnouncer.low(PhoneRowWording.searchCount(books: counts.books, folders: counts.folders))
+            PhoneAnnouncer.say(PhoneRowWording.searchCount(books: counts.books, folders: counts.folders))
         }
     }
 

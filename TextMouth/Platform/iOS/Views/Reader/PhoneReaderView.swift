@@ -275,11 +275,11 @@ struct PhoneReaderView: View {
     private func arrive() async {
         guard let snapshot = session.snapshot else { return }
         await PhoneReaderArrival().run()
-        PhoneAnnouncer.low(snapshot.title)
+        PhoneAnnouncer.say(snapshot.title)
         guard session.snapshot?.isLoading == true else { return }
         try? await Task.sleep(for: .seconds(5))
         if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true {
-            PhoneAnnouncer.low(PhoneReaderVocabulary.loading(snapshot.title))
+            PhoneAnnouncer.say(PhoneReaderVocabulary.loading(snapshot.title))
         }
     }
 

@@ -119,12 +119,12 @@ enum VoiceOverAnnouncer {
         #else
         // iOS posts through SwiftUI's announcement notification. The window
         // is not needed: iOS speaks the announcement for the whole screen.
-        // The shared code announces at high priority by default, which on
-        // iOS would cut off VoiceOver's own speech on every word, so high
-        // and medium both wait for current speech (default), and low may be
-        // dropped (low). The few words that must interrupt take the
-        // iPhone's own path, which keeps iOS's high priority
-        // (`PhoneAnnouncer.important`).
+        // Apple's header (UIAccessibilityConstants.h): default priority
+        // "will interrupt existing speech, but [is] interruptible", and low is
+        // "queued and spoken when other speech utterances have completed". So
+        // the shared code's high and medium words interrupt at default, and
+        // its low words wait their turn. Uninterruptible high priority is
+        // kept for the few words the iPhone chooses (`PhoneAnnouncer.important`).
         switch announcement.priority {
         case .high, .medium: postToVoiceOver(announcement.message, priority: .default)
         case .low: postToVoiceOver(announcement.message, priority: .low)

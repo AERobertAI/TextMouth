@@ -223,8 +223,6 @@ struct PhoneHeadingsSheet: View {
         }
         model.skippedHeadingIDs = reader.skippedHeadingIDs
         rows = model.rows(for: reader)
-        for announcement in said {
-            PhoneAnnouncer.say(announcement.message)
-        }
+        PhoneAnnouncer.say(inOrder: said.map(\.message))
     }
 }

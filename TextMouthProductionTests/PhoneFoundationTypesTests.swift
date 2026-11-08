@@ -201,11 +201,14 @@ final class VoiceOverAnnouncerCollectingTests: XCTestCase {
     }
 }
 
-/// `PhoneAnnouncer`: three strengths, each after a moment.
+/// `PhoneAnnouncer`: two strengths, each after a moment, and a run of words
+/// joined into one announcement.
 @MainActor
 final class PhoneAnnouncerTests: XCTestCase {
-    /// Each waits 0.15 seconds, then says its words at its priority: on the
-    /// Mac's test host, important is an ordinary high-priority announcement.
+    /// Each waits 0.15 seconds, then says its words at its priority: `say`
+    /// queues behind VoiceOver's speech (iOS's low priority, by Apple's
+    /// header), and on the Mac's test host, important is an ordinary
+    /// high-priority announcement.
     func testEachStrengthWaitsAndSaysItsWords() {
         let previous = PhoneAnnouncer.schedule
         var delays: [TimeInterval] = []
@@ -217,15 +220,47 @@ final class PhoneAnnouncerTests: XCTestCase {
 
         let recorder = recordingAnnouncements {
             PhoneAnnouncer.say("Opened Tide Tables")
-            PhoneAnnouncer.low("Tide Tables")
             PhoneAnnouncer.important("Sleep timer ends in 1 minute")
         }
 
-        XCTAssertEqual(delays, [0.15, 0.15, 0.15])
+        XCTAssertEqual(delays, [0.15, 0.15])
         XCTAssertEqual(recorder.announcements.map(\.message), [
-            "Opened Tide Tables", "Tide Tables", "Sleep timer ends in 1 minute",
+            "Opened Tide Tables", "Sleep timer ends in 1 minute",
         ])
-        XCTAssertEqual(recorder.announcements.map(\.priority), [.medium, .low, .high])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.low, .high])
+    }
+
+    /// A run of words is one announcement, each sentence ended, empties left
+    /// out; nothing is said when nothing is left.
+    func testARunOfWordsIsOneAnnouncement() {
+        XCTAssertEqual(
+            PhoneAnnouncer.joined(["Sleep timer stopped", "", "Heading: The Crossing.", "  Chapter 2?  "]),
+            "Sleep timer stopped. Heading: The Crossing. Chapter 2?"
+        )
+        XCTAssertEqual(PhoneAnnouncer.joined(["", "Heading: The Crossing"]), "Heading: The Crossing", "A lone message gets no stop")
+        XCTAssertNil(PhoneAnnouncer.joined([]))
+        XCTAssertNil(PhoneAnnouncer.joined(["", "   "]))
+
+        let previous = PhoneAnnouncer.schedule
+        PhoneAnnouncer.schedule = { _, work in work() }
+        defer { PhoneAnnouncer.schedule = previous }
+        let recorder = recordingAnnouncements {
+            PhoneAnnouncer.say(inOrder: ["Closed", "Saved"])
+            PhoneAnnouncer.say(inOrder: [])
+        }
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Closed. Saved."])
+        XCTAssertEqual(recorder.announcements.map(\.priority), [.low])
+    }
+
+    /// Announcements posted together combine at the strongest priority among
+    /// them, so the most urgent is not made to wait.
+    func testCombinedAnnouncementsTakeTheStrongestPriority() {
+        let combined = PhoneAnnouncer.combined([
+            VoiceOverAnnouncement(message: "Chapter 2", priority: .low),
+            VoiceOverAnnouncement(message: "Sleep timer stopped", priority: .high),
+        ])
+        XCTAssertEqual(combined, VoiceOverAnnouncement(message: "Chapter 2. Sleep timer stopped.", priority: .high))
+        XCTAssertNil(PhoneAnnouncer.combined([]))
     }
 }
 

@@ -59,7 +59,7 @@ private enum PhoneReopeningAtLaunch {
         let reopened = model.lifeCycle.reopenAtLaunch(in: model)
         guard let words = reopened.lowPriorityWords else { return }
         PhoneAnnouncer.schedule(PhoneLifeCycle.wordsDelay) {
-            PhoneAnnouncer.low(words)
+            PhoneAnnouncer.say(words)
         }
     }
 }

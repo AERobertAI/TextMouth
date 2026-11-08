@@ -66,7 +66,9 @@ struct PhoneReaderSheetContent: View {
 /// either would cut off words posted with the closing. So the words wait for
 /// the Mac's moment after a sheet closes (`VoiceOverAnnouncer.afterSheetDelay`,
 /// longer than the reader's 0.35 seconds before returning focus), and are
-/// said at the priority that waits for current speech (`PhoneAnnouncer.say`).
+/// said at iOS's low priority, which Apple's header says is "queued and spoken
+/// when other speech utterances have completed" (`PhoneAnnouncer.say`), as one
+/// announcement so that none cuts off the next.
 /// A book to start waits for the last of them to be said, or for
 /// `PhoneSleepTimerModel.longestWaitBeforePlaying`, whichever comes first.
 ///
@@ -109,9 +111,8 @@ final class PhoneSheetFarewell {
     /// For a sheet that stays open, as the sleep timer does when Settings
     /// say so, as well as for one that has closed.
     static func say(_ words: [String], thenRun start: (@MainActor () -> Void)?) {
-        for word in words {
-            PhoneAnnouncer.say(word)
-        }
+        // One announcement, so that no word cuts off the one before it.
+        PhoneAnnouncer.say(inOrder: words)
         guard let start else { return }
         guard let last = words.last, UIAccessibility.isVoiceOverRunning else {
             start()

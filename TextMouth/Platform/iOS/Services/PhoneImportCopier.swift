@@ -154,7 +154,7 @@ final class PhoneImportCopier: ObservableObject {
         guard let sentence = stoppedAtLastClose else { return }
         stoppedAtLastClose = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchSentenceDelay) {
-            PhoneAnnouncer.low(sentence)
+            PhoneAnnouncer.say(sentence)
         }
     }
 

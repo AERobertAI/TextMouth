@@ -494,16 +494,16 @@ final class PhoneReaderModel {
         announceLater(collected)
     }
 
-    /// Posts `announcements`, in order, after `PhoneAnnouncer.delay`, the spec's
-    /// 0.15 seconds, so SwiftUI's own layout notification after an activation
-    /// doesn't cut them off.
+    /// Posts `announcements` as one announcement, in order, after
+    /// `PhoneAnnouncer.delay`, the spec's 0.15 seconds, so SwiftUI's own layout
+    /// notification after an activation doesn't cut it off. They're joined
+    /// because posted one by one, each would interrupt (or queue behind) the
+    /// one before it, and only the last would be heard.
     private func announceLater(_ announcements: [VoiceOverAnnouncement]) {
-        guard !announcements.isEmpty else { return }
+        guard let combined = PhoneAnnouncer.combined(announcements) else { return }
         let post = post
         schedule(PhoneAnnouncer.delay) {
-            for announcement in announcements {
-                post(announcement)
-            }
+            post(combined)
         }
     }
 
