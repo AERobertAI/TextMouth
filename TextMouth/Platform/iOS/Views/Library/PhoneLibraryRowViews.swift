@@ -73,7 +73,8 @@ struct PhoneNoteRow: View {
 
     var body: some View {
         Text(value.title)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.primary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -93,12 +94,15 @@ struct PhoneContinueRowView: View, Equatable {
         HStack {
             Button(action: open) {
                 VStack(alignment: .leading, spacing: 2) {
+                    // The system's label colors, not the button's tint (see
+                    // `PhoneRowLines`).
                     Text(value.visibleTitle)
                         .font(.headline)
+                        .foregroundStyle(Color.primary)
                     if let time = value.timeText {
                         Text(time)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -138,13 +142,17 @@ private struct PhoneRowLines: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
+            // The system's label colors, named as colors: inside a Button the
+            // hierarchical `.primary`/`.secondary` styles are taken from the
+            // button's tint, which drew the second line in light blue and
+            // failed Apple's contrast audit.
             Text(title)
                 .font(.headline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.primary)
             if let detail, !detail.isEmpty {
                 Text(detail)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
