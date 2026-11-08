@@ -110,7 +110,7 @@ struct PhoneBookmarksSheet: View {
                 // Trailing, in this order, so VoiceOver reads the title,
                 // then Done, then Add Bookmark.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneBookmarksVocabulary.done) { dismiss() }
+                    PhoneActionButton(title: PhoneBookmarksVocabulary.done) { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -158,7 +158,7 @@ struct PhoneBookmarksSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(PhoneBookmarksVocabulary.empty)
             Text(PhoneBookmarksWording.emptyHelp)
-                .foregroundStyle(.secondary)
+                .phoneSecondaryText()
         }
         .accessibilityElement(children: .combine)
     }
@@ -171,14 +171,14 @@ struct PhoneBookmarksSheet: View {
             go(to: row.bookmark)
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.shownTitle)
+                Text(row.shownTitle).phonePrimaryText()
                 if let heading = row.headingText {
-                    Text(heading).foregroundStyle(.secondary)
+                    Text(heading).phoneSecondaryText()
                 }
                 if !row.bookmark.label.isEmpty {
-                    Text(row.bookmark.label).italic()
+                    Text(row.bookmark.label).italic().phonePrimaryText()
                 }
-                Text(row.bookmark.dateText).foregroundStyle(.secondary)
+                Text(row.bookmark.dateText).phoneSecondaryText()
             }
         }
         .accessibilityLabel(row.label)

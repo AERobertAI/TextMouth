@@ -67,7 +67,7 @@ struct PhoneSleepTimerSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneAppWording.close) { dismiss() }
+                    PhoneActionButton(title: PhoneAppWording.close) { dismiss() }
                         .accessibilityHint(PhoneSleepTimerVocabulary.closeHint)
                 }
             }
@@ -96,12 +96,13 @@ struct PhoneSleepTimerSheet: View {
                 PhoneTimerStatus { [service] in service.spokenLabel }
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            Button(PhoneSleepTimerVocabulary.resetTimer, action: reset)
+            PhoneActionButton(title: PhoneSleepTimerVocabulary.resetTimer, action: reset)
                 .accessibilityHint(PhoneSleepTimerVocabulary.resetTimerHint)
-            Button(PhoneSleepTimerVocabulary.cancelTimer, role: .destructive, action: cancel)
+            PhoneActionButton(title: PhoneSleepTimerVocabulary.cancelTimer, role: .destructive, action: cancel)
                 .accessibilityHint(PhoneSleepTimerVocabulary.cancelTimerHint)
         } header: {
             Text(PhoneSleepTimerVocabulary.currentTimer)
+                .phoneSecondaryText()
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -127,6 +128,7 @@ struct PhoneSleepTimerSheet: View {
             timerButton(.custom, title: PhoneSleepTimerVocabulary.set)
         } header: {
             Text(PhoneSleepTimerVocabulary.newTimer)
+                .phoneSecondaryText()
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -140,6 +142,7 @@ struct PhoneSleepTimerSheet: View {
                 .accessibilityHint(SleepTimerView.endOfBookHint(for: reader.effectiveEndOfBookBehavior))
         } header: {
             Text(SleepTimerView.stopAtHeading)
+                .phoneSecondaryText()
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -147,7 +150,7 @@ struct PhoneSleepTimerSheet: View {
     /// The button that sets `choice`, shown as `title`, read by the Mac's
     /// label.
     private func timerButton(_ choice: PhoneSleepTimerChoice, title: String) -> some View {
-        Button(title) { set(choice) }
+        PhoneActionButton(title: title) { set(choice) }
             .accessibilityLabel(PhoneSleepTimerModel.label(of: choice, customMinutes: customMinutes))
             .accessibilityFocused($focus, equals: choice)
             .id(choice)

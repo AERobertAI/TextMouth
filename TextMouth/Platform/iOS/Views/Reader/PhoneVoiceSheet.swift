@@ -119,7 +119,7 @@ struct PhoneVoiceSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneAppWording.close) { dismiss() }
+                    PhoneActionButton(title: PhoneAppWording.close) { dismiss() }
                 }
             }
             .sheet(item: $choosing, onDismiss: afterChoosing) { list in
@@ -154,7 +154,7 @@ struct PhoneVoiceSheet: View {
                     label: PhoneVoiceVocabulary.voiceLabel,
                     value: model.voiceValue(identifier: shown.voiceIdentifier) ?? ""
                 )
-                Button(PhoneVoiceVocabulary.previewTitle, action: previewVoice)
+                PhoneActionButton(title: PhoneVoiceVocabulary.previewTitle, action: previewVoice)
                     .accessibilityLabel(PhoneVoiceVocabulary.previewLabel)
             }
         }
@@ -224,13 +224,13 @@ struct PhoneVoiceSheet: View {
     private var globalSection: some View {
         Section {
             if !shown.isAudioBook {
-                Button(BookSettingsWording.saveButtonTitle) {
+                PhoneActionButton(title: BookSettingsWording.saveButtonTitle) {
                     sayAfterwards { reader.saveSettingsToGlobal() }
                 }
                 .accessibilityLabel(BookSettingsWording.saveAsDefaultsLabel)
                 .accessibilityHint(BookSettingsWording.saveAsDefaultsHint)
             }
-            Button(BookSettingsWording.resetButtonTitle(isAudioBook: shown.isAudioBook)) {
+            PhoneActionButton(title: BookSettingsWording.resetButtonTitle(isAudioBook: shown.isAudioBook)) {
                 sayAfterwards { reader.resetToGlobalSettings() }
             }
             .disabled(!shown.hasOwnSettings)
@@ -243,7 +243,7 @@ struct PhoneVoiceSheet: View {
 
     /// A row named `label`, its value `value`, that opens the list `list`.
     private func choiceRow(_ list: Choosing, label: String, value: String) -> some View {
-        Button(label) {
+        PhoneActionButton(title: label) {
             lastChoosing = list
             choosing = list
         }

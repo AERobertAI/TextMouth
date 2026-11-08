@@ -51,7 +51,7 @@ struct PhoneGoToSheet: View {
             .toolbar {
                 // Trailing, so VoiceOver reads the title first.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(PhoneAppWording.cancel) { dismiss() }
+                    PhoneActionButton(title: PhoneAppWording.cancel) { dismiss() }
                 }
             }
             .task {
@@ -81,11 +81,12 @@ struct PhoneGoToSheet: View {
                 Text(refusal)
                     .foregroundStyle(.red)
             }
-            Button(PhoneGoToVocabulary.jump) { take(field) }
+            PhoneActionButton(title: PhoneGoToVocabulary.jump) { take(field) }
                 .accessibilityLabel(field.jumpLabel)
         } header: {
             // For sight: VoiceOver hears the name once, as the field's label.
             Text(model.label(of: field))
+                .phoneSecondaryText()
                 .accessibilityHidden(true)
         }
     }

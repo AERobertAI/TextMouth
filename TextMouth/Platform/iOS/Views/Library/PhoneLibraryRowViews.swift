@@ -73,7 +73,7 @@ struct PhoneNoteRow: View {
 
     var body: some View {
         Text(value.title)
-            .foregroundStyle(Color.primary)
+            .phonePrimaryText()
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -98,11 +98,11 @@ struct PhoneContinueRowView: View, Equatable {
                     // `PhoneRowLines`).
                     Text(value.visibleTitle)
                         .font(.headline)
-                        .foregroundStyle(Color.primary)
+                        .phonePrimaryText()
                     if let time = value.timeText {
                         Text(time)
                             .font(.subheadline)
-                            .foregroundStyle(Color.secondary)
+                            .phoneSecondaryText()
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,16 +148,16 @@ private struct PhoneRowLines: View {
             // failed Apple's contrast audit.
             Text(title)
                 .font(.headline)
-                .foregroundStyle(Color.primary)
+                .phonePrimaryText()
             if let detail, !detail.isEmpty {
-                // The primary label color too: the audit found the secondary
-                // color "nearly" enough, not enough. The title stays distinct
-                // by its semibold headline font against this regular,
-                // smaller one.
+                // Full contrast too (`PhoneTextColor`): the audit found the
+                // secondary color "nearly" enough, not enough. The title stays
+                // distinct by its semibold headline font against this
+                // regular, smaller one.
                 Text(detail)
                     .font(.subheadline)
                     .fontWeight(.regular)
-                    .foregroundStyle(Color.primary)
+                    .phoneSecondaryText()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
