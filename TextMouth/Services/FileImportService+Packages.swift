@@ -520,8 +520,9 @@ extension FileImportService {
     /// recording's origin record and its original take (`BookOrigin`), the
     /// audio edit history's folder (`AudioEditPackage`), an audiobook's
     /// transcript and the copies kept of an unusable one
-    /// (`TextMouthPaths.isTranscriptFile`), the cachedAudio folder, and the
-    /// removal marker).
+    /// (`TextMouthPaths.isTranscriptFile`), a podcast episode's chapters
+    /// (`TextMouthPaths.podcastChaptersFileName`), the cachedAudio folder,
+    /// and the removal marker).
     static func isPackageContentName(_ name: String) -> Bool {
         !name.hasPrefix(".")
             && name != TextMouthPaths.bookInfoFileName
@@ -532,6 +533,7 @@ extension FileImportService {
             && name != AudioEditPackage.folderName
             && name != TextMouthPaths.cachedAudioFolderName
             && name != TextMouthPaths.removedFromLibraryMarkerName
+            && name != TextMouthPaths.podcastChaptersFileName
             && !TextMouthPaths.isKeptTextCopy(name)
             && !TextMouthPaths.isTranscriptFile(name)
     }

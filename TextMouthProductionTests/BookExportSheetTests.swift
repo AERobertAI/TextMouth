@@ -39,6 +39,7 @@ final class BookExportSheetTests: XCTestCase {
             "Original file, \(source)",
             "Text as Markdown, \(markdown)",
             "Text as plain text, about \(markdown)",
+            "Text as spoken audio",
         ])
         XCTAssertEqual(model.checked, [.originalFile])
         XCTAssertTrue(model.canExport)
@@ -86,8 +87,11 @@ final class BookExportSheetTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
 
-        XCTAssertEqual(model.choices.map(\.isAvailable), [true, false, false])
-        XCTAssertEqual(model.choices.dropFirst().map(\.label), ["Text as Markdown, in the cloud", "Text as plain text, in the cloud"])
+        XCTAssertEqual(model.choices.map(\.isAvailable), [true, false, false, false])
+        XCTAssertEqual(
+            model.choices.dropFirst().map(\.label),
+            ["Text as Markdown, in the cloud", "Text as plain text, in the cloud", "Text as spoken audio, in the cloud"]
+        )
         let refusal = LibraryCloudWording.notDownloaded(titles: [book.title])
         XCTAssertEqual(model.cloudNotice, refusal)
 
@@ -211,11 +215,11 @@ final class BookExportSheetTests: XCTestCase {
             access: cloud
         )
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             let boxes = checkboxes(in: hostingView)
-            XCTAssertEqual(boxes.count, 3, "one checkbox per kind")
-            XCTAssertEqual(boxes.map { $0.state == .on }, [true, false, false])
-            XCTAssertEqual(boxes.map(\.isEnabled), [true, false, false], "the kinds in the cloud are unavailable")
+            XCTAssertEqual(boxes.count, 4, "one checkbox per kind")
+            XCTAssertEqual(boxes.map { $0.state == .on }, [true, false, false, false])
+            XCTAssertEqual(boxes.map(\.isEnabled), [true, false, false, false], "the kinds in the cloud are unavailable")
             XCTAssertEqual(
                 descendants(of: hostingView, as: VoiceOverFocusTriggerView.self).count,
                 1,
@@ -234,8 +238,8 @@ final class BookExportSheetTests: XCTestCase {
         XCTAssertEqual(
             BookExportKind.allCases.map(BookExportWording.name(of:)),
             [
-                "Audio", "Original file", "Text as Markdown", "Text as plain text", "Original recording",
-                "Original audio (before edits)", "Transcript",
+                "Audio", "Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio",
+                "Original recording", "Original audio (before edits)", "Transcript",
             ]
         )
         XCTAssertEqual(Set(BookExportKind.allCases.map(BookExportWording.hint(for:))).count, BookExportKind.allCases.count)

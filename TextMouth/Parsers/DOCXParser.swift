@@ -50,6 +50,8 @@ enum DOCXParser {
         static let styles = "word/styles.xml"
         /// List definitions, which say whether each list is bulleted or numbered.
         static let numbering = "word/numbering.xml"
+        /// The fonts' declared character sets, which say how a symbol is read.
+        static let fontTable = "word/fontTable.xml"
         /// The document's relationships, which hold its hyperlink targets.
         static let documentRelationships = "word/_rels/document.xml.rels"
         /// Core properties: the document's title and author.
@@ -104,7 +106,8 @@ enum DOCXParser {
 
         // Parse styles first so we can identify heading paragraph styles
         try ImportCancellation.throwIfCancelled()
-        let styles = try parseStyles(from: archive)
+        var styles = try parseStyles(from: archive)
+        styles.fonts = try parseFontTable(from: archive)
 
         // Parse numbering definitions for bullet and numbered lists
         try ImportCancellation.throwIfCancelled()
@@ -307,6 +310,22 @@ enum DOCXParser {
     private static func parseStyles(from archive: IndexedArchive) throws -> DOCXStyles {
         try parseOptionalPart(Part.styles, in: archive, absent: DOCXStyles()) { data, path in
             try DOCXStylesParser(data: data, file: path).parse()
+        }
+    }
+
+    /// Extract and parse fontTable.xml for the character sets of the fonts.
+    /// A part that is missing, damaged, or refused leaves them out: a symbol
+    /// is then read in its font by name alone, and no book is lost for it.
+    /// - Throws: `ImportCancelled`, and nothing else.
+    private static func parseFontTable(from archive: IndexedArchive) throws -> WordXMLFonts {
+        do {
+            return try parseOptionalPart(Part.fontTable, in: archive, absent: WordXMLFonts()) { data, path in
+                try DOCXFontTableParser(data: data, file: path).parse()
+            }
+        } catch let cancelled as ImportCancelled {
+            throw cancelled
+        } catch {
+            return WordXMLFonts()
         }
     }
 

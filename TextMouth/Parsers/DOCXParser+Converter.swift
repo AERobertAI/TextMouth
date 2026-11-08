@@ -147,6 +147,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var runExplicitlyHidden: Bool?
         /// The run's character style (`w:rStyle`), empty for none.
         var runStyle = ""
+        /// The font the run's own properties name (`w:rFonts`), nil for none:
+        /// text typed in a symbol font and a `w:sym` are read in it.
+        var runFont: String?
         /// Whether the run being read is hidden: its text, line and page
         /// breaks, and tabs are not read, and begin no page. Follows the
         /// toggle rule of ECMA-376 17.7.3 (`updateRunHidden()`).
@@ -429,6 +432,16 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             if readsNotes && paragraph.isFirstOfNote && paragraph.runCount == 1 && referenceStyles.contains(paragraph.runStyle) {
                 paragraph.runSkipsText = true
             }
+        case "rFonts" where paragraph.isInRun && elementStack.suffix(3) == ["r", "rPr", "rFonts"]:
+            // The run's own font, in which a symbol is read
+            paragraph.runFont = DOCXRunFonts.name(in: attributes)
+        case "sym" where paragraph.isInRun && !runIsUnread && !paragraph.runSkipsText:
+            // A symbol: a character of a font (`w:font`, `w:char`), read as the
+            // Word 97 reader reads one (`WordXMLFonts`). A space where the font
+            // gives no character a voice can speak keeps the words apart.
+            let symbol = styles.fonts.symbol(font: attributes["w:font"], character: WordXMLFonts.character(attributes["w:char"]))
+            paragraph.runText.unicodeScalars.append(symbol)
+            if symbol != " " { producedText = true }
         case "vanish" where paragraph.isInRun:
             // Hidden text: not read. Direct formatting wins over the styles.
             // (`w:webHidden`, hidden only on the web, stays read, and
@@ -527,7 +540,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // tracked change deleted or moved away (its words are read once, where
         // they were moved to)
         if ignoredDepth == 0, !runIsUnread, !paragraph.runSkipsText, let lastElement = elementStack.last, lastElement == "t" {
-            paragraph.runText += string
+            // Text typed in a symbol font (U+F020 to U+F0FF) is read in the run's font
+            // (`WordXMLFonts`); almost no text holds any, and the look for it is cheap.
+            let text = WordXMLFonts.mayHoldSymbolText(string) ? styles.fonts.readingSymbolText(string, inFont: fontOfRun) : string
+            paragraph.runText += text
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 producedText = true
             }
@@ -1027,6 +1043,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runText = ""
         paragraph.runExplicitlyHidden = nil
         paragraph.runStyle = ""
+        paragraph.runFont = nil
         paragraph.runSkipsText = false
         paragraph.runCount += 1
         updateRunHidden()
@@ -1046,6 +1063,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// left out.
     private var runIsUnread: Bool {
         paragraph.runIsHidden || deletionDepth > 0
+    }
+
+    /// The name of the font of the run being read: the font its own
+    /// properties name, else its character style's, else its paragraph
+    /// style's, else the document defaults' (`DOCXStyles.fontName`). Nil when
+    /// none is named.
+    private var fontOfRun: String? {
+        styles.fontName(paragraphStyle: paragraph.style, characterStyle: paragraph.runStyle, direct: paragraph.runFont)
     }
 
     /// Settle whether the run being read is hidden, by its own toggle alone:

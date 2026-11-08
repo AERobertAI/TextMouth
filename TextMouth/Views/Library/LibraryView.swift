@@ -2120,6 +2120,7 @@ struct LibraryView: View {
                 MetadataEditorView(
                     audioMetadata: metadata,
                     handEdits: book.handEdits,
+                    book: book,
                     onSave: { edited, opened in
                         // Compared with what the editor opened with, which
                         // shows the file's tags where the row keeps none,

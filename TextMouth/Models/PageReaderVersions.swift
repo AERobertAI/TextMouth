@@ -61,8 +61,11 @@ enum PageReaderVersions {
             // again once ("1.1.0"). At "1.2.0" the toggle rule for hidden
             // text takes in a table style's own w:vanish and the document
             // defaults' (not a table style's conditional formatting), so
-            // every .docx book is read again once more.
-            return "1.2.0"
+            // every .docx book is read again once more. At "1.3.0" a symbol
+            // (w:sym) and text typed in a symbol font (U+F020 to U+F0FF) are
+            // read through the tables by font that the Word 97 reader uses,
+            // so every .docx book is read again once more.
+            return "1.3.0"
         case .rtf, .rtfd:
             // TextMouth's own reader reads rich text (FMT47) instead of
             // textutil: headings from the style sheet, bold and italic, and
@@ -103,8 +106,11 @@ enum PageReaderVersions {
             // "1.2.0" a row marked hidden (`w:trPr/w:hidden`) no longer hides
             // the visible words in it, which each run's own toggle decides
             // (the hidden row rule of `DOCXHiding`), so every such book is
-            // read again once more.
-            return "1.2.0"
+            // read again once more. At "1.3.0" a symbol (w:sym) and text
+            // typed in a symbol font are read through the tables by font
+            // that the Word 97 reader uses, so every such book is read again
+            // once more.
+            return "1.3.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or
             // a PEF (PG12), so its own case reads again only braille books

@@ -24,6 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A rich text or Word 97-2003 book already in your library was read again once, at the first launch of version 0.3.1, so that it gained its headings and pages.
 - Every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once more, at the first launch of version 0.4.0, for what the readers now find (see What every document reader reads, below, Pages, below, and [Where TextMouth keeps your library](where-your-library-lives.md)). Your place follows its words, and text you changed with Edit Text is kept as it is.
 - At the first launch of version 0.4.1 every .doc book is read again once more, for Word 6 and Word 95 documents and for symbols, and every .docx and .wordml book once more, for hidden text, in the same way.
+- At the first launch of version 0.4.2 every .docx and .wordml book is read again once more, for the symbols they now read (see Other limits of each, below), in the same way.
 
 #### How headings are found
 
@@ -96,6 +97,15 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Text typed in a symbol font, which Word 97 stores as a private-use character, is read the same way. In an ordinary text font it is read through the Symbol table as textutil read it, so a letter that stands for mu or pi reads as one, and a checkbox set in Arial reads as a Greek theta.
 - A bullet made by a symbol, at a paragraph's start, makes the paragraph a list item, and a paragraph of only a picture symbol, such as a checkbox, is not written.
 - Before version 0.4.1 a Word 97-2003 document's symbol read as "(".
+- Symbols in Word documents (.docx) and Word 2003 XML are read from version 0.4.2, by the same rules:
+  - A symbol is a w:sym element, which names a font and a character code. It reads as the character that font shows for the code.
+  - The font of a run is the run's own, else its character style's, else its paragraph style's, else the document defaults'. Each style is followed through the style it is based on.
+  - A .docx also reads word/fontTable.xml, which says which fonts hold pictures. If that part is missing or damaged, only that knowledge is lost and the book is still read.
+  - Text typed in a symbol font, stored as a private-use character, is read through the font in the same way. When no font is named anywhere, such characters stay as they are.
+  - A symbol in a hidden run, or in a deleted or moved-from run, is not read. A symbol in a footnote is read, except in a note's custom mark.
+  - A code that is not four hexadecimal digits, or that no table settles, reads as a space.
+  - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts of a run.
+  - Before version 0.4.2 these symbols were lost: a check box in Wingdings made the words either side run together, and a bullet typed in Symbol was a private-use character.
 - In OpenDocument text, flat .fodt files and OpenOffice 1.x .sxw files are not read.
 - In OpenDocument text, hyperlink addresses are not read, only the links' words.
 - In OpenDocument text, a merged table cell leaves no cell of its own.

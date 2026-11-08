@@ -886,8 +886,8 @@ Each of these is shared, and each has a test pinning it on the Mac. Each gets an
 ### Where the new code goes
 
 - **`TextMouth/Phone/`:** plain types, compiled into both apps, tested by the Mac's test host, importing no UIKit. Only the iPhone's views and their tests use them: new shared code the Mac never calls. `make mac-projection` skips this folder, and a scan test requires that nothing outside it and `Platform/iOS/` names a `Phone` type outside `#if os(iOS)`. No new `@unchecked Sendable` or `nonisolated(unsafe)`: a policy test pins their counts.
-- **`TextMouth/Platform/iOS/`:** SwiftUI views and everything that names UIKit, AVAudioSession, or another iOS-only API. Nothing here can be tested tonight. Views stay thin.
-- **`iOSApp/`:** new, top level, outside the source folder: `Info.plist`, and later the icon and any sounds.
+- **`TextMouth/Platform/iOS/`:** SwiftUI views and everything that names UIKit, AVAudioSession, or another iOS-only API. Views stay thin. Since November 8 its code is tested in the iOS simulator: hosted unit tests in `TextMouthiOSTests/`, and XCUITests of the Library and the reader in `TextMouthiOSUITests/`.
+- **The iOS `Info.plist`:** `TextMouth/Platform/iOS/Info.plist`, written from the Mac's by `Scripts/ios/sync-info-plist.py` (`make check-ios-plist` says when it is stale), with the keys only iOS needs: the audio background mode, and one scene at a time. Until November 8 it was a file of its own at `iOSApp/Info.plist`; main's merge made the two one. The icon and any sounds come later.
 - **Shared files:** changes only behind `#if os(iOS)`, each named in a report.
 
 ### The app's frame

@@ -143,7 +143,7 @@ final class BookExportConvertToTests: XCTestCase {
             Array(choices.dropFirst()),
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
-        for kind in BookExportKind.allCases where kind != .markdown {
+        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript {
             XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }
@@ -317,7 +317,7 @@ final class BookExportConvertToTests: XCTestCase {
             destination: try makeSandboxDirectory("Export Convert Drawn Folder")
         )
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             XCTAssertEqual(popUps(in: hostingView).count, 0, "Text as Markdown is unchecked: no picker")
 
             model.setChecked(true, for: .markdown)
@@ -381,14 +381,14 @@ final class BookExportConvertToTests: XCTestCase {
             writers: [OptionsTestWriter()]
         )
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(true, for: .markdown)
             XCTAssertTrue(waitUntil(timeout: 5) {
                 hostingView.layoutSubtreeIfNeeded()
                 return self.popUps(in: hostingView).count == 1
             }, "checking the kind draws the picker")
             let withMarkdown = checkboxes(in: hostingView).count
-            XCTAssertEqual(withMarkdown, 3, "Markdown has no options to draw")
+            XCTAssertEqual(withMarkdown, 4, "Markdown has no options to draw")
 
             model.setConversionID("options-test", for: .markdown)
             XCTAssertTrue(waitUntil(timeout: 5) {
@@ -420,7 +420,7 @@ final class BookExportConvertToTests: XCTestCase {
             announcements.stop()
         }
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(false, for: .originalFile)
             model.setChecked(true, for: .markdown)
             model.setConversionID("options-test", for: .markdown)
@@ -471,7 +471,7 @@ final class BookExportConvertToTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(false, for: .originalFile)
             model.setChecked(true, for: .markdown)
             model.setConversionID("options-test", for: .markdown)

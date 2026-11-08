@@ -354,10 +354,14 @@ enum TranscriptTextBuilder {
 
 // MARK: - Arithmetic That Cannot Trap
 
-private extension Int {
+extension Int {
     /// This number plus `other`, held at `Int.max` or `Int.min` rather than
     /// trapping: the times and lengths read from a book's files are untrusted,
-    /// and a damaged one must not crash TextMouth.
+    /// and a damaged one must not crash TextMouth. The transcript text
+    /// builder uses it, and so do a transcript's captions (FMT23): their
+    /// times on the book's timeline (`Transcript.bookTimelineCues`) and
+    /// their timing lines; and a transcript from outside, laying a book's
+    /// files one after another on its timeline (`OutsideTranscript`).
     func clampedPlus(_ other: Int) -> Int {
         let (sum, overflowed) = addingReportingOverflow(other)
         // An overflow runs in the direction the added number points.

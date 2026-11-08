@@ -95,6 +95,10 @@ struct ImportDecision: Identifiable {
         /// What the new copy is missing, told with the question so it never
         /// needs an alert of its own.
         let warning: String?
+        /// What replacing does with the two copies' transcripts, when the
+        /// new copy brought one from a file beside its audio (FMT23), as
+        /// the question says it (`DuplicateReplacement.transcriptOutcome`).
+        var transcriptOutcome: DuplicateReplacement.TranscriptOutcome = .asBefore
     }
 
     /// The original file of a book, or of a ZIP archive's books, just added
@@ -138,7 +142,8 @@ struct ImportDecision: Identifiable {
                 book: transform(duplicate.book),
                 existing: transform(duplicate.existing),
                 originalURL: duplicate.originalURL,
-                warning: duplicate.warning
+                warning: duplicate.warning,
+                transcriptOutcome: duplicate.transcriptOutcome
             ))
         case .originalFile, .transcriptionOffer:
             // Neither holds a book's paths: an original file is outside
@@ -321,9 +326,30 @@ struct ImportDecisionWording: Equatable {
     /// are edits of the old copy's files; its places follow their tracks, or
     /// their times (`DuplicateReplacement.movedAudioPlaces`).
     static let replacingKeepsAudioSentence =
-        "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
-        + "and place on the reading list, and its transcript when the audio is the same. "
-        + "Edits of its audio or of its manifest are not kept."
+        "\(replacingKeepsAudioPlaces), and its transcript when the audio is the same. \(audioEditsNotKept)"
+
+    /// What Replace Existing keeps of an audiobook when the new copy brought
+    /// a transcript from a file beside its audio (FMT23) and the existing
+    /// copy's transcript is kept over it (`DuplicateReplacement.TranscriptOutcome.keepsExisting`).
+    static let replacingKeepsAudioOverBroughtTranscriptSentence =
+        "\(replacingKeepsAudioPlaces), and its transcript when the audio is the same, rather than "
+        + "the transcript file found beside the new copy's audio. \(audioEditsNotKept)"
+
+    /// What Replace Existing keeps of an audiobook when the transcript the
+    /// new copy brought from a file beside its audio takes the place of the
+    /// existing copy's (`DuplicateReplacement.TranscriptOutcome.broughtReplacesExisting`).
+    static let replacingWithBroughtTranscriptSentence =
+        "\(replacingKeepsAudioPlaces). The transcript file found beside the new copy's audio replaces "
+        + "the existing copy's transcript. \(audioEditsNotKept)"
+
+    /// What every sentence of what Replace Existing keeps of an audiobook
+    /// begins with.
+    private static let replacingKeepsAudioPlaces =
+        "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list"
+
+    /// What every sentence of what Replace Existing keeps of an audiobook
+    /// ends with.
+    private static let audioEditsNotKept = "Edits of its audio or of its manifest are not kept."
 
     /// What Replace Existing keeps when one copy is an audiobook and the
     /// other is not (ST04): only the book's place in the library. A place in
@@ -342,9 +368,20 @@ struct ImportDecisionWording: Equatable {
     /// What Replace Existing keeps of the library's copy, in the format
     /// `existing`, for a new copy in the format `new`: chosen from both
     /// kinds, never promising what `DuplicateReplacement.carriedBook` drops.
-    static func replacingKeepsSentence(existing: BookFormat, new: BookFormat) -> String {
+    /// For two audiobooks, `transcript` says what becomes of a transcript
+    /// the new copy brought from a file beside its audio (B1).
+    static func replacingKeepsSentence(
+        existing: BookFormat,
+        new: BookFormat,
+        transcript: DuplicateReplacement.TranscriptOutcome = .asBefore
+    ) -> String {
         guard existing.isAudio == new.isAudio else { return replacingAcrossKindsSentence }
-        return new.isAudio ? replacingKeepsAudioSentence : replacingKeepsTextSentence
+        guard new.isAudio else { return replacingKeepsTextSentence }
+        switch transcript {
+        case .asBefore: return replacingKeepsAudioSentence
+        case .keepsExisting: return replacingKeepsAudioOverBroughtTranscriptSentence
+        case .broughtReplacesExisting: return replacingWithBroughtTranscriptSentence
+        }
     }
 
     /// Where the library's copy goes once replaced. In the Trash its files
@@ -378,7 +415,11 @@ struct ImportDecisionWording: Equatable {
             ?? duplicate.book.title
         let choice = "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. "
             + "Replace the existing copy, or keep both as separate books?"
-        let kept = replacingKeepsSentence(existing: matchingFormat, new: duplicate.book.format)
+        let kept = replacingKeepsSentence(
+            existing: matchingFormat,
+            new: duplicate.book.format,
+            transcript: duplicate.transcriptOutcome
+        )
         let question = choice + "\n\n" + kept + " " + replacedCopySentence(movesToTrash: movesToTrash)
         guard let warning = duplicate.warning else { return question }
         return question + "\n\nThe copy just imported is incomplete. \(warning)"
