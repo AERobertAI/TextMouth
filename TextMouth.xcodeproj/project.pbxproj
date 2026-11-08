@@ -1165,6 +1165,7 @@
 		803AAD9432B4315B543D01AF /* PhoneRowValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6C0AC9D5A411027A1C63F64 /* PhoneRowValue.swift */; };
 		804A2D7E04898D373F1AFD21 /* BookManifestEditWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECFE1B6412BBA30AB6B04E95 /* BookManifestEditWording.swift */; };
 		8061DC613E4BE271633DF938 /* FeedDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F00D6BDF1C8F4F3C2D68FD /* FeedDates.swift */; };
+		8075D357500D112F77556208 /* ScreenOrderUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72638E24C1DE19033E266A0 /* ScreenOrderUITests.swift */; };
 		808A2A0390B5E775E81B627F /* ChapterSpeechCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80D23A5796A6C246C5175AF /* ChapterSpeechCache.swift */; };
 		808A6A07B7FDA72C9B56AF07 /* ViewsAndWindowsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036B415193A1B446CDBC5B0C /* ViewsAndWindowsTestSupport.swift */; };
 		813974D2AE34B42EB608303D /* SyntheticAccentedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A115F3938BE2F9FC800F1011 /* SyntheticAccentedText.swift */; };
@@ -3868,6 +3869,7 @@
 		D698FC46AC11743C02CE3951 /* BookAuthorPlaceholderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookAuthorPlaceholderTests.swift; sourceTree = "<group>"; };
 		D6CF814833EA245F32E97171 /* BrailleLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleLayoutTests.swift; sourceTree = "<group>"; };
 		D6E72869911E1C3024607909 /* PortableXML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableXML.swift; sourceTree = "<group>"; };
+		D72638E24C1DE19033E266A0 /* ScreenOrderUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenOrderUITests.swift; sourceTree = "<group>"; };
 		D727BAF0951B18B90DEBAA4C /* RecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingService.swift; sourceTree = "<group>"; };
 		D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsViewTests.swift; sourceTree = "<group>"; };
 		D798DCAF9215F6BBFD707A30 /* KeyboardReachabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardReachabilityTests.swift; sourceTree = "<group>"; };
@@ -4704,6 +4706,7 @@
 			children = (
 				DA8188EED7B61F0BB79C756C /* LibraryUITests.swift */,
 				764B805B6A7C8B820BE996AB /* ReaderUITests.swift */,
+				D72638E24C1DE19033E266A0 /* ScreenOrderUITests.swift */,
 				E13739E1A89C071D9187CAC7 /* TextMouthUITestCase.swift */,
 			);
 			path = TextMouthiOSUITests;
@@ -8227,6 +8230,7 @@
 			files = (
 				9F3449933C9963C04FA7B309 /* LibraryUITests.swift in Sources */,
 				AAC1A85712BA5C2EE0298A82 /* ReaderUITests.swift in Sources */,
+				8075D357500D112F77556208 /* ScreenOrderUITests.swift in Sources */,
 				AD3A4BD7A8B5A9F60D290A18 /* TextMouthUITestCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
