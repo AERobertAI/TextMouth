@@ -37,6 +37,16 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Of 2,244 real files compared before and after, 9 read differently and 2,235 the same. No real Word 2003 XML file holds a symbol, so that half is proved by tests alone.
 - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts.
 
+### Kindle books in the KF8 format
+- An .azw3 book now imports, with its chapters, its headings at the levels its author gave them, and its print pages when it has page breaks (see [What TextMouth reads](what-textmouth-reads.md)). A KF8 book named .mobi or .azw imports too. Earlier versions refused them with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+- A .mobi file that holds a book twice, in MOBI 6 and in KF8, is read from its KF8 half. When the KF8 half can't be read, it is read from its MOBI 6 half.
+- A copy-protected book is still refused, in either half of such a file: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." TextMouth never tries to remove copy protection.
+- A book's contents decides its chapters: an entry that names a whole page titles that chapter, and an entry inside a page is a heading there.
+- A piece of a book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it, whatever its title says. A heading is never made from a title. This puts back together the chapters that calibre cuts into pieces.
+- A page of links that a converter added to the end of a book, headed "Table of Contents", is left out, so it is not read aloud at the end. Soft hyphens are left out.
+- KF8 keeps no page list, so its pages are the page breaks in its text, when it has them.
+- A book whose file is damaged says so: "This Kindle book is damaged or incomplete: …"
+
 ### A book nested deeply can no longer crash TextMouth
 - A book or page nested however deeply can no longer crash TextMouth. The markup guard now parses, checks, and releases a tree on a thread with a 490 MiB stack, which holds a million levels, where the import's own stack held about a thousand.
 - It costs about 55 microseconds a chapter. A 300-chapter book takes about 7 ms more.
@@ -44,6 +54,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Older versions
 - The first time this version opens, every .docx and .wordml book is read again once, for the symbols it now reads (page reader line 1.3.0). Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
+- The first time this version opens, every .mobi book is read again once, for the KF8 half of a book that holds both formats (page reader line 1.0.0). Your place follows its words.
 
 ## 0.4.1 (November 7, 2026)
 ### Commands that said nothing now say what happened
