@@ -23,6 +23,11 @@ struct PhoneReaderSnapshot: Equatable, Sendable {
     /// reader's screen redraws as an error comes or goes, never as the place
     /// moves.
     let errorAlert: ReaderViewModel.ErrorAlert?
+    /// Whether the reader keeps a report of a speech refusal, which the
+    /// Speech Stopped sheet shows. Only whether, not the report: a report
+    /// holds a chapter's text, and the snapshot is compared at every change
+    /// of the reader.
+    let hasSpeechRefusalReport: Bool
 
     /// What `reader` shows now.
     @MainActor
@@ -32,5 +37,6 @@ struct PhoneReaderSnapshot: Equatable, Sendable {
         isPlaying = reader.isPlaybackActivelyAdvancing
         isLoading = reader.isLoading
         errorAlert = reader.errorAlert
+        hasSpeechRefusalReport = reader.speechRefusalAlert.report != nil
     }
 }

@@ -289,8 +289,8 @@ struct SpeechRefusalReport: Equatable, Sendable {
         lines.append(Words.speed(of: refusal))
         lines.append("")
 
-        lines.append("This Mac")
-        lines.append("macOS: \(systemVersion)")
+        lines.append(Words.deviceHeading(onPhone: Words.runsOnPhone))
+        lines.append(Words.systemLine(version: systemVersion, onPhone: Words.runsOnPhone))
         lines.append(Words.build(build))
         lines.append("")
 
@@ -315,8 +315,36 @@ enum SpeechRefusalWording {
     static let heading = "Speech Stopped"
 
     /// What happened, in one plain sentence, and what Play does now.
-    static let summary = "The Mac's speech engine refused to speak the text here, twice, so speech stopped. "
-        + "Play tries again from the same place."
+    static let summary = summary(onPhone: runsOnPhone)
+
+    /// Whether this build is the iPhone app, which words the report for the
+    /// iPhone (the spec, "Words that say Mac"). A parameter of the functions
+    /// below, so that a test on the Mac reaches both.
+    static var runsOnPhone: Bool {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// `summary` for the Mac, or for the iPhone, which has "The iPhone's
+    /// speech engine".
+    static func summary(onPhone: Bool) -> String {
+        "The \(onPhone ? "iPhone" : "Mac")'s speech engine refused to speak the text here, twice, so speech stopped. "
+            + "Play tries again from the same place."
+    }
+
+    /// The heading of the report's lines about the device it ran on.
+    static func deviceHeading(onPhone: Bool) -> String {
+        onPhone ? "This iPhone" : "This Mac"
+    }
+
+    /// The report's line naming the system and its version: "macOS: ..." on
+    /// the Mac, "iOS: ..." on the iPhone.
+    static func systemLine(version: String, onPhone: Bool) -> String {
+        "\(onPhone ? "iOS" : "macOS"): \(version)"
+    }
 
     /// What VoiceOver hears at the stop when the book's window is not in
     /// front, where the sheet cannot speak for itself: another window or
