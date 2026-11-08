@@ -246,6 +246,14 @@ final class PhoneReaderModelTests: XCTestCase {
         return (model, reader)
     }
 
+    /// A jump from the Headings, Bookmarks, or Go To sheet engages the book.
+    func testAJumpFromASheetEngagesTheBook() {
+        let (model, _) = makeModel()
+        XCTAssertEqual(engagements, 0)
+        model.noteJumped()
+        XCTAssertEqual(engagements, 1)
+    }
+
     /// A stopped reader of a text book held in memory: nothing plays, and
     /// nothing is read from disk.
     private func makeReader() -> ReaderViewModel {

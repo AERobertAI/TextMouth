@@ -13,6 +13,9 @@ struct PhoneHeadingsSheet: View {
     let reader: ReaderViewModel
     /// What the sheet leaves to say once it has closed.
     let farewell: PhoneSheetFarewell
+    /// Tells the session the book was moved here, so it counts as opened
+    /// (`PhoneReaderModel.noteJumped`).
+    let noteJumped: @MainActor () -> Void
 
     /// What the sheet offers, at the place it opened at.
     @State private var model: PhoneHeadingsModel
@@ -26,9 +29,10 @@ struct PhoneHeadingsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     /// A sheet over `reader`, farewell words kept in `farewell`.
-    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell) {
+    init(reader: ReaderViewModel, farewell: PhoneSheetFarewell, noteJumped: @escaping @MainActor () -> Void) {
         self.reader = reader
         self.farewell = farewell
+        self.noteJumped = noteJumped
         _model = State(initialValue: PhoneHeadingsModel(reader: reader))
     }
 
@@ -211,6 +215,7 @@ struct PhoneHeadingsSheet: View {
             playsAfterJump: playsAfterJump
         )
         farewell.keep([own].compactMap { $0 } + said.map(\.message))
+        noteJumped()
         dismiss()
     }
 

@@ -470,6 +470,13 @@ final class PhoneReaderModel {
         noteEngaged()
     }
 
+    /// A sheet (Headings, Bookmarks, Go To) moved the book: it counts as
+    /// opened, as any move does, so Back doesn't close it as one opened by
+    /// mistake and drop the jump's place.
+    func noteJumped() {
+        noteEngaged()
+    }
+
     /// Moves the screen's paused book to `offset` in chapter `chapterIndex`
     /// as a page of Book content is turned, keeping the old place for
     /// Return, and saying nothing: the page's own status says where.

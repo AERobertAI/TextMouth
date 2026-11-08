@@ -15,6 +15,9 @@ struct PhoneReaderSheetContent: View {
     let sheet: PhoneReaderSheet
     /// The reader the sheet is over.
     let reader: ReaderViewModel
+    /// Tells the session a jump from a sheet moved the book, so it counts as
+    /// opened.
+    let noteJumped: @MainActor () -> Void
 
     /// What the sheet leaves to say, and to start, once it has closed.
     @State private var farewell = PhoneSheetFarewell()
@@ -33,11 +36,11 @@ struct PhoneReaderSheetContent: View {
     private var panel: some View {
         switch sheet {
         case .headings:
-            PhoneHeadingsSheet(reader: reader, farewell: farewell)
+            PhoneHeadingsSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .goTo:
-            PhoneGoToSheet(reader: reader, farewell: farewell)
+            PhoneGoToSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .bookmarks:
-            PhoneBookmarksSheet(reader: reader, farewell: farewell)
+            PhoneBookmarksSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .sleepTimer:
             PhoneSleepTimerSheet(reader: reader, farewell: farewell)
         case .voice:
