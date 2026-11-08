@@ -184,6 +184,23 @@ These are not accepted. They are what the last pass on November 8, 2026 found, a
 - **Back from the reader** once failed to find a bar identified "Library", though the Library's rows appeared. It passed in the next pass, and the test now prints what it finds.
 - Apple's audit says iOS's secondary gray only nearly passes contrast. The Library's text is full contrast now; Settings and the sheets are not yet. Whether all the phone's text should be full contrast is a question to the user.
 
+### In the simulator, never press Play and never type
+
+- Never press Play, or anything else that makes a sound. The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio.
+- Never type. The keyboard's clicks are sounds too. `TextMouthUITestCase` says so, and no test types.
+- A test that needs a book is sent one at launch (`TEXTMOUTH_OPEN_AT_LAUNCH`) and finds Play unpressed.
+- No test may trap, hang, or play sound aloud, and every wait has a limit.
+- VoiceOver does not run in the simulator. XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type. Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
+
+### Type-checks do not compile tests
+
+- `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own. They compile no test file.
+- So a compile error in a test file is found only by a build that builds the tests.
+  - For `TextMouthProductionTests`, that is the build train.
+  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
+- This happened. On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+- After changing a test file, request a train for it, and do not take a clean type-check as a sign that its tests compile.
+
 ## The performance baselines
 
 PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
