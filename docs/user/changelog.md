@@ -12,7 +12,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - An MP3 has chapters for its first 255 headings only. Past 255, a line after the Format pop-up says so and suggests M4B, and the end of the export says so too.
 - A chapter the voice can't speak fails the export with a sentence saying so: "The voice made no sound for “Chapter 3”. Check that the book's voice speaks the book's language."
 - Progress says which chapter is being spoken. Stop keeps the chapters already spoken, and exporting the same range at the same speed and pitch goes on from there, until TextMouth quits, a different export of spoken audio starts, or the book's voice, text, substitution rules, or pauses change.
-- Quitting TextMouth during an export stops it cleanly and keeps the chapters already made until the next launch.
+- Quitting TextMouth during an export stops it as Stop does, waiting at most 5 seconds, then quits. The next launch clears the chapters it had spoken, as it clears all kept chapters.
 - A Personal Voice, no voice, too little disk space, a second export at once, and a range with nothing to speak are each refused with a sentence saying why.
 - Every kind of export now refuses the folder where TextMouth keeps spoken chapters: "Export can't write into the folder where TextMouth keeps spoken chapters, since TextMouth empties it. Choose another folder."
 - A real voice (Samantha) was exported to an M4B, an M4A, and an MP3, each with three chapters.
@@ -21,7 +21,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Transcripts that come with podcasts and audiobooks
 - Book > Attach Transcript… gives an audiobook a transcript from a WebVTT (.vtt) or SubRip (.srt) file, on any macOS, with nothing transcribed. It asks first before replacing a transcript the book has, and says so if you edited or cleaned it up (see [Transcribing an audiobook](transcribing.md)).
-- An audiobook imported with a .vtt or .srt named as a track is, beside its audio, takes that file as its transcript, whether it came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then. A file that can't be used is named once the import is done, and never fails it.
+- An audiobook imported with a .vtt or .srt file beside its audio, named as a track is with its extension changed (01.vtt beside 01.mp3), takes that file as the track's transcript, whether the book came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then. A file that can't be used is named once the import is done, and never fails it.
 - A downloaded podcast episode brings its own transcript and chapters, for every feed (see [Podcasts and article feeds](feeds.md)). The chapters become its headings when its audio has none.
 - Downloading an episode again replaces its own transcript with the new one, unless you made, edited, or cleaned up the transcript.
 - Book Information has a read-only Transcript detail that says where a transcript came from and when, as in "Attached from “lecture.vtt” on October 30, 2026."
