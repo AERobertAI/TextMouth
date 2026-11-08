@@ -82,7 +82,7 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 
 ## The iPhone app
 
-The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes branch `ios/lead-1108` at 1fefa2cf, which is in main, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below), merged into `integration/iosfixc` at 3d4d6b98, which goes to main once its suite passes.
+The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
 
 ### The frame
 
