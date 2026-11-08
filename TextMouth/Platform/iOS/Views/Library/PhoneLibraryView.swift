@@ -159,13 +159,17 @@ struct PhoneLibraryView: View {
                 }
                 if !rows.isSearching, let summary = rows.summary {
                     // One static element, built with the rows.
-                    // A text style (it scales with Dynamic Type), wrapping to
-                    // as many lines as it needs rather than cutting off, in
-                    // the primary label color for contrast.
+                    // A text style (it scales with Dynamic Type), given the
+                    // row's whole width and as many lines as it needs, in
+                    // the primary label color for contrast. No fixed size
+                    // or line limit: the audit still found the footnote
+                    // style with a vertical fixed size "partially
+                    // unsupported", so it's the subheadline style, free to
+                    // grow.
                     Text(summary)
-                        .font(.footnote)
+                        .font(.subheadline)
                         .foregroundStyle(Color.primary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .onAppear {
@@ -229,10 +233,13 @@ struct PhoneLibraryView: View {
             // The system's label colors, not the button's tint, which
             // `LabeledContent` would take inside a Button.
             LabeledContent {
+                // Full contrast (the audit found the secondary color not
+                // enough); the label stays distinct by its semibold weight.
                 Text(rows.location.view.name)
-                    .foregroundStyle(Color.secondary)
+                    .foregroundStyle(Color.primary)
             } label: {
                 Text(PhoneRowWording.libraryViewLabel)
+                    .fontWeight(.semibold)
                     .foregroundStyle(Color.primary)
             }
         }

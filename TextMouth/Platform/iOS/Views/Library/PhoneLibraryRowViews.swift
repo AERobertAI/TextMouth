@@ -150,9 +150,14 @@ private struct PhoneRowLines: View {
                 .font(.headline)
                 .foregroundStyle(Color.primary)
             if let detail, !detail.isEmpty {
+                // The primary label color too: the audit found the secondary
+                // color "nearly" enough, not enough. The title stays distinct
+                // by its semibold headline font against this regular,
+                // smaller one.
                 Text(detail)
                     .font(.subheadline)
-                    .foregroundStyle(Color.secondary)
+                    .fontWeight(.regular)
+                    .foregroundStyle(Color.primary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
