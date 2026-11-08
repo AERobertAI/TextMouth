@@ -278,6 +278,10 @@ struct PhoneReaderView: View {
         PhoneAnnouncer.say(snapshot.title)
         guard session.snapshot?.isLoading == true else { return }
         try? await Task.sleep(for: .seconds(5))
+        // Leaving the screen cancels this task, and `try?` swallows the
+        // cancellation, so without this a book still loading and kept open
+        // would be announced over the Library as the listener leaves.
+        guard !Task.isCancelled else { return }
         if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true {
             PhoneAnnouncer.say(PhoneReaderVocabulary.loading(snapshot.title))
         }

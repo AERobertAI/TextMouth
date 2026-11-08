@@ -7,7 +7,7 @@ import XCTest
 @MainActor
 final class PhoneLifeCycleReopeningTests: XCTestCase {
     /// A book whose reader's screen was showing opens again, paused at its
-    /// place, with its screen pushed over the Library, and its title is said.
+    /// place, with its screen pushed over the Library; the screen says the title, not the launch.
     func testAReaderOnScreenIsOpenedAgainWithItsScreen() throws {
         let parts = try makeParts("PhoneReopenReader")
         let book = try parts.world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
@@ -16,7 +16,7 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
 
         let reopened = model.lifeCycle.reopenAtLaunch(in: model)
 
-        XCTAssertEqual(reopened, PhoneLifeCycle.LaunchReopened(showsReader: true, lowPriorityWords: "Tide Tables"))
+        XCTAssertEqual(reopened, PhoneLifeCycle.LaunchReopened(showsReader: true, lowPriorityWords: nil), "The reader's arrival says the title")
         XCTAssertEqual(model.session.reader?.book.id, book.id)
         XCTAssertEqual(model.path, [.reader])
         let reader = try XCTUnwrap(model.session.reader)
