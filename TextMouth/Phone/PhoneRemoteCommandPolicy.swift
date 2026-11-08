@@ -46,6 +46,7 @@ struct PhoneRemoteCommandPolicy: Equatable, Sendable {
     /// The commands of a book on the phone: those of the unit in force when the
     /// phone has filled that in, so that the lock screen promises what a press
     /// moves by; else those of the shared skip units `forward` and `backward`.
+    @MainActor
     init(
         unitInForce: (@MainActor () -> SkipUnit)?,
         forward: @autoclosure () -> SkipUnit,
