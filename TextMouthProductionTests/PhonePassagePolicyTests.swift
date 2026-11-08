@@ -189,6 +189,37 @@ final class PhonePassagePolicyTests: XCTestCase {
         XCTAssertNil(place([], chapter: 0, offset: 0))
     }
 
+    // MARK: - Read All's page turns
+
+    /// Paused, a turn moves the place as well as the text, so stopping Read All
+    /// leaves the place at the last page reached.
+    func testTurnWhilePausedMovesThePlaceAndTheText() {
+        XCTAssertEqual(PhonePassagePolicy.turnEffect(isPlaying: false), .movesPlaceAndText)
+    }
+
+    /// Playing, a turn moves only the text; the book plays on.
+    func testTurnWhilePlayingMovesOnlyTheText() {
+        XCTAssertEqual(PhonePassagePolicy.turnEffect(isPlaying: true), .movesTextOnly)
+    }
+
+    /// Read All's chain of `.next` turns walks the whole book, across the
+    /// chapter boundary and past a silent chapter, and then ends with nil,
+    /// which the view answers with false so VoiceOver stops.
+    func testRepeatedForwardTurnsWalkTheBookAndThenEnd() {
+        let chapters = ["abcdefghij", "   ", "klmn"]
+        var chapter = 0
+        var shown = 0..<4
+        var places: [[Int]] = []
+        // Bounded, so a mistake can't loop forever.
+        for _ in 0..<10 {
+            guard let next = target(chapters, chapter: chapter, shown: shown, forward: true) else { break }
+            places.append([next.chapter, next.offset])
+            chapter = next.chapter
+            shown = next.offset..<min(next.offset + 4, chapters[next.chapter].utf16Length)
+        }
+        XCTAssertEqual(places, [[0, 4], [0, 8], [2, 0]])
+    }
+
     // MARK: - Helpers
 
     /// Where a page from `shown` of chapter `chapter` goes, with passages of

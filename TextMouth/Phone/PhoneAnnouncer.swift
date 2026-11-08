@@ -76,10 +76,12 @@ enum PhoneAnnouncer {
         schedule(delay) { postImportant(message) }
     }
 
-    /// Posts `message` at iOS's interrupting priority, by a path of its own,
-    /// since the shared announcer's high priority waits on iOS. On the Mac, and
-    /// in a process hosting tests, it goes through the announcer's poster at
-    /// high priority, so a test reads it.
+    /// Posts `message` at iOS's high priority, by a path of its own: the
+    /// shared announcer posts its high priority at iOS's default, which a new
+    /// utterance can cut off, while high "cannot be interrupted once started"
+    /// (UIAccessibilityConstants.h). On the Mac, and in a process hosting
+    /// tests, it goes through the announcer's poster at high priority, so a
+    /// test reads it.
     private static func postImportant(_ message: String) {
         #if os(iOS)
         guard VoiceOverAnnouncer.defaultDelivery(for: .current) == .post else {

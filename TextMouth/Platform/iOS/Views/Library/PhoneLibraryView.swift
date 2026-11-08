@@ -80,6 +80,8 @@ struct PhoneLibraryView: View {
     @FocusState private var searchFieldFocused: Bool
     /// VoiceOver's focus on this screen, set only on arrival and return.
     @AccessibilityFocusState private var focus: PhoneLibraryFocus?
+    /// Pops this screen when it is a folder's, for the escape gesture.
+    @Environment(\.dismiss) private var dismiss
 
     /// A Library screen at `location`.
     init(model: PhoneAppModel, location: LibraryLocation) {
@@ -177,6 +179,9 @@ struct PhoneLibraryView: View {
             prompt: Text(PhoneLibraryVocabulary.searchPrompt)
         )
         .searchFocused($searchFieldFocused)
+        // VoiceOver's escape (the two-finger scrub): the search is cleared
+        // first, then a folder goes back, as `PhoneEscapePolicy` says.
+        .accessibilityAction(.escape) { scrubbed() }
         .onChange(of: searchText) { _, text in
             searched(text)
         }
@@ -500,6 +505,22 @@ struct PhoneLibraryView: View {
             guard !(foundNothing && saidNoMatches) else { return }
             saidNoMatches = foundNothing
             PhoneAnnouncer.say(PhoneRowWording.searchCount(books: counts.books, folders: counts.folders))
+        }
+    }
+
+    /// The escape gesture: clears a search and puts focus on the field, else
+    /// goes back from a folder to its parent. The top of the Library has
+    /// nowhere to go, so nothing happens there.
+    private func scrubbed() {
+        switch PhoneEscapePolicy.libraryOutcome(isSearching: !searchText.isEmpty, isFolderScreen: isFolderScreen) {
+        case .clearSearch:
+            // The text's change reaches `rows` through `onChange(of:)`.
+            searchText = ""
+            searchFieldFocused = true
+        case .goBack:
+            dismiss()
+        case .nothing:
+            break
         }
     }
 
