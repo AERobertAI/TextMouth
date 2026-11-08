@@ -24,7 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - File menu, Open Book… (Command-O) imports the files you choose.
 - Opening a supported file from Finder imports it and opens it.
-- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, and .azw, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
+- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
 - It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
 - A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it.
 - A photo is refused with the sentence for a PEF that cannot be read (below).
@@ -261,13 +261,15 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### Kindle books that can't be read
 
-- A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”. Reading its text failed: This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+- A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”. Reading its text failed: This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
 - The sentences are:
-  - For a copy-protected book: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." This is checked first, so no part of such a book's text is read.
-  - For a book only in the newer KF8 format, as an .azw3 is: "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+  - For a copy-protected book: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." This is checked first, so no part of such a book's text is read. A file that holds both MOBI 6 and KF8 is checked in both halves.
   - For a book whose text is compressed in a way TextMouth does not know: "This Kindle book is compressed in a way TextMouth can't read yet."
   - For a book that stops short or contradicts itself, as one whose download broke off does: "This Kindle book is damaged or incomplete: ", what is wrong, and "Get a fresh copy of the book, then import it again.", as in "This Kindle book is damaged or incomplete: its text records hold 4096 bytes of the 68150 it says the text has. Get a fresh copy of the book, then import it again."
   - For a file named as a Kindle book that is not one: "This file is not a Kindle book that TextMouth can read."
+  - For a book with no words in it: "This file has no text to read."
+- A KF8 book (an .azw3) imports like any other Kindle book. The sentence about the newer KF8 format that earlier versions gave is gone.
+- A file that holds both MOBI 6 and KF8 whose KF8 half is damaged is read from its MOBI 6 half and imports. Only a copy-protected book is refused for it.
 
 ### KFX Kindle books that can't be read
 
