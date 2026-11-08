@@ -315,10 +315,21 @@ enum DirectSpeechFadePlanner {
     }
 }
 
-/// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
-/// macOS resource even when callers use different synthesizer instances.
-/// Current-chapter and look-ahead renders must therefore never overlap, and
-/// neither must the one-word renders that load a voice ahead of Play.
+/// Puts the reader's renders through AVSpeechSynthesizer.write() one at a
+/// time: the current chapter's, the look-ahead's, and the one-word renders
+/// that load a voice ahead of Play. Taking turns keeps the look-ahead from
+/// competing with the chapter Play waits for, and lets a render that went
+/// stale, or is too long, be refused before it starts.
+///
+/// Overlapping writes are not unsafe in themselves, though this comment once
+/// called write() a shared resource whose calls must never overlap (July 12,
+/// 2026, with nothing recorded to show it). Measured on November 7, 2026:
+/// two and three writes at once, in one voice (Samantha) and in two
+/// (Samantha and the Eloquence voice Eddy), each wrote the very samples it
+/// wrote alone, digest for digest; the outside review saw the same in Flo.
+/// So the speech export (FMT43), whose writes run for hours, writes beside
+/// the reader's renders, through synthesizers of its own, and never waits
+/// here. Premium and neural voices are unmeasured.
 ///
 /// It holds its serial queue and, under a lock, the voices it has warmed up,
 /// so the compiler checks that it is `Sendable`; state added later needs a

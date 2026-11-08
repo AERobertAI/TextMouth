@@ -17,6 +17,7 @@ enum BookExportWording {
         case .originalFile: return "Original file"
         case .markdown: return "Text as Markdown"
         case .plainText: return "Text as plain text"
+        case .spokenAudio: return "Text as spoken audio"
         }
     }
 
@@ -32,6 +33,8 @@ enum BookExportWording {
             return markdownChoiceHint
         case .plainText:
             return "The words TextMouth reads aloud, as plain text, each chapter under its title."
+        case .spokenAudio:
+            return "The book's text spoken by its voice into one audio file, with a chapter for each heading."
         case .originalRecording:
             return "The recording as it was made, before any edits."
         case .originalAudio:
@@ -116,7 +119,10 @@ enum BookExportWording {
     /// by); and what is in the cloud. As in "Original file, 1.2 MB", "Audio,
     /// 12 files, 340 MB", "Audio, 2 books, 680 MB, 1 book in the cloud", or
     /// "Text as Markdown, in the cloud". A converted text says no size:
-    /// "Text as HTML", "Text as RTF, 2 books, 1 book in the cloud".
+    /// "Text as HTML", "Text as RTF, 2 books, 1 book in the cloud". Spoken
+    /// audio, one file whose size is unknown until it is spoken (FMT43), says
+    /// neither a size nor a file count: "Text as spoken audio", or "Text as
+    /// spoken audio, in the cloud".
     /// - Parameters:
     ///   - kind: The checkbox's kind.
     ///   - bookCount: How many books the dialog exports from.
@@ -140,17 +146,19 @@ enum BookExportWording {
         convertedTo conversionName: String? = nil
     ) -> String {
         let converted = conversionName != nil && kind.convertsText
+        // Spoken audio is one file, whose size is unknown until it is spoken.
+        let spoken = kind == .spokenAudio
         var parts = [name(of: kind, convertedTo: conversionName)]
         if bookCount > 1 {
             if availableItemCount > 0 {
                 parts.append(CountWording.books(availableItemCount))
             }
-        } else if fileCount > 1 {
+        } else if fileCount > 1, !spoken {
             parts.append(CountWording.phrase(fileCount, singular: "file", plural: "files"))
         }
-        // A converted file's size is unknown until it is written, and the
-        // Markdown's would mislead, so a conversion says none.
-        if availableItemCount > 0, !converted {
+        // A converted or spoken file's size is unknown until it is written,
+        // and the Markdown's would mislead, so neither says one.
+        if availableItemCount > 0, !converted, !spoken {
             let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
             parts.append(kind == .plainText ? "about \(size)" : size)
         }

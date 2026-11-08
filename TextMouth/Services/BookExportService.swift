@@ -5,9 +5,9 @@ import os
 
 /// A kind of thing a book can export, in the order the Export dialog lists
 /// them: the book's own content (an audiobook's audio, or a text book's own
-/// file and its text, as Voice Dream offered them), then the files a
-/// recording and a transcription keep beside it (the user's answer of
-/// October 4, 2026).
+/// file and its text, as Voice Dream offered them, and that text spoken into
+/// audio), then the files a recording and a transcription keep beside it
+/// (the user's answer of October 4, 2026).
 ///
 /// Export lists whatever files a book's package holds, by kind
 /// (`BookExportService.offer(for:access:)`), so a kind appears for every
@@ -29,6 +29,11 @@ enum BookExportKind: String, CaseIterable, Sendable {
     /// A text book's reading text, chapter by chapter, each under its
     /// title: the words TextMouth reads aloud, as plain text.
     case plainText
+    /// A text book's reading text, or a range of its headings, spoken by its
+    /// voice into one audio file with a chapter per heading (FMT43), made by
+    /// `SpeechExportJob`. It is never copied: a book offers it only with its
+    /// text cache, and only a `.speech` conversion makes its file.
+    case spokenAudio
     /// A recording's original take, kept beside the audio the book plays
     /// (`BookOrigin.originalTakeFileName`).
     case originalRecording
@@ -56,17 +61,23 @@ struct BookExportFile: Equatable, Sendable {
         /// The book's reading text, made from the text cache (content.md)
         /// at the URL (`BookExportService.plainText(of:)`).
         case readingText(fromMarkdown: URL)
+        /// The text cache (content.md) at the URL, which a speech export reads
+        /// (FMT43): what a book offers for "Text as spoken audio". It is a
+        /// placeholder, planned only through a `.speech` conversion, which
+        /// makes it a `.converted` file; it has no bytes of its own to write.
+        case spoken(fromMarkdown: URL)
         /// The file at `from`, made into another by the conversion `by`, for
         /// the book `book` (FMT18): a text book's content.md, walked and
-        /// written by a text writer. (Every kind is written to a scratch file
-        /// and moved into place once whole, so no half-written file is ever
-        /// left in the folder chosen.)
+        /// written by a text writer, or spoken into one audio file by a speech
+        /// export (FMT43). (Every kind is written to a scratch file and moved
+        /// into place once whole, so no half-written file is ever left in the
+        /// folder chosen.)
         case converted(from: URL, book: ExportBookDetails, by: BookExportConversion)
 
         /// The package file whose bytes are read.
         var url: URL {
             switch self {
-            case .copy(let url), .readingText(let url), .converted(let url, _, _):
+            case .copy(let url), .readingText(let url), .spoken(let url), .converted(let url, _, _):
                 return url
             }
         }
@@ -79,7 +90,8 @@ struct BookExportFile: Equatable, Sendable {
     /// as in "Moby-Dick.md" or "OEBPS/chapter1.html".
     let path: String
     /// The file's size in bytes. For reading text, the size of the Markdown
-    /// it is made from, which the text comes close to.
+    /// it is made from, which the text comes close to; for spoken audio, 0,
+    /// as its size is not known before it is spoken.
     let byteCount: Int64
 }
 
@@ -226,14 +238,23 @@ extension BookExportKind {
 
 /// How an export makes one kind's files instead of copying them (FMT18).
 ///
-/// Text tonight: a text book's content.md, walked into an `ExportDocument`
-/// and written by the writer chosen in the Convert to picker. An audio kind
-/// can gain a case of its own later (FMT30, FMT43) without the job runner
-/// changing shape: each case names the extension its files take and how a
-/// file is made.
+/// Each case names the extension its files take and how a file is made, so
+/// the job runner keeps one shape whatever the kind:
+/// - Text: a text book's content.md, walked into an `ExportDocument` and
+///   written by the writer chosen in the Convert to picker.
+/// - Speech (FMT43): a text book's content.md, or a range of its headings,
+///   spoken by its voice into one audio file with a chapter per heading by
+///   `SpeechExportJob`, as the request asks.
+///
+/// Another audio kind (FMT30) can gain a case of its own the same way.
 enum BookExportConversion: Sendable, Equatable {
     /// content.md, walked and written by a text writer with its options.
     case text(TextExportConversion)
+    /// content.md spoken into one audio file by `SpeechExportJob`, as the
+    /// request asks: the book, the range of its headings, the voice, speed,
+    /// and pitch, the format, and the file's name and tags (FMT43). It makes
+    /// the file of "Text as spoken audio" alone.
+    case speech(SpeechExportRequest)
 
     /// The Markdown an export writes of a text book (and of an audiobook's
     /// transcript): written afresh from the walk of its content.md with only
@@ -242,29 +263,39 @@ enum BookExportConversion: Sendable, Equatable {
     /// reader.
     static let markdown = BookExportConversion.text(TextExportConversion(MarkdownExportWriter(), options: NoTextExportOptions()))
 
-    /// The extension, without its dot, of the files the conversion makes.
+    /// The extension, without its dot, of the files the conversion makes: a
+    /// speech export's is its format's ("m4b").
     var fileExtension: String {
         switch self {
         case .text(let conversion):
             return conversion.fileExtension
+        case .speech(let request):
+            return request.format.fileExtension
         }
     }
 
     /// Whether the conversion can make the files of `kind`: a text
-    /// conversion makes those of a kind whose `convertsText` is true, and
-    /// is ignored for any other.
+    /// conversion makes those of a kind whose `convertsText` is true, a
+    /// speech conversion those of "Text as spoken audio" alone, and each is
+    /// ignored for any other.
     func applies(to kind: BookExportKind) -> Bool {
         switch self {
         case .text:
             return kind.convertsText
+        case .speech:
+            return kind == .spokenAudio
         }
     }
 
-    /// The conversion's name, as the Convert to picker says it.
+    /// The conversion's name, as the Convert to picker says it; a speech
+    /// export's is its format's, as the Format pop-up lists it
+    /// ("M4B Audiobook (AAC)").
     var name: String {
         switch self {
         case .text(let conversion):
             return conversion.name
+        case .speech(let request):
+            return request.format.title
         }
     }
 }
@@ -274,7 +305,7 @@ enum BookExportConversion: Sendable, Equatable {
 /// Lists what a book can export and copies the chosen items to a folder
 /// (FR05): an audiobook's audio, a recording's original take, the original
 /// audio an edit kept, a transcript, and a text book's own file, its
-/// Markdown, and its reading text.
+/// Markdown, its reading text, and that text spoken into audio (FMT43).
 ///
 /// Both run off the main actor, since they read and copy files that can
 /// wait on a drive or the network. Neither ever downloads a file that is
@@ -349,6 +380,16 @@ enum BookExportService {
                 byteCount: byteCount(of: markdown)
             )
             items.append(standaloneItem(.plainText, files: [readingText], access: access))
+            // The same text spoken into audio (FMT43): a placeholder of the
+            // text cache that only a speech conversion plans, by its own name
+            // and format (`spokenFiles`); M4B, the dialog's first format,
+            // names it until then. Its size is not known before it is spoken.
+            let spoken = BookExportFile(
+                source: .spoken(fromMarkdown: markdown),
+                path: "\(stem) - Audio.\(SpeechExportFormat.m4b.fileExtension)",
+                byteCount: 0
+            )
+            items.append(standaloneItem(.spokenAudio, files: [spoken], access: access))
         }
         return BookExportOffer(
             book: book,
@@ -720,6 +761,12 @@ enum BookExportService {
     /// Text.md" becoming "Moby-Dick - Text.html", and is then named uniquely
     /// like any other. A conversion given for a kind it cannot make
     /// (`BookExportConversion.applies(to:)`) is ignored.
+    ///
+    /// "Text as spoken audio" (FMT43) is never copied: its file is planned
+    /// only with a speech conversion made for its own book, named by the
+    /// request's file title and format, as "Moby-Dick - Audio.m4b", and then
+    /// made unique like any other. Without one, nothing is planned for it,
+    /// and that is no failure.
     static func plan(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
@@ -769,24 +816,31 @@ enum BookExportService {
     /// kind has a conversion in `conversions` that applies to it, when each
     /// copied or already converted file (the Markdown the offer lists, made
     /// from content.md) becomes one converted by it instead, named with the
-    /// conversion's extension (FMT18). Files made any other way are left as
-    /// they are.
+    /// conversion's extension (FMT18). Reading text is left as it is, and a
+    /// spoken placeholder is left out. "Text as spoken audio" is planned by
+    /// its speech conversion alone (`spokenFiles`).
     private static func files(
         of item: BookExportItem,
         for book: Book,
         conversions: [BookExportKind: BookExportConversion]
     ) -> [BookExportFile] {
+        if item.kind == .spokenAudio {
+            return spokenFiles(of: item, for: book, conversion: conversions[.spokenAudio])
+        }
         guard let conversion = conversions[item.kind], conversion.applies(to: item.kind) else {
             return item.files
         }
         let details = ExportBookDetails(book)
-        return item.files.map { file in
+        return item.files.compactMap { file -> BookExportFile? in
             let url: URL
             switch file.source {
             case .copy(let source), .converted(let source, _, _):
                 url = source
             case .readingText:
                 return file
+            case .spoken:
+                // Only a speech conversion makes a spoken file.
+                return nil
             }
             // The name keeps any folders and swaps only the last extension.
             let path = (file.path as NSString).deletingPathExtension + "." + conversion.fileExtension
@@ -794,6 +848,38 @@ enum BookExportService {
                 source: .converted(from: url, book: details, by: conversion),
                 path: path,
                 byteCount: file.byteCount
+            )
+        }
+    }
+
+    /// The file of the "Text as spoken audio" `item` of `book` to write
+    /// (FMT43): its text cache, spoken by `conversion` when that is a speech
+    /// export made for this book, into a file named by the request's file
+    /// title and its format's extension, its size unknown until it is spoken.
+    /// Nothing otherwise (no conversion, another kind's, or one made for
+    /// another book), since the kind is never copied.
+    ///
+    /// The file title is made safe as one file's name
+    /// (`safeFileName(_:fallback:)`), which leaves the dialog's titles, safe
+    /// already, as they are, so no request can name a file in another folder;
+    /// one with nothing left is named as the offer named it.
+    private static func spokenFiles(
+        of item: BookExportItem,
+        for book: Book,
+        conversion: BookExportConversion?
+    ) -> [BookExportFile] {
+        guard let conversion,
+              case .speech(let request) = conversion,
+              request.bookID == book.id else { return [] }
+        let details = ExportBookDetails(book)
+        return item.files.compactMap { file -> BookExportFile? in
+            guard case .spoken(let markdown) = file.source else { return nil }
+            let offered = (file.path as NSString).deletingPathExtension
+            let title = safeFileName(request.fileTitle, fallback: offered)
+            return BookExportFile(
+                source: .converted(from: markdown, book: details, by: conversion),
+                path: "\(title).\(request.format.fileExtension)",
+                byteCount: 0
             )
         }
     }
@@ -821,6 +907,11 @@ enum BookExportService {
     /// through a file, which is then not written at all; `progress`
     /// hears how many files are done after each one, out of how many. Runs
     /// on the caller's thread: call it off the main thread.
+    ///
+    /// `speech` is what a speech conversion (FMT43) runs with: the
+    /// synthesizer, the voice lookup, the power assertion, the disk checks,
+    /// and the folder its spoken chapters are kept in, and where its progress
+    /// goes. The app passes the live one; tests pass their own.
     static func export(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
@@ -828,7 +919,8 @@ enum BookExportService {
         to destination: URL,
         access: MaintenanceFileAccess = .live,
         cancellation: BookExportCancellation? = nil,
-        progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil
+        progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil,
+        speech: SpeechExportContext = .live
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
         var outcome = BookExportOutcome(destination: destination, booksInCloud: booksInCloud)
@@ -840,7 +932,7 @@ enum BookExportService {
                 outcome.wasCancelled = true
                 break
             }
-            write(planned, access: access, cancellation: token, into: &outcome)
+            write(planned, access: access, cancellation: token, speech: speech, into: &outcome)
             // A Stop pressed during this file ended it, and the export too.
             if outcome.wasCancelled { break }
             progress?(number + 1, files.count)
@@ -854,11 +946,13 @@ enum BookExportService {
     /// file is written (`CancellationError`) sets `outcome.wasCancelled`: the
     /// file is then neither exported nor a failure. Whatever fails, nothing is
     /// removed from the folder chosen: the file is made in a scratch folder
-    /// and only moved in whole.
+    /// and only moved in whole. `speech` is what a speech conversion runs
+    /// with (`export`).
     private static func write(
         _ planned: PlannedFile,
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
+        speech: SpeechExportContext,
         into outcome: inout BookExportOutcome
     ) {
         let source = planned.file.source.url
@@ -883,8 +977,22 @@ enum BookExportService {
                     let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
                     try Data(text.utf8).write(to: scratch, options: .withoutOverwriting)
                 }
+            case .spoken:
+                // A placeholder only a speech conversion plans (`spokenFiles`),
+                // which has no bytes of its own: should one ever be planned as
+                // it is, it fails alone, named with the reason, and the
+                // export goes on.
+                throw CocoaError(.featureUnsupported)
             case .converted(let url, let book, let conversion):
-                try writeConverted(url, book: book, by: conversion, to: planned.target, access: access, cancellation: cancellation)
+                try writeConverted(
+                    url,
+                    book: book,
+                    by: conversion,
+                    to: planned.target,
+                    access: access,
+                    cancellation: cancellation,
+                    speech: speech
+                )
             }
             outcome.exported.append(planned.target)
         } catch is CancellationError {
@@ -908,20 +1016,26 @@ enum BookExportService {
 
     /// Writes the file at `source`, converted by `conversion` for `book`, to
     /// `target`: its bytes are read as the reading text's are (a file in the
-    /// cloud is not downloaded), walked into a document, and written by the
-    /// conversion into a scratch file that `writeThroughScratchFile` moves to
-    /// `target` once whole. Stop is checked after the read, during the walk
-    /// and the writing, and once more before the move.
-    /// - Throws: `CancellationError` when stopped, the walk's or the
-    ///   writer's error, and the move's, which fails rather than replace a
-    ///   file that appeared since the plan.
+    /// cloud is not downloaded), then made into a scratch file that
+    /// `writeThroughScratchFile` moves to `target` once whole. A text
+    /// conversion walks them into a document and writes it with its writer;
+    /// a speech conversion (FMT43) has `SpeechExportJob` speak them, as its
+    /// request asks, through `speech`, and encode them into the scratch file.
+    /// Stop is checked after the read, all through the walk and the writing
+    /// or the speaking and the encoding, and once more before the move.
+    /// - Throws: `CancellationError` when stopped; the walk's or the
+    ///   writer's error, or the speech export's (a refusal, such as a
+    ///   Personal Voice, or a chapter that could not be spoken or encoded);
+    ///   and the move's, which fails rather than replace a file that
+    ///   appeared since the plan.
     private static func writeConverted(
         _ source: URL,
         book: ExportBookDetails,
         by conversion: BookExportConversion,
         to target: URL,
         access: MaintenanceFileAccess,
-        cancellation: BookExportCancellation
+        cancellation: BookExportCancellation,
+        speech: SpeechExportContext
     ) throws {
         let bytes = try access.read(source) { try Data(contentsOf: source) }
         try cancellation.checkCancelled()
@@ -937,6 +1051,25 @@ enum BookExportService {
             try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
                 try text.write(document, to: scratch, cancellation: cancellation)
             }
+        case .speech(let request):
+            // The request names the book's title and author itself, as the
+            // dialog read them, so `book` is not needed. The job checks for
+            // room where it writes: the scratch folder, which
+            // `makeScratchFolder` keeps on the target's volume whenever the
+            // system makes one there. The file is moved in as the job's last
+            // step, so a move that fails, say to a name taken during the hours
+            // the book was spoken, leaves every spoken chapter kept.
+            try withScratchFile(for: target) { scratch in
+                try SpeechExportJob.run(
+                    request,
+                    markdown: bytes,
+                    source: source,
+                    to: scratch,
+                    context: speech,
+                    cancellation: cancellation,
+                    deliver: { try moveScratchFile(scratch, to: target, cancellation: cancellation) }
+                )
+            }
         }
     }
 
@@ -949,17 +1082,32 @@ enum BookExportService {
     /// then, so a stopped export leaves none. The scratch folder is removed
     /// in every case, so a stopped or failed file leaves nothing behind, and
     /// nothing is ever removed from the folder chosen. Every source kind goes
-    /// through it: a copy and the reading text as well as a conversion, an
-    /// audio one (FMT30, FMT43) as well as a text one.
+    /// through it: a copy and the reading text as well as a conversion, a
+    /// speech export's (FMT43), whose job speaks and encodes its one audio
+    /// file into the scratch URL and moves in itself, as well as a text one's.
     private static func writeThroughScratchFile(
         to target: URL,
         cancellation: BookExportCancellation,
         write: (_ scratch: URL) throws -> Void
     ) throws {
+        try withScratchFile(for: target) { scratch in
+            try write(scratch)
+            try moveScratchFile(scratch, to: target, cancellation: cancellation)
+        }
+    }
+
+    /// Runs `body` with where to make the file that will become `target`: a
+    /// URL of the same name in a new scratch folder, which is removed however
+    /// `body` ends.
+    private static func withScratchFile(for target: URL, _ body: (_ scratch: URL) throws -> Void) throws {
         let scratchFolder = try makeScratchFolder(near: target)
         defer { try? FileManager.default.removeItem(at: scratchFolder) }
-        let scratch = scratchFolder.appendingPathComponent(target.lastPathComponent)
-        try write(scratch)
+        try body(scratchFolder.appendingPathComponent(target.lastPathComponent))
+    }
+
+    /// Moves the whole file `scratch` to `target`, unless Stop was pressed,
+    /// making the folder of `target` only now.
+    private static func moveScratchFile(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
         try cancellation.checkCancelled()
         try makeFolder(of: target)
         try moveExclusively(scratch, to: target)
@@ -976,8 +1124,9 @@ enum BookExportService {
     /// Where that cannot be done (`EXDEV`: the scratch folder is on another
     /// volume than `target`; `ENOTSUP` and `EINVAL`: a volume without
     /// exclusive rename) the source is copied with exclusive creation and
-    /// then removed; a copy that fails other than for an existing target
-    /// removes only what it created itself.
+    /// then removed; a copy that fails removes only the item it created
+    /// itself, and only while that item is still the one at `target`
+    /// (`copyExclusively`).
     ///
     /// `rename` stands for `renamex_np(RENAME_EXCL)` and returns 0, or -1
     /// with `errno` set; it exists only so a test can make it report
@@ -997,7 +1146,7 @@ enum BookExportService {
             try copyExclusively(source, to: target)
             try FileManager.default.removeItem(at: source)
         default:
-            throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+            throw posixError(code)
         }
     }
 
@@ -1007,24 +1156,158 @@ enum BookExportService {
         renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
     }
 
-    /// Copies `source`, a file or a folder with all it holds, to `target`,
-    /// which is created exclusively: if anything is there, nothing is
-    /// written and it throws `CocoaError.fileWriteFileExists`. When the copy
-    /// fails for another reason, what it made at `target` (which was made by
-    /// the copy, since it did not exist) is removed, and the error thrown.
-    private static func copyExclusively(_ source: URL, to target: URL) throws {
-        var flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_EXCL)
+    /// Copies `source`, a file or a folder with all it holds, to `target`.
+    ///
+    /// The copy first creates `target` itself, exclusively: an empty file
+    /// (`O_CREAT | O_EXCL`) or an empty folder (`mkdir`), so that if anything
+    /// is there, even something that appeared an instant ago, nothing is
+    /// written and it throws `CocoaError.fileWriteFileExists`. It notes the
+    /// identity of the item it created (`ItemIdentity`: its volume and file
+    /// number) the moment it exists, then copies into it (`copyContents`).
+    ///
+    /// When the copy then fails, the item at `target` is removed only while
+    /// it is still the one this copy created: another app's file that took
+    /// its place meanwhile is never removed. (The copy used to let `copyfile`
+    /// create `target` and, on any failure but "already exists", remove
+    /// whatever was at `target`, which could be another app's file that had
+    /// landed there before the copy got as far as making its own: the export
+    /// team's follow-up of October 19, a data-loss item in the October 30
+    /// triage.)
+    ///
+    /// `copyContents` copies the source into the item made at its second
+    /// argument (`copyIntoCreatedItem`): a file's bytes and attributes into
+    /// the descriptor given, or a folder's items into it, given no
+    /// descriptor. It exists only so a test can make a copy fail
+    /// after `target` is made, and replace `target` with a file of its own
+    /// first. `closeFile` stands for `close(2)`, which can report a write the
+    /// file system deferred and then failed, so a test can make it fail too.
+    static func copyExclusively(
+        _ source: URL,
+        to target: URL,
+        copyContents: (_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws -> Void = copyIntoCreatedItem,
+        closeFile: (_ descriptor: Int32) -> Int32 = { close($0) }
+    ) throws {
         if isFolder(source) {
-            flags |= copyfile_flags_t(COPYFILE_RECURSIVE)
+            guard mkdir(target.path, S_IRWXU) == 0 else { throw creationError(errno, target: target) }
+            // Noted at once: what is at `target` from here on may not stay ours.
+            let made = ItemIdentity(ofItemAt: target)
+            do {
+                try copyContents(source, target, nil)
+            } catch {
+                removeItem(at: target, ifStill: made)
+                throw error
+            }
+            return
         }
-        guard copyfile(source.path, target.path, nil, flags) != 0 else { return }
-        let code = errno
-        if code == EEXIST {
-            throw targetExistsError(target)
+        let descriptor = open(target.path, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else { throw creationError(errno, target: target) }
+        // The descriptor names the file this copy created, whatever later
+        // happens to the name `target`.
+        let made = ItemIdentity(ofDescriptor: descriptor)
+        do {
+            try copyContents(source, target, descriptor)
+        } catch {
+            _ = closeFile(descriptor)
+            removeItem(at: target, ifStill: made)
+            throw error
         }
-        // Not EEXIST, so the exclusive creation of `target` was ours.
+        // A close that fails can mean the copy never fully reached the disk:
+        // the copy failed, and what it made goes.
+        guard closeFile(descriptor) == 0 else {
+            let code = errno
+            removeItem(at: target, ifStill: made)
+            throw posixError(code)
+        }
+    }
+
+    /// The copy `copyExclusively` makes into the item it created at
+    /// `target`: a file's contents into `targetDescriptor`, or a folder's
+    /// items into the folder at `target` when there is no descriptor.
+    static func copyIntoCreatedItem(_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws {
+        if let targetDescriptor {
+            try copyFileContents(source, into: targetDescriptor)
+        } else {
+            try copyFolderContents(source, into: target)
+        }
+    }
+
+    /// Copies the file at `source`, its bytes and its attributes (extended
+    /// attributes, access control list, permissions, and dates:
+    /// `COPYFILE_ALL`), into the open file `targetDescriptor`.
+    /// - Throws: the system's error, as a `POSIXError`.
+    private static func copyFileContents(_ source: URL, into targetDescriptor: Int32) throws {
+        let sourceDescriptor = open(source.path, O_RDONLY | O_CLOEXEC)
+        guard sourceDescriptor >= 0 else { throw posixError(errno) }
+        defer { close(sourceDescriptor) }
+        guard fcopyfile(sourceDescriptor, targetDescriptor, nil, copyfile_flags_t(COPYFILE_ALL)) == 0 else {
+            throw posixError(errno)
+        }
+    }
+
+    /// Copies every item of the folder at `source`, hidden ones included,
+    /// each with all it holds and its attributes, into the new, empty folder
+    /// at `target`, and gives that folder the source's permissions. Each item
+    /// is created exclusively, so nothing in `target` is replaced.
+    /// - Throws: the system's error, as a `POSIXError`, or the file
+    ///   manager's.
+    private static func copyFolderContents(_ source: URL, into target: URL) throws {
+        let flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_EXCL)
+        for name in try FileManager.default.contentsOfDirectory(atPath: source.path) {
+            let from = source.appendingPathComponent(name)
+            let to = target.appendingPathComponent(name)
+            guard copyfile(from.path, to.path, nil, flags) == 0 else { throw posixError(errno) }
+        }
+        if let permissions = try FileManager.default.attributesOfItem(atPath: source.path)[.posixPermissions] {
+            try FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: target.path)
+        }
+    }
+
+    /// What tells one item of the file system from every other while it
+    /// exists: the volume it is on and its file number there. The name an
+    /// item has can be given to another in an instant; these cannot.
+    struct ItemIdentity: Equatable {
+        /// The volume (`st_dev`).
+        let device: dev_t
+        /// The file number on that volume (`st_ino`).
+        let fileNumber: ino_t
+
+        /// The identity of what is at `url` now, itself, not what a symbolic
+        /// link there points to (`lstat`); nil when nothing is there.
+        init?(ofItemAt url: URL) {
+            var info = stat()
+            guard lstat(url.path, &info) == 0 else { return nil }
+            device = info.st_dev
+            fileNumber = info.st_ino
+        }
+
+        /// The identity of the open file `descriptor`; nil when the system
+        /// cannot say.
+        init?(ofDescriptor descriptor: Int32) {
+            var info = stat()
+            guard fstat(descriptor, &info) == 0 else { return nil }
+            device = info.st_dev
+            fileNumber = info.st_ino
+        }
+    }
+
+    /// Removes the item at `target`, a file or a folder with all it holds,
+    /// only while it is still the item `made` names. Nothing is removed when
+    /// `made` is unknown, or when another item has taken its place.
+    private static func removeItem(at target: URL, ifStill made: ItemIdentity?) {
+        guard let made, ItemIdentity(ofItemAt: target) == made else { return }
         try? FileManager.default.removeItem(at: target)
-        throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+    }
+
+    /// The error of a failed exclusive creation at `target`, whose `errno`
+    /// was `code`: the name is taken (`EEXIST`), or the system's error.
+    private static func creationError(_ code: Int32, target: URL) -> Error {
+        code == EEXIST ? targetExistsError(target) : posixError(code)
+    }
+
+    /// `code`, an `errno` value, as a `POSIXError`; `EIO` for a value the
+    /// type does not know.
+    private static func posixError(_ code: Int32) -> POSIXError {
+        POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
     }
 
     /// The error for a move or copy onto a name that is taken.
@@ -1073,15 +1356,25 @@ enum BookExportService {
     // MARK: Reading Text
 
     /// The reading text of the book `title` whose text cache holds `bytes`,
-    /// read from `url`, as plain text (`plainText(of:)`): its chapters as
-    /// the reader parses them, a book without chapter markers being one
-    /// chapter named after the book.
+    /// read from `url`: its chapters and headings as the reader parses them,
+    /// a book without chapter markers being one chapter named after the
+    /// book. The plain text export reads the book through it, and so does a
+    /// speech export (FMT43), so that it speaks the reader's text and finds
+    /// the headings the reader shows.
+    /// - Throws: the error reading content.md as text throws, for bytes
+    ///   that are not UTF-8.
+    static func readingContent(fromMarkdown bytes: Data, at url: URL, title: String) throws -> DocumentContent {
+        let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
+        return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: title, bookAuthor: "")
+    }
+
+    /// The reading text of the book `title` whose text cache holds `bytes`,
+    /// read from `url` (`readingContent(fromMarkdown:at:title:)`), as plain
+    /// text (`plainText(of:)`).
     /// - Throws: the error reading content.md as text throws, for bytes
     ///   that are not UTF-8.
     static func plainText(fromMarkdown bytes: Data, at url: URL, title: String) throws -> String {
-        let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
-        let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: title, bookAuthor: "")
-        return plainText(of: content.chapters)
+        try plainText(of: readingContent(fromMarkdown: bytes, at: url, title: title).chapters)
     }
 
     /// `chapters` as plain text, as TextMouth reads them: each chapter's

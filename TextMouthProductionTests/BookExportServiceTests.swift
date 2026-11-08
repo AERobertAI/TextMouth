@@ -28,10 +28,10 @@ final class BookExportServiceTests: XCTestCase {
         let offer = BookExportService.offer(for: book)
 
         XCTAssertFalse(offer.isPackageInCloud)
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         XCTAssertEqual(
             offer.items.map(\.suggestedName),
-            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt"]
+            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt", "\(stem) - Audio.m4b"]
         )
         XCTAssertEqual(offer.item(.originalFile)?.byteCount, try byteCount(of: book.bookFileURL))
         XCTAssertEqual(offer.item(.markdown)?.byteCount, try byteCount(of: cache))
@@ -133,7 +133,7 @@ final class BookExportServiceTests: XCTestCase {
 
         let offer = BookExportService.offer(for: book)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         let original = try XCTUnwrap(offer.item(.originalFile))
         XCTAssertEqual(original.folderName, BookExportService.fileNameStem(for: book.title))
         XCTAssertEqual(original.files.map(\.path), DAISYPackageFixtures.packageBookFiles)
@@ -147,7 +147,7 @@ final class BookExportServiceTests: XCTestCase {
 
         let offer = BookExportService.offer(for: book)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(offer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         XCTAssertEqual(offer.item(.originalFile)?.suggestedName, "daisy202_test.zip")
         XCTAssertNil(offer.item(.originalFile)?.folderName)
     }
@@ -171,7 +171,7 @@ final class BookExportServiceTests: XCTestCase {
             audioOffer.item(.transcript)?.files.map(\.path),
             ["Night Shift Notes - Transcript.json", "Night Shift Notes - Transcript.md"]
         )
-        XCTAssertEqual(textOffer.items.map(\.kind), [.originalFile, .markdown, .plainText, .originalRecording, .transcript])
+        XCTAssertEqual(textOffer.items.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio, .originalRecording, .transcript])
         let stem = BookExportService.fileNameStem(for: textBook.title)
         XCTAssertEqual(textOffer.item(.transcript)?.files.map(\.path), ["\(stem) - Transcript.json"])
         XCTAssertEqual(textOffer.item(.originalRecording)?.byteCount, Int64(Self.takeBytes.count))
@@ -806,6 +806,142 @@ final class BookExportServiceTests: XCTestCase {
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
+    }
+
+    // MARK: - A Failing Copy Across Volumes
+
+    /// A copy across volumes whose source cannot be read leaves the file
+    /// another app has at the target as it is: the copy makes the target
+    /// itself before reading anything, and finds the name taken. (The copy
+    /// once let `copyfile` fail first on the missing source, and then removed
+    /// whatever was at the target: the October 30 triage's data-loss item.)
+    func testACopyWhoseSourceCannotBeReadLeavesAnotherAppsFile() throws {
+        let folder = try makeSandboxDirectory("Export Copy Missing Source")
+        let missing = folder.appendingPathComponent("missing.txt")
+        let taken = folder.appendingPathComponent("taken.txt")
+        try Data("Another app's".utf8).write(to: taken)
+
+        XCTAssertThrowsError(try BookExportService.moveExclusively(missing, to: taken, rename: Self.otherVolume)) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
+        }
+
+        XCTAssertEqual(try String(contentsOf: taken, encoding: .utf8), "Another app's")
+    }
+
+    /// A copy that fails once it has made the target removes what it made,
+    /// a file or a folder, and throws the failure.
+    func testACopyThatFailsRemovesWhatItMade() throws {
+        let folder = try makeSandboxDirectory("Export Copy Fails")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let package = try Self.makePackage(in: folder)
+
+        for (from, name) in [(source, "file.txt"), (package, "folder.rtfd")] {
+            let target = folder.appendingPathComponent(name)
+            XCTAssertThrowsError(
+                try BookExportService.copyExclusively(from, to: target) { _, made, _ in
+                    XCTAssertTrue(FileManager.default.fileExists(atPath: made.path), "\(name): the target is made first")
+                    throw POSIXError(.EIO)
+                }
+            ) { error in
+                XCTAssertEqual((error as? POSIXError)?.code, .EIO, name)
+            }
+            XCTAssertFalse(FileManager.default.fileExists(atPath: target.path), "\(name): what the copy made is left")
+        }
+        // A source that cannot be read fails the real copy the same way.
+        let missing = folder.appendingPathComponent("missing.txt")
+        let target = folder.appendingPathComponent("from missing.txt")
+        XCTAssertThrowsError(try BookExportService.moveExclusively(missing, to: target, rename: Self.otherVolume)) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .ENOENT)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
+    }
+
+    /// A copy whose close fails, as a write the file system deferred and then
+    /// failed can make it, has failed: what it made is removed and the
+    /// system's error thrown, rather than a file that may be cut short left
+    /// in the folder chosen.
+    func testACopyWhoseCloseFailsRemovesWhatItMade() throws {
+        let folder = try makeSandboxDirectory("Export Copy Close Fails")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("file.txt")
+        var closes = 0
+
+        XCTAssertThrowsError(
+            try BookExportService.copyExclusively(source, to: target, closeFile: { descriptor in
+                closes += 1
+                // The descriptor is closed all the same; only the result fails.
+                _ = Darwin.close(descriptor)
+                errno = EIO
+                return -1
+            })
+        ) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .EIO)
+        }
+        XCTAssertEqual(closes, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path), "a copy whose close failed was left")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new", "the source was touched")
+    }
+
+    /// When another app's item takes the place of the one a failing copy
+    /// made, the copy leaves it there: it removes only the item it created,
+    /// known by its identity, for a file and for a folder alike.
+    func testAFailingCopyLeavesAnItemThatTookTheTargetsPlace() throws {
+        let folder = try makeSandboxDirectory("Export Copy Replaced")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let package = try Self.makePackage(in: folder)
+
+        for (from, name) in [(source, "file.txt"), (package, "folder.rtfd")] {
+            let target = folder.appendingPathComponent(name)
+            XCTAssertThrowsError(
+                try BookExportService.copyExclusively(from, to: target) { _, made, _ in
+                    // Another app takes the name between the copy's making
+                    // it and the copy's failing.
+                    try FileManager.default.removeItem(at: made)
+                    try Data("Another app's".utf8).write(to: made)
+                    throw POSIXError(.EIO)
+                }
+            ) { error in
+                XCTAssertEqual((error as? POSIXError)?.code, .EIO, name)
+            }
+            XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "Another app's", name)
+        }
+    }
+
+    /// A folder copied across volumes keeps every item, hidden ones too,
+    /// and its permissions.
+    func testAFolderCopiedAcrossVolumesKeepsItsHiddenItemsAndPermissions() throws {
+        let folder = try makeSandboxDirectory("Export Copy Folder")
+        let package = try Self.makePackage(in: folder)
+        try Data("hidden".utf8).write(to: package.appendingPathComponent(".hidden"))
+        try FileManager.default.setAttributes([.posixPermissions: 0o750], ofItemAtPath: package.path)
+        let moved = folder.appendingPathComponent("moved.rtfd", isDirectory: true)
+
+        try BookExportService.moveExclusively(package, to: moved, rename: Self.otherVolume)
+
+        XCTAssertEqual(try String(contentsOf: moved.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
+        XCTAssertEqual(try String(contentsOf: moved.appendingPathComponent(".hidden"), encoding: .utf8), "hidden")
+        let permissions = try FileManager.default.attributesOfItem(atPath: moved.path)[.posixPermissions] as? NSNumber
+        XCTAssertEqual(permissions?.intValue, 0o750)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path), "the source folder was kept")
+    }
+
+    /// A rename that cannot be exclusive here, standing for a scratch
+    /// folder on another volume than the target (`EXDEV`).
+    private static let otherVolume: (URL, URL) -> Int32 = { _, _ in
+        errno = EXDEV
+        return -1
+    }
+
+    /// A folder standing for an RTFD package, "package.rtfd" in `folder`,
+    /// holding one file, "TXT.rtf", whose text is "inside".
+    private static func makePackage(in folder: URL) throws -> URL {
+        let package = folder.appendingPathComponent("package.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: package.appendingPathComponent("TXT.rtf"))
+        return package
     }
 
     // MARK: - Words

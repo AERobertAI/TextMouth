@@ -80,6 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // folders this Mac's journal still lists are removed now, and no
         // other folder is touched.
         MigrationStagingLeftovers.sweepInBackground()
+        // A speech export's kept chapters outlive only the session that
+        // spoke them: the ones a quit or a crash left in this Mac's Caches
+        // folder are removed now, unless an export has already begun.
+        SpeechExportStore.sweepInBackground()
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
@@ -208,7 +212,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateCancel
         }
         let reply = terminationGuard.reply()
-        let heldWork = [FeedQuitHold.work(FeedCenter.shared.downloads), TextRereads.shared.quitWork()]
+        let heldWork = [
+            FeedQuitHold.work(FeedCenter.shared.downloads),
+            TextRereads.shared.quitWork(),
+            SpeechExportsUnderWay.shared.quitWork(),
+        ]
         if reply == .terminateNow, QuitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
             return .terminateLater
         }
