@@ -99,31 +99,39 @@ final class OfficeXMLGuardTests: XCTestCase {
         XCTAssertEqual(words(result, "scoped prefix"), "Inside Usual")
     }
 
-    // MARK: - Start tags
+    // MARK: - Tags with many attributes
 
-    /// A start tag of more than 64 KB (`XMLInputGuard.longestStartTag`, 30
-    /// times the longest of 2,067 real parts) is refused; one a little shorter
-    /// (a long attribute value is not a hostile tag) is read.
-    func testAStartTagOver64KBIsRefused() throws {
-        XCTAssertEqual(XMLInputGuard.longestStartTag, 65_536)
-        let long = content(namespaces: "a=\"" + String(repeating: "x", count: 70_000) + "\"", body: "<text:p>words</text:p>")
-        assertRefused(try read(Data(long.utf8), "a long start tag"), "a long start tag")
-        let shorter = content(body: "<text:p>words<text:span a='" + String(repeating: ">", count: 60_000) + "'>fine</text:span></text:p>")
-        XCTAssertEqual(words(try read(Data(shorter.utf8), "a long attribute"), "a long attribute"), "wordsfine")
+    /// `count` attributes with no value, as the text of a start tag.
+    private func attributes(_ count: Int) -> String {
+        (0..<count).map { "a\($0)=\"\"" }.joined(separator: " ")
     }
 
-    /// Sixty-four start tags at the limit, each of thousands of attributes,
-    /// are read in a fraction of a second each; none costs the parser the
-    /// seconds a tag of a megabyte did (which a Cancel could not interrupt).
-    func testStartTagsAtTheLimitCostLittleEach() throws {
-        let attributes = (0..<4_000).map { "a\($0)=\"\"" }.joined(separator: " ")
-        XCTAssertLessThan(attributes.utf8.count, XMLInputGuard.longestStartTag - 100)
-        let body = String(repeating: "<text:span \(attributes)>w</text:span>", count: 64) + "<text:p>words</text:p>"
+    /// More than 1,024 attributes in one start tag (`XMLInputGuard.mostAttributesInATag`,
+    /// 27 times the most in any of 3.98 million real start tags) are refused;
+    /// 1,024 are read. The length of an attribute is no hazard (a picture in
+    /// `o:gfxdata` is one, 267 KB in a real document), so a tag of 300 KB with
+    /// one long value, holding `>` and `=` as well, is read.
+    func testMoreThan1024AttributesAreRefusedAndALongValueIsRead() throws {
+        XCTAssertEqual(XMLInputGuard.mostAttributesInATag, 1_024)
+        let over = content(body: "<text:p \(attributes(1_025))>words</text:p>")
+        assertRefused(try read(Data(over.utf8), "1,025 attributes"), "1,025 attributes")
+        let atLimit = content(body: "<text:p \(attributes(1_024))>words</text:p>")
+        XCTAssertEqual(words(try read(Data(atLimit.utf8), "1,024 attributes"), "1,024 attributes"), "words")
+        let longValue = content(body: "<text:p>words<text:span a='" + String(repeating: ">=\"", count: 100_000) + "'>fine</text:span></text:p>")
+        XCTAssertGreaterThan(longValue.utf8.count, 300_000)
+        XCTAssertEqual(words(try read(Data(longValue.utf8), "a long attribute"), "a long attribute"), "wordsfine")
+    }
+
+    /// Sixty-four tags at the limit, each of 1,024 attributes, are read in a
+    /// fraction of a second each; none costs the parser the seconds a tag of
+    /// 200,000 did (which a Cancel could not interrupt).
+    func testTagsAtTheLimitCostLittleEach() throws {
+        let body = String(repeating: "<text:span \(attributes(1_024))>w</text:span>", count: 64) + "<text:p>words</text:p>"
         XCTAssertNotNil(words(try read(Data(content(body: body).utf8), "tags at the limit"), "tags at the limit"))
     }
 
     /// 200,000 attributes in one start tag are refused before the parser
-    /// reads them (it took seventeen seconds, and minutes at the limit).
+    /// reads them (it took seventeen seconds).
     func testAStartTagOfManyAttributesIsRefused() throws {
         let attributes = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
         let result = try read(Data(content(body: "<text:p \(attributes)>words</text:p>").utf8), "many attributes")

@@ -366,12 +366,103 @@ final class MOBIHostileFileTests: XCTestCase {
 
     // MARK: - The markup
 
-    func testMarkupNestedWithoutEndIsRefusedQuickly() {
-        for open in ["<div>", "<b>", "<span>", "<blockquote>", "<table>", "<font size=1>"] {
-            var fixture = MOBIFixture()
-            fixture.html = "<html><body>" + String(repeating: open, count: 100_000) + "words</body></html>"
-            assertRefused(fixture.data(), "100,000 \(open)")
+    /// What importing a book's file came to: the chapters it read (and the
+    /// words of the first), or the guard's refusal, or any other error.
+    private enum ImportOutcome: Sendable, Equatable {
+        case read(chapters: Int, firstChapterText: String)
+        case refused(MarkupRefusal)
+        case failed(String)
+    }
+
+    /// Imports the book at `url` as the library does, on the stack an import has:
+    /// `MOBIParser.prepareBook(url:)`, which cuts the book into HTML sections
+    /// and hands each through `MarkupGuard` to the converter. It is here, not
+    /// in `MOBIBook(bytes:)`, that the markup's nesting is judged. Returns the
+    /// outcome and how long the import took, or nil when it did not end.
+    private func imported(_ url: URL) -> (outcome: ImportOutcome, seconds: TimeInterval)? {
+        onWorkerSizedStack(timeout: 30) {
+            let start = Date()
+            let outcome: ImportOutcome
+            do {
+                let book = try MOBIParser.prepareBook(url: url)
+                outcome = .read(chapters: book.chapters.count, firstChapterText: book.chapters.first?.chapter.text ?? "")
+            } catch let refusal as MarkupRefusal {
+                outcome = .refused(refusal)
+            } catch {
+                outcome = .failed("\(error)")
+            }
+            return (outcome, Date().timeIntervalSince(start))
         }
+    }
+
+    /// `count` start tags `open` with no end tag (100,000 unless said), read through the whole import.
+    ///
+    /// The nesting limit lives in `MarkupGuard`, which runs when a section's
+    /// HTML is converted, so a test that only opens the book (`MOBIBook(bytes:)`)
+    /// sees no refusal. What the import should do with the markup is read from
+    /// the guard's own count of the tree the parser will make (never less than
+    /// the real tree), not guessed:
+    /// - When the count passes the limit (128), the guard refuses the book with
+    ///   `MarkupRefusal.nestedTooDeeply` before the parse, so no tree is built.
+    /// - When it does not, the book reads, and the tree is no deeper than the
+    ///   count. This test imports such a book only when the count is 40 or
+    ///   fewer, since the test host's debug converter overflows its stack at
+    ///   about 108 levels.
+    ///
+    /// `nests` is what the HTML rules make of `open` with no end tag, and the
+    /// count must agree with it, so a change to the guard or to this test is noticed.
+    private func assertImport(
+        of open: String, count: Int = 100_000, nests: Bool, timeLimit: TimeInterval? = nil,
+        file: StaticString = #filePath, line: UInt = #line
+    ) throws {
+        let timeLimit = timeLimit ?? self.timeLimit
+        var fixture = MOBIFixture()
+        fixture.html = "<html><body>" + String(repeating: open, count: count) + "words</body></html>"
+        let limits = MarkupGuard.Limits.standard
+        // The guard's count under the standard limits: it stops at the first
+        // level past the limit (so it never counts 100,000 levels, which would
+        // take it minutes) and builds no tree.
+        var deepest = 0
+        var countedPastTheLimit = false
+        do {
+            deepest = try MarkupGuard.inspect(Array(fixture.html.utf8), as: .html, limits: limits).deepest
+        } catch MarkupRefusal.nestedTooDeeply {
+            countedPastTheLimit = true
+        }
+        XCTAssertEqual(countedPastTheLimit, nests, "\(count.formatted()) \(open): the guard counts \(countedPastTheLimit ? "past the limit" : "\(deepest) levels")", file: file, line: line)
+        // Never import a document the count calls neither refused nor shallow.
+        guard countedPastTheLimit || deepest <= 40 else { return XCTFail("\(count.formatted()) \(open): counted \(deepest) levels", file: file, line: line) }
+
+        let url = try writeMOBI(fixture.data())
+        guard let (outcome, seconds) = imported(url) else { return }
+        XCTAssertLessThan(seconds, timeLimit, "\(count.formatted()) \(open)", file: file, line: line)
+        if countedPastTheLimit {
+            XCTAssertEqual(outcome, .refused(.nestedTooDeeply(limit: limits.deepestNesting)), "\(count.formatted()) \(open)", file: file, line: line)
+        } else {
+            guard case let .read(chapters, text) = outcome else {
+                return XCTFail("\(count.formatted()) \(open): \(outcome)", file: file, line: line)
+            }
+            XCTAssertEqual(chapters, 1, "\(count.formatted()) \(open)", file: file, line: line)
+            XCTAssertTrue(text.contains("words"), "\(count.formatted()) \(open): \(text.prefix(80))", file: file, line: line)
+        }
+    }
+
+    /// These tags nest in HTML with no end tag, so the book is refused for it,
+    /// when its markup is converted.
+    func testMarkupNestedWithoutEndIsRefusedQuickly() throws {
+        for open in ["<div>", "<b>", "<span>", "<blockquote>", "<font size=1>"] {
+            try assertImport(of: open, nests: true)
+        }
+    }
+
+    /// A `table` start tag inside a table that has no cell closes the open
+    /// table before it opens its own (HTML's "in table" rule), so 20,000 of
+    /// them make a flat row of tables, not a deep tree (the guard counts 3
+    /// levels): the book reads. Reading builds the tree, which a debug build
+    /// takes over a second to do for 100,000, so this one has fewer tables and
+    /// a longer limit than the refusals, which build nothing.
+    func testTablesWithoutEndTagsDoNotNestAndTheBookReads() throws {
+        try assertImport(of: "<table>", count: 20_000, nests: false, timeLimit: 15)
     }
 
     func testAMillionBytesOfAngleBracketsAndQuotesTakesOneSecondAtMost() {

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The HTML Writer
 
-/// Writes the body of the HTML document that stands for a Word 97-2003
+/// Writes the body of the HTML document that stands for a Word 6 to 2003
 /// document (the contract is the comment on `OwnDocumentReaders`), one
 /// character at a time, in the order the characters are in the text.
 ///
@@ -59,6 +59,8 @@ struct WordHTMLWriter {
     /// Whether a number is written as words before its paragraph, rather than
     /// the paragraph being an item of an `ol` whose number is not heard.
     private let numbersAreWords: Bool
+    /// The document's fonts, which say what a symbol's code means.
+    private let fonts: WordFontTable
 
     /// A document with more page breaks than this reader numbers has no
     /// pages (`TextutilPageBreaks.maximumPages`); the writer says so by
@@ -161,11 +163,13 @@ struct WordHTMLWriter {
     ///   - lists: the document's lists, for the paragraphs that are in one.
     ///   - numbersAreWords: whether a list's numbers are written as words
     ///     (`WordDocumentReader.speaksListNumbers`).
+    ///   - fonts: the document's fonts, for its symbols.
     init(
         styles: WordStyleSheet, sections: WordSections, includesPages: Bool, outputLimit: Int,
         paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>,
-        lists: WordListTables = .none, numbersAreWords: Bool = false
+        lists: WordListTables = .none, numbersAreWords: Bool = false, fonts: WordFontTable = .none
     ) {
+        self.fonts = fonts
         self.lists = WordListNumbering(tables: lists)
         self.numbersAreWords = numbersAreWords
         self.styles = styles
@@ -264,11 +268,13 @@ struct WordHTMLWriter {
     }
 
     /// Writes the scalar `scalar` of the text at `position`.
-    private mutating func addText(_ scalar: Unicode.Scalar, at position: Int) throws {
+    private mutating func addText(_ original: Unicode.Scalar, at position: Int) throws {
         let format = characters.format(at: position) ?? WordCharacterFormat()
+        let paragraphFormat = currentParagraphFormat(at: position)
+        // A symbol from Insert Symbol is a placeholder ("(") with the font and the code of the character.
+        let scalar = symbol(replacing: original, in: format, paragraph: paragraphFormat)
         // Text a tracked change deleted is not in the document any more.
         if format.isDeleted { return }
-        let paragraphFormat = currentParagraphFormat(at: position)
         let appearance = appearance(of: format, in: paragraphFormat)
         // Hidden text is not shown in the ordinary view, so it is not read;
         // its white space goes with it.
@@ -278,7 +284,8 @@ struct WordHTMLWriter {
             return
         }
         // A special character in the text (a symbol from a font, 0x28, which
-        // is "(" otherwise) has no words to read.
+        // is "(" otherwise) has no words to read, when it is not a symbol with
+        // a character of its own (`symbol(replacing:in:)`).
         if format.isSpecial && scalar == "(" { return }
         // The first visible words of a paragraph decide whether it begins a
         // page, so a paragraph of hidden text begins none.
@@ -322,6 +329,27 @@ struct WordHTMLWriter {
         paragraphLength += 1
         paragraphCensus.add(size: appearance.size, isBold: appearance.bold)
         previousWasSpace = false
+    }
+
+    /// What the character `scalar` of a run `format` in a paragraph `paragraph` stands for. A symbol
+    /// (`sprmCSymbol`) is stored as the text "(" with the font and the code of the character it shows; what is
+    /// read there is the character the font's own layout gives that code (`WordSymbolFontEncodings`: the
+    /// Symbol encoding, a small table for a WordPerfect font, the code page for an ordinary text font), and a
+    /// space where it gives none (a font of pictures, a code no table settles: the words on either side
+    /// must not run together). Word 97 stores text typed in a symbol font as the code plus 0xF000, which is
+    /// read through the run's font in the same way (a font that the table does not hold leaves it as it is).
+    /// A "(" with no symbol, or any other text, is left as it is.
+    private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat, paragraph: WordParagraphFormat) -> Unicode.Scalar {
+        if scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter {
+            return fonts.symbolScalar(forCode: code, inFont: font, isPrivateUse: format.symbolIsPrivateUse) ?? " "
+        }
+        // Word 97 stores text typed in a symbol font as its code plus 0xF000: the run's font reads it.
+        if (0xF020...0xF0FF).contains(scalar.value),
+           let font = styles.fontIndex(paragraphStyle: paragraph.style, characterStyle: format.style, direct: format.fontIndex),
+           fonts.reading(ofFont: font) != nil {
+            return fonts.symbolScalar(forCode: Int(scalar.value & 0xFF), inFont: font, isPrivateUse: true) ?? " "
+        }
+        return scalar
     }
 
     /// Notes white space, written when the next character that is not white
@@ -469,6 +497,8 @@ struct WordHTMLWriter {
         let markFormat = characters.format(at: position) ?? WordCharacterFormat()
         let markIsDeleted = markFormat.isDeleted
         let marker: WordListNumbering.Marker = isRowEnd ? .none : paragraphMarker(of: format, hasText: hasText, markIsDeleted: markIsDeleted)
+        // Ordinary text ends the count of the lists that it ends (a Word 6 or Word 95 document's simple lists).
+        if hasText, !isRowEnd, marker == .none { lists.plainTextEndsCounts() }
         let level = listLevel
         // What a number written as words says: a level's number, or the words
         // of a level that has none.

@@ -67,8 +67,10 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         _ = PhoneReaderModel.attached(to: model.session)
     }
 
-    /// Names `TextMouthSceneDelegate` for every scene, in code. iOSApp/Info.plist
-    /// declares one scene at a time and no configurations, and with none in the
+    /// Names `TextMouthSceneDelegate` for every scene, in code. The iOS
+    /// Info.plist (TextMouth/Platform/iOS/Info.plist, which
+    /// Scripts/ios/sync-info-plist.py writes) declares one scene at a time and
+    /// no configurations, and with none in the
     /// Info.plist, the header says, the configuration comes back with no scene
     /// class, delegate class, or storyboard. So both classes are set here, the
     /// scene's too, since the documentation does not say what a nil scene class

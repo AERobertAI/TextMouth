@@ -113,8 +113,9 @@ final class WordDocumentReaderTests: XCTestCase {
             let html = try XCTUnwrap(WordDocumentReader.html(from: Data(contentsOf: formatSampleURL(sample)), includesPages: true), sample)
             XCTAssertTrue(html.contains("<body>"), sample)
         }
-        // wIdent 0xA699 with nFib 0x68 is a Word 95 layout, which this reader leaves to textutil.
-        XCTAssertNil(try WordDocumentReader.html(from: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")), includesPages: true))
+        // wIdent 0xA699 with nFib 0x68 is a Word 95 layout, which this reader leaves to textutil
+        // when it is told not to read it (the Mac's choice; `WordDocumentLegacyTests` reads it).
+        XCTAssertNil(try WordDocumentReader.html(from: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")), includesPages: true, readsOldLayout: false))
     }
 
     // MARK: - Text
@@ -1398,12 +1399,15 @@ final class WordDocumentReaderTests: XCTestCase {
     func testAWord95DocumentIsLeftToTextutil() throws {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [Paragraph("old")]
+        // A file with Word 97's identifier is read by Word 97's layout whatever its nFib ([MS-DOC]: the identifier
+        // MUST be 0xA5EC; Word installs an empty document of nFib 0xC0), so this one reads.
         builder.version = 0x0068
-        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true))
-        // And one from before Word 95, by its other wIdent.
+        XCTAssertNotNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
+        // One with the identifier of Word 6 (0xA5DC) is the older layout; asked not to read it
+        // (`readsOldLayout: false`, as a test of the router does), the reader leaves it to textutil, and `WordDocumentLegacyTests` reads these documents.
         builder.version = 0x0065
         builder.identifier = 0xA5DC
-        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true))
+        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
     }
 
     func testAnEncryptedDocumentIsRefusedWithThePasswordSentence() throws {

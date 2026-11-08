@@ -48,7 +48,7 @@ settings:
 # MARKETING_VERSION line, and the Mac app and the iOS app share it.
 settingGroups:
   appVersion:
-    MARKETING_VERSION: "0.4.0"
+    MARKETING_VERSION: "0.4.1"
     CURRENT_PROJECT_VERSION: "1"
 
 # The two C libraries both apps link, each defined once and built for each
@@ -291,18 +291,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
-        # Merged with the INFOPLIST_KEY_ settings below: it holds the keys that
-        # have no such setting, such as the background audio mode and the
-        # document types, and IOSInfoPlistTests reads it.
-        INFOPLIST_FILE: iOSApp/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: TextMouth
+        # Merged with the INFOPLIST_KEY_ settings below into the plist Xcode
+        # generates. Written from the Mac's plist by
+        # Scripts/ios/sync-info-plist.py: the Mac's keys, display name, and
+        # document types, less what iOS cannot read, with the keys only iOS
+        # needs (the background audio mode, one scene at a time). It holds no
+        # key that a setting below also sets, since Apple does not say which
+        # would win, and IOSInfoPlistTests checks both.
+        INFOPLIST_FILE: TextMouth/Platform/iOS/Info.plist
         # A file from another app arrives where it is, as the Files app holds
         # it, rather than as a copy in Documents/Inbox.
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         # No INFOPLIST_KEY_UIApplicationSceneManifest_Generation: the scene
-        # manifest it writes allows several scenes, and iOSApp/Info.plist
-        # holds a manifest of one scene at a time instead.
+        # manifest it writes allows several scenes, and the plist above holds
+        # a manifest of one scene at a time instead.
         CODE_SIGN_STYLE: Automatic
         # The LAME, exception-catcher, and braille-protocol modules, as the
         # Mac target finds them.

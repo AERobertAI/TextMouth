@@ -19,8 +19,9 @@ final class WordDocumentComparisonTests: XCTestCase {
 
     // MARK: - The Samples
 
-    /// The samples the reader leaves to textutil (it returns nil): Word 6 and
-    /// Word 95 documents, whose older layout [MS-DOC] does not describe.
+    /// The samples this comparison leaves to textutil (it asks the reader not
+    /// to read the older layout): Word 6 and Word 95 documents, which
+    /// `WordDocumentLegacyComparisonTests` compares on their own.
     private static let leftToTextutil: Set<String> = [
         "doc/libreoffice-tdf150197_anlv2ListFormat.doc",
         // wIdent 0xA699 and nFib 0x68: a layout of Word 95 or older.
@@ -148,7 +149,9 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// a reader's HTML; nil when the reader leaves the sample to textutil.
     private func readerChapter(_ sample: String, numbersAreWords: Bool = WordDocumentReader.speaksListNumbers) throws -> Chapter? {
         let copy = try copyOfFormatSample(sample)
-        guard let html = try WordDocumentReader.html(of: copy, includesPages: true, speaksListNumbers: numbersAreWords) else { return nil }
+        guard let html = try WordDocumentReader.html(
+            from: Data(contentsOf: copy), includesPages: true, speaksListNumbers: numbersAreWords, readsOldLayout: false
+        ) else { return nil }
         let markdown = try HTMLToMarkdownConverter.convert(
             document: SwiftSoup.parse(html),
             readingFlow: PublicationSemantics.ReadingFlow(source: html),

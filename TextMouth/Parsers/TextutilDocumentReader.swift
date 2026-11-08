@@ -83,7 +83,7 @@ enum TextutilDocumentReader {
         guard !source.isWebPage else {
             // A web page is converted as an .html file is, and names its
             // own title and author in its head.
-            let named = metadata(in: try SwiftSoup.parse(headOf(source.html)))
+            let named = metadata(in: try MarkupGuard.parse(headOf(source.html)))
             return Extraction(
                 markdown: try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true),
                 named: named
@@ -92,7 +92,7 @@ enum TextutilDocumentReader {
         let html = source.html
         // Cancel is heard between the steps of a very large document's reading
         try ImportCancellation.throwIfCancelled()
-        let document = try SwiftSoup.parse(html)
+        let document = try MarkupGuard.parse(html)
         // The names are read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
         let named = metadata(in: document)
@@ -117,7 +117,7 @@ enum TextutilDocumentReader {
             return try HTMLParser.parse(html: source.html, title: fileName)
         }
         let html = source.html
-        let document = try SwiftSoup.parse(html)
+        let document = try MarkupGuard.parse(html)
         let named = metadata(in: document)
         // The metadata is read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
@@ -136,7 +136,7 @@ enum TextutilDocumentReader {
     static func readMetadata(from url: URL, bookFormat: BookFormat) throws -> (title: String, author: String) {
         // The names are in the HTML alone: no plain-text run for pages.
         let html = try htmlText(of: url, bookFormat: bookFormat, includesPages: false).html
-        return metadata(in: try SwiftSoup.parse(headOf(html)))
+        return metadata(in: try MarkupGuard.parse(headOf(html)))
     }
 
     // MARK: HTML

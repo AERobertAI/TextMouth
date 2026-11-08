@@ -695,6 +695,9 @@ enum BrailleFileReader {
     ///   data too large for the pages' offsets.
     static func pages(fromPEF data: Data) throws -> BrailleFilePages {
         try requireOffsetsFit(data)
+        // A tag the parser would take too long over is a damaged PEF
+        // (`XMLInputGuard`).
+        guard XMLInputGuard.problem(with: data) == nil else { throw BrailleFileError.damagedPEF }
         let collector = PEFCollector()
         let parser = XMLParser(data: data)
         parser.delegate = collector
@@ -724,6 +727,7 @@ enum BrailleFileReader {
         guard let prefix = try? handle.read(upToCount: metadataByteCount), !prefix.isEmpty else {
             return (nil, nil, nil)
         }
+        guard XMLInputGuard.problem(with: prefix) == nil else { return (nil, nil, nil) }
         let collector = PEFCollector(stopsAfterHead: true)
         let parser = XMLParser(data: prefix)
         parser.delegate = collector

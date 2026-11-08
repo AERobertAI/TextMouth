@@ -71,6 +71,68 @@ final class EPUBStructureFailureTests: XCTestCase {
         )
     }
 
+    // MARK: - A Tag With Too Many Attributes
+
+    /// A tag of more than 1,024 attributes (`XMLInputGuard.mostAttributesInATag`,
+    /// 27 times the most in any of 3.98 million real start tags) in the container
+    /// or the package document is refused as damage, naming the file, before
+    /// the XML reader sees it: 200,000 attributes in one tag cost the reader
+    /// seconds, and a hostile book could stall an import with them. The bound
+    /// of five seconds is far above the refusal and below the reader's cost.
+    @MainActor
+    func testATagWithTooManyAttributesIsRefusedAsDamageNamingTheFile() throws {
+        let many = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let hostileContainer = Self.container().replacingOccurrences(of: "<rootfiles>", with: "<rootfiles \(many)>")
+        let hostilePackage = Self.packageDocument().replacingOccurrences(of: "<manifest>", with: "<manifest \(many)>")
+        let cases: [(file: String, container: String, package: String)] = [
+            ("META-INF/container.xml", hostileContainer, Self.packageDocument()),
+            ("OEBPS/content.opf", Self.container(), hostilePackage),
+        ]
+        for testCase in cases {
+            let epub = try makeEPUB(container: testCase.container, packageDocument: testCase.package)
+            let clock = ContinuousClock()
+            let start = clock.now
+            try assertRefused(
+                epub,
+                throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
+                    file: testCase.file, reason: XMLInputGuard.tooManyAttributesProblem))),
+                saying: "The file “\(testCase.file)” in this EPUB book is damaged or incomplete: "
+                    + "it has a tag with too many attributes for TextMouth to read safely. "
+                    + "Get a fresh copy of the book, then import it again.")
+            XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.file) took too long")
+        }
+    }
+
+    /// A container or package document with definitions of its own, or in an
+    /// encoding the guard cannot see through, is refused (it is not damaged)
+    /// naming the file, in the EPUB's own sentences, and one that names an
+    /// external type is read.
+    @MainActor
+    func testAnEPUBFileWithOwnDefinitionsOrAStatefulEncodingIsRefused() throws {
+        let subset = Self.container().replacingOccurrences(
+            of: "<container", with: "<!DOCTYPE container [<!ENTITY e \"x>y<!--\">]><container")
+        let epub = try makeEPUB(container: subset, packageDocument: Self.packageDocument())
+        try assertRefused(
+            epub,
+            throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
+                file: "META-INF/container.xml", problem: .ownDefinitions))),
+            saying: "TextMouth can't safely read the file \u{201C}META-INF/container.xml\u{201D} in this EPUB book, because it "
+                + "defines entities of its own. Open the book in the program that made it, save it again, then import it again.")
+        let stateful = Self.packageDocument().replacingOccurrences(
+            of: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>", with: "<?xml version=\"1.0\" encoding\n=\n\"UNICODE-1-1-UTF-7\"?>")
+        XCTAssertNotEqual(stateful, Self.packageDocument())
+        let statefulEPUB = try makeEPUB(container: Self.container(), packageDocument: stateful)
+        try assertRefused(
+            statefulEPUB,
+            throwing: .otherEPUBError(String(describing: EPUBParserError.unsafeFile(
+                file: "OEBPS/content.opf", problem: .encoding("UNICODE-1-1-UTF-7")))),
+            saying: "TextMouth can't safely read the file \u{201C}OEBPS/content.opf\u{201D} in this EPUB book, because it is "
+                + "written in the UNICODE-1-1-UTF-7 encoding. Save it as UTF-8, then import it again.")
+        let external = Self.packageDocument().replacingOccurrences(
+            of: "<package", with: "<!DOCTYPE package PUBLIC \"-//X//EN\" \"http://example.org/x.dtd\"><package")
+        XCTAssertNoThrow(try EPUBParser.parseOPF(external))
+    }
+
     // MARK: - The Reading Order
 
     /// A package document whose spine names nothing says the book has no

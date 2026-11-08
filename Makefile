@@ -85,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg typecheck-ios typecheck-mac mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -108,6 +108,7 @@ help:
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
 	@echo "  make lint-ogg   - Check the app lines this branch adds for audio readers that must refuse Ogg first"
+	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
@@ -300,6 +301,12 @@ lint-ogg:
 ## (Scripts/ios/typecheck.py). CENSUS=1 reads AppKit imports as UIKit in the
 ## copy, so every AppKit use left is counted. It takes the Mac's heavy-work
 ## lock, which the build train shares, and commits nothing.
+## The iOS app's Info.plist (TextMouth/Platform/iOS/Info.plist) is written
+## from the Mac's by Scripts/ios/sync-info-plist.py: this fails when the Mac's
+## plist has changed and the iOS one has not been written again.
+check-ios-plist:
+	@python3 -I Scripts/ios/sync-info-plist.py --check
+
 typecheck-ios:
 	@python3 -I Scripts/ios/typecheck.py --platform ios $(if $(CENSUS),--census,)
 

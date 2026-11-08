@@ -242,39 +242,40 @@ final class EPUBMetadataTests: XCTestCase {
 
     /// An EPUB whose package document and NCX declare an external entity
     /// naming a file on this Mac, and use it in the title, the author, a
-    /// description, and a heading's label, reads that entity as nothing:
-    /// neither the metadata read for the library, nor the book read for the
-    /// reader, nor the package Edit Metadata writes back into the EPUB holds
-    /// the file's text, and the book still reads. XMLDocument once loaded
-    /// such entities, so a crafted EPUB put a local file's text into the
-    /// library and, on Edit Metadata, into the EPUB itself.
+    /// description, and a heading's label, is refused naming the package
+    /// document: the guard (`XMLInputGuard`) refuses a document type
+    /// with definitions of its own in any XML file of a book, so no reading
+    /// (the metadata for the library, the book for the reader, nor the
+    /// package Edit Metadata would write back into the EPUB) holds the file's
+    /// text, and the EPUB is left as it was. XMLDocument once loaded such
+    /// entities, so a crafted EPUB put a local file's text into the library
+    /// and, on Edit Metadata, into the EPUB itself; since U01 the entity read
+    /// as nothing and the book read; now the book is not read, because an
+    /// internal subset can hide a tag that stalls the parser for 39 s.
     func testAnExternalEntityNeverBringsAFilesTextIntoTheBook() throws {
         let folder = try TextPipelineFixtures.temporaryFolder(for: self)
         let secret = folder.appendingPathComponent("secret.txt")
         try Data(Self.secretText.utf8).write(to: secret)
         let epub = try makeEPUBNamingAnEntity(for: secret)
+        let before = try Data(contentsOf: epub)
 
-        let metadata = try EPUBParser.readMetadata(url: epub)
-        let content = try EPUBParser.parse(url: epub)
-        var edited = metadata
-        edited.title = "Harbour Lamps"
-        _ = try EPUBParser.writeMetadata(edited, to: epub)
-        let written = try EPUBParser.extractString(archive: Archive(url: epub, accessMode: .read), path: "OEBPS/package.opf")
-
-        let readings: [(place: String, text: String)] = [
-            ("the title read for the library", metadata.title),
-            ("the author read for the library", metadata.author),
-            ("the publisher read for the library", metadata.publisher),
-            ("the title read for the reader", content.title),
-            ("the author read for the reader", content.author),
-            ("the headings", content.allHeadings.map(\.text).joined(separator: "\n")),
-            ("the chapter titles", content.chapters.map(\.title).joined(separator: "\n")),
-            ("the package written back by Edit Metadata", written),
-        ]
-        for reading in readings {
-            XCTAssertFalse(reading.text.contains(Self.secretText), "\(reading.place) holds the file's text: \(reading.text)")
+        func assertRefused(_ label: String, _ body: () throws -> Void) {
+            XCTAssertThrowsError(try body(), label) { error in
+                guard case let EPUBParserError.unsafeFile(file, problem)? = error as? EPUBParserError else {
+                    return XCTFail("\(label): \(error)")
+                }
+                XCTAssertEqual(file, "OEBPS/package.opf", label)
+                XCTAssertEqual(problem, .ownDefinitions, label)
+                XCTAssertFalse(error.localizedDescription.contains(Self.secretText), label)
+            }
         }
-        XCTAssertEqual(content.chapters.map(\.text), ["Harbour lamps were lit at dusk."])
+        assertRefused("the metadata read for the library") { _ = try EPUBParser.readMetadata(url: epub) }
+        assertRefused("the book read for the reader") { _ = try EPUBParser.parse(url: epub) }
+        let metadata = EPUBMetadata(
+            title: "Harbour Lamps", author: "A. Keeper", publisher: "", publicationDate: "",
+            isbn: "", language: "en", identifier: "", epubVersion: "2.0")
+        assertRefused("Edit Metadata") { _ = try EPUBParser.writeMetadata(metadata, to: epub) }
+        XCTAssertEqual(try Data(contentsOf: epub), before, "the EPUB was changed")
     }
 
     /// An EPUB in the test's own temporary folder whose package document and

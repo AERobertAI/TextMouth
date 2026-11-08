@@ -815,7 +815,8 @@ final class EPUBPageListTests: XCTestCase {
     /// are left open: SwiftSoup itself calls itself once for every level
     /// above an element whose attributes are read, the list's included, or
     /// above most end tags it reads, which would overflow the stack in
-    /// SwiftSoup before TextMouth's walk.
+    /// SwiftSoup before TextMouth's walk. `MarkupGuard` refuses such a document
+    /// before any of this, so its limit is lifted here, to hold the walk to itself.
     func testAPageListBesideMarkupNestedThousandsDeepIsReadOnAWorkerStack() throws {
         let depth = 20_000
         let nav = xhtml(
@@ -829,7 +830,9 @@ final class EPUBPageListTests: XCTestCase {
         )
 
         let labels = onWorkerSizedStack {
-            ((try? EPUBParser.prepareBook(url: epub))?.chapters ?? []).flatMap { $0.chapter.pages.map(\.label) }
+            MarkupGuard.$limits.withValue(.withoutDepthLimit) {
+                ((try? EPUBParser.prepareBook(url: epub))?.chapters ?? []).flatMap { $0.chapter.pages.map(\.label) }
+            }
         }
         XCTAssertEqual(labels, ["7"])
     }

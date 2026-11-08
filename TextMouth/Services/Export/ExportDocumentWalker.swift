@@ -22,26 +22,29 @@ enum ExportDocumentWalker {
     /// (`MarkdownCacheService.cacheText(from:at:)`). Bytes that are not UTF-8
     /// throw the error reading the file as text throws; cancelling stops the
     /// walk with `CancellationError`
-    /// (`document(fromMarkdown:book:cancellation:)`).
+    /// (`document(fromMarkdown:book:options:cancellation:)`).
     static func document(
         fromContentBytes bytes: Data,
         at url: URL,
         book: ExportBookDetails,
+        options: ExportWalkOptions = .plain,
         cancellation: BookExportCancellation? = nil
     ) throws -> ExportDocument {
         let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
-        return try document(fromMarkdown: markdown, book: book, cancellation: cancellation)
+        return try document(fromMarkdown: markdown, book: book, options: options, cancellation: cancellation)
     }
 
     /// The document of `markdown`, a content.md, for `book`. The text is split
     /// into chapters at TextMouth's chapter markers exactly as the reader
     /// splits it (text before the first marker is left out, as the reader
     /// leaves it out); text without a marker is one chapter with no title.
-    /// `cancellation` is checked before each chapter, and a cancelled export
-    /// throws `CancellationError`.
+    /// `options` say what besides the words the document keeps. `cancellation`
+    /// is checked before each chapter, and a cancelled export throws
+    /// `CancellationError`.
     static func document(
         fromMarkdown markdown: String,
         book: ExportBookDetails,
+        options: ExportWalkOptions = .plain,
         cancellation: BookExportCancellation? = nil
     ) throws -> ExportDocument {
         var sections = MarkdownCacheService.splitChapters(markdown)
@@ -49,10 +52,14 @@ enum ExportDocumentWalker {
             sections = [(title: "", content: markdown)]
         }
 
-        var walk = Walk()
+        var walk = Walk(options: options)
         var blocks: [ExportBlock] = []
+        var chapterStarts: [ExportChapterStart] = []
         for section in sections {
             try cancellation?.checkCancelled()
+            if options.keepsChapters {
+                chapterStarts.append(ExportChapterStart(blockIndex: blocks.count, title: section.title))
+            }
             blocks += walk.blocks(ofSectionTitled: section.title, content: section.content)
         }
 
@@ -64,8 +71,30 @@ enum ExportDocumentWalker {
         if !title.isEmpty, !ExportBlock.headings(in: blocks).contains(where: { $0.level == 1 }) {
             titleHeading = walk.plainHeading(level: 1, title: title)
         }
-        return ExportDocument(book: book, titleHeading: titleHeading, blocks: blocks)
+        return ExportDocument(book: book, titleHeading: titleHeading, blocks: blocks, chapterStarts: chapterStarts)
     }
+}
+
+// MARK: - What a Walk Keeps
+
+/// What a walk of content.md keeps besides the words: a writer that has a
+/// place for chapters and pages asks for them, and every other writer's
+/// document is the one it always was.
+struct ExportWalkOptions: Equatable, Sendable {
+    /// Whether the document says where each chapter of the book begins
+    /// (`ExportDocument.chapterStarts`).
+    var keepsChapters = false
+    /// Whether the document keeps content.md's page markers and heading
+    /// annotations, as places between blocks (`ExportBlock.pageBreak`,
+    /// `ExportBlock.navigationTarget`), inside text (`ExportRun.pageBreak`,
+    /// `ExportRun.navigationTarget`), and in a table's cells
+    /// (`ExportTable.cellPages`), read where the reader reads them.
+    var keepsPageMarkers = false
+
+    /// The words alone: what HTML, RTF, Word, and braille write.
+    static let plain = ExportWalkOptions()
+    /// The book's chapters and pages as well, for a writer of an e-book.
+    static let bookStructure = ExportWalkOptions(keepsChapters: true, keepsPageMarkers: true)
 }
 
 // MARK: - Heading IDs
@@ -155,20 +184,40 @@ struct ExportHeadingIDs {
 /// Every swift-markdown type is written `Markdown.Name`, since TextMouth has
 /// types of its own with some of the same names.
 private struct Walk {
+    /// What the walk keeps besides the words.
+    let options: ExportWalkOptions
     /// The ids claimed so far, shared by every chapter of the document.
     var ids = ExportHeadingIDs()
+    /// How many pages have been met, so each page's id is its number.
+    var pageCount = 0
+    /// How many contents targets have been met, so each one's id is its number.
+    var targetCount = 0
+    /// Whether the rest of a marker-led HTML block is being walked: another
+    /// marker-led block inside it is not read again (as the reader does not,
+    /// so a crafted line cannot be re-parsed once per level).
+    var isReadingRestOfMarkerLine = false
+
+    /// A walk that keeps what `options` ask for, with no id claimed and no
+    /// page or target met.
+    init(options: ExportWalkOptions) {
+        self.options = options
+    }
 
     // MARK: Chapters
 
     /// The blocks of one chapter: `content` parsed as Markdown. A chapter that
     /// has a title but no heading of any depth begins with its title as a
-    /// level-1 heading, as the reader gives such a chapter its title.
+    /// level-1 heading, as the reader gives such a chapter its title. A walk
+    /// that keeps the chapters adds none: it says where each chapter begins
+    /// and what it is called (`ExportDocument.chapterStarts`), and the writer
+    /// that asked names the chapter in its contents without adding words the
+    /// book does not have.
     mutating func blocks(ofSectionTitled title: String, content: String) -> [ExportBlock] {
         let parsed = Markdown.Document(parsing: content)
-        var blocks = self.blocks(in: parsed, nesting: 0, listDepth: 0)
+        var blocks = Self.droppingRedundantTargets(from: self.blocks(in: parsed, nesting: 0, listDepth: 0))
         // Claimed after the blocks are made: they hold no heading, so the
         // order of ids is still the order of reading.
-        if !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
+        if !options.keepsChapters, !title.isEmpty, ExportBlock.headings(in: blocks).isEmpty {
             blocks.insert(.heading(plainHeading(level: 1, title: title)), at: 0)
         }
         return blocks
@@ -197,15 +246,25 @@ private struct Walk {
     private mutating func blocks(of block: Markdown.Markup, nesting: Int, listDepth: Int) -> [ExportBlock] {
         switch block {
         case let heading as Markdown.Heading:
-            let runs = Self.runs(of: heading)
+            // A page that starts inside a heading starts where the heading
+            // does (as the reader places it), so it is a break before it.
+            // A contents target inside a heading is the heading's own place,
+            // which the contents link already: the reader adds no row for it.
+            let (places, runs) = Self.splittingPlaces(from: self.runs(of: heading))
+            let breaks = places.compactMap(\.pageBreak).map(ExportBlock.pageBreak)
             // A heading with nothing to read is dropped, as the reader's
             // heading list drops it.
-            guard !runs.isEmpty else { return [] }
+            guard !runs.isEmpty else { return breaks }
             let level = min(max(heading.level, 1), 6)
-            return [.heading(ExportHeading(level: level, runs: runs, id: ids.claim(runs.plainText)))]
+            return breaks + [.heading(ExportHeading(level: level, runs: runs, id: ids.claim(runs.plainText)))]
 
         case let paragraph as Markdown.Paragraph:
-            let runs = Self.runs(of: paragraph)
+            let runs = self.runs(of: paragraph)
+            // A paragraph that is only the start of a page, or a place the
+            // contents point at, is that and no paragraph.
+            if !runs.isEmpty, runs.allSatisfy(\.isPlace) {
+                return runs.compactMap(Self.block(ofPlace:))
+            }
             return runs.isEmpty ? [] : [.paragraph(runs)]
 
         case let list as Markdown.UnorderedList:
@@ -238,12 +297,13 @@ private struct Walk {
             return [.thematicBreak]
 
         case let table as Markdown.Table:
-            return Self.table(of: table).map { [.table($0)] } ?? []
+            // A target in a cell is a place before the table; a page that
+            // starts in a cell stays in it (`ExportTable.cellPages`).
+            let (hoisted, converted) = self.table(of: table)
+            return hoisted + (converted.map { [.table($0)] } ?? [])
 
-        case is Markdown.HTMLBlock:
-            // TextMouth's marker comments, its heading annotations, and any
-            // raw HTML: the reader never reads them, and nor does a writer.
-            return []
+        case let html as Markdown.HTMLBlock:
+            return blocks(ofHTML: html, nesting: nesting, listDepth: listDepth)
 
         case let other as Markdown.BlockContainer:
             // Any other container is walked for its children; any other
@@ -253,6 +313,100 @@ private struct Walk {
         default:
             return []
         }
+    }
+
+    /// The blocks an HTML block makes. TextMouth's marker comments, its
+    /// heading annotations, and any raw HTML make none, as the reader never
+    /// reads them, but for what follows a line's markers (ST05, read as the
+    /// reader reads it, `MarkdownMarker.leading(of:)`): that is Markdown, and
+    /// its blocks are walked, preceded by the places of the markers.
+    private mutating func blocks(ofHTML html: Markdown.HTMLBlock, nesting: Int, listDepth: Int) -> [ExportBlock] {
+        if !isReadingRestOfMarkerLine, let (markers, rest) = MarkdownMarker.leading(of: html.rawHTML) {
+            var made = markers.compactMap { place(of: $0) }.compactMap(Self.block(ofPlace:))
+            isReadingRestOfMarkerLine = true
+            made += blocks(in: Markdown.Document(parsing: String(rest)), nesting: nesting, listDepth: listDepth)
+            isReadingRestOfMarkerLine = false
+            return made
+        }
+        if let marker = MarkdownMarker.decode(html.rawHTML), let found = place(of: marker) {
+            return [Self.block(ofPlace: found)].compactMap { $0 }
+        }
+        return []
+    }
+
+    // MARK: Places
+
+    /// The place `marker` marks when the walk keeps them: a page start (with
+    /// the next id, and for a label with no word left once the characters XML
+    /// forbids are gone, the page's number among the book's pages) or a place
+    /// the contents point at (B3); nil for a walk of the words alone.
+    private mutating func place(of marker: MarkdownMarker) -> ExportRun? {
+        guard options.keepsPageMarkers else { return nil }
+        var run = ExportRun("")
+        switch marker {
+        case .page(let page):
+            pageCount += 1
+            let hasWords = XMLEscaping.hasVisibleText(page.label)
+            run.pageBreak = ExportPageBreak(label: hasWords ? page.label : String(pageCount), id: "page_\(pageCount)")
+        case .heading(let annotation):
+            targetCount += 1
+            let level = min(max(annotation.level, 1), 6)
+            run.navigationTarget = ExportNavigationTarget(level: level, text: annotation.text, id: "target_\(targetCount)")
+        }
+        return run
+    }
+
+    /// The block that marks the place `run` marks.
+    private static func block(ofPlace run: ExportRun) -> ExportBlock? {
+        if let page = run.pageBreak { return .pageBreak(page) }
+        if let target = run.navigationTarget { return .navigationTarget(target) }
+        return nil
+    }
+
+    /// `runs` as the runs that mark places they hold, in order, and the runs
+    /// that are text, neighbours of one style joined again where a place was
+    /// between them.
+    private static func splittingPlaces(from runs: [ExportRun]) -> (places: [ExportRun], text: [ExportRun]) {
+        (runs.filter(\.isPlace), joined(runs.filter { !$0.isPlace }))
+    }
+
+    /// `blocks` without the contents targets that stand where another entry
+    /// of the contents already does, as the reader (`MarkdownDocParser`) keeps
+    /// one navigation row for a place: a target with no words between it and
+    /// a heading is that heading's place, and of several targets with none
+    /// between them only the first is kept. Only the chapter's own blocks, not
+    /// those inside a list or quote, are looked at; a target kept by mistake
+    /// there costs one more entry, never one fewer.
+    private static func droppingRedundantTargets(from blocks: [ExportBlock]) -> [ExportBlock] {
+        // Whether the next block that has words is a heading, for each block,
+        // found in one pass from the end.
+        var headingFollows = [Bool](repeating: false, count: blocks.count)
+        var nextWordsAreHeading = false
+        for index in blocks.indices.reversed() {
+            headingFollows[index] = nextWordsAreHeading
+            switch blocks[index] {
+            case .pageBreak, .navigationTarget: break
+            case .heading: nextWordsAreHeading = true
+            default: nextWordsAreHeading = false
+            }
+        }
+
+        var kept: [ExportBlock] = []
+        // Whether a target was kept with nothing but places since.
+        var targetIsHere = false
+        for (index, block) in blocks.enumerated() {
+            switch block {
+            case .navigationTarget:
+                if headingFollows[index] || targetIsHere { continue }
+                targetIsHere = true
+            case .pageBreak:
+                break
+            default:
+                targetIsHere = false
+            }
+            kept.append(block)
+        }
+        return kept
     }
 
     /// The blocks of a list whose items are `list`'s children. Past the
@@ -285,50 +439,107 @@ private struct Walk {
 
     /// `table` as an `ExportTable`, its cells as plain text, or nil when it
     /// has no row left. A head row whose cells are all empty is left out, and
-    /// the table has no header row.
-    private static func table(of table: Markdown.Table) -> ExportTable? {
-        let head = Array(table.head.cells).map(cellText)
-        let body = Array(table.body.rows).map { Array($0.cells).map(cellText) }
-        let hasHeaderRow = head.contains { !$0.isEmpty }
-        let rows = (hasHeaderRow ? [head] : []) + body
-        return rows.isEmpty ? nil : ExportTable(rows: rows, hasHeaderRow: hasHeaderRow)
+    /// the table has no header row. Also the blocks to put before the table:
+    /// the contents targets in its cells, and the pages in a head row that is
+    /// left out. The pages that start in the other cells stay in them
+    /// (`ExportTable.cellPages`).
+    private mutating func table(of table: Markdown.Table) -> (before: [ExportBlock], table: ExportTable?) {
+        var before: [ExportBlock] = []
+        var rows: [[String]] = []
+        var found: [ExportCellPage] = []
+        let allRows = [Array(table.head.cells)] + table.body.rows.map { Array($0.cells) }
+        for (rowIndex, cells) in allRows.enumerated() {
+            var texts: [String] = []
+            for (column, cell) in cells.enumerated() {
+                let cellText = self.cellText(cell, hoisting: &before)
+                texts.append(cellText.text)
+                found += cellText.pages.map { ExportCellPage(row: rowIndex, column: column, offset: $0.offset, page: $0.page) }
+            }
+            rows.append(texts)
+        }
+        // A head row of empty cells is left out, and the rows after it move up.
+        let hasHeaderRow = rows[0].contains { !$0.isEmpty }
+        if !hasHeaderRow { rows.removeFirst() }
+        var cellPages: [ExportCellPage] = []
+        for var cellPage in found {
+            if hasHeaderRow {
+                cellPages.append(cellPage)
+            } else if cellPage.row == 0 {
+                before.append(.pageBreak(cellPage.page))
+            } else {
+                cellPage.row -= 1
+                cellPages.append(cellPage)
+            }
+        }
+        return (before, rows.isEmpty ? nil : ExportTable(rows: rows, hasHeaderRow: hasHeaderRow, cellPages: cellPages))
     }
 
     /// A cell's words as one line: its runs' plain text with every line feed
-    /// a space, trimmed.
-    private static func cellText(_ cell: Markdown.Markup) -> String {
-        runs(of: cell).plainText
-            .replacingOccurrences(of: "\n", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+    /// a space, trimmed. Also the pages that start in it, each with how many
+    /// Characters of the words come before it; the targets that start in it
+    /// join `hoisted`.
+    private mutating func cellText(
+        _ cell: Markdown.Markup,
+        hoisting hoisted: inout [ExportBlock]
+    ) -> (text: String, pages: [(offset: Int, page: ExportPageBreak)]) {
+        var text = ""
+        var pages: [(offset: Int, page: ExportPageBreak)] = []
+        for run in runs(of: cell) {
+            if let page = run.pageBreak {
+                pages.append((text.count, page))
+            } else if let target = run.navigationTarget {
+                hoisted.append(.navigationTarget(target))
+            } else {
+                text += run.text
+            }
+        }
+        // Line feeds are spaces, one Character each; trimming moves the pages.
+        let spaced = text.replacingOccurrences(of: "\n", with: " ")
+        let trimmed = spaced.trimmingCharacters(in: .whitespacesAndNewlines)
+        let leading = spaced.prefix(while: { $0.isWhitespace }).count
+        return (trimmed, pages.map { (min(max($0.offset - leading, 0), trimmed.count), $0.page) })
     }
 
     // MARK: Runs
 
     /// The runs of `container`'s inline children, for a heading, a paragraph,
     /// or a table cell: neighbouring runs of one style joined, runs with no
-    /// text dropped, and white space and line feeds trimmed from both ends.
-    static func runs(of container: Markdown.Markup) -> [ExportRun] {
-        var runs = joined(inlineRuns(of: container, style: ExportRun("")))
-        // Trim the first run's start and the last run's end, dropping any
-        // run that trimming empties, until each end has text.
-        while let first = runs.first {
-            let trimmed = first.text.drop { $0.isWhitespace || $0.isNewline }
+    /// text dropped (but for the start of a page), and white space and line
+    /// feeds trimmed from both ends of the text.
+    mutating func runs(of container: Markdown.Markup) -> [ExportRun] {
+        var runs = Self.joined(inlineRuns(of: container, style: ExportRun("")))
+        // Trim the first run that has text at its start and the last at its
+        // end, dropping any run that trimming empties, until each end has
+        // text. A page that starts there stays where it is.
+        var index = 0
+        while index < runs.count {
+            if runs[index].isPlace {
+                index += 1
+                continue
+            }
+            let trimmed = runs[index].text.drop { $0.isWhitespace || $0.isNewline }
             if trimmed.isEmpty {
-                runs.removeFirst()
+                runs.remove(at: index)
             } else {
-                runs[0].text = String(trimmed)
+                runs[index].text = String(trimmed)
                 break
             }
         }
-        while let last = runs.last {
-            var text = last.text
+        index = runs.count - 1
+        while index >= 0 {
+            if runs[index].isPlace {
+                index -= 1
+                continue
+            }
+            var text = runs[index].text
             while let end = text.last, end.isWhitespace || end.isNewline {
                 text.removeLast()
             }
             if text.isEmpty {
-                runs.removeLast()
+                runs.remove(at: index)
+                index -= 1
             } else {
-                runs[runs.count - 1].text = text
+                runs[index].text = text
                 break
             }
         }
@@ -338,12 +549,14 @@ private struct Walk {
     /// The runs of `markup`'s children in `style` (an `ExportRun` with empty
     /// text, carrying the emphasis, strength, code, and link of the markup
     /// around them), before neighbours are joined.
-    private static func inlineRuns(of markup: Markdown.Markup, style: ExportRun) -> [ExportRun] {
-        markup.children.flatMap { child -> [ExportRun] in
+    private mutating func inlineRuns(of markup: Markdown.Markup, style: ExportRun) -> [ExportRun] {
+        var made: [ExportRun] = []
+        for child in markup.children {
             var inner = style
             switch child {
             case let text as Markdown.Text:
-                return [styled(text.string, like: style)]
+                made.append(Self.styled(text.string, like: style))
+                continue
             case is Markdown.Emphasis:
                 inner.isEmphasis = true
             case is Markdown.Strong:
@@ -352,7 +565,8 @@ private struct Walk {
                 break // keeps the style it is in
             case let code as Markdown.InlineCode:
                 inner.isCode = true
-                return [styled(code.code, like: inner)]
+                made.append(Self.styled(code.code, like: inner))
+                continue
             case let link as Markdown.Link:
                 // Only a web or mail address becomes a link; any other
                 // link's words are plain text in the style they had.
@@ -362,18 +576,32 @@ private struct Walk {
             case is Markdown.Image:
                 break // its alternative text, in the style it is in; never its source
             case is Markdown.SoftBreak:
-                return [styled(" ", like: style)]
+                made.append(Self.styled(" ", like: style))
+                continue
             case is Markdown.LineBreak:
-                return [styled("\n", like: style)]
-            case is Markdown.InlineHTML:
-                return [] // dropped, ahead of the container case below
+                made.append(Self.styled("\n", like: style))
+                continue
+            case let html as Markdown.InlineHTML:
+                // Dropped, ahead of the container case below, but for a page
+                // start or a contents target where the walk keeps them: a run
+                // of its own at its exact place in the text, in the style it
+                // is in.
+                if let marker = MarkdownMarker.decode(html.rawHTML), var found = place(of: marker) {
+                    found.isEmphasis = style.isEmphasis
+                    found.isStrong = style.isStrong
+                    found.isCode = style.isCode
+                    found.link = style.link
+                    made.append(found)
+                }
+                continue
             case is Markdown.InlineContainer:
                 break // any other container: its children
             default:
-                return [] // any other inline: nothing
+                continue // any other inline: nothing
             }
-            return inlineRuns(of: child, style: inner)
+            made += inlineRuns(of: child, style: inner)
         }
+        return made
     }
 
     /// A run of `text` in the style of `style`.
@@ -384,10 +612,10 @@ private struct Walk {
     }
 
     /// `runs` with neighbours of one style (`hasSameStyle(as:)`) joined into
-    /// one run, and runs with no text dropped.
+    /// one run, and runs with no text dropped, but for the start of a page.
     private static func joined(_ runs: [ExportRun]) -> [ExportRun] {
         var result: [ExportRun] = []
-        for run in runs where !run.text.isEmpty {
+        for run in runs where !run.text.isEmpty || run.isPlace {
             if let last = result.last, last.hasSameStyle(as: run) {
                 result[result.count - 1].text += run.text
             } else {

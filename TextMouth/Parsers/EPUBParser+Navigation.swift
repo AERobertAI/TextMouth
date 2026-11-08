@@ -274,7 +274,7 @@ extension EPUBParser {
         let doc: Document
         let title: String
         do {
-            doc = try SwiftSoup.parse(html)
+            doc = try MarkupGuard.parse(html)
             title = try doc.title()
 
             // Some converted EPUBs have an incomplete machine TOC but a full
@@ -401,7 +401,7 @@ extension EPUBParser {
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             navigationDocumentPaths.insert(path)
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for toc in tableOfContentsNavigations(in: doc) {
@@ -421,7 +421,7 @@ extension EPUBParser {
             let path = ParserUtilities.resolvedPackagePath(href, relativeTo: opfPath, preserveFragment: false)
             guard !navigationDocumentPaths.contains(path),
                   let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             let fragment = ParserUtilities.splitFragment(href).fragment
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment, readingFlow: readingFlow) {
@@ -434,7 +434,7 @@ extension EPUBParser {
     /// What `body` makes of the EPUB 2 NCX the package declares through the
     /// spine's `toc` attribute, or else of its first manifest item of an NCX
     /// media type, given its path inside the archive and its document, read
-    /// as every XML file of the book is (`readingXML(_:_:)`); nil when there
+    /// as every XML file of the book is (`readingXML(_:file:_:)`); nil when there
     /// is none or it cannot be read.
     private static func withNCX<Result>(
         archive: IndexedArchive,
@@ -447,7 +447,7 @@ extension EPUBParser {
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
         guard let xml = try? extractString(archive: archive, path: path) else { return nil }
-        return try? readingXML(xml) { body(path, $0) }
+        return try? readingXML(xml, file: path) { body(path, $0) }
     }
 
     // MARK: - Page Lists
@@ -470,7 +470,7 @@ extension EPUBParser {
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             for list in pageListContainers(in: doc) {
                 for link in elements(in: list, pruning: { _ in false }) where link.tagName() == "a" {
                     guard link.hasAttr("href") else { continue }

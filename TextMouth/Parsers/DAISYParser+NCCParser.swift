@@ -81,7 +81,7 @@ struct DAISY202NCCParser {
             )
         }
         var result = DAISY202NCCResult()
-        Self.collect(from: try SwiftSoup.parse(html), into: &result)
+        Self.collect(from: try MarkupGuard.parse(html), into: &result)
         return result
     }
 
