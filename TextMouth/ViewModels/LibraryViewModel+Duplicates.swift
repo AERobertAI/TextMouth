@@ -102,7 +102,8 @@ extension LibraryViewModel {
                 book: book,
                 existing: existing,
                 originalURL: originalURL,
-                warning: warning
+                warning: warning,
+                transcriptOutcome: DuplicateReplacement.transcriptOutcome(replacing: existing, with: book)
             )
             // Before the question is queued: a quit or a crash before its
             // answer then leaves a package the next launch discards, rather
@@ -459,7 +460,16 @@ extension LibraryViewModel {
                 priority: .medium
             )
         }
-        finishKeeping(preparation.book, from: duplicate, of: decision, offeringTranscription: !preparation.keptTranscript)
+        if let brought = preparation.broughtTranscriptNotUsed {
+            // The transcript file found beside the new copy's audio, which
+            // the old copy's transcript took the place of, as the question
+            // said, is named with the way to use it after all (B1).
+            VoiceOverAnnouncer.announce(
+                TranscriptionWording.broughtTranscriptNotUsed(fileName: brought.fileName),
+                priority: .medium
+            )
+        }
+        finishKeeping(preparation.book, from: duplicate, of: decision, offeringTranscription: !preparation.hasTranscript)
         return .success(nil)
     }
 
@@ -539,7 +549,7 @@ extension LibraryViewModel {
         ReadingTextCache.shared.remove(bookID: existing.id)
         endEditingSessions(of: existing)
         if book.format.isAudio || existing.format.isAudio {
-            TranscribedBooks.shared.record(book.id, isTranscribed: preparation.keptTranscript)
+            TranscribedBooks.shared.record(book.id, isTranscribed: preparation.hasTranscript)
         }
         DiagnosticLog.event(.storage, Self.replacementLogLine(for: book, preparation: preparation))
     }

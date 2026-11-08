@@ -15,6 +15,13 @@ import SwiftUI
 /// picker (FMT18) chooses Markdown, today's export, or a text writer (HTML,
 /// RTF, Word); the checkbox's label and hint then name the writer, and the
 /// writer's own options view, when it has one, shows under the row.
+///
+/// For one text book, a "Text as spoken audio" checkbox (FMT43) shows its
+/// options under it while it is checked: the format, the range of headings,
+/// the rate, and the pitch (`SpeechExportOptionsView`). While that export runs,
+/// the progress bar says which chapter is being spoken, and then that the file
+/// is being encoded, and Stop's hint says that the chapters already spoken are
+/// kept.
 struct BookExportSheet: View {
     /// The dialog's state, and the export.
     @ObservedObject var model: BookExportModel
@@ -111,9 +118,11 @@ struct BookExportSheet: View {
 
     /// The Convert to picker of `kind`: a pop-up menu of Markdown and the
     /// writers, spoken as "Convert to", with the choice made as its value and
-    /// what that choice exports as its hint.
+    /// what that choice exports as its hint. Beside Transcript (FMT23), a
+    /// menu of JSON and Markdown, the writers, and the formats of captions,
+    /// spoken as "Convert transcript to" (`BookExportWording.convertToLabel(for:)`).
     private func conversionPicker(for kind: BookExportKind) -> some View {
-        Picker(BookExportWording.convertToLabel, selection: conversionBinding(for: kind)) {
+        Picker(BookExportWording.convertToLabel(for: kind), selection: conversionBinding(for: kind)) {
             ForEach(model.conversionChoices(for: kind)) { option in
                 Text(option.name).tag(option.id)
             }
@@ -121,18 +130,24 @@ struct BookExportSheet: View {
         .pickerStyle(.menu)
         .fixedSize()
         .disabled(model.isExporting)
-        .accessibilityLabel(BookExportWording.convertToLabel)
+        .accessibilityLabel(BookExportWording.convertToLabel(for: kind))
         .accessibilityValue(model.conversionChoice(for: kind)?.name ?? "")
         .accessibilityHint(model.conversionChoice(for: kind)?.hint ?? "")
     }
 
     /// The folder the items go to, and the button choosing another.
+    ///
+    /// The folder's name never widens the dialog: the line takes the room
+    /// the button leaves, at no width of its own when the dialog is sized,
+    /// and a name too long for it is shortened in its middle on screen.
+    /// VoiceOver and a braille display still get the whole name. Without
+    /// this, a long name made the dialog as wide as the name itself.
     private var destination: some View {
         HStack {
             Text(BookExportWording.destination(folderName: BookExportWording.folderName(of: model.destination)))
                 .lineLimit(1)
                 .truncationMode(.middle)
-            Spacer()
+                .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
             Button(BookExportWording.chooseFolderTitle) {
                 model.chooseDestination(from: window)
             }
@@ -142,11 +157,11 @@ struct BookExportSheet: View {
     }
 
     /// The export's progress bar, labelled and valued with `text`, as in
-    /// "Exporting 3 of 40 items…".
+    /// "Exporting 3 of 40 items…" or "Speaking chapter 3 of 12…".
     private func progressBar(_ text: String) -> some View {
         Group {
-            if case .exporting(let done, let total) = model.phase, total > 0 {
-                ProgressView(value: Double(done), total: Double(total)) {
+            if let fraction = model.progressFraction {
+                ProgressView(value: fraction, total: 1) {
                     Text(text)
                 }
             } else {
@@ -169,7 +184,7 @@ struct BookExportSheet: View {
                     model.stop()
                 }
                 .keyboardShortcut(.cancelAction)
-                .accessibilityHint(BookExportWording.stopHint)
+                .accessibilityHint(model.isExportingSpeech ? SpeechExportWording.stopHint : BookExportWording.stopHint)
             } else {
                 Button(model.summary == nil ? BookExportWording.cancelTitle : BookExportWording.closeTitle) {
                     close()

@@ -197,12 +197,13 @@ final class UnsavedChangesTerminationGuard {
 
 /// Holds a quit that is sure to go ahead, with nothing unsaved or Quit
 /// Anyway chosen, while work a quit must not cut off reaches a safe end:
-/// feed downloads keeping their place (`FeedQuitHold`, FR03), and a book's
+/// feed downloads keeping their place (`FeedQuitHold`, FR03), a book's
 /// text being read again in another encoding (`TextRereads`,
-/// encodingchoice). The application delegate answers `.terminateLater`
-/// while it holds, and TextMouth quits once each piece of work has ended, or
-/// has had the longest it may wait, so a quit that leaves TextMouth open
-/// never stops anything.
+/// encodingchoice), and a book being spoken into an audio file, stopped with
+/// its chapters kept (`SpeechExportsUnderWay`, FMT43). The application
+/// delegate answers `.terminateLater` while it holds, and TextMouth quits
+/// once each piece of work has ended, or has had the longest it may wait, so
+/// a quit that leaves TextMouth open never stops anything.
 @MainActor
 enum QuitHold {
     /// One piece of work a quit may wait for.

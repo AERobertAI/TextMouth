@@ -435,6 +435,15 @@ enum DuplicateReplacement {
         let book: Book
         /// Whether the old copy's transcript went into the new package.
         let keptTranscript: Bool
+        /// Whether the new package holds a transcript, the old copy's or the
+        /// one the new copy brought from a file beside its audio (FMT23): what
+        /// the library row and the offer to transcribe follow.
+        let hasTranscript: Bool
+        /// The transcript the new copy brought from a file beside its audio
+        /// that the old copy's took the place of (`TranscriptOutcome`), so the
+        /// listener can be told it was not used; nil when it brought none, or
+        /// it stayed.
+        let broughtTranscriptNotUsed: BroughtTranscript?
         /// The copy of the old copy's text kept now beside the new text, when
         /// one was made.
         let keptText: URL?
@@ -478,6 +487,9 @@ enum DuplicateReplacement {
         /// The transcript kept before its cleanup, as the new package takes
         /// it, with the transcript.
         var transcriptBeforeCleanup: Data?
+        /// The transcript the new copy brought from a file beside its audio,
+        /// when the old copy's is carried over it.
+        var broughtTranscriptNotUsed: BroughtTranscript?
         /// The old copy's places as the new copy keeps them.
         var places = PlaceRelocator.Places()
     }
@@ -574,6 +586,11 @@ enum DuplicateReplacement {
         return Preparation(
             book: book,
             keptTranscript: carried.transcript != nil,
+            // The package as it is now: the transcript carried over, or the
+            // one the new copy brought (S1).
+            hasTranscript: carried.transcript != nil
+                || FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: movedTo).path),
+            broughtTranscriptNotUsed: carried.broughtTranscriptNotUsed,
             keptText: keptText,
             publishedAt: publishedAt,
             movedTo: movedTo,
@@ -617,6 +634,9 @@ enum DuplicateReplacement {
             let transcript = try readTranscript(in: old, names: names, for: copy)
             carried.transcript = transcript.carried
             carried.transcriptBeforeCleanup = transcript.beforeCleanup
+            if transcript.carried != nil {
+                carried.broughtTranscriptNotUsed = broughtTranscript(of: copy)
+            }
             // An audiobook's text is its transcript's. Kept beside the new
             // copy: a save its transcript's layer does not account for, and,
             // when the transcript stays behind, the text of a transcript the
@@ -722,6 +742,65 @@ enum DuplicateReplacement {
         }
     }
 
+    // MARK: Two Transcripts (FMT23, B1)
+
+    /// What Replace Existing does with the transcripts of two audiobooks when
+    /// the new copy brought one from a file beside its audio (FMT23), as the
+    /// duplicate question tells it before it is answered.
+    enum TranscriptOutcome: Equatable, Sendable {
+        /// Nothing to choose: the new copy brought no transcript, the old copy
+        /// has none, or either is not an audiobook. The old copy's
+        /// transcript, if any, is kept when the audio is the same, as ever.
+        case asBefore
+        /// The old copy's transcript is kept when the audio is the same, and
+        /// the transcript the new copy brought is not used: recognition made
+        /// it, the listener edited or cleaned it up, or this TextMouth cannot
+        /// tell, as for one of a later layout or only in the cloud.
+        case keepsExisting
+        /// The transcript the new copy brought takes the place of the old
+        /// copy's, which came from outside and which the listener never
+        /// touched.
+        case broughtReplacesExisting
+    }
+
+    /// What Replace Existing does with the transcripts of `existing`, the
+    /// library's copy, and `copy`, the new one (`TranscriptOutcome`): a look
+    /// at the new package, and a read of the old transcript's provenance
+    /// without its sentences, downloading nothing (`TranscriptStore.provenance`).
+    static func transcriptOutcome(replacing existing: Book, with copy: Book) -> TranscriptOutcome {
+        guard existing.format.isAudio, copy.format.isAudio,
+              TranscriptStore.hasTranscript(of: copy), TranscriptStore.hasTranscript(of: existing) else { return .asBefore }
+        guard let provenance = TranscriptStore.provenance(in: existing.tmbDirectory), provenance.isOfThisLayout,
+              givesWayToABroughtTranscript(source: provenance.source, isTouched: provenance.isTouched) else {
+            return .keepsExisting
+        }
+        return .broughtReplacesExisting
+    }
+
+    /// Whether an old copy's transcript, from `source` (nil for one
+    /// recognition made) and touched by the listener or not, gives way to a
+    /// transcript the new copy brought: only one from outside the listener
+    /// never edited nor cleaned up (B1). The question and the replacement
+    /// both ask this, so they never disagree.
+    private static func givesWayToABroughtTranscript(source: TranscriptSource?, isTouched: Bool) -> Bool {
+        source != nil && !isTouched
+    }
+
+    /// A transcript the new copy brought from a file beside its audio.
+    struct BroughtTranscript: Equatable, Sendable {
+        /// The file's name, when the transcript came from one file; nil when
+        /// several tracks each brought one.
+        let fileName: String?
+    }
+
+    /// The transcript `copy`'s package holds from a file found beside its
+    /// audio at import (FMT23), or nil when it holds none.
+    private static func broughtTranscript(of copy: Book) -> BroughtTranscript? {
+        guard copy.format.isAudio, let provenance = TranscriptStore.provenance(in: copy.tmbDirectory),
+              provenance.source?.knownOrigin == .imported else { return nil }
+        return BroughtTranscript(fileName: provenance.source?.fileName)
+    }
+
     /// What the old copy's transcript comes to in a replacement: the bytes
     /// the new package takes, when the new copy's audio is the audio
     /// transcribed, with the transcript kept before its cleanup; and whether
@@ -759,6 +838,17 @@ enum DuplicateReplacement {
             return TranscriptCarried()
         }
         var result = TranscriptCarried(wasEdited: transcript.editedAt != nil)
+        // A transcript from outside the listener never touched gives way to
+        // the one the new copy brought from a file beside its audio (FMT23);
+        // one recognition made, or the listener edited or cleaned up, is
+        // carried over it, as the question said (`TranscriptOutcome`, B1).
+        if copy.format.isAudio, TranscriptStore.hasTranscript(of: copy),
+           givesWayToABroughtTranscript(
+               source: transcript.source,
+               isTouched: transcript.editedAt != nil || transcript.cleanedUp != nil
+           ) {
+            return result
+        }
         guard copy.format.isAudio,
               let index = (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex,
               let fitted = fitted(

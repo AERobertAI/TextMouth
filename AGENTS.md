@@ -88,6 +88,16 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 8, 2026
+
+- Main is version 0.4.2: spoken-audio export (M4B, M4A, or MP3 in a chosen voice, a chapter at each heading), transcripts that come with podcasts and audiobooks, symbols in `.docx` and Word 2003 XML documents, and the markup guard's large stack, so a book nested however deeply can't crash TextMouth. Full suite 11,151 tests, 81 skipped, 0 failures; `make typecheck-ios` 0 errors, 0 warnings. At the first launch, `.docx` and `.wordml` books are read again once (1.3.0).
+- Not on main yet: KF8 Kindle books (`readers/azw3`, with main merged and KF8 going through the guard, waiting on its train and then a narrow check), and the iPhone interface (`ios/lead-1108`, `ios/interface` with main merged, before its first run in the simulator). The hand checks and the one question 0.4.2 leaves, listening while a spoken-audio export runs, are in `humanQuestions/2026-11-08.md`.
+- Lessons of that day, which hold for any campaign:
+  - `make typecheck-mac` and `make typecheck-ios` check HEAD's commit as it was when they started (`git archive`), not the working tree. Commit first, and start them again after later commits.
+  - A clean textual merge of `project.pbxproj` can still leave out a branch's new file when the branch never listed it and relied on the train's regeneration. Run `Scripts/agents/regenerate-project.py` after every merge, clean or not.
+  - `git merge-tree --write-tree` and `git commit-tree` scout a chain of merges for conflicts without touching the working tree.
+  - A narrow check of each branch on Sonnet, from one shared brief (`Scripts/agents/briefs/2026-11-08/verify-common.md`), took 2 to 18 minutes and found what the fix rounds had missed: two guards no test pinned, a policy test too loose to fail, and a measurement that settled less than its report said.
+
 ## Where things stood on November 7, 2026
 
 - Main is version 0.4.1: the follow-up sweep, the reader follow-ups, EPUB 3 export, Word 6 and Word 95 documents with symbols read by their font, and the markup guard, which closes three ways a damaged or crafted book, web page, or feed could crash TextMouth. Full suite 10,631 tests, 78 skipped, 0 failures; `make typecheck-ios` 0 errors, 0 warnings. At the first launch, `.doc` books are read again once (1.3.0), and `.docx` and `.wordml` books once (1.2.0).

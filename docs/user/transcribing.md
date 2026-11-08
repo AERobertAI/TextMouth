@@ -18,3 +18,60 @@ Transcribing an audiobook needs macOS 26 or later.
 - A rule has a pattern and a replacement; wholeWord, true unless set, which matches whole words only, keeping the punctuation around them and a possessive "'s" after them, as "Bennett's" becomes "Bennet's", where false matches inside words too; evidence, how many places it was right in, 0 for a rule of your own; and an optional note. Matching ignores case and the kind of apostrophe, the replacement takes the case of the words it replaces, and the rules apply in order. Your copy can't be used when TextMouth can't read it in that format, or when its version is below 1, its date isn't a day written as 2026-10-04, or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again: the sheet says why, naming the field, as in "rules[2].replacement is empty", a copy of it is kept beside it, its name followed by .unreadable- and the date and time, and TextMouth's own rules stand in until you correct it. While your copy is only in the cloud, TextMouth asks the sync service for it, and its own rules stand in meanwhile. When TextMouth's own rules are newer than your copy, the sheet says so.
 - Delete Transcript…, in the same places for a transcribed audiobook, asks first, naming the book and saying when your edits go too, then deletes the transcript, the copy kept from before its last cleanup, the text made from it, and the reading text kept for the book. The audio, your place, and your bookmarks stay, and the book can be transcribed again. While the book is being transcribed, Delete Transcript… says to cancel the transcription first.
 - The Playback tab of Settings has a Transcription group. Transcription language lists the languages the recognizer supports, each marked installed or needs download. Offer to transcribe after importing an audiobook, off by default, asks after each audiobook TextMouth imports, after the import's other questions, "Transcribe the Audiobook?": Transcribe, which Return presses, opens the sheet, which starts at once when the language's model is on this Mac, and otherwise offers the model's download, after which you choose Transcribe, and Not Now, which Escape presses, leaves the book as it is.
+
+## Transcripts that come from a file
+
+Part of version 0.4.2. A transcript need not be made by recognition. An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any macOS, and nothing is transcribed.
+
+### Attach Transcript…
+
+- Attach Transcript… is in an open audiobook's Book menu. It is offered for the audiobooks that Transcribe Audio… is offered for: an audiobook in a package of its own.
+- It opens an Open panel. The panel says "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of Moby-Dick. Its times count from the start of the book's audio." and its button is Attach.
+- A book of several tracks takes one file for the whole book, whose times run on across the tracks.
+- While the file is saved, VoiceOver hears "Attaching “lecture.vtt” to Moby-Dick." When it is done, VoiceOver hears "Attached “lecture.vtt” to Moby-Dick: 7,077 words."
+- If some timed passages of the file could not be read, the sentence goes on, as in "1 timed passage couldn't be read and was left out."
+- The book's text is then the transcript, and the book's row says Transcribed.
+
+### When a book has a transcript already
+
+- A confirmation asks first, headed "Replace the Transcript of Moby-Dick?". It says "The transcript from “lecture.vtt” replaces the book's transcript and the text made from it." and then what stays: the audio, your place, and your bookmarks.
+- If you edited the transcript, it adds "Your edits to the transcript are replaced too." If you cleaned it up, it adds "Its cleanup is replaced too."
+- Its button is Replace Transcript.
+
+### When Attach Transcript… does nothing
+
+- Each reason is said in an alert titled Attach Transcript.
+- The file is neither .vtt nor .srt: "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."
+- The item is not a plain file, such as a named pipe: "That item isn't a plain file TextMouth can read."
+- The file can't be used: "“lecture.vtt” wasn't attached to Moby-Dick:" and the reason, such as "The file isn't a WebVTT transcript TextMouth can read."
+- The book is being transcribed: "Moby-Dick is being transcribed. Cancel the transcription first, or attach the transcript once it finishes."
+
+### While a transcript is being attached
+
+- Transcribe Audio… is dimmed for that book. From any other route, a notice titled Transcribe Audio says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes."
+- Attach Transcript… is dimmed for the book too, so a second file is never attached over the first.
+
+### A transcript beside the audio at import
+
+- When you import an audiobook, TextMouth looks for a transcript file named as a track is: lecture.vtt beside lecture.m4a, or 03.vtt beside 03.mp3. It looks in a single file's folder, a folder of tracks, a ZIP, or a playlist's folder.
+- WebVTT is preferred when both a .vtt and an .srt are there. Each track takes its own file, and the times run on across tracks.
+- The file becomes the book's transcript. No transcription is offered for that book afterwards, and its row says Transcribed as soon as it is listed.
+- A file that can't be used never fails the import. Once the import is done, VoiceOver hears "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript:" and the reason.
+- For several files: "These transcript files were beside the audio but weren't attached: “03.vtt”, “07.vtt”, and “09.srt”. The debug log says why." At most five are named, then how many more.
+- A file read from this Mac may be up to 20 MB.
+
+### Where a transcript came from
+
+- Book Information has a read-only detail named Transcript, which says where the book's transcript came from and when. VoiceOver reads it as "Transcript: " and the line.
+- Made by recognition: "Transcribed on October 4, 2026, in English (United States)."
+- Attached: "Attached from “lecture.vtt” on October 30, 2026." With several files, or a file whose name isn't known, it says "Attached from a WebVTT file on …" or "Attached from a file on …".
+- Found at import: "Attached from “lecture.vtt” when the book was imported, on October 30, 2026."
+- A podcast's own: "The podcast's own transcript, downloaded with the episode on November 2, 2026."
+- If you edited it or cleaned it up, the line goes on with "You edited it on …" and "You cleaned it up on …".
+- A transcript only in the cloud: "The transcript is only in the cloud. Its details appear once the book is downloaded." Nothing is downloaded to say it.
+- The Retranscribe Audio… sheet names a transcript from a file in the same words and adds "Transcribing again replaces this transcript."
+
+### Podcast transcripts
+
+- A podcast episode brings its own transcript and chapters when it downloads (see [Podcasts and article feeds](feeds.md)).
+- Downloading an episode again replaces its own transcript with the new one, unless you made or changed the transcript yourself.

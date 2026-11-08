@@ -17,6 +17,7 @@ enum BookExportWording {
         case .originalFile: return "Original file"
         case .markdown: return "Text as Markdown"
         case .plainText: return "Text as plain text"
+        case .spokenAudio: return "Text as spoken audio"
         }
     }
 
@@ -32,6 +33,8 @@ enum BookExportWording {
             return markdownChoiceHint
         case .plainText:
             return "The words TextMouth reads aloud, as plain text, each chapter under its title."
+        case .spokenAudio:
+            return "The book's text spoken by its voice into one audio file, with a chapter for each heading."
         case .originalRecording:
             return "The recording as it was made, before any edits."
         case .originalAudio:
@@ -47,6 +50,14 @@ enum BookExportWording {
     /// The name of the Convert to picker beside the Text as Markdown
     /// checkbox.
     static let convertToLabel = "Convert to"
+
+    /// The name of the Convert to picker beside the checkbox of `kind`:
+    /// "Convert transcript to" beside Transcript (FMT23), so the two pickers
+    /// never sound alike when one export shows both, and `convertToLabel`
+    /// beside any other.
+    static func convertToLabel(for kind: BookExportKind) -> String {
+        kind == .transcript ? "Convert transcript to" : convertToLabel
+    }
 
     /// What the picker calls its first choice, the picker's default: the
     /// book's text as Markdown (`MarkdownExportWriter`).
@@ -69,8 +80,62 @@ enum BookExportWording {
     /// conversion (nil), keeps `hint(for:)`.
     static func hint(for kind: BookExportKind, convertedTo conversionName: String?) -> String {
         guard let conversionName, kind.convertsText else { return hint(for: kind) }
-        return "The book's text as \(conversionName), made from the Markdown TextMouth reads it from."
+        return "The book's text as \(conversionName), \(madeFromTheMarkdown)"
     }
+
+    /// Where a text writer's file comes from, which every hint of one ends
+    /// with: a text book's, and a transcript's text (`transcriptTextHint(as:)`).
+    private static let madeFromTheMarkdown = "made from the Markdown TextMouth reads it from."
+
+    // MARK: A Transcript's Convert To (FMT23)
+
+    /// What the Transcript checkbox's picker calls its first choice, its
+    /// default: the transcript as TextMouth keeps it, today's export.
+    static let transcriptJSONChoiceName = "JSON and Markdown"
+
+    /// What the picker's hint says while JSON and Markdown is chosen.
+    static let transcriptJSONChoiceHint = "The transcript as TextMouth keeps it, in JSON, with its text as Markdown."
+
+    /// Why a book's captions were not written when its transcript keeps no
+    /// times, only its text (S4): "The book has no timed transcript to write
+    /// as captions.", after the file's name in the export's failure sentence.
+    static let noTimedTranscriptReason = "The book has no timed transcript to write as captions."
+
+    /// What the picker's hint says while `format` is chosen: what reads the
+    /// format, and how its captions are laid out.
+    static func transcriptChoiceHint(for format: TranscriptExportFormat) -> String {
+        switch format {
+        case .webVTT:
+            return "Captions in \(format.name), which web browsers and most players read: \(captionsLayout)"
+        case .subRip:
+            return "Captions in \(format.name) (.\(format.fileExtension)), which nearly every player reads: \(captionsLayout)"
+        }
+    }
+
+    /// What the Transcript checkbox is called while its transcript is
+    /// written as `conversionName`, a format of captions or a text writer:
+    /// "Transcript as WebVTT", "Transcript as HTML".
+    static func transcriptName(as conversionName: String) -> String {
+        "\(name(of: .transcript)) as \(conversionName)"
+    }
+
+    /// What the Transcript checkbox exports while its transcript is written
+    /// as captions in `format`: its hint.
+    static func transcriptHint(as format: TranscriptExportFormat) -> String {
+        "The transcript as \(format.name) captions, \(captionsLayout)"
+    }
+
+    /// What the Transcript checkbox exports while its text is written by the
+    /// text writer named `writerName` (TODO 3984): its hint, "The
+    /// transcript's text as HTML, made from the Markdown TextMouth reads it
+    /// from."
+    static func transcriptTextHint(as writerName: String) -> String {
+        "The transcript's text as \(writerName), \(madeFromTheMarkdown)"
+    }
+
+    /// How an export lays out a transcript's captions, which every hint of
+    /// captions ends with.
+    private static let captionsLayout = "one file for the book, timed from the start of its audio."
 
     // MARK: The Dialog
 
@@ -117,6 +182,12 @@ enum BookExportWording {
     /// 12 files, 340 MB", "Audio, 2 books, 680 MB, 1 book in the cloud", or
     /// "Text as Markdown, in the cloud". A converted text says no size:
     /// "Text as HTML", "Text as RTF, 2 books, 1 book in the cloud".
+    /// Nor does a transcript written as captions or by a text writer
+    /// (FMT23), which says no count of files either, being one file for each
+    /// book: "Transcript as WebVTT", "Transcript as HTML". Spoken audio, one
+    /// file whose size is unknown until it is spoken (FMT43), says neither a
+    /// size nor a file count: "Text as spoken audio", or "Text as spoken
+    /// audio, in the cloud".
     /// - Parameters:
     ///   - kind: The checkbox's kind.
     ///   - bookCount: How many books the dialog exports from.
@@ -130,6 +201,10 @@ enum BookExportWording {
     ///     and the Markdown's would mislead (RTF of Cyrillic text is about
     ///     3.2 times larger, Word 97-2003 two or more times); nil for the
     ///     kind as it is.
+    ///   - transcriptConversionName: The name of what the transcript is
+    ///     written as (FMT23), a format of captions ("WebVTT") or a text
+    ///     writer ("HTML"), which the label names; nil for the transcript as
+    ///     TextMouth keeps it. Every other kind ignores it.
     static func choiceLabel(
         kind: BookExportKind,
         bookCount: Int,
@@ -137,20 +212,24 @@ enum BookExportWording {
         fileCount: Int,
         byteCount: Int64,
         inCloudCount: Int,
-        convertedTo conversionName: String? = nil
+        convertedTo conversionName: String? = nil,
+        transcriptAs transcriptConversionName: String? = nil
     ) -> String {
-        let converted = conversionName != nil && kind.convertsText
-        var parts = [name(of: kind, convertedTo: conversionName)]
+        let transcriptConversion = kind == .transcript ? transcriptConversionName : nil
+        let converted = (conversionName != nil && kind.convertsText) || transcriptConversion != nil
+        // Spoken audio is one file, whose size is unknown until it is spoken.
+        let spoken = kind == .spokenAudio
+        var parts = [transcriptConversion.map(transcriptName(as:)) ?? name(of: kind, convertedTo: conversionName)]
         if bookCount > 1 {
             if availableItemCount > 0 {
                 parts.append(CountWording.books(availableItemCount))
             }
-        } else if fileCount > 1 {
+        } else if fileCount > 1, !spoken, transcriptConversion == nil {
             parts.append(CountWording.phrase(fileCount, singular: "file", plural: "files"))
         }
-        // A converted file's size is unknown until it is written, and the
-        // Markdown's would mislead, so a conversion says none.
-        if availableItemCount > 0, !converted {
+        // A converted or spoken file's size is unknown until it is written,
+        // and the Markdown's would mislead, so neither says one.
+        if availableItemCount > 0, !converted, !spoken {
             let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
             parts.append(kind == .plainText ? "about \(size)" : size)
         }

@@ -367,6 +367,18 @@ enum TextMouthPaths {
             || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
     }
 
+    /// Name of a podcast episode's chapters, kept beside its audio in its
+    /// package by its download (FMT25), in the normalized form
+    /// `PodcastChapters.normalizedJSON()` writes, and read when the audio is
+    /// analyzed (`BookContentAnalysisService.analyzeAudio`). TextMouth's own
+    /// file, never part of the book (`FileImportService.isPackageContentName`).
+    static let podcastChaptersFileName = "podcastChapters.json"
+
+    /// Path to a podcast episode's chapters inside a .tmb package
+    static func podcastChaptersPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(podcastChaptersFileName)
+    }
+
     /// The name of the folder inside a .tmb package holding the speech
     /// prepared for the book (`cachedAudioDir(in:)`). Packages on disk use
     /// it, so it never changes.

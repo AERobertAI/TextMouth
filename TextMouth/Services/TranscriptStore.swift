@@ -120,6 +120,27 @@ enum TranscriptStore {
         try decoder.decode(Transcript.self, from: bytes)
     }
 
+    // MARK: Book Information
+
+    /// The line Book Information's Transcript detail shows for `book`, or nil
+    /// when it shows none: a book that is not an audiobook, one without a
+    /// package of its own, and one without a transcript the sheet could name
+    /// (`TranscriptionWording.bookInfoLine(for:)`).
+    ///
+    /// The transcript is read on a background queue, as a long book's runs to
+    /// tens of megabytes, and never downloaded: one only in iCloud is told as
+    /// such. The Book Information sheets call it as they appear and show the
+    /// detail once it answers.
+    static func bookInfoLine(for book: Book) async -> String? {
+        guard book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
+        // The package's place is found here, on the caller's actor, so only
+        // a URL crosses to the background queue.
+        let directory = book.tmbDirectory
+        return await OffMainWork.run {
+            TranscriptionWording.bookInfoLine(for: read(from: directory))
+        }
+    }
+
     // MARK: Writing
 
     /// The bytes transcript.json holds for `transcript`.

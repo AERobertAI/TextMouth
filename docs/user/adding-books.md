@@ -329,12 +329,22 @@ Part of [TextMouth's documentation](../../README.md).
 - The question says which file matches which book, as in "“Moby-Dick.epub” matches “Moby-Dick”, which is already in your library. Replace the existing copy, or keep both as separate books?", and then, after a blank line, what Replace Existing keeps of the existing copy and where its files go:
   - For a text book: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it."
   - For an audiobook: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same. Edits of its audio or of its manifest are not kept."
+  - For an audiobook whose new copy came with a transcript file beside its audio (see [Transcribing an audiobook](transcribing.md)), the sentence says which transcript will stay:
+    - Kept: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio. Edits of its audio or of its manifest are not kept."
+    - Replaced: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list. The transcript file found beside the new copy's audio replaces the existing copy's transcript. Edits of its audio or of its manifest are not kept."
   - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
   - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
   - A copy that is missing chapters adds "The copy just imported is incomplete." and what it lacks.
 - The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
 
 ## What Replace Existing keeps
+
+- Which transcript an audiobook keeps (0.4.2), when both copies have one and the new copy's came from a file beside its audio:
+  - The existing copy's transcript stays when recognition made it, when you edited it or cleaned it up, or when this TextMouth can't tell, as for one made by a later version or one only in the cloud. It stays only when the audio is the same, as below.
+  - The existing copy's transcript gives way to the file when it came from outside, from an attached file or a podcast, and you never edited or cleaned it up.
+  - The question tells you which of the two will happen before you answer.
+  - After the answer, when a file was not used, VoiceOver hears "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript: Replacing kept the existing copy's transcript. To use the file instead, open the book and choose Attach Transcript… from the Book menu."
+  - When each of several tracks brought a file, one sentence names them together and gives no Attach Transcript… advice, since that command takes one file for the whole book: "The transcript files beside the audio weren't attached as the book's transcript: Replacing kept the existing copy's transcript."
 
 - Replace Existing makes the new copy the same book as the existing one, under the same ID, so it keeps more than the question names:
   - It keeps the existing copy's date added, its place among the books of its folder when you ordered them by hand, when it was last opened and played, the details you edited by hand in Book Info, and its own voice, speed, pitch, end-of-book choice, and skip units.
