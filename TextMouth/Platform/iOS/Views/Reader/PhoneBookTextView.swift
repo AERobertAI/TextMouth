@@ -70,7 +70,7 @@ final class PhoneBookTextView: UITextView {
     /// Here; forgotten when the passage changes.
     private var rotorSentence: Int?
     /// Whether this view turned off the screen's sleep, which it puts back.
-    private var keepsScreenAwake = false
+    private var endScreenHold: (@MainActor () -> Void)?
     /// The 10-second tick while the app is active and the view on screen.
     private var tick: Timer?
     /// The app's activity observers.
@@ -366,17 +366,17 @@ final class PhoneBookTextView: UITextView {
 
     // MARK: - The Screen's Sleep
 
-    /// Keeps the screen awake while the text has focus.
+    /// Keeps the screen awake while the text has focus, by a hold on the
+    /// app's one keeper of the screen's sleep (`PhoneScreenSleep`).
     private func keepScreenAwake() {
-        guard !keepsScreenAwake else { return }
-        keepsScreenAwake = true
-        UIApplication.shared.isIdleTimerDisabled = true
+        guard endScreenHold == nil else { return }
+        endScreenHold = PhoneScreenSleep.hold()
     }
 
-    /// Lets the screen sleep again, if this view kept it awake.
+    /// Lets the screen sleep again, if this view kept it awake. Only this
+    /// view's hold is let go: another owner's (the import's) stays.
     private func allowScreenSleep() {
-        guard keepsScreenAwake else { return }
-        keepsScreenAwake = false
-        UIApplication.shared.isIdleTimerDisabled = false
+        endScreenHold?()
+        endScreenHold = nil
     }
 }

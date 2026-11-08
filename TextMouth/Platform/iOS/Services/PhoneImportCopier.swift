@@ -64,9 +64,8 @@ final class PhoneImportCopier: ObservableObject {
     private var run: PhoneImportCopyRun?
     /// Ends the background task held while anything imports.
     private var endHold: (@MainActor () -> Void)?
-    /// Whether this copier turned the idle timer off, so it turns back on
-    /// only what it turned off.
-    private var keepsScreenAwake = false
+    /// Lets go of this copier's hold on the screen's sleep, while it has one.
+    private var endScreenHold: (@MainActor () -> Void)?
     /// The pending re-check of the sweep's moment after a quiet period.
     private var sweepCheck: DispatchWorkItem?
     /// Whether `install()` has run.
@@ -370,12 +369,16 @@ final class PhoneImportCopier: ObservableObject {
 
     /// Keeps the screen from locking while an import runs and the app is in
     /// front, so Auto-Lock doesn't stop it; puts back only what this copier
-    /// changed. **Not verified:** another screen that keeps it awake (Book
-    /// content) must agree on one owner of `isIdleTimerDisabled`.
+    /// changed. It holds the screen through `PhoneScreenSleep`, the one keeper
+    /// that Book content shares, so neither lets the screen lock under the
+    /// other.
     private func setScreenKeptAwake(_ awake: Bool) {
-        guard awake != keepsScreenAwake else { return }
-        keepsScreenAwake = awake
-        UIApplication.shared.isIdleTimerDisabled = awake
+        if awake {
+            if endScreenHold == nil { endScreenHold = PhoneScreenSleep.hold() }
+        } else {
+            endScreenHold?()
+            endScreenHold = nil
+        }
     }
 
     /// Sweeps now, later, or not, as `PhoneImportHolding` decides.
