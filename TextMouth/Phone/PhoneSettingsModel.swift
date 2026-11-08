@@ -166,7 +166,7 @@ struct PhoneSettingsAdjustment: Sendable {
         hint: Words.defaultSpeedCaption.rawValue,
         range: SettingsPolicy.wordsPerMinute.range,
         step: 25,
-        words: { PhoneSettingsVocabulary.wordsPerMinute($0) }
+        words: { PhoneVoiceVocabulary.speedValue(wordsPerMinute: $0) }
     )
 
     /// "Default pitch": 0.5 to 2.0, in steps of a tenth, named as the Mac's

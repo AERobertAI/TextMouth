@@ -91,12 +91,4 @@ enum PhoneSettingsVocabulary: String, CaseIterable {
 
     case removalBehavior = "Removal Behavior"
     case confirmBeforeRemoving = "Confirm before removing a book"
-
-    // MARK: Words Built from a Value
-
-    /// A speed as the Mac's slider says it: "200 words per minute". The test
-    /// pins the Mac's own string, which interpolates the same whole number.
-    static func wordsPerMinute(_ wordsPerMinute: Double) -> String {
-        "\(Int(wordsPerMinute)) words per minute"
-    }
 }
