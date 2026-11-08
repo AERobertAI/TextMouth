@@ -355,6 +355,11 @@ final class PhoneReaderModel {
             guard let self, let reader else { return }
             self.move(on: reader, forward: false, source: .command)
         }
+        // The lock screen's skip intervals follow the unit a move goes by.
+        reader.phoneHooks.unitInForce = { [weak self, weak reader] in
+            guard let self, let reader else { return PhoneDefaults.textNavigationUnitDefault }
+            return self.unitInForce(of: reader)
+        }
         #endif
     }
 

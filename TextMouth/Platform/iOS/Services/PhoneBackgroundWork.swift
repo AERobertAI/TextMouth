@@ -61,17 +61,16 @@ enum PhoneBackgroundWork {
             flush: { _ = PhoneLifeCycle.flushPendingWrites(because: "book-stopped-in-background") }
         )
         self.hold = hold
-        // `$reader` tells of each reader as it is about to be set, on the main
-        // actor that sets it, before anything can play it: the hooks are in
-        // place before the first Play.
-        readerSubscription = model.session.$reader.sink { reader in
-            guard let reader else { return }
+        // The session tells of each reader as it makes it, whichever slot it
+        // takes and before anything can play it: the hooks are in place before
+        // the first Play, even for a next book that goes straight behind the
+        // screen.
+        readerSubscription = model.session.readerMade.sink { reader in
             attach(hold, to: reader)
         }
-        // The subscription tells of the reader on screen as it begins; one
-        // already gone behind it, before this ran, is given the hooks too.
-        if let behind = model.session.listeningReader {
-            attach(hold, to: behind)
+        // Readers open before this ran, in either slot, are given the hooks too.
+        for open in [model.session.reader, model.session.listeningReader].compactMap({ $0 }) {
+            attach(hold, to: open)
         }
         installSleepTimerHold(lifeCycle)
         lifeCycle.onDidEnterBackground {

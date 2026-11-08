@@ -43,6 +43,22 @@ struct PhoneRemoteCommandPolicy: Equatable, Sendable {
         self.init(forward: unit, backward: unit)
     }
 
+    /// The commands of a book on the phone: those of the unit in force when the
+    /// phone has filled that in, so that the lock screen promises what a press
+    /// moves by; else those of the shared skip units `forward` and `backward`.
+    @MainActor
+    init(
+        unitInForce: (@MainActor () -> SkipUnit)?,
+        forward: @autoclosure () -> SkipUnit,
+        backward: @autoclosure () -> SkipUnit
+    ) {
+        if let unitInForce {
+            self.init(unit: unitInForce())
+        } else {
+            self.init(forward: forward(), backward: backward())
+        }
+    }
+
     /// The commands before any book is open: targets are installed at launch,
     /// so that a Play can wake the app, and no unit promises anything yet.
     static let noBook = PhoneRemoteCommandPolicy(forward: .sentence, backward: .sentence)

@@ -82,4 +82,20 @@ final class PhoneSettingsDefaultsTests: XCTestCase {
         PhoneDefaults.setFollowInBraille(false, in: store)
         XCTAssertFalse(PhoneDefaults.followInBraille(in: store))
     }
+
+    // MARK: - The Braille Table in config.json
+
+    /// A table config.json refuses is written empty, the file's "keep the
+    /// current choice", so that it is not repaired and logged at every launch;
+    /// a Mac table's value is kept as it is.
+    func testConfigKeepsOnlyABrailleTableItAccepts() {
+        XCTAssertEqual(PhoneDefaults.configBrailleTable(for: "no-such-table.ctb"), "")
+        XCTAssertEqual(PhoneDefaults.configBrailleTable(for: ""), "")
+        XCTAssertEqual(PhoneDefaults.configBrailleTable(for: "mac:fr-bfu-g2.ctb"), "mac:fr-bfu-g2.ctb")
+        // Whatever it writes, reading it back changes nothing.
+        for stored in ["no-such-table.ctb", "mac:fr-bfu-g2.ctb", BrailleTableCatalog.defaultTableID] {
+            let written = PhoneDefaults.configBrailleTable(for: stored)
+            XCTAssertEqual(BrailleTableCatalog.storableValue(written) ?? "", written, stored)
+        }
+    }
 }

@@ -25,6 +25,10 @@ final class PhoneAudioSession {
     /// Follows the phone session's two readers, the one on screen and the one
     /// going on behind it, to attach each reader it opens.
     private var readerSubscriptions: Set<AnyCancellable> = []
+    /// The phone's session, whose readers are asked whether a book plays or
+    /// waits to (`aBookPlaysOrWaits`). Weak: the session outlives the app's
+    /// screens, and this must never keep it.
+    private weak var session: PhoneSession?
     /// The readers attached, each held weakly with what follows its units.
     private var attachedReaders: [AttachedReader] = []
 
@@ -59,6 +63,7 @@ final class PhoneAudioSession {
     /// reader it opens is attached (`attach(_:)`).
     static func install(session: PhoneSession) {
         let audio = PhoneAudioSession.shared
+        audio.session = session
         audio.configure()
         audio.startObserving()
 
@@ -86,31 +91,34 @@ final class PhoneAudioSession {
             reopened.nowPlayingService.updateNowPlayingInfo(title: book.title, author: book.author, isPlaying: false)
         }
 
+        // Each reader is attached once as the session makes it, whichever slot
+        // it takes; the slots' publishers below only watch for readers leaving.
+        session.readerMade.sink { reader in
+            PhoneAudioSession.shared.attach(reader)
+        }
+        .store(in: &audio.readerSubscriptions)
         // Each publisher tells of a reader as it is about to be set, a new one
         // or nil, while the session still holds the one before it.
         session.$reader.sink { [weak session] reader in
-            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.reader, in: session)
+            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.reader)
         }
         .store(in: &audio.readerSubscriptions)
         session.$listeningReader.sink { [weak session] reader in
-            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.listeningReader, in: session)
+            PhoneAudioSession.shared.readerChanges(to: reader, from: session?.listeningReader)
         }
         .store(in: &audio.readerSubscriptions)
     }
 
-    /// One of the session's readers changes from `old` to `new`: a new reader
-    /// is attached, and a reader that has closed by the end of this turn may
-    /// let the session go (`deactivateAfterAReaderCloses(in:)`). One that only
+    /// One of the session's readers changes from `old` to `new`: a reader that
+    /// has closed by the end of this turn may let the session go
+    /// (`deactivateAfterAReaderCloses()`). One that only
     /// moved behind the book on screen, or came forward, keeps it: the
     /// engineer's review (F1) has only a close deactivate.
-    private func readerChanges(to new: ReaderViewModel?, from old: ReaderViewModel?, in session: PhoneSession?) {
-        if let new {
-            attach(new)
-        }
-        guard let session, let old, old !== new else { return }
+    private func readerChanges(to new: ReaderViewModel?, from old: ReaderViewModel?) {
+        guard let old, old !== new else { return }
         DispatchQueue.main.async { [weak old] in
             guard old == nil || old?.hasClosed == true else { return }
-            PhoneAudioSession.shared.deactivateAfterAReaderCloses(in: session)
+            PhoneAudioSession.shared.deactivateAfterAReaderCloses()
         }
     }
 
@@ -141,7 +149,12 @@ final class PhoneAudioSession {
         // are read a turn later, on the main queue, when the change is in.
         let units = Publishers.Merge(
             reader.$book.map { _ in () },
-            reader.settingsViewModel.objectWillChange.map { _ in () }
+            reader.settingsViewModel.objectWillChange.map { _ in () },
+            // Settings keeps each kind's unit in the preferences, not in the
+            // settings model, so a change there is heard here.
+            NotificationCenter.default
+                .publisher(for: UserDefaults.didChangeNotification, object: TextMouthRuntime.current.preferences)
+                .map { _ in () }
         )
         .receive(on: DispatchQueue.main)
         .sink { [weak reader] in
@@ -231,8 +244,8 @@ final class PhoneAudioSession {
     /// activated the session itself is reported to refuse this (thread 759553).
     func deactivateIfIdle() {
         let nowPlaying = NowPlayingService.shared
-        guard !nowPlaying.anyReaderCountsAsPlaying else {
-            DiagnosticLog.trace(.playback, "audio session kept: a book plays")
+        guard !aBookPlaysOrWaits() else {
+            DiagnosticLog.trace(.playback, "audio session kept: a book plays or waits to")
             return
         }
         nowPlaying.prepareReadersForSessionDeactivation()
@@ -250,14 +263,24 @@ final class PhoneAudioSession {
     /// claims it as it loads, and a non-mixable session can be made active in
     /// the background "only when the app is the NowPlaying app"
     /// (`AudioSessionTypes.h:50-52`; the engineer's review, F1).
-    private func deactivateAfterAReaderCloses(in session: PhoneSession) {
+    private func deactivateAfterAReaderCloses() {
         guard UIApplication.shared.applicationState == .active else { return }
-        let open = [session.reader, session.listeningReader].compactMap { $0 }
-        let bookPlaysOrWaits = open.contains { reader in
+        deactivateIfIdle()
+    }
+
+    /// Whether a book plays or waits to, the one rule for letting the session
+    /// go, at a close in the foreground and at every move to the background:
+    /// a book any reader counts as playing, or a reader playing under way, or
+    /// one with a request to play waiting, as a hand-over's next book has
+    /// while it loads. Deactivating then would end the audio the load is
+    /// about to start, and the session would be made active again in the
+    /// background.
+    private func aBookPlaysOrWaits() -> Bool {
+        if NowPlayingService.shared.anyReaderCountsAsPlaying { return true }
+        let open = [session?.reader, session?.listeningReader].compactMap { $0 }
+        return open.contains { reader in
             reader.isPlaybackUnderWay || reader.autoplayRequests.waitingRequest(for: reader.book.id) != nil
         }
-        guard !bookPlaysOrWaits else { return }
-        deactivateIfIdle()
     }
 
     /// A Pause from the listener while the session is interrupted: the

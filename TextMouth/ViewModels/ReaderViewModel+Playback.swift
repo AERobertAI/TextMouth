@@ -3944,7 +3944,13 @@ extension ReaderViewModel {
 
     /// The media commands this book's units allow (`PhoneRemoteCommandPolicy`).
     var phoneRemoteCommandPolicy: PhoneRemoteCommandPolicy {
-        PhoneRemoteCommandPolicy(forward: playbackSkipForwardUnit, backward: playbackSkipBackwardUnit)
+        // The phone moves by one unit in force, filled by its reader model;
+        // the lock screen must promise what a press does.
+        PhoneRemoteCommandPolicy(
+            unitInForce: phoneHooks.unitInForce,
+            forward: playbackSkipForwardUnit,
+            backward: playbackSkipBackwardUnit
+        )
     }
 }
 #endif

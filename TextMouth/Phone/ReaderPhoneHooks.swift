@@ -33,4 +33,10 @@ struct ReaderPhoneHooks {
     /// audio may start again or ends. The places that tell are the audio
     /// slice's to add. Nil tells no one.
     var silentGapBegan: (@MainActor () -> Void)?
+
+    /// The unit the phone's moves go by for this reader now (its book's own,
+    /// else its kind's from Settings). The lock screen's skip commands are
+    /// built from it, so that they never promise 15 seconds and move a
+    /// sentence. Nil, as on the Mac, keeps the shared skip units.
+    var unitInForce: (@MainActor () -> SkipUnit)?
 }

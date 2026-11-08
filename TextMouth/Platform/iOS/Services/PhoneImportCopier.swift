@@ -107,7 +107,7 @@ final class PhoneImportCopier: ObservableObject {
         }
         // A batch's quarters are said only while no book plays.
         library.importProgress.isBookPlaying = { [weak session = model.session] in
-            session?.snapshot?.isPlaying == true
+            session?.isAnyBookPlaying == true
         }
         // The library's own values, delivered on the main queue, a turn
         // after each change, as the team's rule asks.
@@ -191,7 +191,7 @@ final class PhoneImportCopier: ObservableObject {
             holding.hold(urls)
             return
         }
-        let route = PhoneImportHolding.route(isBookPlaying: model.session.snapshot?.isPlaying == true)
+        let route = PhoneImportHolding.route(isBookPlaying: model.session.isAnyBookPlaying)
         if route == .importAndOpen,
            let sentence = PhoneImportWording.importing(urls.map(PhoneImportWording.displayName(of:))) {
             PhoneAnnouncer.say(sentence)
