@@ -156,6 +156,36 @@ final class TranscriptPairingTests: XCTestCase {
         )
     }
 
+    /// 01.vtt beside 01.wav and 02.srt beside 02.wav record both formats, in
+    /// the order the tracks play, naming no one file.
+    func testFilesOfTwoFormatsRecordEachFormat() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("01.vtt"))
+        try write(Self.oneSubRipCue, to: tracks.appendingPathComponent("02.srt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let mixed = try storedTranscript(of: try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path).book)
+
+        XCTAssertEqual(mixed.source?.knownFormats, [.webVTT, .subRip], "01.vtt beside 02.srt did not record each format")
+        XCTAssertEqual(mixed.source?.formats, ["webvtt", "srt"])
+        XCTAssertEqual(mixed.source?.format, "webvtt", "the first file's format is still the one old TextMouths read")
+        XCTAssertNil(mixed.source?.fileName)
+    }
+
+    /// Two files of one format record that one format alone, as every
+    /// transcript did before this field.
+    func testFilesOfOneFormatRecordThatFormatAlone() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("01.vtt"))
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("02.vtt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let alike = try storedTranscript(of: try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path).book)
+
+        XCTAssertEqual(alike.source, TranscriptSource(origin: .imported, format: .webVTT))
+        XCTAssertNil(alike.source?.formats)
+    }
+
     /// Two tracks named alike but for their extension (01.wav and 01.m4a)
     /// both look for 01.vtt: the file times the track that plays first and
     /// no other, so the book's text never reads the same passage twice, and

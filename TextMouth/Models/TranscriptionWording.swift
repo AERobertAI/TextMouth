@@ -179,14 +179,17 @@ enum TranscriptionWording {
     private static func cameFrom(_ source: TranscriptSource, on day: String) -> String {
         let quotedName = source.fileName.map { "“\($0)”" }
         let formatName = source.knownFormat?.name
+        // Every format the files were of, said together: "WebVTT and
+        // SubRip", when this TextMouth knows them all.
+        let formatNames = source.knownFormats?.map(\.name).joined(separator: " and ")
         switch source.knownOrigin {
         case .attached:
             if let quotedName { return "Attached from \(quotedName) on \(day)." }
             if let formatName { return "Attached from a \(formatName) file on \(day)." }
             return "Attached from a file on \(day)."
         case .imported:
-            // One file by its name; several by their format, when known.
-            let files = quotedName ?? formatName.map { "\($0) files" } ?? "files"
+            // One file by its name; several by their formats, when known.
+            let files = quotedName ?? formatNames.map { "\($0) files" } ?? "files"
             return "Attached from \(files) when the book was imported, on \(day)."
         case .podcast:
             return "The podcast's own transcript, downloaded with the episode on \(day)."

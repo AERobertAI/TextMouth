@@ -137,8 +137,8 @@ enum TranscriptPairing: Sendable, Equatable {
     /// one that cannot be read, or runs on past its track's end, is set aside
     /// with why. The files kept make one transcript
     /// (`OutsideTranscript.transcript(sentencesByFile:plan:source:now:hasher:)`),
-    /// whose source names the first one's format, and its name when it is
-    /// the only one kept.
+    /// whose source names each file's format, in the order the tracks play,
+    /// and its name when it is the only one kept.
     ///
     /// Nothing here fails the import: when the tracks cannot be measured, or
     /// the transcript cannot be made or written, every file that would have
@@ -217,7 +217,8 @@ enum TranscriptPairing: Sendable, Equatable {
                 source: TranscriptSource(
                     origin: .imported,
                     format: first.file.format,
-                    fileName: kept.count == 1 ? first.file.name : nil
+                    fileName: kept.count == 1 ? first.file.name : nil,
+                    otherFormats: kept.dropFirst().map(\.file.format)
                 )
             )
             try TranscriptStore.write(transcript, into: staged.tmbDirectory)

@@ -612,6 +612,17 @@ final class OutsideTranscriptTests: XCTestCase {
             try lineOfStored(#"{"format":"ttml","origin":"imported"}"#),
             "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
         )
+        // Files of two formats are named together, in the order read; a
+        // list holding a format this TextMouth does not know names none.
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"webvtt","formats":["webvtt","srt"],"origin":"imported"}"#),
+            "Attached from WebVTT and SubRip files when the book was imported, on \(day). "
+                + "Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"webvtt","formats":["webvtt","ttml"],"origin":"imported"}"#),
+            "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
+        )
         XCTAssertEqual(
             line(.podcast, .podcastJSON),
             "The podcast's own transcript, downloaded with the episode on \(day). Transcribing again replaces this transcript."
