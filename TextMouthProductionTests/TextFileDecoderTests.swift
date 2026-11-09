@@ -382,14 +382,16 @@ final class TextFileDecoderTests: XCTestCase {
             guard !data.contains(0) else { continue }
             files += 1
             let name = url.lastPathComponent
-            var ranges = [0..<data.count]
+            var ranges: [Range<Int>] = [0..<data.count]
             if data.count <= 2_048 {
-                ranges += (16..<max(16, data.count)).map { 0..<$0 } + (1..<max(1, data.count - 16)).map { $0..<data.count }
+                // Every prefix and every suffix of a small file.
+                for end in 16..<max(16, data.count) { ranges.append(0..<end) }
+                for start in 1..<max(1, data.count - 16) { ranges.append(start..<data.count) }
             } else {
-                ranges += (0..<400).map { _ -> Range<Int> in
-                    let length = min(16 + next(below: 4_081), data.count - 1)
-                    let start = next(below: data.count - length)
-                    return start..<start + length
+                for _ in 0..<400 {
+                    let length: Int = min(16 + next(below: 4_081), data.count - 1)
+                    let start: Int = next(below: data.count - length)
+                    ranges.append(start..<(start + length))
                 }
             }
             for range in ranges where range.count >= 16 {
