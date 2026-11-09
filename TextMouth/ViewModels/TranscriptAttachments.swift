@@ -91,9 +91,9 @@ final class TranscriptAttachments: ObservableObject {
     }
 
     /// The folder `startingFolder(for:)` finds for a book recorded as
-    /// imported from `sourcePath`; a plain string, so it can cross to
-    /// another thread.
-    static func startingFolder(forSource sourcePath: String?) -> URL? {
+    /// imported from `sourcePath`; a plain string, and not bound to the main
+    /// actor, so it can run on another thread.
+    nonisolated static func startingFolder(forSource sourcePath: String?) -> URL? {
         // A source must be a whole path: an empty one would name the
         // current directory.
         guard let source = sourcePath, source.hasPrefix("/") else { return nil }
@@ -104,7 +104,7 @@ final class TranscriptAttachments: ObservableObject {
 
     /// Whether a folder is at `url` (one look at the file system, which
     /// downloads nothing).
-    private static func isFolder(_ url: URL) -> Bool {
+    nonisolated private static func isFolder(_ url: URL) -> Bool {
         var isDirectory: ObjCBool = false
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
