@@ -85,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -111,6 +111,7 @@ help:
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
+	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
@@ -317,6 +318,13 @@ typecheck-ios:
 ## minutes, without xcodebuild or the hosted tests.
 typecheck-mac:
 	@python3 -I Scripts/ios/typecheck.py --platform macos
+
+## The Mac's hosted tests as well as the app, compiled and linked with SwiftPM
+## and not run: finds a test file that does not compile before a train does.
+## REF=<commit> checks that commit, from any worktree (default HEAD, as with
+## the other type-checks, so commit first).
+typecheck-tests:
+	@python3 -I Scripts/ios/typecheck.py --platform macos --tests $(if $(REF),--ref $(REF),)
 
 ## What this branch changes in the code the Mac compiles, since BASE: files
 ## moved, wrapped in #if os(macOS), or given a platform alias count as

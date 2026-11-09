@@ -15,6 +15,15 @@ project.yml):
 Both link the C libraries the apps link (LAME and the Objective-C exception
 catcher), so a clean run means the app compiles and links.
 
+With `--tests` (macOS only) the package also holds the Mac's hosted test target,
+TextMouthProductionTests, built with `swift build --build-tests`, so a test file
+that does not compile is found without xcodebuild. The target's sources are the
+folder of that name plus the files of TextMouthTests/Sources/Tests that
+project.yml lists for it (read from project.yml at the commit, so the two cannot
+drift apart); errors in those files are reported under their repository paths.
+It compiles the tests and the app, and links the test bundle, but runs nothing.
+Do this before asking the build train for a build.
+
 The census (`--census`, iOS only) reads `import AppKit` as `import UIKit` in
 the copy, so that every AppKit name a file uses is reported, instead of the
 file stopping at one "no such module" error. It is for counting what is left;
@@ -26,7 +35,7 @@ takes about two minutes. Its results go to the main checkout's gitignored
 build/typecheck/results/, one folder per run: summary.md and errors.txt.
 
 Usage:
-  typecheck.py [--platform ios|macos] [--census] [--ref REF] [--agent SLUG]
+  typecheck.py [--platform ios|macos] [--census | --tests] [--ref REF] [--agent SLUG]
                [--wait MINUTES] [--jobs N] [--no-lock] [--quiet]
 Exit status: 0 when the build succeeded, 1 when it found errors, 2 for a
 problem setting it up, 3 when the lock stayed busy for the whole wait.
@@ -55,6 +64,14 @@ RESOLVED = Path("TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Pa
 # beside this script's own folder (python3 -I leaves both out of sys.path).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+
+# The hosted test target of project.yml, and the folder of the copy that holds the
+# files project.yml lists for it from TextMouthTests/Sources/Tests (one SwiftPM
+# target takes one folder). Diagnostics in that folder are shown under the
+# files' repository paths.
+TEST_TARGET = "TextMouthProductionTests"
+LISTED_TESTS_FOLDER = f"{TEST_TARGET}/_ListedInProjectYml"
+LISTED_TESTS_ORIGIN = "TextMouthTests/Sources/Tests"
 
 # Each package: its identity in Package.resolved, its checkout's folder name,
 # and the folder name the probe gives it. swift-markdown finds cmark at
@@ -120,19 +137,42 @@ def prepare_packages(pkgs, pins, say):
             run(["git", "-C", str(target), "checkout", "--quiet", revision])
 
 
-def prepare_sources(repo, commit, src, census):
-    """Replaces `src` with the committed TextMouth/, Vendor/, and
-    TextMouthBraille/ folders at `commit`; in a census, reads AppKit imports
-    as UIKit there. Returns how many imports the census rewrote."""
-    if src.exists():
-        shutil.rmtree(src)
-    src.mkdir(parents=True)
-    archive = subprocess.Popen(["git", "-C", str(repo), "archive", commit, "TextMouth", "Vendor", "TextMouthBraille"],
-                               stdout=subprocess.PIPE)
+def listed_test_files(repo, commit):
+    """The files of TextMouthTests/Sources/Tests that project.yml at `commit` lists
+    as sources of the hosted test target, in its order."""
+    text = run(["git", "-C", str(repo), "show", f"{commit}:project.yml"]).stdout
+    block = re.search(rf"^  {TEST_TARGET}:\n(.*?)^    settings:", text, re.MULTILINE | re.DOTALL)
+    if not block:
+        raise RuntimeError(f"project.yml at {commit} has no {TEST_TARGET} target")
+    return re.findall(rf"^      - ({re.escape(LISTED_TESTS_ORIGIN)}/\S+\.swift)\s*$", block.group(1), re.MULTILINE)
+
+
+def extract(repo, commit, paths, src):
+    """Extracts `paths` (git pathspecs) of `commit` into the folder `src`."""
+    archive = subprocess.Popen(["git", "-C", str(repo), "archive", commit, *paths], stdout=subprocess.PIPE)
     subprocess.run(["tar", "-x", "-C", str(src)], stdin=archive.stdout, check=True)
     archive.stdout.close()
     if archive.wait() != 0:
         raise RuntimeError(f"git archive {commit} failed")
+
+
+def prepare_sources(repo, commit, src, census, tests=False):
+    """Replaces `src` with the committed TextMouth/, Vendor/, and
+    TextMouthBraille/ folders at `commit`; with `tests`, also the hosted test
+    target's Swift sources, gathered into one folder; in a census, reads AppKit
+    imports as UIKit there. Returns how many imports the census rewrote."""
+    if src.exists():
+        shutil.rmtree(src)
+    src.mkdir(parents=True)
+    extract(repo, commit, ["TextMouth", "Vendor", "TextMouthBraille"], src)
+    if tests:
+        listed = listed_test_files(repo, commit)
+        extract(repo, commit, [f":(glob){TEST_TARGET}/**/*.swift", *listed], src)
+        # SwiftPM takes one folder per target, so the listed files are copied beside the rest.
+        folder = src / LISTED_TESTS_FOLDER
+        folder.mkdir(parents=True)
+        for path in listed:
+            shutil.copy2(src / path, folder / Path(path).name)
     rewritten = 0
     if census:
         for path in (src / "TextMouth").rglob("*.swift"):
@@ -152,11 +192,27 @@ def excluded_folders(src, platform):
     return [c for c in candidates if (src / "TextMouth" / c).exists()]
 
 
-def write_package(src, pkgs, platform, ios_target):
-    """Writes the probe's Package.swift into `src`."""
+def write_package(src, pkgs, platform, ios_target, tests=False):
+    """Writes the probe's Package.swift into `src`; with `tests`, it also
+    holds the hosted test target."""
     excludes = ", ".join(f'"{e}"' for e in excluded_folders(src, platform))
     # The braille helper's protocol is a header-only module, found by its map.
     include_flags = f'"-I", "{src / "TextMouthBraille" / "include"}"'
+    test_target = f"""
+        // The Mac's hosted tests: compiled and linked, never run.
+        .testTarget(
+            name: "{TEST_TARGET}",
+            dependencies: [
+                "TextMouth",
+                "LAME",
+                "ObjCExceptionCatcher",
+                "ZIPFoundation",
+                "SwiftSoup",
+                .product(name: "Markdown", package: "swift-markdown"),
+            ],
+            path: "{TEST_TARGET}",
+            swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"])]
+        ),""" if tests else ""
     (src / "Package.swift").write_text(f"""// swift-tools-version: 6.0
 // Written by Scripts/ios/typecheck.py: builds a copy of TextMouth's app sources
 // for {platform}. Never run.
@@ -205,14 +261,14 @@ let package = Package(
             path: "TextMouth",
             exclude: [{excludes}],
             swiftSettings: [.unsafeFlags([{include_flags}, "-continue-building-after-errors"])]
-        ),
+        ),{test_target}
     ],
     swiftLanguageModes: [.v6]
 )
 """)
 
 
-def summarize(log_text, src, header, out):
+def summarize(log_text, src, header, out, tests=False):
     """Writes errors.txt and summary.md into `out` from the build's log, and
     returns (summary text, error count, link failed, build succeeded)."""
     errors, warnings, package_problems = set(), set(), 0
@@ -228,7 +284,9 @@ def summarize(log_text, src, header, out):
             if match.group(4) == "error":
                 package_problems += 1
             continue
-        if not relative.startswith("TextMouth/"):
+        if relative.startswith(LISTED_TESTS_FOLDER + "/"):
+            relative = f"{LISTED_TESTS_ORIGIN}/{relative[len(LISTED_TESTS_FOLDER) + 1:]}"
+        if not relative.startswith(("TextMouth/", TEST_TARGET + "/", LISTED_TESTS_ORIGIN + "/")):
             # The vendored C code builds with its warnings hidden; only its
             # errors would matter, and they count as the app's.
             if match.group(4) == "warning":
@@ -251,8 +309,8 @@ def summarize(log_text, src, header, out):
     (out / "warnings.txt").write_text("".join(f"{f}:{l}:{c}: warning: {m}\n" for f, l, c, m in sorted(warnings)))
     lines = [header, "",
              f"- Result: {'BUILD SUCCEEDED' if succeeded else 'FAILED'}",
-             f"- Errors in the app: **{len(ordered)}** in **{len(per_file)}** files",
-             f"- Warnings in the app: {len(warnings)}",
+             f"- Errors in the app{' and its tests' if tests else ''}: **{len(ordered)}** in **{len(per_file)}** files",
+             f"- Warnings in the app{' and its tests' if tests else ''}: {len(warnings)}",
              f"- Errors inside the Swift packages: {package_problems}",
              f"- Link: {'failed' if link_lines and not ordered else 'not reached' if ordered else 'ok' if succeeded else 'unknown'}",
              ""]
@@ -276,6 +334,8 @@ def main(argv):
     parser = argparse.ArgumentParser(prog="typecheck.py", description=__doc__.splitlines()[0])
     parser.add_argument("--platform", choices=["ios", "macos"], default="ios")
     parser.add_argument("--census", action="store_true", help="read import AppKit as import UIKit (iOS only)")
+    parser.add_argument("--tests", action="store_true",
+                        help="also compile and link the Mac's hosted test target, TextMouthProductionTests (macOS only)")
     parser.add_argument("--ref", default="HEAD", help="the commit to check (committed work only)")
     parser.add_argument("--agent", default=os.environ.get("BBS_AGENT", "someone"), help="who runs it, for the lock and the results' folder")
     # Three hours, as run_locked.py waits: since November 8, 2026 heavy jobs run strictly one
@@ -288,6 +348,8 @@ def main(argv):
     args = parser.parse_args(argv)
     if args.census and args.platform != "ios":
         parser.error("--census is for --platform ios")
+    if args.tests and (args.platform != "macos" or args.census):
+        parser.error("--tests is for --platform macos, without --census")
 
     def say(text):
         if not args.quiet:
@@ -300,8 +362,10 @@ def main(argv):
     except subprocess.CalledProcessError as error:
         print(f"typecheck: cannot read {args.ref}: {error.stderr.strip()}", file=sys.stderr)
         return 2
-    mode = "census" if args.census else "strict"
-    work = WORK_ROOT / args.platform
+    mode = "census" if args.census else "tests" if args.tests else "strict"
+    # The packages are shared by every mode of a platform; each mode builds in a folder of its own.
+    pkgs = WORK_ROOT / args.platform / "pkgs"
+    work = WORK_ROOT / (f"{args.platform}-tests" if args.tests else args.platform)
     stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
     out = RESULTS / f"{re.sub(r'[^A-Za-z0-9_-]', '_', args.agent)}-{args.platform}-{mode}-{commit}-{stamp}"
 
@@ -317,14 +381,16 @@ def main(argv):
             return 3
     try:
         say(f"{args.platform} {mode} check of {commit} from {repo}")
-        prepare_packages(work / "pkgs", pins, say)
-        rewritten = prepare_sources(repo, commit, work / "src", args.census)
-        write_package(work / "src", work / "pkgs", args.platform, args.ios_target)
+        prepare_packages(pkgs, pins, say)
+        rewritten = prepare_sources(repo, commit, work / "src", args.census, args.tests)
+        write_package(work / "src", pkgs, args.platform, args.ios_target, args.tests)
         sdk = run(["xcrun", "--sdk", "iphoneos" if args.platform == "ios" else "macosx", "--show-sdk-path"]).stdout.strip()
         command = ["swift", "build", "--sdk", sdk, "-j", str(args.jobs), "--scratch-path", str(work / "spm")]
         if args.platform == "ios":
             command += ["--triple", f"arm64-apple-ios{args.ios_target}"]
-        say("building (about two minutes)")
+        if args.tests:
+            command += ["--build-tests"]
+        say("building (about two minutes for the app alone)")
         result = subprocess.run(command, cwd=work / "src", capture_output=True, text=True,
                                 env={**os.environ, "SWIFTCI_USE_LOCAL_DEPS": "1"})
         log_text = result.stdout + result.stderr
@@ -332,7 +398,7 @@ def main(argv):
         (out / "build.log").write_text(log_text)
         header = (f"# {args.platform} {mode} check of {commit} ({args.agent}, {stamp})"
                   + (f"\n\nThe census read {rewritten} AppKit imports as UIKit." if args.census else ""))
-        summary, count, _link_failed, succeeded = summarize(log_text, work / "src", header, out)
+        summary, count, _link_failed, succeeded = summarize(log_text, work / "src", header, out, args.tests)
     finally:
         if taken and not args.no_lock:
             heavy_lock.release()
