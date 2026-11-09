@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// A damaged Word document must never turn silently into a shorter or plainer
@@ -114,12 +115,16 @@ final class DOCXMalformedXMLTests: XCTestCase {
     /// in a new temporary directory, removed after the test. Each entry of
     /// `changes` replaces the part at that path with the given bytes, and
     /// each path in `removed` leaves that part out.
-    private func makeDOCX(replacing changes: [String: Data] = [:], removing removed: Set<String> = []) throws -> URL {
+    private func makeDOCX(
+        replacing changes: [String: Data] = [:],
+        removing removed: Set<String> = [],
+        compressionMethod: CompressionMethod = .none
+    ) throws -> URL {
         var parts = Self.intactParts.mapValues { Data($0.utf8) }.merging(changes) { _, change in change }
         for path in removed {
             parts[path] = nil
         }
-        let zip = try makeTemporaryZip(prefix: "TextMouthDOCXTest", entries: parts)
+        let zip = try makeTemporaryZip(prefix: "TextMouthDOCXTest", entries: parts, compressionMethod: compressionMethod)
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouthDOCXTest-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -657,6 +662,47 @@ final class DOCXMalformedXMLTests: XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: package) }
         let cached = try String(contentsOf: TextMouthPaths.contentMarkdownPath(in: package), encoding: .utf8)
         XCTAssertEqual(try Self.spokenText(of: cached), Self.spokenDocument)
+    }
+
+    // MARK: - ZIP Damage
+
+    /// A part whose compressed data cannot be decoded is damage in the
+    /// package like any other, said in the same words with the part named,
+    /// not ZIPFoundation's own error, which is logged.
+    func testAPartWhoseCompressedDataCannotBeDecodedIsNamedAsDamaged() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let docx = try makeDOCX(compressionMethod: .deflate)
+        try damageData(of: DOCXParser.Part.document, in: docx)
+
+        var thrown: Error?
+        let lines = try debugLogLines { do { _ = try DOCXParser.parse(url: docx) } catch { thrown = error } }
+
+        XCTAssertEqual(
+            thrown?.localizedDescription,
+            "The file “word/document.xml” in this document is damaged or incomplete: "
+                + "its compressed data could not be decoded. "
+                + "Get a fresh copy of the document, then import it again.",
+            "what a listener is told of ZIP damage"
+        )
+        let logged = lines.filter { $0.contains("DOCX_ZIP_ERROR: word/document.xml: ") }
+        XCTAssertEqual(logged.count, 1, "ZIPFoundation's own error is logged once: \(lines)")
+        XCTAssertFalse(
+            (thrown?.localizedDescription ?? "").contains("ZIPFoundation"),
+            "the raw error reached the listener: \(String(describing: thrown))"
+        )
+        guard case .malformedXML(let file, _)? = thrown as? DOCXParserError else {
+            return XCTFail("Expected DOCXParserError.malformedXML, received \(String(describing: thrown))")
+        }
+        XCTAssertEqual(file, "word/document.xml")
+    }
+
+    /// The same damage in the styles part, which is read before the text,
+    /// names that part.
+    func testAStylesPartThatCannotBeDecodedIsNamedAsDamaged() throws {
+        let docx = try makeDOCX(compressionMethod: .deflate)
+        try damageData(of: DOCXParser.Part.styles, in: docx)
+
+        malformedXMLReason(naming: DOCXParser.Part.styles) { try DOCXParser.parse(url: docx) }
     }
 
     // MARK: - Core Properties

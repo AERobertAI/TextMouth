@@ -299,6 +299,69 @@ final class DAISYMalformedXMLTests: XCTestCase {
         malformedXMLReason(naming: "part1.smil") { try DAISYParser.extractMarkdown(from: damaged) }
     }
 
+    // MARK: - ZIP Damage
+
+    /// A file of the archive whose compressed data cannot be decoded is
+    /// named as damaged in the DAISY sentence, read or copied, instead of
+    /// surfacing ZIPFoundation's own error; the copy leaves nothing behind,
+    /// and the files beside it still read.
+    func testAFileWhoseCompressedDataCannotBeDecodedIsNamedAsDamaged() throws {
+        let zip = try makeTemporaryZip(
+            prefix: "TextMouthDAISYTest",
+            entries: Self.daisy202Package().mapValues { Data($0.utf8) },
+            compressionMethod: .deflate
+        )
+        defer { try? FileManager.default.removeItem(at: zip) }
+        try damageData(of: "text.html", in: zip)
+        let provider = ArchiveFileProvider(archive: try Archive(url: zip, accessMode: .read))
+        let expected = "The file “text.html” in this DAISY book is damaged or incomplete: "
+            + "its compressed data could not be decoded. Get a fresh copy of the book, then import it again."
+
+        XCTAssertThrowsError(try provider.readFile(at: "text.html")) { error in
+            XCTAssertEqual(error.localizedDescription, expected, "reading the file")
+        }
+        let copy = FileManager.default.temporaryDirectory.appendingPathComponent("TextMouthDAISYCopy-\(UUID().uuidString).html")
+        defer { try? FileManager.default.removeItem(at: copy) }
+        XCTAssertThrowsError(try provider.copyFile(at: "text.html", to: copy)) { error in
+            XCTAssertEqual(error.localizedDescription, expected, "copying the file")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: copy.path), "the failed copy was left behind")
+        XCTAssertEqual(try provider.readFile(at: "ncc.html"), Data(Self.ncc.utf8), "a file beside it")
+    }
+
+    // MARK: - Text Beyond the Audio
+
+    /// An archive's SMIL file that the XML guard refuses (1,025 attributes on
+    /// a tag) still tells that the book holds text of its own beyond the
+    /// audio: the archive is then the only copy of that text and is kept,
+    /// as it is when the same SMIL file is ordinary. With no text file for
+    /// it to name, the refused file adds nothing.
+    func testARefusedSMILStillShowsThatTheArchiveHoldsText() {
+        let many = (0..<1_025).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let refused = Self.part1SMIL.replacingOccurrences(
+            of: "<text src=\"text.html#t1\"/>", with: "<text src=\"text.html#t1\" \(many)/>"
+        )
+        XCTAssertNotEqual(refused, Self.part1SMIL, "the fixture's text element is not where this test looks")
+        XCTAssertNotNil(XMLInputGuard.problem(with: Data(refused.utf8)), "the guard does not refuse the SMIL file")
+
+        for (label, smil, expectsText) in [
+            ("ordinary SMIL", Self.part1SMIL, true), ("refused SMIL", refused, true)
+        ] {
+            let package = InMemoryDAISYPackage(Self.daisy202Package(["part1.smil": smil, "part2.smil": "<smil/>"]))
+            XCTAssertEqual(
+                FileImportService.daisyArchiveLeftovers(of: package, archiveName: "Soundings.zip").holdsText,
+                expectsText, label
+            )
+        }
+        // Without the text file the SMIL file names, there is no text to keep.
+        var files = Self.daisy202Package(["part1.smil": refused, "part2.smil": "<smil/>"])
+        files["text.html"] = nil
+        XCTAssertFalse(
+            FileImportService.daisyArchiveLeftovers(of: InMemoryDAISYPackage(files), archiveName: "Soundings.zip").holdsText,
+            "a refused SMIL file named a text file the archive does not hold"
+        )
+    }
+
     // MARK: - SMIL Audio Clips
 
     /// A clip list cut off after its first clip throws instead of returning

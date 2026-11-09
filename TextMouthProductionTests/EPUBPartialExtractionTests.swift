@@ -853,34 +853,4 @@ final class EPUBPartialExtractionTests: XCTestCase {
         let entry = try XCTUnwrap(archive[member], "No member named \(member)")
         try archive.remove(entry)
     }
-
-    /// Overwrite the first bytes of `member`'s data in the ZIP at `url` with
-    /// 0xFF, as a failing disk or an interrupted copy can: compressed data
-    /// then cannot be decoded, and stored data no longer matches its checksum.
-    private func damageData(of member: String, in url: URL, byteCount: Int = 8) throws {
-        var bytes = [UInt8](try Data(contentsOf: url))
-        let start = try XCTUnwrap(Self.dataOffset(of: member, in: bytes), "No local file header names \(member)")
-        bytes.replaceSubrange(start..<start + byteCount, with: repeatElement(0xFF, count: byteCount))
-        try Data(bytes).write(to: url)
-    }
-
-    /// Where `member`'s data starts in the ZIP `bytes`: just past its local
-    /// file header, which is the signature "PK\3\4", 26 bytes of fields
-    /// (the name's length at offset 26, the extra field's at 28), the name,
-    /// and the extra field. ZIPFoundation keeps this offset internal.
-    private static func dataOffset(of member: String, in bytes: [UInt8]) -> Int? {
-        let signature: [UInt8] = [0x50, 0x4B, 0x03, 0x04]
-        let name = Array(member.utf8)
-        /// The little-endian 16-bit field at `offset` in the header at `header`.
-        func field(_ header: Int, _ offset: Int) -> Int {
-            Int(bytes[header + offset]) | Int(bytes[header + offset + 1]) << 8
-        }
-        for header in 0..<max(0, bytes.count - 30) where bytes[header..<header + 4].elementsEqual(signature) {
-            let nameStart = header + 30
-            let nameEnd = nameStart + field(header, 26)
-            guard nameEnd <= bytes.count, bytes[nameStart..<nameEnd].elementsEqual(name) else { continue }
-            return nameEnd + field(header, 28)
-        }
-        return nil
-    }
 }

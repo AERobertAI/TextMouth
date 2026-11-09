@@ -281,14 +281,18 @@ enum DOCXParser {
     /// `ArchiveEntryReader`, so a part larger than the most TextMouth reads
     /// from one file is refused rather than read whole into memory (TODO I05).
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
-    ///   more than `ArchiveEntryLimits.current` allows, or the archive's
-    ///   error when the entry exists but cannot be unpacked.
+    ///   more than `ArchiveEntryLimits.current` allows, or when the entry
+    ///   exists but cannot be unpacked (the ZIP damage is then said in plain
+    ///   words, and ZIPFoundation's own error is logged as `DOCX_ZIP_ERROR`).
     private static func extractOptionalData(from archive: IndexedArchive, path: String) throws -> Data? {
         guard let entry = archive[path] else { return nil }
         do {
             return try ArchiveEntryReader.read(entry, in: archive.archive).data
         } catch let overflow as ArchiveEntryOverflow {
             throw DOCXParserError.malformedXML(file: path, reason: overflow.reason)
+        } catch {
+            let reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "DOCX_ZIP_ERROR")
+            throw DOCXParserError.malformedXML(file: path, reason: reason)
         }
     }
 
@@ -298,7 +302,7 @@ enum DOCXParser {
     /// part's bytes and its path, or return `absent` when the package has no
     /// such part: a document without lists, say, simply has no numbering.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
-    ///   present but damaged, or the archive's error when it cannot be unpacked.
+    ///   present but damaged, or cannot be unpacked.
     private static func parseOptionalPart<Content>(
         _ path: String,
         in archive: IndexedArchive,
