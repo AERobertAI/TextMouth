@@ -252,7 +252,7 @@ final class FeedItemRecordTests: XCTestCase {
         let (told, contradicted, unasked) = (books[0], books[1], books[2])
         // `contradicted` holds a recognized transcript, the listener's.
         try TranscriptStore.write(
-            TranscriptFixtures.transcript([("a.m4a", 1_000, [TranscriptFixtures.sentence("Heard.", from: 0, to: 500)])]),
+            TranscriptFixtures.transcript([(path: "a.m4a", duration: 1_000, sentences: [TranscriptFixtures.sentence("Heard.", from: 0, to: 500)])]),
             into: contradicted.tmbDirectory
         )
         XCTAssertTrue(FeedItemPackage.holdsListenersFiles(contradicted.tmbDirectory), "the test's transcript is not the listener's")
