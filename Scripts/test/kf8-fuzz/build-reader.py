@@ -8,7 +8,7 @@ chapter type with `swiftc` (optimized, Swift 5 mode), linked against the package
 `build/DerivedData/Build/Products/Release` (SwiftSoup, swift-markdown, ZIPFoundation), with `Stubs.swift` for the app
 types around them. It is heavy: run it under the heavy-work lock, as every build of this Mac is:
 
-    python3 -I build/orchestrator/followups1105/run_locked.py kf8-reader python3 -I Scripts/test/kf8-fuzz/build-reader.py ...
+    python3 -I Scripts/agents/run_locked.py kf8-reader python3 -I Scripts/test/kf8-fuzz/build-reader.py ...
 
 WORKFOLDER (default: next to OUTPUT) holds the module cache and a copy of the chapter types; its files are
 overwritten by every build. Nothing is deleted.

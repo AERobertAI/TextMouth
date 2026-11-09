@@ -166,7 +166,7 @@ The iPhone app is tested in two places: on the Mac's test host, for everything t
   - `ToolbarPlacementProbeUITests` (1 test): see The probe test, below.
   - They read what VoiceOver would be given: each element's label, value, and traits, in the order of the accessibility tree, as a depth-first walk of one snapshot.
   - No wait lasts longer than 60 seconds.
-- To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, and `run_locked.py`. A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle. The repository does not record the exact command line the iPhone team used.
+- To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, and `Scripts/agents/run_locked.py`. A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle. The repository does not record the exact command line the iPhone team used.
 - At the last pass on November 8, 2026 (pass 3 of the sheet-button round, on 6a3ac9a4, whose later commit changes only a comment), 16 of 16 unit tests passed, and 17 of 22 UI tests. The five that fail are the open findings below.
 
 ### The audit and its accepted findings

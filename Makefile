@@ -114,7 +114,7 @@ help:
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
-	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
+	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen), keeping the copy-files phases in their old order"
 	@echo "  make set-version VERSION=0.2.0 - Set the app's version (MARKETING_VERSION in project.yml) and regenerate the Xcode project; commits nothing"
 	@echo "  make bump-patch - Raise the version's PATCH by one (0.2.0 to 0.2.1), for a day of fixes and small changes an older TextMouth can follow; regenerates the Xcode project, commits nothing"
 	@echo "  make bump-minor - Raise the version's MINOR by one and set PATCH to 0 (0.2.3 to 0.3.0), for a change an older TextMouth cannot follow; regenerates the Xcode project, commits nothing"
@@ -124,10 +124,13 @@ help:
 	@echo "  make xcode      - Open the project in Xcode"
 	@echo ""
 
-## Regenerate the Xcode project from project.yml
+## Regenerate the Xcode project from project.yml. xcodegen deals the copy-files
+## phases out in another order each run, so the script puts the committed order
+## back when the phases mean the same. build and install come through here, and
+## set-version and the bumps run the same script, so none leaves such noise.
 generate:
 	@echo "==> Generating Xcode project..."
-	xcodegen generate
+	@python3 -I -B Scripts/agents/regenerate-project.py
 	@echo "==> Done."
 
 ## Set the app's version number, MARKETING_VERSION in project.yml, and
