@@ -25,6 +25,75 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertEqual(TerminationDecision.decide(hasUnsavedChanges: false, userChoseQuitAnyway: true), .terminate)
     }
 
+    // MARK: - A Quit Held for Work
+
+    /// A second request to quit while a quit is held starts no second hold
+    /// and replies to AppKit no second time, for each kind of work a quit
+    /// holds for: a stand-in for any work, and a speech export under way
+    /// (the third and fourth kinds, feed downloads and a re-read, are the
+    /// same `QuitHold.Work`). The work is ended once; the one reply is true;
+    /// and once it was given a later hold holds afresh.
+    func testASecondQuitWhileOneIsHeldRepliesToAppKitOnce() async throws {
+        // Any work: it ends when the test lets it.
+        var endings = 0
+        var isEnded = false
+        let standIn = QuitHold.Work(
+            isRunning: { !isEnded },
+            end: {
+                endings += 1
+                while !isEnded { try? await Task.sleep(for: .milliseconds(5)) }
+            },
+            longestWait: .seconds(30)
+        )
+        // A speech export under way: ending is the export's own business.
+        let underWay = SpeechExportsUnderWay()
+        let exportID = underWay.begin(BookExportCancellation())
+        let kinds: [(name: String, work: QuitHold.Work, finish: () -> Void)] = [
+            ("any work", standIn, { isEnded = true }),
+            ("a speech export", underWay.quitWork(), { underWay.ended(exportID) }),
+        ]
+        for (name, work, finish) in kinds {
+            let holder = QuitHold.Holder()
+            var replies: [Bool] = []
+
+            XCTAssertTrue(holder.hold([work]) { replies.append($0) }, "\(name): the first quit was not held")
+            XCTAssertTrue(holder.hold([work]) { replies.append($0) }, "\(name): the second quit was not held")
+            XCTAssertTrue(holder.hold([work]) { replies.append($0) }, "\(name): the third quit was not held")
+            finish()
+            for _ in 0..<500 where replies.isEmpty {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            // Time for a second reply to come, were one coming.
+            try await Task.sleep(for: .milliseconds(100))
+
+            XCTAssertEqual(replies, [true], "\(name): AppKit was replied to \(replies.count) times, not once")
+        }
+        XCTAssertEqual(endings, 1, "any work was ended more than once by the repeated quits")
+    }
+
+    /// Once a held quit has been answered, the holder holds a later quit
+    /// afresh when work runs again, and holds none when nothing runs.
+    func testAHolderHoldsAgainOnceItsHoldIsAnswered() async throws {
+        let holder = QuitHold.Holder()
+        var isRunning = true
+        let work = QuitHold.Work(isRunning: { isRunning }, end: { isRunning = false }, longestWait: .seconds(30))
+        var replies: [Bool] = []
+
+        XCTAssertTrue(holder.hold([work]) { replies.append($0) })
+        for _ in 0..<500 where replies.isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(replies, [true])
+        XCTAssertFalse(holder.hold([work]) { _ in XCTFail("a quit with nothing running was held") })
+
+        isRunning = true
+        XCTAssertTrue(holder.hold([work]) { replies.append($0) }, "a later quit was not held afresh")
+        for _ in 0..<500 where replies.count < 2 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(replies, [true, true])
+    }
+
     // MARK: - The Guard
 
     /// With nothing unsaved, the guard flushes and quits at once, asking
