@@ -6,8 +6,10 @@ import Foundation
 /// - `reader kf8 BOOK` reads a Kindle book as an import does (the Kindle reader, then the shared converter and
 ///   the chapter parser), prints "OK" and a line of counts, and exits 0; prints "ERR" and the sentence a listener
 ///   would hear, and exits 1, for a book the reader refuses. A trap is a signal, which `fuzz.py` reports.
-/// - `reader sections BOOK` reads a Kindle book (.azw3, .mobi) or an EPUB (.epub) the same way and prints each chapter
-///   as a line "NUMBER<TAB>WORDS<TAB>TITLE", then a line "WORDS<TAB>TOTAL<TAB>SHA-256" whose digest is that of
+/// - `reader sections BOOK` (or `sections6`, which reads a hybrid file's MOBI 6 half) reads a Kindle book (.azw3,
+///   .mobi) or an EPUB (.epub) the same way and prints each chapter as a line
+///   "NUMBER<TAB>WORDS<TAB>TITLE<TAB>FIRST SIX WORDS ... LAST SIX WORDS", a line "HEADING<TAB>NUMBER<TAB>LEVEL: TEXT"
+///   for each heading, then a line "WORDS<TAB>TOTAL<TAB>SHA-256" whose digest is that of
 ///   the book's words in order (white space made single spaces, the characters no one sees left out), so two
 ///   files of one book can be compared by eye or by `diff`, as `KF8RealBookTests` compares them. A last line
 ///   "SOFTHYPHENS<TAB>COUNT" counts the soft hyphens (U+00AD) left in the chapters' text.
@@ -18,8 +20,8 @@ import Foundation
 struct Reader {
     static func main() {
         let arguments = CommandLine.arguments
-        guard arguments.count == 3, ["kf8", "sections"].contains(arguments[1]) else {
-            print("usage: reader kf8|sections BOOK")
+        guard arguments.count == 3, ["kf8", "sections", "sections6"].contains(arguments[1]) else {
+            print("usage: reader kf8|sections|sections6 BOOK")
             exit(2)
         }
         let url = URL(fileURLWithPath: arguments[2])
@@ -29,9 +31,11 @@ struct Reader {
             if url.pathExtension.lowercased() == "epub" {
                 chapters = try EPUBParser.prepareBook(url: url).chapters.map(\.chapter)
             } else {
-                chapters = try MOBIParser.prepareBook(url: url).chapters.map(\.chapter)
+                // sections6 reads a hybrid file from its MOBI 6 half, which a library stored before KF8 was read.
+                let half: MOBIBook.HybridChoice = arguments[1] == "sections6" ? .mobi6 : .kf8
+                chapters = try MOBIParser.prepareBook(url: url, hybrid: half).chapters.map(\.chapter)
             }
-            if arguments[1] == "sections" {
+            if arguments[1] != "kf8" {
                 printSections(chapters)
             } else {
                 let words = chapters.reduce(0) { $0 + $1.wordCount }
@@ -58,7 +62,14 @@ struct Reader {
     /// Prints a line for each chapter and the line of totals (see the type's comment).
     private static func printSections(_ chapters: [Chapter]) {
         for (index, chapter) in chapters.enumerated() {
-            print("\(index + 1)\t\(chapter.wordCount)\t\(chapter.title)")
+            // The chapter's first and last six words, so a misplaced piece shows at a chapter's edges.
+            let chapterWords = words(of: [chapter])
+            let edges = chapterWords.prefix(6).joined(separator: " ") + " ... " + chapterWords.suffix(6).joined(separator: " ")
+            print("\(index + 1)\t\(chapter.wordCount)\t\(chapter.title)\t\(edges)")
+        }
+        // The headings of each chapter, as "level: text", as `KF8RealBookTests` compares them.
+        for (index, chapter) in chapters.enumerated() {
+            for heading in chapter.headings { print("HEADING\t\(index + 1)\t\(heading.level): \(heading.text)") }
         }
         let all = words(of: chapters)
         let digest = SHA256.hash(data: Data(all.joined(separator: " ").utf8)).map { String(format: "%02x", $0) }.joined()
