@@ -513,6 +513,25 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertNotNil(keptEdited.held?.editedAt)
         XCTAssertEqual(keptEdited.preparation.broughtTranscriptNotUsed, DuplicateReplacement.BroughtTranscript(fileName: "Tide.vtt"))
 
+        // Cleaned up by the listener, though from outside and never edited:
+        // kept as well. This pins the cleanup half of "touched" on the
+        // replacement path (the question reads it from transcript.json, the
+        // replacement from the decoded transcript); losing it there would
+        // make the question promise what the replacement does not do.
+        var cleaned = recognized
+        cleaned.source = TranscriptSource(origin: .attached, format: .subRip, fileName: "Older.srt")
+        cleaned.cleanedUp = TranscriptCleanupNote(
+            cleanedAt: TranscriptFixtures.date, rulesVersion: 1, rulesDate: "2026-10-04", rules: "built-in", corrections: 2
+        )
+        let keptCleaned = try replace(withOld: cleaned)
+        XCTAssertEqual(keptCleaned.outcome, .keepsExisting, "the question did not count a cleanup as touching the transcript")
+        XCTAssertEqual(
+            keptCleaned.held?.files.first?.sentences.map(\.text), ["The ferry waits at the slip."],
+            "Replace Existing gave a cleaned-up transcript way to the file's, though the question said it was kept"
+        )
+        XCTAssertNotNil(keptCleaned.held?.cleanedUp, "the cleanup record was not carried with the transcript")
+        XCTAssertEqual(keptCleaned.preparation.broughtTranscriptNotUsed, DuplicateReplacement.BroughtTranscript(fileName: "Tide.vtt"))
+
         // From outside and untouched: gives way to the file's.
         var outside = recognized
         outside.source = TranscriptSource(origin: .attached, format: .subRip, fileName: "Older.srt")
