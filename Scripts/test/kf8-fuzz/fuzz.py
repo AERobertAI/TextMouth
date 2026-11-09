@@ -14,6 +14,13 @@ prints OK or ERR and exits 0 or 1 for a book it read or refused. Anything else i
   - a signal (a trap, or a stack overflow): the round's file is kept as FOLDER/trap-<round>.bin, named in the report;
   - a time over the limit, or a peak memory over the limit.
 The report ends with the counts, and the exit status is 0 only if no round failed.
+
+First runs (November 9, 2026, the reader built by build-reader.py from the sources of that day, each round in a
+reader process of its own; a book of these reads in a few tens of milliseconds), no round failing in any:
+  - seed 1, 2,000 rounds, se-the-time-machine.azw3:        read 1736, refused 264 (and 1736 / 264 for main's reader)
+  - seed 1, 2,000 rounds, mobi/quay-almanac-hybrid.mobi:    read 1863, refused 137
+  - seed 1, 2,000 rounds, mobi/pg1952-yellow-wallpaper-kf8.mobi: read 1830, refused 170
+  - seed 2, 2,000 rounds over those three books and mobi/pg1080-modest-proposal-kf8.mobi: read 1820, refused 180
 """
 import argparse
 import random
