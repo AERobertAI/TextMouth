@@ -132,3 +132,103 @@ enum ParserUtilities {
         return stack.joined(separator: "/")
     }
 }
+
+// MARK: - Soft Hyphens
+
+extension ParserUtilities {
+
+    /// `text` without its soft hyphens (U+00AD): the character itself, and
+    /// every way markup spells it (`&shy;`, and a numeric reference to 173
+    /// in decimal or hexadecimal with any letter case and any number of
+    /// leading zeros, with or without its semicolon). A publisher puts them
+    /// inside words to say where a line may break; a person reading sees none
+    /// in the middle of a line, and nothing that reads the words should meet
+    /// one in the middle of a word. Measured on November 9, 2026, a soft
+    /// hyphen left in a word:
+    /// - hides the word from Search in Book (`hyphen` does not find
+    ///   `hy\u{AD}phen`, nor does a regular expression);
+    /// - becomes a visible hyphen in braille (dots 3-6) and keeps the word
+    ///   from contracting;
+    /// - is spoken as the hyphen it is taken for, a longer word with a
+    ///   break in it (`Scripts/agents/probes/speech-soft-hyphen-probe.swift`).
+    ///
+    /// One rule for every reader that uses it: the Kindle readers (a KF8
+    /// book's markup and its contents' labels, and a MOBI 6 book's), so
+    /// that a soft hyphen is left out in one place.
+    static func removingSoftHyphens(_ text: String) -> String {
+        let bytes = Array(text.utf8)
+        // The common case, no soft hyphen at all, costs one scan and no copy.
+        var first: Int?
+        var position = 0
+        while position < bytes.count {
+            if softHyphenLength(in: bytes, at: position) != nil { first = position; break }
+            position += 1
+        }
+        guard let start = first else { return text }
+        var result = Array(bytes[..<start])
+        result.reserveCapacity(bytes.count)
+        position = start
+        while position < bytes.count {
+            if let length = softHyphenLength(in: bytes, at: position) {
+                position += length
+            } else {
+                result.append(bytes[position])
+                position += 1
+            }
+        }
+        return String(decoding: result, as: UTF8.self)
+    }
+
+    /// The length in bytes of the soft hyphen that begins at `position` in
+    /// UTF-8 `bytes`, or nil when none does.
+    private static func softHyphenLength(in bytes: [UInt8], at position: Int) -> Int? {
+        let byte = bytes[position]
+        // The character: C2 AD.
+        if byte == 0xC2 { return position + 1 < bytes.count && bytes[position + 1] == 0xAD ? 2 : nil }
+        guard byte == UInt8(ascii: "&"), position + 1 < bytes.count else { return nil }
+        // &shy; in any letter case.
+        if hasASCIIName(shyName, in: bytes, at: position + 1) { return 1 + shyName.count }
+        // &#173; &#xAD; and their spellings.
+        guard bytes[position + 1] == UInt8(ascii: "#") else { return nil }
+        var cursor = position + 2
+        var radix = 10
+        if cursor < bytes.count, bytes[cursor] == UInt8(ascii: "x") || bytes[cursor] == UInt8(ascii: "X") {
+            radix = 16
+            cursor += 1
+        }
+        var value = 0
+        var digits = 0
+        while cursor < bytes.count, digits < 12, let digit = digitValue(bytes[cursor], radix: radix) {
+            value = value * radix + digit
+            digits += 1
+            cursor += 1
+        }
+        guard digits > 0, value == 0xAD else { return nil }
+        if cursor < bytes.count, bytes[cursor] == UInt8(ascii: ";") { cursor += 1 }
+        return cursor - position
+    }
+
+    /// The name of the entity for a soft hyphen, with its semicolon.
+    private static let shyName = Array("shy;".utf8)
+
+    /// Whether the lower-case ASCII `name` is in `bytes` at `position`, in any letter case.
+    private static func hasASCIIName(_ name: [UInt8], in bytes: [UInt8], at position: Int) -> Bool {
+        guard position + name.count <= bytes.count else { return false }
+        for (index, expected) in name.enumerated() {
+            let byte = bytes[position + index]
+            let lowered = (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte) ? byte + 32 : byte
+            if lowered != expected { return false }
+        }
+        return true
+    }
+
+    /// The value of the digit `byte` in `radix` (10 or 16), or nil.
+    private static func digitValue(_ byte: UInt8, radix: Int) -> Int? {
+        switch byte {
+        case UInt8(ascii: "0")...UInt8(ascii: "9"): return Int(byte - UInt8(ascii: "0"))
+        case UInt8(ascii: "a")...UInt8(ascii: "f") where radix == 16: return Int(byte - UInt8(ascii: "a")) + 10
+        case UInt8(ascii: "A")...UInt8(ascii: "F") where radix == 16: return Int(byte - UInt8(ascii: "A")) + 10
+        default: return nil
+        }
+    }
+}

@@ -148,7 +148,7 @@ enum KF8Book {
             }
             sections.append(MOBIBook.Section(
                 title: titles[index] ?? displayTitle(of: rawTitle, differentFrom: bookTitle),
-                html: MOBIMarkup.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
+                html: ParserUtilities.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
                 headingTargets: headingTargets,
                 stripsDuplicateNavigation: true,
                 documentNumber: index + 1,
@@ -211,7 +211,7 @@ enum KF8Book {
     /// when it holds nothing to read.
     private static func readableLabel(_ label: String) -> String {
         let unescaped = (try? Entities.unescape(label)) ?? label
-        return MOBIMarkup.removingSoftHyphens(unescaped).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return ParserUtilities.removingSoftHyphens(unescaped).split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     // MARK: A Contents Page Made for the Book

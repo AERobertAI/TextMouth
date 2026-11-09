@@ -306,6 +306,10 @@ struct MOBIBook {
         var entries: [MOBIIndexEntry] = []
         if let indexRecord = headers.indexRecord {
             entries = try MOBIIndex.entries(startingAt: indexRecord, in: database).filter { $0.offset < text.count }
+            // A label is read, searched, and shown in braille as it is written: without a soft hyphen in it.
+            for index in entries.indices {
+                entries[index].label = ParserUtilities.removingSoftHyphens(entries[index].label)
+            }
         }
 
         // Every place the book names gets an anchor: the places its links
@@ -341,7 +345,8 @@ struct MOBIBook {
             nextAnchor = lastAnchor
             sections.append(Section(
                 title: start.title,
-                html: MOBIText.decode(bytes, encoding: headers.encoding),
+                // Without the soft hyphens a publisher put inside words (see `ParserUtilities.removingSoftHyphens`).
+                html: ParserUtilities.removingSoftHyphens(MOBIText.decode(bytes, encoding: headers.encoding)),
                 headingTargets: headingTargets
             ))
         }
@@ -399,6 +404,10 @@ struct MOBIBook {
                     .replacingOccurrences(of: ">", with: "&gt;")
                 return "<p>\(escaped)</p>"
             }
-        return Section(title: nil, html: "<html><body>\(paragraphs.joined())</body></html>", headingTargets: [:])
+        // The soft hyphens (U+00AD, which Windows-1252 has at 0xAD) are left out, as they are of a book of markup.
+        // Run after the escaping above, so that the text "&shy;" (now "&amp;shy;") stays as the author typed it.
+        return Section(
+            title: nil, html: ParserUtilities.removingSoftHyphens("<html><body>\(paragraphs.joined())</body></html>"),
+            headingTargets: [:])
     }
 }

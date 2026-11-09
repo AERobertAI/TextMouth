@@ -613,12 +613,12 @@ final class KF8ReviewFixTests: XCTestCase {
     func testEverySpellingOfASoftHyphenIsLeftOut() {
         let spellings = ["\u{AD}", "&shy;", "&#173;", "&#173", "&#xAD;", "&#xad;", "&#xAd;", "&#x00AD;", "&#00173;", "&#X0ad;"]
         for spelling in spellings {
-            XCTAssertEqual(MOBIMarkup.removingSoftHyphens("pro\(spelling)duct"), "product", spelling)
+            XCTAssertEqual(ParserUtilities.removingSoftHyphens("pro\(spelling)duct"), "product", spelling)
         }
         // What is not one stays.
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens("&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}"), "&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}")
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens("plain"), "plain")
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens(""), "")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}"), "&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("plain"), "plain")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens(""), "")
     }
 
     func testALabelLosesItsSoftHyphensToo() throws {
