@@ -1,7 +1,13 @@
 import SwiftUI
 
-/// The colors of the phone's words, in one place (the iPhone interface spec,
-/// "Dynamic Type and contrast").
+/// The colors of the phone's words, in one place.
+///
+/// The iPhone interface spec (`IOS-INTERFACE-SPEC-2026-11-07.md`) has no
+/// section on contrast. Its words on text sizes are "The layout" of the
+/// reader ("At large text sizes, the grid becomes one column and the screen
+/// scrolls") and "A book's row" ("What's visible"). Full contrast is a
+/// decision outside the spec: question 2 of section 6 in
+/// `humanQuestions/2026-11-08.md`, which the user has not answered.
 ///
 /// Apple's accessibility audit finds iOS's secondary gray only "nearly"
 /// enough contrast, and the tint a button draws its words in no better, so
