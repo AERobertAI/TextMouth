@@ -710,7 +710,8 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         let session = try await AudioEditSession.open(bookID: book.id, in: world.library)
         defer { session.close() }
         try await session.perform(.cut(AudioTimeRange(start: 1, end: 2)))
-        XCTAssertTrue(try await session.save().rendered)
+        let firstSave = try await session.save()
+        XCTAssertTrue(firstSave.rendered)
         LibraryPersistenceService.flushPendingSave()
         XCTAssertEqual(try indexedHeadings(of: try XCTUnwrap(world.library.bookByID(book.id))), [title])
         XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
@@ -718,7 +719,8 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
 
         // Every edit undone and saved: the chapters are back.
         while try await session.undo() != nil {}
-        XCTAssertTrue(try await session.save().rendered, "the reverted audio was not saved")
+        let revertSave = try await session.save()
+        XCTAssertTrue(revertSave.rendered, "the reverted audio was not saved")
         LibraryPersistenceService.flushPendingSave()
         let reverted = try XCTUnwrap(world.library.bookByID(book.id))
         XCTAssertEqual(try indexedHeadings(of: reverted), original, "reverting to the original lost the podcast's chapters")
@@ -731,7 +733,8 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
 
         // Edited again: set aside again.
         try await session.perform(.cut(AudioTimeRange(start: 3, end: 4)))
-        XCTAssertTrue(try await session.save().rendered)
+        let secondSave = try await session.save()
+        XCTAssertTrue(secondSave.rendered)
         LibraryPersistenceService.flushPendingSave()
         XCTAssertEqual(try indexedHeadings(of: try XCTUnwrap(world.library.bookByID(book.id))), [title])
         XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
