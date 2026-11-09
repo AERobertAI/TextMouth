@@ -186,10 +186,15 @@ final class SMILTextSources: NSObject, XMLParserDelegate {
 
     /// The `src` of each text element in `data`, in order, up to the point
     /// a damaged document stops the read; the sources found stand.
+    ///
+    /// A file the XML guard refuses (a tag with too many attributes, entities
+    /// of its own, an encoding it cannot see through; `XMLInputGuard`) is
+    /// never given to the XML parser, but it still names its text: the
+    /// sources are found by `sourcesWithoutParsing(_:)`. Reading none would
+    /// say a book has no text of its own, and the archive that holds the
+    /// only copy of that text would be offered for deletion.
     static func scan(_ data: Data) -> [String] {
-        // A SMIL file with a tag the parser would take too long over names no source
-        // (`XMLInputGuard`).
-        guard XMLInputGuard.problem(with: data) == nil else { return [] }
+        guard XMLInputGuard.problem(with: data) == nil else { return sourcesWithoutParsing(data) }
         let scanner = SMILTextSources()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
@@ -205,6 +210,27 @@ final class SMILTextSources: NSObject, XMLParserDelegate {
         // Prefixed names ("smil:text") count; only the local name matters.
         guard elementName.split(separator: ":").last == "text", let source = attributeDict["src"] else { return }
         sources.append(source)
+    }
+
+    /// A text element's start tag, its prefix allowed (`smil:text`), up to
+    /// its `src` attribute in either kind of quotation mark. The tag's other
+    /// attributes are passed over by `[^<>]*?`, which never crosses the start
+    /// or the end of another tag, so a file made of unclosed tags is read in
+    /// one pass, not once for each. Group 1 and 2 are the source.
+    private static let sourcePattern =
+        #"<(?:[^\s<>:/]+:)?text\s[^<>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')"#
+
+    /// The `src` of each text element in `data`, found as text and not as
+    /// XML, for a file the guard keeps from the XML parser: no entity is
+    /// expanded and no document type read, so the file costs no more than a
+    /// pass over its bytes. ISO Latin 1 gives every byte a character, so
+    /// markup in any ASCII-compatible encoding reads as it is written.
+    private static func sourcesWithoutParsing(_ data: Data) -> [String] {
+        guard let markup = String(data: data, encoding: .isoLatin1),
+              let expression = try? NSRegularExpression(pattern: sourcePattern) else { return [] }
+        return expression.matches(in: markup, range: NSRange(markup.startIndex..., in: markup)).compactMap { match in
+            [1, 2].lazy.compactMap { Range(match.range(at: $0), in: markup) }.first.map { String(markup[$0]) }
+        }
     }
 }
 

@@ -313,18 +313,39 @@ final class XMLInputGuardTests: XCTestCase {
 
     // MARK: - SMIL, PEF, and the ODT manifest
 
-    /// The text sources of a SMIL file are found in an ordinary one, and none
-    /// in a file the guard refuses (1,025 attributes, an encoding it cannot
-    /// read, entities of its own).
-    func testTheSMILTextSourcesOfAHostileFileAreNone() {
+    /// The text sources of a SMIL file are found in an ordinary one, and in a
+    /// file the guard refuses (1,025 attributes, an encoding it cannot read,
+    /// entities of its own) too, without the XML parser: they are what
+    /// tells a DAISY archive holds text, which keeps the archive from being
+    /// deleted after its audio is imported. A hostile file names the
+    /// sources it names and nothing more, and a quote, a prefix, or a
+    /// look-alike element is read as the XML parser reads it.
+    func testTheSMILTextSourcesOfAHostileFileAreStillFound() {
         func smil(_ extra: String = "", head: String = "") -> Data {
             Data("\(head)<smil><body><par><text src=\"chapter.html#p1\" \(extra)/></par></body></smil>".utf8)
         }
         XCTAssertEqual(SMILTextSources.scan(smil()), ["chapter.html#p1"])
         XCTAssertEqual(SMILTextSources.scan(smil(attributes(1_000))), ["chapter.html#p1"])
-        XCTAssertEqual(SMILTextSources.scan(smil(attributes(1_025))), [])
-        XCTAssertEqual(SMILTextSources.scan(smil(head: declaring("UTF-7").replacingOccurrences(of: "<r/>", with: ""))), [])
-        XCTAssertEqual(SMILTextSources.scan(smil(head: "<!DOCTYPE smil [<!ENTITY e \"x\">]>")), [])
+        XCTAssertEqual(SMILTextSources.scan(smil(attributes(1_025))), ["chapter.html#p1"], "1,025 attributes")
+        XCTAssertEqual(
+            SMILTextSources.scan(smil(head: declaring("UTF-7").replacingOccurrences(of: "<r/>", with: ""))),
+            ["chapter.html#p1"], "UTF-7")
+        XCTAssertEqual(
+            SMILTextSources.scan(smil(head: "<!DOCTYPE smil [<!ENTITY e \"x\">]>")), ["chapter.html#p1"], "entities")
+        // Read as text: single quotes, a prefix, the attribute after many, and
+        // no look-alikes (`textual`, `data-src`, a source outside a text element).
+        let tricky = Data("""
+        <!DOCTYPE smil [<!ENTITY e "x">]><smil:smil><smil:par>
+        <smil:text id='a' src='one.html#a'/><textual src="no.html"/><text data-src="no.html"/>
+        <audio src="no.mp3"/><text   \n  src = "two.html#b"/><text id="c"/>
+        </smil:par></smil:smil>
+        """.utf8)
+        XCTAssertEqual(SMILTextSources.scan(tricky), ["one.html#a", "two.html#b"])
+        // Unclosed start tags are read in one pass.
+        let started = Date()
+        let unclosed = Data("<!DOCTYPE x [<!ENTITY e \"x\">]>".utf8) + Data(String(repeating: "<text ", count: 200_000).utf8)
+        XCTAssertEqual(SMILTextSources.scan(unclosed), [])
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5, "200,000 unclosed tags took too long")
         // An external type, which DAISY's SMIL files name, is read.
         XCTAssertEqual(
             SMILTextSources.scan(smil(head: "<!DOCTYPE smil PUBLIC \"-//W3C//DTD SMIL 1.0//EN\" \"http://www.w3.org/TR/REC-smil/SMIL10.dtd\">")),
