@@ -88,7 +88,7 @@ struct PhoneSettingsView: View {
                         // by (the spec, under "Lists").
                         Text(section.title)
                             .phoneSecondaryText()
-                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityAddTraits(PhoneExperiment.has("header-plain") ? [] : .isHeader)
                     }
                 }
             }
@@ -201,7 +201,9 @@ struct PhoneSettingsView: View {
 
     /// A slider, with its value and caption above and below it for the eye.
     /// VoiceOver hears each of those once, from the slider itself.
+    @ViewBuilder
     private func sliderRow(_ adjustment: PhoneSettingsAdjustment, value: Binding<Double>) -> some View {
+        if !PhoneExperiment.has("settings-no-sliders") {
         VStack(alignment: .leading, spacing: 8) {
             PhoneValueRow(name: adjustment.label, value: adjustment.words(value.wrappedValue))
                 .accessibilityHidden(true)
@@ -211,15 +213,18 @@ struct PhoneSettingsView: View {
             .modifier(SteppedAdjustment(adjustment: adjustment, value: value, isEnabled: true))
             caption(adjustment.hint)
         }
+        }
     }
 
     /// A stepper, showing its label and value, with its caption below for the
     /// eye. VoiceOver hears each of those once, from the stepper itself.
+    @ViewBuilder
     private func stepperRow(
         _ adjustment: PhoneSettingsAdjustment,
         value: Binding<Double>,
         isEnabled: Bool = true
     ) -> some View {
+        if !PhoneExperiment.has("settings-no-steppers") {
         VStack(alignment: .leading, spacing: 4) {
             Stepper(value: value, in: adjustment.range, step: adjustment.step) {
                 PhoneValueRow(name: adjustment.label, value: adjustment.words(value.wrappedValue))
@@ -228,10 +233,13 @@ struct PhoneSettingsView: View {
             caption(adjustment.hint)
         }
         .disabled(!isEnabled)
+        }
     }
 
     /// A switch, with its hint below it for the eye where the Mac shows one.
+    @ViewBuilder
     private func switchRow(_ item: PhoneSettingsSwitch, isOn: Binding<Bool>, isEnabled: Bool = true) -> some View {
+        if !PhoneExperiment.has("settings-no-switches") {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(item.title, isOn: isOn)
                 .accessibilityLabel(item.label)
@@ -241,6 +249,7 @@ struct PhoneSettingsView: View {
             }
         }
         .disabled(!isEnabled)
+        }
     }
 
     /// Words for the eye, in the small type of the Mac's captions, and hidden
