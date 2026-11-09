@@ -180,6 +180,7 @@
 		12937CABF002E9B236C949AA /* PhoneControlDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B91439A8914A99CACBAE3D3 /* PhoneControlDescription.swift */; };
 		129CBC20EF3DFAF2E7CEB779 /* AudioLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BAACF5B4626204168E4630 /* AudioLayoutTests.swift */; };
 		12AF7D75BB075DBCEF4CD167 /* MOBIPalmDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000D0127EF5FCB48E259EB84 /* MOBIPalmDatabase.swift */; };
+		12C235E1AD1750E19329CBE6 /* SoftHyphenEffectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9470D49E805C5984842F3305 /* SoftHyphenEffectTests.swift */; };
 		12D505C6ED1F046A0CD10AE4 /* RecordingTimeFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 402B311C2047359E5F608A66 /* RecordingTimeFixtures.swift */; };
 		12EE3B0DB5FA24665FAE3935 /* ObjCExceptionCatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = ADB4F71B7687D98D92EBB2C6 /* ObjCExceptionCatcher.m */; };
 		12F5EEA0E4B1E5FA546D8E40 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */; };
@@ -3444,6 +3445,7 @@
 		941498F44F26906704569AD2 /* PhoneLogShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneLogShareSheet.swift; sourceTree = "<group>"; };
 		943AF61F345B2ACB9628D173 /* ReadingListPlace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingListPlace.swift; sourceTree = "<group>"; };
 		94559A41D8F0BE56561F9BA7 /* FeedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSettingsView.swift; sourceTree = "<group>"; };
+		9470D49E805C5984842F3305 /* SoftHyphenEffectTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoftHyphenEffectTests.swift; sourceTree = "<group>"; };
 		947A2B8E1DFAFE920F129FD8 /* FrontWindowKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontWindowKind.swift; sourceTree = "<group>"; };
 		94953E75DBCD1314B4C810B5 /* RTFTrackedChangesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTFTrackedChangesTests.swift; sourceTree = "<group>"; };
 		950F0DA3C89F58D7E1A09D08 /* FolderNavigationHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderNavigationHistoryTests.swift; sourceTree = "<group>"; };
@@ -5913,6 +5915,7 @@
 				32306AE0077F63ED034EEBE3 /* ShortcutPressDispatcherTests.swift */,
 				A302208FF87E613C9FBC9CC5 /* ShortcutsSettingsTabTests.swift */,
 				B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */,
+				9470D49E805C5984842F3305 /* SoftHyphenEffectTests.swift */,
 				24FD44634EFBEF912F8F24D0 /* SoundEffectPlaybackTests.swift */,
 				F0FD5C1D47651B7BAADAC52F /* SourceScanSymlinkTests.swift */,
 				E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */,
@@ -7332,6 +7335,7 @@
 				4E3C802E88134CE8DE442985 /* ShortcutPressDispatcherTests.swift in Sources */,
 				9E1C0546937F42BA32C454D7 /* ShortcutsSettingsTabTests.swift in Sources */,
 				D8F3E731356EE743DB4469C4 /* SleepTimerServiceTests.swift in Sources */,
+				12C235E1AD1750E19329CBE6 /* SoftHyphenEffectTests.swift in Sources */,
 				08B3A68EBCF96D30BA8FD75C /* SoundEffectPlaybackTests.swift in Sources */,
 				7F8D1115F9B02E2475D12C95 /* SourceScanSymlinkTests.swift in Sources */,
 				DDCA01075DB335BF911AD722 /* SourceScanTestSupport.swift in Sources */,
