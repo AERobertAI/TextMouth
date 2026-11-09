@@ -114,18 +114,3 @@ struct PhoneValueRow: View {
         }
     }
 }
-
-/// TEMPORARY (an audit experiment, removed before it is finished): names, in
-/// the debug launch variable TEXTMOUTH_EXPERIMENT (comma separated), the
-/// candidate causes of an audit finding that a view leaves out for one run.
-enum PhoneExperiment {
-    /// Whether `name` is switched on. Always false in a release build.
-    static func has(_ name: String) -> Bool {
-        #if DEBUG
-        let list = ProcessInfo.processInfo.environment["TEXTMOUTH_EXPERIMENT"] ?? ""
-        return list.split(separator: ",").contains { $0 == name }
-        #else
-        return false
-        #endif
-    }
-}

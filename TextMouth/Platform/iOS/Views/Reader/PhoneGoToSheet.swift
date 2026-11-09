@@ -52,7 +52,7 @@ struct PhoneGoToSheet: View {
                 PhoneSheetButton(title: PhoneAppWording.cancel) { dismiss() }
             }
             .task {
-                if !PhoneExperiment.has("goto-no-focus") { await focusOpeningField() }
+                await focusOpeningField()
             }
         }
     }
@@ -82,17 +82,15 @@ struct PhoneGoToSheet: View {
                     .foregroundStyle(.red)
             }
             PhoneActionButton(title: PhoneGoToVocabulary.jump) { take(field) }
-                .accessibilityLabel(PhoneExperiment.has("goto-jump-plain") ? PhoneGoToVocabulary.jump : field.jumpLabel)
+                .accessibilityLabel(field.jumpLabel)
         } header: {
             // For sight: VoiceOver hears the name once, as the field's label.
             // (Showing it to VoiceOver as a heading did not clear the
             // audit's one "potentially inaccessible text" finding, so the
             // spec's single reading stands.)
-            if !PhoneExperiment.has("goto-no-header") {
-                Text(model.label(of: field))
-                    .phoneSecondaryText()
-                    .accessibilityHidden(!PhoneExperiment.has("goto-header-visible"))
-            }
+            Text(model.label(of: field))
+                .phoneSecondaryText()
+                .accessibilityHidden(true)
         }
     }
 

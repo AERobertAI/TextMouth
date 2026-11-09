@@ -211,63 +211,6 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         try audit(app, screen: "Navigation unit choice", accepting: [.navigationTitle("Navigation unit"), .barItem("Cancel")])
     }
 
-    // MARK: - EXPERIMENTS (TEMPORARY: removed before the last pass)
-
-    /// Runs the audit of `types` on a screen once per candidate cause switched
-    /// off (`PhoneExperiment`), each a launch of its own, and keeps every
-    /// finding with the results, failing nothing. `open` brings the screen up.
-    private func experiment(
-        _ variants: [String], screen: String, types: XCUIAccessibilityAuditType,
-        open: (_ variant: String) throws -> XCUIApplication
-    ) throws {
-        for variant in variants {
-            let app = try open(variant)
-            try audit(app, screen: "\(screen) [\(variant.isEmpty ? "baseline" : variant)]", types: types, informing: types)
-            app.terminate()
-        }
-    }
-
-    /// Go To's element detection, with each candidate cause switched off.
-    func testExperimentGoToElementDetection() throws {
-        try experiment(["", "goto-header-visible", "goto-no-header", "goto-jump-plain", "goto-no-focus"], screen: "Go To", types: .elementDetection) { variant in
-            let app = try launchIntoTheReader(environment: ["TEXTMOUTH_EXPERIMENT": variant])
-            _ = try openReaderSheet("Go To", titled: "Go To", waitingFor: "Cancel", in: app)
-            return app
-        }
-    }
-
-    /// Sleep Timer's contrast, with each candidate cause switched off.
-    func testExperimentSleepTimerContrast() throws {
-        try experiment(["", "header-plain", "sleep-no-field", "sleep-no-stepper"], screen: "Sleep Timer", types: .contrast) { variant in
-            let app = try launchIntoTheReader(environment: ["TEXTMOUTH_EXPERIMENT": variant])
-            _ = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
-            return app
-        }
-    }
-
-    /// Settings' contrast, with each candidate cause switched off.
-    func testExperimentSettingsContrast() throws {
-        try experiment(["", "header-plain", "settings-no-sliders", "settings-no-switches", "settings-no-steppers"], screen: "Settings", types: .contrast) { variant in
-            let app = try launch(sendingTheBook: false, environment: ["TEXTMOUTH_EXPERIMENT": variant])
-            XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: Self.patience), "No Settings button")
-            app.buttons["Settings"].tap()
-            XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: Self.patience), "Settings never opened")
-            return app
-        }
-    }
-
-    /// Whether the Dynamic Type findings on Settings are the same from one
-    /// audit to the next: the same screen audited three times, each kept.
-    func testExperimentSettingsDynamicTypeIsRepeatable() throws {
-        let app = try launch(sendingTheBook: false)
-        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: Self.patience), "No Settings button")
-        app.buttons["Settings"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: Self.patience), "Settings never opened")
-        for run in 1...3 {
-            try audit(app, screen: "Settings Dynamic Type, run \(run)", types: .dynamicType, informing: .dynamicType)
-        }
-    }
-
     // MARK: - Helpers
 
     /// Opens the reader's sheet from its control, waits for the sheet's

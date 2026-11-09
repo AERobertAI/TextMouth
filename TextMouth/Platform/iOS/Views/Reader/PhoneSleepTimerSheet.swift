@@ -101,7 +101,7 @@ struct PhoneSleepTimerSheet: View {
         } header: {
             Text(PhoneSleepTimerVocabulary.currentTimer)
                 .phoneSecondaryText()
-                .accessibilityAddTraits(PhoneExperiment.has("header-plain") ? [] : .isHeader)
+                .accessibilityAddTraits(.isHeader)
         }
     }
 
@@ -112,13 +112,10 @@ struct PhoneSleepTimerSheet: View {
             ForEach(PhoneSleepTimerModel.presetMinutes, id: \.self) { minutes in
                 timerButton(.preset(minutes: minutes), title: SleepTimerDuration.minutes(minutes).displayName)
             }
-            if !PhoneExperiment.has("sleep-no-field") {
             TextField(PhoneSleepTimerVocabulary.minutesField, text: $customText)
                 .keyboardType(.numberPad)
                 .accessibilityLabel(PhoneSleepTimerVocabulary.customMinutesLabel)
                 .accessibilityHint(PhoneSleepTimerModel.customMinutesHint)
-            }
-            if !PhoneExperiment.has("sleep-no-stepper") {
             Stepper(
                 SleepTimerView.adjustMinutesLabel,
                 value: Binding(get: { customMinutes }, set: { customText = String($0) }),
@@ -126,12 +123,11 @@ struct PhoneSleepTimerSheet: View {
                 step: SleepTimerView.customMinutesStep
             )
             .accessibilityValue(CountWording.minutes(customMinutes))
-            }
             timerButton(.custom, title: PhoneSleepTimerVocabulary.set)
         } header: {
             Text(PhoneSleepTimerVocabulary.newTimer)
                 .phoneSecondaryText()
-                .accessibilityAddTraits(PhoneExperiment.has("header-plain") ? [] : .isHeader)
+                .accessibilityAddTraits(.isHeader)
         }
     }
 
@@ -145,7 +141,7 @@ struct PhoneSleepTimerSheet: View {
         } header: {
             Text(SleepTimerView.stopAtHeading)
                 .phoneSecondaryText()
-                .accessibilityAddTraits(PhoneExperiment.has("header-plain") ? [] : .isHeader)
+                .accessibilityAddTraits(.isHeader)
         }
     }
 
