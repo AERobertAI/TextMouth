@@ -139,7 +139,7 @@ struct TimedTextCue: Equatable, Sendable {
             } else {
                 // A word that would pass the limit is where the text stops.
                 if count + (followsWhiteSpace ? 2 : 1) > characterLimit {
-                    return (cutBack(plain), true)
+                    return (cutBack(plain, endsAtWordEnd: followsWhiteSpace), true)
                 }
                 if followsWhiteSpace {
                     plain.append(" ")
@@ -155,8 +155,10 @@ struct TimedTextCue: Equatable, Sendable {
 
     /// `text`, which was cut at its end, cut back to the end of the last
     /// sentence in its second half, else to its last space, else as it is, so
-    /// a cue seldom ends in half a word.
-    private static func cutBack(_ text: String) -> String {
+    /// a cue seldom ends in half a word. With `endsAtWordEnd`, the cut fell
+    /// between two words, so the text ends in a whole word and is not cut
+    /// back to its last space (a sentence's end is still preferred).
+    private static func cutBack(_ text: String, endsAtWordEnd: Bool) -> String {
         let characters = Array(text)
         var lastSpace: Int?
         var index = characters.count - 1
@@ -169,6 +171,7 @@ struct TimedTextCue: Equatable, Sendable {
             }
             index -= 1
         }
+        guard !endsAtWordEnd else { return text }
         return lastSpace.map { String(characters[..<$0]) } ?? text
     }
 

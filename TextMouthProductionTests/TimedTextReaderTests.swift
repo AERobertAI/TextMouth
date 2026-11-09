@@ -557,7 +557,7 @@ final class TimedTextReaderTests: XCTestCase {
         """)
 
         XCTAssertEqual(vtt.skippedCueCount, 0)
-        XCTAssertEqual(vtt.cues.map(\.endMilliseconds), [past, past + 1_000, 902_416_000])
+        XCTAssertEqual(vtt.cues.map(\.endMilliseconds), [past, past + 1_000, 901_816_000])
         XCTAssertEqual(subRipCues.cues, [cue(past + 1, past + 1_000, "Past the hundredth hour.")])
     }
 
@@ -1072,6 +1072,12 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertTrue(words.hasSuffix("word"), "cut mid-word: ...\(words.suffix(12))")
         XCTAssertLessThanOrEqual(words.count, limit)
         XCTAssertGreaterThan(words.count, limit - 5)
+
+        // The limit falls inside a word here ("abcdefgh a" is the 10,000th
+        // character), so the cue goes back to the word before.
+        let insideAWord = try webVTTCue(String(repeating: "abcdefgh ", count: limit)).text
+        XCTAssertTrue(insideAWord.hasSuffix(" abcdefgh"), "cut mid-word: ...\(insideAWord.suffix(12))")
+        XCTAssertEqual(insideAWord.count, 9_998)
 
         let unbroken = try webVTTCue(String(repeating: "x", count: limit * 3)).text
         XCTAssertEqual(unbroken.count, limit)
