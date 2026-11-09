@@ -536,6 +536,73 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertFalse(text(of: book, 0).contains("The essay words."))
     }
 
+    /// Project Gutenberg's A Modest Proposal (ebook 1080) as calibre made it: the header page, which holds the book's
+    /// title page too, in a `<header>`; the essay, a document with no heading, whose `<title>` is the same; and the
+    /// license, cut in two inside one `<footer>` (the license's opening words, then its heading). The essay was read
+    /// in the header's chapter, and the license's opening words at the end of the essay, so there were two chapters
+    /// where the EPUB has three.
+    func testAnEssayAfterAWholeHeaderIsItsOwnChapterAndALicenseKeepsItsOpeningWords() throws {
+        var fixture = try pieces([
+            "<header id=\"pg-header\"><h2>The Project Gutenberg eBook of A Modest Proposal</h2><p>Header words.</p></header>",
+            "<div class=\"chapter\" id=\"calibre_pb_0\"><p>The essay words.</p></div>",
+            "<footer id=\"pg-footer\"><div>The end marker of the eBook</div><p>The opening words of the license.</p></footer>",
+            "<footer id=\"pg-footer\"><h2>THE FULL LICENSE</h2><p>The rest of the license.</p></footer>",
+        ], titles: ["A Modest Proposal", "A Modest Proposal", "THE FULL LICENSE", "THE FULL LICENSE"])
+        fixture.entries = [KF8Fixture.Entry(label: "THE FULL LICENSE", document: 3)]
+        let book = try prepared(fixture)
+        let found = chapters(of: book)
+        XCTAssertEqual(
+            book.chapters.map(\.chapter.title),
+            ["The Project Gutenberg eBook of A Modest Proposal", "A Modest Proposal", "THE FULL LICENSE"], found)
+        XCTAssertEqual(headings(of: book, 1), ["A Modest Proposal"], "the essay is headed by its title: \(found)")
+        XCTAssertFalse(text(of: book, 0).contains("The essay words."), "the essay is read in the header's chapter: \(found)")
+        XCTAssertTrue(text(of: book, 1).contains("The essay words."), found)
+        XCTAssertFalse(text(of: book, 1).contains("opening words of the license"), "the license's opening is read at the essay's end: \(found)")
+        // The license's chapter begins with its opening words and goes on to its heading and the rest.
+        let license = text(of: book, 2)
+        let order = ["The end marker of the eBook", "opening words of the license", "THE FULL LICENSE", "The rest of the license."]
+        let places = order.map { license.range(of: $0)?.lowerBound }
+        XCTAssertFalse(places.contains { $0 == nil }, "the license's chapter lacks a part: \(found)")
+        XCTAssertEqual(places.compactMap { $0 }, places.compactMap { $0 }.sorted(), "the license's parts are out of order: \(license)")
+        XCTAssertEqual(
+            words(book).joined(separator: " "),
+            "The Project Gutenberg eBook of A Modest Proposal Header words. The essay words. The end marker of the eBook "
+                + "The opening words of the license. THE FULL LICENSE The rest of the license.")
+    }
+
+    /// What the container rules leave as it was: the second half of a section calibre opened again, a back page after
+    /// a footer, and a headless piece before a heading in another container are all still read in the chapter before.
+    func testPiecesInTheSameSectionOrAfterAFooterOrBeforeAHeadingInAnotherSectionStillGoOn() throws {
+        // A long chapter cut in two inside one `<section>`: the second half goes on.
+        let halves = try prepared(pieces([
+            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<section id=\"c1\"><p>Two.</p></section>",
+        ]))
+        XCTAssertEqual(halves.chapters.count, 1, "the two halves of one section: \(chapters(of: halves))")
+        // The same title but another section, with no heading: a section of its own is a chapter of its own.
+        let other = try prepared(pieces([
+            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<section id=\"c2\"><p>Two.</p></section>",
+        ]))
+        XCTAssertEqual(other.chapters.count, 2, "another section: \(chapters(of: other))")
+        // A back page after a footer goes on with it, as Project Gutenberg's does after its license.
+        let back = try prepared(pieces([
+            "<h1>Chapter</h1><p>One.</p>", "<footer id=\"pg-footer\"><h2>The end</h2><p>Words.</p></footer>", "<div><p>back</p></div>",
+        ], titles: ["Chapter", "The end", "The end"]))
+        XCTAssertEqual(back.chapters.map(\.chapter.title), ["Chapter", "The end"], "a back page after a footer: \(chapters(of: back))")
+        XCTAssertTrue(text(of: back, 1).contains("back"), chapters(of: back))
+        // The end of a chapter, in a section of its own, before the next chapter's heading in another: it goes on
+        // with the chapter before it, as the end of a chapter does.
+        let tail = try prepared(pieces([
+            "<h1>CHAPTER X</h1><p>Words of ten.</p>", "<section id=\"a\"><p>The end of ten.</p></section>",
+            "<section id=\"b\"><h1>CHAPTER XI</h1><p>Words of eleven.</p></section>",
+        ], titles: ["CHAPTER X", "CHAPTER XI", "CHAPTER XI"]))
+        XCTAssertEqual(tail.chapters.count, 2, chapters(of: tail))
+        XCTAssertTrue(text(of: tail, 0).contains("The end of ten."), chapters(of: tail))
+        XCTAssertFalse(text(of: tail, 1).contains("The end of ten."), chapters(of: tail))
+        // A section with no id names nothing: the same shape as the essay, but nothing says the pieces are not one.
+        let anonymous = try prepared(pieces(["<header><h1>Chapter</h1><p>One.</p></header>", "<p>Two.</p>"]))
+        XCTAssertEqual(anonymous.chapters.count, 1, chapters(of: anonymous))
+    }
+
     /// The last document, with no heading and a title of its own, keeps its chapter, whether or not the guide
     /// names it (the review's toc-epilogue book: the guide names the epilogue). The guide does not decide it.
     func testAHeadlessLastPieceTheGuideNamesKeepsItsChapter() throws {

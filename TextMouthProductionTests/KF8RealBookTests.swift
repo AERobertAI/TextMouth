@@ -124,6 +124,36 @@ final class KF8RealBookTests: XCTestCase {
         XCTAssertFalse(chapters.contains { $0.title == "Table of Contents" })
     }
 
+    // MARK: - Project Gutenberg's A Modest Proposal, from calibre
+
+    /// The essay is a document with no heading whose `<title>` is the header page's, so a repeated title once
+    /// joined it to the header (two chapters, where the EPUB has three), and the license's opening words, in the first
+    /// piece calibre cut the license into, were read at the end of the essay. Chapter for chapter, the KF8 file and
+    /// the EPUB must now be the same book: the same titles, the same number of words in each, the same words in
+    /// the same order.
+    func testAModestProposalReadsAsItsEPUBsThreeChaptersWithTheLicensesOpeningInTheLicense() throws {
+        let book = try prepared("mobi/pg1080-modest-proposal-kf8.mobi")
+        XCTAssertTrue(book.title.hasPrefix("A Modest Proposal"), book.title)
+        let chapters = book.chapters.map(\.chapter)
+        let source = try epub("azw3/pg1080-modest-proposal.epub").chapters.map(\.chapter)
+        let found = chapters.map { "\"\($0.title)\" (\($0.wordCount) words)" }.joined(separator: "; ")
+        XCTAssertEqual(chapters.map(\.title), source.map(\.title), found)
+        XCTAssertEqual(chapters.map(\.title), [
+            "The Project Gutenberg eBook of A Modest Proposal", "A Modest Proposal", "THE FULL PROJECT GUTENBERG™ LICENSE",
+        ], found)
+        XCTAssertEqual(chapters.map(\.wordCount), source.map(\.wordCount), "words in each chapter: \(found)")
+        XCTAssertEqual(chapters.map(\.wordCount), [169, 3_386, 2_906], found)
+        let kf8 = words(chapters)
+        XCTAssertEqual(kf8.count, 6_461)
+        XCTAssertEqual(digest(kf8), digest(words(source)), "the words, in order, of the KF8 book and of its EPUB")
+        // The essay's chapter holds the essay and not the license's opening, which begins the license's chapter.
+        let essay = chapters[1].text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let license = chapters[2].text.trimmingCharacters(in: .whitespacesAndNewlines)
+        XCTAssertTrue(essay.hasSuffix("my wife past child-bearing."), String(essay.suffix(120)))
+        XCTAssertTrue(license.hasPrefix("*** END OF THE PROJECT GUTENBERG EBOOK"), String(license.prefix(120)))
+        XCTAssertEqual(headings(chapters), headings(source), "the same headings at the same levels")
+    }
+
     // MARK: - The Quay Almanac, made here from an EPUB
 
     func testTheQuayAlmanacAZW3ReadsLikeItsEPUBInEveryWayCounted() throws {
