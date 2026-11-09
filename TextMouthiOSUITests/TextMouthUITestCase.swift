@@ -239,6 +239,20 @@ class TextMouthUITestCase: XCTestCase {
             )
         }
 
+        /// On a screen scrolled part of the way, text cut by the edge of the
+        /// screen or by the bar it scrolls under: the audit reports "Text
+        /// clipped" for it with no element (once or twice a pass, November 9,
+        /// 2026). The screenshot of pass 4 shows exactly that on Settings at
+        /// the largest size, scrolled: a line cut at the top under the
+        /// navigation bar's glass, and a row cut at the bottom edge. Matched by
+        /// an empty label, the clipped-text kind, and Apple's exact words, and
+        /// used only by the audits of a scrolled screen.
+        static let scrolledPastTheEdge = Accepted(
+            type: .textClipped, label: "",
+            why: "text cut by the screen's edge or the bar on a scrolled screen, which is what scrolling does",
+            description: "Text clipped"
+        )
+
         /// The navigation bar's title: iOS truncates a long title at large
         /// sizes, and VoiceOver and braille read it whole.
         static func navigationTitle(_ title: String) -> Accepted {
