@@ -130,8 +130,15 @@ enum PageReaderVersions {
             // it was made from, and they are read as pages. A MOBI 6 book
             // has none. A hybrid file is read from its KF8 half from
             // "1.0.0", which keeps the headings at the levels the author gave
-            // them, so every .mobi book is read again once.
-            return "1.0.0"
+            // them, so every .mobi book is read again once. At "1.1.0" a soft
+            // hyphen is left out of a MOBI 6 book's words and contents too (a
+            // KF8 book's already were; a soft hyphen hid a word from search, was
+            // a hyphen in braille, and a pause in speech), a KF8 book's pieces
+            // that calibre cut are joined into chapters by a rule that gives
+            // an essay after a header its own chapter and a licence's opening
+            // words their licence's chapter, so every .mobi book (.azw3
+            // included) is read again once more.
+            return "1.1.0"
         case .kfx:
             // A KFX book (FMT52) has pages when it carries a print page
             // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and

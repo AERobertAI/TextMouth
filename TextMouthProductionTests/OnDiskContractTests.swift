@@ -557,7 +557,7 @@ final class OnDiskContractTests: XCTestCase {
                 // nothing of its own) and 1.3.0 (symbols by font).
                 let raised = [
                     "epub": "1.0.3", "html": "1.0.3", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.3.0", "docx": "1.3.0",
-                    "odt": "1.1.0", "wordml": "1.3.0",
+                    "odt": "1.1.0", "wordml": "1.3.0", "mobi": "1.1.0",
                 ]
                 return (name, raised[name] ?? "1.0.0")
             }),
