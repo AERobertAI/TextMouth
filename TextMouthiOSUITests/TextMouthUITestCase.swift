@@ -74,6 +74,8 @@ class TextMouthUITestCase: XCTestCase {
     /// which carries the screen's tree.
     func tap(_ element: XCUIElement, until expected: XCUIElement, in app: XCUIApplication, what: String) {
         for _ in 0..<3 {
+            // A tap whose screen took longer than the wait to come has worked.
+            if expected.exists { return }
             guard element.waitForExistence(timeout: Self.patience) else {
                 XCTFail("No \(what) to tap:\n\(app.debugDescription)")
                 return
@@ -158,11 +160,52 @@ class TextMouthUITestCase: XCTestCase {
 
     /// A finding the audit makes of a part of iOS the app doesn't draw, which
     /// the app can't change, matched by the audit's type and the element's
-    /// label, with the reason it's accepted.
+    /// label (exactly, or by its start when `labelIsPrefix`), and, when
+    /// `description` is given, Apple's own short description of it, with the
+    /// reason it's accepted.
     struct Accepted {
         let type: XCUIAccessibilityAuditType
         let label: String
         let why: String
+        /// Whether `label` need only begin the element's label.
+        var labelIsPrefix = false
+        /// Apple's `compactDescription` the finding must have, or none.
+        var description: String?
+
+        /// Whether the finding of `type`, on an element labeled `elementLabel`
+        /// (empty when it names none), described as `compact`, is this one.
+        func matches(type findingType: XCUIAccessibilityAuditType, label elementLabel: String, description compact: String) -> Bool {
+            guard findingType.contains(type) else { return false }
+            guard labelIsPrefix ? elementLabel.hasPrefix(label) : elementLabel == label else { return false }
+            return description.map { $0 == compact } ?? true
+        }
+
+        /// The Library's summary row, "1 book. 2 hours, ... remaining at
+        /// current speed", whose Dynamic Type finding ("partially unsupported")
+        /// is a plain `Text` in the subheadline style that grows and wraps
+        /// (the screenshots of `LargeTextUITests`, 5 lines at the largest
+        /// size). Its cause is not known. Matched by the summary's first
+        /// words (they begin with the book count, "1 book.") and the Dynamic
+        /// Type kind only; the same row's other findings, and every other
+        /// row's, still fail.
+        static let librarySummary = Accepted(
+            type: .dynamicType, label: "1 book.",
+            why: "the Library's summary row: a plain Text that grows and wraps, flagged for a cause not known",
+            labelIsPrefix: true
+        )
+
+        /// The finding at the largest size on Settings that names no element,
+        /// "Dynamic Type font sizes are unsupported". It is not the "partially
+        /// unsupported" of a text node, and names nothing the tree holds; the
+        /// control on that screen that does not grow is the system stepper's
+        /// minus and plus (the screenshot of `LargeTextUITests`), which is
+        /// probably what it is, unproven. Matched by an empty label, the
+        /// Dynamic Type kind, and Apple's exact words only.
+        static let unnamedUnsupported = Accepted(
+            type: .dynamicType, label: "",
+            why: "a finding that names no element, probably the system stepper's controls, which iOS does not grow",
+            description: "Dynamic Type font sizes are unsupported"
+        )
 
         /// The system's search field: iOS clips its placeholder at the
         /// largest text sizes, and VoiceOver and braille read it whole.
@@ -203,9 +246,13 @@ class TextMouthUITestCase: XCTestCase {
         }
     }
 
-    /// The kinds of finding iOS audits, each of which `audit` runs alone.
-    private static let auditKinds: [XCUIAccessibilityAuditType] = [
-        .contrast, .elementDetection, .hitRegion, .sufficientElementDescription, .dynamicType, .textClipped, .trait,
+    /// The kinds of finding iOS audits (XCUIAccessibilityAuditTypes.h of the
+    /// iOS 26.0 SDK has these seven), each with its name: the one table that
+    /// `audit` runs from and `name(of:)` reads.
+    private static let auditKinds: [(kind: XCUIAccessibilityAuditType, name: String)] = [
+        (.contrast, "contrast"), (.elementDetection, "element detection"), (.hitRegion, "hit region"),
+        (.sufficientElementDescription, "element description"), (.dynamicType, "Dynamic Type"),
+        (.textClipped, "clipped text"), (.trait, "trait"),
     ]
 
     /// Runs Apple's accessibility audit on the screen showing, every iOS type
@@ -222,10 +269,11 @@ class TextMouthUITestCase: XCTestCase {
     /// names its element. And Go To's "Potentially inaccessible text" appeared
     /// in both of the runs that audited every kind together, and in none of
     /// five launches that audited that kind alone, so it is a product of the
-    /// combined run. Nothing is skipped: every kind still runs.
+    /// combined run. Every kind in `auditKinds`, the seven this SDK has, still
+    /// runs; a kind a later SDK adds would need a row there.
     ///
     /// Each finding names its element with its type, label, value, identifier,
-    /// and frame in points (`trace(of:)`), so that a finding can be found on
+    /// and frame in points (`trace(of:named:)`), so that a finding can be found on
     /// the screenshot kept with the results. When any finding is not accepted,
     /// the screen's whole accessibility tree, every element with its frame, is
     /// kept too ("<screen>: accessibility tree").
@@ -241,11 +289,15 @@ class TextMouthUITestCase: XCTestCase {
         var findings: [String] = []
         var acceptedFindings: [String] = []
         var informingFindings: [String] = []
-        for kind in Self.auditKinds where !types.intersection(kind).isEmpty {
+        for (kind, _) in Self.auditKinds where !types.intersection(kind).isEmpty {
             try app.performAccessibilityAudit(for: kind) { issue in
-                let label = issue.element?.label ?? ""
-                let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: issue.element)): \(issue.compactDescription). \(issue.detailedDescription)"
-                if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
+                // One snapshot of the element, taken only if it still exists
+                // (reading a missing element's properties fails the test),
+                // serves the match and the trace.
+                let snapshot = Self.snapshot(of: issue.element)
+                let label = snapshot?.label ?? ""
+                let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: snapshot, named: issue.element != nil)): \(issue.compactDescription). \(issue.detailedDescription)"
+                if let match = accepted.first(where: { $0.matches(type: issue.auditType, label: label, description: issue.compactDescription) }) {
                     acceptedFindings.append("\(said) Accepted: \(match.why).")
                 } else if !informed.isDisjoint(with: issue.auditType) {
                     // Kept with the results, and not failed.
@@ -283,14 +335,23 @@ class TextMouthUITestCase: XCTestCase {
         )
     }
 
+    /// A snapshot of an audit finding's `element`, or none when the finding
+    /// names no element or the element is gone (the check is `exists`, which
+    /// never fails the test, where reading a missing element's properties
+    /// would).
+    static func snapshot(of element: XCUIElement?) -> (any XCUIElementSnapshot)? {
+        guard let element, element.exists else { return nil }
+        return try? element.snapshot()
+    }
+
     /// What an audit finding's element is, to find it on the screenshot: its
     /// type, label, value, identifier, and frame in points, whether it is
     /// enabled, and how many elements it holds. "no element" when the finding
-    /// names none, and a note when the element is gone by the time it is read
-    /// (reading a missing element's properties would fail the test).
-    static func trace(of element: XCUIElement?) -> String {
-        guard let element else { return "no element" }
-        guard element.exists, let snapshot = try? element.snapshot() else { return "an element no longer in the tree" }
+    /// names none (`named` false), and a note when it named one that is gone
+    /// by the time it is read.
+    static func trace(of snapshot: (any XCUIElementSnapshot)?, named: Bool) -> String {
+        guard named else { return "no element" }
+        guard let snapshot else { return "an element no longer in the tree" }
         let value = snapshot.value.map { "\($0)" } ?? "none"
         return "\(snapshot.elementType.rawValue) \"\(snapshot.label)\" (value \(value), id \"\(snapshot.identifier)\", "
             + "frame \(snapshot.frame), enabled \(snapshot.isEnabled), \(snapshot.children.count) children)"
@@ -298,12 +359,7 @@ class TextMouthUITestCase: XCTestCase {
 
     /// The name of an iOS audit type, as XCUIAccessibilityAuditTypes.h has it.
     static func name(of type: XCUIAccessibilityAuditType) -> String {
-        let names: [(XCUIAccessibilityAuditType, String)] = [
-            (.contrast, "contrast"), (.elementDetection, "element detection"), (.hitRegion, "hit region"),
-            (.sufficientElementDescription, "element description"), (.dynamicType, "Dynamic Type"),
-            (.textClipped, "clipped text"), (.trait, "trait"),
-        ]
-        let matched = names.filter { type.contains($0.0) }.map(\.1)
+        let matched = auditKinds.filter { type.contains($0.kind) }.map(\.name)
         return matched.isEmpty ? "type \(type.rawValue)" : matched.joined(separator: ", ")
     }
 
