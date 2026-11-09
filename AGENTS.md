@@ -51,7 +51,7 @@ The orchestrator launches each agent in its own git worktree under `.claude/work
   - **Each train:**
     - it waits for the heavy-work lock first in line, so no other job takes the lock before it, for up to 50 minutes, and never runs without it; a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock;
     - it then takes every waiting request, those made while it waited included, and merges the commit each one names onto `train/base` in `.claude/worktrees/train`, leaving out a branch that conflicts anywhere but project.pbxproj and telling its agent;
-    - it builds once, with two jobs;
+    - it builds once, with two jobs. If the build fails to compile only in files some merged branches change, it builds again without those branches, and merges again, in the order of the requests, every branch it had left out for a conflict: one that now merges cleanly is taken back, and the summary says so;
     - it runs the union of the tests asked for, dropping and reporting any name `Scripts/test/run-area.py` does not know;
     - it writes `build/orchestrator/train/trains/<id>/summary.md`;
     - it waits for the next hour while under 3 GB is free.
