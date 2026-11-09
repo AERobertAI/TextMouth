@@ -333,7 +333,8 @@ final class TextFileDecoderTests: XCTestCase {
                         .data(using: encoding) else { continue }
                 for start in 0..<max(0, data.count - 16) {
                     // Short windows from every start; the rest of the file from every seventh.
-                    let lengths = [16, 17, 40, 101] + (start % 7 == 0 ? [data.count - start] : [])
+                    var lengths: [Int] = [16, 17, 40, 101]
+                    if start % 7 == 0 { lengths.append(data.count - start) }
                     for length in lengths where length >= 16 && start + length <= data.count {
                         windows += 1
                         if let read = TextFileDecoder.unmarkedUnicode(in: Data(data[start..<start + length])) {
