@@ -136,8 +136,9 @@ final class MOBIReaderTests: XCTestCase {
             XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/\(name)")), .mobi, name)
         }
         // A MOBI 6 book has no print pages, a KF8 book (FMT48) has its EPUB's page-break
-        // elements, and both are the format "mobi": its page reader is 1.0.0.
-        XCTAssertEqual(PageReaderVersions.current(for: .mobi), "1.0.0")
+        // elements, and both are the format "mobi": its page reader is 1.1.0 (soft hyphens are left out of
+        // a MOBI 6 book's words, and a KF8 book's license begins with its opening words).
+        XCTAssertEqual(PageReaderVersions.current(for: .mobi), "1.1.0")
     }
 
     func testThePanelOffersKindleBooks() {
@@ -169,7 +170,7 @@ final class MOBIReaderTests: XCTestCase {
         ])
         XCTAssertTrue(spaced(allText(of: content)).contains("It is very seldom that mere ordinary people"))
         XCTAssertTrue(content.pages.breaks.isEmpty, "a Kindle book has no print pages")
-        XCTAssertEqual(imported.book.pageReaderVersion, "1.0.0")
+        XCTAssertEqual(imported.book.pageReaderVersion, "1.1.0")
     }
 
     func testAnImportedKindleBookReadsTheSameFromItsSourceAfterItsTextIsRemoved() throws {
