@@ -674,6 +674,46 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertEqual(try DOCXParser.parse(url: docx).title, "Mending Cloth Spines")
     }
 
+    /// Core properties that name no title, or no author (an empty element, a
+    /// self-closing one, one of only spaces and line breaks, or none), leave
+    /// the document its file name and the unknown author, as a document with
+    /// no core properties has, rather than an empty title and author.
+    func testEmptyCorePropertiesFallBackLikeMissingOnes() throws {
+        func core(title: String, creator: String) -> Data {
+            Data("""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+             xmlns:dc="http://purl.org/dc/elements/1.1/">\(title)\(creator)</cp:coreProperties>
+            """.utf8)
+        }
+        let cases: [(name: String, part: Data?)] = [
+            ("empty elements", core(title: "<dc:title></dc:title>", creator: "<dc:creator></dc:creator>")),
+            ("self-closing elements", core(title: "<dc:title/>", creator: "<dc:creator/>")),
+            ("spaces and line breaks", core(title: "<dc:title>  \n </dc:title>", creator: "<dc:creator> \t </dc:creator>")),
+            ("no elements", core(title: "", creator: "")),
+            ("no core properties at all", nil),
+        ]
+        for (name, part) in cases {
+            let docx = try part.map { try makeDOCX(replacing: [DOCXParser.Part.coreProperties: $0]) }
+                ?? makeDOCX(removing: [DOCXParser.Part.coreProperties])
+            let content = try DOCXParser.parse(url: docx)
+            XCTAssertEqual(content.title, Self.fileTitle, "title for \(name)")
+            XCTAssertEqual(content.author, Book.unknownAuthor, "author for \(name)")
+            XCTAssertEqual(content.chapters.map(\.text), [Self.spokenDocument], "text for \(name)")
+        }
+        // A title given with an empty author keeps the title, and the reverse.
+        let titleOnly = try makeDOCX(replacing: [
+            DOCXParser.Part.coreProperties: core(title: "<dc:title>Spine Notes</dc:title>", creator: "<dc:creator> </dc:creator>")
+        ])
+        XCTAssertEqual(try DOCXParser.parse(url: titleOnly).title, "Spine Notes")
+        XCTAssertEqual(try DOCXParser.parse(url: titleOnly).author, Book.unknownAuthor)
+        let authorOnly = try makeDOCX(replacing: [
+            DOCXParser.Part.coreProperties: core(title: "<dc:title> </dc:title>", creator: "<dc:creator>Ilse Varga</dc:creator>")
+        ])
+        XCTAssertEqual(try DOCXParser.parse(url: authorOnly).title, Self.fileTitle)
+        XCTAssertEqual(try DOCXParser.parse(url: authorOnly).author, "Ilse Varga")
+    }
+
     /// Damaged core properties never fail the document. It is read under its
     /// file name with an unknown author, even when a title was read before
     /// the damage, all of its text still reads, and the damage is reported.

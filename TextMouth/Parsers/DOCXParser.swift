@@ -71,8 +71,11 @@ enum DOCXParser {
         let metadata = try? readMetadata(from: url)
 
         // Parse the generated Markdown using the shared Markdown parser
-        let docTitle = metadata?.title ?? title
-        let docAuthor = metadata?.author ?? Book.unknownAuthor
+        // A title or author the core properties leave empty is not a name:
+        // the file's name and the unknown author stand, as for a document
+        // with no core properties at all.
+        let docTitle = metadata?.namedTitle ?? title
+        let docAuthor = metadata?.namedAuthor ?? Book.unknownAuthor
 
         let content = try MarkdownDocParser.parse(markdown: markdown, title: docTitle)
         return DocumentContent(
