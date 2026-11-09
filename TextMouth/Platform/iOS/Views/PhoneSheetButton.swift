@@ -26,7 +26,9 @@ import SwiftUI
 enum PhoneSheetButtonPlacement {
     /// The placement of every sheet button, and of any other button beside
     /// them in the bar (Bookmarks' Add). Changing it back is this one line.
-    static let placement: ToolbarItemPlacement = .topBarTrailing
+    /// (A computed property: `ToolbarItemPlacement` is not `Sendable`, so a
+    /// stored one is not concurrency-safe.)
+    static var placement: ToolbarItemPlacement { .topBarTrailing }
 }
 
 /// One button of a sheet's bar, in `PhoneSheetButtonPlacement.placement`, its
