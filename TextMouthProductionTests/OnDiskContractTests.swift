@@ -557,9 +557,10 @@ final class OnDiskContractTests: XCTestCase {
                 // nothing of its own) and 1.3.0 (symbols by font).
                 let raised = [
                     "epub": "1.0.3", "html": "1.0.3", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.3.0", "docx": "1.3.0",
-                    "odt": "1.1.0", "wordml": "1.3.0", "mobi": "1.1.0",
+                    "odt": "1.1.0", "wordml": "1.3.0",
                 ]
-                return (name, raised[name] ?? "1.0.0")
+                // Kindle books (.mobi and .azw3) are at 1.1.0: soft hyphens left out of MOBI 6 books, and the KF8 chapter rule.
+                return (name, raised[name] ?? (name == "mobi" ? "1.1.0" : "1.0.0"))
             }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )
