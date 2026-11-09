@@ -5,7 +5,7 @@
 
 It compiles the Kindle reader, the shared HTML converter, the Markdown chapter parser, and the EPUB reader's
 chapter type with `swiftc` (optimized, Swift 5 mode), linked against the packages an earlier Release build left in
-`build/DerivedData/Build/Products/Release` (SwiftSoup, swift-markdown, ZIPFoundation), with `Stubs.swift` for the app
+`build/DerivedData/Build/Products/Release` (or under `$KF8_FUZZ_BUILD`; SwiftSoup, swift-markdown, ZIPFoundation), with `Stubs.swift` for the app
 types around them. It is heavy: run it under the heavy-work lock, as every build of this Mac is:
 
     python3 -I build/orchestrator/followups1105/run_locked.py kf8-reader python3 -I Scripts/test/kf8-fuzz/build-reader.py ...
@@ -19,13 +19,16 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
-PRODUCTS = ROOT + "/build/DerivedData/Build/Products/Release"
-CHECKOUTS = ROOT + "/build/DerivedData/SourcePackages/checkouts"
+# The folder holding DerivedData: this repository's build folder, or another checkout's when an agent's worktree
+# has none of its own (set KF8_FUZZ_BUILD to that checkout's `build` folder).
+BUILD = os.environ.get("KF8_FUZZ_BUILD", ROOT + "/build")
+PRODUCTS = BUILD + "/DerivedData/Build/Products/Release"
+CHECKOUTS = BUILD + "/DerivedData/SourcePackages/checkouts"
 
 PARSERS = """MOBIBook MOBIError MOBIHeaders MOBIHuffman MOBIIndex MOBIMarkup MOBIPalmDatabase MOBIParser MOBIText KF8Book KF8Layout
-KFXSignature HTMLToMarkdownConverter HTMLReadingText MarkdownParser MarkdownEmphasis MarkdownHeadingAnnotation MarkdownLiteral
-MarkdownMarkerWriter MarkdownPageMarker PublicationSemantics ParserUtilities DocumentByteLimit ArchiveEntryReader
-EPUBParser EPUBParser+Navigation ExtractionReport PackageSAXParser PDFExtractionDiagnostics""".split()
+KFXSignature MarkupGuard MarkupScanner MarkupNesting HTMLToMarkdownConverter HTMLReadingText MarkdownParser MarkdownEmphasis MarkdownHeadingAnnotation MarkdownLiteral
+MarkdownMarker MarkdownMarkerWriter MarkdownPageMarker PublicationSemantics ParserUtilities DocumentByteLimit ArchiveEntryReader
+XMLInputGuard EPUBParser EPUBParser+Navigation ExtractionReport PackageSAXParser PDFExtractionDiagnostics""".split()
 MODELS = ["BookPages", "EPUBMetadata"]
 
 
