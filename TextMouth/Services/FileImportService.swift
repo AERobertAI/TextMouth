@@ -213,12 +213,14 @@ final class SMILTextSources: NSObject, XMLParserDelegate {
     }
 
     /// A text element's start tag, its prefix allowed (`smil:text`), up to
-    /// its `src` attribute in either kind of quotation mark. The tag's other
+    /// its `src` attribute in either kind of quotation mark. The white space
+    /// after the name is looked at but not consumed (`(?=\s)`), so a `src`
+    /// that comes first is found by the white space before it. The tag's other
     /// attributes are passed over by `[^<>]*?`, which never crosses the start
     /// or the end of another tag, so a file made of unclosed tags is read in
     /// one pass, not once for each. Group 1 and 2 are the source.
     private static let sourcePattern =
-        #"<(?:[^\s<>:/]+:)?text\s[^<>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')"#
+        #"<(?:[^\s<>:/]+:)?text(?=\s)[^<>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')"#
 
     /// The `src` of each text element in `data`, found as text and not as
     /// XML, for a file the guard keeps from the XML parser: no entity is
