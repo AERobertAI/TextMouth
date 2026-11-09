@@ -181,6 +181,42 @@ final class OutsideTranscriptTests: XCTestCase {
 
     // MARK: - Cutting the Book's Timeline into Its Files
 
+    /// A WebVTT file timed on the whole of a book of 120 hours (three files
+    /// of 40) reads in full, cues past hour 100 included, and its
+    /// sentences go to the files they were spoken in, each counted from its
+    /// own file's start, so none is past the 100 hours a file may hold: the
+    /// book's audio is no shorter than the file's last cue, so none is
+    /// refused as running past the end. Cues past hour 100 were dropped
+    /// when the readers stopped at 100 hours.
+    func testACaptionFileTimedOnABookOfMoreThan100HoursIsReadAndCutIntoItsFiles() throws {
+        let files = ["a1.wav", "a2.wav", "a3.wav"].map { Self.planFile($0, seconds: 144_000) }
+        let captions = """
+        WEBVTT
+
+        00:00:01.000 --> 00:00:02.000
+        First file.
+
+        50:00:00.000 --> 50:00:01.000
+        Second file.
+
+        110:00:00.000 --> 110:00:01.500
+        Past the hundredth hour.
+        """
+
+        let document = try TimedTextReader.read(Data(captions.utf8), as: .webVTT)
+        try OutsideTranscript.checkFits(document.sentences, durationMilliseconds: 3 * 144_000_000)
+        let split = OutsideTranscript.split(document.sentences, across: files)
+
+        XCTAssertEqual(document.skippedCueCount, 0, "a cue past hour 100 was passed over")
+        XCTAssertEqual(split["a1.wav"]?.map(\.text), ["First file."])
+        XCTAssertEqual(split["a2.wav"]?.map(\.text), ["Second file."])
+        XCTAssertEqual(split["a3.wav"]?.map(\.text), ["Past the hundredth hour."])
+        // 110 hours on the book is 30 hours into its third file.
+        XCTAssertEqual(split["a3.wav"]?.map(\.startMilliseconds), [108_000_000])
+        let longest = split.values.joined().map(\.endMilliseconds).max() ?? 0
+        XCTAssertLessThanOrEqual(longest, Transcript.maximumMilliseconds, "a sentence is past a single file's limit")
+    }
+
     /// On a book of a 3-second file and a 2-second file, a sentence at the
     /// start stays as it is; one starting in the first file and running on
     /// into the second stays in the first, its end held at the file's end

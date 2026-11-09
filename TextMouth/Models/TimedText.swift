@@ -208,8 +208,10 @@ struct TimedTextDocument: Equatable, Sendable {
     /// order the file gives them.
     var cues: [TimedTextCue]
     /// How many of the file's cues were passed over as unusable: a time that
-    /// does not read or lies past `Transcript.maximumMilliseconds`, an end
-    /// before its start, or text that is nothing but markup and white space.
+    /// does not read or lies past `TimedTextLimits.maximumCueMilliseconds`
+    /// (a Podcasting 2.0 file's, past `Transcript.maximumMilliseconds`), an
+    /// end before its start, or text that is nothing but markup and white
+    /// space.
     var skippedCueCount: Int = 0
 
     /// How many of the cues were kept only in part, their text longer than
@@ -320,6 +322,17 @@ enum TimedTextLimits {
     /// charter's decision 5). A chapter with its picture and link takes a
     /// few hundred bytes, so 1 MB holds thousands of chapters.
     static let podcastChaptersBytes = 1_048_576
+
+    /// The latest moment a WebVTT or SubRip cue may end at, in milliseconds:
+    /// 1,000 hours, a little more than the 999:59:59.999 the timestamp
+    /// grammar can write. A book's whole transcript is one file timed on the
+    /// book's timeline (Export writes one, and Attach Transcript… reads one),
+    /// so its times run past the 100 hours a single audio file may last
+    /// (`Transcript.maximumMilliseconds`); they are cut into the book's files
+    /// afterwards, each time then counted from its file's start, and a
+    /// transcript running past the end of the book's audio is refused
+    /// (`pastTheEndMarginMilliseconds`). Far from overflow.
+    static let maximumCueMilliseconds = 3_600_000_000
 
     /// The most characters one cue's text keeps: 10,000, some 1,700 words,
     /// which is ten times a long caption and more than any sentence a

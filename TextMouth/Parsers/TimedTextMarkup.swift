@@ -268,8 +268,12 @@ enum TimedTextMarkup {
 
     /// The cue that `timingLine` and the lines of text after it make, or nil
     /// when it cannot be used: a time that does not read, an end before its
-    /// start, an end past `Transcript.maximumMilliseconds` (exactly that is
-    /// allowed), or text that is blank once its markup is gone.
+    /// start, an end past `TimedTextLimits.maximumCueMilliseconds` (exactly
+    /// that is allowed), or text that is blank once its markup is gone. A
+    /// time may run past a single file's 100 hours
+    /// (`Transcript.maximumMilliseconds`): a book's transcript is timed on
+    /// the whole book, whose files it is cut into afterwards
+    /// (`OutsideTranscript.split(_:across:)`).
     /// `removingOverrides` removes SubRip's `{\...}` overrides as well.
     static func cue(
         timingLine: Line, textLines: some Collection<Line>, removingOverrides: Bool
@@ -277,7 +281,7 @@ enum TimedTextMarkup {
         // The times come first: a cue they refuse needs no text read.
         guard let timing = timing(of: timingLine),
               let start = timing.start, let end = timing.end,
-              start <= end, end <= Transcript.maximumMilliseconds else { return nil }
+              start <= end, end <= TimedTextLimits.maximumCueMilliseconds else { return nil }
         let (text, voice, lastVoice, wasCut) = cueText(of: textLines, removingOverrides: removingOverrides)
         guard !text.isEmpty else { return nil }
         return TimedTextCue(
