@@ -128,6 +128,20 @@ class RegenerateProjectTests(unittest.TestCase):
         self.assertEqual(self.project.read_text(), fresh)
         self.assertIn("git has no copy of the project", output)
 
+    def test_a_source_archive_inside_another_repository_is_not_mistaken_for_part_of_it(self):
+        # The outer repository tracks a project file at its own top level; the archive
+        # is a folder below it, with the same file, untracked there.
+        self.make_repository(text_of([LICENSES, TABLES], [ID_A, ID_B]))
+        archive = self.root / "unpacked"
+        (archive / "TextMouth.xcodeproj").mkdir(parents=True)
+        self.assertTrue(str(archive).startswith(str(self.folder)))
+        (archive / regenerate.PROJECT).write_text("old")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            regenerate.main(archive, self.make_xcodegen(NOISY))
+        self.assertEqual((archive / regenerate.PROJECT).read_text(), NOISY)
+        self.assertIn("git has no copy of the project", out.getvalue())
+
     def test_the_index_copy_is_the_one_compared_not_the_working_file(self):
         # A project already regenerated and left unstaged must not hide the noise the index lacks.
         committed = text_of([LICENSES, TABLES], [ID_A, ID_B])
