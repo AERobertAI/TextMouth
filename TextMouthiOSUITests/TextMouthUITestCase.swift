@@ -174,6 +174,13 @@ class TextMouthUITestCase: XCTestCase {
     /// shows them all. The accepted ones are kept with the results, with their
     /// reasons. A finding of a kind in `informed` is kept with the results and
     /// does not fail the test: for a kind a test checks another way.
+    ///
+    /// Each finding names its element with its type, label, value, identifier,
+    /// and frame in points (`trace(of:)`), so that a finding can be found on
+    /// the screenshot kept with the results. When any finding is not accepted,
+    /// the screen's whole accessibility tree, every element with its frame, is
+    /// kept too ("<screen>: accessibility tree"), for a finding that names no
+    /// element, or a container, or something of zero size.
     func audit(
         _ app: XCUIApplication,
         screen: String,
@@ -188,8 +195,7 @@ class TextMouthUITestCase: XCTestCase {
         var informingFindings: [String] = []
         try app.performAccessibilityAudit(for: types) { issue in
             let label = issue.element?.label ?? ""
-            let element = issue.element.map { "\($0.elementType.rawValue) \"\(label)\"" } ?? "no element"
-            let said = "[\(Self.name(of: issue.auditType))] \(element): \(issue.compactDescription). \(issue.detailedDescription)"
+            let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: issue.element)): \(issue.compactDescription). \(issue.detailedDescription)"
             if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
                 acceptedFindings.append("\(said) Accepted: \(match.why).")
             } else if !informed.isDisjoint(with: issue.auditType) {
@@ -202,6 +208,12 @@ class TextMouthUITestCase: XCTestCase {
             return true
         }
         keepScreenshot(of: app, named: "\(screen) audited")
+        if !findings.isEmpty || !informingFindings.isEmpty {
+            let tree = XCTAttachment(string: app.debugDescription)
+            tree.name = "\(screen): accessibility tree"
+            tree.lifetime = .keepAlways
+            add(tree)
+        }
         if !acceptedFindings.isEmpty {
             let note = XCTAttachment(string: acceptedFindings.joined(separator: "\n"))
             note.name = "\(screen): findings accepted"
@@ -219,6 +231,19 @@ class TextMouthUITestCase: XCTestCase {
             "The \(screen)'s audit found \(findings.count):\n" + findings.joined(separator: "\n"),
             file: file, line: line
         )
+    }
+
+    /// What an audit finding's element is, to find it on the screenshot: its
+    /// type, label, value, identifier, and frame in points, whether it is
+    /// enabled, and how many elements it holds. "no element" when the finding
+    /// names none, and a note when the element is gone by the time it is read
+    /// (reading a missing element's properties would fail the test).
+    static func trace(of element: XCUIElement?) -> String {
+        guard let element else { return "no element" }
+        guard element.exists, let snapshot = try? element.snapshot() else { return "an element no longer in the tree" }
+        let value = snapshot.value.map { "\($0)" } ?? "none"
+        return "\(snapshot.elementType.rawValue) \"\(snapshot.label)\" (value \(value), id \"\(snapshot.identifier)\", "
+            + "frame \(snapshot.frame), enabled \(snapshot.isEnabled), \(snapshot.children.count) children)"
     }
 
     /// The name of an iOS audit type, as XCUIAccessibilityAuditTypes.h has it.
