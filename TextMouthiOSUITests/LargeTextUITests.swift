@@ -15,7 +15,7 @@ final class LargeTextUITests: TextMouthUITestCase {
     /// The Library with a book, at the largest size.
     func testTheLibraryWithABookHoldsAtTheLargestText() throws {
         let app = try launchIntoTheReader(textSize: Self.largestText)
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        goBackToTheLibrary(from: app)
         let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "No row for the book at the largest size:\n\(app.debugDescription)")
