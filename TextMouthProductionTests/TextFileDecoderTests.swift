@@ -130,11 +130,11 @@ final class TextFileDecoderTests: XCTestCase {
     func testUTF16WithoutAByteOrderMarkIsRecognizedByItsZeroBytes() throws {
         XCTAssertEqual(
             try decode(Self.sampleUTF16LE),
-            DecodedText(text: Self.sample, encoding: .utf16LittleEndian, basis: .unmarkedUTF16)
+            DecodedText(text: Self.sample, encoding: .utf16LittleEndian, basis: .unmarkedUnicode)
         )
         XCTAssertEqual(
             try decode(Self.sampleUTF16BE),
-            DecodedText(text: Self.sample, encoding: .utf16BigEndian, basis: .unmarkedUTF16)
+            DecodedText(text: Self.sample, encoding: .utf16BigEndian, basis: .unmarkedUnicode)
         )
         let asciiOnly: [UInt8] = [0x48, 0x00, 0x69, 0x00, 0x21, 0x00]
         XCTAssertNotNil(String(data: Data(asciiOnly), encoding: .utf8))
@@ -159,6 +159,229 @@ final class TextFileDecoderTests: XCTestCase {
                 DecodedText(text: String(decoding: bytes, as: UTF8.self), encoding: .utf8, basis: .validUTF8)
             )
         }
+    }
+
+    // MARK: - Unmarked UTF-16 in Other Scripts, and Unmarked UTF-32
+
+    /// The four forms of Unicode text a file can hold with no byte-order mark
+    /// that the decoder tells by the bytes alone, with the bytes of a text in
+    /// each, written out here so no Foundation behavior decides the fixture.
+    private enum UnmarkedForm: CaseIterable {
+        case utf16LittleEndian, utf16BigEndian, utf32LittleEndian, utf32BigEndian
+
+        /// The encoding the decoder is expected to report for it.
+        var encoding: String.Encoding {
+            switch self {
+            case .utf16LittleEndian: return .utf16LittleEndian
+            case .utf16BigEndian: return .utf16BigEndian
+            case .utf32LittleEndian: return .utf32LittleEndian
+            case .utf32BigEndian: return .utf32BigEndian
+            }
+        }
+
+        /// `text` in this form, with no byte-order mark.
+        func bytes(of text: String) -> [UInt8] {
+            switch self {
+            case .utf16LittleEndian: return text.utf16.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] }
+            case .utf16BigEndian: return text.utf16.flatMap { [UInt8($0 >> 8), UInt8($0 & 0xFF)] }
+            case .utf32LittleEndian:
+                return text.unicodeScalars.flatMap { s in (0..<4).map { UInt8((s.value >> (8 * UInt32($0))) & 0xFF) } }
+            case .utf32BigEndian:
+                return text.unicodeScalars.flatMap { s in (0..<4).reversed().map { UInt8((s.value >> (8 * UInt32($0))) & 0xFF) } }
+            }
+        }
+    }
+
+    /// Texts in the scripts a rule of `TextFileDecoder.unmarkedUnicode(in:)`
+    /// is written for: each has more than a few words, a line ending, and
+    /// the ASCII punctuation or digits real text has.
+    private static let unmarkedSamples: [(script: String, text: String)] = [
+        ("Russian", "Привет, мир! Это проверка текста в кодировке UTF-16 без метки порядка байтов.\nВторая строка — с тире и «кавычками».\n"),
+        ("Greek", "Καλημέρα κόσμε. Αυτό είναι ένα δοκιμαστικό κείμενο χωρίς σήμανση σειράς byte.\nΔεύτερη γραμμή.\n"),
+        ("Hebrew", "שלום עולם. זהו טקסט לבדיקה ללא סימן סדר בתים.\nשורה שנייה.\n"),
+        ("Arabic", "مرحبا بالعالم. هذا نص تجريبي بدون علامة ترتيب البايتات.\nالسطر الثاني.\n"),
+        ("Japanese", "吾輩は猫である。名前はまだ無い。\nどこで生れたかとんと見当がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。\n2026年11月9日\n"),
+        ("Chinese", "我们在2026年11月9日测试这段没有字节顺序标记的文字。\n第二行也是中文，包含标点符号。\n"),
+        ("Korean", "안녕하세요. 이것은 바이트 순서 표시가 없는 UTF-16 텍스트입니다.\n두 번째 줄입니다.\n"),
+        ("Russian with an emoji", "Привет 😀 мир, это строка с эмодзи и кириллицей.\n"),
+        ("Latin", "Café au lait for the señor — naïve, “quoted” text.\n"),
+        ("ASCII", "Hello world, plain ASCII in Unicode without a mark.\n"),
+    ]
+
+    /// Unmarked UTF-16 in an alphabet or in Chinese, Japanese, or Korean, and
+    /// unmarked UTF-32, are read as Unicode in their byte order, the text
+    /// whole and the encoding named. Every script is tried in all four forms,
+    /// and every miss is reported at once.
+    func testUnmarkedUnicodeInEveryScriptIsRecognizedByItsBytes() throws {
+        var failures: [String] = []
+        for (script, text) in Self.unmarkedSamples {
+            for form in UnmarkedForm.allCases {
+                let decoded = try decode(form.bytes(of: text))
+                let expected = DecodedText(text: text, encoding: form.encoding, basis: .unmarkedUnicode)
+                if decoded != expected {
+                    failures.append(
+                        "\(script) as \(form): read as \(TextFileDecoder.name(of: decoded.encoding)), \(decoded.basis), "
+                            + "text \(decoded.text.prefix(24).debugDescription)…"
+                    )
+                }
+            }
+        }
+        XCTAssertEqual(failures, [], "unmarked Unicode that was not recognized")
+    }
+
+    /// The least UTF-32 there is, two characters, is read; so is a single
+    /// line of Cyrillic UTF-16 of the fewest letters the rule asks for.
+    func testTheShortestUnmarkedTextsThatAreRecognized() throws {
+        XCTAssertEqual(try decode(UnmarkedForm.utf32LittleEndian.bytes(of: "Hi")).text, "Hi")
+        XCTAssertEqual(try decode(UnmarkedForm.utf32BigEndian.bytes(of: "Hi")).encoding, .utf32BigEndian)
+        let eightLetters = "приветик"
+        XCTAssertEqual(eightLetters.count, 8)
+        XCTAssertEqual(try decode(UnmarkedForm.utf16LittleEndian.bytes(of: eightLetters)).text, eightLetters)
+    }
+
+    /// Bytes that are not Unicode text are not read as it, however much they
+    /// look like it to a rule: each is left to the steps after, which read
+    /// them as they always did. Every case says why it is not unmarked
+    /// Unicode, and the cases that fail are all reported.
+    func testBytesThatAreNotUnmarkedUnicodeAreNotReadAsIt() {
+        let russian = "Привет, мир! Это проверка текста.\n"
+        let russianLE = UnmarkedForm.utf16LittleEndian.bytes(of: russian)
+        /// `text` with `scalar` in place of its fifth character, as UTF-16LE.
+        func replacingAFifthCharacter(with scalar: UInt16) -> [UInt8] {
+            var units = Array(russian.utf16)
+            units[4] = scalar
+            return units.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] }
+        }
+        // Fixed-width records: letters with a NUL at every eighth byte, all at odd positions.
+        let paddedExport = (0..<512).map { UInt8($0 % 8 == 7 ? 0 : 0x41 + $0 % 26) }
+        let cases: [(why: String, bytes: [UInt8])] = [
+            ("an odd number of bytes", Array(russianLE.dropLast())),
+            ("a control character among the letters", replacingAFifthCharacter(with: 0x0001)),
+            ("a private-use character among the letters", replacingAFifthCharacter(with: 0xE000)),
+            ("half of a surrogate pair among the letters", replacingAFifthCharacter(with: 0xD800)),
+            ("a noncharacter among the letters", replacingAFifthCharacter(with: 0xFFFF)),
+            ("too few Cyrillic letters", UnmarkedForm.utf16LittleEndian.bytes(of: "Привет")),
+            ("a NUL-padded export", paddedExport),
+            ("a column of digits, one to a line", Array((1...40).flatMap { Array("\($0 % 10)\n".utf8) })),
+            ("single characters and spaces", Array((1...40).flatMap { Array("\($0 % 10) ".utf8) })),
+            ("Russian in UTF-8", Array(russian.utf8)),
+            ("sixty-four zero bytes", [UInt8](repeating: 0, count: 64)),
+            ("UTF-32 with a control character", UnmarkedForm.utf32LittleEndian.bytes(of: "Привет\u{1}мир, мир")),
+            ("UTF-32 beyond Unicode", Array([0x41, 0, 0, 0, 0x42, 0, 0x11, 0, 0x43, 0, 0, 0, 0x44, 0, 0, 0])),
+            ("UTF-32 of a single zero unit pair", [0, 0, 0, 0, 0, 0, 0, 0]),
+        ]
+        var failures: [String] = []
+        for (why, bytes) in cases {
+            if let read = TextFileDecoder.unmarkedUnicode(in: Data(bytes)) {
+                failures.append("\(why): read as \(TextFileDecoder.name(of: read.encoding)), \(read.text.prefix(24).debugDescription)")
+            }
+        }
+        XCTAssertEqual(failures, [], "bytes taken for unmarked Unicode that are not")
+    }
+
+    /// Text in 8-bit and double-byte encodings is not taken for unmarked
+    /// Unicode: the same sentences as the recognized cases above, in every
+    /// encoding they are written in that Foundation has, as the whole file
+    /// and from each of many starts, with ends of 16, 17, 40, and 101 bytes
+    /// after the start, since a window of a file is the likeliest thing to be
+    /// misread.
+    func testTextInOtherEncodingsIsNeverTakenForUnmarkedUnicode() {
+        // The IANA names Core Foundation knows; one it lacks is left out.
+        let encodings: [(script: String, names: [String])] = [
+            ("Russian", ["utf-8", "windows-1251", "koi8-r", "ibm866"]),
+            ("Greek", ["utf-8", "windows-1253", "iso-8859-7"]),
+            ("Hebrew", ["utf-8", "windows-1255"]),
+            ("Arabic", ["utf-8", "windows-1256"]),
+            ("Japanese", ["utf-8", "shift_jis", "euc-jp", "iso-2022-jp", "windows-31j"]),
+            ("Chinese", ["utf-8", "gbk", "gb18030", "big5"]),
+            ("Korean", ["utf-8", "euc-kr"]),
+            ("Latin", ["utf-8", "windows-1252", "macintosh", "iso-8859-1"]),
+        ]
+        var failures: [String] = []
+        var windows = 0
+        for (script, names) in encodings {
+            guard let text = Self.unmarkedSamples.first(where: { $0.script == script })?.text else {
+                XCTFail("no sample text for \(script)")
+                continue
+            }
+            for name in names {
+                guard let encoding = TextEncodingFixtures.encoding(named: name),
+                      let data = String(repeating: TextEncodingFixtures.writable(text, in: encoding), count: 6)
+                        .data(using: encoding) else { continue }
+                for start in 0..<max(0, data.count - 16) {
+                    // Short windows from every start; the rest of the file from every seventh.
+                    let lengths = [16, 17, 40, 101] + (start % 7 == 0 ? [data.count - start] : [])
+                    for length in lengths where length >= 16 && start + length <= data.count {
+                        windows += 1
+                        if let read = TextFileDecoder.unmarkedUnicode(in: Data(data[start..<start + length])) {
+                            failures.append("\(script) in \(name), bytes \(start)..<\(start + length): "
+                                + "read as \(TextFileDecoder.name(of: read.encoding)) \(read.text.prefix(16).debugDescription)")
+                        }
+                    }
+                }
+            }
+        }
+        XCTAssertGreaterThan(windows, 5_000, "the sweep covered too little to prove anything")
+        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows were taken for unmarked Unicode")
+    }
+
+    /// TestData's text samples (plain text, Markdown, HTML, XML, and the
+    /// subtitle, playlist, and braille formats) are never taken for unmarked
+    /// Unicode, whole, nor in any of many windows of them: every prefix and
+    /// suffix of a small file, and 400 windows of a large one such as
+    /// pride.txt, from a fixed seed. Files with a NUL byte are not 8-bit
+    /// text and are left out; the count of those swept is asserted so that
+    /// a moved folder cannot empty the sweep.
+    func testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode() throws {
+        let testData = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TestData", isDirectory: true)
+        let textExtensions: Set<String> = [
+            "txt", "md", "markdown", "html", "htm", "xhtml", "xml", "csv", "tsv", "srt", "vtt", "lrc", "m3u", "m3u8", "cue",
+            "json", "xspf", "pls", "ttml", "opml", "ssml", "fb2", "dtbook", "brf", "brl", "pef", "eml", "mbox", "edl",
+            "smil", "opf", "ncx",
+        ]
+        let enumerator = try XCTUnwrap(
+            FileManager.default.enumerator(at: testData, includingPropertiesForKeys: [.isRegularFileKey]),
+            "TestData cannot be listed at \(testData.path)"
+        )
+        var generator: UInt64 = 0x9E37_79B9_7F4A_7C15
+        /// The next number of a fixed sequence, so a failure can be repeated.
+        func next(below limit: Int) -> Int {
+            generator = generator &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return Int(generator >> 33) % limit
+        }
+        var failures: [String] = []
+        var files = 0
+        var windows = 0
+        for case let url as URL in enumerator where textExtensions.contains(url.pathExtension.lowercased()) {
+            let data = try Data(contentsOf: url)
+            guard !data.contains(0) else { continue }
+            files += 1
+            let name = url.lastPathComponent
+            var ranges = [0..<data.count]
+            if data.count <= 2_048 {
+                ranges += (16..<max(16, data.count)).map { 0..<$0 } + (1..<max(1, data.count - 16)).map { $0..<data.count }
+            } else {
+                ranges += (0..<400).map { _ -> Range<Int> in
+                    let length = min(16 + next(below: 4_081), data.count - 1)
+                    let start = next(below: data.count - length)
+                    return start..<start + length
+                }
+            }
+            for range in ranges where range.count >= 16 {
+                windows += 1
+                if let read = TextFileDecoder.unmarkedUnicode(in: Data(data[range])) {
+                    failures.append("\(name) bytes \(range): read as \(TextFileDecoder.name(of: read.encoding)) \(read.text.prefix(16).debugDescription)")
+                }
+            }
+            // The decoder as a whole, with the file as it is.
+            if let decoded = try? TextFileDecoder.decode(data, fileName: name, format: .txt), decoded.basis == .unmarkedUnicode {
+                failures.append("\(name) decoded as unmarked Unicode")
+            }
+        }
+        XCTAssertGreaterThan(files, 20, "TestData holds too few text samples to prove anything (\(files))")
+        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows of \(files) files were taken for unmarked Unicode")
     }
 
     // MARK: - UTF-8
@@ -393,7 +616,7 @@ final class TextFileDecoderTests: XCTestCase {
         let encodings: [(bytes: [UInt8], basis: DecodedText.Basis)] = [
             (Array(source.utf8), .validUTF8),
             ([0xFF, 0xFE] + Array(utf16LE), .byteOrderMark),
-            (Array(utf16BE), .unmarkedUTF16),
+            (Array(utf16BE), .unmarkedUnicode),
             (Array(source.utf8) + [0xE9], .fallback),
         ]
         for (bytes, basis) in encodings {
@@ -554,7 +777,7 @@ final class TextFileDecoderTests: XCTestCase {
     func testEvidenceInTheBytesComesBeforeAGuess() throws {
         XCTAssertEqual(try decode(Self.sampleUTF8, policy: .guess).basis, .validUTF8)
         XCTAssertEqual(try decode([0xFF, 0xFE] + Self.sampleUTF16LE, policy: .guess).basis, .byteOrderMark)
-        XCTAssertEqual(try decode(Self.sampleUTF16BE, policy: .guess).basis, .unmarkedUTF16)
+        XCTAssertEqual(try decode(Self.sampleUTF16BE, policy: .guess).basis, .unmarkedUnicode)
         let declared = try TextFileDecoder.decode(
             Data(Self.html(head: "<meta charset=\"windows-1252\">", body: Self.windows1252Bytes)),
             fileName: "Fixture.html", format: .html, policy: .guess
@@ -644,6 +867,70 @@ final class TextFileDecoderTests: XCTestCase {
         // A changed file that is no longer well formed ISO-2022-JP is left to the steps after,
         // not read by Foundation's lenient reader.
         XCTAssertEqual(try decode(bytes + [0xE9], policy: .recorded("iso-2022-jp")).basis, .fallback)
+    }
+
+    /// An HTML file that declares ISO-2022-JP is valid UTF-8, so its
+    /// declaration was never reached: it read as ASCII with escape sequences
+    /// in it, under every policy but the guessing one. It is now read in
+    /// ISO-2022-JP by its declaration under the fallback, the policy of a
+    /// book that recorded no encoding; a book that recorded one keeps it, and
+    /// the guessing policy still finds it by its structure first.
+    func testAnHTMLFileThatDeclaresISO2022JPIsReadInIt() throws {
+        let japanese = "いろはにほへと ちりぬるを。\nフェリーは七時に出ます。\n"
+        let body = Array(try XCTUnwrap(japanese.data(using: .iso2022JP)))
+        for head in [
+            "<meta charset=\"iso-2022-jp\">",
+            "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-2022-JP\">",
+        ] {
+            let file = Data(Self.html(head: head, body: body))
+            XCTAssertNotNil(String(data: file, encoding: .utf8), "\(head): the fixture is not valid UTF-8")
+
+            // The policy of a book that recorded no encoding, which is the default.
+            let decoded = try TextFileDecoder.decode(file, fileName: "Fixture.html", format: .html, policy: .fallback)
+            XCTAssertTrue(decoded.text.contains(japanese), "\(head): \(decoded.text.debugDescription)")
+            XCTAssertFalse(decoded.text.contains("\u{1B}"), "\(head): an escape sequence was read as text")
+            XCTAssertEqual(decoded.encoding, .iso2022JP, head)
+            XCTAssertEqual(decoded.basis, .declaration(label: head.contains("charset=ISO-2022-JP") ? "ISO-2022-JP" : "iso-2022-jp"), head)
+            // The guessing policy finds it by its structure, as it did.
+            let guessed = try TextFileDecoder.decode(file, fileName: "Fixture.html", format: .html, policy: .guess)
+            XCTAssertEqual(guessed.basis, .guess, head)
+            XCTAssertTrue(guessed.text.contains(japanese), head)
+            // A book that recorded another encoding keeps it.
+            let recorded = try TextFileDecoder.decode(
+                file, fileName: "Fixture.html", format: .html, policy: .recorded("windows-1251")
+            )
+            XCTAssertEqual(recorded.basis, .validUTF8, "\(head): a recorded encoding was overruled")
+        }
+    }
+
+    /// The declaration reads only what it can: a page with no escape in it
+    /// is plain ASCII, whatever it declares; one whose ISO-2022-JP is
+    /// truncated is left to UTF-8 as it was; a plain-text file has no
+    /// declaration to read; and an HTML file that declares nothing is as before.
+    func testADeclarationOfISO2022JPChangesNothingItCannotRead() throws {
+        let japanese = "いろはにほへと\n"
+        let body = Array(try XCTUnwrap(japanese.data(using: .iso2022JP)))
+        let declared = "<meta charset=\"iso-2022-jp\">"
+
+        let ascii = try TextFileDecoder.decode(
+            Data(Self.html(head: declared, body: Array("plain words".utf8))),
+            fileName: "Fixture.html", format: .html
+        )
+        XCTAssertEqual(ascii.basis, .validUTF8, "a page with no escape in it")
+
+        // Cut off in the middle of the shift into JIS X 0208 (ESC $ B).
+        let truncated = try TextFileDecoder.decode(
+            Data(Self.html(head: declared, body: [0x1B, 0x24])), fileName: "Fixture.html", format: .html
+        )
+        XCTAssertEqual(truncated.basis, .validUTF8, "a truncated escape sequence")
+
+        let plainText = try TextFileDecoder.decode(Data(body), fileName: "Fixture.txt", format: .txt)
+        XCTAssertEqual(plainText.basis, .validUTF8, "a plain-text file has no declaration")
+
+        let undeclared = try TextFileDecoder.decode(
+            Data(Self.html(head: "", body: body)), fileName: "Fixture.html", format: .html
+        )
+        XCTAssertEqual(undeclared.basis, .validUTF8, "an HTML file that declares no encoding")
     }
 
     /// A book's policy is the encoding it recorded, or the fallback for a
