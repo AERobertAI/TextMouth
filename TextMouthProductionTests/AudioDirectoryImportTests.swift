@@ -68,6 +68,49 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertTrue(parsed.content.chapters.allSatisfy { !$0.text.isEmpty })
     }
 
+    /// A book folder that is itself a symbolic link is read as the folder it
+    /// leads to, once, with the links inside it still passed over: the scan
+    /// found its tracks, and the book parses from the link as from the folder.
+    /// A link that leads nowhere is still refused, not read as empty.
+    func testABookFolderThatIsASymbolicLinkIsReadAsTheFolderItLeadsTo() async throws {
+        let base = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let real = base.appendingPathComponent("Real", isDirectory: true)
+        for name in ["Disc 1/Track.wav", "Disc 2/Track.wav"] {
+            try AudioTestFixtures.writeSilence(to: real.appendingPathComponent(name))
+        }
+        // A link inside the folder, which stays passed over.
+        try FileManager.default.createSymbolicLink(
+            at: real.appendingPathComponent("link.wav"),
+            withDestinationURL: real.appendingPathComponent("Disc 1/Track.wav")
+        )
+        let link = base.appendingPathComponent("Linked")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+
+        let expected = ["Disc 1/Track.wav", "Disc 2/Track.wav"]
+        XCTAssertEqual(
+            try AudioBookParser.trackPaths(in: real, scan: .importing), expected,
+            "the folder itself reads wrong, so the fixture is not what this test thinks"
+        )
+        for scan in [AudioBookParser.TrackScan.importing, .package] {
+            XCTAssertEqual(
+                try AudioBookParser.trackPaths(in: link, scan: scan), expected,
+                "the folder's tracks through its link, \(scan)"
+            )
+        }
+        let parsed = try await AudioBookParser.parseDirectory(url: link)
+        XCTAssertEqual(parsed.content.chapters.count, 2, "chapters of the book read through the link")
+        XCTAssertEqual(
+            parsed.filePaths.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path },
+            expected.map { real.appendingPathComponent($0).resolvingSymlinksInPath().path }
+        )
+
+        // A link to nothing is no folder: refused, as an unreadable folder is.
+        let dangling = base.appendingPathComponent("Dangling")
+        try FileManager.default.createSymbolicLink(at: dangling, withDestinationURL: base.appendingPathComponent("Gone"))
+        XCTAssertThrowsError(try AudioBookParser.audioFiles(in: dangling), "a link to nothing was read")
+    }
+
     /// A repeated manifest entry must not repeat a chapter, and identical
     /// basenames in separate directories must not select the wrong disc.
     func testManifestOrdersRelativePathsOnceAndPreservesTitles() async throws {
