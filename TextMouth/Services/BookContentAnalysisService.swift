@@ -555,8 +555,9 @@ enum BookContentAnalysisService {
     /// `keptPodcastChapters(of:)`), unless `readingPodcastChapters` is false.
     /// - Parameter readingPodcastChapters: False when the audio is no longer
     ///   the audio the kept chapters were timed to, whatever the file beside
-    ///   it still holds: an edit has replaced it, and removing the chapters
-    ///   (`LibraryViewModel.dropPodcastChapters(of:in:)`) may have failed.
+    ///   it still holds: an edit has replaced it, and setting the chapters
+    ///   aside (`LibraryViewModel.setAsidePodcastChapters(of:in:)`) may have
+    ///   failed.
     static func analyzeAudio(
         book: Book,
         url: URL,
