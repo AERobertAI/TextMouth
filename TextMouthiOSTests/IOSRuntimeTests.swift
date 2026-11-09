@@ -26,6 +26,9 @@ final class IOSRuntimeTests: XCTestCase {
         XCTAssertNotNil(current.preferencesFile, "The hosted process's preferences are kept in its sandbox")
     }
 
+    // The next two tests read `PhoneLaunchRequest`, which debug builds alone hold.
+    #if DEBUG
+
     /// A UI test's launch that asks runs as a hosted test does: in a sandbox
     /// named for its process, with preferences of its own.
     func testAUITestsLaunchThatAsksRunsInASandbox() {
@@ -55,6 +58,8 @@ final class IOSRuntimeTests: XCTestCase {
             )
         }
     }
+
+    #endif
 
     /// The library's default place in a container: Library/Application
     /// Support/.TextMouth, hidden from the Files app and backed up.

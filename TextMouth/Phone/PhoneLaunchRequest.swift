@@ -1,5 +1,11 @@
 import Foundation
 
+// The whole of this file is compiled into debug builds only: both of its uses
+// (`TextMouthRuntime.detect` and the iPhone's scene delegate) are inside
+// `#if DEBUG`, so a release build holds neither the type nor its two variable
+// names, and no environment variable can steer it.
+#if DEBUG
+
 /// What a UI test, or a run in the iOS simulator, asks of the iPhone app at
 /// launch through the app's environment, in debug builds only: to run with a
 /// library of its own, and to be sent a book as another app would send one.
@@ -42,3 +48,5 @@ enum PhoneLaunchRequest {
         return [URL(fileURLWithPath: path)]
     }
 }
+
+#endif
