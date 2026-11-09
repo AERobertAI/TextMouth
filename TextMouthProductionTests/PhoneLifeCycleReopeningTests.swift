@@ -43,14 +43,15 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
     /// the crash guard's sentence is what is said.
     func testABookThatClosedTheAppWhileOpeningIsNotOpenedAndIsNamed() throws {
         // The last run's mark is on disk before this run's session is made.
+        // The keys the run kept as it ended are on disk beside the mark.
         var opening: Book?
         let parts = try makeParts("PhoneReopenCrash") { world, preferences in
             let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
             preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
+            Self.keep(book, showingItsScreen: true, in: preferences)
             opening = book
         }
-        let book = try XCTUnwrap(opening)
-        keep(book, showingItsScreen: true, in: parts)
+        XCTAssertNotNil(opening)
         let model = makeModel(parts)
 
         let reopened = model.lifeCycle.reopenAtLaunch(in: model)
@@ -61,6 +62,8 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
         ))
         XCTAssertNil(model.session.reader)
         XCTAssertEqual(model.path, [])
+        // And nothing is left that would reopen the book at the next launch.
+        XCTAssertNil(parts.preferences.string(forKey: PhoneSession.reopenBookKey), "The crashed book's key outlived the verdict")
     }
 
     /// A file opened at launch wins over reopening: nothing is opened, and
@@ -118,9 +121,15 @@ final class PhoneLifeCycleReopeningTests: XCTestCase {
     /// Keeps `book` for the next launch in `parts`' preferences, as a session
     /// leaves them when the app leaves the screen.
     private func keep(_ book: Book, showingItsScreen: Bool, in parts: Parts) {
-        parts.preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
-        parts.preferences.set(showingItsScreen, forKey: PhoneSession.reopenShowsReaderKey)
-        parts.preferences.set(false, forKey: PhoneSession.reopenFromReadingListKey)
+        Self.keep(book, showingItsScreen: showingItsScreen, in: parts.preferences)
+    }
+
+    /// The same, into any preferences: for keys that must be on disk before
+    /// the session is made.
+    private static func keep(_ book: Book, showingItsScreen: Bool, in preferences: UserDefaults) {
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        preferences.set(showingItsScreen, forKey: PhoneSession.reopenShowsReaderKey)
+        preferences.set(false, forKey: PhoneSession.reopenFromReadingListKey)
     }
 
     /// Private parts for a model, whose readers close as the test ends.
