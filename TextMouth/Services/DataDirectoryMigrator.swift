@@ -24,7 +24,14 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// The data directory to copy is gone, or is no folder: a file, or
     /// anything else, stands where it was.
     case missingSource
+    /// The copy lacks the content of the book with this title: its file is
+    /// not where the library says, inside the data directory.
     case missingBook(String)
+    /// The book with this title is stored at this path, outside the data
+    /// directory, so the move copies nothing of it and cannot point the
+    /// library at a copy. Refused before anything is published, rather than
+    /// reported as missing from the copy, which it never was in.
+    case bookOutsideDataDirectory(title: String, path: String)
     case invalidLibrary
     /// The new location changed while the data was being copied, so the
     /// copy was not published and the data directory in use did not change
@@ -47,6 +54,10 @@ enum DataDirectoryMigrationError: LocalizedError {
             return "The new location, \(location.namedDescription), is a file, not a folder. Choose another location."
         case .missingSource: return "The current data directory does not exist."
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
+        case .bookOutsideDataDirectory(let title, let path):
+            return "The book \(title) is stored at \(path), outside the data directory, so the move cannot carry it. "
+                + "Import it again so that a copy is stored in the data directory, or remove it from the library, "
+                + "then move the data directory again."
         case .invalidLibrary: return "The migrated library index could not be validated."
         case .destinationChanged(let change): return change.explanation
         case .cancelled:
@@ -510,6 +521,13 @@ enum DataDirectoryMigrator {
         for index in migratedLibrary.books.indices {
             if let moved = source.relocating(migratedLibrary.books[index].filePath, to: destination.named) {
                 migratedLibrary.books[index].filePath = moved
+            } else if !migratedLibrary.books[index].filePath.hasPrefix(destinationPath + "/") {
+                // Neither in the data directory nor already in the new
+                // location: the copy never held this book, so it is not
+                // "missing from the copy" (`missingBook`) but stored apart.
+                throw DataDirectoryMigrationError.bookOutsideDataDirectory(
+                    title: migratedLibrary.books[index].title, path: migratedLibrary.books[index].filePath
+                )
             }
 
             let stagedBookPath = staging.path + String(
