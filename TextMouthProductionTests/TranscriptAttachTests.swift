@@ -575,6 +575,40 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertNil(presenter.notice)
     }
 
+    /// The wait covers every request, not only a one-book request: a
+    /// selection of several rows that includes a book a transcript is being
+    /// attached to opens no sheet either, in whatever place the book stands
+    /// in the list, and says which book to wait for. A selection of other
+    /// books is untouched by it.
+    func testTranscribeAudioWaitsForABookAmongSeveral() throws {
+        let world = try makeIntegrationWorld("Attach Transcript Transcribe Several")
+        let attached = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let other = try world.makeSilentAudioFileBook(title: "Long Pier", duration: 4)
+        let attachments = TranscriptAttachments.shared
+        attachments.begin(attached.id)
+        defer { attachments.end(attached.id) }
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        for books in [[attached, other], [other, attached]] {
+            presenter.notice = nil
+            presenter.transcribe(books, library: world.library, window: nil)
+
+            XCTAssertNil(presenter.sheet, "a sheet opened for \(books.map(\.title)) while a transcript was being attached")
+            XCTAssertEqual(
+                presenter.notice?.message,
+                "A transcript is being attached to Four Tones. Transcribe it once that finishes.",
+                "the notice for \(books.map(\.title)) did not name the book being attached to"
+            )
+        }
+
+        // Books none of which is being attached to still reach the sheet
+        // (which, for several books, says why it cannot transcribe them).
+        presenter.notice = nil
+        presenter.transcribe([other], library: world.library, window: nil)
+        XCTAssertNotNil(presenter.sheet, "a book not being attached to was refused")
+        XCTAssertNil(presenter.notice)
+    }
+
     /// A transcription of the book begun while the confirmation showed keeps
     /// Replace from attaching, since it would save its own transcript over
     /// the file's: the notice says to wait, the transcript stays byte for
