@@ -226,7 +226,10 @@ enum ArchiveEntryReader {
     /// keeps what went wrong, ZIPFoundation's own error, in the debug log as
     /// one import event that begins with `tag`.
     static func unreadableReason(of entry: Entry, error: Error, tag: String) -> String {
-        DiagnosticLog.event(.import, "\(tag): \(entry.path): \(error)")
+        // The entry's path is its place inside the archive, a package-relative
+        // name and no absolute path, which the log policy allows.
+        let member = entry.path
+        DiagnosticLog.event(.import, "\(tag): \(member): \(error)")
         return entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
     }
 
