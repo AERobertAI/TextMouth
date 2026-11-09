@@ -898,7 +898,9 @@ extension LibraryViewModel {
     ) {
         // Only the first package opens a window; the others are imported.
         var hasOpenedPackage = false
-        for url in urls {
+        // A WebVTT or SubRip file chosen with its audio is attached to that
+        // audio's book as it is imported, not refused as a book.
+        for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
             let ext = url.pathExtension.lowercased()
             if FileImportService.isBookPackage(url) {
                 openTMBPackage(

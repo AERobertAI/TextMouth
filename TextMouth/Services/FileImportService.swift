@@ -35,7 +35,14 @@ enum FileImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat(let ext): return "Unsupported file format: .\(ext)"
+        case .unsupportedFormat(let ext):
+            // A transcript is not a book, but it has a way in: say it.
+            let hint = TimedTextFormat.cueFileFormat(forExtension: ext) != nil
+                ? ". A .\(ext) file is a transcript, not a book. To use it, import its audio, then choose "
+                    + "Attach Transcript… from the Book menu. A transcript named like its audio and beside it "
+                    + "is attached when the audio is imported."
+                : ""
+            return "Unsupported file format: .\(ext)" + hint
         case .hashingFailed: return "Failed to compute file hash."
         case .importFailed(let msg): return "Import failed: \(msg)"
         case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written."

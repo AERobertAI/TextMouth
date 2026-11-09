@@ -451,6 +451,60 @@ final class TranscriptPairingTests: XCTestCase {
         XCTAssertNil(pairing.transcriptFile(forTrack: ""))
     }
 
+    // MARK: - Chosen With Their Audio
+
+    /// A WebVTT or SubRip file chosen in the import panel together with the
+    /// audio it sits beside is left out of the books to import, since the
+    /// audio's import attaches it; a transcript file chosen alone, one whose
+    /// audio is not chosen, one the audio does not find (the .srt beside a
+    /// .vtt), and one beside a text book stay, to be refused as they were.
+    /// The other items keep their order.
+    func testATranscriptChosenWithItsAudioIsNotImportedAsABook() throws {
+        let folder = try makeSandboxDirectory("pairing-chosen")
+        func touch(_ name: String) throws -> URL {
+            let url = folder.appendingPathComponent(name)
+            try Data("x".utf8).write(to: url)
+            return url
+        }
+        let tide = try touch("Tide.wav")
+        let tideCaptions = try touch("Tide.vtt")
+        let loneCaptions = try touch("Lone.srt")
+        let both = try touch("Both.m4a")
+        let bothWebVTT = try touch("Both.vtt")
+        let bothSubRip = try touch("Both.srt")
+        let upper = try touch("Loud.mp3")
+        let upperCaptions = try touch("Loud.VTT")
+        let novel = try touch("Novel.txt")
+        let novelCaptions = try touch("Novel.vtt")
+        let chosen = [tideCaptions, tide, loneCaptions, bothSubRip, both, bothWebVTT, upperCaptions, upper, novelCaptions, novel]
+
+        let kept = TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(chosen)
+
+        XCTAssertEqual(
+            kept.map(\.lastPathComponent),
+            ["Tide.wav", "Lone.srt", "Both.srt", "Both.m4a", "Loud.mp3", "Novel.vtt", "Novel.txt"],
+            "the transcript files chosen with their audio (Tide.vtt, Both.vtt, Loud.VTT) were not all left out, or others were"
+        )
+        // Nothing among the items to drop: the list comes back as it is.
+        XCTAssertEqual(TranscriptPairing.droppingTranscriptsChosenWithTheirAudio([tide, both]), [tide, both])
+        XCTAssertEqual(TranscriptPairing.droppingTranscriptsChosenWithTheirAudio([]), [])
+    }
+
+    /// A transcript file refused as a book says how to use it: import its
+    /// audio and attach it, or name it like its audio; another unsupported
+    /// file says only what it always did.
+    func testATranscriptFileRefusedAsABookSaysHowToAttachIt() {
+        let vtt = FileImportError.unsupportedFormat("vtt").errorDescription ?? ""
+        XCTAssertEqual(
+            vtt,
+            "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, then choose "
+                + "Attach Transcript… from the Book menu. A transcript named like its audio and beside it "
+                + "is attached when the audio is imported."
+        )
+        XCTAssertTrue(FileImportError.unsupportedFormat("SRT").errorDescription?.contains("Attach Transcript…") == true)
+        XCTAssertEqual(FileImportError.unsupportedFormat("xyz").errorDescription, "Unsupported file format: .xyz")
+    }
+
     // MARK: - The Notice's Words
 
     /// One file set aside is named with why, the reason as its error words
