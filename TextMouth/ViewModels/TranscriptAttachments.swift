@@ -82,10 +82,21 @@ final class TranscriptAttachments: ObservableObject {
     /// imported from one file. Nil when the book records no source, or the
     /// folder is not there now, as when it was on a disk not connected: the
     /// panel then opens where it last did.
+    ///
+    /// It looks at the file system, which can stall for a long time on a
+    /// disk that is a network share or cloud drive and not answering, so the
+    /// Open panel asks it off the main thread (`chooseTranscriptFile`).
     static func startingFolder(for book: Book) -> URL? {
+        startingFolder(forSource: book.sourceFilePath)
+    }
+
+    /// The folder `startingFolder(for:)` finds for a book recorded as
+    /// imported from `sourcePath`; a plain string, so it can cross to
+    /// another thread.
+    static func startingFolder(forSource sourcePath: String?) -> URL? {
         // A source must be a whole path: an empty one would name the
         // current directory.
-        guard let source = book.sourceFilePath, source.hasPrefix("/") else { return nil }
+        guard let source = sourcePath, source.hasPrefix("/") else { return nil }
         let sourceURL = URL(fileURLWithPath: source)
         let folder = isFolder(sourceURL) ? sourceURL : sourceURL.deletingLastPathComponent()
         return isFolder(folder) ? folder : nil

@@ -315,6 +315,26 @@ final class TranscriptionPresenter: ObservableObject {
             return
         }
         #if os(macOS)
+        // Taken at once, before the folder is looked for, so a second
+        // command asked meanwhile opens no second panel.
+        isChoosingTranscriptFile = true
+        let sourcePath = book.sourceFilePath
+        Task { [weak self] in
+            // The starting folder is looked for off the main thread: the
+            // folder may be on a share or cloud drive that does not answer.
+            let folder = await OffMainWork.run { TranscriptAttachments.startingFolder(forSource: sourcePath) }
+            self?.presentTranscriptPanel(startingIn: folder, for: book, library: library, window: window)
+        }
+        #endif
+    }
+
+    #if os(macOS)
+    /// Shows the Open panel that Attach Transcript… asks for a file with
+    /// (`chooseTranscriptFile(for:library:window:)`), as a sheet on `window`
+    /// (on its own without one), starting in `folder` when there is one, and
+    /// attaches the file chosen to `book` through `library`. Ends
+    /// `isChoosingTranscriptFile` when the panel closes.
+    private func presentTranscriptPanel(startingIn folder: URL?, for book: Book, library: LibraryViewModel, window: PlatformWindow?) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = TranscriptAttachments.fileTypes
         panel.allowsMultipleSelection = false
@@ -322,10 +342,9 @@ final class TranscriptionPresenter: ObservableObject {
         panel.canChooseFiles = true
         panel.message = TranscriptionWording.attachPanelMessage(bookTitle: book.title)
         panel.prompt = TranscriptionWording.attachPanelPrompt
-        if let folder = TranscriptAttachments.startingFolder(for: book) {
+        if let folder {
             panel.directoryURL = folder
         }
-        isChoosingTranscriptFile = true
         let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard let self else { return }
             self.isChoosingTranscriptFile = false
@@ -339,8 +358,8 @@ final class TranscriptionPresenter: ObservableObject {
         } else {
             panel.begin(completionHandler: finish)
         }
-        #endif
     }
+    #endif
 
     /// Attaches the WebVTT or SubRip file at `url` to `book` as its
     /// transcript (FMT23), timed on the book's audio from its start, through

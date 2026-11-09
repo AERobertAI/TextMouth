@@ -184,6 +184,12 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertNil(TranscriptAttachments.startingFolder(for: book), "a name alone named the current folder")
         book.sourceFilePath = nil
         XCTAssertNil(TranscriptAttachments.startingFolder(for: book))
+
+        // The panel looks off the main thread, from the path alone, and
+        // gets the answer the book's own lookup gives.
+        XCTAssertEqual(TranscriptAttachments.startingFolder(forSource: file.path)?.path, folder.path)
+        XCTAssertEqual(TranscriptAttachments.startingFolder(forSource: tracks.path)?.path, tracks.path)
+        XCTAssertNil(TranscriptAttachments.startingFolder(forSource: nil))
     }
 
     // MARK: - Attaching
