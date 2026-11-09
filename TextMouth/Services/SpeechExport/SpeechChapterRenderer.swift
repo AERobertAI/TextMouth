@@ -155,9 +155,9 @@ enum SpeechChapterRenderer {
                     try speaker.speak(words)
                 }
             }
-            guard file.hasSound else {
-                throw SpeechRenderFailure.noSound(title)
-            }
+            // `finish` is the one place that refuses a chapter with no sound
+            // in it (a voice that made none, or only silence), so no file
+            // is ever completed without it; the catch below removes it.
             return try file.finish(trailingSilence: trailingSilence)
         } catch {
             // A chapter left partway is no use to anyone: closed first, so
@@ -391,7 +391,9 @@ private final class ChapterAudioFile {
     /// what it holds.
     ///
     /// - Throws: `SpeechRenderFailure.noSound` when no speech with sound in
-    ///   it was written, or the file's error.
+    ///   it was written: none at all, or only silence, however many frames.
+    ///   This is the only check of it (`SpeechChapterRenderer.render` relies
+    ///   on it); or the file's error.
     func finish(trailingSilence seconds: TimeInterval) throws -> RenderedSpeechChapter {
         guard case .open(let file, _) = state, hasSound else {
             throw SpeechRenderFailure.noSound(title)
