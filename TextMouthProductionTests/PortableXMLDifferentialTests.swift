@@ -116,7 +116,23 @@ final class PortableXMLDifferentialTests: XCTestCase {
             reason: "Foundation's tidying leaves each unclosed <br> open past its item, nesting the items inside one another; SwiftSoup closes them with the item's end tag",
             evidence: "from channel selects 1 and 60"
         ),
+        // Project Gutenberg's A Modest Proposal (a sample of the KF8 reader's, FMT48): its contents write the title across
+        // two lines with a CR LF, and the tidy reading of Foundation keeps the carriage return in the text.
+        "tidy: pg1080-modest-proposal.epub/OEBPS/toc.xhtml": carriageReturnDifference(
+            "Foundation: element L1 name=html local=html prefix= uri=http://www.w3.org/1999/xhtml text=\"A Modest Proposal\\r For"
+        ),
+        "tidy: pg1080-modest-proposal.epub/OEBPS/toc.ncx": carriageReturnDifference(
+            "Foundation: element L1 name=ncx local=ncx prefix= uri=http://www.daisy.org/z3986/2005/ncx/ text=\"A Modest Proposal\\r For"
+        ),
     ]
+
+    /// Why a text written across lines with a CR LF is read differently when tidied, and the start of the report that shows it.
+    private static func carriageReturnDifference(_ evidence: String) -> KnownDifference {
+        KnownDifference(
+            reason: "tidying keeps the carriage return of a CR LF line break inside a text; the portable tree has none",
+            evidence: evidence
+        )
+    }
 
     /// Why a document that declares an entity is read differently.
     private static let entityDifference = KnownDifference(
