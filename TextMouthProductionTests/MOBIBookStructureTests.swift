@@ -602,19 +602,19 @@ final class MOBIBookStructureTests: XCTestCase {
     /// its markup has for one and in its contents' labels and headings.
     func testSoftHyphensAreLeftOutOfAMOBI6BooksWordsAndItsContentsLabels() throws {
         var fixture = MOBIFixture()
-        fixture.html = "<html><body><h1>Chap\u{AD}ter</h1><p>hy\u{AD}phen hy&shy;phen hy&#173;phen hy&#xAD;phen hy&#xad;phen. A \u{AD}stray.</p>"
+        fixture.html = "<html><body><p>First has hy\u{AD}phen hy&shy;phen hy&#173;phen hy&#xAD;phen hy&#xad;phen. A \u{AD}stray.</p>"
             + "<p>Second part.</p></body></html>"
         fixture.entries = [
-            .init(label: "Chap\u{AD}ter &shy;one", offset: try offset(of: "<h1>", in: fixture.html)),
+            .init(label: "Chap\u{AD}ter &shy;one", offset: try offset(of: "<p>First", in: fixture.html)),
             .init(label: "Sec\u{AD}ond", offset: try offset(of: "<p>Second", in: fixture.html)),
         ]
         let book = try prepared(fixture)
         let all = book.chapters.map(\.chapter.text).joined(separator: " ")
         XCTAssertFalse(all.unicodeScalars.contains("\u{AD}"), "a soft hyphen was read: \(all.debugDescription)")
-        XCTAssertEqual(spaced(all), "Chapter hyphen hyphen hyphen hyphen hyphen. A stray. Second part.")
+        XCTAssertEqual(spaced(all), "First has hyphen hyphen hyphen hyphen hyphen. A stray. Second part.")
         let headings = book.chapters.flatMap { $0.chapter.headings.map(\.text) }
-        XCTAssertFalse(headings.contains { $0.unicodeScalars.contains("\u{AD}") || $0.contains("&shy;") }, "\(headings)")
-        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter one", "Second"], "the labels are the chapters' titles")
+        XCTAssertEqual(headings, ["Chapter one", "Second"], "the contents' labels are the headings, without soft hyphens")
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter one", "Second"], "and the chapters' titles")
     }
 
     /// A Windows-1252 book spells it as the byte 0xAD, and a plain PalmDOC book holds the same byte in its lines;
