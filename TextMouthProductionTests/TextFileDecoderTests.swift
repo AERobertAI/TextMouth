@@ -181,14 +181,25 @@ final class TextFileDecoderTests: XCTestCase {
 
         /// `text` in this form, with no byte-order mark.
         func bytes(of text: String) -> [UInt8] {
+            var result: [UInt8] = []
             switch self {
-            case .utf16LittleEndian: return text.utf16.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] }
-            case .utf16BigEndian: return text.utf16.flatMap { [UInt8($0 >> 8), UInt8($0 & 0xFF)] }
-            case .utf32LittleEndian:
-                return text.unicodeScalars.flatMap { s in (0..<4).map { UInt8((s.value >> (8 * UInt32($0))) & 0xFF) } }
-            case .utf32BigEndian:
-                return text.unicodeScalars.flatMap { s in (0..<4).reversed().map { UInt8((s.value >> (8 * UInt32($0))) & 0xFF) } }
+            case .utf16LittleEndian, .utf16BigEndian:
+                for unit in text.utf16 {
+                    let low = UInt8(unit & 0xFF)
+                    let high = UInt8(unit >> 8)
+                    result += self == .utf16LittleEndian ? [low, high] : [high, low]
+                }
+            case .utf32LittleEndian, .utf32BigEndian:
+                for scalar in text.unicodeScalars {
+                    let value: UInt32 = scalar.value
+                    let little: [UInt8] = [
+                        UInt8(value & 0xFF), UInt8((value >> 8) & 0xFF),
+                        UInt8((value >> 16) & 0xFF), UInt8((value >> 24) & 0xFF),
+                    ]
+                    result += self == .utf32LittleEndian ? little : Array(little.reversed())
+                }
             }
+            return result
         }
     }
 
@@ -253,7 +264,19 @@ final class TextFileDecoderTests: XCTestCase {
             return units.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] }
         }
         // Fixed-width records: letters with a NUL at every eighth byte, all at odd positions.
-        let paddedExport = (0..<512).map { UInt8($0 % 8 == 7 ? 0 : 0x41 + $0 % 26) }
+        var paddedExport: [UInt8] = []
+        for position in 0..<512 {
+            let letter: Int = 0x41 + position % 26
+            paddedExport.append(position % 8 == 7 ? 0 : UInt8(letter))
+        }
+        // Single characters, one to a line and then one to a word.
+        var digitsPerLine: [UInt8] = []
+        var digitsPerWord: [UInt8] = []
+        for number in 1...40 {
+            let digit = UInt8(0x30 + number % 10)
+            digitsPerLine += [digit, 0x0A]
+            digitsPerWord += [digit, 0x20]
+        }
         let cases: [(why: String, bytes: [UInt8])] = [
             ("an odd number of bytes", Array(russianLE.dropLast())),
             ("a control character among the letters", replacingAFifthCharacter(with: 0x0001)),
@@ -262,12 +285,12 @@ final class TextFileDecoderTests: XCTestCase {
             ("a noncharacter among the letters", replacingAFifthCharacter(with: 0xFFFF)),
             ("too few Cyrillic letters", UnmarkedForm.utf16LittleEndian.bytes(of: "Привет")),
             ("a NUL-padded export", paddedExport),
-            ("a column of digits, one to a line", Array((1...40).flatMap { Array("\($0 % 10)\n".utf8) })),
-            ("single characters and spaces", Array((1...40).flatMap { Array("\($0 % 10) ".utf8) })),
+            ("a column of digits, one to a line", digitsPerLine),
+            ("single characters and spaces", digitsPerWord),
             ("Russian in UTF-8", Array(russian.utf8)),
             ("sixty-four zero bytes", [UInt8](repeating: 0, count: 64)),
             ("UTF-32 with a control character", UnmarkedForm.utf32LittleEndian.bytes(of: "Привет\u{1}мир, мир")),
-            ("UTF-32 beyond Unicode", Array([0x41, 0, 0, 0, 0x42, 0, 0x11, 0, 0x43, 0, 0, 0, 0x44, 0, 0, 0])),
+            ("UTF-32 beyond Unicode", [0x41, 0, 0, 0, 0x42, 0, 0x11, 0, 0x43, 0, 0, 0, 0x44, 0, 0, 0] as [UInt8]),
             ("UTF-32 of a single zero unit pair", [0, 0, 0, 0, 0, 0, 0, 0]),
         ]
         var failures: [String] = []
