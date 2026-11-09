@@ -23,19 +23,29 @@ destination and the names of the files it copies.
 
 Before writing anything, the script checks that the project it leaves copies
 the same files to the same places as xcodegen's own, and keeps xcodegen's
-otherwise.
+otherwise. Where there is no index copy to compare with (git is not installed,
+the folder is a source archive and not a clone, or the project is not tracked),
+xcodegen's whole project is kept, and the script says so.
 
-Usage, from the repository's root or a worktree's:
-    python3 -I Scripts/agents/regenerate-project.py
+`make generate` runs this script, so `make build`, `make install`,
+`make set-version`, `make bump-patch`, and `make bump-minor` leave no
+copy-phase noise either.
+
+It works on the checkout it is in, wherever it is run from:
+    python3 -I -B Scripts/agents/regenerate-project.py
 """
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 
+# The checkout this file is in: Scripts/agents/ is two folders below its root.
+ROOT = Path(__file__).resolve().parents[2]
 PROJECT = "TextMouth.xcodeproj/project.pbxproj"
+# Where Homebrew puts xcodegen, tried when it is not on PATH.
 XCODEGEN = "/opt/homebrew/bin/xcodegen"
 
 # The project's copy-files section, from its Begin line through its End line.
@@ -56,6 +66,27 @@ def run(arguments, **options):
     if result.returncode != 0:
         sys.exit(f"{' '.join(arguments)} failed:\n{result.stdout}{result.stderr}")
     return result.stdout
+
+
+def find_xcodegen():
+    """The path of xcodegen: the one on PATH, else Homebrew's; the script stops
+    with a message when there is neither."""
+    found = shutil.which("xcodegen") or (XCODEGEN if Path(XCODEGEN).exists() else None)
+    if not found:
+        sys.exit("regenerate-project: xcodegen is not installed (brew install xcodegen)")
+    return found
+
+
+def index_copy(root):
+    """The project as the index has it, the copy `git diff` compares with; None
+    when there is none to read (no git, no repository, or an untracked project).
+    `:./` names the file from `root` down, so a source archive unpacked inside
+    some other repository is not mistaken for part of it."""
+    try:
+        result = subprocess.run(["git", "show", f":./{PROJECT}"], cwd=root, capture_output=True, text=True)
+    except OSError:
+        return None
+    return result.stdout if result.returncode == 0 else None
 
 
 def copy_phases(project):
@@ -91,14 +122,18 @@ def with_old_copy_order(fresh, old):
     return PHASE_REFERENCE.sub(lambda _: next(replacements), result)
 
 
-def main():
-    """Regenerate the project, then leave out the noise of its copy-phase
-    order when, and only when, that changes nothing it copies."""
-    root = Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
+def main(root=ROOT, xcodegen=None):
+    """Regenerate the project in `root`, then leave out the noise of its
+    copy-phase order when, and only when, that changes nothing it copies."""
+    xcodegen = xcodegen or find_xcodegen()
     project_path = root / PROJECT
-    # The project as it was: the index's copy, the one `git diff` compares with.
-    old = run(["git", "show", f":{PROJECT}"], cwd=root)
-    run([XCODEGEN, "generate"], cwd=root)
+    # The project as it was, read before xcodegen overwrites the file.
+    old = index_copy(root)
+    run([xcodegen, "generate"], cwd=root)
+    if old is None:
+        print("regenerate-project: git has no copy of the project to compare with, "
+              "so xcodegen's project is kept whole")
+        return
     fresh = project_path.read_text()
     if copy_phases(old) != copy_phases(fresh):
         print("regenerate-project: the copy-files phases changed in meaning, so xcodegen's project is kept whole")
