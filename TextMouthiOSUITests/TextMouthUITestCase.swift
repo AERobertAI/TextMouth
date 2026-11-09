@@ -1,4 +1,3 @@
-import ObjectiveC
 import XCTest
 
 /// What every UI test of the iPhone app shares: a launch with a library of
@@ -68,19 +67,21 @@ class TextMouthUITestCase: XCTestCase {
         return app
     }
 
-    /// Taps the reader's Back button until the Library shows, at most three
-    /// times, five seconds apart: at the largest text size the first tap was
-    /// seen to leave the reader on screen (November 9, 2026), so one tap is
-    /// not trusted there. Fails with the screen's tree when the Library never
-    /// comes.
-    func goBackToTheLibrary(from app: XCUIApplication) {
+    /// Taps `element` until `expected` shows, at most three times, five
+    /// seconds apart: at the largest text size the first tap after a launch
+    /// was seen to do nothing (a Back, an Add to Library; November 9, 2026), so
+    /// one tap is not trusted there. `what` names the tap in the failure,
+    /// which carries the screen's tree.
+    func tap(_ element: XCUIElement, until expected: XCUIElement, in app: XCUIApplication, what: String) {
         for _ in 0..<3 {
-            let back = app.navigationBars.buttons.element(boundBy: 0)
-            guard back.waitForExistence(timeout: 5) else { continue }
-            back.tap()
-            if app.navigationBars["Library"].waitForExistence(timeout: 5) { return }
+            guard element.waitForExistence(timeout: Self.patience) else {
+                XCTFail("No \(what) to tap:\n\(app.debugDescription)")
+                return
+            }
+            element.tap()
+            if expected.waitForExistence(timeout: 5) { return }
         }
-        XCTFail("Back never reached the Library:\n\(app.debugDescription)")
+        XCTFail("Tapping \(what) three times did not bring up what it should:\n\(app.debugDescription)")
     }
 
     // MARK: - What VoiceOver Is Given, in Order
@@ -177,12 +178,35 @@ class TextMouthUITestCase: XCTestCase {
             Accepted(type: .dynamicType, label: label, why: "a bar item, which iOS shows in the Large Content Viewer")
         }
 
+        /// The first section header under a navigation bar, which the audit
+        /// reports as failing contrast ("Contrast failed for
+        /// SwiftUI.AccessibilityNode") on Settings ("Voice") and on Sleep Timer
+        /// ("New Timer"). It is a false positive, proven on November 9, 2026
+        /// from the screenshots kept with the results: each header's frame
+        /// (16, 116 or 132, 370 by 40 points) holds black text, (0, 0, 0), on a
+        /// background of (235 to 242, 235 to 242, 240 to 247), whose lowest
+        /// contrast is about 17 to 1, and the phone draws every header in the
+        /// primary label color (`PhoneTextColor`). Matched by the header's own
+        /// words and the contrast kind only: any other contrast finding, on
+        /// these screens or any other, still fails.
+        static func firstHeader(_ title: String) -> Accepted {
+            Accepted(
+                type: .contrast, label: title,
+                why: "the first section header under the bar: black text on a near-white background, measured from the screenshot, a false positive"
+            )
+        }
+
         /// The navigation bar's title: iOS truncates a long title at large
         /// sizes, and VoiceOver and braille read it whole.
         static func navigationTitle(_ title: String) -> Accepted {
             Accepted(type: .textClipped, label: title, why: "the navigation bar's title, read whole by VoiceOver and braille")
         }
     }
+
+    /// The kinds of finding iOS audits, each of which `audit` runs alone.
+    private static let auditKinds: [XCUIAccessibilityAuditType] = [
+        .contrast, .elementDetection, .hitRegion, .sufficientElementDescription, .dynamicType, .textClipped, .trait,
+    ]
 
     /// Runs Apple's accessibility audit on the screen showing, every iOS type
     /// of it (or `types`), and fails once with every finding not `accepted`
@@ -191,12 +215,20 @@ class TextMouthUITestCase: XCTestCase {
     /// reasons. A finding of a kind in `informed` is kept with the results and
     /// does not fail the test: for a kind a test checks another way.
     ///
+    /// **Each kind is audited alone**, one `performAccessibilityAudit` per
+    /// kind, and not all together (November 9, 2026, iPhone 17, iOS 26.0).
+    /// Audited together, a finding names no element ("no element"), so it can't
+    /// be matched to an accepted one or found on the screen; audited alone, it
+    /// names its element. And Go To's "Potentially inaccessible text" appeared
+    /// in both of the runs that audited every kind together, and in none of
+    /// five launches that audited that kind alone, so it is a product of the
+    /// combined run. Nothing is skipped: every kind still runs.
+    ///
     /// Each finding names its element with its type, label, value, identifier,
     /// and frame in points (`trace(of:)`), so that a finding can be found on
     /// the screenshot kept with the results. When any finding is not accepted,
     /// the screen's whole accessibility tree, every element with its frame, is
-    /// kept too ("<screen>: accessibility tree"), for a finding that names no
-    /// element, or a container, or something of zero size.
+    /// kept too ("<screen>: accessibility tree").
     func audit(
         _ app: XCUIApplication,
         screen: String,
@@ -209,24 +241,21 @@ class TextMouthUITestCase: XCTestCase {
         var findings: [String] = []
         var acceptedFindings: [String] = []
         var informingFindings: [String] = []
-        try app.performAccessibilityAudit(for: types) { issue in
-            let label = issue.element?.label ?? ""
-            var said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: issue.element)): \(issue.compactDescription). \(issue.detailedDescription)"
-            if issue.element == nil {
-                // The finding names no element, so what the issue itself holds
-                // (its frame, if it has one) is the only trace of where it is.
-                said += "\n    The issue holds:\n" + Self.internals(of: issue)
+        for kind in Self.auditKinds where !types.intersection(kind).isEmpty {
+            try app.performAccessibilityAudit(for: kind) { issue in
+                let label = issue.element?.label ?? ""
+                let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: issue.element)): \(issue.compactDescription). \(issue.detailedDescription)"
+                if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
+                    acceptedFindings.append("\(said) Accepted: \(match.why).")
+                } else if !informed.isDisjoint(with: issue.auditType) {
+                    // Kept with the results, and not failed.
+                    informingFindings.append(said)
+                } else {
+                    findings.append(said)
+                }
+                // Handled here, listed below.
+                return true
             }
-            if let match = accepted.first(where: { issue.auditType.contains($0.type) && label == $0.label }) {
-                acceptedFindings.append("\(said) Accepted: \(match.why).")
-            } else if !informed.isDisjoint(with: issue.auditType) {
-                // Kept with the results, and not failed.
-                informingFindings.append(said)
-            } else {
-                findings.append(said)
-            }
-            // Handled here, listed below.
-            return true
         }
         keepScreenshot(of: app, named: "\(screen) audited")
         if !findings.isEmpty || !informingFindings.isEmpty {
@@ -265,44 +294,6 @@ class TextMouthUITestCase: XCTestCase {
         let value = snapshot.value.map { "\($0)" } ?? "none"
         return "\(snapshot.elementType.rawValue) \"\(snapshot.label)\" (value \(value), id \"\(snapshot.identifier)\", "
             + "frame \(snapshot.frame), enabled \(snapshot.isEnabled), \(snapshot.children.count) children)"
-    }
-
-    /// The instance variables of `object`, one line each, and the same one
-    /// level down for the objects they hold (`depth` levels in all): for an
-    /// audit finding that names no element, whose private fields may say where
-    /// on the screen it is. Read through the Objective-C runtime, only for
-    /// object and structure variables, which key-value coding can read.
-    static func internals(of object: NSObject, depth: Int = 3, indent: String = "      ") -> String {
-        var lines: [String] = []
-        var cls: AnyClass? = type(of: object)
-        while let current = cls, current != NSObject.self {
-            var count: UInt32 = 0
-            if let ivars = class_copyIvarList(current, &count) {
-                for index in 0..<Int(count) {
-                    let ivar = ivars[index]
-                    guard let rawName = ivar_getName(ivar), let rawType = ivar_getTypeEncoding(ivar) else { continue }
-                    let name = String(cString: rawName)
-                    let encoding = String(cString: rawType)
-                    // Only what can be read safely: objects and structures.
-                    guard encoding.hasPrefix("@") || encoding.hasPrefix("{") else { continue }
-                    let held = encoding.hasPrefix("@") ? object_getIvar(object, ivar) : object.value(forKey: name)
-                    guard let held else {
-                        lines.append("\(indent)\(name): nil")
-                        continue
-                    }
-                    let isPlain = held is NSString || held is NSNumber || held is NSValue || held is NSArray || held is NSDictionary || held is NSSet
-                    if !isPlain, depth > 1, let nested = held as? NSObject {
-                        lines.append("\(indent)\(name): \(type(of: nested))")
-                        lines.append(Self.internals(of: nested, depth: depth - 1, indent: indent + "  "))
-                    } else {
-                        lines.append("\(indent)\(name): \(String(describing: held).prefix(600))")
-                    }
-                }
-                free(ivars)
-            }
-            cls = class_getSuperclass(current)
-        }
-        return lines.joined(separator: "\n")
     }
 
     /// The name of an iOS audit type, as XCUIAccessibilityAuditTypes.h has it.
