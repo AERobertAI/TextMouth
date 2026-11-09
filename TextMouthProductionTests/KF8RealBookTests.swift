@@ -108,15 +108,16 @@ final class KF8RealBookTests: XCTestCase {
         // The digest of the words Project Gutenberg's EPUB of the same book gives the EPUB reader
         // (that EPUB is not kept): the same words in the same order.
         XCTAssertEqual(digest(kf8), "aa27cad3e68df7e2756f9bcad186f3d695c9d91bbf712469fa993fb5ebbbebe8")
-        // The same headings at the same levels as that EPUB's.
+        // The same headings at the same levels as that EPUB's (the license's chapter begins with its opening words,
+        // before its heading, so it has the start entry every such chapter has, as A Modest Proposal's EPUB does).
         XCTAssertEqual(headings(chapters), [
             "2: The Project Gutenberg eBook of The Yellow Wallpaper", "1: The Yellow Wallpaper",
-            "2: By Charlotte Perkins Gilman", "2: THE FULL PROJECT GUTENBERG™ LICENSE",
+            "2: By Charlotte Perkins Gilman", "1: THE FULL PROJECT GUTENBERG™ LICENSE", "2: THE FULL PROJECT GUTENBERG™ LICENSE",
         ])
         // calibre cut the EPUB's two documents into four, and added a contents page at the end that is not read.
-        // The piece of the license that opens with no heading goes on with the license before it, so the
-        // license is one section, with no heading made from the title calibre gave the piece (the EPUB reader,
-        // which reads each document whole, has the license twice).
+        // The license's opening, the piece that has no heading, begins the license's chapter and the piece with its
+        // heading goes on with it, so the license is one chapter that holds its opening words (and the essay's chapter
+        // ends where the essay does).
         XCTAssertEqual(chapters.map(\.title), [
             "The Project Gutenberg eBook of The Yellow Wallpaper", "By Charlotte Perkins Gilman",
             "THE FULL PROJECT GUTENBERG™ LICENSE",
