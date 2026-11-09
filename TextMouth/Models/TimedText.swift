@@ -87,6 +87,11 @@ struct TimedTextCue: Equatable, Sendable {
     /// They lie in order inside `text` and inside the cue's time, as a
     /// transcript's words must (`Transcript.validationFailure()`).
     var words: [TranscriptWord] = []
+    /// Whether the file's text for the cue was longer than TextMouth keeps
+    /// (`TimedTextLimits.maximumCueCharacters`), so `text` is its beginning,
+    /// cut where a sentence ends or, failing that, between words. A listener
+    /// is told how many cues were cut (`TimedTextDocument.cutCueCount`).
+    var isCutShort = false
 
     /// `raw` as a cue's text (`text`): each run of white space (spaces,
     /// tabs, line breaks, no-break spaces, and the rest of Unicode's white
@@ -97,11 +102,31 @@ struct TimedTextCue: Equatable, Sendable {
     /// cues read from any format are spaced alike, and no third-party file
     /// puts a control character into a book's text, its speech, or braille.
     static func plainText(_ raw: some StringProtocol) -> String {
+        finishedText(of: raw, characterLimit: .max).text
+    }
+
+    /// `raw` as a speaker's name: finished as `plainText(_:)` finishes it and
+    /// kept to `TimedTextLimits.maximumVoiceNameCharacters`. Every reader
+    /// finishes a voice name with it.
+    static func voiceName(_ raw: some StringProtocol) -> String {
+        finishedText(of: raw, characterLimit: TimedTextLimits.maximumVoiceNameCharacters).text
+    }
+
+    /// `raw` finished as `plainText(_:)` finishes it, but kept to at most
+    /// `characterLimit` characters, so one cue, or one name, of a hostile
+    /// file cannot be a book's single sentence (or be copied into every cue
+    /// after it, as a speaker's name is). Past the limit the reading of
+    /// `raw` stops, so the cost is that of the limit, not of the file, and
+    /// the text is cut back to where a sentence ends in its second half,
+    /// failing that to the last space, failing that at the limit itself.
+    /// - Returns: The finished text, and whether it was cut.
+    static func finishedText(of raw: some StringProtocol, characterLimit: Int) -> (text: String, wasCut: Bool) {
         // Built character by character, a space put in only when a word
         // follows: the same text as splitting at white space and joining,
         // but without an array holding a substring (32 bytes) for each
         // word, which for a 20 MB cue of one-letter words was some 320 MB.
         var plain = ""
+        var count = 0
         var followsWhiteSpace = false
         for character in raw {
             if character.isWhitespace {
@@ -112,14 +137,57 @@ struct TimedTextCue: Equatable, Sendable {
                 // Left out as if it were never there: "a\u{7}b" is "ab".
                 continue
             } else {
+                // A word that would pass the limit is where the text stops.
+                if count + (followsWhiteSpace ? 2 : 1) > characterLimit {
+                    return (cutBack(plain), true)
+                }
                 if followsWhiteSpace {
                     plain.append(" ")
+                    count += 1
                     followsWhiteSpace = false
                 }
                 plain.append(character)
+                count += 1
             }
         }
-        return plain
+        return (plain, false)
+    }
+
+    /// `text`, which was cut at its end, cut back to the end of the last
+    /// sentence in its second half, else to its last space, else as it is, so
+    /// a cue seldom ends in half a word.
+    private static func cutBack(_ text: String) -> String {
+        let characters = Array(text)
+        var lastSpace: Int?
+        var index = characters.count - 1
+        while index >= characters.count / 2 {
+            if characters[index] == " " {
+                lastSpace = lastSpace ?? index
+                if endsSentence(characters[..<index]) {
+                    return String(characters[..<index])
+                }
+            }
+            index -= 1
+        }
+        return lastSpace.map { String(characters[..<$0]) } ?? text
+    }
+
+    /// The marks that end a sentence when a word ends with one.
+    private static let sentenceEndingMarks: Set<Character> = [".", "?", "!", "…"]
+
+    /// The marks that may follow a sentence's end: quotation marks, straight
+    /// and curly, and closing brackets, as in `said.”` or `(see above.)`.
+    private static let closingMarks: Set<Character> = ["\"", "'", "”", "’", ")", "]"]
+
+    /// Whether `text` ends a sentence: whether its last character, after any
+    /// closing quotation marks and brackets, is ".", "?", "!", or "…". Both
+    /// the Podcasting 2.0 reader, gathering words into sentences, and the cut
+    /// of a cue too long to keep use it.
+    static func endsSentence(_ text: some BidirectionalCollection<Character>) -> Bool {
+        guard let last = text.reversed().first(where: { !closingMarks.contains($0) }) else {
+            return false
+        }
+        return sentenceEndingMarks.contains(last)
     }
 
     /// Whether `character` is a control character (Unicode's Cc). A control
@@ -143,6 +211,12 @@ struct TimedTextDocument: Equatable, Sendable {
     /// does not read or lies past `Transcript.maximumMilliseconds`, an end
     /// before its start, or text that is nothing but markup and white space.
     var skippedCueCount: Int = 0
+
+    /// How many of the cues were kept only in part, their text longer than
+    /// TextMouth keeps (`TimedTextCue.isCutShort`).
+    var cutCueCount: Int {
+        cues.reduce(0) { $0 + ($1.isCutShort ? 1 : 0) }
+    }
 
     /// The cues as a transcript's sentences (`TranscriptSentence`), in order:
     /// each cue's text, times, and words, with its voice named before its
@@ -246,6 +320,19 @@ enum TimedTextLimits {
     /// charter's decision 5). A chapter with its picture and link takes a
     /// few hundred bytes, so 1 MB holds thousands of chapters.
     static let podcastChaptersBytes = 1_048_576
+
+    /// The most characters one cue's text keeps: 10,000, some 1,700 words,
+    /// which is ten times a long caption and more than any sentence a
+    /// speaker says. Past it the text is cut (`TimedTextCue.isCutShort`), so
+    /// a file that is one 20 MB cue cannot make one sentence and paragraph
+    /// of that length in a book, which neither the reader's layout, nor
+    /// VoiceOver, nor braille is made for.
+    static let maximumCueCharacters = 10_000
+
+    /// The most characters a speaker's name keeps: 100. A name is put before
+    /// the text each time the speaker changes, so a name of megabytes would
+    /// be copied into every cue after it.
+    static let maximumVoiceNameCharacters = 100
 
     /// The most cues a file may hold: 250,000, more than 20 MB of SubRip
     /// holds, and three cues a second for a whole day of audio.

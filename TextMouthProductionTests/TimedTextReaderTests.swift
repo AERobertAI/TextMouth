@@ -994,7 +994,93 @@ final class TimedTextReaderTests: XCTestCase {
             texts = [try subRipCue(hostile).text, try webVTTCue(hostile).text]
         }
 
-        XCTAssertEqual(texts.map { $0 == hostile }, [true, true], "each cue keeps its characters as text")
+        // The characters stay text (no tag or override is taken from them),
+        // up to the most one cue keeps.
+        let kept = String(hostile.prefix(TimedTextLimits.maximumCueCharacters))
+        XCTAssertEqual(texts.map { $0 == kept }, [true, true], "each cue keeps its first characters as text")
+        XCTAssertLessThan(elapsed, .seconds(10))
+    }
+
+    // MARK: - One Cue's Length
+
+    /// A text of `count` sentences, "Sentence 1 is here. Sentence 2 is
+    /// here. ...", on one line.
+    private func sentences(_ count: Int) -> String {
+        (1...count).map { "Sentence \($0) is here." }.joined(separator: " ")
+    }
+
+    /// A cue longer than the most one keeps is cut where a sentence ends,
+    /// and is counted; a cue no longer is kept whole and not counted. The
+    /// cut is the beginning of the text, in both file formats.
+    func testACueLongerThanTheLimitIsCutWhereASentenceEnds() throws {
+        let limit = TimedTextLimits.maximumCueCharacters
+        let long = sentences(2_000)
+        XCTAssertGreaterThan(long.count, limit, "the test's text is not longer than the limit")
+        let cues = [("WebVTT", try webVTTCue(long)), ("SubRip", try subRipCue(long))]
+        for (format, cue) in cues {
+            XCTAssertTrue(cue.isCutShort, "\(format): a cue of \(long.count) characters was not marked cut")
+            XCTAssertLessThanOrEqual(cue.text.count, limit, "\(format): the cut cue is longer than the limit")
+            XCTAssertGreaterThan(cue.text.count, limit / 2, "\(format): the cut went back more than it needed to")
+            XCTAssertTrue(cue.text.hasSuffix("is here."), "\(format): the cue ends mid-sentence: ...\(cue.text.suffix(30))")
+            XCTAssertTrue(long.hasPrefix(cue.text), "\(format): the cue is not the beginning of the text")
+        }
+
+        // Exactly the limit is whole; one more character is cut.
+        let exact = String(repeating: "a", count: limit)
+        XCTAssertFalse(try webVTTCue(exact).isCutShort)
+        XCTAssertEqual(try webVTTCue(exact).text.count, limit)
+        XCTAssertTrue(try webVTTCue(exact + "a").isCutShort)
+        let document = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n\(long)\n\n00:03.000 --> 00:04.000\nShort.\n")
+        XCTAssertEqual(document.cutCueCount, 1)
+        XCTAssertEqual(document.cues.map(\.isCutShort), [true, false])
+    }
+
+    /// Without a sentence's end in the second half of the text, a cue is
+    /// cut at the last space; without a space, at the limit itself.
+    func testACueWithoutASentenceEndIsCutBetweenWordsOrAtTheLimit() throws {
+        let limit = TimedTextLimits.maximumCueCharacters
+        let words = try webVTTCue(String(repeating: "word ", count: limit)).text
+        XCTAssertTrue(words.hasSuffix("word"), "cut mid-word: ...\(words.suffix(12))")
+        XCTAssertLessThanOrEqual(words.count, limit)
+        XCTAssertGreaterThan(words.count, limit - 5)
+
+        let unbroken = try webVTTCue(String(repeating: "x", count: limit * 3)).text
+        XCTAssertEqual(unbroken.count, limit)
+
+        // A sentence's end in the first half only is not worth cutting back
+        // to: the text goes to its last space instead.
+        let early = "Done." + String(repeating: " word", count: limit)
+        let cut = try webVTTCue(early).text
+        XCTAssertTrue(cut.hasSuffix("word"), "...\(cut.suffix(12))")
+        XCTAssertGreaterThan(cut.count, limit - 10)
+    }
+
+    /// A speaker's name is kept to its limit, as the cue's voice and as a
+    /// name put in the text where another voice takes over, so a name of
+    /// megabytes is not copied into every sentence where the speaker
+    /// changes.
+    func testASpeakersNameIsKeptToItsLimit() throws {
+        let limit = TimedTextLimits.maximumVoiceNameCharacters
+        let name = String(repeating: "N", count: limit * 50)
+
+        let cue = try webVTTCue("<v \(name)>Hello.<v Ben>Hi.<v \(name)>Again.")
+
+        XCTAssertEqual(cue.voice?.count, limit)
+        XCTAssertEqual(cue.text, "Hello. Ben: Hi. \(String(repeating: "N", count: limit)): Again.")
+        XCTAssertFalse(cue.isCutShort)
+    }
+
+    /// 5 MB of one cue, the worst a fetched transcript may be, reads in a
+    /// moment and keeps only the limit.
+    func testAFiveMegabyteCueReadsInAMomentAndKeepsTheLimit() throws {
+        let text = String(repeating: "a ", count: 2_500_000)
+        var cue: TimedTextCue?
+        let elapsed = try ContinuousClock().measure {
+            cue = try webVTTCue(text)
+        }
+
+        XCTAssertEqual(cue?.isCutShort, true)
+        XCTAssertLessThanOrEqual(cue?.text.count ?? .max, TimedTextLimits.maximumCueCharacters)
         XCTAssertLessThan(elapsed, .seconds(10))
     }
 }

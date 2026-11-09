@@ -96,6 +96,16 @@ final class TranscriptAttachTests: XCTestCase {
             "Attached “lock.srt” to Lock Keeper: \(7_077.formatted()) words. "
                 + "3 timed passages couldn't be read and were left out."
         )
+        // Passages cut short for their length (one cue has a limit).
+        XCTAssertEqual(
+            TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 0, cut: 1),
+            "Attached “lock.srt” to Lock Keeper: 30 words. 1 timed passage was too long and was cut short."
+        )
+        XCTAssertEqual(
+            TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 2, cut: 2),
+            "Attached “lock.srt” to Lock Keeper: 30 words. 2 timed passages couldn't be read and were left out. "
+                + "2 timed passages were too long and were cut short."
+        )
     }
 
     // MARK: - The Command

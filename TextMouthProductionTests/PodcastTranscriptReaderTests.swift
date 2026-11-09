@@ -507,6 +507,43 @@ final class PodcastTranscriptReaderTests: XCTestCase {
         let twoSentencesOfWords = try transcript(words("One sentence here. And another one."))
         XCTAssertEqual(try PodcastTranscriptReader.read(twoSentencesOfWords, maximumCues: 2).cues.count, 2)
     }
+
+    /// One segment's text longer than a cue keeps is cut where a sentence
+    /// ends and counted, and so is a speaker's name past its limit, which a
+    /// transcript puts before the text each time the speaker changes.
+    func testALongSegmentAndALongSpeakersNameAreCut() throws {
+        let limit = TimedTextLimits.maximumCueCharacters
+        let long = (1...2_000).map { "Sentence \($0) is here." }.joined(separator: " ")
+        let name = String(repeating: "N", count: TimedTextLimits.maximumVoiceNameCharacters * 50)
+
+        let document = try PodcastTranscriptReader.read(
+            transcript([segment(long, from: 0, to: 900, speaker: name), segment("Short.", from: 1_000, to: 1_900, speaker: name)])
+        )
+
+        XCTAssertEqual(document.cues.map(\.isCutShort), [true, false])
+        XCTAssertEqual(document.cutCueCount, 1)
+        let first = try XCTUnwrap(document.cues.first)
+        XCTAssertLessThanOrEqual(first.text.count, limit)
+        XCTAssertTrue(first.text.hasSuffix("is here."), "the cue ends mid-sentence: ...\(first.text.suffix(30))")
+        XCTAssertTrue(long.hasPrefix(first.text), "the cue is not the beginning of the text")
+        XCTAssertEqual(first.voice?.count, TimedTextLimits.maximumVoiceNameCharacters)
+    }
+
+    /// Words of a feed that times every word are gathered into a sentence
+    /// of sixty at most, but not past the limit one cue keeps: sixty words
+    /// of 4,000 characters make cues of two words each, none cut.
+    func testWordsAreNotGatheredPastTheLimitOfOneCue() throws {
+        let bigWord = String(repeating: "w", count: 4_000)
+        let segments = (0..<60).map { segment(bigWord, from: $0 * 100, to: $0 * 100 + 100) }
+
+        let document = try PodcastTranscriptReader.read(transcript(segments))
+
+        XCTAssertEqual(document.cues.count, 30, "sixty words of 4,000 characters were not made two to a cue")
+        let longest = document.cues.map(\.text.count).max() ?? 0
+        XCTAssertLessThanOrEqual(longest, TimedTextLimits.maximumCueCharacters, "a cue is longer than the limit")
+        XCTAssertEqual(document.cutCueCount, 0)
+        assertSentencesAreTrusted(document, "sixty long words")
+    }
 }
 
 // MARK: - Writing Podcasting 2.0 Files

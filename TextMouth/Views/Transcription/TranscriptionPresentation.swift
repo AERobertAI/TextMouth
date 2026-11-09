@@ -542,7 +542,8 @@ final class TranscriptionPresenter: ObservableObject {
                 fileName: url.lastPathComponent,
                 bookTitle: book.title,
                 wordCount: transcript.wordCount,
-                skipped: document.skippedCueCount
+                skipped: document.skippedCueCount,
+                cut: document.cutCueCount
             ),
             window
         )
@@ -551,7 +552,7 @@ final class TranscriptionPresenter: ObservableObject {
         DiagnosticLog.event(
             .storage,
             "TRANSCRIPT_ATTACHED: \(book.title): \(document.format.name) file, \(sentenceCount) sentences, "
-                + "\(document.skippedCueCount) passages left out"
+                + "\(document.skippedCueCount) passages left out, \(document.cutCueCount) cut short"
         )
     }
 
