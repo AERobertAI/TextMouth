@@ -90,7 +90,8 @@ final class Probe: NSObject, NSApplicationDelegate {
                 log("work ended")
             },
             longestWait: .seconds(3),
-            finishing: "keeping the probe's downloads"
+            kind: "probe work",
+            finishing: { "keeping the probe's downloads" }
         )
     }
 
