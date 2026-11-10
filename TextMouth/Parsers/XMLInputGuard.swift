@@ -235,8 +235,8 @@ enum XMLInputGuard {
     ///   - cancelled: Asked every `tagsBetweenCancelChecks` start tags, when
     ///     given; the walk ends, as if the part ended there, once it answers
     ///     true. A caller that passes it must itself refuse to go on with a
-    ///     part whose scan was cut short (`problem(with:stoppingWhenCancelled:)`
-    ///     and `PackageSAXParser.parseDocument()` do).
+    ///     part whose scan was cut short (`problem(throwingWhenCancelled:)`
+    ///     and so `PackageSAXParser.parseDocument()` do).
     static func walkStartTags(
         in units: CodeUnits,
         begin: (_ nameStart: Int) -> Void,
@@ -452,7 +452,7 @@ enum XMLInputGuard {
     ///
     /// With `cancelled`, the scan ends early once it answers true, and then
     /// says only that it found no such tag *so far*: the caller must not
-    /// treat the part as checked (`problem(with:stoppingWhenCancelled:)`).
+    /// treat the part as checked (`problem(throwingWhenCancelled:)`).
     static func hasTag(
         withMoreAttributesThan limit: Int = mostAttributesInATag,
         in data: Data,
@@ -506,23 +506,30 @@ enum XMLInputGuard {
     /// encoding first, since the other checks read the part as ASCII, then the
     /// subset, then the attributes. A document type that only names an
     /// external one (DAISY and NCX files have those) is fine.
-    ///
-    /// The attribute count is the one long pass (all of the part: seconds for
-    /// a very large one in a Debug build). With `stoppingWhenCancelled` it
-    /// ends as soon as the import running on this thread is cancelled, and
-    /// then answers nil though the part was not checked to its end: the
-    /// caller must go on to ask `ImportCancellation.throwIfCancelled()` before
-    /// it hands the part to a parser (the flag, once set, stays set, so that
-    /// ask throws), as `PackageSAXParser.parseDocument()` does.
-    static func problem(
-        with data: Data,
-        isDecodedText: Bool = false,
-        stoppingWhenCancelled: Bool = false
-    ) -> Problem? {
+    static func problem(with data: Data, isDecodedText: Bool = false) -> Problem? {
         if let encoding = encodingProblem(of: data, isDecodedText: isDecodedText) { return encoding }
         if declaresInternalSubset(data) { return .ownDefinitions }
-        let cancelled: (() -> Bool)? = stoppingWhenCancelled ? { ImportCancellation.current?.isCancelled == true } : nil
-        if hasTag(withMoreAttributesThan: mostAttributesInATag, in: data, cancelled: cancelled) { return .tooManyAttributes }
+        if hasTag(withMoreAttributesThan: mostAttributesInATag, in: data) { return .tooManyAttributes }
+        return nil
+    }
+
+    /// `problem(with:isDecodedText:)` for a part read inside an import: the attribute count, the one long
+    /// pass (all of the part: seconds for a very large one in a Debug build), ends as soon as the import
+    /// running on this thread is cancelled, and then this throws `ImportCancelled`. It never answers nil
+    /// for a scan it did not finish, so a caller cannot hand an unchecked part to a parser by forgetting to
+    /// ask. A problem found before the cancel is still answered.
+    /// - Throws: `ImportCancelled` when the import was cancelled during the scan.
+    static func problem(throwingWhenCancelled data: Data, isDecodedText: Bool = false) throws -> Problem? {
+        if let encoding = encodingProblem(of: data, isDecodedText: isDecodedText) { return encoding }
+        if declaresInternalSubset(data) { return .ownDefinitions }
+        var stoppedByCancel = false
+        let tooMany = hasTag(withMoreAttributesThan: mostAttributesInATag, in: data) {
+            let cancelled = ImportCancellation.current?.isCancelled == true
+            if cancelled { stoppedByCancel = true }
+            return cancelled
+        }
+        if tooMany { return .tooManyAttributes }
+        if stoppedByCancel { throw ImportCancelled() }
         return nil
     }
 }

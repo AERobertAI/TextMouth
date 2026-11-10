@@ -73,15 +73,14 @@ class PackageSAXParser: NSObject, XMLParserDelegate {
         // are no damage.
         //
         // The scan of a very large part takes seconds, so it ends when the
-        // import is cancelled, and a part it did not finish is never handed
-        // to the parser: the flag stays set, and the ask below throws.
-        if let problem = XMLInputGuard.problem(with: data, stoppingWhenCancelled: true) {
+        // import is cancelled, and then throws `ImportCancelled`: a part it
+        // did not finish is never handed to the parser.
+        if let problem = try XMLInputGuard.problem(throwingWhenCancelled: data) {
             if problem != .tooManyAttributes, let refusedXMLError {
                 throw refusedXMLError(file, problem)
             }
             throw malformedXMLError(file, XMLInputGuard.tooManyAttributesProblem)
         }
-        try ImportCancellation.throwIfCancelled()
 
         let parser = XMLParser(data: data)
         parser.delegate = self
