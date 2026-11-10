@@ -546,7 +546,7 @@ final class XMLInputGuardTests: XCTestCase {
             }
         }
         // The plain form never asks, in any import.
-        try ImportCancellation.$current.withValue(cancelled) {
+        ImportCancellation.$current.withValue(cancelled) {
             XCTAssertNil(XMLInputGuard.problem(with: tags(10_000)))
         }
     }
