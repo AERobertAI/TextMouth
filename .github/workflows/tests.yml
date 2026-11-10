@@ -156,11 +156,23 @@ jobs:
       - name: Build and run this shard's tests
         run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.shards }}
 
+      # Did the build compile? The tests start only then, so a log with a test suite in it says so. The cache is one for
+      # each day and is not saved again once it exists, so products of a build that stopped on an error must not take
+      # the day's place.
+      - name: Did the build finish?
+        id: built
+        if: ${{ !cancelled() }}
+        run: |
+          if grep -q "^Test Suite " build/remote/run.log 2>/dev/null; then
+            echo "finished=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # The build products for tomorrow's runs, saved only when today has none yet (the restore above did not hit
       # today's key): whether or not the tests passed (a failed test leaves good products), but not for a run that
-      # was cancelled part way. Every shard builds the same products, so the first shard saves them.
+      # was cancelled part way or whose build did not compile. Every shard builds the same products, so the first
+      # shard saves them.
       - name: Save the build products
-        if: ${{ !cancelled() && matrix.shard == 1 && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && matrix.shard == 1 && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' && steps.built.outputs.finished == 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -225,9 +237,9 @@ jobs:
             build/remote-DerivedData-ios
             !build/remote-DerivedData-ios/Logs
             build/remote-cache-ios
-          key: build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
           restore-keys: |
-            build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-
+            build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-
 
       - name: Generate the Xcode project
         run: make generate
@@ -252,15 +264,26 @@ jobs:
       - name: Build the iPhone app and its UI tests
         run: python3 -I -B Scripts/agents/run-ios-build.py --out build/remote-ios
 
+      # Only products of a build that finished are worth keeping for the day: the cache is one for each day and is not
+      # saved again once it exists, so a build that stopped early (the first probe run, which lacked the platform) must
+      # not take the day's place. The script exits 0 either way; its summary says which.
+      - name: Did the build finish?
+        id: built
+        if: ${{ !cancelled() }}
+        run: |
+          if grep -q "^iOS build: PASSED" build/remote-ios/ios-summary.txt 2>/dev/null; then
+            echo "finished=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Save the build products
-        if: ${{ !cancelled() && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' && steps.built.outputs.finished == 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             build/remote-DerivedData-ios
             !build/remote-DerivedData-ios/Logs
             build/remote-cache-ios
-          key: build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+          key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
 
       - name: Upload the iPhone build's results
         if: always()

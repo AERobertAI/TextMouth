@@ -215,6 +215,18 @@ class JobsTests(unittest.TestCase):
                 save = job[job.index("Save the build products"):]
                 self.assertIn("steps.cache.outputs.cache-hit != 'true'", save.split("uses:")[0])
 
+    def test_a_days_cache_is_saved_only_from_a_build_that_finished(self):
+        # The cache is one a day and never saved again once it exists: the first probe run of November 10 lacked the
+        # iOS platform, stopped after 20 seconds, saved that, and kept the day's real build from being saved.
+        for name in ("test", "ios"):
+            with self.subTest(job=name):
+                job = self.job(name)
+                finished = job[job.index("Did the build finish?"):]
+                self.assertIn("if: ${{ !cancelled() }}", finished.split("run:")[0], "it must run after a failed step too")
+                save = job[job.index("Save the build products"):]
+                self.assertIn("steps.built.outputs.finished == 'true'", save.split("uses:")[0])
+                self.assertLess(job.index("Did the build finish?"), job.index("Save the build products"))
+
     def test_the_two_jobs_caches_have_names_of_their_own(self):
         keys = re.findall(r"key: (build-[a-z]+(?:-[a-z]+)?)-", self.code)
         self.assertEqual(sorted(set(keys)), ["build-ios", "build-test-build"])
