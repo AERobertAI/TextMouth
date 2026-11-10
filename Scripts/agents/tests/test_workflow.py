@@ -282,6 +282,28 @@ class GateTests(unittest.TestCase):
         self.assertFalse(request["ios"], "the gate's checks are the project, the pins, Release, and the suite")
         self.assertGreaterEqual(request["shards"], 2)
 
+    def test_the_suite_runs_for_pushes_and_for_pull_requests_of_this_repository_but_not_for_forks(self):
+        # The call starts 5 macOS jobs, which GitHub runs at once; a fork's pull request could keep TestBuild waiting.
+        suite = job_of(self.code, "suite")
+        self.assertIn(
+            "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}",
+            suite.split("uses:")[0])
+
+    def test_the_gate_job_still_runs_for_every_pull_request(self):
+        self.assertNotIn("if:", job_of(self.code, "gate").split("steps:")[0])
+
+    def test_the_comments_say_what_is_true_of_forks_and_of_the_baselines(self):
+        # A comment is the only place these are said, so they are pinned as text (code_of drops comments).
+        check = CHECK.read_text(encoding="utf-8")
+        jobs = JOBS.read_text(encoding="utf-8")
+        self.assertNotIn("Nothing runs for a pull request's fork here", jobs)
+        self.assertIn("not for one from a fork", jobs)
+        self.assertIn("not from a fork", check)
+        self.assertIn("no baseline is checked here", check, "strict baselines run only on the Mac model that recorded them")
+        self.assertNotIn("a busy machine does not skip them", check)
+        for weaker in ("runner-skips.conf", "KF8HostileFileTests", "-onlyUsePackageVersionsFromResolvedFile"):
+            self.assertIn(weaker, check, f"the ways the suite is weaker than make check's must be said: {weaker}")
+
     def test_the_gate_workflow_repeats_neither_the_toolchain_nor_the_suites_jobs(self):
         self.assertNotIn("xcodegen.zip", self.code)
         self.assertNotIn("run-on-runner.py", self.code)

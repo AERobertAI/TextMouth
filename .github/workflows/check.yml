@@ -7,12 +7,25 @@
 #   failing on any generation, resolution, or compile error, on any Swift warning, and on an app larger
 #   than its size limit.
 # - `suite` runs the hosted XCTest suite through tests.yml, the workflow that test-build.yml calls for
-#   a push to TestBuild, so the suite has one way to run on GitHub: in parallel shards, with the same
-#   tests left out on the runner (Scripts/agents/runner-skips.conf). It asks for what the gate asked of
-#   its fourth step: a build from nothing, since xcodebuild reports a file's warnings only when it compiles
-#   that file, with no Swift warning allowed in it, and the performance baselines run strictly
-#   (a number more than twice its baseline fails; a busy machine does not skip them).
-#   One machine ran the whole suite in more than the gate's 60-minute limit; the shards finish it in minutes.
+#   a push to TestBuild, so the suite has one way to run on GitHub: in parallel shards. It asks for what
+#   the old fourth step asked: a build from nothing, since xcodebuild reports a file's warnings only when it
+#   compiles that file, and no Swift warning allowed in it. One machine ran the whole suite in more than the
+#   old job's 60-minute limit; the shards finish it in about 20 minutes cold.
+#   It runs only for a push to main and for a pull request from this repository, not from a fork: it starts
+#   5 macOS jobs (the gate and 4 shards), and GitHub runs 5 at once, so a fork's pull request could keep
+#   TestBuild's runs waiting. A fork's pull request still gets the gate.
+#
+# What the suite is not, compared with the fourth step of `make check` (Scripts/check.sh) on a Mac:
+# - The 103 tests of Scripts/agents/runner-skips.conf are left out, as they are on TestBuild, so no job on
+#   GitHub runs them; the development Mac does (`make check` runs them all).
+# - Two families of timing tests (KF8HostileFileTests, MOBIHostileFileTests) have their limits multiplied
+#   by 2.5 (TestMachine.timeScale; Scripts/agents/run-on-runner.py sets it).
+# - xcodebuild here is not given -onlyUsePackageVersionsFromResolvedFile, as `make test` is on a Mac, so the
+#   pins are checked on the gate's machine only (step 2 and the end of `make check --without-tests`).
+# - "strict_performance" asks for the performance baselines to run even on a busy machine, but they run
+#   only on the Mac model they were recorded on (PerformanceBaselineSupport): on a GitHub runner they are
+#   skipped, as they were in the old job, so no baseline is checked here. Run `make check` on the development
+#   Mac for that.
 #
 # The toolchain (Xcode and XcodeGen, with the digest GitHub publishes for XcodeGen) is pinned in one place,
 # the local action .github/actions/setup-xcode, which every macOS job here and in tests.yml uses.
@@ -83,8 +96,11 @@ jobs:
 
   suite:
     name: the hosted suite
+    # Not for a pull request from a fork (see the top of this file).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/tests.yml
     with:
-      # The full suite in the most shards, built from nothing, strict baselines, no Swift warning, and no
-      # iPhone build (test-build.yml's runs build that). requests/head are left out: no train reads this.
+      # The full suite in the most shards, built from nothing, no Swift warning, and no iPhone build
+      # (test-build.yml's runs build that). Strict baselines are asked for and skipped on a runner (see above).
+      # requests/head are left out: no train reads this.
       request-json: '{"areas":["all"],"classes":[],"full":true,"shards":4,"cold":true,"ios":false,"strict_performance":true,"no_warnings":true}'

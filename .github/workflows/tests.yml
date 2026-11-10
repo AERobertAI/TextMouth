@@ -7,8 +7,11 @@
 #                   .github/test-request.json, which says what to run (areas, test classes, or the full
 #                   suite) and in how many parallel jobs;
 #   check.yml       for the reproducibility gate on main, which gives the request as the input `request-json`
-#                   (the full suite, built from nothing, with strict performance baselines and no Swift warning).
-# Nothing runs for a pull request's fork here, no job holds a secret, and none may do more than read the repository.
+#                   (the full suite, built from nothing, with no Swift warning; strict performance baselines are asked for and
+#                   skipped on a runner).
+# check.yml calls it for a push to main and for a pull request from this repository, not for one from a fork (the `if`
+# of its `suite` job), because the call starts 5 macOS jobs. No job here holds a secret, and none may do more than
+# read the repository.
 # It uses only GitHub's own actions, pinned to full commit hashes with their release tags alongside, and the
 # repository's own local action .github/actions/setup-xcode.
 #
