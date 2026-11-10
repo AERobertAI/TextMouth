@@ -247,6 +247,9 @@ final class QuitWhileHeldTests: XCTestCase {
 
         let words = QuitHoldWording.message(finishing: ["keeping downloads"])
         XCTAssertEqual(world.log.told, [words, words])
+        // The work starts in a task of its own, a turn after the quit is answered.
+        let started = await eventually { downloads.started >= 1 }
+        XCTAssertTrue(started, "the work never started")
         XCTAssertEqual(downloads.started, 1, "the second quit started the work again")
         XCTAssertEqual(downloads.ended, 0)
         XCTAssertEqual(world.log.asks, 0, "asked to quit again before the work ended")
