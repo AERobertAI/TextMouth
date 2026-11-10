@@ -71,7 +71,8 @@ final class SpeechExportsUnderWay {
         QuitHold.Work(
             isRunning: { self.isRunning },
             end: { await self.stopAll() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            finishing: "stopping a speech export with the chapters it finished kept"
         )
     }
 }

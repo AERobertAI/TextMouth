@@ -583,7 +583,8 @@ final class TextRereads {
         QuitHold.Work(
             isRunning: { self.isReadingAgain() },
             end: { await self.ended() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            finishing: "reading a book's text again in another encoding"
         )
     }
 

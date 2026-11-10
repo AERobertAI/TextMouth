@@ -1300,7 +1300,8 @@ enum FeedQuitHold {
         QuitHold.Work(
             isRunning: { downloads.hasWork && !downloads.isStoppedForQuit },
             end: { await downloads.stopForQuit() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            finishing: "keeping the place of your feed downloads for next time"
         )
     }
 }

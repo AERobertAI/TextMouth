@@ -128,7 +128,15 @@ final class UnsavedChangesTerminationGuard {
     /// its question would hold up the quit event. A request that arrives
     /// while the prompt is on its way or showing is cancelled without
     /// another prompt.
-    func reply() -> NSApplication.TerminateReply {
+    ///
+    /// When the quit is to go ahead, `whenQuitting` has the last word: it
+    /// may hold the quit for work to finish, answering `.terminateCancel`
+    /// (and asking to quit again itself later) or `.terminateLater`. A cancel
+    /// keeps Quit Anyway for the request that follows, which must not ask
+    /// about the unsaved changes again.
+    func reply(
+        whenQuitting answer: @MainActor () -> NSApplication.TerminateReply = { .terminateNow }
+    ) -> NSApplication.TerminateReply {
         guard !isPrompting else { return .terminateCancel }
         flush()
         let decision = TerminationDecision.decide(
@@ -136,10 +144,15 @@ final class UnsavedChangesTerminationGuard {
             userChoseQuitAnyway: userChoseQuitAnyway
         )
         // Quit Anyway answers one request: the one it makes.
+        let choseQuitAnyway = userChoseQuitAnyway
         userChoseQuitAnyway = false
         switch decision {
         case .terminate:
-            return .terminateNow
+            let reply = answer()
+            if reply == .terminateCancel {
+                userChoseQuitAnyway = choseQuitAnyway
+            }
+            return reply
         case .cancelAndPrompt:
             isPrompting = true
             DispatchQueue.main.async { [self] in

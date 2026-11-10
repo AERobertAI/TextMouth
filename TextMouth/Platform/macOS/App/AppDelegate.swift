@@ -140,9 +140,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Holds a quit while the failure center reports unsaved changes.
     private let terminationGuard = UnsavedChangesTerminationGuard()
 
-    /// Asks AppKit to quit again, once a library move stopped for a quit
-    /// has ended; tests replace it, so nothing quits.
+    /// Asks AppKit to quit again, once a library move stopped for a quit,
+    /// an editor or the Record window asked first, or an answered question
+    /// has ended: always through `QuitRequest.ask()`, which asks from
+    /// outside the main queue's drain. Tests replace it, so nothing quits.
     var requestTermination: @MainActor @Sendable () -> Void = { QuitRequest.ask() }
+
+    /// The work a quit must not cut off, as the app has it: feed downloads,
+    /// books read again in another encoding, and speech exports under way.
+    /// Tests replace it with work of their own.
+    var heldWork: @MainActor () -> [QuitHold.Work] = {
+        [
+            FeedQuitHold.work(FeedCenter.shared.downloads),
+            TextRereads.shared.quitWork(),
+            SpeechExportsUnderWay.shared.quitWork(),
+        ]
+    }
+
+    /// Finishes that work for a quit the person asked for, saying what it
+    /// is doing in a panel and through VoiceOver (`QuitNotice`), and then
+    /// asks to quit again. Tests replace it with a finisher that shows and
+    /// says nothing.
+    var quitFinisher = QuitFinisher(
+        tell: { QuitNotice.shared.show($0) },
+        finished: { QuitNotice.shared.dismiss() }
+    )
 
     /// The Record window's controller, which a quit asks about its take
     /// first (FR04): the app's, unless a test sets its own.
@@ -190,18 +212,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    that second request quits at step 2, whatever is unsaved. Cancel
     ///    keeps TextMouth open.
     /// 4. A quit that goes ahead at step 2 while feed downloads wait or run,
-    ///    or while a book's text is read again in another encoding, is
-    ///    answered later (`QuitHold`): each download keeps its place for the
-    ///    next launch, the one under way its resume data (`FeedQuitHold`,
-    ///    FR03), after three seconds at most; then each re-read finishes, its
-    ///    text and its record both written (`TextRereads`, encodingchoice),
-    ///    after ten seconds at most; and then TextMouth quits.
+    ///    while a book's text is read again in another encoding, or while a
+    ///    speech export is under way, waits for that work (`QuitHold`). A
+    ///    quit the person asks for is cancelled, TextMouth says in a panel
+    ///    and through VoiceOver what it is finishing and that it will quit
+    ///    afterwards (`QuitFinisher`, `QuitNotice`), and asks to quit again
+    ///    once the work has ended, or has had its longest wait. Each
+    ///    download keeps its place for the next launch, the one under way its
+    ///    resume data (`FeedQuitHold`, FR03), after three seconds at most;
+    ///    then each re-read finishes, its text and its record both written
+    ///    (`TextRereads`, encodingchoice), after ten seconds at most; then
+    ///    each speech export stops with its chapters kept
+    ///    (`SpeechExportsUnderWay`); and then TextMouth quits. It is
+    ///    cancelled rather than left pending because AppKit quits at once,
+    ///    asking nothing, on a second Command-Q or the Dock's Quit while a
+    ///    reply is pending. A request that comes while the work is being
+    ///    finished is answered before step 0: it is cancelled too, and the
+    ///    same words are said again, so it never cuts the work off. The
+    ///    request that asks again when the work has ended skips step 4, once.
+    ///    When the system ends the session, a cancel would stop the log out,
+    ///    so that quit is answered later instead (`QuitHold.hold`).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // The memory guard quits to protect the Mac, everything saved,
         // asking nothing (B07).
         if PlaybackMemoryGuard.shared.isQuittingToProtectTheMac {
             return .terminateNow
         }
+        if quitFinisher.answerRepeatedRequest() {
+            return .terminateCancel
+        }
+        let workIsDone = quitFinisher.takeFinished()
         if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
             return .terminateCancel
         }
@@ -211,16 +251,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if audioEditors.holdQuit(then: requestTermination) {
             return .terminateCancel
         }
-        let reply = terminationGuard.reply()
-        let heldWork = [
-            FeedQuitHold.work(FeedCenter.shared.downloads),
-            TextRereads.shared.quitWork(),
-            SpeechExportsUnderWay.shared.quitWork(),
-        ]
-        if reply == .terminateNow, QuitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
-            return .terminateLater
+        return terminationGuard.reply { [self] in
+            replyForHeldWork(to: sender, workIsDone: workIsDone)
         }
-        return reply
+    }
+
+    /// The answer for a quit that is sure to go ahead (step 4): it goes ahead
+    /// when no work needs finishing, or `workIsDone`; otherwise the work is
+    /// finished first. The person's quit is cancelled while `quitFinisher`
+    /// finishes it and asks again; the system ending the session is answered
+    /// later, through `QuitHold`, since a cancel would stop it.
+    private func replyForHeldWork(
+        to sender: NSApplication,
+        workIsDone: Bool
+    ) -> NSApplication.TerminateReply {
+        guard !workIsDone else { return .terminateNow }
+        let works = heldWork()
+        if QuitReason.currentRequestEndsTheSession {
+            let held = QuitHold.hold(works) { sender.reply(toApplicationShouldTerminate: $0) }
+            return held ? .terminateLater : .terminateNow
+        }
+        return quitFinisher.finish(works) ? .terminateCancel : .terminateNow
     }
 
     func applicationWillTerminate(_ notification: Notification) {
