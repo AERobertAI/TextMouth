@@ -90,6 +90,32 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 9, 2026
+
+- Main is version 0.4.3, tagged `v0.4.3`:
+  - the KF8 follow-ups (`.mobi` at 1.1.0);
+  - unmarked UTF-16 and UTF-32, and linked book folders (plain text at 1.0.1, HTML at 1.0.4);
+  - the transcripts' follow-ups;
+  - the iPhone's audit findings (unshipped).
+  Full suite 11,905 tests: 11,818 passed, 81 skipped, 5 expected failures, and 1 interrupted when the user's own TextMouth started beside the host. That class passed alone 3 times. `make build` (Release) succeeded.
+- Every version from v0.2.0 is tagged (Versions in `docs/developer/building.md`); pushing tags is the user's.
+- The repository is public at `github.com/AERobertAI/TextMouth`, with `origin` at `git@github.com:AERobertAI/TextMouth.git`. The orchestrator, its train, and the `ci` agent may push to the `TestBuild` branch only, for GitHub Actions; every other push stays the user's.
+- The tools gained four things:
+  - `run_locked.py`, `run_suite.py`, and `copy_phases.py` in `Scripts/agents/`;
+  - `make generate` through `regenerate-project.py`, so `make install` leaves no noise;
+  - trains that take back a branch left out only for a conflict;
+  - `make typecheck-tests`, the step before every train request.
+- Under way:
+  - `fix/quit-while-held`, a fix round after an Opus review found that it read the quit reason under the wrong keyword;
+  - `ios/search-1109`, Search in Book on the iPhone, in its fix round;
+  - `ci/github-actions`.
+- The user's line for the day is 45% of the week left; nothing new starts until the work under way is done.
+- Lessons of that day, which hold for any campaign:
+  - Never put a deliberate break on the build train: it tests every request in one tree, and two scratch branches with fixes broken on purpose failed other agents' classes. Prove a break with a harness through `run_locked.py`.
+  - A hosted test failing with "The test runner exited with code 0" may be the user's own TextMouth starting beside the host, which shares its bundle identifier. Read the system log for `terminate:`, and run the class alone before calling it a fault.
+  - Outside reviews found three faults no train could. A decoder rule that would have turned valid text into garbage on the launch re-read. A chapter rule that could cut a chapter in two. A quit-reason keyword that would have cancelled log outs. Every test and probe of the last had pinned the same wrong keyword: a test should take an outside constant from the SDK, not from the code it tests.
+  - Test files that don't compile cost an hourly train each: `make typecheck-tests REF=<commit>` finds them first.
+
 ## Where things stood on November 8, 2026
 
 - Main is version 0.4.2: spoken-audio export (M4B, M4A, or MP3 in a chosen voice, a chapter at each heading), transcripts that come with podcasts and audiobooks, symbols in `.docx` and Word 2003 XML documents, the markup guard's large stack, so a book nested however deeply can't crash TextMouth, and KF8 Kindle books (`.azw3`, and the KF8 half of a `.mobi`). Full suite 11,853 tests, 81 skipped, 0 failures, the iPhone interface's included; `make typecheck-ios` 0 errors, 0 warnings. At the first launch, `.docx` and `.wordml` books are read again once (1.3.0), and `.mobi` books once (1.0.0).
