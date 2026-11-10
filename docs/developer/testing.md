@@ -245,14 +245,15 @@ These are not accepted. They are what the last pass on November 8, 2026 found. F
 - No test may trap, hang, or play sound aloud, and every wait has a limit.
 - VoiceOver does not run in the simulator. XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type. Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
 
-### Type-checks do not compile tests
+### Type-checks and tests
 
 - `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own. They compile no test file.
-- So a compile error in a test file is found only by a build that builds the tests.
-  - For `TextMouthProductionTests`, that is the build train.
+- `make typecheck-tests` compiles the Mac's hosted tests too. It builds the app and `TextMouthProductionTests` (the folder of that name and the files of `TextMouthTests/Sources/Tests` that `project.yml` lists for it) with SwiftPM and `swift build --target TextMouthProductionTests`. It links no test bundle and runs nothing. Run it, once for a batch and after committing, before asking the build train for a build. `make typecheck-tests REF=<commit>` checks that commit from any worktree. It takes the heavy-work lock itself, so never wrap it in `run_locked.py`. A run takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock. Its errors read as the train's do (file, line, message), and its summary is in `build/typecheck/results/` of the main checkout.
+- So, apart from `make typecheck-tests`, a compile error in a test file is found only by a build that builds the tests.
+  - For `TextMouthProductionTests`, `make typecheck-tests` finds it before a train does, and the build train finds it otherwise.
   - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
 - This happened. On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
-- After changing a test file, request a train for it, and do not take a clean type-check as a sign that its tests compile.
+- After changing a test file, run `make typecheck-tests` before requesting a train for it. Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
 
 ## The performance baselines
 
