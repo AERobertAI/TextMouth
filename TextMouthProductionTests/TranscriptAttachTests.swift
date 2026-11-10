@@ -591,12 +591,12 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertNil(presenter.notice)
     }
 
-    /// The wait covers every request, not only a one-book request: a
-    /// selection of several rows that includes a book a transcript is being
-    /// attached to opens no sheet either, in whatever place the book stands
-    /// in the list, and says which book to wait for. A selection of other
-    /// books is untouched by it.
-    func testTranscribeAudioWaitsForABookAmongSeveral() throws {
+    /// A request for several books gets the sheet that says transcription
+    /// works on one book at a time, even when one of them is a book a
+    /// transcript is being attached to: the wait notice is for one book, and
+    /// a selection is refused whatever is attached, so it is not told to wait
+    /// for something that would not help.
+    func testSeveralBooksAreRefusedByTheSheetNotToldToWait() throws {
         let world = try makeIntegrationWorld("Attach Transcript Transcribe Several")
         let attached = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
         let other = try world.makeSilentAudioFileBook(title: "Long Pier", duration: 4)
@@ -605,24 +605,10 @@ final class TranscriptAttachTests: XCTestCase {
         defer { attachments.end(attached.id) }
         let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
 
-        for books in [[attached, other], [other, attached]] {
-            presenter.notice = nil
-            presenter.transcribe(books, library: world.library, window: nil)
+        presenter.transcribe([other, attached], library: world.library, window: nil)
 
-            XCTAssertNil(presenter.sheet, "a sheet opened for \(books.map(\.title)) while a transcript was being attached")
-            XCTAssertEqual(
-                presenter.notice?.message,
-                "A transcript is being attached to Four Tones. Transcribe it once that finishes.",
-                "the notice for \(books.map(\.title)) did not name the book being attached to"
-            )
-        }
-
-        // Books none of which is being attached to still reach the sheet
-        // (which, for several books, says why it cannot transcribe them).
-        presenter.notice = nil
-        presenter.transcribe([other], library: world.library, window: nil)
-        XCTAssertNotNil(presenter.sheet, "a book not being attached to was refused")
-        XCTAssertNil(presenter.notice)
+        XCTAssertNotNil(presenter.sheet, "the sheet that refuses several books did not open")
+        XCTAssertNil(presenter.notice, "a selection was told to wait: \(presenter.notice?.message ?? "-")")
     }
 
     /// A transcription of the book begun while the confirmation showed keeps

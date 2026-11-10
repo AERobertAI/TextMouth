@@ -152,16 +152,15 @@ final class TranscriptionPresenter: ObservableObject {
     /// already. With `startsAtOnce`, the sheet presses Transcribe for the
     /// user as soon as it can.
     ///
-    /// When a transcript is being attached to any of `books`
-    /// (`TranscriptAttachments`), a notice naming the first such book says to
-    /// wait instead, whether the request is for one book or for several, and
-    /// from whichever way the command came: the reader's Book menu dims it
-    /// for one book, and a library row, a selection of rows, or a VoiceOver
-    /// action reaches here (follow-up 7). A request for several books
-    /// that includes such a book gets the same notice, not the sheet.
+    /// For one audiobook a transcript is being attached to
+    /// (`TranscriptAttachments`), a notice says to wait instead, from
+    /// whichever way the command came: the reader's Book menu dims it then,
+    /// and a library row or VoiceOver action reaches here (follow-up 7). A
+    /// request for several books gets the sheet that says transcription
+    /// works on one book at a time, whatever is being attached.
     func transcribe(_ books: [Book], library: LibraryViewModel, window: PlatformWindow?, startsAtOnce: Bool = false) {
         guard sheet == nil else { return }
-        if let book = books.first(where: { TranscriptAttachments.shared.bookIDs.contains($0.id) }) {
+        if books.count == 1, let book = books.first, TranscriptAttachments.shared.bookIDs.contains(book.id) {
             notice = TranscriptionNotice(
                 title: TranscriptionWording.transcribeNoticeTitle,
                 message: TranscriptionWording.transcribeWhileAttaching(bookTitle: book.title)
