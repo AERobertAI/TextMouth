@@ -12,7 +12,7 @@ import io
 import json
 import time
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from types import SimpleNamespace
 from unittest import mock
 
@@ -204,6 +204,13 @@ class RemoteTrainFailureTests(RemoteTrainCase):
         self.assert_put_back(requests)
         self.assertIn("cancelled", next(train.TRAINS.iterdir()).joinpath("remote-failure.txt").read_text())
 
+    def test_a_cancelled_run_is_no_verdict_even_when_it_uploaded_partial_results(self):
+        # The workflow uploads whatever it has even when it is cancelled; a half-run is not a result.
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_runs(results(FAILING_SUMMARY, FAILING_LOG), view=DONE_CANCELLED)
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
     def test_a_run_that_leaves_no_results_puts_the_requests_back(self):
         requests = [self.branch("alpha", {"a.txt": "a"})]
         self.gh_runs({"fail": True}, view=DONE_FAILED)
@@ -324,7 +331,9 @@ class LoopTests(RemoteTrainCase):
     """The loop's options."""
 
     def test_soon_without_remote_is_refused(self):
-        with redirect_stdout(io.StringIO()):
+        # A pretend clock, so that a loop which wrongly started would end at its deadline, not hang.
+        self.patch(train, time=FakeClock(), run_one_train=lambda args: self.fail("a train must not run"))
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             status = train.command_loop(SimpleNamespace(every=60, soon=5, remote=False, hours=1, base="main"))
         self.assertEqual(status, 2)
 
