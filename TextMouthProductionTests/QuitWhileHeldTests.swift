@@ -1,4 +1,5 @@
 import AppKit
+import CoreServices
 import XCTest
 @testable import TextMouth
 
@@ -68,8 +69,10 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertTrue(finisherAsked, "the finisher's request to quit again does not use QuitRequest (asked \(asked.count) times)")
     }
 
-    /// No app source asks AppKit to quit with `terminate(nil)` but the helper
-    /// and the memory guard's own quit, which the delegate answers at once.
+    /// No line of the app quits or ends it but the helper's own, and the few
+    /// lines that say `quit-ok:` and why (the memory guard's emergency quits,
+    /// a helper Process being ended): `terminate(` in any form, a `#selector`
+    /// naming terminate (for `perform` or `sendAction`), `exit(`, and `_exit(`.
     /// The same check runs in `Scripts/test/quit-while-held.py`.
     func testNoSourceAsksAppKitToQuitExceptTheHelperAndTheMemoryGuard() throws {
         let appSources = URL(fileURLWithPath: #filePath)
@@ -78,24 +81,31 @@ final class QuitWhileHeldTests: XCTestCase {
         guard let files = FileManager.default.enumerator(at: appSources, includingPropertiesForKeys: nil) else {
             throw XCTSkip("the app's sources are not beside the tests: \(appSources.path)")
         }
-        let allowed: Set<String> = ["QuitRequest.swift", "PlaybackMemoryGuard.swift"]
-        let call = try NSRegularExpression(pattern: #"\bterminate\((nil|self|sender)\)"#)
+        let call = try NSRegularExpression(pattern: #"terminate\(|#selector\([^)]*terminate|\b_?exit\("#)
         var stray: [String] = []
         var scanned = 0
-        for case let file as URL in files where file.pathExtension == "swift" && !allowed.contains(file.lastPathComponent) {
+        for case let file as URL in files where file.pathExtension == "swift" {
             scanned += 1
             let text = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
             for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
                 // The line without its indentation, as a String so the range matches.
                 let code = String(line.drop { $0 == " " })
                 let range = NSRange(code.startIndex..., in: code)
-                if !code.hasPrefix("//"), call.firstMatch(in: code, range: range) != nil {
+                if !code.hasPrefix("//"), !code.contains("quit-ok:"), call.firstMatch(in: code, range: range) != nil {
                     stray.append("\(file.lastPathComponent):\(number + 1): \(code)")
                 }
             }
         }
         XCTAssertGreaterThan(scanned, 100, "the scan found only \(scanned) sources, so it looked in the wrong place")
-        XCTAssertEqual(stray, [], "these ask AppKit to quit other than through QuitRequest.ask()")
+        XCTAssertEqual(stray, [], "these lines quit or end the app other than through QuitRequest.ask()")
+        // A scan that matched nothing would pass whatever the sources hold.
+        for sample in [
+            "NSApp.terminate(nil)", "NSRunningApplication.current.terminate()",
+            "app.perform(#selector(NSApplication.terminate(_:)))", "_exit(0)", "exit(1)",
+        ] {
+            let found = call.firstMatch(in: sample, range: NSRange(sample.startIndex..., in: sample))
+            XCTAssertNotNil(found, "the scan misses \(sample)")
+        }
     }
 
     // MARK: - The Words
@@ -116,12 +126,42 @@ final class QuitWhileHeldTests: XCTestCase {
     /// The app's three kinds of work each give a phrase of their own.
     func testEachKindOfWorkSaysWhatItIsDoing() {
         let phrases = [
-            FeedQuitHold.work(FeedCenter.shared.downloads).finishing,
-            TextRereads.shared.quitWork().finishing,
-            SpeechExportsUnderWay.shared.quitWork().finishing,
+            FeedQuitHold.work(FeedCenter.shared.downloads).finishing(),
+            TextRereads().quitWork().finishing(),
+            SpeechExportsUnderWay().quitWork().finishing(),
         ]
         XCTAssertEqual(Set(phrases).count, 3, "two kinds of work say the same thing: \(phrases)")
         XCTAssertFalse(phrases.contains(""), "a kind of work says nothing: \(phrases)")
+        let kinds = [
+            FeedQuitHold.work(FeedCenter.shared.downloads).kind,
+            TextRereads().quitWork().kind,
+            SpeechExportsUnderWay().quitWork().kind,
+        ]
+        XCTAssertEqual(Set(kinds).count, 3, "two kinds of work share a kind: \(kinds)")
+    }
+
+    /// Several books read again, or several speech exports, are said as
+    /// several: the words name the count, not "a book" or "a speech export".
+    func testSeveralPiecesOfWorkAreSaidAsSeveral() {
+        let rereads = TextRereads()
+        rereads.bookIDs = [UUID()]
+        let oneBook = rereads.quitWork().finishing()
+        rereads.bookIDs = [UUID(), UUID(), UUID()]
+        let threeBooks = rereads.quitWork().finishing()
+        XCTAssertTrue(oneBook.contains("a book's text"), "one re-read: \(oneBook)")
+        XCTAssertTrue(threeBooks.contains("3 books"), "three re-reads: \(threeBooks)")
+        XCTAssertFalse(threeBooks.contains("a book"), "three re-reads said as one: \(threeBooks)")
+
+        let underWay = SpeechExportsUnderWay()
+        let first = underWay.begin(BookExportCancellation())
+        let oneExport = underWay.quitWork().finishing()
+        let second = underWay.begin(BookExportCancellation())
+        let twoExports = underWay.quitWork().finishing()
+        XCTAssertTrue(oneExport.contains("a speech export"), "one export: \(oneExport)")
+        XCTAssertTrue(twoExports.contains("2 speech exports"), "two exports: \(twoExports)")
+        XCTAssertFalse(twoExports.contains("a speech export"), "two exports said as one: \(twoExports)")
+        underWay.ended(first)
+        underWay.ended(second)
     }
 
     // MARK: - The Finisher
@@ -135,7 +175,7 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertFalse(finisher.finish([FakeWork("idle", running: false).work()]))
         XCTAssertFalse(finisher.isFinishing)
         XCTAssertFalse(finisher.answerRepeatedRequest())
-        XCTAssertFalse(finisher.takeFinished())
+        XCTAssertEqual(finisher.takeFinished(), [])
         XCTAssertEqual(log.told, [])
         XCTAssertEqual(log.asks, 0)
     }
@@ -161,8 +201,8 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertEqual(downloads.ended, 1)
         XCTAssertEqual(log.finishedNotices, 1, "the notice was not taken down once")
         XCTAssertFalse(finisher.isFinishing)
-        XCTAssertTrue(finisher.takeFinished(), "the request after the work was not told it is done")
-        XCTAssertFalse(finisher.takeFinished(), "the answer was given twice")
+        XCTAssertEqual(finisher.takeFinished(), ["keeping downloads"], "the request after the work was not told which work it waited for")
+        XCTAssertEqual(finisher.takeFinished(), [], "the answer was given twice")
     }
 
     /// Each piece of work is finished in turn, and the words name them all.
@@ -227,7 +267,7 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), 3, "the wait was far longer than 50 ms")
         XCTAssertEqual(stuck.ended, 0, "the stuck work ended")
         XCTAssertTrue(stuck.running)
-        XCTAssertTrue(finisher.takeFinished(), "the request after the wait was not told to go ahead")
+        XCTAssertEqual(finisher.takeFinished(), ["stuck"], "the request after the wait was not told to go ahead")
         stuck.released = true
     }
 
@@ -309,6 +349,45 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertEqual(prompts.count, 1, "the prompt was shown again")
     }
 
+    /// A Quit Anyway kept for the request that follows the work belongs to that
+    /// quit: when a library move, begun during the wait, cancels that request,
+    /// the choice is forgotten, and the next quit asks about the unsaved
+    /// changes again.
+    func testAKeptQuitAnywayIsForgottenWhenTheFollowUpIsCancelled() async {
+        let center = PersistenceFailureCenter()
+        center.recordFailure(.substitutions, path: "/data/substitutions.json", error: WriteRefused())
+        let prompts = Counter()
+        let guardAsks = Counter()
+        let world = DelegateWorld(terminationGuard: UnsavedChangesTerminationGuard(
+            failureCenter: center,
+            flush: {},
+            prompt: { _ in
+                prompts.count += 1
+                return .quitAnyway
+            },
+            requestTermination: { guardAsks.count += 1 }
+        ))
+        let downloads = FakeWork("keeping downloads")
+        world.delegate.heldWork = { [downloads.work()] }
+        XCTAssertEqual(world.ask(), .terminateCancel)
+        let chosen = await eventually { guardAsks.count == 1 }
+        XCTAssertTrue(chosen, "Quit Anyway was never chosen")
+        XCTAssertEqual(world.ask(), .terminateCancel, "the work was not held")
+        downloads.released = true
+        let followUp = await eventually { world.log.asks == 1 }
+        XCTAssertTrue(followUp)
+
+        let move = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Backup/Library"))
+        move.begin()
+        move.beginCopying()
+        XCTAssertEqual(world.ask(), .terminateCancel, "a copying library move did not hold the follow-up")
+        move.end()
+
+        XCTAssertEqual(world.ask(), .terminateCancel, "Quit Anyway outlived the quit it was chosen for")
+        let asked = await eventually { prompts.count == 2 }
+        XCTAssertTrue(asked, "the unsaved changes were not asked about again (prompts: \(prompts.count))")
+    }
+
     /// Nothing running holds nothing: the quit goes ahead at once.
     func testNothingRunningHoldsNothing() {
         let world = DelegateWorld()
@@ -328,19 +407,79 @@ final class QuitWhileHeldTests: XCTestCase {
 
         let answer = finisher.reply(
             forQuitWith: [downloads.work()],
-            workIsDone: false,
+            waitedFor: [],
             endsTheSession: true,
             replyLater: { replies.values.append($0) }
         )
 
         XCTAssertEqual(answer, .terminateLater, "a log out was cancelled or let through")
-        XCTAssertEqual(log.told, [], "the log out was told to the listener as a quit")
+        XCTAssertEqual(
+            log.told, [QuitHoldWording.message(finishing: ["keeping downloads"])],
+            "the log out was not told to the listener in the words of any held quit"
+        )
         XCTAssertFalse(finisher.isFinishing)
         XCTAssertEqual(replies.values, [])
         downloads.released = true
         let replied = await eventually { replies.values == [true] }
         XCTAssertTrue(replied, "the log out's reply never came: \(replies.values)")
         XCTAssertEqual(downloads.ended, 1)
+        XCTAssertEqual(log.finishedNotices, 1, "the notice stayed up after the log out's work")
+        XCTAssertEqual(log.asks, 0, "a log out asked to quit again")
+    }
+
+    /// A log out that comes while the person's quit is being finished is not
+    /// cancelled: it says the same words again, is answered later, and is
+    /// replied to as the work ends, in place of asking to quit again.
+    func testALogOutDuringAHeldQuitIsAnsweredLaterAndRepliedToWhenTheWorkEnds() async {
+        let log = FinisherLog()
+        let finisher = log.finisher()
+        let downloads = FakeWork("keeping downloads")
+        let replies = Replies()
+        XCTAssertFalse(finisher.answerSessionEnd(replyLater: { _ in }), "a log out with nothing to finish was held")
+        XCTAssertTrue(finisher.finish([downloads.work()]))
+
+        XCTAssertTrue(finisher.answerSessionEnd(replyLater: { replies.values.append($0) }), "a log out during a held quit was not answered later")
+        XCTAssertTrue(finisher.answerSessionEnd(replyLater: { _ in XCTFail("a second log out replaced the first's reply") }))
+
+        let words = QuitHoldWording.message(finishing: ["keeping downloads"])
+        XCTAssertEqual(log.told, [words, words, words], "each request did not say the same words")
+        downloads.released = true
+        let replied = await eventually { replies.values == [true] }
+        XCTAssertTrue(replied, "the log out's reply never came: \(replies.values)")
+        XCTAssertEqual(log.asks, 0, "TextMouth asked to quit again beside the log out's reply")
+        XCTAssertEqual(log.finishedNotices, 1)
+        XCTAssertEqual(finisher.takeFinished(), [], "the log out left a mark for a request that never comes")
+    }
+
+    /// Work that begins while the notice is up is waited for by the request
+    /// that follows; only the kinds already waited for are let go.
+    func testWorkThatBeganDuringTheWaitIsNotCutOff() async {
+        let log = FinisherLog()
+        let finisher = log.finisher()
+        let downloads = FakeWork("downloads")
+        XCTAssertTrue(finisher.finish([downloads.work()]))
+        downloads.released = true
+        let asked = await eventually { log.asks == 1 }
+        XCTAssertTrue(asked)
+        let waited = finisher.takeFinished()
+        XCTAssertEqual(waited, ["downloads"])
+
+        let export = FakeWork("exports")
+        XCTAssertEqual(
+            finisher.reply(forQuitWith: [downloads.work(), export.work()], waitedFor: waited, endsTheSession: false, replyLater: { _ in }),
+            .terminateCancel, "an export begun during the wait was cut off"
+        )
+        XCTAssertEqual(
+            log.told.last, QuitHoldWording.message(finishing: ["exports"]),
+            "the words named the downloads already waited for, or not the export"
+        )
+        export.released = true
+        let again = await eventually { log.asks == 2 }
+        XCTAssertTrue(again)
+        XCTAssertEqual(
+            finisher.reply(forQuitWith: [downloads.work(), export.work()], waitedFor: finisher.takeFinished(), endsTheSession: false, replyLater: { _ in }),
+            .terminateNow
+        )
     }
 
     /// The finisher's answers by case: work done, no work, and work.
@@ -349,15 +488,15 @@ final class QuitWhileHeldTests: XCTestCase {
         let running = FakeWork("running")
 
         XCTAssertEqual(
-            finisher.reply(forQuitWith: [running.work()], workIsDone: true, endsTheSession: false, replyLater: { _ in }),
+            finisher.reply(forQuitWith: [running.work()], waitedFor: ["running"], endsTheSession: false, replyLater: { _ in }),
             .terminateNow, "work the request already waited for held it again"
         )
         XCTAssertEqual(
-            finisher.reply(forQuitWith: [], workIsDone: false, endsTheSession: true, replyLater: { _ in }),
+            finisher.reply(forQuitWith: [], waitedFor: [], endsTheSession: true, replyLater: { _ in }),
             .terminateNow, "a log out with no work was held"
         )
         XCTAssertEqual(
-            finisher.reply(forQuitWith: [running.work()], workIsDone: false, endsTheSession: false, replyLater: { _ in }),
+            finisher.reply(forQuitWith: [running.work()], waitedFor: [], endsTheSession: false, replyLater: { _ in }),
             .terminateCancel
         )
         running.released = true
@@ -365,16 +504,75 @@ final class QuitWhileHeldTests: XCTestCase {
 
     // MARK: - Why a Quit Came
 
+    /// The keyword of a quit's reason is the SDK's `kAEQuitReason` (`'why?'`),
+    /// and the test names it by its own bytes besides, so a keyword changed in
+    /// both places cannot pass.
+    func testTheReasonKeywordIsTheSDKs() {
+        XCTAssertEqual(QuitReason.reasonKeyword, AEKeyword(kAEQuitReason))
+        XCTAssertEqual(QuitReason.reasonKeyword, 0x7768_793F, "kAEQuitReason is 'why?', not 'why '")
+    }
+
     /// Log out, restart, and shut down end the session; a plain quit, the
-    /// Dock's (which names no reason), and no event do not.
+    /// reason of quitting everything, and no reason do not.
     func testOnlyTheSystemsReasonsEndTheSession() {
-        for reason in ["logo", "rlgo", "rest", "shut"] {
-            XCTAssertTrue(QuitReason.endsTheSession(QuitReason.fourCharCode(reason)), "\(reason) does not end the session")
+        for reason in [kAELogOut, kAEReallyLogOut, kAERestart, kAEShutDown] {
+            XCTAssertTrue(QuitReason.endsTheSession(OSType(reason)), "\(String(reason, radix: 16)) does not end the session")
         }
-        XCTAssertFalse(QuitReason.endsTheSession(QuitReason.fourCharCode("quit")))
+        XCTAssertFalse(QuitReason.endsTheSession(OSType(kAEQuitAll)))
         XCTAssertFalse(QuitReason.endsTheSession(nil))
-        XCTAssertEqual(QuitReason.reasonKeyword, 0x7768_7920, "'why ' is the Apple event attribute of a quit's reason")
+    }
+
+    /// Quit Apple events built from the SDK's keyword, as loginwindow sends
+    /// them, are recognised whether the reason is an attribute or a
+    /// parameter; the keyword this code once used, `'why '`, is not one.
+    func testAQuitEventNamingASessionEndingReasonIsRecognised() {
+        func quitEvent(reason: OSType?, key: AEKeyword, asParameter: Bool) -> NSAppleEventDescriptor {
+            let event = NSAppleEventDescriptor(
+                eventClass: AEEventClass(kCoreEventClass), eventID: AEEventID(kAEQuitApplication),
+                targetDescriptor: nil, returnID: AEReturnID(kAutoGenerateReturnID),
+                transactionID: AETransactionID(kAnyTransactionID)
+            )
+            if let reason {
+                let described = NSAppleEventDescriptor(enumCode: reason)
+                if asParameter {
+                    event.setParam(described, forKeyword: key)
+                } else {
+                    event.setAttribute(described, forKeyword: key)
+                }
+            }
+            return event
+        }
+        let sdkKey = AEKeyword(kAEQuitReason)
+        let logOut = OSType(kAEReallyLogOut)
+
+        XCTAssertTrue(QuitReason.endsTheSession(event: quitEvent(reason: logOut, key: sdkKey, asParameter: false)), "a log out as an attribute")
+        XCTAssertTrue(QuitReason.endsTheSession(event: quitEvent(reason: logOut, key: sdkKey, asParameter: true)), "a log out as a parameter")
+        XCTAssertTrue(QuitReason.endsTheSession(event: quitEvent(reason: OSType(kAEShutDown), key: sdkKey, asParameter: false)))
+        XCTAssertFalse(QuitReason.endsTheSession(event: quitEvent(reason: nil, key: sdkKey, asParameter: false)), "the Dock's quit names no reason")
+        XCTAssertFalse(QuitReason.endsTheSession(event: quitEvent(reason: OSType(kAEQuitAll), key: sdkKey, asParameter: false)))
+        XCTAssertFalse(
+            QuitReason.endsTheSession(event: quitEvent(reason: logOut, key: 0x7768_7920, asParameter: false)),
+            "a reason under 'why ' is not the system's"
+        )
+        XCTAssertFalse(QuitReason.endsTheSession(event: nil))
+    }
+
+    /// A quit soon after the system said it is powering off is the system's,
+    /// whatever its event names; one long after, or before any notice, is
+    /// the person's. A test, with no Apple event, is never a session end.
+    func testAQuitAfterThePowerOffNoticeIsTheSystems() {
+        QuitReason.forgetPowerOff()
+        defer { QuitReason.forgetPowerOff() }
+        let now = Date()
+
+        XCTAssertFalse(QuitReason.quitFollowsPowerOff(now: now), "a quit before any notice")
         XCTAssertFalse(QuitReason.currentRequestEndsTheSession, "a test, with no Apple event, ended the session")
+        QuitReason.noteWillPowerOff(at: now.addingTimeInterval(-10))
+        XCTAssertTrue(QuitReason.quitFollowsPowerOff(now: now), "a quit ten seconds after the notice")
+        XCTAssertTrue(QuitReason.currentRequestEndsTheSession)
+        XCTAssertFalse(QuitReason.quitFollowsPowerOff(now: now.addingTimeInterval(QuitReason.powerOffWindow + 1)), "a quit long after the notice")
+        QuitReason.forgetPowerOff()
+        XCTAssertFalse(QuitReason.currentRequestEndsTheSession)
     }
 
     // MARK: - Fakes
@@ -434,7 +632,8 @@ final class QuitWhileHeldTests: XCTestCase {
                     self.order?.events.append("\(self.name) ended")
                 },
                 longestWait: longestWait,
-                finishing: name
+                kind: name,
+                finishing: { self.name }
             )
         }
     }

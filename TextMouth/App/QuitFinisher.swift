@@ -18,6 +18,12 @@ enum QuitHoldWording {
         "TextMouth is finishing up before it quits: \(list(phrases)). It will quit as soon as that is done."
     }
 
+    /// The words for `works`, each as it describes itself now.
+    @MainActor
+    static func message(for works: [QuitHold.Work]) -> String {
+        message(finishing: works.map { $0.finishing() })
+    }
+
     /// `items` in a sentence: "a", "a and b", or "a, b, and c".
     static func list(_ items: [String]) -> String {
         switch items.count {
@@ -40,10 +46,16 @@ enum QuitHoldWording {
 /// which says again what is finishing and cancels that request too, so a
 /// second request never cuts anything off and never goes unanswered.
 ///
+/// The system ending the session while the work is finished is not cancelled,
+/// which would stop the log out: `answerSessionEnd(replyLater:)` says the
+/// same words, and the reply it keeps is given when the work ends, in place
+/// of asking to quit again.
+///
 /// When the work has ended, or has had its longest wait, `askAgain` asks to
 /// quit once more (`QuitRequest.ask()`), and `takeFinished()` tells that
-/// request, once, that the work is done, so a wait is not begun again for
-/// work that gave up waiting.
+/// request, once, which kinds of work were waited for, so a wait is not begun
+/// again for work that gave up waiting, while work of another kind that began
+/// meanwhile is waited for.
 @MainActor
 final class QuitFinisher {
     /// Says its message, aloud and on screen.
@@ -57,9 +69,14 @@ final class QuitFinisher {
     private var finishing: Task<Void, Never>?
     /// What is said while the work runs, to say again.
     private var message: String?
-    /// Whether the work ended since the delegate last asked, so the quit
-    /// asked again goes ahead.
-    private var hasFinished = false
+    /// The kinds of work being waited for now.
+    private var waitingFor: Set<String> = []
+    /// The kinds of work waited for since the delegate last asked, so the
+    /// quit asked again goes ahead without waiting for them again.
+    private var waitedFor: Set<String> = []
+    /// The reply of a session end that came while the work was finished, to
+    /// give when it ends.
+    private var sessionReply: (@MainActor (Bool) -> Void)?
 
     /// A finisher that `tell`s the person what it is finishing, calls
     /// `finished` when the work is done, and `askAgain` to quit again.
@@ -87,8 +104,9 @@ final class QuitFinisher {
         guard !isFinishing else { return true }
         let running = works.filter { $0.isRunning() }
         guard !running.isEmpty else { return false }
-        let words = QuitHoldWording.message(finishing: running.map(\.finishing))
+        let words = QuitHoldWording.message(for: running)
         message = words
+        waitingFor = Set(running.map(\.kind))
         tell(words)
         finishing = Task { [weak self] in
             for work in running {
@@ -109,42 +127,72 @@ final class QuitFinisher {
         return true
     }
 
-    /// Whether the work has ended since the last call, for the request to
-    /// quit that follows its end. The answer is given once.
-    func takeFinished() -> Bool {
-        defer { hasFinished = false }
-        return hasFinished
+    /// Answers the system ending the session while the work is being
+    /// finished: says the same words again and keeps `replyLater`, to be
+    /// called with true when the work ends, and returns true, for the
+    /// delegate to answer `.terminateLater`. Returns false when no work is
+    /// being finished. Only the first reply is kept: a second session end
+    /// while one is pending quits at once, whatever is answered.
+    func answerSessionEnd(replyLater: @escaping @MainActor (Bool) -> Void) -> Bool {
+        guard isFinishing, let message else { return false }
+        tell(message)
+        if sessionReply == nil {
+            sessionReply = replyLater
+        }
+        return true
+    }
+
+    /// The kinds of work waited for since the last call, for the request to
+    /// quit that follows. The answer is given once; none when no wait ended.
+    func takeFinished() -> Set<String> {
+        defer { waitedFor = [] }
+        return waitedFor
     }
 
 #if os(macOS)
     /// The answer for a quit that is sure to go ahead, with nothing unsaved
-    /// or asked first: it goes ahead when `workIsDone` (`takeFinished()`) or
-    /// no work needs finishing. Otherwise the work is finished first. The
-    /// person's quit is cancelled while `finish(_:)` works and asks again;
-    /// the system ending the session (`endsTheSession`) is answered later,
-    /// with `.terminateLater` and `replyLater` called as the work ends,
-    /// since a cancel would stop the log out.
+    /// or asked first. Work of a kind in `waitedFor` (`takeFinished()`) was
+    /// waited for already, and is not waited for again; the rest that runs is
+    /// finished first. The person's quit is cancelled while `finish(_:)`
+    /// works and asks again; the system ending the session
+    /// (`endsTheSession`) is answered later, with `.terminateLater`,
+    /// saying the same words, and `replyLater` called as the work ends, since
+    /// a cancel would stop the log out.
     func reply(
         forQuitWith works: [QuitHold.Work],
-        workIsDone: Bool,
+        waitedFor: Set<String>,
         endsTheSession: Bool,
         replyLater: @escaping @MainActor (Bool) -> Void
     ) -> NSApplication.TerminateReply {
-        guard !workIsDone else { return .terminateNow }
-        if endsTheSession {
-            return QuitHold.hold(works, reply: replyLater) ? .terminateLater : .terminateNow
+        let remaining = works.filter { !waitedFor.contains($0.kind) }
+        guard endsTheSession else {
+            return finish(remaining) ? .terminateCancel : .terminateNow
         }
-        return finish(works) ? .terminateCancel : .terminateNow
+        let running = remaining.filter { $0.isRunning() }
+        let held = QuitHold.hold(running) { [self] in
+            finished()
+            replyLater($0)
+        }
+        guard held else { return .terminateNow }
+        tell(QuitHoldWording.message(for: running))
+        return .terminateLater
     }
 #endif
 
     /// The work has ended or had its longest wait: the notice comes down and
-    /// TextMouth asks to quit again.
+    /// the quit goes on, by the reply of a session end that came meanwhile,
+    /// or by asking to quit again.
     private func didFinish() {
         finishing = nil
         message = nil
-        hasFinished = true
         finished()
+        if let reply = sessionReply {
+            sessionReply = nil
+            reply(true)
+            return
+        }
+        waitedFor = waitingFor
+        waitingFor = []
         askAgain()
     }
 }

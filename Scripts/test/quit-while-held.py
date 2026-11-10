@@ -23,12 +23,19 @@ The cases (see Scripts/test/quit-while-held/main.swift):
                 work ends before TextMouth does.
   second-key    The same, with Command-Q through the Quit menu item.
   second-dock   The same, with the Dock's Quit (a quit Apple event).
-  logout        The system ending the session is answered later, not
-                cancelled, with the work ended.
+  logout        The system ending the session, with the SDK's quit reason
+                as an attribute, is answered later, not cancelled, with the
+                work ended and the words said once.
+  logout-param  The same, with the reason as a parameter.
+  logout-during-quit
+                A log out while the person's quit is being finished is
+                answered later too, and replied to as the work ends.
   no-work       Nothing to finish: the quit goes ahead at once.
 
-It also checks that no app source asks AppKit to quit again except through
-QuitRequest.ask() (the memory guard's own quit excepted, and said so there).
+It also checks that no line of the app quits or ends it (terminate( in any
+form, a #selector naming terminate, exit(, _exit() except through
+QuitRequest.ask(). A line is exempt only by a `quit-ok: reason` comment on
+that line.
 
 Usage:
     python3 -I Scripts/test/quit-while-held.py                 # all cases
@@ -58,7 +65,7 @@ REPO = Path(__file__).resolve().parents[2]
 # The probe's own sources.
 PROBE_DIR = REPO / "Scripts" / "test" / "quit-while-held"
 # The app's quit sources the probe builds in unchanged.
-APP_SOURCES = [REPO / "TextMouth" / "App" / name for name in ("QuitRequest.swift", "QuitHold.swift", "QuitFinisher.swift")]
+APP_SOURCES = [REPO / "TextMouth" / "App" / name for name in ("QuitRequest.swift", "QuitReason.swift", "QuitHold.swift", "QuitFinisher.swift")]
 # The probe's own files, built with them.
 PROBE_SOURCES = [PROBE_DIR / "Stubs.swift", PROBE_DIR / "main.swift"]
 
@@ -74,15 +81,20 @@ EXPECTED = {
     "second-key": 0,
     "second-dock": 0,
     "logout": 0,
+    "logout-param": 0,
+    "logout-during-quit": 0,
     "no-work": 0,
 }
 # The cases that are controls.
 CONTROLS = {name for name, code in EXPECTED.items() if code != 0}
 
-# A line that asks AppKit to quit with terminate(...): in code, not a comment.
-TERMINATE_CALL = re.compile(r"\bterminate\((nil|self|sender)\)")
-# The files that may: the helper itself, and the memory guard's emergency quit.
-MAY_TERMINATE = {"QuitRequest.swift", "PlaybackMemoryGuard.swift"}
+# A line that ends the app or asks AppKit to: any terminate( call (also
+# NSRunningApplication.current.terminate()), a #selector naming terminate (for
+# perform or sendAction), and exit( or _exit(.
+QUIT_CALL = re.compile(r"terminate\(|#selector\([^)]*terminate|\b_?exit\(")
+# A line that may, said on the line itself with a reason after it: the helper's
+# own call, a Process being ended, the memory guard's emergency quits.
+LINE_MARK = "quit-ok:"
 
 
 def sources_with_overlay(paths, overlay):
@@ -133,13 +145,12 @@ def judge(name, code, verdict):
 
 
 def check_ask_sites():
-    """Finds the app sources that ask AppKit to quit other than through the helper."""
+    """Finds the lines of the app that quit or end the app other than through the
+    helper, each exempt only by a `quit-ok:` mark and its reason on the line itself."""
     stray = []
     for path in sorted((REPO / "TextMouth").rglob("*.swift")):
-        if path.name in MAY_TERMINATE:
-            continue
         for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
-            if TERMINATE_CALL.search(line) and not line.lstrip().startswith("//"):
+            if QUIT_CALL.search(line) and LINE_MARK not in line and not line.lstrip().startswith("//"):
                 stray.append(f"{path.relative_to(REPO)}:{number}: {line.strip()}")
     return stray
 
@@ -171,7 +182,7 @@ def main():
         for line in stray:
             print("STRAY QUIT     ", line)
         print(("FAIL" if stray else "PASS") + "           ask-sites     "
-              + (f"{len(stray)} source(s) ask AppKit to quit other than through QuitRequest.ask()" if stray
+              + (f"{len(stray)} line(s) quit or end the app other than through QuitRequest.ask()" if stray
                  else "every quit is asked through QuitRequest.ask()"))
         failures += bool(stray)
     print("every case showed what it should" if failures == 0 else f"{failures} case(s) did not")

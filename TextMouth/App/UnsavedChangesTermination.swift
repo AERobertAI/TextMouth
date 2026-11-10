@@ -163,6 +163,14 @@ final class UnsavedChangesTerminationGuard {
     }
 #endif
 
+    /// Forgets a Quit Anyway kept for the request that follows work a quit
+    /// waited for, when that request is cancelled before it reaches the guard
+    /// (a take, an editor's edits, or a library move began meanwhile): the
+    /// choice belonged to that quit, and a later one must ask again.
+    func forgetQuitAnyway() {
+        userChoseQuitAnyway = false
+    }
+
     /// Shows the prompt and carries out the choice. Changes saved since the
     /// request leave nothing to ask about: TextMouth asks to quit again at
     /// once, and that request quits.

@@ -26,6 +26,11 @@ func log(_ line: String) {
     print(String(format: "%5.0f ms  ", Date().timeIntervalSince(startedAt) * 1_000) + line)
 }
 
+/// The SDK's keyword of a quit's reason, `kAEQuitReason`, and the SDK's
+/// reason of a log out: what loginwindow sends, taken from the headers.
+let sdkQuitReasonKeyword = AEKeyword(kAEQuitReason)
+let sdkLogOutReason = OSType(kAEReallyLogOut)
+
 /// How the delegate holds a quit while the work runs.
 enum Design {
     /// The fix: cancel, finish, ask again (`QuitFinisher`).
@@ -97,11 +102,17 @@ final class Probe: NSObject, NSApplicationDelegate {
         log("applicationShouldTerminate #\(asked) (ends the session: \(session))")
         switch design {
         case .finisher:
+            // The order of AppDelegate.applicationShouldTerminate: a session
+            // end during a held quit first, then a repeated request.
+            if session, finisher.answerSessionEnd(replyLater: { sender.reply(toApplicationShouldTerminate: $0) }) {
+                log("session end answered later, while the person's quit is finished")
+                return .terminateLater
+            }
             if finisher.answerRepeatedRequest() { return .terminateCancel }
-            let done = finisher.takeFinished()
+            let waited = finisher.takeFinished()
             let answer = finisher.reply(
                 forQuitWith: [work],
-                workIsDone: done,
+                waitedFor: waited,
                 endsTheSession: session,
                 replyLater: { sender.reply(toApplicationShouldTerminate: $0) }
             )
@@ -141,13 +152,24 @@ final class Probe: NSObject, NSApplicationDelegate {
     /// Extra things a case must show once the app ends: problems found.
     static let expectations: [String: @MainActor (Probe) -> [String]] = [
         "second-timer": secondRequest, "second-key": secondRequest, "second-dock": secondRequest,
-        "logout": { probe in
+        "logout": sessionEnd, "logout-param": sessionEnd,
+        "logout-during-quit": { probe in
             var problems: [String] = []
-            if !probe.told.isEmpty { problems.append("the log out was cancelled to say \(probe.told.count) thing(s)") }
-            if probe.asked != 1 { problems.append("asked \(probe.asked) times, not once") }
+            if probe.asked != 2 { problems.append("asked \(probe.asked) times, not twice (a cancelled log out asks again)") }
+            if probe.told.count < 2 { problems.append("said \(probe.told.count) time(s), fewer than 2") }
+            if !probe.noticeTakenDown { problems.append("the notice was not taken down") }
             return problems
         },
     ]
+
+    /// A log out with work to finish: answered later, never cancelled, so it
+    /// is asked once; the work's words are said once, as for any held quit.
+    static let sessionEnd: @MainActor (Probe) -> [String] = { probe in
+        var problems: [String] = []
+        if probe.told.count != 1 { problems.append("said \(probe.told.count) time(s), not once") }
+        if probe.asked != 1 { problems.append("asked \(probe.asked) times, not once (a cancelled log out asks again)") }
+        return problems
+    }
 
     /// A second request while the work is finished: the delegate was asked
     /// for the first, the second, and the request that follows the work; the
@@ -200,8 +222,8 @@ final class Probe: NSObject, NSApplicationDelegate {
 
     /// The Dock's Quit, or with a reason the system's: a quit Apple event to
     /// this process, as the Dock and loginwindow send one.
-    func sendQuitEvent(_ reason: String?) {
-        log("sending a quit Apple event (reason: \(reason ?? "none"))")
+    func sendQuitEvent(reason: OSType?, asParameter: Bool = false) {
+        log("sending a quit Apple event (reason: \(reason.map { String($0, radix: 16) } ?? "none"), as \(asParameter ? "a parameter" : "an attribute"))")
         let target = NSAppleEventDescriptor(processIdentifier: getpid())
         let event = NSAppleEventDescriptor(
             eventClass: AEEventClass(kCoreEventClass),
@@ -210,11 +232,15 @@ final class Probe: NSObject, NSApplicationDelegate {
             returnID: AEReturnID(kAutoGenerateReturnID),
             transactionID: AETransactionID(kAnyTransactionID)
         )
+        // The SDK's own keyword, never QuitReason's: a wrong keyword there
+        // must fail these cases, not be echoed back by them.
         if let reason {
-            event.setAttribute(
-                NSAppleEventDescriptor(enumCode: QuitReason.fourCharCode(reason)),
-                forKeyword: QuitReason.reasonKeyword
-            )
+            let described = NSAppleEventDescriptor(enumCode: reason)
+            if asParameter {
+                event.setParam(described, forKeyword: sdkQuitReasonKeyword)
+            } else {
+                event.setAttribute(described, forKeyword: sdkQuitReasonKeyword)
+            }
         }
         guard let description = event.aeDesc else { return }
         let status = AESendMessage(description, nil, AESendMode(kAENoReply), kAEDefaultTimeout)
@@ -264,11 +290,21 @@ final class Probe: NSObject, NSApplicationDelegate {
         // The fix: a second request from the Dock, as a quit Apple event.
         "second-dock": Case(design: .finisher, isControl: false) { probe in
             probe.after(0.05) { probe.quitFromTimer() }
-            probe.after(0.20) { probe.sendQuitEvent(nil) }
+            probe.after(0.20) { probe.sendQuitEvent(reason: nil) }
         },
-        // The log out is not cancelled: answered later, work ended, once.
+        // The log out is not cancelled: answered later, work ended, once. The
+        // reason is the SDK's, sent as an attribute and as a parameter.
         "logout": Case(design: .finisher, isControl: false) { probe in
-            probe.after(0.05) { probe.sendQuitEvent("logo") }
+            probe.after(0.05) { probe.sendQuitEvent(reason: sdkLogOutReason) }
+        },
+        "logout-param": Case(design: .finisher, isControl: false) { probe in
+            probe.after(0.05) { probe.sendQuitEvent(reason: sdkLogOutReason, asParameter: true) }
+        },
+        // A log out while the person's quit is being finished: answered
+        // later, not cancelled, the work ended, then TextMouth ends.
+        "logout-during-quit": Case(design: .finisher, isControl: false) { probe in
+            probe.after(0.05) { probe.quitFromTimer() }
+            probe.after(0.20) { probe.sendQuitEvent(reason: sdkLogOutReason) }
         },
         // Nothing to finish: the quit goes ahead at once.
         "no-work": Case(design: .finisher, isControl: false) { probe in

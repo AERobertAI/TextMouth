@@ -60,6 +60,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // plays, or outlives the playback it began in, still reaches the
         // quit ceiling (REV17a).
         PlaybackMemoryGuard.shared.beginWatching()
+        // A shut down or restart says so before it asks TextMouth to quit, so
+        // that quit is the system's, not to be cancelled (`QuitReason`).
+        QuitReason.startWatchingForPowerOff()
         // Any afconvert that an earlier TextMouth left running, orphaned by
         // a force-quit or a memory quit, is killed now (REV17a); only ones
         // writing TextMouth's own hidden conversion files are touched.
@@ -233,35 +236,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    same words are said again, so it never cuts the work off. The
     ///    request that asks again when the work has ended skips step 4, once.
     ///    When the system ends the session, a cancel would stop the log out,
-    ///    so that quit is answered later instead (`QuitHold.hold`).
+    ///    so that quit is answered later instead, with the same words
+    ///    (`QuitHold.hold`); one that comes while the work is finished for the
+    ///    person's quit is answered later too, and replied to as the work
+    ///    ends (`QuitFinisher.answerSessionEnd`). A kind of work already
+    ///    waited for is not waited for again by the request that follows; a
+    ///    kind that began meanwhile is.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // The memory guard quits to protect the Mac, everything saved,
         // asking nothing (B07).
         if PlaybackMemoryGuard.shared.isQuittingToProtectTheMac {
             return .terminateNow
         }
+        // The system ending the session is never cancelled, which would stop
+        // the log out; while work is finished for the person's quit, it is
+        // answered later, with the same words, and replied to as the work ends.
+        let endsTheSession = QuitReason.currentRequestEndsTheSession
+        if endsTheSession,
+           quitFinisher.answerSessionEnd(replyLater: { sender.reply(toApplicationShouldTerminate: $0) }) {
+            return .terminateLater
+        }
         if quitFinisher.answerRepeatedRequest() {
             return .terminateCancel
         }
-        let workIsDone = quitFinisher.takeFinished()
-        if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
-            return .terminateCancel
-        }
-        if recordingWindows.holdQuit(then: requestTermination) {
-            return .terminateCancel
-        }
-        if audioEditors.holdQuit(then: requestTermination) {
+        let waitedFor = quitFinisher.takeFinished()
+        if holdsBeforeTheGuard() {
+            // The request that follows a wait carries the Quit Anyway kept
+            // for it; cancelled here, it is forgotten with the quit.
+            if !waitedFor.isEmpty {
+                terminationGuard.forgetQuitAnyway()
+            }
             return .terminateCancel
         }
         // Step 4, for a quit that is sure to go ahead.
         return terminationGuard.reply { [self] in
             quitFinisher.reply(
                 forQuitWith: heldWork(),
-                workIsDone: workIsDone,
-                endsTheSession: QuitReason.currentRequestEndsTheSession,
+                waitedFor: waitedFor,
+                endsTheSession: endsTheSession,
                 replyLater: { sender.reply(toApplicationShouldTerminate: $0) }
             )
         }
+    }
+
+    /// Step 0, the questions asked before anything is flushed or waited for:
+    /// a library move stopped, the Record window's take, and the audio
+    /// editors' unsaved edits. Returns whether one holds this request, which
+    /// is then to be cancelled; each asks to quit again once answered.
+    private func holdsBeforeTheGuard() -> Bool {
+        DataDirectoryMoveProgress.stopForQuit(then: requestTermination)
+            || recordingWindows.holdQuit(then: requestTermination)
+            || audioEditors.holdQuit(then: requestTermination)
     }
 
     func applicationWillTerminate(_ notification: Notification) {

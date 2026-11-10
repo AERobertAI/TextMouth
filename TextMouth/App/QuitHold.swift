@@ -31,10 +31,17 @@ enum QuitHold {
         let end: @MainActor () async -> Void
         /// The longest a quit waits for it: past this, TextMouth quits anyway.
         let longestWait: Duration
+        /// What kind of work it is, the same for every piece of that kind
+        /// ("feeds", "rereads", "exports"). A quit that waited for a kind goes
+        /// on without waiting for that kind again, but waits for a kind that
+        /// began in the meantime (`QuitFinisher`).
+        let kind: String
         /// What the work is doing for the quit, as a phrase after "TextMouth is
         /// finishing up before it quits:", such as "reading a book's text
-        /// again". It is said aloud and shown (`QuitHoldWording`).
-        let finishing: String
+        /// again". It is said aloud and shown (`QuitHoldWording`), and counts
+        /// the work when several pieces of a kind run, so it is read when the
+        /// quit is asked, not when the work is made.
+        let finishing: @MainActor () -> String
     }
 
     /// Holds the quit while each of `works` that runs now reaches its end,

@@ -54,7 +54,7 @@ enum QuitRequest {
     private static func deliverToAppKit() {
 #if os(macOS)
         NSApplication.shared.perform(
-            #selector(NSApplication.terminate(_:)),
+            #selector(NSApplication.terminate(_:)), // quit-ok: the one helper every quit goes through
             with: nil,
             afterDelay: 0,
             inModes: [.common]
@@ -63,41 +63,3 @@ enum QuitRequest {
         // An iPhone app never ends itself (the system decides): nothing.
     }
 }
-
-#if os(macOS)
-/// Why a request to quit came, as far as the delegate needs to tell: the
-/// system ending the session (log out, restart, shut down), which waits for
-/// a reply and must not be cancelled, or the person asking to quit.
-enum QuitReason {
-    /// The Apple event attribute that says why the system asks an
-    /// application to quit ('why ', `kAEQuitReason`).
-    static let reasonKeyword = fourCharCode("why ")
-
-    /// The reasons that end the session ('logo', 'rlgo', 'rest', 'shut':
-    /// `kAELogOut`, `kAEReallyLogOut`, `kAERestart`, `kAEShutDown`).
-    static let sessionEndingReasons: Set<FourCharCode> = [
-        fourCharCode("logo"), fourCharCode("rlgo"), fourCharCode("rest"), fourCharCode("shut"),
-    ]
-
-    /// Whether `reason`, the quit reason of an Apple event if it had one,
-    /// ends the session. Pure, so the choice is tested without an event.
-    static func endsTheSession(_ reason: FourCharCode?) -> Bool {
-        reason.map(sessionEndingReasons.contains) ?? false
-    }
-
-    /// Whether the quit being answered now was asked by the system ending the
-    /// session. Command-Q, the Quit menu item, and a call to `terminate` have
-    /// no Apple event; the Dock's Quit has one without a session-ending reason.
-    @MainActor
-    static var currentRequestEndsTheSession: Bool {
-        let reason = NSAppleEventManager.shared().currentAppleEvent?
-            .attributeDescriptor(forKeyword: reasonKeyword)?.enumCodeValue
-        return endsTheSession(reason)
-    }
-
-    /// The code of a four-character string such as "logo".
-    static func fourCharCode(_ text: String) -> FourCharCode {
-        text.utf8.reduce(0) { ($0 << 8) | FourCharCode($1) }
-    }
-}
-#endif
