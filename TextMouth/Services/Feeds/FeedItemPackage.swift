@@ -37,7 +37,13 @@ enum FeedItemPackage {
     /// metadata edited by hand (`Book.HandEdits`), or files of the
     /// listener's (`holdsListenersFiles(_:)`). Only such a package stays
     /// once its file is removed.
-    static func holdsListenerState(_ row: Book, package: URL) -> Bool {
+    ///
+    /// The last test reads the package's folder and, for a transcript, its
+    /// transcript.json, which is slow for a long transcript on a cloud
+    /// drive. A caller on the main thread that has the answer already, read
+    /// off it (`listenersFilesHeld(in:)`), passes it as `holdsListenersFiles`
+    /// and nothing is read here; without it the package is read here.
+    static func holdsListenerState(_ row: Book, package: URL, holdsListenersFiles known: Bool? = nil) -> Bool {
         !row.isUnopened
             || row.readingPosition != nil
             || !row.bookmarks.isEmpty
@@ -45,7 +51,18 @@ enum FeedItemPackage {
             || row.lastPlaybackStopped != nil
             || row.hasOwnSettings
             || !(row.handEdits?.fields.isEmpty ?? true)
-            || holdsListenersFiles(package)
+            || (known ?? holdsListenersFiles(package))
+    }
+
+    /// For each of `packages`, by the ID of the book it belongs to, whether
+    /// it holds files of the listener's (`holdsListenersFiles(_:)`). The
+    /// reads are slow enough to be felt (about 70 ms for a transcript of
+    /// 16 MB, once for each episode a rule removes), so a caller on the main
+    /// thread has them made on another and passes the answers to
+    /// `holdsListenerState(_:package:holdsListenersFiles:)`. Safe to call
+    /// from any thread.
+    static func listenersFilesHeld(in packages: [UUID: URL]) -> [UUID: Bool] {
+        packages.mapValues { holdsListenersFiles($0) }
     }
 
     /// Whether the package at `package` holds files of the listener's: a

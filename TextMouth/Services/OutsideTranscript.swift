@@ -89,9 +89,32 @@ enum OutsideTranscript {
         var split: [String: [TranscriptSentence]] = [:]
         for sentence in sentences {
             let span = spans[lastSpanIndex(startingAtOrBefore: sentence.startMilliseconds, in: spans)]
-            split[span.path, default: []].append(span.place(sentence))
+            if let placed = span.place(sentence) {
+                split[span.path, default: []].append(placed)
+            }
         }
         return split
+    }
+
+    /// `sentence`, timed from the start of its file, as a transcript of that
+    /// file may hold it: nil for a sentence that starts past
+    /// `Transcript.maximumMilliseconds`, 100 hours, which no file's
+    /// transcript times; a sentence that runs past them ends there, its
+    /// words kept only when each still ends inside it. The cue readers take
+    /// times to 1,000 hours, since a book's whole transcript runs on its
+    /// timeline (`TimedTextLimits.maximumCueMilliseconds`), so a file longer
+    /// than 100 hours is left out past its hundredth hour, as the readers
+    /// left cues out before, and not refused whole as unusable.
+    static func withinTheLimitOfAFile(_ sentence: TranscriptSentence) -> TranscriptSentence? {
+        let limit = Transcript.maximumMilliseconds
+        guard sentence.startMilliseconds <= limit else { return nil }
+        guard sentence.endMilliseconds > limit else { return sentence }
+        var held = sentence
+        held.endMilliseconds = limit
+        if !held.words.allSatisfy({ $0.endMilliseconds <= limit }) {
+            held.words = []
+        }
+        return held
     }
 
     /// One audio file laid on the book's timeline, in milliseconds.
@@ -116,8 +139,11 @@ enum OutsideTranscript {
         /// its start and end counted from the file's start, each held inside
         /// the file, and its words moved with it, kept only when every one
         /// begins and ends inside the sentence's new time, in order;
-        /// otherwise it keeps none.
-        func place(_ sentence: TranscriptSentence) -> TranscriptSentence {
+        /// otherwise it keeps none. In a file longer than the 100 hours a
+        /// transcript may time (`Transcript.maximumMilliseconds`), a sentence
+        /// that starts past them is left out (nil) and one that runs past
+        /// them ends there (`OutsideTranscript.withinTheLimitOfAFile(_:)`).
+        func place(_ sentence: TranscriptSentence) -> TranscriptSentence? {
             // Held inside the file on the book's timeline before anything
             // moves, so every time that moves lies at or after the file's
             // start and no subtraction can overflow, whatever the file said.
@@ -132,7 +158,7 @@ enum OutsideTranscript {
             placed.startMilliseconds = heldStart - start
             placed.endMilliseconds = heldEnd - start
             placed.words = wordsFit ? sentence.words.map(moved) : []
-            return placed
+            return OutsideTranscript.withinTheLimitOfAFile(placed)
         }
 
         /// `time`, on the book's timeline, held inside this file.
@@ -216,7 +242,9 @@ enum OutsideTranscript {
     ) throws -> Transcript {
         // Each of the plan's files' sentences, in the plan's order.
         let sentencesInOrder = try plan.files.map { file -> [TranscriptSentence] in
-            let fileSentences = sentencesByFile[file.path] ?? []
+            // A file longer than 100 hours keeps no sentence past them
+            // (`withinTheLimitOfAFile(_:)`).
+            let fileSentences = (sentencesByFile[file.path] ?? []).compactMap(withinTheLimitOfAFile)
             try checkFits(fileSentences, durationMilliseconds: Transcript.milliseconds(file.duration))
             return fileSentences
         }

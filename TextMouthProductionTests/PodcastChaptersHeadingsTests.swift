@@ -634,11 +634,12 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
 
     // MARK: - An Edit of the Audio
 
-    /// Saving an edit of an episode's audio removes the chapters kept
-    /// beside it before the edited audio is analyzed, since they were timed
-    /// to the audio before the edit: the episode is one chapter after the
-    /// save, though its chapters would still fit, and the log says why.
-    func testSavingAnEditOfTheAudioDropsTheKeptChapters() async throws {
+    /// Saving an edit of an episode's audio sets the chapters kept beside
+    /// it aside, hidden, before the edited audio is analyzed, since they
+    /// were timed to the audio before the edit: the episode is one chapter
+    /// after the save, though its chapters would still fit, and the log says
+    /// why.
+    func testSavingAnEditOfTheAudioSetsTheKeptChaptersAside() async throws {
         let world = try makeIntegrationWorld("Podcast Chapters Edit")
         let title = uniqueTitle("Canal Survey")
         let chapters = try PodcastChapters(chapters: [
@@ -666,20 +667,137 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
 
         XCTAssertTrue(outcome.rendered)
         XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory).path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: TextMouthPaths.podcastChaptersSetAsidePath(in: book.tmbDirectory).path),
+            "the chapters were deleted, not set aside"
+        )
         let saved = try XCTUnwrap(world.library.bookByID(book.id))
         XCTAssertEqual(try indexedHeadings(of: saved), [title])
         XCTAssertEqual(
-            loggedLines(from: "PODCAST_CHAPTERS_DROPPED: \(title): "),
-            ["PODCAST_CHAPTERS_DROPPED: \(title): the audio was edited, so the podcast's chapters no longer fit it"]
+            loggedLines(from: "PODCAST_CHAPTERS_SET_ASIDE: \(title): "),
+            ["PODCAST_CHAPTERS_SET_ASIDE: \(title): the audio was edited, so the podcast's chapters no longer fit it"]
         )
         XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
     }
 
-    /// Chapters that could not be removed after an edit are not laid over the
+    /// Reverting an edited episode to its original take, and saving, brings
+    /// the podcast's chapters back with the original audio: the episode is
+    /// its three chapters again after the revert as it was before the edit,
+    /// and the log says so. A second edit sets them aside again, and undoing
+    /// it brings them back again. An episode that was never edited keeps
+    /// its chapters, and nothing is said.
+    func testRevertingAnEditedEpisodeBringsItsChaptersBack() async throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Revert")
+        let title = uniqueTitle("Canal Survey")
+        let chapters = try PodcastChapters(chapters: [
+            PodcastChapter(startMilliseconds: 0, title: "Locks"),
+            PodcastChapter(startMilliseconds: 4_000, title: "Weirs"),
+            PodcastChapter(startMilliseconds: 8_000, title: "Towpaths"),
+        ]).normalizedJSON()
+        let book = try makeEpisode(in: world, title: title, fileName: "\(title).wav", keeping: chapters) { file in
+            try AudioTestFixtures.writeIdentityRamp(to: file, frames: 80_000, sampleRate: 8_000)
+        }
+        addTeardownBlock {
+            AudioEditScratch.remove(for: book.id)
+            ReadingTextCache.shared.remove(bookID: book.id)
+        }
+        let live = TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)
+        let aside = TextMouthPaths.podcastChaptersSetAsidePath(in: book.tmbDirectory)
+        let original = ["Locks", "Weirs", "Towpaths"]
+        XCTAssertEqual(try indexedHeadings(of: book), original)
+
+        // Edited and saved: the chapters are set aside.
+        let session = try await AudioEditSession.open(bookID: book.id, in: world.library)
+        defer { session.close() }
+        try await session.perform(.cut(AudioTimeRange(start: 1, end: 2)))
+        let firstSave = try await session.save()
+        XCTAssertTrue(firstSave.rendered)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try indexedHeadings(of: try XCTUnwrap(world.library.bookByID(book.id))), [title])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: aside.path))
+
+        // Every edit undone and saved: the chapters are back.
+        while try await session.undo() != nil {}
+        let revertSave = try await session.save()
+        XCTAssertTrue(revertSave.rendered, "the reverted audio was not saved")
+        LibraryPersistenceService.flushPendingSave()
+        let reverted = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(try indexedHeadings(of: reverted), original, "reverting to the original lost the podcast's chapters")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: aside.path), "the set-aside copy was left behind")
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_RESTORED: \(title): "),
+            ["PODCAST_CHAPTERS_RESTORED: \(title): every edit was undone, so the podcast's chapters fit the audio again"]
+        )
+
+        // Edited again: set aside again.
+        try await session.perform(.cut(AudioTimeRange(start: 3, end: 4)))
+        let secondSave = try await session.save()
+        XCTAssertTrue(secondSave.rendered)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try indexedHeadings(of: try XCTUnwrap(world.library.bookByID(book.id))), [title])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: aside.path))
+    }
+
+    /// Starting an edit history over, after its file could not be read, drops
+    /// the chapters set aside for the old history's original: undoing every
+    /// edit of the new history reaches audio that still lacks what the first
+    /// edits cut, which the podcast's chapters do not fit. The episode is one
+    /// chapter after the revert, the chapters are not brought back, and the
+    /// log does not say so.
+    func testStartingTheHistoryOverNeverBringsTheOldChaptersBack() async throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Start Over")
+        let title = uniqueTitle("Canal Survey")
+        let chapters = try PodcastChapters(chapters: [
+            PodcastChapter(startMilliseconds: 0, title: "Locks"),
+            PodcastChapter(startMilliseconds: 4_000, title: "Weirs"),
+            PodcastChapter(startMilliseconds: 8_000, title: "Towpaths"),
+        ]).normalizedJSON()
+        let book = try makeEpisode(in: world, title: title, fileName: "\(title).wav", keeping: chapters) { file in
+            try AudioTestFixtures.writeIdentityRamp(to: file, frames: 80_000, sampleRate: 8_000)
+        }
+        addTeardownBlock {
+            AudioEditScratch.remove(for: book.id)
+            ReadingTextCache.shared.remove(bookID: book.id)
+        }
+        let live = TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)
+        let aside = TextMouthPaths.podcastChaptersSetAsidePath(in: book.tmbDirectory)
+
+        // Edited and saved: the chapters are set aside.
+        let first = try await AudioEditSession.open(bookID: book.id, in: world.library)
+        try await first.perform(.cut(AudioTimeRange(start: 1, end: 2)))
+        let firstSave = try await first.save()
+        XCTAssertTrue(firstSave.rendered)
+        first.close()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: aside.path), "the chapters were not set aside")
+
+        // The history cannot be read; the listener starts it over, edits,
+        // saves, then undoes that edit and saves again.
+        try Data("not json".utf8).write(to: AudioEditPackage.historyURL(in: book.tmbDirectory))
+        let second = try await AudioEditSession.open(bookID: book.id, in: world.library, startingOver: true)
+        defer { second.close() }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: aside.path), "starting over left the old chapters set aside")
+        try await second.perform(.cut(AudioTimeRange(start: 3, end: 4)))
+        let editedSave = try await second.save()
+        XCTAssertTrue(editedSave.rendered)
+        while try await second.undo() != nil {}
+        let revertSave = try await second.save()
+        XCTAssertTrue(revertSave.rendered, "the reverted audio was not saved")
+        LibraryPersistenceService.flushPendingSave()
+
+        let saved = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(try indexedHeadings(of: saved), [title], "the old chapters came back over audio they do not fit")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_RESTORED: \(title): "), [])
+    }
+
+    /// Chapters that could not be set aside after an edit are not laid over the
     /// edited audio all the same: the save's analysis does not read them, so
     /// the episode is one chapter, the log says the file was left, and the
     /// save has gone on. (The file is made undeletable with the immutable flag.)
-    func testChaptersThatCannotBeDroppedAreNotLaidOverTheEditedAudio() async throws {
+    func testChaptersThatCannotBeSetAsideAreNotLaidOverTheEditedAudio() async throws {
         let world = try makeIntegrationWorld("Podcast Chapters Edit Left")
         let title = uniqueTitle("Canal Survey")
         let chapters = try PodcastChapters(chapters: [
@@ -701,7 +819,8 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         addTeardownBlock {
             try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: kept.path)
         }
-        let failure = try XCTUnwrap(thrownError(by: { try FileManager.default.removeItem(at: kept) }))
+        let aside = TextMouthPaths.podcastChaptersSetAsidePath(in: book.tmbDirectory)
+        let failure = try XCTUnwrap(thrownError(by: { try FileManager.default.moveItem(at: kept, to: aside) }))
 
         let session = try await AudioEditSession.open(bookID: book.id, in: world.library)
         defer { session.close() }
@@ -716,30 +835,62 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(
             loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): "),
             [
-                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be removed: "
+                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be set aside: "
                     + loggedName(of: failure),
             ]
         )
         XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
     }
 
-    /// Dropping the chapters of a package that keeps none is no error, and
-    /// says nothing.
-    func testDroppingChaptersThatAreNotThereSaysNothing() throws {
+    /// Setting aside, or bringing back, the chapters of a package that
+    /// keeps none is no error, and says nothing.
+    func testSettingAsideChaptersThatAreNotThereSaysNothing() throws {
         let package = try makeSandboxDirectory("PodcastChaptersNone")
         let title = uniqueTitle("Canal Survey")
         let book = Book(title: title, format: .audio, filePath: package.appendingPathComponent("\(title).wav").path, md5Hash: UUID().uuidString)
 
-        LibraryViewModel.dropPodcastChapters(of: book, in: package)
+        LibraryViewModel.setAsidePodcastChapters(of: book, in: package)
+        LibraryViewModel.restorePodcastChapters(of: book, in: package)
 
-        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_DROPPED: \(title): "), [])
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_SET_ASIDE: \(title): "), [])
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_RESTORED: \(title): "), [])
         XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): "), [])
     }
 
-    /// Chapters that cannot be removed after an edit stay, with one line
+    /// Chapters set aside come back only to an empty place: a package that
+    /// holds chapters of its own again, as a new download's, keeps them, and
+    /// the set-aside copy stays as it is; and chapters set aside over an
+    /// older set-aside copy replace it.
+    func testSetAsideChaptersNeverReplaceChaptersInTheirPlace() throws {
+        let package = try makeSandboxDirectory("PodcastChaptersTwoCopies")
+        let live = TextMouthPaths.podcastChaptersPath(in: package)
+        let aside = TextMouthPaths.podcastChaptersSetAsidePath(in: package)
+        let title = uniqueTitle("Canal Survey")
+        let book = Book(title: title, format: .audio, filePath: package.appendingPathComponent("\(title).wav").path, md5Hash: UUID().uuidString)
+        try Data("older".utf8).write(to: aside)
+        try Data("newer".utf8).write(to: live)
+
+        LibraryViewModel.restorePodcastChapters(of: book, in: package)
+
+        XCTAssertEqual(try Data(contentsOf: live), Data("newer".utf8), "chapters in their place were replaced")
+        XCTAssertEqual(try Data(contentsOf: aside), Data("older".utf8))
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_RESTORED: \(title): "), [])
+
+        LibraryViewModel.setAsidePodcastChapters(of: book, in: package)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertEqual(try Data(contentsOf: aside), Data("newer".utf8), "the older set-aside copy was kept over the newer")
+
+        LibraryViewModel.restorePodcastChapters(of: book, in: package)
+
+        XCTAssertEqual(try Data(contentsOf: live), Data("newer".utf8))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: aside.path))
+    }
+
+    /// Chapters that cannot be set aside after an edit stay, with one line
     /// saying so, which names the error by its code and domain, and the
     /// save goes on.
-    func testChaptersThatCannotBeDroppedAreLeftWithALine() throws {
+    func testChaptersThatCannotBeSetAsideAreLeftWithALine() throws {
         let package = try makeSandboxDirectory("PodcastChaptersLocked")
         let kept = TextMouthPaths.podcastChaptersPath(in: package)
         try sampleChaptersFile().write(to: kept)
@@ -749,20 +900,22 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         addTeardownBlock {
             try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path)
         }
-        let failure = try XCTUnwrap(thrownError(by: { try FileManager.default.removeItem(at: kept) }))
+        let failure = try XCTUnwrap(thrownError(by: {
+            try FileManager.default.moveItem(at: kept, to: TextMouthPaths.podcastChaptersSetAsidePath(in: package))
+        }))
         let title = uniqueTitle("Canal Survey")
         let book = Book(title: title, format: .audio, filePath: package.appendingPathComponent("\(title).wav").path, md5Hash: UUID().uuidString)
 
-        LibraryViewModel.dropPodcastChapters(of: book, in: package)
+        LibraryViewModel.setAsidePodcastChapters(of: book, in: package)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path))
         XCTAssertEqual(
             loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): "),
             [
-                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be removed: "
+                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be set aside: "
                     + loggedName(of: failure),
             ]
         )
-        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_DROPPED: \(title): "), [])
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_SET_ASIDE: \(title): "), [])
     }
 }

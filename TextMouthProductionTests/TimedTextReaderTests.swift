@@ -75,7 +75,7 @@ final class TimedTextReaderTests: XCTestCase {
 
     /// Asserts what every document read promises: its format, at least one
     /// cue, in the order they begin, each ending at or after its start and
-    /// no later than `Transcript.maximumMilliseconds`, with plain text that
+    /// no later than `TimedTextLimits.maximumCueMilliseconds`, with plain text that
     /// is never blank and a voice that is nil or never blank, and whose
     /// sentences make a transcript `Transcript.validationFailure()` accepts.
     private func assertKeepsItsPromises(
@@ -87,7 +87,7 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(document.cues.map(\.startMilliseconds), document.cues.map(\.startMilliseconds).sorted(), label, file: file, line: line)
         for cue in document.cues {
             XCTAssertTrue((0...cue.endMilliseconds).contains(cue.startMilliseconds), label, file: file, line: line)
-            XCTAssertLessThanOrEqual(cue.endMilliseconds, Transcript.maximumMilliseconds, label, file: file, line: line)
+            XCTAssertLessThanOrEqual(cue.endMilliseconds, TimedTextLimits.maximumCueMilliseconds, label, file: file, line: line)
             XCTAssertFalse(cue.text.isEmpty, label, file: file, line: line)
             XCTAssertEqual(cue.text, TimedTextCue.plainText(cue.text), label, file: file, line: line)
             XCTAssertNotEqual(cue.voice, "", label, file: file, line: line)
@@ -510,26 +510,55 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(document.skippedCueCount, 2)
     }
 
-    /// A cue may end at `Transcript.maximumMilliseconds`, 100 hours, and no
-    /// later: one ending a millisecond after, or beginning after it, is
-    /// passed over and counted.
+    /// A cue may end at `TimedTextLimits.maximumCueMilliseconds`, 1,000
+    /// hours, and no later: one ending a millisecond after, or beginning
+    /// after it, is passed over and counted. The grammar writes hours in
+    /// three digits, so the test's limit is written in four, which does not
+    /// read at all.
     func testTheLongestTimeIsKeptAndOneMillisecondMoreIsNot() throws {
-        XCTAssertEqual(Transcript.maximumMilliseconds, 360_000_000)
+        XCTAssertEqual(TimedTextLimits.maximumCueMilliseconds, 3_600_000_000)
         let document = try webVTT("""
         WEBVTT
 
-        99:59:59.000 --> 100:00:00.000
-        The last second.
+        999:59:59.000 --> 999:59:59.999
+        The last millisecond the grammar writes.
 
-        99:59:59.000 --> 100:00:00.001
-        One millisecond too long.
-
-        100:00:00.001 --> 100:00:01.000
+        1000:00:00.000 --> 1000:00:01.000
         Past the end.
         """)
 
-        XCTAssertEqual(document.cues, [cue(359_999_000, 360_000_000, "The last second.")])
-        XCTAssertEqual(document.skippedCueCount, 2)
+        XCTAssertEqual(document.cues, [cue(3_599_999_000, 3_599_999_999, "The last millisecond the grammar writes.")])
+        XCTAssertEqual(document.skippedCueCount, 1)
+    }
+
+    /// A cue timed past 100 hours, the length a single audio file may have
+    /// (`Transcript.maximumMilliseconds`), is read in either format, as a
+    /// book of more than 100 hours exports them (S: cue times past 100
+    /// hours could not be read back by Attach Transcript...); the sentences
+    /// are cut into the book's files afterwards, each counted from its file.
+    func testCuesPast100HoursAreRead() throws {
+        let past = Transcript.maximumMilliseconds
+        let vtt = try webVTT("""
+        WEBVTT
+
+        99:59:59.000 --> 100:00:00.000
+        Inside the hundredth hour.
+
+        100:00:00.001 --> 100:00:01.000
+        Past the hundredth hour.
+
+        250:30:15.500 --> 250:30:16.000
+        Far past.
+        """)
+        let subRipCues = try subRip("""
+        1
+        100:00:00,001 --> 100:00:01,000
+        Past the hundredth hour.
+        """)
+
+        XCTAssertEqual(vtt.skippedCueCount, 0)
+        XCTAssertEqual(vtt.cues.map(\.endMilliseconds), [past, past + 1_000, 901_816_000])
+        XCTAssertEqual(subRipCues.cues, [cue(past + 1, past + 1_000, "Past the hundredth hour.")])
     }
 
     // MARK: - Markup
@@ -994,7 +1023,106 @@ final class TimedTextReaderTests: XCTestCase {
             texts = [try subRipCue(hostile).text, try webVTTCue(hostile).text]
         }
 
-        XCTAssertEqual(texts.map { $0 == hostile }, [true, true], "each cue keeps its characters as text")
+        // The characters stay text (no tag or override is taken from them),
+        // up to the most one cue keeps.
+        let kept = String(hostile.prefix(TimedTextLimits.maximumCueCharacters))
+        XCTAssertEqual(texts.map { $0 == kept }, [true, true], "each cue keeps its first characters as text")
+        XCTAssertLessThan(elapsed, .seconds(10))
+    }
+
+    // MARK: - One Cue's Length
+
+    /// A text of `count` sentences, "Sentence 1 is here. Sentence 2 is
+    /// here. ...", on one line.
+    private func sentences(_ count: Int) -> String {
+        (1...count).map { "Sentence \($0) is here." }.joined(separator: " ")
+    }
+
+    /// A cue longer than the most one keeps is cut where a sentence ends,
+    /// and is counted; a cue no longer is kept whole and not counted. The
+    /// cut is the beginning of the text, in both file formats.
+    func testACueLongerThanTheLimitIsCutWhereASentenceEnds() throws {
+        let limit = TimedTextLimits.maximumCueCharacters
+        let long = sentences(2_000)
+        XCTAssertGreaterThan(long.count, limit, "the test's text is not longer than the limit")
+        let cues = [("WebVTT", try webVTTCue(long)), ("SubRip", try subRipCue(long))]
+        for (format, cue) in cues {
+            XCTAssertTrue(cue.isCutShort, "\(format): a cue of \(long.count) characters was not marked cut")
+            XCTAssertLessThanOrEqual(cue.text.count, limit, "\(format): the cut cue is longer than the limit")
+            XCTAssertGreaterThan(cue.text.count, limit / 2, "\(format): the cut went back more than it needed to")
+            XCTAssertTrue(cue.text.hasSuffix("is here."), "\(format): the cue ends mid-sentence: ...\(cue.text.suffix(30))")
+            XCTAssertTrue(long.hasPrefix(cue.text), "\(format): the cue is not the beginning of the text")
+        }
+
+        // Exactly the limit is whole; one more character is cut.
+        let exact = String(repeating: "a", count: limit)
+        XCTAssertFalse(try webVTTCue(exact).isCutShort)
+        XCTAssertEqual(try webVTTCue(exact).text.count, limit)
+        XCTAssertTrue(try webVTTCue(exact + "a").isCutShort)
+        let document = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n\(long)\n\n00:03.000 --> 00:04.000\nShort.\n")
+        XCTAssertEqual(document.cutCueCount, 1)
+        XCTAssertEqual(document.cues.map(\.isCutShort), [true, false])
+    }
+
+    /// Without a sentence's end in the second half of the text, a cue is
+    /// cut at the last space; without a space, at the limit itself.
+    func testACueWithoutASentenceEndIsCutBetweenWordsOrAtTheLimit() throws {
+        let limit = TimedTextLimits.maximumCueCharacters
+        let words = try webVTTCue(String(repeating: "word ", count: limit)).text
+        XCTAssertTrue(words.hasSuffix("word"), "cut mid-word: ...\(words.suffix(12))")
+        XCTAssertLessThanOrEqual(words.count, limit)
+        XCTAssertGreaterThan(words.count, limit - 5)
+
+        // The limit falls inside a word here ("abcdefgh a" is the 10,000th
+        // character), so the cue goes back to the word before.
+        let insideAWord = try webVTTCue(String(repeating: "abcdefgh ", count: limit)).text
+        XCTAssertTrue(insideAWord.hasSuffix(" abcdefgh"), "cut mid-word: ...\(insideAWord.suffix(12))")
+        XCTAssertEqual(insideAWord.count, 9_998)
+
+        // A cut that falls between two words, where the text itself ends a
+        // sentence, keeps all of it: 1,000 words of 9 characters and 999
+        // spaces are 9,999 characters, the 1,001st word being left out.
+        let sentences = try webVTTCue(Array(repeating: "abcdefgh.", count: 1_001).joined(separator: " "))
+        XCTAssertTrue(sentences.isCutShort)
+        XCTAssertEqual(sentences.text.count, 9_999, "the last whole sentence before the limit was cut back with the rest")
+
+        let unbroken = try webVTTCue(String(repeating: "x", count: limit * 3)).text
+        XCTAssertEqual(unbroken.count, limit)
+
+        // A sentence's end in the first half only is not worth cutting back
+        // to: the text goes to its last space instead.
+        let early = "Done." + String(repeating: " word", count: limit)
+        let cut = try webVTTCue(early).text
+        XCTAssertTrue(cut.hasSuffix("word"), "...\(cut.suffix(12))")
+        XCTAssertGreaterThan(cut.count, limit - 10)
+    }
+
+    /// A speaker's name is kept to its limit, as the cue's voice and as a
+    /// name put in the text where another voice takes over, so a name of
+    /// megabytes is not copied into every sentence where the speaker
+    /// changes.
+    func testASpeakersNameIsKeptToItsLimit() throws {
+        let limit = TimedTextLimits.maximumVoiceNameCharacters
+        let name = String(repeating: "N", count: limit * 50)
+
+        let cue = try webVTTCue("<v \(name)>Hello.<v Ben>Hi.<v \(name)>Again.")
+
+        XCTAssertEqual(cue.voice?.count, limit)
+        XCTAssertEqual(cue.text, "Hello. Ben: Hi. \(String(repeating: "N", count: limit)): Again.")
+        XCTAssertFalse(cue.isCutShort)
+    }
+
+    /// 5 MB of one cue, the worst a fetched transcript may be, reads in a
+    /// moment and keeps only the limit.
+    func testAFiveMegabyteCueReadsInAMomentAndKeepsTheLimit() throws {
+        let text = String(repeating: "a ", count: 2_500_000)
+        var cue: TimedTextCue?
+        let elapsed = try ContinuousClock().measure {
+            cue = try webVTTCue(text)
+        }
+
+        XCTAssertEqual(cue?.isCutShort, true)
+        XCTAssertLessThanOrEqual(cue?.text.count ?? .max, TimedTextLimits.maximumCueCharacters)
         XCTAssertLessThan(elapsed, .seconds(10))
     }
 }
@@ -1009,7 +1137,17 @@ extension XCTestCase {
     func assertSentencesAreTrusted(
         _ document: TimedTextDocument, _ label: String, file: StaticString = #filePath, line: UInt = #line
     ) {
-        let transcript = TranscriptFixtures.transcript([(path: "a.mp3", duration: 0, sentences: document.sentences)])
+        // A cue may be timed past a single file's 100 hours, on a book's
+        // timeline; the sentences are laid across files of 100 hours as an
+        // attach cuts them (`OutsideTranscript.split`), and the transcript
+        // those make is the one that must be trusted.
+        let files = (0..<10).map {
+            TranscriptionPlan.File(path: "a\($0).mp3", url: URL(fileURLWithPath: "/nonexistent/a\($0).mp3"), duration: 360_000)
+        }
+        let byFile = OutsideTranscript.split(document.sentences, across: files)
+        let transcript = TranscriptFixtures.transcript(files.compactMap { planFile in
+            byFile[planFile.path].map { (path: planFile.path, duration: 360_000_000, sentences: $0) }
+        })
         XCTAssertNil(transcript.validationFailure(), label, file: file, line: line)
         for (cue, sentence) in zip(document.cues, document.sentences) {
             let before = Array(cue.text.utf16)

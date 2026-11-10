@@ -45,6 +45,35 @@ enum TranscriptPairing: Sendable, Equatable {
         let name: String
     }
 
+    // MARK: Transcript Files Chosen With Their Audio
+
+    /// `urls`, the items chosen to import, without the WebVTT and SubRip
+    /// files among them that an audio file chosen with them finds as its
+    /// transcript (`besideFile`): the audio's import attaches such a file
+    /// itself, so it is no book of its own, and importing it as one would
+    /// only refuse it as an unsupported format while the audio's book is
+    /// made with it. A transcript file chosen without its audio, or whose
+    /// audio is not among the items, or one the audio does not find (a .srt
+    /// beside the audio's .vtt), stays in the list. The order of the rest is
+    /// kept. It looks at the file system, a few times for each audio file
+    /// chosen, and only when a transcript file is among `urls`.
+    static func droppingTranscriptsChosenWithTheirAudio(_ urls: [URL]) -> [URL] {
+        let isTranscript = urls.map { TimedTextFormat.cueFileFormat(forExtension: $0.pathExtension) != nil }
+        guard isTranscript.contains(true) else { return urls }
+        // The files the chosen audio files find, as lowercase paths: a disk
+        // that ignores case may store a name in another case than the
+        // lookup spells it.
+        let found = Set(
+            zip(urls, isTranscript)
+                .filter { url, isTranscript in !isTranscript && BookFormat.detect(from: url) == .audio }
+                .compactMap { url, _ in TranscriptPairing.besideFile(url).foundFile(forTrack: url.lastPathComponent) }
+                .map { $0.url.standardizedFileURL.path.lowercased() }
+        )
+        return zip(urls, isTranscript)
+            .filter { url, isTranscript in !(isTranscript && found.contains(url.standardizedFileURL.path.lowercased())) }
+            .map(\.0)
+    }
+
     // MARK: Finding a Track's Transcript File
 
     /// Where the transcript file of the track whose path in the book is
@@ -137,8 +166,8 @@ enum TranscriptPairing: Sendable, Equatable {
     /// one that cannot be read, or runs on past its track's end, is set aside
     /// with why. The files kept make one transcript
     /// (`OutsideTranscript.transcript(sentencesByFile:plan:source:now:hasher:)`),
-    /// whose source names the first one's format, and its name when it is
-    /// the only one kept.
+    /// whose source names each file's format, in the order the tracks play,
+    /// and its name when it is the only one kept.
     ///
     /// Nothing here fails the import: when the tracks cannot be measured, or
     /// the transcript cannot be made or written, every file that would have
@@ -217,7 +246,8 @@ enum TranscriptPairing: Sendable, Equatable {
                 source: TranscriptSource(
                     origin: .imported,
                     format: first.file.format,
-                    fileName: kept.count == 1 ? first.file.name : nil
+                    fileName: kept.count == 1 ? first.file.name : nil,
+                    otherFormats: kept.dropFirst().map(\.file.format)
                 )
             )
             try TranscriptStore.write(transcript, into: staged.tmbDirectory)

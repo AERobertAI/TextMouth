@@ -155,7 +155,9 @@ final class TranscriptionPresenter: ObservableObject {
     /// For one audiobook a transcript is being attached to
     /// (`TranscriptAttachments`), a notice says to wait instead, from
     /// whichever way the command came: the reader's Book menu dims it then,
-    /// and a library row or VoiceOver action reaches here (follow-up 7).
+    /// and a library row or VoiceOver action reaches here (follow-up 7). A
+    /// request for several books gets the sheet that says transcription
+    /// works on one book at a time, whatever is being attached.
     func transcribe(_ books: [Book], library: LibraryViewModel, window: PlatformWindow?, startsAtOnce: Bool = false) {
         guard sheet == nil else { return }
         if books.count == 1, let book = books.first, TranscriptAttachments.shared.bookIDs.contains(book.id) {
@@ -312,6 +314,26 @@ final class TranscriptionPresenter: ObservableObject {
             return
         }
         #if os(macOS)
+        // Taken at once, before the folder is looked for, so a second
+        // command asked meanwhile opens no second panel.
+        isChoosingTranscriptFile = true
+        let sourcePath = book.sourceFilePath
+        Task { [weak self] in
+            // The starting folder is looked for off the main thread: the
+            // folder may be on a share or cloud drive that does not answer.
+            let folder = await OffMainWork.run { TranscriptAttachments.startingFolder(forSource: sourcePath) }
+            self?.presentTranscriptPanel(startingIn: folder, for: book, library: library, window: window)
+        }
+        #endif
+    }
+
+    #if os(macOS)
+    /// Shows the Open panel that Attach Transcript… asks for a file with
+    /// (`chooseTranscriptFile(for:library:window:)`), as a sheet on `window`
+    /// (on its own without one), starting in `folder` when there is one, and
+    /// attaches the file chosen to `book` through `library`. Ends
+    /// `isChoosingTranscriptFile` when the panel closes.
+    private func presentTranscriptPanel(startingIn folder: URL?, for book: Book, library: LibraryViewModel, window: PlatformWindow?) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = TranscriptAttachments.fileTypes
         panel.allowsMultipleSelection = false
@@ -319,10 +341,9 @@ final class TranscriptionPresenter: ObservableObject {
         panel.canChooseFiles = true
         panel.message = TranscriptionWording.attachPanelMessage(bookTitle: book.title)
         panel.prompt = TranscriptionWording.attachPanelPrompt
-        if let folder = TranscriptAttachments.startingFolder(for: book) {
+        if let folder {
             panel.directoryURL = folder
         }
-        isChoosingTranscriptFile = true
         let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard let self else { return }
             self.isChoosingTranscriptFile = false
@@ -336,8 +357,8 @@ final class TranscriptionPresenter: ObservableObject {
         } else {
             panel.begin(completionHandler: finish)
         }
-        #endif
     }
+    #endif
 
     /// Attaches the WebVTT or SubRip file at `url` to `book` as its
     /// transcript (FMT23), timed on the book's audio from its start, through
@@ -515,21 +536,24 @@ final class TranscriptionPresenter: ObservableObject {
         }
         services.transcribedBooks.record(book.id, isTranscribed: true)
         library.bookUpdates.transcriptReplaced(bookID: book.id, with: installation.text)
+        // The sentences the transcript holds; those of a file longer than 100
+        // hours past its hundredth hour are left out, and told as passages
+        // left out (`OutsideTranscript.withinTheLimitOfAFile(_:)`).
+        let sentenceCount = transcript.files.reduce(0) { $0 + $1.sentences.count }
         services.announce(
             TranscriptionWording.attached(
                 fileName: url.lastPathComponent,
                 bookTitle: book.title,
                 wordCount: transcript.wordCount,
-                skipped: document.skippedCueCount
+                skipped: document.skippedCueCount + (sentences.count - sentenceCount),
+                cut: document.cutCueCount
             ),
             window
         )
-        // Counts and the format alone: never the transcript's words, nor a path.
-        let sentenceCount = transcript.files.reduce(0) { $0 + $1.sentences.count }
         DiagnosticLog.event(
             .storage,
             "TRANSCRIPT_ATTACHED: \(book.title): \(document.format.name) file, \(sentenceCount) sentences, "
-                + "\(document.skippedCueCount) passages left out"
+                + "\(document.skippedCueCount) passages left out, \(document.cutCueCount) cut short"
         )
     }
 

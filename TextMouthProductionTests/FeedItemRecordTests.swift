@@ -237,6 +237,47 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
     }
 
+    /// A removal readied with what a read off the main thread found for the
+    /// packages uses those answers and reads nothing itself (the removal of
+    /// many episodes read each transcript.json on the main actor): an
+    /// answer of "holds files" keeps a package whose folder holds none, and
+    /// an answer of "holds none" lets a package go whole though its folder
+    /// now holds a transcript of the listener's. A book without an answer is
+    /// read, as ever, and the answers a read off the main thread gives
+    /// (`FeedItemPackage.listenersFilesHeld(in:)`) are those of reading
+    /// each package.
+    func testAReadiedRemovalUsesTheAnswersReadOffTheMainThread() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordPrereadAnswers")
+        let (_, books) = try await downloadedEpisodes(3, in: world)
+        let (told, contradicted, unasked) = (books[0], books[1], books[2])
+        // `contradicted` holds a recognized transcript, the listener's.
+        try TranscriptStore.write(
+            TranscriptFixtures.transcript([(path: "a.m4a", duration: 1_000, sentences: [TranscriptFixtures.sentence("Heard.", from: 0, to: 500)])]),
+            into: contradicted.tmbDirectory
+        )
+        XCTAssertTrue(FeedItemPackage.holdsListenersFiles(contradicted.tmbDirectory), "the test's transcript is not the listener's")
+        XCTAssertFalse(FeedItemPackage.holdsListenersFiles(told.tmbDirectory))
+        XCTAssertEqual(
+            FeedItemPackage.listenersFilesHeld(in: [
+                told.id: told.tmbDirectory, contradicted.id: contradicted.tmbDirectory,
+            ]),
+            [told.id: false, contradicted.id: true],
+            "the answers read off the main thread are not those of reading each package"
+        )
+
+        let readied = try world.library.readyFeedFilesForRemoval(
+            of: [told, contradicted, unasked],
+            keepingPackages: true,
+            listenersFilesHeld: [told.id: true, contradicted.id: false]
+        )
+
+        XCTAssertEqual(
+            Dictionary(uniqueKeysWithValues: readied.map { ($0.row.id, $0.keepsPackage) }),
+            [told.id: true, contradicted.id: false, unasked.id: false],
+            "the readied removal did not use the answers it was given (told, contradicted, unasked)"
+        )
+    }
+
     /// When files cannot be removed, each row goes back where it was, with
     /// its place, still on the reading list: an opened download's row, which
     /// had moved to its feed's shelf, and an unopened one's, which had left

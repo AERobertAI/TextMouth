@@ -163,10 +163,19 @@ extension LibraryViewModel: FeedLibraryHost {
     /// rows out of the books (to their feeds' shelves when their packages
     /// stay), and the indexes on disk, all on the main actor, so the library
     /// changes and is saved as one. Nothing is removed yet.
+    ///
+    /// `listenersFilesHeld` has, for the books whose packages were read off
+    /// the main thread already (`FeedItemPackage.listenersFilesHeld(in:)`),
+    /// whether each holds files of the listener's; a book not in it is read
+    /// here, as the listener's own one-book deletions do.
     /// - Returns: The removals to make, in the order asked.
     /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
     ///   could not be written: the library is as it was.
-    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval] {
+    func readyFeedFilesForRemoval(
+        of books: [Book],
+        keepingPackages: Bool,
+        listenersFilesHeld: [UUID: Bool] = [:]
+    ) throws -> [FeedFileRemoval] {
         var updated = library
         var removals: [FeedFileRemoval] = []
         for requested in books {
@@ -182,7 +191,11 @@ extension LibraryViewModel: FeedLibraryHost {
                 removals.append(FeedFileRemoval(row: row, keepsPackage: false, wasOnShelf: true))
                 continue
             }
-            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(row, package: row.tmbDirectory)
+            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(
+                row,
+                package: row.tmbDirectory,
+                holdsListenersFiles: listenersFilesHeld[row.id]
+            )
             if keeps {
                 // 1. The record takes the row's state before anything else changes.
                 LibraryPersistenceService.saveBookInfo(for: row)

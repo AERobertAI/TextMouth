@@ -179,14 +179,17 @@ enum TranscriptionWording {
     private static func cameFrom(_ source: TranscriptSource, on day: String) -> String {
         let quotedName = source.fileName.map { "“\($0)”" }
         let formatName = source.knownFormat?.name
+        // Every format the files were of, said together: "WebVTT and
+        // SubRip", when this TextMouth knows them all.
+        let formatNames = source.knownFormats?.map(\.name).joined(separator: " and ")
         switch source.knownOrigin {
         case .attached:
             if let quotedName { return "Attached from \(quotedName) on \(day)." }
             if let formatName { return "Attached from a \(formatName) file on \(day)." }
             return "Attached from a file on \(day)."
         case .imported:
-            // One file by its name; several by their format, when known.
-            let files = quotedName ?? formatName.map { "\($0) files" } ?? "files"
+            // One file by its name; several by their formats, when known.
+            let files = quotedName ?? formatNames.map { "\($0) files" } ?? "files"
             return "Attached from \(files) when the book was imported, on \(day)."
         case .podcast:
             return "The podcast's own transcript, downloaded with the episode on \(day)."
@@ -525,16 +528,29 @@ enum TranscriptionWording {
     /// “lecture.vtt” to Moby-Dick: 7,077 words.", the count written with the
     /// user's grouping, as a finished transcription says it; then, when
     /// `skipped` of the file's timed passages could not be read, how many
-    /// were left out: " 1 timed passage couldn't be read and was left out."
-    static func attached(fileName: String, bookTitle: String, wordCount: Int, skipped: Int) -> String {
-        let sentence = "Attached “\(fileName)” to \(bookTitle): \(words(wordCount))."
-        guard skipped > 0 else { return sentence }
-        let leftOut = grouped(
-            skipped,
-            singular: "timed passage couldn't be read and was left out",
-            plural: "timed passages couldn't be read and were left out"
-        )
-        return "\(sentence) \(leftOut)."
+    /// were left out: " 1 timed passage couldn't be read and was left out.";
+    /// then, when `cut` of the passages were longer than TextMouth keeps and
+    /// were cut short (`TimedTextLimits.maximumCueCharacters`), how many:
+    /// " 1 timed passage was too long and was cut short."
+    static func attached(fileName: String, bookTitle: String, wordCount: Int, skipped: Int, cut: Int = 0) -> String {
+        var sentence = "Attached “\(fileName)” to \(bookTitle): \(words(wordCount))."
+        if skipped > 0 {
+            let leftOut = grouped(
+                skipped,
+                singular: "timed passage couldn't be read and was left out",
+                plural: "timed passages couldn't be read and were left out"
+            )
+            sentence += " \(leftOut)."
+        }
+        if cut > 0 {
+            let cutShort = grouped(
+                cut,
+                singular: "timed passage was too long and was cut short",
+                plural: "timed passages were too long and were cut short"
+            )
+            sentence += " \(cutShort)."
+        }
+        return sentence
     }
 
     // MARK: Book Information
