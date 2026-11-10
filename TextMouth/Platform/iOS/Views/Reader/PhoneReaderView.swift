@@ -282,13 +282,10 @@ struct PhoneReaderView: View {
     /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
     /// change with that control as its argument. Sheets and alerts don't
     /// return focus by themselves. `unless` is asked then, and a true answer
-    /// leaves focus where it is.
+    /// leaves focus where it is, as does the listener's landing on any of the
+    /// reader's controls meanwhile (`PhoneFocusRequests`).
     private func returnFocus(to kind: PhoneControlKind, unless skip: @escaping @MainActor () -> Bool = { false }) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + PhoneFocusPolicy.screenChangedDelay) {
-            guard !skip() else { return }
-            guard let view = PhoneFocusRegistry.shared.view(for: kind) else { return }
-            UIAccessibility.post(notification: .layoutChanged, argument: view)
-        }
+        PhoneFocusRegistry.shared.requestFocus(on: kind, after: PhoneFocusPolicy.screenChangedDelay, unless: skip)
     }
 
     /// The Speech Stopped sheet went away: focus returns to Play (the spec,
