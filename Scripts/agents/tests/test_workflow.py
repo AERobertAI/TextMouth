@@ -47,7 +47,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertGreaterEqual(len(uses), 3)
         for use in uses:
             with self.subTest(use=use):
-                self.assertRegex(use, r"^actions/(checkout|cache|upload-artifact)@[0-9a-f]{40}$")
+                self.assertRegex(use, r"^actions/(checkout|cache|cache/restore|cache/save|upload-artifact)@[0-9a-f]{40}$")
 
     def test_one_run_at_a_time_a_newer_push_cancels_an_older_run_and_the_job_has_a_time_limit(self):
         self.assertRegex(self.code, r"(?m)^concurrency:\n  group: test-build\n  cancel-in-progress: true\n")

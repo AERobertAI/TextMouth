@@ -77,15 +77,20 @@ jobs:
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/xcodegen/bin/xcodegen" --version
 
-      # The Swift package repositories and checkouts, so a run need not fetch
-      # them again. The key changes whenever a pin or the Xcode version does.
-      - name: Cache Swift packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Last run's build products, so this run compiles only what changed. The newest cache
+      # for this Xcode is restored (the key ends with the commit, which is new on every push, so
+      # the prefix finds the last run's). The manifest beside it says which files those products
+      # were built from; restore_mtimes.py, below, uses it. Saved again after the tests, below.
+      - name: Restore the build products
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
-            build/remote-DerivedData/SourcePackages
-          key: swiftpm-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+            build/remote-DerivedData
+            build/remote-cache
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-
 
       # The runner image starts macOS's audio service before anyone is logged in, and with that
       # service as it starts, every test that reads an audio file hangs: the first trial run
@@ -115,8 +120,26 @@ jobs:
       - name: Generate the Xcode project
         run: make generate
 
+      # A fresh checkout gives every file a new time, which would make Xcode compile everything
+      # again. Files unchanged since the cached build get one fixed old time; changed files keep
+      # their new one. With no cache every file gets it, and the build is a complete one.
+      - name: Keep unchanged files looking unchanged
+        run: python3 -I -B Scripts/agents/restore_mtimes.py build/remote-cache/manifest.json
+
       - name: Build and run the tests
         run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote
+
+      # The build products for the next run, whether or not the tests passed (a failed test
+      # leaves good products), but not for a run that was cancelled part way.
+      - name: Save the build products
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            build/remote-DerivedData
+            build/remote-cache
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ github.sha }}
 
       # The result, as a page on the run, whether the tests passed or not.
       - name: Show the summary
