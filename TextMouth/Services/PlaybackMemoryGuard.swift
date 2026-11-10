@@ -461,7 +461,11 @@ final class PlaybackMemoryGuard {
 
     /// Quit through AppKit, which asks nothing while
     /// `isQuittingToProtectTheMac` is set, so `applicationWillTerminate`
-    /// shuts down as it always does.
+    /// shuts down as it always does. This is the one quit that calls
+    /// `terminate(_:)` itself rather than through `QuitRequest.ask()`: the
+    /// delegate answers it at once, holding nothing, so there is no wait for
+    /// a reply to hang, and an emergency should not wait a turn of the run
+    /// loop.
     static func quitAskingNothing() {
 #if os(macOS)
         NSApplication.shared.terminate(nil)

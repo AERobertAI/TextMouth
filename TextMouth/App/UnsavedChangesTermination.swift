@@ -98,7 +98,7 @@ final class UnsavedChangesTerminationGuard {
         failureCenter: PersistenceFailureCenter = .shared,
         flush: @escaping @MainActor () -> Void = UnsavedChangesTerminationGuard.flushPendingWrites,
         prompt: @escaping @MainActor ([PersistenceFailure]) -> UnsavedChangesChoice = UnsavedChangesPrompt.run,
-        requestTermination: @escaping @MainActor () -> Void = { NSApp.terminate(nil) }
+        requestTermination: @escaping @MainActor () -> Void = { QuitRequest.ask() }
     ) {
         self.failureCenter = failureCenter
         self.flush = flush

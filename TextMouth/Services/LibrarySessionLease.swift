@@ -158,7 +158,7 @@ final class LibrarySessionLease {
         // system decides), so on iOS quitting does nothing.
         quit: @escaping @MainActor () -> Void = {
             #if os(macOS)
-            NSApplication.shared.terminate(nil)
+            QuitRequest.ask()
             #endif
         }
     ) {

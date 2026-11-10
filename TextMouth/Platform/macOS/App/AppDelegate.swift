@@ -142,7 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Asks AppKit to quit again, once a library move stopped for a quit
     /// has ended; tests replace it, so nothing quits.
-    var requestTermination: @MainActor @Sendable () -> Void = { NSApplication.shared.terminate(nil) }
+    var requestTermination: @MainActor @Sendable () -> Void = { QuitRequest.ask() }
 
     /// The Record window's controller, which a quit asks about its take
     /// first (FR04): the app's, unless a test sets its own.
