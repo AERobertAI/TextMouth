@@ -14,7 +14,8 @@ On November 9 the user installed 0.4.2 and asked to keep working on the follow-u
 - **The train.** When your branch changes Swift, send one request naming every area and every class your change could touch:
   `python3 -I Scripts/agents/build-train.py request --agent NAME --branch BRANCH --areas A,B --classes X,Y`.
   Then wait for it with one background `python3 -I Scripts/agents/wait-for-result.py --agent NAME`. A request made before the hour leaves on that hour's train. Fix every failure it reports in one round, then ask once more.
-- **Type-checks.** Run `make typecheck-mac` and `make typecheck-ios` once for each batch, after committing, since they check HEAD's commit. Never wrap them in `run_locked.py`.
+- **Never put a deliberate break on the train.** The train tests every request together in one tree, so a branch with a fix broken on purpose fails other agents' classes. Prove a break with a small harness in a scratch copy, run through `run_locked.py`, or by reading where only the hosted app can show it.
+- **Type-checks.** Run `make typecheck-mac` and `make typecheck-ios` once for each batch, after committing, since they check HEAD's commit. Before a train request, also type-check the tests on your commit: `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/ios/typecheck.py --platform macos --tests --ref <your commit>`. Never wrap any of them in `run_locked.py`.
 - **Anything else heavy** (a Release build, a fuzz run, a simulator pass) goes through the heavy-work lock:
   `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/followups1105/run_locked.py <name> <command...>`.
 - **Disk.** About 12 GB is free. Keep your scratch in `build/orchestrator/<your name>/` of the main checkout, and report how much you add.
