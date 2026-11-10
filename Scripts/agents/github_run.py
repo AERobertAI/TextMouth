@@ -183,7 +183,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
     run = find_run(commit)
     progress(f"run {run['url']}")
     state = wait_for_run(run, limit_minutes)
-    minutes = round((CLOCK() - started) / 60, 1)
     downloaded = download(run["databaseId"], destination)
+    # From the push to the results in hand, which is what the Mac waits for.
+    minutes = round((CLOCK() - started) / 60, 1)
     return {"commit": commit, "url": state["url"], "conclusion": state.get("conclusion") or "unknown",
             "minutes": minutes, "downloaded": downloaded}
