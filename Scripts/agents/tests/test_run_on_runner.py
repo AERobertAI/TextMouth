@@ -186,6 +186,75 @@ class ProgressTests(RunnerTestCase):
         self.assertIn("(nothing yet)", out.getvalue())
 
 
+class ShardTests(RunnerTestCase):
+    """A job that runs its share of a request."""
+
+    CLASSES = ["AlphaTests", "BetaTests", "GammaTests", "DeltaTests", "EpsilonTests"]
+
+    def test_the_slices_of_all_shards_together_are_the_request_exactly_once(self):
+        request = {"areas": ["stats"], "classes": ["ExtraTests"], "full": True}
+        with mock.patch.object(runner, "classes_of", return_value=self.CLASSES + ["ExtraTests"]):
+            slices = [runner.sliced(request, number, 3) for number in (1, 2, 3)]
+        every = [name for one in slices for name in one["classes"]]
+        self.assertEqual(sorted(every), sorted(self.CLASSES + ["ExtraTests"]))
+        for one in slices:
+            self.assertEqual((one["areas"], one["full"]), ([], False), "a slice names classes and is never the full suite")
+        self.assertEqual([one["shard"] for one in slices], ["1 of 3", "2 of 3", "3 of 3"])
+
+    def test_one_shard_leaves_the_request_alone(self):
+        request = {"areas": ["stats"], "classes": [], "full": True}
+        self.assertIs(runner.sliced(request, 1, 1), request)
+
+    def test_a_shard_runs_only_its_classes(self):
+        self.write_request({"areas": ["stats"], "classes": []})
+        seen = []
+
+        def spy(areas, classes, derived, log, jobs=3):
+            seen.append((areas, classes))
+            return self.child(SUMMARY_PASSED, LOG_PASSED)(areas, classes, derived, log)
+
+        with mock.patch.object(runner, "classes_of", return_value=self.CLASSES), \
+                mock.patch.object(test_command, "area_command", spy):
+            status, _ = self.run_main(extra=["--shard", "2", "--of", "2"])
+        self.assertEqual(status, 0)
+        self.assertEqual(seen[0][0], [])
+        expected = runner.shard.split(self.CLASSES, runner.shard.load_times(), 2)[1]
+        self.assertEqual(seen[0][1], expected)
+        self.assertIn("(shard 2 of 2)", (self.out / "summary.md").read_text())
+
+    def test_a_shard_dealt_no_classes_passes_having_run_nothing(self):
+        self.write_request({"areas": ["stats"], "classes": []})
+        with mock.patch.object(runner, "classes_of", return_value=["OnlyTests"]):
+            status, _ = self.run_main(extra=["--shard", "2", "--of", "2"])
+        self.assertEqual(status, 0)
+        self.assertIn("Executed 0 tests", (self.out / "run-summary.txt").read_text())
+
+    def test_a_shard_number_outside_the_count_is_refused(self):
+        with contextlib.redirect_stderr(io.StringIO()):
+            status, _ = self.run_main(extra=["--shard", "3", "--of", "2"])
+        self.assertEqual(status, 2)
+
+    def test_classes_of_expands_areas_with_run_area_and_keeps_the_requests_own(self):
+        class Done:
+            stdout = "AlphaTests\nBetaTests\n"
+
+        calls = []
+        with mock.patch.object(runner.subprocess, "run", lambda command, **more: calls.append(command) or Done()):
+            names = runner.classes_of({"areas": ["stats", "logs"], "classes": ["BetaTests", "ZetaTests"]})
+        self.assertEqual(names, ["AlphaTests", "BetaTests", "ZetaTests"])
+        self.assertEqual(calls[0][-3:], ["--list", "stats", "logs"])
+
+    def test_all_in_the_areas_lists_every_class(self):
+        calls = []
+
+        class Done:
+            stdout = "A\n"
+
+        with mock.patch.object(runner.subprocess, "run", lambda command, **more: calls.append(command) or Done()):
+            runner.classes_of({"areas": ["stats", "all"], "classes": []})
+        self.assertEqual(calls[0][-2:], ["--list", "all"])
+
+
 class FullSuiteTests(RunnerTestCase):
     """A request for the full suite, whose output is its log."""
 

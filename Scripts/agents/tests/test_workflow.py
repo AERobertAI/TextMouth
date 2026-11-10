@@ -47,7 +47,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertGreaterEqual(len(uses), 3)
         for use in uses:
             with self.subTest(use=use):
-                self.assertRegex(use, r"^actions/(checkout|cache|cache/restore|cache/save|upload-artifact)@[0-9a-f]{40}$")
+                self.assertRegex(use, r"^actions/(checkout|cache/restore|cache/save|upload-artifact|download-artifact)@[0-9a-f]{40}$")
 
     def test_one_run_at_a_time_a_newer_push_cancels_an_older_run_and_the_job_has_a_time_limit(self):
         self.assertRegex(self.code, r"(?m)^concurrency:\n  group: test-build\n  cancel-in-progress: true\n")
@@ -62,15 +62,60 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("xcodebuild test", self.code, "the test command comes from test_command.py alone")
         self.assertNotIn("run-area.py", self.code, "the test command comes from test_command.py alone")
 
+    def job(self, name):
+        """The text of one job of the workflow, from its heading to the next job's."""
+        jobs = self.code.split("\njobs:\n")[1]
+        parts = re.split(r"(?m)^  ([a-z]+):\n", jobs)
+        # parts is ["", name, body, name, body, ...]
+        return dict(zip(parts[1::2], parts[2::2]))[name]
+
+    def test_there_are_three_jobs_plan_test_and_collect(self):
+        self.assertEqual(re.findall(r"(?m)^  ([a-z]+):\n", self.code.split("\njobs:\n")[1]), ["plan", "test", "collect"])
+
+    def test_only_the_test_job_uses_a_macos_runner_and_the_others_are_cheap_linux_jobs(self):
+        self.assertIn("runs-on: macos-26", self.job("test"))
+        for name in ("plan", "collect"):
+            self.assertRegex(self.job(name), r"runs-on: ubuntu-24\.04\n")
+            self.assertRegex(self.job(name), r"timeout-minutes: \d+\n")
+
+    def test_the_shards_run_side_by_side_and_one_failing_does_not_cancel_the_others(self):
+        test = self.job("test")
+        self.assertIn("fail-fast: false", test)
+        self.assertIn("needs: plan", test)
+        self.assertIn("matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}", test)
+
+    def test_the_join_runs_whether_the_shards_passed_failed_or_were_stopped(self):
+        collect = self.job("collect")
+        self.assertIn("needs: [plan, test]", collect)
+        self.assertRegex(collect, r"if: \$\{\{ always\(\)")
+
     def test_the_results_are_uploaded_even_when_the_tests_fail(self):
-        step = self.code[self.code.index("Upload the results"):]
-        self.assertIn("if: always()", step.split("Upload the result bundle")[0])
-        self.assertIn(f"name: {github_run.ARTIFACT}", step)
-        self.assertRegex(step, r"retention-days: [1-9]\n")
+        for name, artifact in (("test", "shard-results-"), ("collect", github_run.ARTIFACT)):
+            with self.subTest(job=name):
+                job = self.job(name)
+                step = job[job.index(f"name: {artifact}") - 150:]
+                self.assertIn("if: always()", step.split("path:")[0])
+                self.assertRegex(job, r"retention-days: [1-9]\b")
+
+    def test_the_artifact_the_mac_downloads_is_made_by_the_join_alone(self):
+        self.assertNotIn(f"name: {github_run.ARTIFACT}\n", self.job("test"))
+        self.assertIn(f"name: {github_run.ARTIFACT}\n", self.job("collect"))
 
     def test_the_result_bundle_is_uploaded_only_on_failure(self):
-        bundle = self.code[self.code.index("Upload the result bundle"):]
-        self.assertIn("if: failure()", bundle)
+        job = self.job("test")
+        bundle = job[job.index("Upload the result bundle"):]
+        self.assertIn("if: failure()", bundle.split("path:")[0])
+
+    def test_only_the_first_shard_saves_the_build_products_and_never_after_a_cancel(self):
+        job = self.job("test")
+        save = job[job.index("Save the build products"):]
+        self.assertIn("if: ${{ !cancelled() && matrix.shard == 1 }}", save.split("uses:")[0])
+
+    def test_the_build_products_are_restored_before_the_files_times_are_set_and_the_build_runs(self):
+        job = self.job("test")
+        order = [job.index(name) for name in ("Restore the build products", "Generate the Xcode project",
+                                              "restore_mtimes.py", "run-on-runner.py")]
+        self.assertEqual(order, sorted(order))
 
     def test_the_gate_workflow_check_yml_does_not_also_run_for_a_push_to_testbuild(self):
         # check.yml (make check) runs for every push to main and every pull request. A push to

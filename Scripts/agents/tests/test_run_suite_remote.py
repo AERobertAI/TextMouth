@@ -85,6 +85,8 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.assertEqual(list(refs), ["refs/heads/TestBuild"])
         request = self.pushed_request(refs["refs/heads/TestBuild"])
         self.assertTrue(request["full"])
+        self.assertEqual((request["areas"], request["shards"]), (["all"], run_suite.shard.MAX_SHARDS),
+                         "the full suite is every test, dealt out as widely as the workflow allows")
         self.assertEqual(request["requests"], [{"agent": "orchestrator-suite", "head": self.head}])
 
     def test_a_remote_suite_with_failing_tests_exits_one(self):

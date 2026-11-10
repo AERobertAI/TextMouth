@@ -75,6 +75,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+import shard  # noqa: E402
 import test_command  # noqa: E402
 
 ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
@@ -447,6 +448,17 @@ def run_tests(merged, train_dir):
 UNFINISHED_RUNS = ("cancelled", "timed_out", "startup_failure", "skipped", "stale", "action_required")
 
 
+def selected_classes(areas, classes):
+    """Every test class the areas and classes name, in the merged tree, as run-area.py lists them
+    (an area's classes, every class for "all"), without repeats."""
+    names = test_command.area_names(areas)
+    listed = []
+    if names:
+        listed = subprocess.run(["python3", "-I", "Scripts/test/run-area.py", "--list", *names], cwd=WORKTREE,
+                                capture_output=True, text=True).stdout.split()
+    return list(dict.fromkeys(listed + list(classes)))
+
+
 def remote_run_tests(merged, train_dir):
     """Runs the union of the merged requests' areas and classes on GitHub Actions;
     returns run-area's output, read from the run's summary, as run_tests does.
@@ -460,7 +472,10 @@ def remote_run_tests(merged, train_dir):
     areas, classes = choose_tests(merged)
     if not areas and not classes:
         return NO_TESTS_RAN
-    request = {"areas": areas, "classes": classes, "full": False, "train": train_dir.name,
+    # A long request runs as several jobs side by side; the times are those of the merged tree.
+    times = shard.load_times(WORKTREE / "Scripts" / "agents" / "class-times.json")
+    shards = shard.shard_count(selected_classes(areas, classes), times)
+    request = {"areas": areas, "classes": classes, "full": False, "shards": shards, "train": train_dir.name,
                "requests": [{"agent": r["agent"], "branch": r["branch"], "head": r["head"]} for r in merged]}
     (train_dir / "command.txt").write_text("remote: " + json.dumps(request) + "\n")
     head = git("rev-parse", "HEAD", cwd=WORKTREE).stdout.strip()

@@ -5,29 +5,34 @@
 # build train (Scripts/agents/build-train.py --remote) and full suite
 # (Scripts/agents/run_suite.py --remote) push with --force: a commit of the
 # tree to test, plus the request file .github/test-request.json, which says what
-# to run (areas, test classes, or the full suite). Nothing runs for a pull
-# request or a fork, so no outsider's code ever runs here, and the job holds no
-# secrets and may only read the repository. It uses only GitHub's own actions,
-# pinned to full commit hashes with their release tags alongside.
+# to run (areas, test classes, or the full suite) and in how many parallel jobs.
+# Nothing runs for a pull request or a fork, so no outsider's code ever runs
+# here, and no job holds a secret or may do more than read the repository. It
+# uses only GitHub's own actions, pinned to full commit hashes with their
+# release tags alongside.
 #
-# The tests run through Scripts/agents/run-on-runner.py, which builds the
-# command with Scripts/agents/test_command.py, the one place the train, the
-# full suite, and this workflow take it from. The app is signed ad hoc
-# (CODE_SIGNING_ALLOWED=NO, as on the Mac), since a runner has no identity.
+# Three jobs:
+#   plan     (Linux, seconds)  reads the request and says how many shards it wants.
+#   test     (macOS, a matrix)  one job per shard: builds the app, with last run's build
+#                               products restored from the cache so only what changed is
+#                               compiled, and runs its share of the classes through
+#                               Scripts/agents/run-on-runner.py, which builds the command with
+#                               Scripts/agents/test_command.py, the one place the train, the full
+#                               suite, and this workflow take it from. The app is signed ad hoc
+#                               (CODE_SIGNING_ALLOWED=NO, as on the Mac), since a runner has no identity.
+#   collect  (Linux, seconds)  joins the shards' results into the one result the Mac downloads
+#                               (artifact test-build-results: the log, the short summary the train reads,
+#                               the request, and a page for the run's summary), kept a few days.
 #
-# It uploads, for a few days: the log, the short summary the train reads, the
-# request as it ran, and a page for the run's summary. The result bundle of a
-# full suite is uploaded only when the run fails.
-#
-# The toolchain matches check.yml (the reproducibility gate): the same Xcode,
-# the same XcodeGen with the same digest, the same pinned actions.
+# The toolchain matches check.yml (the reproducibility gate): the same Xcode, the same
+# XcodeGen with the same digest, the same pinned actions.
 name: Test build
 
 on:
   push:
     branches: [TestBuild]
 
-# The job only reads the repository.
+# The jobs only read the repository.
 permissions:
   contents: read
 
@@ -38,12 +43,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  plan:
+    name: plan the shards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A push without a request has nothing to run: say so, plainly.
+      - name: Read the request
+        id: plan
+        run: |
+          if [ ! -f .github/test-request.json ]; then
+            echo "::error::The pushed commit has no .github/test-request.json, so there is nothing to run."
+            exit 1
+          fi
+          cat .github/test-request.json
+          python3 -I -B Scripts/agents/plan_shards.py .github/test-request.json | tee -a "$GITHUB_OUTPUT"
+
   test:
-    name: build and test
+    name: test (shard ${{ matrix.shard }} of ${{ needs.plan.outputs.shards }})
+    needs: plan
     runs-on: macos-26
-    # The longest the whole job may take. The runner script stops the tests
+    # The longest one job may take. The runner script stops the tests
     # before this, at 80 minutes, so that the results are written and uploaded.
     timeout-minutes: 100
+    strategy:
+      # A shard that fails must not cancel the others: the results of all are wanted.
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       XCODE_VERSION: "26.0.1"
       XCODEGEN_VERSION: "2.45.3"
@@ -106,15 +140,6 @@ jobs:
           sleep 5
           system_profiler SPAudioDataType || true
 
-      # A push without a request has nothing to run: say so, plainly.
-      - name: Read the request
-        run: |
-          if [ ! -f .github/test-request.json ]; then
-            echo "::error::The pushed commit has no .github/test-request.json, so there is nothing to run."
-            exit 1
-          fi
-          cat .github/test-request.json
-
       # As `make generate` does: the project is generated from project.yml, with
       # the copy-files phases kept in their committed order.
       - name: Generate the Xcode project
@@ -126,13 +151,14 @@ jobs:
       - name: Keep unchanged files looking unchanged
         run: python3 -I -B Scripts/agents/restore_mtimes.py build/remote-cache/manifest.json
 
-      - name: Build and run the tests
-        run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote
+      - name: Build and run this shard's tests
+        run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.shards }}
 
       # The build products for the next run, whether or not the tests passed (a failed test
-      # leaves good products), but not for a run that was cancelled part way.
+      # leaves good products), but not for a run that was cancelled part way. Every shard builds the
+      # same products, so the first shard saves them.
       - name: Save the build products
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.shard == 1 }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -140,6 +166,56 @@ jobs:
             build/remote-DerivedData
             build/remote-cache
           key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ github.sha }}
+
+      # What the last job joins: this shard's log, summary, and request.
+      - name: Upload this shard's results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shard-results-${{ matrix.shard }}
+          path: |
+            build/remote/request.json
+            build/remote/run.log
+            build/remote/run-summary.txt
+            build/remote/summary.md
+          if-no-files-found: ignore
+          retention-days: 2
+
+      # The full suite's result bundle is large, so it is kept only to look into a failure.
+      - name: Upload the result bundle of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-build-result-bundle-${{ matrix.shard }}
+          path: build/remote/result.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
+
+  collect:
+    name: join the results
+    needs: [plan, test]
+    # Whether the shards passed, failed, or were stopped; not when there was no plan to follow.
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A shard that never got as far as uploading has no artifact; the join names it.
+      - name: Download the shards' results
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: shard-results-*
+          path: build/shards
+
+      - name: Join the results
+        run: |
+          mkdir -p build/shards
+          python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }}
 
       # The result, as a page on the run, whether the tests passed or not.
       - name: Show the summary
@@ -164,13 +240,3 @@ jobs:
             build/remote/summary.md
           if-no-files-found: ignore
           retention-days: 5
-
-      # The full suite's result bundle is large, so it is kept only to look into a failure.
-      - name: Upload the result bundle of a failed run
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: test-build-result-bundle
-          path: build/remote/result.xcresult
-          if-no-files-found: ignore
-          retention-days: 3

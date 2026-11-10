@@ -38,6 +38,7 @@ sys.path.insert(0, str(AGENTS))
 import heavy_lock  # noqa: E402
 
 import github_run  # noqa: E402
+import shard  # noqa: E402
 import test_command  # noqa: E402
 
 # The train's own reading of a log, so the two can't disagree.
@@ -141,7 +142,11 @@ def run_remote(name, log, commit, cwd=None):
         return 3
     folder = f"{log}.remote"
     try:
-        request = {"areas": [], "classes": [], "full": True, "requests": [{"agent": name, "head": commit}]}
+        # The full suite is long, so it runs as the most shards there are. It names "all" as well as "full" so
+        # the runner can deal its classes out: the area "all" is every test of the scheme (11,854 counted in
+        # the sources, 11,853 run on the Mac on November 9, 2026), so the shards' classes add up to the suite.
+        request = {"areas": ["all"], "classes": [], "full": True, "shards": shard.MAX_SHARDS,
+                   "requests": [{"agent": name, "head": commit}]}
         try:
             result = github_run.run_remotely(cwd or os.getcwd(), commit, request, folder,
                                              f"Test build: full suite for {name}",

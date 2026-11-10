@@ -20,7 +20,11 @@ It exits 0 when the tests passed and 1 when they did not. Every wait has a
 limit: the whole run (--limit-minutes), and a test host that writes nothing
 to the log for too long is killed, as the Mac's train kills one.
 
-Usage: python3 -I -B Scripts/agents/run-on-runner.py [--request FILE] [--out DIR] [--limit-minutes N]
+With --shard I --of N (N above 1) the job runs only its share of the request's classes, the I-th of N
+slices shard.py makes of them, so that N jobs run the request side by side; merge_shards.py joins
+their results.
+
+Usage: python3 -I -B Scripts/agents/run-on-runner.py [--request FILE] [--out DIR] [--limit-minutes N] [--shard I --of N]
 Run it from the repository root.
 """
 import argparse
@@ -38,6 +42,7 @@ sys.dont_write_bytecode = True
 AGENTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
+import shard  # noqa: E402
 import test_command  # noqa: E402
 
 # The repository's root, where the commands run.
@@ -80,6 +85,26 @@ def print_progress(log, finished):
               f"{lines[-1].strip()[:160] if lines else '(nothing yet)'}", flush=True)
 
 
+def classes_of(request):
+    """The test classes a request names, in order and without repeats: its areas expanded by
+    run-area.py (which lists an area's classes, and every class for "all"), then its own classes."""
+    names = test_command.area_names(request["areas"])
+    listed = []
+    if names:
+        listed = subprocess.run(["python3", "-I", "Scripts/test/run-area.py", "--list", *names], cwd=ROOT,
+                                capture_output=True, text=True, check=True).stdout.split()
+    return list(dict.fromkeys(listed + list(request["classes"])))
+
+
+def sliced(request, number, count):
+    """The request narrowed to shard `number` of `count` (1-based): only that shard's classes, never
+    the full-suite flag. With a count of 1 the request is returned as it is."""
+    if count <= 1:
+        return request
+    mine = shard.split(classes_of(request), shard.load_times(), count)[number - 1]
+    return {**request, "areas": [], "classes": mine, "full": False, "shard": f"{number} of {count}"}
+
+
 def run_tests(train, request, out, limit_minutes):
     """Runs the request's tests; returns (the printed result, whether the time
     limit stopped the run). The result is run-area.py's own output, or, for the
@@ -92,6 +117,12 @@ def run_tests(train, request, out, limit_minutes):
     # train's own code on purpose: one definition of "hung" for the Mac and the runner.
     train.DERIVED = derived
     train.post = lambda to, topic, tag="build": print(f"{tag}: {topic}", flush=True)
+    if request.get("shard") and not request["classes"]:
+        # A shard dealt no classes (more shards than classes) has nothing to run.
+        log.write_text("This shard was dealt no test classes.\n"
+                       "Test Suite 'Selected tests' passed at (nothing to run).\n")
+        return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"
+                "PASSED in 0 seconds\n"), False
     if request["full"]:
         command = test_command.full_suite_command(derived, out / "result.xcresult")
         # The suite's whole output is its log; run-area.py writes its own log.
@@ -150,7 +181,10 @@ def write_results(request, out, output, passed, seconds):
     executed = next((l.strip() for l in reversed(output.splitlines()) if "Executed" in l), "no tests ran")
     failed = [l.strip() for l in output.splitlines() if l.strip().startswith(("FAILED ", "ERROR "))]
     wanted = "the full suite" if request["full"] else (
-        "areas " + (", ".join(request["areas"]) or "none") + "; classes " + (", ".join(request["classes"]) or "none"))
+        "areas " + (", ".join(request["areas"]) or "none") + "; classes " + (", ".join(request["classes"][:20]) or "none")
+        + (f" and {len(request['classes']) - 20} more" if len(request["classes"]) > 20 else ""))
+    if request.get("shard"):
+        wanted += f" (shard {request['shard']})"
     lines = ["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
              f"- Asked for: {wanted}", f"- Minutes: {seconds / 60:.1f}",
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
@@ -166,6 +200,8 @@ def main(argv):
     parser.add_argument("--request", default=github_run.REQUEST_PATH)
     parser.add_argument("--out", default="build/remote")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
+    parser.add_argument("--shard", type=int, default=1, help="this job's number among the shards, from 1")
+    parser.add_argument("--of", type=int, default=1, help="how many shards the request is split into")
     args = parser.parse_args(argv)
     out = (ROOT / args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -174,6 +210,10 @@ def main(argv):
     except (OSError, ValueError) as error:
         print(f"run-on-runner: cannot read the request {args.request}: {error}", file=sys.stderr)
         return 2
+    if not 1 <= args.shard <= max(1, args.of):
+        print(f"run-on-runner: shard {args.shard} is not among {args.of}", file=sys.stderr)
+        return 2
+    request = sliced(request, args.shard, args.of)
     started = time.monotonic()
     train = test_command.load_build_train()
     # A request may ask for a shorter limit than the default (never a longer one), as a trial run does.

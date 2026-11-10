@@ -124,6 +124,24 @@ class RemoteTrainRunTests(RemoteTrainCase):
         self.assertEqual(sorted(tree), sorted(["base.txt", "a.txt", "b.txt", github_run.REQUEST_PATH]),
                          "both branches should be merged into the pushed tree")
 
+    def test_a_long_request_asks_for_more_shards_and_a_short_one_for_one(self):
+        self.branch("alpha", {"a.txt": "a"}, areas=["stats"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        # 1500 seconds of tests, by the times file: three shards at 600 seconds each at most.
+        self.patch(train, selected_classes=lambda areas, classes: ["BigTests"],
+                   shard=SimpleNamespace(load_times=lambda path: {"BigTests": 1500}, shard_count=train.shard.shard_count))
+        self.run_train()
+        long_request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual(long_request["shards"], 3)
+
+    def test_a_short_request_is_one_shard(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["SmallTests"])
+        self.run_train()
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual(request["shards"], 1)
+
     def test_each_agent_is_told_the_result_and_given_the_runs_link(self):
         self.branch("alpha", {"a.txt": "a"})
         self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
