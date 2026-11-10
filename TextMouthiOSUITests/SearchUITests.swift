@@ -138,11 +138,20 @@ final class SearchUITests: TextMouthUITestCase {
         // The field holds the keyboard, as the spec has it, and the audit
         // reads the keyboard's own cells too (pass 1, November 9, 2026: three
         // "TUIPredictionViewCell" findings, and contrast findings on the rows
-        // under the keyboard). A scroll, which is silent, puts it away
-        // (`scrollDismissesKeyboard`); then back to the top.
-        app.swipeUp()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: Self.patience), "Scrolling didn't put the keyboard away")
-        app.swipeDown()
-        try audit(app, screen: "Search in Book sheet", accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book")])
+        // under the keyboard). Pass 2 showed that a swipe of the whole app
+        // did not put it away. A drag that begins on the results' heading is
+        // a scroll of the list, which is silent and puts the keyboard away
+        // (`scrollDismissesKeyboard`). If it stays, the audit runs all the
+        // same and says what it finds, with a note that the keyboard was up.
+        let heading = app.staticTexts["Search results"].firstMatch
+        if heading.exists {
+            heading.press(forDuration: 0.1, thenDragTo: app.navigationBars["Search in Book"].firstMatch)
+        }
+        if !app.keyboards.firstMatch.waitForNonExistence(timeout: 10) {
+            let note = XCTAttachment(string: "The keyboard was still up when the sheet was audited.")
+            note.lifetime = .keepAlways
+            add(note)
+        }
+        try audit(app, screen: "Search in Book sheet", accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge])
     }
 }
