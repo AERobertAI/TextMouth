@@ -56,7 +56,8 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
         case .bookOutsideDataDirectory(let title, let path):
             return "The book \(title) is stored at \(path), outside the data directory, so the move cannot carry it. "
-                + "Import it again so that a copy is stored in the data directory, or remove it from the library, "
+                + "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy "
+                + "stored in the data directory takes its place, or remove it from the library, "
                 + "then move the data directory again."
         case .invalidLibrary: return "The migrated library index could not be validated."
         case .destinationChanged(let change): return change.explanation

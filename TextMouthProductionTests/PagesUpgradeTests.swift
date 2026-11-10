@@ -55,7 +55,8 @@ final class PagesUpgradeTests: XCTestCase {
     /// format has none, so no book of it is ever read again for pages. EPUB
     /// and HTML, whose shared converter changed a heading's label, then
     /// stopped taking "Page" alone for a page's label, and then took a
-    /// leading "Page" off every label, are at 1.0.3; the others have not
+    /// leading "Page" off every label, are at 1.0.3 (HTML went on to 1.0.4 and
+    /// plain text to 1.0.1 with the text decoder's new steps); the others have not
     /// changed since they gained pages, except rich text and Word 97-2003, which
     /// went to TextMouth's own readers at 1.1.0.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {

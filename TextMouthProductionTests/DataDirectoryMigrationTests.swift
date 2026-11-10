@@ -281,6 +281,7 @@ final class DataDirectoryMigrationTests: XCTestCase {
             XCTAssertTrue(description.contains("Stored Apart"), "the book is not named: \(description)")
             XCTAssertTrue(description.contains(outsideFile.path), "its path is not given: \(description)")
             XCTAssertTrue(description.contains("outside the data directory"), "where it is is not said: \(description)")
+            XCTAssertTrue(description.contains("Replace Existing"), "the way out is not said: \(description)")
             XCTAssertFalse(description.contains("missing"), "it was reported as missing from the copy: \(description)")
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "the copy was published")

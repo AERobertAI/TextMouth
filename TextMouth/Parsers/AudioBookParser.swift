@@ -152,7 +152,7 @@ enum AudioBookParser {
     /// and `directory` as it is otherwise, its spelling kept (a path through
     /// /var stays one). A link that leads nowhere is returned as it is, and
     /// the enumerator reports it.
-    private static func resolvingALinkedFolder(_ directory: URL) -> URL {
+    static func resolvingALinkedFolder(_ directory: URL) -> URL {
         let isLink = (try? directory.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
         return isLink ? directory.resolvingSymlinksInPath() : directory
     }

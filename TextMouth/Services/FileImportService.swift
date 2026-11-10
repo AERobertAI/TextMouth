@@ -983,6 +983,11 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        // A symbolic link to a folder is the folder it leads to, from here on:
+        // every walk of the folder below (its tracks, a DAISY book beneath it,
+        // the files it holds) would otherwise start at the link, which the
+        // file manager's enumerator does not enter.
+        let sourceURL = resolvingLinkedFolder(sourceURL)
         // A playlist imports as one audiobook of the files it lists (FMT10).
         if isPlaylistFile(sourceURL) {
             return try importPlaylistWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
@@ -1150,6 +1155,15 @@ enum FileImportService {
 
     /// Whether the item at `url` is a folder (a package such as an .rtfd
     /// included).
+    /// `url` as the folder it leads to when it is a symbolic link to a folder,
+    /// so that a link is imported as choosing the folder itself is. Any other
+    /// item, a link to a file included, is returned as it is. The one place a
+    /// top-level link is resolved for an import.
+    static func resolvingLinkedFolder(_ url: URL) -> URL {
+        let resolved = AudioBookParser.resolvingALinkedFolder(url)
+        return resolved != url && isFolder(resolved) ? resolved : url
+    }
+
     private static func isFolder(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
     }
@@ -1350,7 +1364,8 @@ enum FileImportService {
     /// package is never one. Neither is a folder with a DAISY book in a
     /// folder beneath it: such a folder is not itself a book, and its
     /// tracks belong to the books beneath it.
-    static func isFolderOfTracks(_ source: URL) -> Bool {
+    static func isFolderOfTracks(_ linkOrFolder: URL) -> Bool {
+        let source = resolvingLinkedFolder(linkOrFolder)
         guard source.pathExtension.lowercased() != "tmb", BookFormat.detect(from: source) == nil else { return false }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory), isDirectory.boolValue else {
