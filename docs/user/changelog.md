@@ -11,11 +11,10 @@ Every version of TextMouth, newest first, and what changed for you in each.
   - Moby Dick's Epilogue went from 482 words to 267, and The Yellow Wallpaper's last chapter from 6,295 to 6,082.
   - The words of each book are the same, only the cut between chapters moved.
 - A Modest Proposal in KF8 now has the 3 chapters of its EPUB: Project Gutenberg's header page, the essay, and the licence. It was 2, with the essay joined to the header page.
-- The rule that puts back together the pieces of one chapter is narrower than in 0.4.2, so it cannot cut a chapter in two.
-- Soft hyphens, the invisible marks a publisher puts inside words to say where a line may break, are now left out of every Kindle book, MOBI 6 as well as KF8, in the words, in the contents' names, and in a plain text book.
+- Soft hyphens, the invisible marks a publisher puts inside words to say where a line may break, were already left out of KF8 books. Now they are left out of MOBI 6 books too: in the words, in the contents' names, and in a book of plain text.
   - Search in Book now finds a word that had one inside it. Before, a search for "hyphenation" did not find the same word with a soft hyphen after its "hy".
-  - A braille display no longer shows a hyphen where one was.
-  - Speech no longer pauses at one: the voice read a soft hyphen as a visible hyphen, a word 2% to 6% longer.
+  - A braille display no longer shows a hyphen in the middle of such a word.
+  - Speech no longer stumbles over one: the voice read a soft hyphen as if it were a hyphen, which made the word 2% to 6% longer to say.
 - Not changed: an EPUB keeps its soft hyphens, which do the same there. No EPUB in the test collection holds one.
 
 ### Text files in more encodings
