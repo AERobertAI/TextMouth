@@ -35,7 +35,13 @@ enum FileImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat(let ext): return "Unsupported file format: .\(ext)"
+        case .unsupportedFormat(let ext):
+            // A transcript is not a book, but it has a way in: say it.
+            let hint = TimedTextFormat.cueFileFormat(forExtension: ext) != nil
+                ? ". A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, "
+                    + "and choose Attach Transcript… from the Book menu."
+                : ""
+            return "Unsupported file format: .\(ext)" + hint
         case .hashingFailed: return "Failed to compute file hash."
         case .importFailed(let msg): return "Import failed: \(msg)"
         case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written."
@@ -186,10 +192,15 @@ final class SMILTextSources: NSObject, XMLParserDelegate {
 
     /// The `src` of each text element in `data`, in order, up to the point
     /// a damaged document stops the read; the sources found stand.
+    ///
+    /// A file the XML guard refuses (a tag with too many attributes, entities
+    /// of its own, an encoding it cannot see through; `XMLInputGuard`) is
+    /// never given to the XML parser, but it still names its text: the
+    /// sources are found by `sourcesWithoutParsing(_:)`. Reading none would
+    /// say a book has no text of its own, and the archive that holds the
+    /// only copy of that text would be offered for deletion.
     static func scan(_ data: Data) -> [String] {
-        // A SMIL file with a tag the parser would take too long over names no source
-        // (`XMLInputGuard`).
-        guard XMLInputGuard.problem(with: data) == nil else { return [] }
+        guard XMLInputGuard.problem(with: data) == nil else { return sourcesWithoutParsing(data) }
         let scanner = SMILTextSources()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
@@ -205,6 +216,29 @@ final class SMILTextSources: NSObject, XMLParserDelegate {
         // Prefixed names ("smil:text") count; only the local name matters.
         guard elementName.split(separator: ":").last == "text", let source = attributeDict["src"] else { return }
         sources.append(source)
+    }
+
+    /// A text element's start tag, its prefix allowed (`smil:text`), up to
+    /// its `src` attribute in either kind of quotation mark. The white space
+    /// after the name is looked at but not consumed (`(?=\s)`), so a `src`
+    /// that comes first is found by the white space before it. The tag's other
+    /// attributes are passed over by `[^<>]*?`, which never crosses the start
+    /// or the end of another tag, so a file made of unclosed tags is read in
+    /// one pass, not once for each. Group 1 and 2 are the source.
+    private static let sourcePattern =
+        #"<(?:[^\s<>:/]+:)?text(?=\s)[^<>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')"#
+
+    /// The `src` of each text element in `data`, found as text and not as
+    /// XML, for a file the guard keeps from the XML parser: no entity is
+    /// expanded and no document type read, so the file costs no more than a
+    /// pass over its bytes. ISO Latin 1 gives every byte a character, so
+    /// markup in any ASCII-compatible encoding reads as it is written.
+    private static func sourcesWithoutParsing(_ data: Data) -> [String] {
+        guard let markup = String(data: data, encoding: .isoLatin1),
+              let expression = try? NSRegularExpression(pattern: sourcePattern) else { return [] }
+        return expression.matches(in: markup, range: NSRange(markup.startIndex..., in: markup)).compactMap { match in
+            [1, 2].lazy.compactMap { Range(match.range(at: $0), in: markup) }.first.map { String(markup[$0]) }
+        }
     }
 }
 
@@ -955,6 +989,11 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        // A symbolic link to a folder is the folder it leads to, from here on:
+        // every walk of the folder below (its tracks, a DAISY book beneath it,
+        // the files it holds) would otherwise start at the link, which the
+        // file manager's enumerator does not enter.
+        let sourceURL = resolvingLinkedFolder(sourceURL)
         // A playlist imports as one audiobook of the files it lists (FMT10).
         if isPlaylistFile(sourceURL) {
             return try importPlaylistWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
@@ -1118,6 +1157,15 @@ enum FileImportService {
     /// measured as a file), and no other folder is.
     static func isRTFDFolder(_ url: URL) -> Bool {
         url.pathExtension.lowercased() == "rtfd" && isFolder(url)
+    }
+
+    /// `url` as the folder it leads to when it is a symbolic link to a folder,
+    /// so that a link is imported as choosing the folder itself is. Any other
+    /// item, a link to a file included, is returned as it is. The one place a
+    /// top-level link is resolved for an import.
+    static func resolvingLinkedFolder(_ url: URL) -> URL {
+        let resolved = AudioBookParser.resolvingALinkedFolder(url)
+        return resolved != url && isFolder(resolved) ? resolved : url
     }
 
     /// Whether the item at `url` is a folder (a package such as an .rtfd
@@ -1322,7 +1370,8 @@ enum FileImportService {
     /// package is never one. Neither is a folder with a DAISY book in a
     /// folder beneath it: such a folder is not itself a book, and its
     /// tracks belong to the books beneath it.
-    static func isFolderOfTracks(_ source: URL) -> Bool {
+    static func isFolderOfTracks(_ linkOrFolder: URL) -> Bool {
+        let source = resolvingLinkedFolder(linkOrFolder)
         guard source.pathExtension.lowercased() != "tmb", BookFormat.detect(from: source) == nil else { return false }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory), isDirectory.boolValue else {

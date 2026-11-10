@@ -4,6 +4,66 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.4 (November 10, 2026)
+### Quitting while work is under way
+- The hang after Quit Anyway, or after a save, is gone. While feed downloads, a book's text read again in another encoding, or a speech export were under way, choosing Quit Anyway in the alert about unsaved changes, or answering the Record window's question or an audio editor's Save or Discard, could leave TextMouth open with its windows stuck. Now the quit ends.
+- A second Command-Q, or the Dock's Quit, while TextMouth finishes that work no longer cuts it off. It used to quit at once, with a download's place not kept and a re-read or an export cut short.
+- TextMouth now says what it is doing when you quit during that work, in a small window titled "Quitting TextMouth" and through VoiceOver:
+  - "TextMouth is finishing up before it quits: <what>. It will quit as soon as that is done."
+  - What it says for downloads is "keeping the place of your feed downloads for next time". For a re-read it is "reading a book's text again in another encoding", and for an export "stopping a speech export with the chapters it finished kept". When several run, the sentence counts them, as in "reading the text of 3 books again in another encoding".
+  - Pressing Command-Q again says the same words again.
+  - The window does not take the keyboard from the window you were in.
+  - The waits are the same as before: 3 seconds for downloads, 10 for a re-read, and 5 for an export. Work that cannot end gives up after its wait.
+- Log out, restart, and shut down wait for the same work as before and are not cancelled by it. If you log out while TextMouth is finishing for your Quit, the log out goes on when the work has ended.
+- The alert about unsaved changes is not shown a second time when you chose Quit Anyway and TextMouth had to finish work first.
+- Not changed: a log out, restart, or shut down is still stopped by an alert about unsaved changes, or by a question from an audio editor, the Record window, or a library move.
+- A limit: if a question stops the quit after the downloads have stopped (Cancel in the unsaved-changes alert, say), TextMouth stays open and the downloads stay stopped for the rest of that session. They are asked for again at the next launch.
+- Not tried: a real log out or shut down. It was tested with the quit message the system sends, but not by logging out. Whether VoiceOver speaks the window's words when TextMouth is not the front app, as when you choose Quit in the Dock from another app, was not checked either.
+
+## 0.4.3 (November 9, 2026)
+### Kindle books: chapters at the licence, and no soft hyphens
+- A Kindle book from Project Gutenberg now ends its last chapter where the author did. The licence's opening words, which used to sit at the end of the last chapter, now open the licence's own chapter, as in the EPUB of the same book.
+  - Pride and Prejudice's last chapter went from 1,461 words to 1,248, and its licence from 2,694 words to 2,907.
+  - Moby Dick's Epilogue went from 482 words to 267, and The Yellow Wallpaper's last chapter from 6,295 to 6,082.
+  - The words of each book are the same, only the cut between chapters moved.
+- A Modest Proposal in KF8 now has the 3 chapters of its EPUB: Project Gutenberg's header page, the essay, and the licence. It was 2, with the essay joined to the header page.
+- Soft hyphens, the invisible marks a publisher puts inside words to say where a line may break, were already left out of KF8 books. Now they are left out of MOBI 6 books too: in the words, in the contents' names, and in a book of plain text.
+  - Search in Book now finds a word that had one inside it. Before, a search for "hyphenation" did not find the same word with a soft hyphen after its "hy".
+  - A braille display no longer shows a hyphen in the middle of such a word.
+  - Speech no longer stumbles over one: the voice read a soft hyphen as if it were a hyphen, which made the word 2% to 6% longer to say.
+- Not changed: an EPUB keeps its soft hyphens, which do the same there. No EPUB in the test collection holds one.
+
+### Text files in more encodings
+- A plain text, Markdown, or HTML file that is UTF-16 or UTF-32 and has no byte-order mark is now found in more cases, and read right instead of as garbage (see [What TextMouth reads](what-textmouth-reads.md)).
+  - Found: UTF-32 in either byte order, and UTF-16 in Greek, Cyrillic, Armenian, Hebrew, Arabic, Chinese, Japanese, or Korean. Before, only UTF-16 in Latin letters was found.
+  - Book Information names the encoding it found, as in "UTF-16 (little-endian), recognized by its bytes".
+  - A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16. In testing, 89 text samples and the same sentences in more than 20 encodings were read as before.
+- Not found, and read with the wrong letters: UTF-16 in the scripts of India, and short Chinese, Japanese, or Korean UTF-16 with fewer than 8 spaces, digits, or line ends. A Chinese file needed about 46 characters and a Korean one about 28. UTF-16 and UTF-32 have no item in the Text Encoding pop-up, so save such a file as UTF-8, or with a byte-order mark, and add it again.
+- An HTML file that declares ISO-2022-JP, a Japanese 7-bit encoding, and holds its escape codes is read in it. It was read as UTF-8.
+- A subtitle file (.srt or .vtt) or an .m3u playlist in UTF-16 or UTF-32 without a mark, in a script other than Latin letters, is read right too.
+- A book that recorded its encoding when you added it keeps it. Your own choice in Text Encoding still overrules everything.
+
+### A folder that is a link, and clearer messages
+- A folder that is a link to another folder imports as the folder it leads to, since you named it, and the book takes the name of that folder. A link to a folder of DAISY books in folders is refused, as the folder itself is, and a link to nothing is still an error (see [Adding books](adding-books.md)).
+- Moving the library's folder, with a book stored outside the data directory, no longer says that the copy is missing the book's content. It says where the book is, that it is outside the data directory, and what to do: import it again and choose Replace Existing, or remove it from the library (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A Word document or DAISY book with a damaged ZIP part now says "The file “word/document.xml” in this document is damaged or incomplete: its compressed data could not be decoded. Get a fresh copy of the document, then import it again." It showed the ZIP library's own error. A full disk while a DAISY file is copied is still reported as a full disk.
+- A Word document whose title is empty takes its file's name, and one whose creator is empty has the author "Unknown", as if it had none.
+- A ZIP holding a DAISY book with audio is kept, and the "Book Imported" alert says why, even when a SMIL file in it has a tag with too many attributes for TextMouth to parse. Before, the archive could be offered for deletion although it held the only copy of the text.
+
+### Transcripts
+- Attach Transcript… reads a transcript for a book of more than 100 hours. Its times may run to 1,000 hours, and they are cut into the book's audio files. A single audio file is timed for only its first 100 hours: a passage that starts after a file's hundredth hour is left out and counted with the passages that could not be read, as in "2 timed passages couldn't be read and were left out." (see [Transcribing an audiobook](transcribing.md)).
+- A passage of more than 10,000 characters is cut short at the end of a sentence, or between words, and Attach says so: "1 timed passage was too long and was cut short." A file that is one huge passage no longer makes one huge sentence in the book.
+- A WebVTT or SubRip file chosen or opened together with its audio, with Open Book…, from Finder, or on the Dock icon, is attached to that audio's book, where it was refused as a book. A transcript file alone is still refused, and the refusal now says what to do: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." (see [Adding books](adding-books.md)).
+- Transcribe Audio… waits while a transcript is being attached to the book, whichever way it was asked for: "A transcript is being attached to Moby-Dick. Transcribe it once that finishes."
+- Book Information names every format of a transcript found at import in files of more than one, as in "Attached from WebVTT and SubRip files when the book was imported, on …".
+- A podcast episode's chapters come back when you undo every edit of its audio and save. They are set aside when edits are saved, since the edited audio no longer fits them. After Start Over they do not come back (see [Editing audio](editing-audio.md)).
+- Not fixed: quitting TextMouth while it fetches a podcast episode's transcript makes the next launch download the episode again.
+
+### Older versions
+- The first time this version opens, every .mobi book (.azw3, .azw, and .prc too) is read again once, for the chapters and soft hyphens above (page reader line 1.1.0). Your place follows its words.
+- The first time this version opens, every plain text and HTML book is read again once, for the encodings above (page reader lines 1.0.1 and 1.0.4). Its text is the same unless its file is one the new rules read. EPUB books are not read again.
+- Markdown books are read the new way when they are added, or when their text is built again.
+
 ## 0.4.2 (November 8, 2026)
 ### Export a text book as spoken audio
 - A text book's Export dialog has a checkbox, "Text as spoken audio", that speaks the book with its voice into one audio file, M4B, M4A, or MP3, with a chapter at each heading (see [Exporting books](exporting-books.md)).

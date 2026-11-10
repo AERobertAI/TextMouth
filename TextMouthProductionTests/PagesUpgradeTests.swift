@@ -30,20 +30,24 @@ final class PagesUpgradeTests: XCTestCase {
 
     // MARK: - The Versions
 
-    /// The page reader's version each format with pages is at: EPUB and HTML
-    /// at 1.0.3, rich text (.rtf and .rtfd), read by TextMouth's own reader
+    /// The page reader's version each format with pages is at: EPUB at 1.0.3,
+    /// HTML at 1.0.4 (the text decoder's unmarked Unicode and ISO-2022-JP
+    /// declarations), plain text at 1.0.1 (the same), rich text (.rtf and .rtfd), read by TextMouth's own reader
     /// since FMT47 and with its follow-ups since, at 1.2.0, Word (.doc: 97-2003
     /// since FMT47, and Word 6 and Word 95 with it since) at 1.3.0, Word (.docx,
     /// with its table styles and document defaults, and its symbols by font,
     /// since) and Word 2003 XML (.wordml, read by its own reader since FMT53,
     /// with hidden row marks and symbols by font since) at 1.3.0, OpenDocument
-    /// text (.odt) at 1.1.0, and the rest at 1.0.0.
+    /// text (.odt) at 1.1.0, Kindle books (.mobi, .azw3) at 1.1.0 (soft hyphens left out of MOBI 6
+    /// books too, and the KF8 chapter rule), and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
-        case .epub, .html: return "1.0.3"
+        case .epub: return "1.0.3"
+        case .html: return "1.0.4"
+        case .txt: return "1.0.1"
         case .rtf, .rtfd: return "1.2.0"
         case .doc, .docx, .wordml: return "1.3.0"
-        case .odt: return "1.1.0"
+        case .odt, .mobi: return "1.1.0"
         default: return "1.0.0"
         }
     }
@@ -52,7 +56,8 @@ final class PagesUpgradeTests: XCTestCase {
     /// format has none, so no book of it is ever read again for pages. EPUB
     /// and HTML, whose shared converter changed a heading's label, then
     /// stopped taking "Page" alone for a page's label, and then took a
-    /// leading "Page" off every label, are at 1.0.3; the others have not
+    /// leading "Page" off every label, are at 1.0.3 (HTML went on to 1.0.4 and
+    /// plain text to 1.0.1 with the text decoder's new steps); the others have not
     /// changed since they gained pages, except rich text and Word 97-2003, which
     /// went to TextMouth's own readers at 1.1.0.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {

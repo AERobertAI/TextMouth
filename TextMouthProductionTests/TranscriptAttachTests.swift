@@ -96,6 +96,16 @@ final class TranscriptAttachTests: XCTestCase {
             "Attached “lock.srt” to Lock Keeper: \(7_077.formatted()) words. "
                 + "3 timed passages couldn't be read and were left out."
         )
+        // Passages cut short for their length (one cue has a limit).
+        XCTAssertEqual(
+            TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 0, cut: 1),
+            "Attached “lock.srt” to Lock Keeper: 30 words. 1 timed passage was too long and was cut short."
+        )
+        XCTAssertEqual(
+            TranscriptionWording.attached(fileName: "lock.srt", bookTitle: "Lock Keeper", wordCount: 30, skipped: 2, cut: 2),
+            "Attached “lock.srt” to Lock Keeper: 30 words. 2 timed passages couldn't be read and were left out. "
+                + "2 timed passages were too long and were cut short."
+        )
     }
 
     // MARK: - The Command
@@ -184,6 +194,12 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertNil(TranscriptAttachments.startingFolder(for: book), "a name alone named the current folder")
         book.sourceFilePath = nil
         XCTAssertNil(TranscriptAttachments.startingFolder(for: book))
+
+        // The panel looks off the main thread, from the path alone, and
+        // gets the answer the book's own lookup gives.
+        XCTAssertEqual(TranscriptAttachments.startingFolder(forSource: file.path)?.path, folder.path)
+        XCTAssertEqual(TranscriptAttachments.startingFolder(forSource: tracks.path)?.path, tracks.path)
+        XCTAssertNil(TranscriptAttachments.startingFolder(forSource: nil))
     }
 
     // MARK: - Attaching
@@ -573,6 +589,26 @@ final class TranscriptAttachTests: XCTestCase {
 
         XCTAssertNotNil(presenter.sheet, "the sheet did not open once the attaching ended")
         XCTAssertNil(presenter.notice)
+    }
+
+    /// A request for several books gets the sheet that says transcription
+    /// works on one book at a time, even when one of them is a book a
+    /// transcript is being attached to: the wait notice is for one book, and
+    /// a selection is refused whatever is attached, so it is not told to wait
+    /// for something that would not help.
+    func testSeveralBooksAreRefusedByTheSheetNotToldToWait() throws {
+        let world = try makeIntegrationWorld("Attach Transcript Transcribe Several")
+        let attached = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let other = try world.makeSilentAudioFileBook(title: "Long Pier", duration: 4)
+        let attachments = TranscriptAttachments.shared
+        attachments.begin(attached.id)
+        defer { attachments.end(attached.id) }
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        presenter.transcribe([other, attached], library: world.library, window: nil)
+
+        XCTAssertNotNil(presenter.sheet, "the sheet that refuses several books did not open")
+        XCTAssertNil(presenter.notice, "a selection was told to wait: \(presenter.notice?.message ?? "-")")
     }
 
     /// A transcription of the book begun while the confirmation showed keeps

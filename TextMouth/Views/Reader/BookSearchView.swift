@@ -33,14 +33,20 @@ enum BookSearchWording {
     ///   - hasTranscript: Whether the book has a transcript, as the library's
     ///     rows and the Book menu know it (`TranscribedBooks`).
     ///   - withheld: Why its text is not shown, when the reader knows.
+    ///   - offersTranscription: Whether the app can transcribe at all. The
+    ///     iPhone app cannot, so it passes false, and no sentence tells the
+    ///     listener to transcribe or transcribe again.
     static func noTextToSearch(
         bookTitle: String,
         canTranscribe: Bool,
         hasTranscript: Bool,
-        withheld: TranscriptTextWithheld?
+        withheld: TranscriptTextWithheld?,
+        offersTranscription: Bool = true
     ) -> String {
         guard hasTranscript else {
-            return canTranscribe ? noTranscript(bookTitle: bookTitle) : "\(bookTitle) has no transcript to search."
+            return canTranscribe && offersTranscription
+                ? noTranscript(bookTitle: bookTitle)
+                : "\(bookTitle) has no transcript to search."
         }
         let lead = "\(bookTitle) has no transcript text to search now"
         switch withheld {
@@ -51,7 +57,8 @@ enum BookSearchWording {
         case .textInCloud?:
             return "\(lead). \(TranscriptionWording.textInCloud)"
         case .audioChanged?:
-            return "\(lead), because \(BookTextEditWording.transcriptStaleReason) Transcribe it again, then search the new transcript."
+            let because = "\(lead), because \(BookTextEditWording.transcriptStaleReason)"
+            return offersTranscription ? "\(because) Transcribe it again, then search the new transcript." : because
         case .editHeld(let refusal, let keptCopy)?:
             let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
             return "\(lead), because its edited text can't be used: \(why) \(BookTextEditWording.kept(keptCopy))"
@@ -70,6 +77,24 @@ enum BookSearchWording {
 
     /// The search field's hint when the book searched is a transcript.
     static let transcriptFieldHint = "Type to search the book's transcript"
+
+    /// The search field's label.
+    static let fieldLabel = "Search text"
+
+    /// The search field's hint when the book searched is a text book.
+    static let fieldHint = "Type to search within the book"
+
+    /// The Use Regex switch's label.
+    static let regexLabel = "Use regular expression"
+
+    /// The Use Regex switch's hint.
+    static let regexHint = "When enabled, search text is treated as a regular expression"
+
+    /// The label of the list of results.
+    static let resultsLabel = "Search results"
+
+    /// The hint of the button that closes the sheet.
+    static let backToBookHint = "Close search and return to the book"
 }
 
 /// Case-insensitive matching shared by book search: literal text, or a
@@ -507,7 +532,7 @@ struct BookSearchView: View {
                 Spacer()
                 Button("Back to Book") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
-                    .accessibilityHint("Close search and return to the book")
+                    .accessibilityHint(BookSearchWording.backToBookHint)
             }
             .padding()
 
@@ -516,8 +541,8 @@ struct BookSearchView: View {
                 TextField("Search text", text: $model.query)
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
-                    .accessibilityLabel("Search text")
-                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : "Type to search within the book")
+                    .accessibilityLabel(BookSearchWording.fieldLabel)
+                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : BookSearchWording.fieldHint)
                     .accessibilityIdentifier(voiceOverFocusID)
                     .background(VoiceOverFocus(delay: 1.2))
 
@@ -532,8 +557,8 @@ struct BookSearchView: View {
                 HStack {
                     Toggle("Use Regex", isOn: $model.useRegex)
                         .checkboxToggleStyle()
-                        .accessibilityLabel("Use regular expression")
-                        .accessibilityHint("When enabled, search text is treated as a regular expression")
+                        .accessibilityLabel(BookSearchWording.regexLabel)
+                        .accessibilityHint(BookSearchWording.regexHint)
 
                     Spacer()
 
@@ -602,7 +627,7 @@ struct BookSearchView: View {
                 // The status line above gives the count, which "N matches
                 // found" here would repeat, and misstate once the result
                 // limit is reached.
-                .accessibilityLabel("Search results")
+                .accessibilityLabel(BookSearchWording.resultsLabel)
                 .accessibilityRotor("Search Results") {
                     ForEach(model.results) { result in
                         AccessibilityRotorEntry(result.timedLabel ?? result.contextAndLocation, id: result.id)

@@ -1,8 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// The reader's screen: Book content, Play, and a grid of three columns and
-/// five rows, in the spec's order and layout (the spec, under "The reader").
+/// The reader's screen: Book content, Play, and a grid of up to three columns
+/// and six rows (`PhoneReaderControl.gridRows`), in the spec's order and
+/// layout (the spec, under "The reader"; Search in Book follows Headings,
+/// which makes sixteen controls).
 ///
 /// The view is thin. It reads the session's snapshot, which changes only
 /// when the book's title, playing, or loading does, never as the place moves;
@@ -122,7 +124,7 @@ struct PhoneReaderView: View {
                     control(item)
                 }
             } else {
-                ForEach(gridRows, id: \.self) { row in
+                ForEach(PhoneReaderControl.gridRows, id: \.self) { row in
                     HStack(spacing: 12) {
                         ForEach(row, id: \.self) { item in
                             control(item)
@@ -130,13 +132,6 @@ struct PhoneReaderView: View {
                     }
                 }
             }
-        }
-    }
-
-    /// The grid's rows, three controls to a row, in the spec's order.
-    private var gridRows: [[PhoneReaderControl]] {
-        stride(from: 0, to: PhoneReaderControl.grid.count, by: 3).map {
-            Array(PhoneReaderControl.grid[$0..<min($0 + 3, PhoneReaderControl.grid.count)])
         }
     }
 
@@ -201,6 +196,14 @@ struct PhoneReaderView: View {
             }
         case .returnToPlace:
             return { model.returnToPreviousPlace() }
+        case .searchInBook:
+            return {
+                // Opens only for a book with text to search; any other is told
+                // why, and nothing opens (`PhoneReaderModel.openSearch`).
+                guard model.openSearch() else { return }
+                sheetOpener = item
+                sheet = item.sheet
+            }
         case .navigationUnit, .bookmarks, .headings, .goTo, .sleepTimer, .voice, .bookInfo:
             return {
                 sheetOpener = item
@@ -282,13 +285,10 @@ struct PhoneReaderView: View {
     /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
     /// change with that control as its argument. Sheets and alerts don't
     /// return focus by themselves. `unless` is asked then, and a true answer
-    /// leaves focus where it is.
+    /// leaves focus where it is, as does the listener's landing on any of the
+    /// reader's controls meanwhile (`PhoneFocusRequests`).
     private func returnFocus(to kind: PhoneControlKind, unless skip: @escaping @MainActor () -> Bool = { false }) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + PhoneFocusPolicy.screenChangedDelay) {
-            guard !skip() else { return }
-            guard let view = PhoneFocusRegistry.shared.view(for: kind) else { return }
-            UIAccessibility.post(notification: .layoutChanged, argument: view)
-        }
+        PhoneFocusRegistry.shared.requestFocus(on: kind, after: PhoneFocusPolicy.screenChangedDelay, unless: skip)
     }
 
     /// The Speech Stopped sheet went away: focus returns to Play (the spec,

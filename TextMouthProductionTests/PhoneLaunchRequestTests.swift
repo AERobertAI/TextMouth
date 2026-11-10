@@ -1,6 +1,9 @@
 import XCTest
 @testable import TextMouth
 
+// `PhoneLaunchRequest` exists in debug builds only, and so do these tests of it.
+#if DEBUG
+
 /// `PhoneLaunchRequest`: what a UI test, or a run in the iOS simulator, asks
 /// of the iPhone app through its environment. The words are read here, on the
 /// Mac; the two places that act on them are iOS's alone and debug builds'
@@ -45,11 +48,23 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(PhoneLaunchRequest.filesToOpen(["TEXTMOUTH_OPEN_AT_LAUNCH": "/tmp/a.epub"]).first?.isFileURL, true)
     }
 
+    // MARK: - The Search Filled In
+
+    /// A non-empty value is the text the Search in Book field starts with;
+    /// a missing or empty one leaves the field empty.
+    func testTheSearchTextIsWhatTheVariableHolds() {
+        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "Cheshire"]), "Cheshire")
+        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "two words"]), "two words")
+        XCTAssertNil(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": ""]))
+        XCTAssertNil(PhoneLaunchRequest.searchText([:]))
+    }
+
     // MARK: - Where It Is Read
 
     /// Each place that reads the request does so in a debug build of the
     /// iPhone app only: the runtime's sandbox inside `#if os(iOS)` and
-    /// `#if DEBUG`, and the scene delegate's file, an iOS file, inside
+    /// `#if DEBUG`, the scene delegate's file, an iOS file, inside
+    /// `#if DEBUG`, and the Search in Book sheet's text, an iOS file, inside
     /// `#if DEBUG`.
     func testTheRequestIsReadOnlyInTheIPhonesDebugBuild() throws {
         let runtime = try Self.source("App/TextMouthRuntime.swift")
@@ -62,6 +77,24 @@ final class PhoneLaunchRequestTests: XCTestCase {
         let opening = try Self.text(from: "#if DEBUG", upTo: "#endif", in: scene)
         XCTAssertTrue(opening.contains("PhoneLaunchRequest.filesToOpen(ProcessInfo.processInfo.environment)"))
         XCTAssertEqual(scene.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "PhoneLaunchRequest is read outside #if DEBUG")
+
+        let sheet = try Self.source("Platform/iOS/Views/Reader/PhoneSearchSheet.swift")
+        let filling = try Self.text(from: "#if DEBUG", upTo: "#endif", in: sheet)
+        XCTAssertTrue(filling.contains("PhoneLaunchRequest.searchText(ProcessInfo.processInfo.environment)"))
+        XCTAssertEqual(sheet.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "The sheet reads PhoneLaunchRequest outside #if DEBUG")
+    }
+
+    /// The type itself is compiled into debug builds only: its file opens
+    /// `#if DEBUG` before the enum and closes it after the enum's last brace,
+    /// so a release build holds neither the type nor its variable names.
+    func testTheTypeIsCompiledIntoDebugBuildsOnly() throws {
+        let type = try Self.source("Phone/PhoneLaunchRequest.swift")
+        let guardStart = try XCTUnwrap(type.range(of: "\n#if DEBUG\n"), "PhoneLaunchRequest.swift has no #if DEBUG line")
+        let enumStart = try XCTUnwrap(type.range(of: "enum PhoneLaunchRequest {"), "The enum moved")
+        XCTAssertLessThan(guardStart.lowerBound, enumStart.lowerBound, "#if DEBUG comes after the enum")
+        // Counted as whole lines: the file's comment names the condition too.
+        XCTAssertEqual(type.split(separator: "\n").filter { $0 == "#if DEBUG" }.count, 1, "Not exactly one #if DEBUG line in PhoneLaunchRequest.swift")
+        XCTAssertTrue(type.hasSuffix("}\n\n#endif\n"), "The enum is not the last thing inside the #if DEBUG")
     }
 
     // MARK: - Reading the Source
@@ -78,3 +111,5 @@ final class PhoneLaunchRequestTests: XCTestCase {
         return String(source[first.lowerBound..<last.lowerBound])
     }
 }
+
+#endif

@@ -260,6 +260,12 @@ enum AudioEditHistoryStore {
         if history != before || startedOver {
             try write(history, source: source, toPackage: package, bookFile: bookFile, loadOrigin: loadOrigin)
         }
+        if startedOver {
+            // The podcast chapters set aside for the old history's original
+            // fit no audio the new history will start from, so undoing every
+            // edit of the new history must never bring them back.
+            AudioEditPackage.discardSetAsidePodcastChapters(inPackage: package)
+        }
         AudioEditPackage.removeUnusedTakes(of: history, inPackage: package)
         return result
     }

@@ -4,8 +4,16 @@ import Foundation
 
 /// Basic metadata extracted from docProps/core.xml
 struct DOCXMetadata {
+    /// The title and author as written, trimmed; empty when the core
+    /// properties name none (an empty element, or one of only spaces).
     var title: String
     var author: String
+
+    /// The title, or nil when the document names none, so that a document
+    /// with an empty title is named as one without a title is.
+    var namedTitle: String? { title.isEmpty ? nil : title }
+    /// The author, or nil when the document names none.
+    var namedAuthor: String? { author.isEmpty ? nil : author }
 }
 
 /// SAX parser for docProps/core.xml to extract title and author

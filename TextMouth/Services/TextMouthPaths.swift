@@ -379,6 +379,22 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent(podcastChaptersFileName)
     }
 
+    /// Name of the podcast chapters set aside while edits of the episode's
+    /// audio are saved in its file, whose times the chapters no longer fit.
+    /// Undoing every edit and saving brings the original audio back, and
+    /// the chapters come back with it (`LibraryViewModel.restorePodcastChapters`).
+    /// Hidden, so it is never taken for the book's own content
+    /// (`FileImportService.isPackageContentName`), and removed with the
+    /// audio that made it, as the chapters are
+    /// (`FeedItemPackage.removeWhatTheFileMade`).
+    static let podcastChaptersSetAsideFileName = ".podcastChapters.unedited.json"
+
+    /// Path to the podcast chapters set aside inside a .tmb package
+    /// (`podcastChaptersSetAsideFileName`).
+    static func podcastChaptersSetAsidePath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(podcastChaptersSetAsideFileName)
+    }
+
     /// The name of the folder inside a .tmb package holding the speech
     /// prepared for the book (`cachedAudioDir(in:)`). Packages on disk use
     /// it, so it never changes.

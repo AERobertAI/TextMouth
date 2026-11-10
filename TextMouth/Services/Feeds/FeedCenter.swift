@@ -111,10 +111,17 @@ protocol FeedLibraryHost: AnyObject {
     /// a removal whose files go off the main thread (FR11): the records and
     /// the feeds' indexes on disk, the rows out of the books, nothing
     /// removed yet.
+    /// `listenersFilesHeld` carries what reading the packages off the main
+    /// thread found for the books it names (`FeedItemPackage.listenersFilesHeld(in:)`),
+    /// so a removal of many does not read their transcripts here.
     /// - Returns: The removals to make.
     /// - Throws: `FeedItemPackageError.indexNotWritten`, with nothing
     ///   changed.
-    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval]
+    func readyFeedFilesForRemoval(
+        of books: [Book],
+        keepingPackages: Bool,
+        listenersFilesHeld: [UUID: Bool]
+    ) throws -> [FeedFileRemoval]
     /// The last part of `removeFeedFiles(of:keepingPackages:remove:)`, once
     /// the files of `removals` have gone, but for those `failures` names
     /// with why, whose rows go back where they were.

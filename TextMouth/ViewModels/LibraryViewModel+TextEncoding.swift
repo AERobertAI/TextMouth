@@ -583,7 +583,14 @@ final class TextRereads {
         QuitHold.Work(
             isRunning: { self.isReadingAgain() },
             end: { await self.ended() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            kind: "text re-reads",
+            finishing: {
+                let count = self.bookIDs.count
+                return count == 1
+                    ? "reading a book's text again in another encoding"
+                    : "reading the text of \(count) books again in another encoding"
+            }
         )
     }
 

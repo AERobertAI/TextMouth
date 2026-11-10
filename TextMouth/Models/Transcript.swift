@@ -315,15 +315,32 @@ struct TranscriptSource: Codable, Hashable, Sendable {
     /// showing. Never a path, never an address: it is shown to the
     /// listener, and kept in files that sync with the library.
     var fileName: String?
+    /// The formats of every file it was read from, each once, in the order
+    /// the files were read, when files of more than one format were read (a
+    /// track's 01.vtt and another's 02.srt): `TimedTextFormat` raw values or
+    /// a later TextMouth's. Nil when all the files were of `format`, which is
+    /// then the one format of the transcript, and in every transcript an
+    /// earlier TextMouth wrote, which cannot read this field and keeps
+    /// `format` as the first file's.
+    var formats: [String]?
 
     /// The source of a transcript that reached its book by `origin`, read
     /// from a file of `format` named `fileName`. A name given with folders
     /// before it keeps only its last part, so no folder of the listener's
     /// is ever kept or shown; a name of nothing but white space is no name.
-    init(origin: Origin, format: TimedTextFormat, fileName: String? = nil) {
+    ///
+    /// For a transcript read from files of several formats, `format` is the
+    /// first file's and `otherFormats` are the formats of the rest; those
+    /// the same as one named already are not repeated.
+    init(origin: Origin, format: TimedTextFormat, fileName: String? = nil, otherFormats: [TimedTextFormat] = []) {
         self.origin = origin.rawValue
         self.format = format.rawValue
         self.fileName = fileName.flatMap(Self.lastPathComponent(of:))
+        var distinct = [format]
+        for other in otherFormats where !distinct.contains(other) {
+            distinct.append(other)
+        }
+        formats = distinct.count > 1 ? distinct.map(\.rawValue) : nil
     }
 
     /// The origin, when it is one this TextMouth knows; nil for one a later
@@ -336,6 +353,14 @@ struct TranscriptSource: Codable, Hashable, Sendable {
     /// TextMouth wrote.
     var knownFormat: TimedTextFormat? {
         TimedTextFormat(rawValue: format)
+    }
+
+    /// Every format the transcript's files were of, in the order the files
+    /// were read, when this TextMouth knows them all; nil when a later
+    /// TextMouth wrote a format it does not know, whatever the others are.
+    var knownFormats: [TimedTextFormat]? {
+        let known = (formats ?? [format]).compactMap(TimedTextFormat.init(rawValue:))
+        return known.count == (formats?.count ?? 1) ? known : nil
     }
 
     /// The last part of `name` after any slashes ("lecture.vtt" of

@@ -66,6 +66,10 @@ enum AudioEditBookRender {
         /// Whether anything was rendered: false when the file already held
         /// every applied edit.
         let rendered: Bool
+        /// How many edits the file holds now: none when every edit was
+        /// undone and the original audio was rendered back, which the
+        /// podcast chapters kept beside it fit again.
+        let appliedEditCount: Int
     }
 
     /// Renders `request` at `now`, telling `progress` how far it is.
@@ -115,7 +119,8 @@ enum AudioEditBookRender {
                 audioFile: request.audioFile,
                 replacedFile: nil,
                 duration: Double(current.frames) / current.sampleRate,
-                rendered: false
+                rendered: false,
+                appliedEditCount: list.appliedEntries.count
             )
         }
         let renderedIDs = list.appliedEntries.map(\.id)
@@ -195,7 +200,8 @@ enum AudioEditBookRender {
             audioFile: newPath,
             replacedFile: newPath == request.audioFile ? nil : request.audioFile,
             duration: writtenSeconds,
-            rendered: true
+            rendered: true,
+            appliedEditCount: renderedIDs.count
         )
     }
 

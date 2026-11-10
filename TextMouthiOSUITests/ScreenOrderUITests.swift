@@ -64,11 +64,13 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: Self.patience), "No Settings button")
         app.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: Self.patience), "Settings never opened")
-        // Dynamic Type is reported and not failed here: the audit flags the
-        // lower rows (a slider's value and caption, the switch) as "partially
-        // unsupported" and the cause is not known. `LargeTextUITests` audits
-        // Settings at the largest size, scrolled, and fails on what it finds.
-        try audit(app, screen: "Settings", informing: .dynamicType, accepting: [.navigationTitle("Settings")])
+        // Dynamic Type is reported and not failed here: the audit flags a few
+        // plain text nodes ("Auto-play after navigation", its caption, and
+        // some other captions) as "partially unsupported", and what it finds
+        // repeats within a launch but not from one launch to the next (see
+        // `audit`). The first header, "Voice", is accepted for contrast: a
+        // false positive (`Accepted.firstHeader`).
+        try audit(app, screen: "Settings", informing: .dynamicType, accepting: [.navigationTitle("Settings"), .firstHeader("Voice")])
     }
 
     // MARK: - The reader's sheets
@@ -144,9 +146,10 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         // No timer runs, so there is no Current Timer section.
         XCTAssertFalse(elements.contains { $0.label == "Current Timer" }, "Current Timer shows with no timer running")
         // Dynamic Type is reported and not failed: the audit flags the
-        // stepper's label, a system control's; the cause is not known (see
-        // Settings).
-        try audit(app, screen: "Sleep Timer sheet", informing: .dynamicType, accepting: [.navigationTitle("Sleep Timer"), .barItem("Close")])
+        // stepper's title, "Adjust minutes" (see Settings). The first header,
+        // "New Timer", is accepted for contrast: a false positive
+        // (`Accepted.firstHeader`).
+        try audit(app, screen: "Sleep Timer sheet", informing: .dynamicType, accepting: [.navigationTitle("Sleep Timer"), .barItem("Close"), .firstHeader("New Timer")])
     }
 
     /// Voice & Speed for a text book: the title, Close, Language, Voice,
@@ -192,7 +195,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         let elements = try openReaderSheet("Book Info", titled: "Book Information", waitingFor: "Cancel", in: app)
         assertOrder(["Book Information", "Cancel", "Save", "Book title", "Author", "Publisher", "Publication date", "Format", "Added", "Last Opened", "Word Count"], in: elements)
         // Dynamic Type is reported and not failed: the audit flags the
-        // read-only rows at the bottom; the cause is not known (see Settings).
+        // read-only rows at the bottom, "Last Opened" and "Word Count" and
+        // their values (see Settings).
         try audit(app, screen: "Book Information sheet", informing: .dynamicType, accepting: [.navigationTitle("Book Information"), .barItem("Cancel"), .barItem("Save")])
     }
 
@@ -212,42 +216,6 @@ final class ScreenOrderUITests: TextMouthUITestCase {
     }
 
     // MARK: - Helpers
-
-    /// Opens the reader's sheet from its control, waits for the sheet's
-    /// navigation bar and for the button `element`, and returns the sheet's
-    /// elements in order.
-    private func openReaderSheet(
-        _ control: String,
-        titled title: String,
-        waitingFor element: String,
-        in app: XCUIApplication
-    ) throws -> [Element] {
-        let opener = app.buttons[control]
-        XCTAssertTrue(opener.waitForExistence(timeout: Self.patience), "No \(control) control:\n\(app.debugDescription)")
-        opener.tap()
-        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: Self.patience), "The \(control) sheet never opened:\n\(app.debugDescription)")
-        XCTAssertTrue(
-            app.buttons[element].waitForExistence(timeout: Self.patience),
-            "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
-        )
-        return try elementsOfSheet(titled: title, in: app)
-    }
-
-    /// The elements of the sheet titled `title`, in order: everything from its
-    /// title on. A sheet's navigation bar is known by its identifier and
-    /// carries no label, so the order holds its title as the text inside it.
-    /// The screen under a sheet may still be in the tree before it, and a
-    /// control there can share the sheet's name ("Bookmarks", "Navigation
-    /// unit"), but that is a button: the last titled element that isn't one
-    /// is where the sheet begins.
-    private func elementsOfSheet(titled title: String, in app: XCUIApplication) throws -> [Element] {
-        let elements = try elementsInOrder(of: app)
-        guard let start = elements.lastIndex(where: { $0.label == title && $0.type != .button }) else {
-            XCTFail("No navigation bar titled \"\(title)\" in: \(elements.map(\.label).joined(separator: " | "))")
-            return []
-        }
-        return Array(elements[start...])
-    }
 
     /// Every element of a screen longer than the display: the screen as it
     /// stands, then scrolled a page at a time (a swipe up, which is silent)

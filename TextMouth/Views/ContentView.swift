@@ -52,7 +52,7 @@ struct LibraryWindowView: View {
                         // Quitting is the Mac's; an iPhone app closes from
                         // the system, so the button does nothing there.
                         #if os(macOS)
-                        NSApplication.shared.terminate(nil)
+                        QuitRequest.ask()
                         #endif
                     }
                 )

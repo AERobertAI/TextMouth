@@ -461,10 +461,14 @@ final class PlaybackMemoryGuard {
 
     /// Quit through AppKit, which asks nothing while
     /// `isQuittingToProtectTheMac` is set, so `applicationWillTerminate`
-    /// shuts down as it always does.
+    /// shuts down as it always does. This is the one quit that calls
+    /// `terminate(_:)` itself rather than through `QuitRequest.ask()`: the
+    /// delegate answers it at once, holding nothing, so there is no wait for
+    /// a reply to hang, and an emergency should not wait a turn of the run
+    /// loop.
     static func quitAskingNothing() {
 #if os(macOS)
-        NSApplication.shared.terminate(nil)
+        NSApplication.shared.terminate(nil) // quit-ok: the memory guard's emergency quit, answered at once
 #else
         // Phase 0: iOS lets an app end only by the system's choice, so there
         // is nothing to quit; the system itself ends apps under memory pressure.
@@ -486,7 +490,7 @@ final class PlaybackMemoryGuard {
         // quit); this keeps any path not foreseen from ending the app.
         DiagnosticLog.event(.app, "AUDIO_MEMORY_QUIT_REFUSED: an iPhone app never quits itself")
         #else
-        _exit(0)
+        _exit(0) // quit-ok: the memory guard's last resort, from a stuck main thread
         #endif
     }
 }

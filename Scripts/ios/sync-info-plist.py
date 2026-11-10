@@ -32,11 +32,6 @@ is left out by name, with the declaration of any type nothing else names:
   are macOS's.
 
 What iOS adds:
-- ".azw3" beside the extensions of the Kindle MOBI type and its declaration.
-  The Mac's list does not name it yet. `readers/azw3` adds it to `BookFormat`
-  and to the Mac's plist, which overlaps `ADDED_EXTENSION` below (adding an
-  extension already there changes nothing, so the merge is safe); the
-  orchestrator settles which stays at the merge.
 - The keys only iOS has (`IOS_ONLY_KEYS`): the audio background mode, without
   which every book stops as the screen locks, and a scene manifest of one
   scene at a time, also on an iPad, since one reading session cannot serve two
@@ -44,8 +39,9 @@ What iOS adds:
   the manifest names no configuration. project.yml leaves out Xcode's
   generated manifest, which would allow several scenes.
 
-Everything else is the Mac's, including the Kindle MOBI and KFX types, the
-network settings feeds need, and the build identity.
+Everything else is the Mac's, including the Kindle MOBI type (whose list names
+.azw3 since 0.4.2, as the Mac's own does) and the KFX type, the network
+settings feeds need, and the build identity.
 
 Usage, from the repository's root or a worktree's:
     python3 -I Scripts/ios/sync-info-plist.py           write the file
@@ -84,17 +80,6 @@ IOS_ONLY_KEYS = {
     "UIApplicationSceneManifest": {"UIApplicationSupportsMultipleScenes": False},
 }
 
-# The Kindle MOBI type: its document type's name, and its type's identifier.
-MOBI_NAME = "Kindle Book (MOBI)"
-MOBI_TYPE = "com.textmouth.mobi"
-# The extension iOS adds to it.
-ADDED_EXTENSION = "azw3"
-
-
-def with_added_extension(extensions):
-    """`extensions` with `ADDED_EXTENSION` after them, once."""
-    return extensions if ADDED_EXTENSION in extensions else extensions + [ADDED_EXTENSION]
-
 
 def ios_plist(mac):
     """The iOS plist's contents, derived from the Mac's (a dict)."""
@@ -105,10 +90,7 @@ def ios_plist(mac):
         name = entry["CFBundleTypeName"]
         if name in REFUSED:
             continue
-        entry = dict(entry)
-        if name == MOBI_NAME:
-            entry["CFBundleTypeExtensions"] = with_added_extension(entry["CFBundleTypeExtensions"])
-        document_types.append(entry)
+        document_types.append(dict(entry))
     result["CFBundleDocumentTypes"] = document_types
 
     # The declaration of a type that a kept document type names stays; one
@@ -118,12 +100,7 @@ def ios_plist(mac):
     for declaration in mac["UTImportedTypeDeclarations"]:
         if declaration["UTTypeIdentifier"] not in named:
             continue
-        declaration = dict(declaration)
-        if declaration["UTTypeIdentifier"] == MOBI_TYPE:
-            tags = dict(declaration["UTTypeTagSpecification"])
-            tags["public.filename-extension"] = with_added_extension(tags["public.filename-extension"])
-            declaration["UTTypeTagSpecification"] = tags
-        imported.append(declaration)
+        imported.append(dict(declaration))
     result["UTImportedTypeDeclarations"] = imported
 
     # The keys only iOS has. The Mac's plist holding one of them would be a

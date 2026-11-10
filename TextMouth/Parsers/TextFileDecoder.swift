@@ -14,9 +14,12 @@ struct DecodedText: Equatable, Sendable {
         case chosen
         /// A byte-order mark at the start of the file named the encoding.
         case byteOrderMark
-        /// No mark, but the bytes show the zero high bytes of UTF-16 text
-        /// in a Latin script (see `TextFileDecoder.unmarkedUTF16Encoding(of:)`).
-        case unmarkedUTF16
+        /// No mark, but the bytes' own structure shows UTF-16 or UTF-32 text:
+        /// the zero high bytes of UTF-16 in a Latin script, the repeated high
+        /// byte of an alphabet's UTF-16, zero bytes among the high-valued
+        /// bytes of other scripts' UTF-16, or the zero bytes of every UTF-32
+        /// code unit (see `TextFileDecoder.unmarkedUnicode(in:)`).
+        case unmarkedUnicode
         /// The bytes are valid UTF-8.
         case validUTF8
         /// An HTML file's own declaration named the encoding: a meta
@@ -129,14 +132,19 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    file as damaged. Bytes after a UTF-8 mark that are not valid UTF-8 are
 ///    read by the fallback (step 6), like any other broken UTF-8; no
 ///    declaration can overrule the mark.
-/// 2. UTF-16 without a mark is recognized by its zero bytes (see
-///    `unmarkedUTF16Encoding(of:)`). It must be looked for before UTF-8,
-///    because UTF-16 holding only ASCII characters is also valid UTF-8, read
-///    as a NUL after every letter.
+/// 2. UTF-16 and UTF-32 without a mark are recognized by the structure of
+///    their bytes (see `unmarkedUnicode(in:)`): the zero bytes of Latin
+///    UTF-16 or of UTF-32, the shared high byte of an alphabet's UTF-16, and
+///    the zeros of ASCII among other scripts' UTF-16. They must be looked
+///    for before UTF-8, because UTF-16 holding only ASCII characters is also
+///    valid UTF-8, read as a NUL after every letter, and so is a Cyrillic
+///    UTF-16 text, read as control characters.
 /// 3. Bytes that are valid UTF-8 are UTF-8, except a file in ISO-2022-JP,
 ///    which is valid UTF-8 too: the guessing policy looks for one (and a
 ///    book that recorded the encoding reads in it) before it takes bytes
-///    for UTF-8 (`sevenBitText(_:policy:)`).
+///    for UTF-8 (`sevenBitText(_:policy:)`), and so does an HTML file that
+///    declares ISO-2022-JP, whatever the policy says of bytes that name no
+///    encoding (`declaredSevenBitText(_:)`).
 /// 4. An HTML file whose bytes are not valid UTF-8 is read in the encoding
 ///    it declares in its first 1024 bytes, with a meta element or an XML
 ///    declaration (see `declaredEncodingLabel(in:)`). Valid UTF-8 is read as
@@ -205,11 +213,34 @@ enum TextFileDecoder {
         /// (`TextEncodingError`), never left to the fallback.
         case chosen(String)
 
+        /// Whether this is the policy of a book that recorded its encoding.
+        var isRecorded: Bool {
+            if case .recorded = self { return true }
+            return false
+        }
+
         /// The policy for a book whose recorded encoding is `identifier`:
         /// that encoding, or the fallback for a book that has none.
         static func forBook(recording identifier: String?) -> EncodingPolicy {
             identifier.map(EncodingPolicy.recorded) ?? .fallback
         }
+    }
+
+    // MARK: Evidence
+
+    /// How much of the evidence in the bytes a read looks at.
+    enum Evidence: Equatable, Sendable {
+        /// Every step: the rules for unmarked UTF-16 and UTF-32 in every
+        /// script, and an HTML file's declaration of ISO-2022-JP. The reading
+        /// of every plain text, Markdown, and HTML book.
+        case full
+        /// The steps as they were before those two were added: unmarked
+        /// UTF-16 in a Latin script alone, and no declaration of ISO-2022-JP.
+        /// For the readers of files that are no book and have no page reader
+        /// version to raise (a web archive's page without an encoding name, a
+        /// .doc that is really a web page, a playlist, a subtitle file), so
+        /// that what they read stays what it was.
+        case legacy
     }
 
     // MARK: Reading Files
@@ -269,9 +300,12 @@ enum TextFileDecoder {
     /// - Throws: `TextEncodingError` when the file names an encoding its
     ///   bytes cannot be read in.
     static func decode(
-        _ data: Data, fileName: String, format: BookFormat, policy: EncodingPolicy = .fallback
+        _ data: Data, fileName: String, format: BookFormat, policy: EncodingPolicy = .fallback,
+        evidence: Evidence = .full
     ) throws -> DecodedText {
-        var decoded = try decodeBytes(data, fileName: fileName, readsDeclarations: format == .html, policy: policy)
+        var decoded = try decodeBytes(
+            data, fileName: fileName, readsDeclarations: format == .html, policy: policy, evidence: evidence
+        )
         decoded.text = normalizingLineEndings(droppingLeadingByteOrderMarks(decoded.text))
         return decoded
     }
@@ -279,7 +313,7 @@ enum TextFileDecoder {
     /// Choose the encoding by the steps in the type's description and read
     /// `data` in it, before the text is finished.
     private static func decodeBytes(
-        _ data: Data, fileName: String, readsDeclarations: Bool, policy: EncodingPolicy
+        _ data: Data, fileName: String, readsDeclarations: Bool, policy: EncodingPolicy, evidence: Evidence
     ) throws -> DecodedText {
         // 0. The listener's choice, which overrules everything the bytes say.
         if case let .chosen(identifier) = policy {
@@ -301,15 +335,25 @@ enum TextFileDecoder {
             return DecodedText(text: text, encoding: mark.encoding, basis: .byteOrderMark)
         }
 
-        // 2. UTF-16 without a mark, recognized by its zero bytes.
-        if let encoding = unmarkedUTF16Encoding(of: data), let text = unicodeText(data, as: encoding) {
-            return DecodedText(text: text, encoding: encoding, basis: .unmarkedUTF16)
+        // 2. UTF-16 or UTF-32 without a mark, recognized by the structure of its
+        // bytes. A book that recorded its encoding, and a reader whose files are
+        // no book (`Evidence.legacy`), ask only the rule that has always been
+        // here, so what they read does not change.
+        if let unmarked = unmarkedUnicode(in: data, latinOnly: policy.isRecorded || evidence == .legacy) {
+            return DecodedText(text: unmarked.text, encoding: unmarked.encoding, basis: .unmarkedUnicode)
         }
 
         // 3. A file in a 7-bit encoding the policy names (ISO-2022-JP), which
         // is valid UTF-8 too and so is looked for before UTF-8 is.
         if let sevenBit = sevenBitText(data, policy: policy) {
             return sevenBit
+        }
+
+        // 3a. An HTML file that declares ISO-2022-JP, for the policies that
+        // left the bytes to the fallback or to UTF-8 (not a recorded
+        // encoding, which the book keeps, and not a reader of the old evidence).
+        if readsDeclarations, !policy.isRecorded, evidence == .full, let declared = declaredSevenBitText(data) {
+            return declared
         }
 
         // 3b. Valid UTF-8.
@@ -354,6 +398,23 @@ enum TextFileDecoder {
             guard let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
             return DecodedText(text: guess.text, encoding: guess.encoding, basis: .guess)
         }
+    }
+
+    /// `data`, an HTML file, read in ISO-2022-JP when its own declaration
+    /// names that encoding and the bytes are well formed in it with a shift
+    /// into JIS X 0208, which a 7-bit text with no Japanese in it lacks (it
+    /// reads the same as UTF-8 and ASCII, so it is left to them). ISO-2022-JP
+    /// is valid UTF-8, so the declaration is never reached for it
+    /// (step 4); the guessing policy finds such a file by its structure
+    /// (`TextEncodingGuesser.guessSevenBit(_:)`), but a book without a
+    /// recorded encoding was left reading the escape sequences as text.
+    /// Nil for any other file, and for a declaration whose bytes are not
+    /// well formed, which is left to UTF-8 as it always was.
+    private static func declaredSevenBitText(_ data: Data) -> DecodedText? {
+        guard data.contains(0x1B), let label = declaredEncodingLabel(in: data),
+              encoding(forLabel: label) == .iso2022JP,
+              let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
+        return DecodedText(text: guess.text, encoding: guess.encoding, basis: .declaration(label: label))
     }
 
     /// `data` read as `policy` says to read bytes that name no encoding, or
@@ -526,6 +587,235 @@ enum TextFileDecoder {
                 return .utf16BigEndian
             }
             return nil
+        }
+    }
+
+    // MARK: Unmarked Unicode
+
+    /// UTF-16 or UTF-32 text written without a byte-order mark, read: the
+    /// text and its encoding, or nil when the bytes do not show either.
+    ///
+    /// Four rules look for it, each of which names the byte order from the
+    /// structure of the bytes alone. They run in this order, and the first
+    /// that names an encoding decides:
+    /// 1. UTF-16 in a Latin script (`unmarkedUTF16Encoding(of:)`), the rule
+    ///    that has always been here.
+    /// 2. UTF-32 (`unmarkedUTF32Encoding(of:)`).
+    /// 3. UTF-16 in an alphabet (`UTF16ByteStatistics.isAlphabetic(_:)`).
+    /// 4. UTF-16 in any other script, such as Chinese, Japanese, or Korean
+    ///    (`UTF16ByteStatistics.isAnchoredByZeros(_:)`).
+    ///
+    /// The text rules 2 to 4 give must also read as text
+    /// (`isPlausibleText(_:)`): no control character, noncharacter, or
+    /// private-use character, no character in a plane that holds none, and
+    /// no unpaired surrogate, which bytes of another kind, read as UTF-16,
+    /// almost always hold. Rule 1's text is taken as it is, as it always was.
+    ///
+    /// Not every unmarked UTF-16 can be told. Chinese, Japanese, and Korean
+    /// UTF-16 with no ASCII character in it, no line ending even, reads in
+    /// the same bytes as text in Shift JIS, GBK, or EUC read two bytes at a
+    /// time, and Indic scripts' high bytes are the tab, line feed, and
+    /// carriage return of ordinary text. Both are left to the steps after
+    /// this one, where a missed recognition costs less than a wrong one.
+    /// - Parameter latinOnly: whether to ask rule 1 alone, as every read did
+    ///   before rules 2 to 4: the read of a book that recorded its encoding,
+    ///   which the new rules must not overrule, and of a file that is no book
+    ///   (`Evidence.legacy`).
+    static func unmarkedUnicode(in data: Data, latinOnly: Bool = false) -> (text: String, encoding: String.Encoding)? {
+        // Rule 1.
+        if let latin = unmarkedUTF16Encoding(of: data), let text = unicodeText(data, as: latin) {
+            return (text, latin)
+        }
+        guard !latinOnly else { return nil }
+        // Rules 2 to 4, each only when the text it gives reads as text; one whose
+        // text does not (a UTF-16 column of single characters read as UTF-32
+        // reaches planes no text does) leaves the bytes to the rule after it.
+        let candidates = [unmarkedUTF32Encoding(of: data), unmarkedStructuredUTF16Encoding(of: data)]
+        for case let encoding? in candidates {
+            if let text = unicodeText(data, as: encoding), isPlausibleText(text) {
+                return (text, encoding)
+            }
+        }
+        return nil
+    }
+
+    /// The byte order of UTF-32 text written without a mark, or nil when the
+    /// bytes do not show one. The length must be a whole number of at least
+    /// two code units, and every code unit must have its top byte zero and
+    /// the byte below it no more than 0x10, since no code point is beyond
+    /// U+10FFFF: in one byte order and not the other, and not all of them
+    /// zero. Text in UTF-8 or a single- or double-byte encoding never holds
+    /// a zero byte at every fourth position, and almost never a zero byte at
+    /// all; UTF-16 holds them only in a column of single characters, one to a
+    /// line, which reads as code points no text has. (Whether the code points
+    /// read as text is for `unmarkedUnicode(in:)` to ask.)
+    static func unmarkedUTF32Encoding(of data: Data) -> String.Encoding? {
+        guard data.count >= 8, data.count.isMultiple(of: 4) else { return nil }
+        return data.withUnsafeBytes { bytes -> String.Encoding? in
+            // Whether each byte order can hold every unit so far, and whether any unit is not zero.
+            var littleEndianFits = true
+            var bigEndianFits = true
+            var anyNonZeroUnit = false
+            for index in stride(from: 0, to: bytes.count, by: 4) {
+                if bytes[index + 3] != 0 || bytes[index + 2] > 0x10 { littleEndianFits = false }
+                if bytes[index] != 0 || bytes[index + 1] > 0x10 { bigEndianFits = false }
+                // Neither byte order can hold the units: not UTF-32, and the usual case, at the first unit.
+                if !littleEndianFits && !bigEndianFits { return nil }
+                if bytes[index] != 0 || bytes[index + 1] != 0 || bytes[index + 2] != 0 || bytes[index + 3] != 0 {
+                    anyNonZeroUnit = true
+                }
+            }
+            // Both orders fit only when every unit is zero.
+            guard anyNonZeroUnit, littleEndianFits != bigEndianFits else { return nil }
+            return littleEndianFits ? .utf32LittleEndian : .utf32BigEndian
+        }
+    }
+
+    /// The byte order of UTF-16 text that is not in a Latin script and has no
+    /// mark, by rules 3 and 4 of `unmarkedUnicode(in:)`, or nil when neither
+    /// byte order shows it, or both do.
+    private static func unmarkedStructuredUTF16Encoding(of data: Data) -> String.Encoding? {
+        guard let statistics = UTF16ByteStatistics(data) else { return nil }
+        // An alphabet's text names its byte order by the one high byte its
+        // letters share; text in another script by the zeros of its ASCII
+        // characters.
+        let orders: [(encoding: String.Encoding, units: UTF16ByteStatistics.Order)] = [
+            (.utf16LittleEndian, statistics.littleEndian), (.utf16BigEndian, statistics.bigEndian),
+        ]
+        let showing = orders.filter {
+            UTF16ByteStatistics.isAlphabetic($0.units) || UTF16ByteStatistics.isAnchoredByZeros($0.units)
+        }
+        return showing.count == 1 ? showing[0].encoding : nil
+    }
+
+    /// Whether `text`, read from bytes that were taken for Unicode text by
+    /// their structure, reads as text: it is not empty, and every character
+    /// is a printable one, a tab, a line ending, or a form feed. A control
+    /// character (other than those), a noncharacter, a private-use
+    /// character, and the replacement character are what bytes of some other
+    /// kind read as UTF-16 or UTF-32 produce, and the first of them refuses
+    /// the reading. So does a character in planes 4 to 13, which hold
+    /// nothing yet: they are what a UTF-16 column of single characters, one to
+    /// a line, reads as UTF-32.
+    private static func isPlausibleText(_ text: String) -> Bool {
+        !text.unicodeScalars.isEmpty && text.unicodeScalars.allSatisfy { scalar in
+            switch scalar.value {
+            case 0x09, 0x0A, 0x0C, 0x0D:
+                return true
+            case 0x00...0x1F, 0x7F...0x9F, 0xE000...0xF8FF, 0xFDD0...0xFDEF, 0xFFFD, 0x40000...0xDFFFF, 0xF0000...0x10FFFF:
+                return false
+            default:
+                // U+FFFE and U+FFFF, and the last two code points of every plane.
+                return scalar.value & 0xFFFE != 0xFFFE
+            }
+        }
+    }
+
+    /// Counts of the bytes of 16-bit code units, taken in each byte order,
+    /// from which `unmarkedStructuredUTF16Encoding(of:)` judges UTF-16 that
+    /// has no mark and is not in a Latin script. One pass over the bytes
+    /// fills both orders.
+    private struct UTF16ByteStatistics {
+        /// What one byte order shows of the code units.
+        struct Order {
+            /// How many code units have each value as their high byte.
+            var highByteCounts = [Int](repeating: 0, count: 256)
+            /// How many code units have a zero low byte.
+            var zeroLowBytes = 0
+            /// How many code units have a nonzero high byte.
+            var nonZeroHighBytes = 0
+            /// How many of those have a low byte of 0x80 or more.
+            var nonZeroHighBytesWithHighBitLow = 0
+            /// How many code units have a zero high byte and a low byte that is
+            /// ASCII text (tab, line feed, carriage return, or 0x20 to 0x7E): the
+            /// anchors of rule 4, a space, a digit, or a line ending.
+            var asciiTextUnits = 0
+
+            /// Add the code unit whose bytes are `high` and `low`.
+            mutating func add(high: UInt8, low: UInt8) {
+                highByteCounts[Int(high)] += 1
+                if low == 0 { zeroLowBytes += 1 }
+                if high == 0, low == 0x09 || low == 0x0A || low == 0x0D || (0x20...0x7E).contains(low) {
+                    asciiTextUnits += 1
+                }
+                if high != 0 {
+                    nonZeroHighBytes += 1
+                    if low >= 0x80 { nonZeroHighBytesWithHighBitLow += 1 }
+                }
+            }
+        }
+
+        /// The code units read little-endian (high byte second).
+        let littleEndian: Order
+        /// The code units read big-endian (high byte first).
+        let bigEndian: Order
+
+        /// The fewest code units with a nonzero high byte that can show a
+        /// rule: fewer is too little text to tell from chance.
+        static let minimumNonZeroHighBytes = 8
+        /// The fewest anchors rule 4 asks for (`asciiTextUnits`). At 4, one
+        /// accented Latin 1 sample with four NULs put in it at random read as
+        /// UTF-16 in 3 of 81,000 windows; at 8, none did.
+        static let minimumAnchors = 8
+        /// The high bytes of the alphabets whose letters share one: Greek
+        /// (U+03xx), Cyrillic (U+04xx), Armenian and Hebrew (U+05xx), and
+        /// Arabic (U+06xx). The tab, line feed, and carriage return are 0x09,
+        /// 0x0A, and 0x0D, so the scripts at U+09xx to U+0Dxx are left out:
+        /// a list of single characters, one to a line, would read as them.
+        static let alphabetHighBytes: ClosedRange<Int> = 0x03...0x06
+
+        /// The statistics of `data`, or nil when its length is odd or too
+        /// short to hold `minimumNonZeroHighBytes` code units.
+        init?(_ data: Data) {
+            guard data.count.isMultiple(of: 2), data.count >= 2 * Self.minimumNonZeroHighBytes else { return nil }
+            var little = Order()
+            var big = Order()
+            data.withUnsafeBytes { bytes in
+                for index in stride(from: 0, to: bytes.count, by: 2) {
+                    // The unit's two bytes, as a little-endian (low byte first)
+                    // and a big-endian (high byte first) reading take them.
+                    little.add(high: bytes[index + 1], low: bytes[index])
+                    big.add(high: bytes[index], low: bytes[index + 1])
+                }
+            }
+            littleEndian = little
+            bigEndian = big
+        }
+
+        /// Whether the units show UTF-16 in an alphabet: at least
+        /// `minimumNonZeroHighBytes` of them have a nonzero high byte, and
+        /// at least 85% of those share one high byte of
+        /// `alphabetHighBytes`. Ordinary text has no ETX, EOT, ENQ, or ACK
+        /// in it, whichever way its bytes pair, and the share leaves room for
+        /// the punctuation among the letters (a dash, a quotation mark).
+        static func isAlphabetic(_ order: Order) -> Bool {
+            guard order.nonZeroHighBytes >= minimumNonZeroHighBytes else { return false }
+            let shared = alphabetHighBytes.map { order.highByteCounts[$0] }.max() ?? 0
+            return shared * 100 >= order.nonZeroHighBytes * 85
+        }
+
+        /// Whether the units show UTF-16 in some other script by the zeros
+        /// of its ASCII characters: at least 8 code units have a zero high
+        /// byte and a low byte that is ASCII text (`asciiTextUnits`: a space,
+        /// a digit, a line ending), and those are at least 90% of all the
+        /// units with a zero high byte, so a few stray NUL bytes in a UTF-8 or
+        /// 8-bit text, which make zero-high units of any low byte, show
+        /// nothing; at most one unit in four of the zero-high units has a zero
+        /// low byte (the characters 一, 가, and a blank braille cell do; read
+        /// in the other byte order, the zeros of the ASCII characters are all
+        /// low bytes); and at least 15% of the units with a nonzero high byte
+        /// have a low byte of 0x80 or more, as Chinese, Japanese, and Korean
+        /// characters do, and ASCII text, with or without the zeros a
+        /// fixed-width export pads it with, never does. Text in UTF-8 or any
+        /// 8-bit encoding holds no zero byte at all, but a stray few are
+        /// tolerated (`testStrayNULsDoNotTurnTextIntoUnmarkedUnicode`).
+        static func isAnchoredByZeros(_ order: Order) -> Bool {
+            let zeroHighBytes = order.highByteCounts[0]
+            return order.nonZeroHighBytes >= minimumNonZeroHighBytes
+                && order.asciiTextUnits >= minimumAnchors
+                && order.asciiTextUnits * 10 >= zeroHighBytes * 9
+                && order.zeroLowBytes * 4 <= zeroHighBytes
+                && order.nonZeroHighBytesWithHighBitLow * 100 >= order.nonZeroHighBytes * 15
         }
     }
 

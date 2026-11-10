@@ -147,6 +147,81 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertFalse(pair.first.hasClosed)
     }
 
+    // MARK: - Closing One Book
+
+    /// Removing the book that plays on behind the screen closes it alone: the
+    /// book on screen stays open, with nothing behind it any more, and is the
+    /// one kept for the next launch (board message #5368: both readers used
+    /// to close).
+    func testClosingTheBookBehindLeavesTheBookOnScreenOpen() throws {
+        let pair = try makePlayingPair("PhoneCloseBehind")
+
+        pair.session.closeBook(id: pair.firstBook.id)
+
+        XCTAssertTrue(pair.first.hasClosed, "The book behind is still open")
+        XCTAssertFalse(pair.second.hasClosed, "The book on screen closed with it")
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertNil(pair.session.listeningSnapshot)
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.secondBook.id)
+        XCTAssertEqual(
+            pair.preferences.string(forKey: PhoneSession.reopenBookKey), pair.secondBook.id.uuidString,
+            "The next launch should reopen the book that is left"
+        )
+    }
+
+    /// Removing the book on screen closes it alone: the book that plays behind
+    /// it comes forward and goes on playing.
+    func testClosingTheBookOnScreenBringsTheBookBehindForward() throws {
+        let media = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let pair = try makePlayingPair("PhoneCloseOnScreen", nowPlaying: media)
+        XCTAssertEqual(media.focusedOwnerID, pair.second.nowPlayingService.ownerID, "The book on screen isn't focused to begin with")
+
+        pair.session.closeBook(id: pair.secondBook.id)
+
+        // A remote Play reaches the book that came forward.
+        XCTAssertEqual(media.focusedOwnerID, pair.first.nowPlayingService.ownerID, "The book that came forward is not focused")
+
+        XCTAssertTrue(pair.second.hasClosed, "The book on screen is still open")
+        XCTAssertFalse(pair.first.hasClosed, "The book behind closed with it")
+        XCTAssertTrue(pair.session.reader === pair.first)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.firstBook.id)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing, "The book that plays on stopped")
+    }
+
+    /// With a single book open, closing it leaves no reader and nothing to
+    /// reopen.
+    func testClosingTheOnlyOpenBookLeavesNothingOpen() throws {
+        let world = try makeIntegrationWorld("PhoneCloseOnly")
+        let book = try world.makeSilentAudioBook(title: "Lone Volume", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneCloseOnly")
+        let session = makeSession(in: world, preferences: preferences)
+        let reader = try XCTUnwrap(session.open(book))
+        waitForReaderToLoad(reader)
+
+        session.closeBook(id: book.id)
+
+        XCTAssertTrue(reader.hasClosed)
+        XCTAssertNil(session.reader)
+        XCTAssertNil(session.snapshot)
+        XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey), "A closed book is still kept for reopening")
+    }
+
+    /// Closing a book that isn't open touches neither reader.
+    func testClosingABookThatIsNotOpenChangesNothing() throws {
+        let pair = try makePlayingPair("PhoneCloseOther")
+        let other = try pair.world.makeSilentAudioBook(title: "Shelved Volume", trackDurations: [5])
+
+        pair.session.closeBook(id: other.id)
+
+        XCTAssertFalse(pair.first.hasClosed)
+        XCTAssertFalse(pair.second.hasClosed)
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertTrue(pair.session.listeningReader === pair.first)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing)
+    }
+
     // MARK: - Engaging
 
     /// A mistaken double-tap on a row leaves the book as it was: still "New",
@@ -833,6 +908,92 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey))
     }
 
+    /// The reopen keys go with the crash guard, as the session is made, not
+    /// only when the first activation acts on the verdict: the guard is gone
+    /// from disk at that moment, so an app that ends again before its first
+    /// activation must find no keys naming the book it ended opening. The
+    /// launch after that one reopens nothing and says nothing.
+    func testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysGuard")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysGuard")
+        // As the run that ended while opening the book left the disk.
+        preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        preferences.set(true, forKey: PhoneSession.reopenShowsReaderKey)
+        preferences.set(true, forKey: PhoneSession.reopenFromReadingListKey)
+
+        // This launch's session is made; the app ends before the first
+        // activation, so `takeReopeningAtLaunch` never runs.
+        let crashedLaunch = makeSession(in: world, preferences: preferences)
+        let keys = [
+            PhoneSession.openingBookKey, PhoneSession.reopenBookKey,
+            PhoneSession.reopenShowsReaderKey, PhoneSession.reopenFromReadingListKey,
+        ]
+        let leftOnDisk = keys.filter { preferences.object(forKey: $0) != nil }
+        XCTAssertEqual(leftOnDisk, [], "These keys outlived the crash guard's clearing: \(leftOnDisk)")
+
+        // The next launch, made before the crashed launch ever takes its
+        // verdict, as after a crash before activation: nothing to reopen.
+        // (With the keys still on disk, it would reopen the book.)
+        let nextLaunch = makeSession(in: world, preferences: preferences)
+        XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "The book that crashed the app reopens")
+        XCTAssertEqual(nextLaunch.takeReopeningAtLaunch(fileOpened: false), .nothing)
+
+        // The launch that decides still knows, from memory, to say so.
+        XCTAssertNil(crashedLaunch.bookToReopenAtLaunch)
+        XCTAssertEqual(
+            crashedLaunch.takeReopeningAtLaunch(fileOpened: false),
+            .closedWhileOpening("TextMouth closed while opening Tide Tables, so it wasn't reopened.")
+        )
+    }
+
+    /// A book opened since the session was made, as a Play from the lock
+    /// screen opens one before the first activation, keeps its reopen keys
+    /// when the verdict on the crashed book is taken: the verdict says the
+    /// crashed book wasn't reopened, and clears nothing of the open one's.
+    /// (The keys of the crashed book were cleared as the session was made.)
+    func testTheVerdictLeavesTheKeysOfABookOpenedSince() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysSince")
+        let crashed = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let playing = try world.makeSilentAudioBook(title: "Salt Marsh", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysSince")
+        // The last run ended while opening Tide Tables.
+        preferences.set(crashed.id.uuidString, forKey: PhoneSession.openingBookKey)
+        let session = makeSession(in: world, preferences: preferences)
+
+        // A Play from the lock screen opens Salt Marsh before any activation.
+        let reader = try XCTUnwrap(session.open(playing))
+        waitForReaderToLoad(reader)
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.reopenBookKey), playing.id.uuidString, "Salt Marsh's keys were not written")
+
+        // The first activation: a book is open, so no file or reopening wins,
+        // and the verdict on the crashed book is taken.
+        XCTAssertEqual(
+            session.takeReopeningAtLaunch(fileOpened: true),
+            .closedWhileOpening("TextMouth closed while opening Tide Tables, so it wasn't reopened.")
+        )
+        XCTAssertEqual(
+            preferences.string(forKey: PhoneSession.reopenBookKey), playing.id.uuidString,
+            "The verdict cleared the keys of the book opened since"
+        )
+    }
+
+    /// With no crash guard, the session being made leaves the reopen keys for
+    /// the first activation, which opens the book.
+    func testTheReopenKeysStandWhenNoCrashGuardIsFound() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysStand")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysStand")
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        preferences.set(true, forKey: PhoneSession.reopenShowsReaderKey)
+
+        let session = makeSession(in: world, preferences: preferences)
+
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.reopenBookKey), book.id.uuidString)
+        XCTAssertEqual(session.bookToReopenAtLaunch?.id, book.id)
+    }
+
     /// A book no longer in the library, or a damaged value, clears what is kept.
     func testABookGoneFromTheLibraryClearsWhatIsKept() throws {
         let world = try makeIntegrationWorld("PhoneReopenGone")
@@ -870,12 +1031,12 @@ final class PhoneSessionTests: XCTestCase {
     }
 
     /// Makes a `PlayingPair`, failing the test when the first never plays.
-    private func makePlayingPair(_ label: String) throws -> PlayingPair {
+    private func makePlayingPair(_ label: String, nowPlaying: NowPlayingService? = nil) throws -> PlayingPair {
         let world = try makeIntegrationWorld(label)
         let firstBook = try world.makeSilentAudioBook(title: "Playing Volume", trackDurations: [30])
         let secondBook = try world.makeSilentAudioBook(title: "Looked-At Volume", trackDurations: [30])
         let preferences = makeSandboxedPreferences(label)
-        let session = makeSession(in: world, preferences: preferences)
+        let session = makeSession(in: world, preferences: preferences, nowPlaying: nowPlaying)
         let first = try XCTUnwrap(session.open(firstBook))
         waitForReaderToLoad(first)
         session.togglePlayPause()

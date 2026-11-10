@@ -94,10 +94,17 @@ final class BookSearchModel: ObservableObject {
     private let search: Search
 
     /// A model that searches `corpus` with `BookSearchEngine`.
-    /// - Parameter announce: Speaks each completed search's status through
-    ///   VoiceOver.
-    convenience init(corpus: BookSearchCorpus, announce: @escaping @MainActor (String) -> Void) {
-        self.init(debounceInterval: Self.debounceInterval, announce: announce) { query, useRegex in
+    /// - Parameters:
+    ///   - debounceInterval: How long typing must pause before a search
+    ///     starts; the Mac's by default, and the phone's longer one.
+    ///   - announce: Speaks each completed search's status through
+    ///     VoiceOver.
+    convenience init(
+        corpus: BookSearchCorpus,
+        debounceInterval: Duration = BookSearchModel.debounceInterval,
+        announce: @escaping @MainActor (String) -> Void
+    ) {
+        self.init(debounceInterval: debounceInterval, announce: announce) { query, useRegex in
             try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
         }
     }

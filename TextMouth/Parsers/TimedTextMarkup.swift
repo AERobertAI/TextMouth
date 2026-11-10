@@ -268,8 +268,12 @@ enum TimedTextMarkup {
 
     /// The cue that `timingLine` and the lines of text after it make, or nil
     /// when it cannot be used: a time that does not read, an end before its
-    /// start, an end past `Transcript.maximumMilliseconds` (exactly that is
-    /// allowed), or text that is blank once its markup is gone.
+    /// start, an end past `TimedTextLimits.maximumCueMilliseconds` (exactly
+    /// that is allowed), or text that is blank once its markup is gone. A
+    /// time may run past a single file's 100 hours
+    /// (`Transcript.maximumMilliseconds`): a book's transcript is timed on
+    /// the whole book, whose files it is cut into afterwards
+    /// (`OutsideTranscript.split(_:across:)`).
     /// `removingOverrides` removes SubRip's `{\...}` overrides as well.
     static func cue(
         timingLine: Line, textLines: some Collection<Line>, removingOverrides: Bool
@@ -277,11 +281,12 @@ enum TimedTextMarkup {
         // The times come first: a cue they refuse needs no text read.
         guard let timing = timing(of: timingLine),
               let start = timing.start, let end = timing.end,
-              start <= end, end <= Transcript.maximumMilliseconds else { return nil }
-        let (text, voice, lastVoice) = cueText(of: textLines, removingOverrides: removingOverrides)
+              start <= end, end <= TimedTextLimits.maximumCueMilliseconds else { return nil }
+        let (text, voice, lastVoice, wasCut) = cueText(of: textLines, removingOverrides: removingOverrides)
         guard !text.isEmpty else { return nil }
         return TimedTextCue(
-            startMilliseconds: start, endMilliseconds: end, text: text, voice: voice, lastVoice: lastVoice
+            startMilliseconds: start, endMilliseconds: end, text: text, voice: voice, lastVoice: lastVoice,
+            isCutShort: wasCut
         )
     }
 
@@ -302,10 +307,12 @@ enum TimedTextMarkup {
     /// - Character references are decoded once the tags are gone (see
     ///   `appendDecodingReferences(_:to:)`), so `&lt;b&gt;` is the text
     ///   "<b>", never a tag.
-    /// - Last, the text is finished with `TimedTextCue.plainText`.
+    /// - Last, the text is finished with `TimedTextCue.plainText`, and kept to
+    ///   `TimedTextLimits.maximumCueCharacters`: `wasCut` says whether it
+    ///   was longer.
     private static func cueText(
         of lines: some Collection<Line>, removingOverrides: Bool
-    ) -> (text: String, voice: String?, lastVoice: String?) {
+    ) -> (text: String, voice: String?, lastVoice: String?, wasCut: Bool) {
         var raw: [UInt8] = []
         for (number, line) in lines.enumerated() {
             if number > 0 { raw.append(Byte.lineFeed) }
@@ -465,7 +472,7 @@ private struct CueTextBuilder {
         guard let annotation = TimedTextMarkup.voiceAnnotation(ofTag: content) else { return }
         var annotationBytes: [UInt8] = []
         TimedTextMarkup.appendDecodingReferences(annotation, to: &annotationBytes)
-        let name = TimedTextCue.plainText(String(decoding: annotationBytes, as: UTF8.self))
+        let name = TimedTextCue.voiceName(String(decoding: annotationBytes, as: UTF8.self))
         guard !name.isEmpty, name != namedLast else { return }
         if voice == nil {
             // The first voice is the cue's own, which a transcript names
@@ -482,17 +489,19 @@ private struct CueTextBuilder {
         namedLast = name
     }
 
-    /// The cue's text, finished with `TimedTextCue.plainText`, its voice, and
-    /// the voice speaking at its end when that is another.
-    mutating func finished() -> (text: String, voice: String?, lastVoice: String?) {
+    /// The cue's text, finished with `TimedTextCue.plainText` and kept to
+    /// `TimedTextLimits.maximumCueCharacters` (`wasCut` says whether it was
+    /// longer), its voice, and the voice speaking at its end when that is
+    /// another.
+    mutating func finished() -> (text: String, voice: String?, lastVoice: String?, wasCut: Bool) {
         decodeUndecoded()
         // The voice speaking last is told apart only when it is not the
         // cue's own (`TimedTextCue.lastVoice`).
-        return (
-            TimedTextCue.plainText(String(decoding: decoded, as: UTF8.self)),
-            voice,
-            namedLast == voice ? nil : namedLast
+        let (text, wasCut) = TimedTextCue.finishedText(
+            of: String(decoding: decoded, as: UTF8.self),
+            characterLimit: TimedTextLimits.maximumCueCharacters
         )
+        return (text, voice, namedLast == voice ? nil : namedLast, wasCut)
     }
 
     /// Moves the text not yet decoded to the decoded text, its character

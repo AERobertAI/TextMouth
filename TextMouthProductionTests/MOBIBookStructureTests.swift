@@ -593,4 +593,44 @@ final class MOBIBookStructureTests: XCTestCase {
         MOBIFixture.put32(&bytes, record0 + 4, 0xFFFF_FFFF)
         XCTAssertThrowsError(try MOBIBook(bytes: bytes)) { XCTAssertTrue($0 is DocumentTooLargeError, "\($0)") }
     }
+
+    // MARK: - Soft hyphens
+
+    /// A soft hyphen (U+00AD) a publisher put inside a word is not part of what a listener reads: it hid
+    /// the word from search, was a hyphen in braille, and was a pause in speech (measured November 9, 2026; see
+    /// `ParserUtilities.removingSoftHyphens`). A MOBI 6 book loses them as a KF8 book does, in every spelling
+    /// its markup has for one and in its contents' labels and headings.
+    func testSoftHyphensAreLeftOutOfAMOBI6BooksWordsAndItsContentsLabels() throws {
+        var fixture = MOBIFixture()
+        fixture.html = "<html><body><p>First has hy\u{AD}phen hy&shy;phen hy&#173;phen hy&#xAD;phen hy&#xad;phen. A \u{AD}stray.</p>"
+            + "<p>Second part.</p></body></html>"
+        fixture.entries = [
+            .init(label: "Chap\u{AD}ter &shy;one", offset: try offset(of: "<p>First", in: fixture.html)),
+            .init(label: "Sec\u{AD}ond", offset: try offset(of: "<p>Second", in: fixture.html)),
+        ]
+        let book = try prepared(fixture)
+        let all = book.chapters.map(\.chapter.text).joined(separator: " ")
+        XCTAssertFalse(all.unicodeScalars.contains("\u{AD}"), "a soft hyphen was read: \(all.debugDescription)")
+        XCTAssertEqual(spaced(all), "First has hyphen hyphen hyphen hyphen hyphen. A stray. Second part.")
+        let headings = book.chapters.flatMap { $0.chapter.headings.map(\.text) }
+        XCTAssertEqual(headings, ["Chapter one", "Second"], "the contents' labels are the headings, without soft hyphens")
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter one", "Second"], "and the chapters' titles")
+    }
+
+    /// A Windows-1252 book spells it as the byte 0xAD, and a plain PalmDOC book holds the same byte in its lines;
+    /// the text "&shy;" in a plain book is the author's own text and stays.
+    func testSoftHyphensAreLeftOutOfAWindows1252BookAndAPlainPalmDOCBook() throws {
+        var windows = MOBIFixture()
+        windows.encoding = 1252
+        windows.textBytes = Array("<html><body><p>hy".utf8) + [0xAD] + Array("phen.</p></body></html>".utf8)
+        XCTAssertEqual(spaced(try XCTUnwrap(try prepared(windows).chapters.first).chapter.text), "hyphen.")
+
+        var plain = MOBIFixture()
+        plain.type = "TEXt"
+        plain.creator = "REAd"
+        plain.hasMOBIHeader = false
+        plain.databaseName = "Plain_Notes"
+        plain.textBytes = Array("hy".utf8) + [0xAD] + Array("phen and &shy; typed".utf8)
+        XCTAssertEqual(spaced(try XCTUnwrap(try prepared(plain).chapters.first).chapter.text), "hyphen and &shy; typed")
+    }
 }

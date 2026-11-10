@@ -116,7 +116,29 @@ final class PortableXMLDifferentialTests: XCTestCase {
             reason: "Foundation's tidying leaves each unclosed <br> open past its item, nesting the items inside one another; SwiftSoup closes them with the item's end tag",
             evidence: "from channel selects 1 and 60"
         ),
+        // Project Gutenberg's A Modest Proposal (a sample of the KF8 reader's, FMT48): its contents write the title
+        // across two lines with a character reference to a carriage return (`&#13;`, then a line feed), which the
+        // tidy reading of Foundation keeps in the text and the portable tree collapses: the class of "tidy:
+        // references and whitespace" above. The report names only the first node that differs (the root
+        // element's text), so these two entries pass any report that starts with it and cannot tell another tidy
+        // difference in these two files apart; the strict reading, which the EPUB reader uses on both platforms,
+        // agrees on both.
+        "tidy: pg1080-modest-proposal.epub/OEBPS/toc.xhtml": carriageReturnDifference(
+            "Foundation: element L1 name=html local=html prefix= uri=http://www.w3.org/1999/xhtml text=\"A Modest Proposal\\r For"
+        ),
+        "tidy: pg1080-modest-proposal.epub/OEBPS/toc.ncx": carriageReturnDifference(
+            "Foundation: element L1 name=ncx local=ncx prefix= uri=http://www.daisy.org/z3986/2005/ncx/ text=\"A Modest Proposal\\r For"
+        ),
     ]
+
+    /// Why a text that holds a character reference to a carriage return is read differently when tidied, and the
+    /// start of the report that shows it.
+    private static func carriageReturnDifference(_ evidence: String) -> KnownDifference {
+        KnownDifference(
+            reason: "tidying keeps whitespace written as a character reference (&#13;); the portable tree collapses it",
+            evidence: evidence
+        )
+    }
 
     /// Why a document that declares an entity is read differently.
     private static let entityDifference = KnownDifference(

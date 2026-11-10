@@ -218,6 +218,21 @@ extension Archive {
 /// most the entry may hold, before anything is done with that chunk.
 enum ArchiveEntryReader {
 
+    /// Why the data of `entry` could not be read, in the words that complete
+    /// "The file “…” in this book is damaged or incomplete: …" (`PackageDamage`),
+    /// for a reader to put in its own damage error when `read` or `stream`
+    /// threw `error`, ZIPFoundation's, rather than an overflow. The reader
+    /// tells the listener the file is damaged and to get a fresh copy; this
+    /// keeps what went wrong, ZIPFoundation's own error, in the debug log as
+    /// one import event that begins with `tag`.
+    static func unreadableReason(of entry: Entry, error: Error, tag: String) -> String {
+        // The entry's path is its place inside the archive, a package-relative
+        // name and no absolute path, which the log policy allows.
+        let member = entry.path
+        DiagnosticLog.event(.import, "\(tag): \(member): \(error)")
+        return entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+    }
+
     /// Reads `entry` of `archive` wholly into memory and returns its bytes
     /// with the checksum of the bytes read, which the caller may compare
     /// with the one the archive stores (`Entry.checksum`).

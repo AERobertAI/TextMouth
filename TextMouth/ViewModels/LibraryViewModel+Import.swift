@@ -133,7 +133,9 @@ extension LibraryViewModel {
     ///
     /// - Parameter origin: The Library window importing the items.
     func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil) {
-        for url in urls {
+        // A WebVTT or SubRip file opened with its audio is attached to that
+        // audio's book as it is imported, not refused as a book.
+        for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
             let ext = url.pathExtension.lowercased()
 
             if FileImportService.isBookPackage(url) {
@@ -898,7 +900,9 @@ extension LibraryViewModel {
     ) {
         // Only the first package opens a window; the others are imported.
         var hasOpenedPackage = false
-        for url in urls {
+        // A WebVTT or SubRip file chosen with its audio is attached to that
+        // audio's book as it is imported, not refused as a book.
+        for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
             let ext = url.pathExtension.lowercased()
             if FileImportService.isBookPackage(url) {
                 openTMBPackage(

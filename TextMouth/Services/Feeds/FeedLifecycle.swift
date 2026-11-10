@@ -520,8 +520,15 @@ extension FeedCenter {
         var outcome = FeedDueRemovalOutcome()
         let storage = environment.bookStorage()
         let packages = due.map { BookPackage($0.book) }
-        let heldWhole = await OffMainWork.run(on: .global(qos: .utility)) {
-            Self.packagesHeldWhole(packages, storage: storage)
+        // What each package holds of the listener's is read here too: it
+        // reads each transcript.json (about 70 ms for 16 MB), which the main
+        // actor would pay once for each unopened episode removed. Only the
+        // packages held whole are read, since a package only in the cloud is
+        // left alone and reading it could download it.
+        let packageURLs = Dictionary(due.map { ($0.book.id, $0.book.tmbDirectory) }, uniquingKeysWith: { first, _ in first })
+        let (heldWhole, listenersFilesHeld) = await OffMainWork.run(on: .global(qos: .utility)) { () -> (Set<UUID>, [UUID: Bool]) in
+            let whole = Self.packagesHeldWhole(packages, storage: storage)
+            return (whole, FeedItemPackage.listenersFilesHeld(in: packageURLs.filter { whole.contains($0.key) }))
         }
         outcome.leftInCloud = due.map(\.book.id).filter { !heldWhole.contains($0) }
         // One may have been put in use meanwhile: opened in a reader, or
@@ -538,7 +545,11 @@ extension FeedCenter {
         // 1 and 2: the records and the indexes, on the main actor.
         let readied: [FeedFileRemoval]
         do {
-            readied = try library.readyFeedFilesForRemoval(of: removable.map(\.book), keepingPackages: true)
+            readied = try library.readyFeedFilesForRemoval(
+                of: removable.map(\.book),
+                keepingPackages: true,
+                listenersFilesHeld: listenersFilesHeld
+            )
         } catch {
             DiagnosticLog.event(.feeds, "\(putOffEvent): \(error.localizedDescription)")
             outcome.wasPutOff = true

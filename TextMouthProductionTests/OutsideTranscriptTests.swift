@@ -181,6 +181,125 @@ final class OutsideTranscriptTests: XCTestCase {
 
     // MARK: - Cutting the Book's Timeline into Its Files
 
+    /// A WebVTT file timed on the whole of a book of 120 hours (three files
+    /// of 40) reads in full, cues past hour 100 included, and its
+    /// sentences go to the files they were spoken in, each counted from its
+    /// own file's start, so none is past the 100 hours a file may hold: the
+    /// book's audio is no shorter than the file's last cue, so none is
+    /// refused as running past the end. Cues past hour 100 were dropped
+    /// when the readers stopped at 100 hours.
+    func testACaptionFileTimedOnABookOfMoreThan100HoursIsReadAndCutIntoItsFiles() throws {
+        let files = ["a1.wav", "a2.wav", "a3.wav"].map { Self.planFile($0, seconds: 144_000) }
+        let captions = """
+        WEBVTT
+
+        00:00:01.000 --> 00:00:02.000
+        First file.
+
+        50:00:00.000 --> 50:00:01.000
+        Second file.
+
+        110:00:00.000 --> 110:00:01.500
+        Past the hundredth hour.
+        """
+
+        let document = try TimedTextReader.read(Data(captions.utf8), as: .webVTT)
+        try OutsideTranscript.checkFits(document.sentences, durationMilliseconds: 3 * 144_000_000)
+        let split = OutsideTranscript.split(document.sentences, across: files)
+
+        XCTAssertEqual(document.skippedCueCount, 0, "a cue past hour 100 was passed over")
+        XCTAssertEqual(split["a1.wav"]?.map(\.text), ["First file."])
+        XCTAssertEqual(split["a2.wav"]?.map(\.text), ["Second file."])
+        XCTAssertEqual(split["a3.wav"]?.map(\.text), ["Past the hundredth hour."])
+        // 110 hours on the book is 30 hours into its third file.
+        XCTAssertEqual(split["a3.wav"]?.map(\.startMilliseconds), [108_000_000])
+        let longest = split.values.joined().map(\.endMilliseconds).max() ?? 0
+        XCTAssertLessThanOrEqual(longest, Transcript.maximumMilliseconds, "a sentence is past a single file's limit")
+    }
+
+    /// One audio file of 101 hours, longer than the 100 a transcript times,
+    /// takes a caption file's cues up to its hundredth hour: a cue that
+    /// starts past it is left out, one that runs past it ends there, and
+    /// what is kept makes a transcript that is trusted, so the attach is not
+    /// refused whole. The cues past hour 100 were left out by the reader
+    /// before the readers took times to 1,000 hours.
+    func testAFileOfMoreThan100HoursKeepsTheCuesUpToItsHundredthHour() throws {
+        let files = [Self.planFile("long.wav", seconds: 363_600)]
+        let captions = """
+        WEBVTT
+
+        01:00:00.000 --> 01:00:05.000
+        Early.
+
+        99:59:50.000 --> 100:00:30.000
+        Straddling.
+
+        100:30:00.000 --> 100:30:05.000
+        Past the hundredth hour.
+        """
+        let limit = Transcript.maximumMilliseconds
+
+        let document = try TimedTextReader.read(Data(captions.utf8), as: .webVTT)
+        let split = OutsideTranscript.split(document.sentences, across: files)
+
+        XCTAssertEqual(document.cues.count, 3, "the reader should keep all three cues")
+        let kept = try XCTUnwrap(split["long.wav"])
+        XCTAssertEqual(kept.map(\.text), ["Early.", "Straddling."], "the cue past the hundredth hour was not left out, or another was")
+        XCTAssertEqual(kept.map(\.endMilliseconds), [3_605_000, limit], "the straddling cue was not held at the hundredth hour")
+        let transcript = TranscriptFixtures.transcript([(path: "long.wav", duration: 363_600_000, sentences: kept)])
+        XCTAssertNil(transcript.validationFailure(), "what was kept is not a transcript TextMouth trusts")
+
+        // The same for the cues of a track's own file found at import.
+        let ownFile = document.sentences.compactMap(OutsideTranscript.withinTheLimitOfAFile)
+        XCTAssertEqual(ownFile.map(\.text), ["Early.", "Straddling."])
+    }
+
+    /// The two ways a transcript is made for a file of 101 hours, through the
+    /// functions themselves, with a small real file standing for the audio
+    /// (only its fingerprint is read): from a track's own cues
+    /// (`transcript(sentencesByFile:)`, the import's way), and from a book's
+    /// whole timeline (`transcript(bookTimeline:)`, Attach's way). Neither is
+    /// refused: the cue past the hundredth hour is left out of the transcript,
+    /// and the straddling one ends there. The number left out is what Attach
+    /// tells, the cues read less the sentences the transcript holds.
+    func testATranscriptOfAFileOfMoreThan100HoursLeavesOutTheCuesPastItsHundredthHour() throws {
+        let folder = try makeSandboxDirectory("Outside Transcript Long File")
+        let audio = folder.appendingPathComponent("long.wav")
+        try Data("standing for 101 hours of sound".utf8).write(to: audio)
+        let plan = TranscriptionPlan(files: [TranscriptionPlan.File(path: "long.wav", url: audio, duration: 363_600)])
+        let captions = """
+        WEBVTT
+
+        01:00:00.000 --> 01:00:05.000
+        Early.
+
+        99:59:50.000 --> 100:00:30.000
+        Straddling.
+
+        100:30:00.000 --> 100:30:05.000
+        Past the hundredth hour.
+        """
+        let limit = Transcript.maximumMilliseconds
+        let sentences = try TimedTextReader.read(Data(captions.utf8), as: .webVTT).sentences
+        XCTAssertEqual(sentences.count, 3, "the reader should keep all three cues")
+
+        let ownFile = try OutsideTranscript.transcript(
+            sentencesByFile: ["long.wav": sentences], plan: plan, source: Self.lectureSource
+        )
+        let timeline = try OutsideTranscript.transcript(bookTimeline: sentences, plan: plan, source: Self.lectureSource)
+
+        for (way, transcript) in [("a track's own file", ownFile), ("the book's timeline", timeline)] {
+            let kept = transcript.files.flatMap(\.sentences)
+            XCTAssertEqual(kept.map(\.text), ["Early.", "Straddling."], "\(way): the cue past the hundredth hour was not left out")
+            XCTAssertEqual(kept.map(\.endMilliseconds), [3_605_000, limit], "\(way): the straddling cue was not held at the hundredth hour")
+            XCTAssertNil(transcript.validationFailure(), "\(way): what was kept is not a transcript TextMouth trusts")
+            XCTAssertEqual(
+                sentences.count - kept.count, 1,
+                "\(way): Attach would not tell one passage left out"
+            )
+        }
+    }
+
     /// On a book of a 3-second file and a 2-second file, a sentence at the
     /// start stays as it is; one starting in the first file and running on
     /// into the second stays in the first, its end held at the file's end
@@ -574,6 +693,17 @@ final class OutsideTranscriptTests: XCTestCase {
         )
         XCTAssertEqual(
             try lineOfStored(#"{"format":"ttml","origin":"imported"}"#),
+            "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
+        )
+        // Files of two formats are named together, in the order read; a
+        // list holding a format this TextMouth does not know names none.
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"webvtt","formats":["webvtt","srt"],"origin":"imported"}"#),
+            "Attached from WebVTT and SubRip files when the book was imported, on \(day). "
+                + "Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"webvtt","formats":["webvtt","ttml"],"origin":"imported"}"#),
             "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
         )
         XCTAssertEqual(

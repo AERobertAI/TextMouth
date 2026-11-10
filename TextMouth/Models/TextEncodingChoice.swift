@@ -100,9 +100,9 @@ struct TextEncodingReading: Equatable, Sendable {
         case guessed
         /// The file begins with a byte-order mark.
         case byteOrderMark
-        /// The file is UTF-16 without a byte-order mark, recognized by its
-        /// zero bytes.
-        case unmarkedUTF16
+        /// The file is UTF-16 or UTF-32 without a byte-order mark,
+        /// recognized by the structure of its bytes.
+        case unmarkedUnicode
         /// The bytes are valid UTF-8.
         case validUTF8
         /// An HTML file declares it.
@@ -135,7 +135,7 @@ struct TextEncodingReading: Equatable, Sendable {
         switch decoded.basis {
         case .chosen: basis = .chosen
         case .byteOrderMark: basis = .byteOrderMark
-        case .unmarkedUTF16: basis = .unmarkedUTF16
+        case .unmarkedUnicode: basis = .unmarkedUnicode
         case .validUTF8: basis = .validUTF8
         case .declaration: basis = .declared
         case .recorded, .guess: basis = .guessed

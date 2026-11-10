@@ -22,11 +22,11 @@ TextMouth is a Mac app, and since November 4, 2026 (phase 0 of the iOS port) a s
 - `TextMouth/Platform/iOS/` holds what only the iOS app compiles: the iPhone app's own code (its app and scene delegates, views, and services), IOSUnavailable, and a stand-in for each Mac-only type that shared code still names, in folders that mirror the Mac's. The iPhone's plain types, the ones that import no UIKit, are in the shared folder `TextMouth/Phone/` instead, so the Mac's tests reach them. A stand-in's file name ends `+iOS` and starts with the comment `// Phase 0 stand-in:`, which says what the Mac version does and what iOS does instead.
 - The iOS app has one Info.plist, an Info.plist of its own, `TextMouth/Platform/iOS/Info.plist`, which project.yml names in `INFOPLIST_FILE` and Xcode merges into the plist it generates (`GENERATE_INFOPLIST_FILE`). Until 0.4.1 the iOS configurations used the Mac's plist, by accident: XcodeGen sets `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes. `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names: "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start), "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either), and the BRF, BRL, and PEF braille files (reading them takes the braille helper).
-  - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration. From 0.4.2 the Mac's own list names `.azw3` (FMT48), so that addition (`ADDED_EXTENSION` in Scripts/ios/sync-info-plist.py) is no longer needed.
+  - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration. From 0.4.2 the Mac's own list names `.azw3` (FMT48), so that addition is gone: `ADDED_EXTENSION` was removed from Scripts/ios/sync-info-plist.py in 0.4.3, and the iOS plist's Kindle type is the Mac's, unchanged. `make check-ios-plist` still exits 0, with the file as it was.
   - It adds the two keys that only iOS has (`IOS_ONLY_KEYS` in the script): `UIBackgroundModes` with the one mode `audio`, without which every book stops as the screen locks, and `UIApplicationSceneManifest` with `UIApplicationSupportsMultipleScenes` false, so the app has one scene at a time, an iPad included, since one reading session cannot serve two windows. The scene's delegate is named in code, by `TextMouthAppDelegate`, so the manifest names no configuration. The script stops, rather than hide a mistake, if the Mac's plist ever holds one of those two keys.
   - project.yml leaves out `INFOPLIST_KEY_UIApplicationSceneManifest_Generation`, because Xcode's generated manifest would allow several scenes. The iOS plist holds no key that an `INFOPLIST_KEY_` setting in project.yml also sets (`INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace` and `INFOPLIST_KEY_UILaunchScreen_Generation`), since Apple does not say which would win. The app's display name, "TextMouth", comes from this plist, which takes it from the Mac's.
   - iOS goes by the types a document type names (`LSItemContentTypes`) and the extensions their declarations tag, not by `CFBundleTypeExtensions`, which is why a type is left out by name. Everything else is the Mac's, including the Kindle MOBI and KFX types and the App Transport Security setting feeds need.
-  - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting. It checks that the iOS list is the Mac's less the named exceptions, that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
+  - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting. It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list, that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
   - Nothing has run on a device: whether `Info.plist` is the place iOS reads `.azw3` from is unchecked. The simulator build merges the file into Xcode's generated plist and installs, and `make check-ios-plist` passes at 1fefa2cf.
 - The files directly in `TextMouth/Platform/` are shared by both apps:
   - `PlatformTypes` declares three aliases: `PlatformWindow` (NSWindow on the Mac, UIWindow on iOS), `PlatformFont` (NSFont, UIFont), and `PlatformView` (NSView, UIView);
@@ -82,7 +82,7 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 
 ## The iPhone app
 
-The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
+The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below). The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
 
@@ -102,13 +102,15 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
 
 ### PhoneLaunchRequest
 
-- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has two variables.
+- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has three variables.
   - `TEXTMOUTH_UI_TEST` set to exactly "1" gives the launch a library and preferences in a sandbox of its own, as a hosted test has. An empty or mistyped value leaves the app as it is.
   - `TEXTMOUTH_OPEN_AT_LAUNCH` set to an absolute path sends the app that file, as another app would send one at a cold launch. A relative path is ignored.
-- It acts in debug builds only.
-  - The type itself is shared code, and the Mac's tests cover it (`PhoneLaunchRequestTests`).
-  - The two places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox, and the scene delegate, which opens the file.
-  - A release build ignores both variables.
+  - `TEXTMOUTH_SEARCH_IN_BOOK` set to text opens the Search in Book sheet with its field already holding that text, so a UI test shows the results without typing (`PhoneLaunchRequest.searchText(_:)`). An empty value is ignored.
+- It exists in debug builds only (0.4.3).
+  - The whole of `PhoneLaunchRequest.swift` is inside `#if DEBUG`. So are its tests: `PhoneLaunchRequestTests` on the Mac, and the two tests of `IOSRuntimeTests` that read it.
+  - The three places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), the scene delegate, which opens the file, and the Search in Book sheet, which fills its field (`fillFieldForTesting()`). `PhoneLaunchRequestTests.testTheRequestIsReadOnlyInTheIPhonesDebugBuild` pins those reads, and `testTheTypeIsCompiledIntoDebugBuildsOnly` that the type is debug only.
+  - A release build holds neither the type nor its three variable names, so no environment variable can steer it. When it had two variables, a Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one. It was not measured again with the third.
+  - The Mac's Release build was not checked for it by a build. By reading, the Mac's Release code never names it.
 - A UI test needs it because XCTest names its configuration (`XCTestConfigurationFilePath`) only in a process that hosts a test bundle, and the app a UI test drives does not host one. Without the sandbox, each test would find what the last one left in the app's real container.
 - The book comes in the way a person's would: held until the library starts, copied by the import's copier, imported, and opened. The file is never moved or deleted.
 - From a shell, `xcrun simctl launch` passes each variable with the prefix `SIMCTL_CHILD_` (see [Building TextMouth](../developer/building.md)).
@@ -142,6 +144,15 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - It keeps what it read in `openingBookAtLastEnd`.
   - `takeReopeningAtLaunch(fileOpened:)` acts on it at the first activation.
 - It used to be read at the first activation. A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
+- The reopen keys are cleared with the guard (0.4.3), in the same step, as the session is made.
+  - The three keys are `reopenBookKey`, `reopenShowsReaderKey`, and `reopenFromReadingListKey`. `PhoneSession.init` removes them when it finds a guard, with `forgetReopening(in:)`, the one place that lists them.
+  - The reason: the guard is gone from disk at that moment. If the app ended again before its first activation, the next launch found no guard and keys still naming the book that crashed it, and reopened that book. Now it reopens nothing.
+  - Without a guard, `init` leaves the keys for the first activation, which reopens the book as before.
+- The verdict branch of `takeReopeningAtLaunch(fileOpened:)` keeps the keys of a book opened since.
+  - It used to clear the keys too. A Play from the lock screen that opened a book before the first activation had written keys of its own, and the verdict wiped them.
+  - Now the verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard. The keys of the book opened since stand.
+  - The tests: `testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound` in `PhoneSessionTests`, and `PhoneLifeCycleReopeningTests`, whose crash test writes the keys beside the guard, before the session, and asserts the keys are gone after `reopenAtLaunch`.
+  - Still open, and older than this change: `registerOpenBook` saves the book being opened as the last opened. If that save lands before a crash while opening a book, a lock-screen Play can open it, and the first activation then says it closed while opening that book while it plays.
 - When the guard finds a crash, the book is not reopened, and the listener hears "TextMouth closed while opening <title>, so it wasn't reopened." (`PhoneAppWording.closedWhileOpening`).
 - A file opened at launch wins over reopening. A book that crashes on loading therefore cannot do so at every launch.
 - A lock-screen Play that opens a book takes a hold on the app for the load ("Playing from the lock screen", through `PhoneSession.beginHold`), as going on to the next book does.
@@ -245,10 +256,11 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
 - `PhoneActionButton` is a `Button` whose plain words take `phonePrimaryText()`. Use it in place of `Button(title, action:)`. VoiceOver reads the same label. It takes an optional `ButtonRole`.
 - `PhoneValueRow` shows a name and its value in place of `LabeledContent(name, value:)`, whose value iOS draws in gray. The name takes `primary` and the value `secondary`.
   - At the accessibility text sizes (`typeSize.isAccessibilitySize`) the value goes under the name, in a `VStack`. Side by side, the name broke in the middle of a word beside its value at the largest size ("Fade out duration" in Settings).
-  - The stacking has no test of its own, and the test that would show it, `LargeTextUITests`, still fails on Settings (see [Testing TextMouth](../developer/testing.md)).
+  - `PhoneValueRowTests` (`TextMouthiOSTests`, 3 tests) pins the stacking. It asks a hosting controller how tall the row is at a width of 300 points and compares that with the name's height, the 4-point gap, and the value's. At all five accessibility sizes the row must be the stacked height, to within 1.5 points, and at the seven ordinary sizes it must be shorter. Un-stacking the row fails it, and so does always stacking it. It was not run against an un-stacked row, and that `LabeledContent` lays out side by side outside a Form is inferred.
+- The spec has no section on contrast, so `PhoneTextStyle` cites its words on text sizes by their section names, and no longer by numbers: "The layout" of the reader ("At large text sizes, the grid becomes one column and the screen scrolls") and "A book's row" ("What's visible").
 - Full contrast for all of the phone's text follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`. The user has not answered. Until they do, the work follows the recommendation: yes, for people with low vision.
 - To undo it, make one line say `static let secondary = Color.secondary` in `PhoneTextColor`. Button words stay at full contrast, since `primary` is a separate line.
-- The contrast result: the audit's findings of contrast fell from about 50 to 2 on the sheets tested. Both remaining ones are on the first section header under the bar ("Voice" in Settings, "New Timer" in Sleep Timer), whose text is black in the screenshots, so they are probably false positives.
+- The contrast result: the audit's findings of contrast fell from about 50 to 2 on the sheets tested. Both remaining ones are on the first section header under the bar ("Voice" in Settings, "New Timer" in Sleep Timer). They are false positives, proven on November 9, 2026 from the screenshots: the pixels over each header's frame are black (0, 0, 0) on (235 to 242, 235 to 242, 240 to 247), about 17 to 1. Nothing switched off cleared them (the header trait, sliders, switches, steppers, the field). The audit accepts them by the header's label and the contrast kind only (see [Testing TextMouth](../developer/testing.md)).
 
 ### PhoneSheetButton: where a sheet's buttons go
 
@@ -266,16 +278,67 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
   - The two folder sheets had Cancel before the title. They follow the spec now.
 - Why not the system's places, `.cancellationAction` and `.confirmationAction`:
   - In the simulator's tests (iPhone 17, iOS 26), Book Information's and the choice sheet's Cancel were reported missing, though Go To's, in `.topBarTrailing`, was found.
-  - `ToolbarPlacementProbeUITests` put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026. The buttons were never missing. They were ordinary buttons labeled "Cancel" and "Save", with no identifier, drawn as text pills 66 and 51 points wide, and not as an xmark or "Close".
+  - A probe test, `ToolbarPlacementProbeUITests`, put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026. The probe was removed in 0.4.3, with its test and its launch variable. `PhoneSheetButton.swift`'s comment keeps the history, and it is accurate. The buttons were never missing. They were ordinary buttons labeled "Cancel" and "Save", with no identifier, drawn as text pills 66 and 51 points wide, and not as an xmark or "Close".
   - What was wrong was their order. Those places are the bar's leading side, so the accessibility tree read "Cancel, Save, Book Information", with the buttons before the title. The tests read a sheet from its title on, so they found no Cancel after it. The earlier reports of a missing Cancel were an order problem.
   - Limit: the probe gave the buttons explicit labels, so the unlabeled case was not observed. This is written in the helper's comment.
-- The probe is `PhoneSheetButtonPlacement.probeVariable`, the launch variable `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`. In a debug build, when it is "1", every sheet button takes `.cancellationAction`. It is read under `#if DEBUG` only (see [Building TextMouth](../developer/building.md)).
+- `PhoneSheetButtonPlacement` has no probe: no launch variable changes the placement, and `placement` is a computed property, `.topBarTrailing`, since `ToolbarItemPlacement` is not `Sendable` and a stored one is not concurrency-safe.
 - Not verified: the order on a phone with VoiceOver, since VoiceOver does not run in the simulator. The simulator's tree is what the tests read.
 - A related fix from the same round: a `Slider` in the Voice sheet is labeled by its label closure alone. A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
+### Search in Book
+
+- The reader's sixteenth control, `PhoneReaderControl.searchInBook`, comes after Headings and before Go To in VoiceOver's order. Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text." (`PhoneBookSearchVocabulary`). It opens `PhoneReaderSheet.search`.
+- `PhoneReaderModel.openSearch()` decides whether it opens, and returns true only when the book has text to search (`ReaderViewModel.canSearchText`).
+  - While the book loads, it says "Loading <title>" with medium priority and opens nothing.
+  - For an audiobook with no transcript text, it says why, in the Mac's words (`ReaderViewModel.announceNoTextToSearch`), and opens nothing.
+  - For a text book that failed to load, it says nothing: that screen shows the failure in place of the controls.
+- The grid has six rows (`PhoneReaderControl.gridRows`), each a slice of `grid`, so VoiceOver's order is the same however the rows break:
+  - Where Am I?, Navigation unit, Speed;
+  - Previous Heading, Next Heading, Add bookmark;
+  - Bookmarks, Headings, Search in Book;
+  - Go To, Return, Sleep Timer;
+  - Voice, Book Info;
+  - Skip backward, Skip forward.
+- A plain three to a row would leave Skip forward alone in a sixth row. So the rows are broken to keep each pair together, and the two skips are the last row, as in the spec. The fifth row holds two, and the spec had five rows.
+  - `testTheGridRowsKeepOrderAndPairs` pins the order, at most three to a row, the three groups, and the last row. It does not pin the exact rows.
+  - The comments on `PhoneReaderControl.grid` ("three to a row") and above `testTheControlsAreInTheSpecsOrder` ("five full rows and a sixth") still say the old count.
+- The sheet is `PhoneSearchSheet` (`Platform/iOS/Views/Reader/`), thin over `PhoneBookSearchSource` and over the Mac's `BookSearchModel` and `BookSearchEngine`.
+  - VoiceOver's order is the title, Back to Book, the field, the status line, the regular-expression switch, a "Search results" heading, and then the results in the order they lie in the book.
+  - The Mac's words are shared through `BookSearchWording` (`Views/Reader/BookSearchView.swift`): the field's label "Search text" and its two hints, the switch's label "Use regular expression" and its hint, the "Search results" label, and Back to Book's hint "Close search and return to the book". The Mac's sheet reads them from there too, with the values unchanged.
+  - Only what the phone adds is in `PhoneBookSearchVocabulary`: the button's hint, a result row's hint "Goes to this result." (the Mac's "Activate to navigate to this result" names a gesture), and the typing pause.
+  - A text book's results say where the match is as a percent, the Mac's default. There is no Display picker, and there is no clear-search button.
+  - Focus lands in the field 0.35 seconds after the sheet opens, unless VoiceOver has landed on a reader control meanwhile (the tickets, below).
+  - The field turns off capital letters and correction, so the listener's text goes in as typed.
+- A search waits for typing to pause for one second (`PhoneBookSearchVocabulary.typingPause`), as the Library's search does, so that a listener typing with a braille display or Braille Screen Input is not told "No matches" between letters. The Mac waits a quarter second.
+  - `BookSearchModel` has a `debounceInterval` parameter for it, `init(corpus:debounceInterval:announce:)`. `BookSearchModel.debounceInterval` is the default, 250 milliseconds, so the Mac's one call passes none and behaves as before.
+  - `PhoneBookSearchSource.makeModel(announce:)` passes the phone's second.
+  - `testNothingIsSaidUntilTypingHasPausedForASecond` sets the query, waits 0.6 seconds, and requires that the status is still "Searching…" with nothing said. It would fail at 250 milliseconds.
+  - Each completed search says its status once, with low priority (`PhoneAnnouncer`), so typing is never cut off. The status line holds the same words for anyone who flicks to it.
+- A result goes to its place with `ReaderViewModel.goToSearchResult(chapterIndex:characterOffset:inTranscript:)`, which the Mac's sheet now calls too, so one place decides the move: a transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
+  - The Return place is kept, the sheet closes, and the session counts the book as opened (`PhoneReaderModel.noteJumped`).
+  - What the jump says is collected and said after the sheet has closed (`PhoneSheetFarewell`). A transcript jump says "Moved to <the time>, <the heading>." (`BookSearchWording.movedTo(time:location:)`), and a text book's jump says nothing beyond what the reader says, as on the Mac. It plays on from the result if Auto-play after navigation is on.
+  - Back to Book, and the sheet disappearing any other way, stop a search still running (`cancelSearch()`), so nothing is said for a sheet that is gone.
+- `offersTranscription` is a parameter of `BookSearchWording.noTextToSearch` and `ReaderViewModel.announceNoTextToSearch`, true by default. The phone cannot transcribe, so `openSearch()` passes false.
+  - An audiobook with no transcript hears "<title> has no transcript to search." and not the Mac's "Transcribe it first, with Transcribe Audio."
+  - A stale transcript hears its reason without "Transcribe it again, then search the new transcript."
+  - Two tests in `PhoneReaderModelTests` pin it: a packaged audiobook that `isTranscribable` must not mention "ranscribe" on the phone, and the Mac's words must still name the command.
+  - The phone's words for a held edit still mention "your editor" and "content.md". The phone cannot hold an edit, so this is a follow-up only.
+- The focus requests are `PhoneFocusRequests` (`Phone/PhoneFocusRequests.swift`), a plain value with no clock, which the Mac's tests drive by calls alone, and `PhoneFocusRegistry` (`Platform/iOS/Views/`), which observes VoiceOver's landings.
+  - A request that waits 0.35 seconds takes a ticket (`request()`, through `PhoneFocusRegistry.beginRequest()`), and asks for it back when its time comes (`claim(_:)`, through `claimRequest(_:)`). It posts only if the ticket is still good.
+  - VoiceOver landing on any of the reader's controls (`PhoneControlKind`) spends every ticket still waiting, since that is the listener's own move (`focusLanded(on:)`).
+  - A landing on Back or the title cancels nothing. The spec said "Any focus event cancels a request still waiting", and now says what the code does. `PhoneFocusPolicy` already exempted those two, and cancelling on them could stop focus from ever returning after a sheet closes. This needs a phone to check.
+  - The sheet's focus into its field, the alert's and Speech Stopped's returns, and a sheet's return to its control all go through the tickets. The Library's list-focus helper is not wired to them.
+  - `PhoneFocusRequestsTests` has six cases, including every kind of control, so a control whose landing fails to cancel is named. Nothing tests the iOS posting path.
+  - Unverified: whether VoiceOver lands on another reader control by itself as a sheet finishes closing. If it does, the return of focus is cancelled by VoiceOver rather than the listener.
+- `PhoneSession.closeBook(id:)` closes only that book's reader. A book on screen with another behind it hands the screen to the one behind, as Back does (`leaveReader`), and a book that is not open does nothing. The Library's Remove calls it (`PhoneLibraryView`), so removing the book that plays behind the screen no longer stops the other.
+  - `PhoneSessionTests` pin four cases: the book behind, the book on screen, the only book, and a book not open.
+  - The on-screen case also checks which reader Now Playing follows, but with only two readers it passes with or without the hand-over, so it does not prove it. A third reader would.
+- Files: Phone/PhoneBookSearch.swift, Phone/PhoneFocusRequests.swift, Phone/PhoneReaderState.swift, Phone/PhoneReaderModel.swift, Phone/PhoneLaunchRequest.swift, Phone/PhoneSession.swift, Platform/iOS/Views/Reader/PhoneSearchSheet.swift, Platform/iOS/Views/PhoneFocusRegistry.swift, ViewModels/BookSearchModel.swift, ViewModels/ReaderViewModel+Bookmarks.swift, Views/Reader/BookSearchView.swift.
+- The tests are in [Testing TextMouth](../developer/testing.md).
+
 ## What is left
 
-- These are not done: the rotors on Play, Book content's language, Search in Book, the Files drop folder, sounds, and `PhoneSession.closeBook(id:)`. [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
+- These are not done: the rotors on Play, Book content's language, the Files drop folder, and sounds. [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
 - Phase 1 left these places empty or approximate, and the first run has not settled them:
   - the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
   - a recording backend, if recording comes to iOS;

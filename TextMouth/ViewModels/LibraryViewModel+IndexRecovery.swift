@@ -400,7 +400,7 @@ extension LibraryViewModel {
     /// while recovering, so the termination flush saves only package metadata.
     func quitWithoutWritingLibraryIndex() {
         #if os(macOS)
-        NSApplication.shared.terminate(nil)
+        QuitRequest.ask()
         #else
         // iOS apps do not quit themselves (phase 0): nothing happens, and the
         // recovery screen stays up for another choice.

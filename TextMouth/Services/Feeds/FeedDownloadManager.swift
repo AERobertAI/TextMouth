@@ -1271,9 +1271,12 @@ final class FeedDownloadManager {
 
 /// Holds a quit while the feed downloads keep their place (FR03), through
 /// the hold every piece of such work shares (`QuitHold`). The application
-/// delegate asks it only once the quit is sure to go ahead, with nothing
-/// unsaved or Quit Anyway chosen, so a quit that leaves TextMouth open never
-/// stops a download.
+/// delegate asks it once the quit has passed the questions of a library move,
+/// the Record window, the editors, and unsaved changes, and asks about them
+/// once more after the downloads stopped. A person who cancels one of those
+/// last questions then leaves TextMouth open with the downloads stopped for
+/// the rest of the session (`isStoppedForQuit`); each is listed for the next
+/// launch, which asks for it again (`resumeDownloadsSavedAtQuit()`).
 @MainActor
 enum FeedQuitHold {
     /// The longest a quit waits for the downloads: producing resume data
@@ -1300,7 +1303,9 @@ enum FeedQuitHold {
         QuitHold.Work(
             isRunning: { downloads.hasWork && !downloads.isStoppedForQuit },
             end: { await downloads.stopForQuit() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            kind: "feed downloads",
+            finishing: { "keeping the place of your feed downloads for next time" }
         )
     }
 }

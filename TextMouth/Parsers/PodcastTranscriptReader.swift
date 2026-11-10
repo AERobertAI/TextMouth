@@ -71,8 +71,12 @@ enum PodcastTranscriptReader {
         let start: Int
         /// When it ends, in milliseconds: never before `start`.
         let end: Int
-        /// Its text on one line (`TimedTextCue.plainText`): never empty.
+        /// Its text on one line (`TimedTextCue.plainText`), kept to
+        /// `TimedTextLimits.maximumCueCharacters`: never empty.
         let body: String
+        /// Whether `body` is the beginning of a longer text, cut
+        /// (`TimedTextCue.isCutShort`).
+        let isCutShort: Bool
         /// Who speaks it; nil when the file names nobody. Never blank.
         let voice: String?
 
@@ -86,7 +90,7 @@ enum PodcastTranscriptReader {
                   let start = PodcastingJSON.milliseconds(fields["startTime"]),
                   let end = PodcastingJSON.milliseconds(fields["endTime"]),
                   end >= start,
-                  let body = PodcastingJSON.plainText(fields["body"]),
+                  let (body, isCutShort) = PodcastingJSON.cueText(fields["body"]),
                   !body.isEmpty
             else {
                 return nil
@@ -94,7 +98,8 @@ enum PodcastTranscriptReader {
             self.start = start
             self.end = end
             self.body = body
-            let speaker = PodcastingJSON.plainText(fields["speaker"])
+            self.isCutShort = isCutShort
+            let speaker = PodcastingJSON.voiceName(fields["speaker"])
             voice = speaker?.isEmpty == false ? speaker : nil
         }
 
@@ -107,7 +112,7 @@ enum PodcastTranscriptReader {
 
         /// The segment as a cue of its own, whose words are not timed.
         var cue: TimedTextCue {
-            TimedTextCue(startMilliseconds: start, endMilliseconds: end, text: body, voice: voice)
+            TimedTextCue(startMilliseconds: start, endMilliseconds: end, text: body, voice: voice, isCutShort: isCutShort)
         }
     }
 
@@ -182,8 +187,11 @@ enum PodcastTranscriptReader {
         /// When the word added last ends, in milliseconds.
         private var lastWordEnd: Int
         /// Whether the word added last ends a sentence
-        /// (`PodcastTranscriptReader.endsSentence(_:)`).
+        /// (`TimedTextCue.endsSentence(_:)`).
         private var isEnded = false
+        /// Whether any word added was itself cut short
+        /// (`TimedTextCue.isCutShort`).
+        private var isCutShort = false
 
         /// A sentence of `word` alone, so far.
         init(startingWith word: Segment) {
@@ -199,10 +207,15 @@ enum PodcastTranscriptReader {
         /// `maximumWordsPerSentence` words, a word of the same speaker (no
         /// speaker counting as the same as no speaker) joins it when it
         /// starts less than `wordGapMilliseconds` after the word before it
-        /// ends. A word that starts before that one ends joins it too.
+        /// ends. A word that starts before that one ends joins it too. A
+        /// word that would take the text past
+        /// `TimedTextLimits.maximumCueCharacters` begins the next sentence
+        /// instead: words as long as the limit allows are no words at all,
+        /// and sixty of them must not make a cue of sixty times the limit.
         func takes(_ word: Segment) -> Bool {
             !isEnded
                 && words.count < PodcastTranscriptReader.maximumWordsPerSentence
+                && textLength + 1 + word.body.utf16.count <= TimedTextLimits.maximumCueCharacters
                 && word.voice == voice
                 && word.start - lastWordEnd < PodcastTranscriptReader.wordGapMilliseconds
         }
@@ -225,29 +238,17 @@ enum PodcastTranscriptReader {
             textLength += length
             end = max(end, word.end)
             lastWordEnd = word.end
-            isEnded = PodcastTranscriptReader.endsSentence(word.body)
+            isEnded = TimedTextCue.endsSentence(word.body)
+            isCutShort = isCutShort || word.isCutShort
         }
 
         /// The sentence as a cue, with its words timed.
         var cue: TimedTextCue {
-            TimedTextCue(startMilliseconds: start, endMilliseconds: end, text: text, voice: voice, words: words)
+            TimedTextCue(
+                startMilliseconds: start, endMilliseconds: end, text: text, voice: voice, words: words,
+                isCutShort: isCutShort
+            )
         }
-    }
-
-    /// The marks that end a sentence when a word ends with one.
-    private static let sentenceEndingMarks: Set<Character> = [".", "?", "!", "…"]
-
-    /// The marks that may follow a sentence's end: quotation marks, straight
-    /// and curly, and closing brackets, as in `said.”` or `(see above.)`.
-    private static let closingMarks: Set<Character> = ["\"", "'", "”", "’", ")", "]"]
-
-    /// Whether `word` ends a sentence: whether its last character, after any
-    /// closing quotation marks and brackets, is ".", "?", "!", or "…".
-    private static func endsSentence(_ word: String) -> Bool {
-        guard let last = word.reversed().first(where: { !closingMarks.contains($0) }) else {
-            return false
-        }
-        return sentenceEndingMarks.contains(last)
     }
 }
 
@@ -294,9 +295,25 @@ enum PodcastingJSON {
     }
 
     /// `value` finished as a cue's text is (`TimedTextCue.plainText`) when it
-    /// is text, which may leave it empty; nil when it is not text.
+    /// is text, which may leave it empty; nil when it is not text. Used for a
+    /// chapter's title, which no limit holds to.
     static func plainText(_ value: Any?) -> String? {
         (value as? String).map { TimedTextCue.plainText($0) }
+    }
+
+    /// `value` as a cue's text, finished and kept to
+    /// `TimedTextLimits.maximumCueCharacters` (`TimedTextCue.finishedText`),
+    /// with whether it was cut; nil when it is not text.
+    static func cueText(_ value: Any?) -> (text: String, wasCut: Bool)? {
+        (value as? String).map {
+            TimedTextCue.finishedText(of: $0, characterLimit: TimedTextLimits.maximumCueCharacters)
+        }
+    }
+
+    /// `value` as a speaker's name (`TimedTextCue.voiceName`) when it is
+    /// text, which may leave it empty; nil when it is not text.
+    static func voiceName(_ value: Any?) -> String? {
+        (value as? String).map { TimedTextCue.voiceName($0) }
     }
 
     /// `items` sorted by when each begins, `start`, those that begin together
