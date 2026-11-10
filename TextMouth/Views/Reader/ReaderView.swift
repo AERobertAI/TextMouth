@@ -524,11 +524,11 @@ struct ReaderPanelSheets: ViewModifier {
                 currentWPM: viewModel.speechService.wordsPerMinute,
                 announce: viewModel.announceToVoiceOver,
                 onNavigate: { chapterIndex, charOffset in
-                    if isTranscript {
-                        viewModel.navigateToTranscriptSearchResult(chapterIndex: chapterIndex, textOffset: charOffset)
-                    } else {
-                        viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
-                    }
+                    viewModel.goToSearchResult(
+                        chapterIndex: chapterIndex,
+                        characterOffset: charOffset,
+                        inTranscript: isTranscript
+                    )
                     panels.search = false
                 }
             )

@@ -278,6 +278,24 @@ extension ReaderViewModel {
         autoPlayIfEnabled()
     }
 
+    /// Moves the reader to a Search in Book result, saving the current
+    /// position for Return and Go Back: the result of a transcript search to
+    /// the start of the sentence holding the match, any other to the match.
+    /// The one place that decides which move a result makes, for the Mac's
+    /// sheet and the phone's.
+    /// - Parameters:
+    ///   - chapterIndex: The content unit (chapter) holding the match.
+    ///   - characterOffset: The UTF-16 offset of the match in that unit's text.
+    ///   - inTranscript: Whether the book searched is a transcript
+    ///     (`BookSearchCorpus.timing` is not nil).
+    func goToSearchResult(chapterIndex: Int, characterOffset: Int, inTranscript: Bool) {
+        if inTranscript {
+            navigateToTranscriptSearchResult(chapterIndex: chapterIndex, textOffset: characterOffset)
+        } else {
+            navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: characterOffset)
+        }
+    }
+
     /// Whether Search in Book has a text to search: a text book that has
     /// loaded, or an audiobook with a transcript, whose text it searches.
     /// An audiobook without one has only spacing that counts time.
@@ -293,12 +311,16 @@ extension ReaderViewModel {
     /// command it names, if any, is the one the menu offers. A reason the
     /// load found for the text not being shown means the book has a
     /// transcript whatever the rows have noted of it yet.
-    func announceNoTextToSearch(hasTranscript: Bool) {
+    ///
+    /// `offersTranscription` is false on the iPhone, which cannot transcribe:
+    /// the words then name no command and tell no one to transcribe.
+    func announceNoTextToSearch(hasTranscript: Bool, offersTranscription: Bool = true) {
         announceToVoiceOver(BookSearchWording.noTextToSearch(
             bookTitle: book.title,
             canTranscribe: LibraryAudioCommand.isTranscribable(book),
             hasTranscript: hasTranscript || transcriptWithheld != nil,
-            withheld: transcriptWithheld
+            withheld: transcriptWithheld,
+            offersTranscription: offersTranscription
         ))
     }
 

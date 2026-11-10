@@ -376,6 +376,35 @@ final class PhoneSession: ObservableObject {
         rememberForReopening()
     }
 
+    /// Saves and closes the reader of the book `bookID` alone, leaving the
+    /// other open book as it was: for a book removed from the library while
+    /// it is open behind the screen, which must not stop the other book that
+    /// plays on. Nothing happens when the book is not open.
+    ///
+    /// When the book was the one on screen and another goes on behind it,
+    /// that one comes forward, as it does when Back leaves an unplayed
+    /// reader (`leaveReader`).
+    func closeBook(id bookID: UUID) {
+        if let behind = listening, behind.bookID == bookID {
+            setListening(nil)
+            close(behind)
+        } else if let onScreen = current, onScreen.bookID == bookID {
+            if let behind = listening {
+                // Closed first, then the book behind takes its place, as in
+                // `leaveReader`.
+                close(onScreen)
+                setListening(nil)
+                setCurrent(behind)
+            } else {
+                setCurrent(nil)
+                close(onScreen)
+            }
+        } else {
+            return
+        }
+        rememberForReopening()
+    }
+
     /// Closes `opened`: it is followed no more, it saves and closes, and, if
     /// the listener never engaged with its book, the book is left as it was:
     /// still "New", still unopened, and not among the recently opened, which a

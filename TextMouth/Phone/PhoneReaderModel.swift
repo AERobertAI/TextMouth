@@ -450,6 +450,39 @@ final class PhoneReaderModel {
         placeDidMove?()
     }
 
+    // MARK: - Search in Book
+
+    /// Search in Book was activated. True when the book has text to search
+    /// and the sheet should open. Otherwise the listener is told why, a
+    /// moment later as every answer is, and false is returned, so the
+    /// button stays in its place and does something every time
+    /// (the spec's "Everything else follows in a fixed order and a fixed
+    /// place"):
+    /// - while the book loads, "Loading Moby-Dick";
+    /// - for an audiobook with no transcript text, the Mac's words for why
+    ///   (`ReaderViewModel.announceNoTextToSearch`) without any that tell the
+    ///   listener to transcribe, since the phone has no Transcribe Audio;
+    /// - for a text book that failed to load, nothing: its screen shows the
+    ///   failure in place of the controls.
+    func openSearch() -> Bool {
+        guard let reader else { return false }
+        if reader.canSearchText { return true }
+        if reader.isLoading {
+            announceLater([VoiceOverAnnouncement(
+                message: PhoneReaderVocabulary.loading(reader.book.title),
+                priority: .medium
+            )])
+        } else if reader.isAudioBook {
+            answer {
+                $0.announceNoTextToSearch(
+                    hasTranscript: TranscribedBooks.shared.contains($0.book.id),
+                    offersTranscription: false
+                )
+            }
+        }
+        return false
+    }
+
     /// Listen from Here: moves the screen's book to `offset` in chapter
     /// `chapterIndex`, keeping the old place for Return, and plays it. What
     /// the jump says is collected and dropped: the book, starting there, is

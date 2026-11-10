@@ -4,10 +4,67 @@ import UIKit
 /// one (`UIAccessibility.post(notification:argument:)` wants the view) and a
 /// landing can be told for what it is. Each control registers its view in its
 /// `makeUIView`. Views are held weakly: a screen that goes takes its views.
+///
+/// It also keeps the reader's delayed requests for focus, and cancels them as
+/// VoiceOver lands on one of the reader's controls (`PhoneFocusRequests`).
 @MainActor
 final class PhoneFocusRegistry {
     /// The app's one registry: the reader's screen is shown once at a time.
     static let shared = PhoneFocusRegistry()
+
+    /// The delayed requests for focus that are waiting, and the rule that a
+    /// landing on a control cancels them.
+    private var requests = PhoneFocusRequests()
+    /// The observer of VoiceOver's landings, kept for the registry's life.
+    private var focusObserver: NSObjectProtocol?
+
+    private init() {
+        // Told on the main queue, then claims the main actor; only the
+        // element's identity crosses, which is Sendable. Every landing is
+        // heard, whoever or whatever caused it: `PhoneFocusRequests` decides
+        // which of them cancel a request.
+        focusObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.elementFocusedNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            let landed = (notification.userInfo?[UIAccessibility.focusedElementUserInfoKey] as? NSObject)
+                .map(ObjectIdentifier.init)
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.requests.focusLanded(on: self.kind(ofElementWithID: landed))
+            }
+        }
+    }
+
+    /// Asks for VoiceOver's focus to go to the control `kind`, by a layout
+    /// change with its view as the argument, after `delay` seconds. Cancelled
+    /// if VoiceOver lands on one of the reader's controls in the meantime,
+    /// since that is the listener's move and must not be pulled back, or if
+    /// `skip` answers true when the time comes. Does nothing if the control
+    /// has no view then.
+    func requestFocus(on kind: PhoneControlKind, after delay: TimeInterval, unless skip: @escaping @MainActor () -> Bool = { false }) {
+        let ticket = beginRequest()
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            MainActor.assumeIsolated {
+                // Claimed first, so a request that is skipped is spent too.
+                guard let self, self.claimRequest(ticket), !skip() else { return }
+                guard let view = self.view(for: kind) else { return }
+                UIAccessibility.post(notification: .layoutChanged, argument: view)
+            }
+        }
+    }
+
+    /// Notes a request for focus that is about to wait, for a caller that
+    /// makes the request itself (a sheet putting focus in its field): it
+    /// asks `claimRequest(_:)` when its time comes.
+    func beginRequest() -> PhoneFocusRequests.Ticket {
+        requests.request()
+    }
+
+    /// The time of the request with `ticket` has come: true, once, unless the
+    /// listener's landing on a reader control has cancelled it meanwhile.
+    func claimRequest(_ ticket: PhoneFocusRequests.Ticket) -> Bool {
+        requests.claim(ticket)
+    }
 
     /// A view held without keeping it.
     private final class WeakView {

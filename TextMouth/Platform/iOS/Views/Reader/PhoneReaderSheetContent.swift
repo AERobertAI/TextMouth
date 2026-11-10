@@ -42,6 +42,8 @@ struct PhoneReaderSheetContent: View {
         switch sheet {
         case .headings:
             PhoneHeadingsSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
+        case .search:
+            PhoneSearchSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .goTo:
             PhoneGoToSheet(reader: reader, farewell: farewell, noteJumped: noteJumped)
         case .bookmarks:

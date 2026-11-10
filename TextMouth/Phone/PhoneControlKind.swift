@@ -29,6 +29,8 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case bookmarks
     /// The Headings sheet.
     case headings
+    /// The Search in Book sheet.
+    case searchInBook
     /// The Go To sheet.
     case goTo
     /// Return, to the place before the last jump.
