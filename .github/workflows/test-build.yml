@@ -94,6 +94,18 @@ jobs:
           system_profiler SPAudioDataType || true
           ls /Library/Audio/Plug-Ins/HAL || true
 
+      # A trial only, for a request that says "restart_audio": true: restart macOS's audio
+      # service, which the runner image starts before any user is logged in.
+      - name: Restart the audio service
+        run: |
+          if grep -q '"restart_audio": true' .github/test-request.json; then
+            sudo killall coreaudiod || true
+            sleep 5
+            system_profiler SPAudioDataType || true
+          else
+            echo "Not asked for."
+          fi
+
       # A trial only, for a request that says "virtual_audio": true: a virtual sound device
       # (BlackHole, from Homebrew), to see whether the audio tests then run as they do on the Mac.
       - name: Install a virtual audio device
