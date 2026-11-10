@@ -191,6 +191,55 @@ class MergeShardsTests(unittest.TestCase):
         self.assertIn("shard 3 of 3 reported nothing", summary)
         self.assertNotIn("shard 2 of 3 reported nothing", summary, "shard 2 is the one that came")
 
+    def ios_results(self, summary, errors="", log="xcodebuild output\n"):
+        """Makes the folder the iPhone build's artifact downloads into; returns it."""
+        folder = self.out.parent / "ios"
+        folder.mkdir(exist_ok=True)
+        (folder / "ios-summary.txt").write_text(summary)
+        (folder / "ios-errors.txt").write_text(errors)
+        (folder / "ios.log").write_text(log)
+        return folder
+
+    def test_the_iphone_builds_results_are_passed_on_beside_the_tests(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 3.1\n")
+        merge_shards.merge(self.shards, self.out, 1, ios)
+        self.assertEqual(sorted(path.name for path in self.out.iterdir()),
+                         ["ios-errors.txt", "ios-summary.txt", "ios.log", "request.json", "run-summary.txt", "run.log",
+                          "summary.md"])
+        self.assertIn("- iOS build: PASSED; errors in the app: 0 in 0 files", (self.out / "summary.md").read_text())
+
+    def test_a_failed_iphone_build_does_not_fail_the_tests_but_its_errors_come_through(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: FAILED\nErrors in the app: 1 in 1 files\n", "A.swift:1:2: error: bad\n")
+        passed = merge_shards.merge(self.shards, self.out, 1, ios)
+        self.assertTrue(passed, "the tests and the iPhone build are judged apart")
+        self.assertEqual((self.out / "ios-errors.txt").read_text(), "A.swift:1:2: error: bad\n")
+        self.assertIn("iOS build: FAILED", (self.out / "ios-summary.txt").read_text())
+
+    def test_an_iphone_job_that_reported_nothing_is_said_to_have_not_run(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        empty = self.out.parent / "no-ios"
+        empty.mkdir()
+        passed = merge_shards.merge(self.shards, self.out, 1, empty)
+        self.assertTrue(passed)
+        self.assertTrue((self.out / "ios-summary.txt").read_text().startswith("iOS build: NOT RUN"))
+        self.assertIn("iOS build: NOT RUN", (self.out / "summary.md").read_text())
+
+    def test_without_an_iphone_folder_no_iphone_files_are_written(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        self.merged(1)
+        self.assertFalse((self.out / "ios-summary.txt").exists())
+        self.assertNotIn("iOS", (self.out / "summary.md").read_text())
+
+    def test_the_command_line_takes_the_iphone_folder_as_a_fourth_argument(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        with redirect_stdout(io.StringIO()):
+            status = merge_shards.main([str(self.shards), str(self.out), "1", str(ios)])
+        self.assertEqual(status, 0)
+        self.assertTrue((self.out / "ios-summary.txt").exists())
+
     def test_a_missing_shards_folder_fails_the_run(self):
         passed, summary = self.merged(2)
         self.assertFalse(passed)

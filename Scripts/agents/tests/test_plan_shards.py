@@ -30,7 +30,7 @@ class PlanShardsTests(unittest.TestCase):
     def test_a_request_for_three_shards_gives_three_in_the_matrix(self):
         status, lines = self.plan({"areas": ["all"], "shards": 3})
         self.assertEqual(status, 0)
-        self.assertEqual(lines, ["shards=3", 'matrix={"shard":[1,2,3]}'])
+        self.assertEqual(lines[:2], ["shards=3", 'matrix={"shard":[1,2,3]}'])
 
     def test_the_matrix_line_is_json_the_workflow_can_expand(self):
         _, lines = self.plan({"shards": 2})
@@ -59,6 +59,28 @@ class PlanShardsTests(unittest.TestCase):
     def test_a_missing_file_is_an_error(self):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(plan_shards.main(["/nonexistent/request.json"]), 2)
+
+    def output(self, request):
+        """The plan's lines as {name: value}."""
+        return dict(line.split("=", 1) for line in self.plan(request)[1])
+
+    def test_the_request_is_passed_on_as_one_line_that_reads_back_the_same(self):
+        request = {"areas": ["all"], "classes": ["A\nB", "Café"], "shards": 2, "full": True}
+        lines = self.plan(request)[1]
+        self.assertEqual(len([l for l in lines if l.startswith("request=")]), 1)
+        self.assertEqual(len(lines), 5, "one output line each: no raw newline may split the request")
+        self.assertEqual(json.loads(self.output(request)["request"]), request)
+
+    def test_the_iphone_build_is_on_unless_the_request_turns_it_off(self):
+        self.assertEqual(self.output({})["ios"], "true")
+        self.assertEqual(self.output({"ios": False})["ios"], "false")
+        self.assertEqual(self.output({"ios": True})["ios"], "true")
+        self.assertEqual(self.output({"ios": "no"})["ios"], "true", "only a real false turns it off")
+
+    def test_the_build_is_cached_unless_the_request_asks_for_a_cold_one(self):
+        self.assertEqual(self.output({})["cold"], "false")
+        self.assertEqual(self.output({"cold": True})["cold"], "true")
+        self.assertEqual(self.output({"cold": "yes"})["cold"], "false", "only a real true makes it cold")
 
     def test_the_most_shards_is_what_the_workflow_runs_at_once(self):
         # A free account runs a few macOS jobs at once; more shards would only queue.
