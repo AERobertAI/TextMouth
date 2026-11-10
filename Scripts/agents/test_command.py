@@ -35,10 +35,11 @@ FULL_SUITE_BASE = ["xcodebuild", "test", "-project", "TextMouth.xcodeproj", "-sc
                    "CODE_SIGNING_ALLOWED=NO", "SWIFT_STRICT_CONCURRENCY=complete"]
 
 
-def full_suite_command(derived_data, result_bundle=None):
+def full_suite_command(derived_data, result_bundle=None, extra=()):
     """The argv of the full suite, built in `derived_data`. With `result_bundle`
-    (a path), xcodebuild also writes its result bundle there."""
-    command = [*FULL_SUITE_BASE, "-derivedDataPath", str(derived_data)]
+    (a path), xcodebuild also writes its result bundle there; `extra` is more
+    xcodebuild arguments, put before it."""
+    command = [*FULL_SUITE_BASE, "-derivedDataPath", str(derived_data), *extra]
     if result_bundle:
         command += ["-resultBundlePath", str(result_bundle)]
     return command
@@ -50,12 +51,12 @@ def area_names(areas):
     return ["all"] if "all" in areas else list(areas)
 
 
-def area_command(areas, classes, derived_data, log, jobs=2, slot=False):
+def area_command(areas, classes, derived_data, log, jobs=2, slot=False, extra=()):
     """The argv of one run-area.py run of `areas` and `classes` (a list, may be
     empty), built in `derived_data` and logged to `log`. A class named beside
     "all" is already part of it, so it is left out. `slot` False leaves out the
     build-slot wrapper, as the train and the runner both want; `jobs` is
-    xcodebuild's -jobs."""
+    xcodebuild's -jobs; `extra` is more xcodebuild arguments."""
     names = area_names(areas)
     command = ["python3", "-I", "Scripts/test/run-area.py", *names]
     if classes and names != ["all"]:
@@ -64,6 +65,8 @@ def area_command(areas, classes, derived_data, log, jobs=2, slot=False):
     if not slot:
         command += ["--no-slot"]
     command += ["--derived-data", str(derived_data), "--log", str(log)]
+    # run-area.py takes each as --xcodebuild-arg=ARG (the equals sign, since ARG starts with a hyphen).
+    command += [f"--xcodebuild-arg={argument}" for argument in extra]
     return command
 
 

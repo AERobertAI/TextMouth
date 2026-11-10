@@ -50,8 +50,20 @@ ROOT = AGENTS.parents[1]
 # The whole run may take this long, in minutes: less than the workflow's job limit,
 # so this script ends the run and writes its results before the job is cancelled.
 DEFAULT_LIMIT_MINUTES = 80
+# The longest one test may take on the runner, in seconds. xcodebuild fails a test that passes it, so a test
+# that waits for something the runner lacks costs this and not its own limit (5 minutes for an audio read).
+# The slowest test on the development Mac takes 21 seconds, so 90 leaves a wide margin.
+TEST_SECONDS = 90
 # xcodebuild's -jobs on the runner (a free macOS runner has 3 or 4 cores).
 RUNNER_JOBS = 3
+
+
+def time_limit_arguments(request):
+    """The xcodebuild arguments that fail a test passing its time limit: the request's
+    "test_seconds", or TEST_SECONDS."""
+    seconds = str(int(request.get("test_seconds", TEST_SECONDS)))
+    return ["-test-timeouts-enabled", "YES", "-default-test-execution-time-allowance", seconds,
+            "-maximum-test-execution-time-allowance", seconds]
 
 
 def read_request(path):
@@ -124,12 +136,12 @@ def run_tests(train, request, out, limit_minutes):
         return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"
                 "PASSED in 0 seconds\n"), False
     if request["full"]:
-        command = test_command.full_suite_command(derived, out / "result.xcresult")
+        command = test_command.full_suite_command(derived, out / "result.xcresult", extra=time_limit_arguments(request))
         # The suite's whole output is its log; run-area.py writes its own log.
         sink = open(log, "wb")
     else:
         command = test_command.area_command(request["areas"], request["classes"], derived, log,
-                                            jobs=RUNNER_JOBS)
+                                            jobs=RUNNER_JOBS, extra=time_limit_arguments(request))
         sink = subprocess.PIPE
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT)

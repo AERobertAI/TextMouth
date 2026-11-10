@@ -67,6 +67,14 @@ class AreaCommandTests(unittest.TestCase):
         self.assertEqual(command[command.index("--jobs") + 1], "3")
         self.assertNotIn("--no-slot", command)
 
+    def test_extra_xcodebuild_arguments_are_passed_with_an_equals_sign(self):
+        command = test_command.area_command(["feeds"], [], "/d", "/l", extra=["-test-timeouts-enabled", "YES"])
+        self.assertEqual(command[-2:], ["--xcodebuild-arg=-test-timeouts-enabled", "--xcodebuild-arg=YES"])
+
+    def test_extra_arguments_reach_the_full_suite_before_its_result_bundle(self):
+        command = test_command.full_suite_command("/d", "/r.xcresult", extra=["-test-timeouts-enabled", "YES"])
+        self.assertEqual(command[-4:], ["-test-timeouts-enabled", "YES", "-resultBundlePath", "/r.xcresult"])
+
     def test_the_command_is_made_of_plain_strings(self):
         command = test_command.area_command(["feeds"], [], Path("/d"), Path("/l"))
         self.assertTrue(all(isinstance(word, str) for word in command))

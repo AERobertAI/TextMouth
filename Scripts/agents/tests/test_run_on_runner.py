@@ -59,7 +59,7 @@ class RunnerTestCase(unittest.TestCase):
                    f"sys.stdout.write({printed!r}); sys.stdout.flush()\n"
                    f"time.sleep({sleep})\n"
                    f"sys.exit({status})\n")
-        return lambda areas, classes, derived, log, jobs=3: [sys.executable, "-I", "-B", "-c", program, str(log)]
+        return lambda areas, classes, derived, log, jobs=3, extra=(): [sys.executable, "-I", "-B", "-c", program, str(log)]
 
     def run_main(self, limit_minutes=5, extra=()):
         """Runs the script's main() on the request; returns (status, stdout)."""
@@ -147,8 +147,8 @@ class AreaRunTests(RunnerTestCase):
     def test_the_command_gets_the_requests_areas_classes_and_the_runners_jobs(self):
         seen = {}
 
-        def spy(areas, classes, derived, log, jobs=3):
-            seen.update(areas=areas, classes=classes, derived=derived, log=log, jobs=jobs)
+        def spy(areas, classes, derived, log, jobs=3, extra=()):
+            seen.update(areas=areas, classes=classes, derived=derived, log=log, jobs=jobs, extra=extra)
             return self.child(SUMMARY_PASSED, LOG_PASSED)(areas, classes, derived, log)
 
         with mock.patch.object(test_command, "area_command", spy):
@@ -186,6 +186,39 @@ class ProgressTests(RunnerTestCase):
         self.assertIn("(nothing yet)", out.getvalue())
 
 
+class TimeLimitTests(RunnerTestCase):
+    """A test that waits for something the runner lacks fails after a short limit, not its own long one."""
+
+    def test_the_default_limit_is_ninety_seconds_and_a_request_may_change_it(self):
+        self.assertEqual(runner.time_limit_arguments({}),
+                         ["-test-timeouts-enabled", "YES", "-default-test-execution-time-allowance", "90",
+                          "-maximum-test-execution-time-allowance", "90"])
+        self.assertIn("30", runner.time_limit_arguments({"test_seconds": 30}))
+
+    def test_both_commands_get_the_limit(self):
+        seen = {}
+
+        def spy_area(areas, classes, derived, log, jobs=3, extra=()):
+            seen["area"] = list(extra)
+            return self.child(SUMMARY_PASSED, LOG_PASSED)(areas, classes, derived, log)
+
+        with mock.patch.object(test_command, "area_command", spy_area):
+            self.run_main()
+        self.write_request({"areas": [], "classes": [], "full": True})
+
+        def spy_full(derived, result_bundle=None, extra=()):
+            seen["full"] = list(extra)
+            return [sys.executable, "-I", "-B", "-c", f"import sys; sys.stdout.write({LOG_PASSED!r})"]
+
+        with mock.patch.object(test_command, "full_suite_command", spy_full):
+            self.run_main()
+        self.assertEqual(seen["area"], runner.time_limit_arguments({}))
+        self.assertEqual(seen["full"], runner.time_limit_arguments({}))
+
+    def test_the_limit_is_far_above_the_slowest_test_on_the_development_mac(self):
+        self.assertGreaterEqual(runner.TEST_SECONDS, 4 * 21, "the slowest local test took 21 seconds on November 6, 2026")
+
+
 class ShardTests(RunnerTestCase):
     """A job that runs its share of a request."""
 
@@ -209,7 +242,7 @@ class ShardTests(RunnerTestCase):
         self.write_request({"areas": ["stats"], "classes": []})
         seen = []
 
-        def spy(areas, classes, derived, log, jobs=3):
+        def spy(areas, classes, derived, log, jobs=3, extra=()):
             seen.append((areas, classes))
             return self.child(SUMMARY_PASSED, LOG_PASSED)(areas, classes, derived, log)
 
@@ -262,7 +295,7 @@ class FullSuiteTests(RunnerTestCase):
         self.write_request({"areas": [], "classes": [], "full": True})
         seen = {}
 
-        def fake_full(derived, result_bundle=None):
+        def fake_full(derived, result_bundle=None, extra=()):
             seen.update(derived=derived, bundle=result_bundle)
             program = f"import sys; sys.stdout.write({LOG_PASSED!r})"
             return [sys.executable, "-I", "-B", "-c", program]

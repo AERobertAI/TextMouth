@@ -61,6 +61,9 @@ Options:
   --log FILE          log file;     default <tempdir>/TextMouth-area-<suffix>.log
                       (<suffix> is $BBS_AGENT when set, else "area")
   --jobs N            xcodebuild -jobs (default 4)
+  --xcodebuild-arg=ARG  one more argument for xcodebuild (repeatable; give it with an equals sign,
+                      as --xcodebuild-arg=-test-timeouts-enabled, since it starts with a hyphen);
+                      not used by --repeat
   --no-slot           do not hold a build slot (for a Mac with no agents running)
   --clean             unregister the build folder's app and delete the folder
   -h, --help          this text
@@ -125,6 +128,7 @@ def parse_args(argv):
     parser.add_argument("--derived-data")
     parser.add_argument("--log")
     parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--xcodebuild-arg", action="append", default=[])
     parser.add_argument("--no-slot", action="store_true")
     parser.add_argument("--clean", action="store_true")
     parser.add_argument("--changed", action="store_true")
@@ -674,6 +678,9 @@ def selftest() -> int:
         "-destination", "platform=macOS", "-parallel-testing-enabled", "NO", "-jobs", "3",
         "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "-derivedDataPath", "/tmp/D",
         "-only-testing:TextMouthProductionTests/A", "-only-testing:TextMouthProductionTests/B"], command)
+    extra = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False, extra=["-test-timeouts-enabled", "YES"])
+    check("extra arguments go before the classes", extra[-3:] == ["-test-timeouts-enabled", "YES", "-only-testing:TextMouthProductionTests/A"],
+          extra[-3:])
     slotted = testkit.build_command(Path("/r"), ["A"], "/tmp/D")
     check("the wrapper goes first", slotted[0] == "/r/" + testkit.SLOT_WRAPPER and slotted[1] == "xcodebuild", slotted[:2])
 
@@ -1020,7 +1027,8 @@ def main(argv) -> int:
         command, steps = repeat_plan(root, selected, derived_data, args.jobs, args.repeat, log_path,
                                      env_vars, use_slot=not args.no_slot)
     else:
-        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot)
+        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot,
+                                        extra=args.xcodebuild_arg)
 
     if args.dry_run:
         if args.repeat:
