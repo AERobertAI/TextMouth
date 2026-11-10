@@ -293,6 +293,14 @@ class SkipTests(RunnerTestCase):
         chosen = runner.selected_skips({"full": False, "areas": [], "classes": ["FooTests"]}, skips)
         self.assertEqual(chosen, [("FooTests", "testBar", "")])
 
+    def test_a_probe_request_leaves_nothing_out_however_much_it_asks_for(self):
+        skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
+        for request in ({"full": True, "areas": [], "classes": []}, {"full": False, "areas": ["stats"], "classes": []},
+                        {"full": False, "areas": [], "classes": ["FooTests"]}):
+            with self.subTest(request=request):
+                self.assertEqual(runner.selected_skips({**request, "no_skips": True}, skips), [])
+                self.assertNotEqual(runner.selected_skips({**request, "no_skips": False}, skips), [])
+
     def test_the_arguments_hold_the_time_limit_and_the_skips(self):
         arguments = runner.runner_arguments({"full": True, "areas": [], "classes": []}, [("FooTests", "testBar", "")])
         self.assertEqual(arguments[:2], ["-test-timeouts-enabled", "YES"])
