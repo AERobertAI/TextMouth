@@ -71,6 +71,13 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.assertIn("Executed 11853 tests, with 81 tests skipped and 0 failures", out)
         self.assertIn("https://github.example/runs/7001", out)
 
+    def test_a_log_in_a_folder_that_does_not_exist_yet_is_written_all_the_same(self):
+        self.log = self.folder / "new-folder" / "suite.log"
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        status, out, _ = self.run_remote()
+        self.assertEqual(status, 0, out)
+        self.assertEqual(self.log.read_text(), SUITE_PASSED)
+
     def test_the_suite_pushed_is_the_full_suite_of_the_commit_to_testbuild_only(self):
         self.gh_runs(results("PASSED\n", SUITE_PASSED))
         self.run_remote("orchestrator-suite")

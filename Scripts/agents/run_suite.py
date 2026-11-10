@@ -158,6 +158,7 @@ def run_remote(name, log, commit, cwd=None):
               file=sys.stderr)
         return 4
     # The run's log is the suite's log, where a local run's would be.
+    Path(log).parent.mkdir(parents=True, exist_ok=True)
     Path(log).write_bytes(downloaded.read_bytes())
     return judge_log(log)
 
