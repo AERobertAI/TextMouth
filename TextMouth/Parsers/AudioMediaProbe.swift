@@ -178,7 +178,8 @@ enum AudioMediaProbe {
         }
     }
 
-    /// A track and its asset on their way to `decodeQueue`.
+    /// `@unchecked Sendable`: a track and its asset on their way to `decodeQueue`, used there by one decoding check
+    /// alone, on one thread, and by nothing else meanwhile.
     private struct DecodeJob: @unchecked Sendable {
         let track: AVAssetTrack
         let asset: AVAsset
