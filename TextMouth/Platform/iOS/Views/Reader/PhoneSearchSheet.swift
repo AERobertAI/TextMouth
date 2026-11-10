@@ -62,6 +62,9 @@ struct PhoneSearchSheet: View {
                     resultRows
                 }
             }
+            // Scrolling the results puts the keyboard away, so it never
+            // covers the rows being read or touched.
+            .scrollDismissesKeyboard(.immediately)
             .navigationTitle(PhoneBookSearchVocabulary.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

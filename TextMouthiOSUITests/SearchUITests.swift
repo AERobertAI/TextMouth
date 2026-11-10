@@ -135,6 +135,14 @@ final class SearchUITests: TextMouthUITestCase {
     func testTheSearchSheetPassesTheAudit() throws {
         let app = try openSearchSheet(for: Self.word)
         _ = try waitForStatus(ending: [" matches", " match"], in: app)
+        // The field holds the keyboard, as the spec has it, and the audit
+        // reads the keyboard's own cells too (pass 1, November 9, 2026: three
+        // "TUIPredictionViewCell" findings, and contrast findings on the rows
+        // under the keyboard). A scroll, which is silent, puts it away
+        // (`scrollDismissesKeyboard`); then back to the top.
+        app.swipeUp()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: Self.patience), "Scrolling didn't put the keyboard away")
+        app.swipeDown()
         try audit(app, screen: "Search in Book sheet", accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book")])
     }
 }
