@@ -253,7 +253,7 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
 # ---------------------------------------------------------------------------
 
 def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: int = 4,
-                  use_slot: bool = True, action: str = "test") -> List[str]:
+                  use_slot: bool = True, action: str = "test", extra: Sequence[str] = ()) -> List[str]:
     """The argv of one xcodebuild run of all `classes`, behind the slot wrapper.
 
     `action` is xcodebuild's own: "test" (the default), or "build-for-testing"
@@ -262,7 +262,8 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
     One invocation carries every class as its own -only-testing: argument, so
     several areas launch the test host once (each launch leaves about 23 MB in
     a system cache). Run it from the repository root. The wrapper is left out
-    when use_slot is false.
+    when use_slot is false. `extra` is more xcodebuild arguments, put before the
+    classes (the GitHub runner passes its test time limits this way).
     """
     command = [str(root / SLOT_WRAPPER)] if use_slot else []
     command += [
@@ -276,6 +277,7 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
         "COMPILER_INDEX_STORE_ENABLE=NO",
         "-derivedDataPath", derived_data,
     ]
+    command += list(extra)
     command += [f"-only-testing:{TEST_TARGET}/{name}" for name in classes]
     return command
 

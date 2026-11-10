@@ -116,7 +116,7 @@ class RunSuiteTests(HeavyLockTestCase):
     def test_a_command_line_without_a_log_is_refused(self):
         with mock.patch.object(sys, "argv", ["run_suite.py", "suite"]), contextlib.redirect_stderr(io.StringIO()) as err:
             self.assertEqual(run_suite.main(), 2)
-        self.assertIn("usage: run_suite.py NAME LOG", err.getvalue())
+        self.assertIn("usage: run_suite.py [--remote COMMIT] NAME LOG", err.getvalue())
 
     def test_the_command_is_the_hosted_suite_and_never_changes_unnoticed(self):
         # The real command, read without running it: the merge method in AGENTS.md names these.
