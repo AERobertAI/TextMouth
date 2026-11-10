@@ -30,7 +30,7 @@ enum PageReaderVersions {
     /// theirs later, each with a case of its own and its own version, which
     /// reads again only its own books (V07).
     ///
-    /// EPUB and HTML are at "1.0.3". At "1.0.1" the HTML converter they
+    /// EPUB is at "1.0.3", and HTML at "1.0.4" (below). At "1.0.1" the HTML converter they
     /// share stopped leaving a page-break element's number in the label of a
     /// heading that holds one ("Part 9Two" is "Part Two"), which changed the
     /// reading text of the books that have such a heading and of no others.
@@ -47,10 +47,24 @@ enum PageReaderVersions {
     /// read. Every format's labels lose the word whenever their content.md
     /// is read, so only these two formats are read again: only their text
     /// can change.
+    ///
+    /// HTML is at "1.0.4", ahead of EPUB. At "1.0.4" the decoder every plain
+    /// text and HTML book goes through (`TextFileDecoder`) recognizes UTF-16
+    /// in an alphabet and in Chinese, Japanese, and Korean, and UTF-32,
+    /// written without a byte-order mark, and reads an HTML file that
+    /// declares ISO-2022-JP in it, unless the book recorded its encoding.
+    /// That changes what a book of an HTML file in one of those makes, and no
+    /// EPUB's, which has its own readers; so each HTML book is read again
+    /// once, its content.md byte for byte as before unless it is one of
+    /// those. A web archive's page and a .doc that is a web page keep the old
+    /// steps (`TextFileDecoder.Evidence.legacy`), since they have no such
+    /// version to raise.
     static func current(for format: BookFormat) -> String? {
         switch format {
-        case .epub, .html:
+        case .epub:
             return "1.0.3"
+        case .html:
+            return "1.0.4"
         case .pdf, .daisy:
             return "1.0.0"
         case .docx:
@@ -122,8 +136,19 @@ enum PageReaderVersions {
             // Plain text's form feeds begin pages (PG13), and its own case
             // reads again only plain text books (V07). Most hold no form
             // feed between words: each is read again once, its content.md
-            // byte for byte as before, and then stamped.
-            return "1.0.0"
+            // byte for byte as before, and then stamped. At "1.0.1" the
+            // decoder recognizes UTF-16 in an alphabet and in Chinese,
+            // Japanese, and Korean, and UTF-32, written without a
+            // byte-order mark (`TextFileDecoder.unmarkedUnicode(in:)`), so a
+            // book of such a file, read before as UTF-8 with control
+            // characters in it (Cyrillic UTF-16 is valid UTF-8) or as
+            // Windows-1252, is read again once, and every other plain text
+            // book a second time, byte for byte as before. (Markdown has no
+            // page reader and no version: its books read the new way
+            // whenever their text is built again, by Redo Text Extraction or
+            // a stale cache, and a Markdown file imported from now on reads
+            // so at once.)
+            return "1.0.1"
         case .mobi:
             // A Kindle book of the MOBI family has pages when it is in KF8
             // (FMT48): that format keeps the page-break elements of the EPUB

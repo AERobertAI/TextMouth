@@ -634,7 +634,7 @@ enum EPUBParser {
         } catch let overflow as ArchiveEntryOverflow {
             throw EPUBParserError.damagedFile(file: entry.path, reason: overflow.reason)
         } catch {
-            let reason = entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+            let reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "EPUB_ZIP_ERROR")
             throw EPUBParserError.damagedFile(file: entry.path, reason: reason)
         }
         guard entry.checksum == 0 || checksum == entry.checksum else {

@@ -152,7 +152,8 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// to the bounds `readFile(at:)` holds it to, so an audio file of up to
     /// 256 MB never sits whole in memory (PERF24). A copy that fails, the
     /// entry found too large partway included, leaves nothing behind.
-    /// - Throws: as `readFile(at:)` throws, or the error writing threw.
+    /// - Throws: as `readFile(at:)` throws, or the error writing threw
+    ///   (never taken for damage in the archive: `WriteFailure`).
     func copyFile(at path: String, to destination: URL) throws {
         let entry = try entry(at: path)
         guard FileManager.default.createFile(atPath: destination.path, contents: nil) else {
@@ -170,7 +171,8 @@ class ArchiveFileProvider: DAISYFileProvider {
                 try ArchiveEntryReader.stream(entry, in: archive, limit: nil, holdingToDeclaredSize: budget != nil) { chunk in
                     batch.append(chunk)
                     if batch.count >= Self.writeBatchSize {
-                        try handle.write(contentsOf: batch)
+                        // A failed write (a full disk) is not the archive's damage.
+                        do { try handle.write(contentsOf: batch) } catch { throw WriteFailure(underlying: error) }
                         batch.removeAll(keepingCapacity: true)
                     }
                 }
@@ -195,16 +197,33 @@ class ArchiveFileProvider: DAISYFileProvider {
         return entry
     }
 
-    /// Run `body`, which reads `entry`, naming an entry it finds too large
-    /// in the DAISY damage sentence and keeping that on the budget.
-    private func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
+    /// A failure to write a file out while it is copied, which `withinBounds`
+    /// passes on as it was: the error itself, not ZIP damage. Internal so that
+    /// a test can throw one, since a full disk cannot be made in a test.
+    struct WriteFailure: Error {
+        /// The error the write threw.
+        let underlying: Error
+    }
+
+    /// Run `body`, which reads `entry`, naming an entry it finds too large,
+    /// or whose data cannot be unpacked, in the DAISY damage sentence and
+    /// keeping that on the budget. ZIPFoundation's own error for the second
+    /// is logged as `DAISY_ZIP_ERROR`, not shown. A failed write
+    /// (`WriteFailure`) is the error it was.
+    func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
+        let reason: String
         do {
             return try body()
+        } catch let failure as WriteFailure {
+            throw failure.underlying
         } catch let overflow as ArchiveEntryOverflow {
-            let damage = DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
-            budget?.record(damage)
-            throw damage
+            reason = overflow.reason
+        } catch {
+            reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "DAISY_ZIP_ERROR")
         }
+        let damage = DAISYParserError.malformedXML(file: entry.path, reason: reason)
+        budget?.record(damage)
+        throw damage
     }
 }
 

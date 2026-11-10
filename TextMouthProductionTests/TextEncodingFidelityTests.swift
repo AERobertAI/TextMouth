@@ -332,7 +332,7 @@ enum EncodedBookFixture {
             case .utf8: return .validUTF8
             case .utf8WithMark, .utf16LEWithMark, .utf16BEWithMark, .utf32LEWithMark, .utf32BEWithMark:
                 return .byteOrderMark
-            case .utf16LE, .utf16BE: return .unmarkedUTF16
+            case .utf16LE, .utf16BE: return .unmarkedUnicode
             case .windows1252: return .fallback
             }
         }
@@ -496,7 +496,7 @@ enum EncodedBookFixture {
         ),
         HTMLVariant(
             name: "UTF-16LE without a byte-order mark",
-            encoding: .utf16LE, decodedEncoding: .utf16LittleEndian, basis: .unmarkedUTF16
+            encoding: .utf16LE, decodedEncoding: .utf16LittleEndian, basis: .unmarkedUnicode
         ),
         HTMLVariant(
             name: "Windows-1252 declared by a meta charset", head: "<meta charset=\"windows-1252\">",

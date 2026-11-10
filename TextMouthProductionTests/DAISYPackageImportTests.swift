@@ -547,6 +547,57 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.subpathsOfDirectory(atPath: parent.path).sorted(), before)
     }
 
+    /// A symbolic link to a folder of DAISY book folders is imported as the
+    /// folder itself is: refused, with the folder's own sentence, and not as
+    /// one audiobook of every book's tracks. The enumerator does not enter a
+    /// link, so the walks that find a DAISY book beneath the folder, and the
+    /// files it holds, must start at the folder the link leads to.
+    func testALinkToAParentOfDAISYBookFoldersIsRefusedAsTheFolderItselfIs() throws {
+        var files = inside("Rope Splicing/", Fixtures.navigationBook)
+        files["Rope Splicing/track.mp3"] = ""
+        files.merge(inside("Ferry Timetables/", Fixtures.packageBook)) { $1 }
+        files["Ferry Timetables/track.mp3"] = ""
+        let parent = try Fixtures.writeFolder(files, named: "Audiobooks", in: sources)
+        let link = sources.appendingPathComponent("Linked Audiobooks")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: parent)
+
+        XCTAssertFalse(FileImportService.isFolderOfTracks(parent), "the folder itself")
+        XCTAssertFalse(FileImportService.isFolderOfTracks(link), "a link to it is a folder of tracks")
+        let direct = assertRefusedAsNoBook(parent)
+        var viaLink: String?
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: link, toFolder: folderPath)) { error in
+            let failure = error as? ImportFailure
+            XCTAssertEqual(failure?.step, .checkingFormat, "\(error)")
+            XCTAssertEqual((failure?.underlying as? FolderWithoutBookError)?.folderName, "Audiobooks", "\(error)")
+            viaLink = error.localizedDescription
+        }
+        XCTAssertEqual(viaLink, direct, "the sentence for a link differs from the folder's")
+        XCTAssertEqual((try? folderEntries()) ?? ["unreadable"], [], "something was copied")
+    }
+
+    /// A positive control: a symbolic link to a folder of tracks imports as
+    /// one audiobook, named and made as the folder itself is, from the folder
+    /// the link leads to, and the folder is kept.
+    func testALinkToAFolderOfTracksImportsAsTheFolderItselfDoes() throws {
+        let folder = try Fixtures.writeFolder(
+            ["Bonus/notes.txt": "Notes.", "Bonus/cover.jpg": "not really a picture"],
+            named: "Night Ferries",
+            in: sources
+        )
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("02.wav"), duration: 0.2)
+        let link = sources.appendingPathComponent("Linked Ferries")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
+
+        XCTAssertTrue(FileImportService.isFolderOfTracks(link))
+        let imported = try FileImportService.importFileWithReport(from: link, toFolder: folderPath)
+        XCTAssertEqual(imported.book.format, .audio)
+        XCTAssertEqual(imported.book.title, "Night Ferries", "the book is named by the folder it leads to")
+        XCTAssertTrue(imported.isFromFolder)
+        XCTAssertFalse(imported.mayDeleteOriginal, "a folder is never deleted as an original")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("01.wav").path))
+    }
+
     /// A DAISY book two folders deep also makes its parent a folder that is
     /// not a book, whatever audio sits at the parent's top.
     func testADAISYBookTwoFoldersDeepAlsoRefusesTheParent() throws {

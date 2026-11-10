@@ -92,7 +92,10 @@ enum AudioBookParser {
 
     /// Find the same playable candidates during import and reader loading.
     /// ZIPs commonly contain a wrapper folder; AppleDouble sidecars and symbolic
-    /// links are not chapters, even when their names have an audio extension.
+    /// links inside the folder are not chapters, even when their names have an
+    /// audio extension. The folder itself may be a symbolic link: whoever named
+    /// it chose to read what it leads to, so it is read as that folder
+    /// (`resolvingALinkedFolder(_:)`), while the links inside it stay unfollowed.
     /// - Parameter scan: which formats are tracks (`TrackScan`). Every app
     ///   caller passes it, so each says whether it runs before the import's
     ///   conversion or on a package; the default, the import's list, is what
@@ -102,7 +105,7 @@ enum AudioBookParser {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
-            at: directory,
+            at: resolvingALinkedFolder(directory),
             includingPropertiesForKeys: Array(keys),
             options: [.skipsHiddenFiles],
             errorHandler: { _, error in
@@ -141,6 +144,17 @@ enum AudioBookParser {
                 relativeName(of: $1, in: directory)
             ) == .orderedAscending
         }
+    }
+
+    /// `directory` as the folder to walk: the folder a symbolic link leads to
+    /// when `directory` is itself a link, since the file manager's enumerator
+    /// refuses a link ("couldn't be opened", as if the folder were damaged),
+    /// and `directory` as it is otherwise, its spelling kept (a path through
+    /// /var stays one). A link that leads nowhere is returned as it is, and
+    /// the enumerator reports it.
+    static func resolvingALinkedFolder(_ directory: URL) -> URL {
+        let isLink = (try? directory.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+        return isLink ? directory.resolvingSymlinksInPath() : directory
     }
 
     /// The path from `directory` of each track `audioFiles(in:scan:)` finds

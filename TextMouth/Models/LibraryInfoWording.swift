@@ -285,9 +285,10 @@ enum TextEncodingWording {
     static let chosenNote = "chosen"
     /// What follows the name of a Unicode encoding a byte-order mark names.
     static let byteOrderMarkNote = "from its byte order mark"
-    /// What follows "UTF-16" for a file recognized as UTF-16 by its zero
-    /// bytes, which has no byte-order mark.
-    static let unmarkedUTF16Note = "recognized by its bytes"
+    /// What follows the name of a Unicode encoding for a file recognized as
+    /// UTF-16 or UTF-32 by the structure of its bytes, which has no
+    /// byte-order mark.
+    static let unmarkedUnicodeNote = "recognized by its bytes"
     /// What follows the name of the encoding an HTML file declares.
     static let declaredNote = "declared in the file"
     /// What follows "Windows-1252 (Western European)" for a file whose bytes
@@ -304,7 +305,7 @@ enum TextEncodingWording {
         case .chosen: note = chosenNote
         case .guessed: note = guessNote
         case .byteOrderMark: note = byteOrderMarkNote
-        case .unmarkedUTF16: note = unmarkedUTF16Note
+        case .unmarkedUnicode: note = unmarkedUnicodeNote
         case .validUTF8: note = nil
         case .declared: note = declaredNote
         case .defaultEncoding: note = defaultNote

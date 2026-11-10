@@ -206,7 +206,11 @@ enum TextutilDocumentReader {
         case .webPage:
             // The page's bytes are held to the same limit as a document's.
             let bytes = try DocumentByteLimit.contents(of: url)
-            let page = try TextFileDecoder.decode(bytes, fileName: url.lastPathComponent, format: .html)
+            // The old evidence, as the web archive reader reads: a .doc keeps its
+            // version, so what it reads does not change (`TextFileDecoder.Evidence.legacy`).
+            let page = try TextFileDecoder.decode(
+                bytes, fileName: url.lastPathComponent, format: .html, evidence: .legacy
+            )
             return Source(html: page.text, isWebPage: true)
         case let .textutil(chosen):
             format = chosen

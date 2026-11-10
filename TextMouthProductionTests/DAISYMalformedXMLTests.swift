@@ -299,6 +299,136 @@ final class DAISYMalformedXMLTests: XCTestCase {
         malformedXMLReason(naming: "part1.smil") { try DAISYParser.extractMarkdown(from: damaged) }
     }
 
+    // MARK: - ZIP Damage
+
+    /// A file of the archive whose compressed data cannot be decoded is
+    /// named as damaged in the DAISY sentence, read or copied, instead of
+    /// surfacing ZIPFoundation's own error; the copy leaves nothing behind,
+    /// and the files beside it still read.
+    func testAFileWhoseCompressedDataCannotBeDecodedIsNamedAsDamaged() throws {
+        let zip = try makeTemporaryZip(
+            prefix: "TextMouthDAISYTest",
+            entries: Self.daisy202Package().mapValues { Data($0.utf8) },
+            compressionMethod: .deflate
+        )
+        defer { try? FileManager.default.removeItem(at: zip) }
+        try damageData(of: "text.html", in: zip)
+        let provider = ArchiveFileProvider(archive: try Archive(url: zip, accessMode: .read))
+        let expected = "The file “text.html” in this DAISY book is damaged or incomplete: "
+            + "its compressed data could not be decoded. Get a fresh copy of the book, then import it again."
+
+        XCTAssertThrowsError(try provider.readFile(at: "text.html")) { error in
+            XCTAssertEqual(error.localizedDescription, expected, "reading the file")
+        }
+        let copy = FileManager.default.temporaryDirectory.appendingPathComponent("TextMouthDAISYCopy-\(UUID().uuidString).html")
+        defer { try? FileManager.default.removeItem(at: copy) }
+        XCTAssertThrowsError(try provider.copyFile(at: "text.html", to: copy)) { error in
+            XCTAssertEqual(error.localizedDescription, expected, "copying the file")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: copy.path), "the failed copy was left behind")
+        XCTAssertEqual(try provider.readFile(at: "ncc.html"), Data(Self.ncc.utf8), "a file beside it")
+    }
+
+    /// What `withinBounds` makes of each thing that can go wrong while a file
+    /// is read or copied: a failed write (a full disk) is the error it was and
+    /// never called damage in the book; an error of ZIPFoundation's is the
+    /// damage sentence, with the raw error logged as DAISY_ZIP_ERROR; and a
+    /// file past its limit is damage too.
+    func testAFailedWriteIsNotCalledDamageButAnArchiveErrorIs() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let zip = try makeTemporaryZip(
+            prefix: "TextMouthDAISYTest",
+            entries: Self.daisy202Package().mapValues { Data($0.utf8) },
+            compressionMethod: .deflate
+        )
+        defer { try? FileManager.default.removeItem(at: zip) }
+        let archive = try Archive(url: zip, accessMode: .read)
+        let provider = ArchiveFileProvider(archive: archive)
+        let entry = try XCTUnwrap(archive["text.html"], "the fixture has no text.html")
+
+        // A write that fails: the error comes out as it went in.
+        XCTAssertThrowsError(
+            try provider.withinBounds(of: entry, { () throws -> Void in
+                throw ArchiveFileProvider.WriteFailure(underlying: CocoaError(.fileWriteOutOfSpace))
+            })
+        ) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace, "a full disk was called \(error)")
+            XCTAssertFalse(error is DAISYParserError, "a full disk was called damage in the book: \(error)")
+        }
+
+        // An error of the archive's own: damage, named, with the raw error logged.
+        var thrown: Error?
+        let marker = "text.html"
+        let lines = debugLogLinesWritten {
+            do {
+                try provider.withinBounds(of: entry, { () throws -> Void in throw Archive.ArchiveError.invalidCRC32 })
+            } catch { thrown = error }
+        }
+        XCTAssertEqual(
+            thrown?.localizedDescription,
+            "The file “\(marker)” in this DAISY book is damaged or incomplete: its compressed data could not be decoded. "
+                + "Get a fresh copy of the book, then import it again."
+        )
+        XCTAssertEqual(
+            lines.filter { $0.contains("DAISY_ZIP_ERROR: \(marker): invalidCRC32") }.count, 1,
+            "ZIPFoundation's own error is logged once: \(lines)"
+        )
+
+        // A file past its limit: damage, with its own reason, nothing logged as a ZIP error.
+        let overflow = ArchiveEntryOverflow.pastLimit(path: marker, limit: 10)
+        XCTAssertThrowsError(try provider.withinBounds(of: entry, { () throws -> Void in throw overflow })) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                DAISYParserError.malformedXML(file: marker, reason: overflow.reason).localizedDescription
+            )
+        }
+    }
+
+    /// The debug-log lines written while `body` runs.
+    private func debugLogLinesWritten(during body: () -> Void) -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
+    }
+
+    // MARK: - Text Beyond the Audio
+
+    /// An archive's SMIL file that the XML guard refuses (1,025 attributes on
+    /// a tag) still tells that the book holds text of its own beyond the
+    /// audio: the archive is then the only copy of that text and is kept,
+    /// as it is when the same SMIL file is ordinary. With no text file for
+    /// it to name, the refused file adds nothing.
+    func testARefusedSMILStillShowsThatTheArchiveHoldsText() {
+        let many = (0..<1_025).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let refused = Self.part1SMIL.replacingOccurrences(
+            of: "<text src=\"text.html#t1\"/>", with: "<text src=\"text.html#t1\" \(many)/>"
+        )
+        XCTAssertNotEqual(refused, Self.part1SMIL, "the fixture's text element is not where this test looks")
+        XCTAssertNotNil(XMLInputGuard.problem(with: Data(refused.utf8)), "the guard does not refuse the SMIL file")
+
+        for (label, smil, expectsText) in [
+            ("ordinary SMIL", Self.part1SMIL, true), ("refused SMIL", refused, true)
+        ] {
+            let package = InMemoryDAISYPackage(Self.daisy202Package(["part1.smil": smil, "part2.smil": "<smil/>"]))
+            XCTAssertEqual(
+                FileImportService.daisyArchiveLeftovers(of: package, archiveName: "Soundings.zip").holdsText,
+                expectsText, label
+            )
+        }
+        // Without the text file the SMIL file names, there is no text to keep.
+        var files = Self.daisy202Package(["part1.smil": refused, "part2.smil": "<smil/>"])
+        files["text.html"] = nil
+        XCTAssertFalse(
+            FileImportService.daisyArchiveLeftovers(of: InMemoryDAISYPackage(files), archiveName: "Soundings.zip").holdsText,
+            "a refused SMIL file named a text file the archive does not hold"
+        )
+    }
+
     // MARK: - SMIL Audio Clips
 
     /// A clip list cut off after its first clip throws instead of returning

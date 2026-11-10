@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// A damaged Word document must never turn silently into a shorter or plainer
@@ -114,12 +115,16 @@ final class DOCXMalformedXMLTests: XCTestCase {
     /// in a new temporary directory, removed after the test. Each entry of
     /// `changes` replaces the part at that path with the given bytes, and
     /// each path in `removed` leaves that part out.
-    private func makeDOCX(replacing changes: [String: Data] = [:], removing removed: Set<String> = []) throws -> URL {
+    private func makeDOCX(
+        replacing changes: [String: Data] = [:],
+        removing removed: Set<String> = [],
+        compressionMethod: CompressionMethod = .none
+    ) throws -> URL {
         var parts = Self.intactParts.mapValues { Data($0.utf8) }.merging(changes) { _, change in change }
         for path in removed {
             parts[path] = nil
         }
-        let zip = try makeTemporaryZip(prefix: "TextMouthDOCXTest", entries: parts)
+        let zip = try makeTemporaryZip(prefix: "TextMouthDOCXTest", entries: parts, compressionMethod: compressionMethod)
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouthDOCXTest-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -659,6 +664,47 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertEqual(try Self.spokenText(of: cached), Self.spokenDocument)
     }
 
+    // MARK: - ZIP Damage
+
+    /// A part whose compressed data cannot be decoded is damage in the
+    /// package like any other, said in the same words with the part named,
+    /// not ZIPFoundation's own error, which is logged.
+    func testAPartWhoseCompressedDataCannotBeDecodedIsNamedAsDamaged() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let docx = try makeDOCX(compressionMethod: .deflate)
+        try damageData(of: DOCXParser.Part.document, in: docx)
+
+        var thrown: Error?
+        let lines = debugLogLines { do { _ = try DOCXParser.parse(url: docx) } catch { thrown = error } }
+
+        XCTAssertEqual(
+            thrown?.localizedDescription,
+            "The file “word/document.xml” in this document is damaged or incomplete: "
+                + "its compressed data could not be decoded. "
+                + "Get a fresh copy of the document, then import it again.",
+            "what a listener is told of ZIP damage"
+        )
+        let logged = lines.filter { $0.contains("DOCX_ZIP_ERROR: word/document.xml: ") }
+        XCTAssertEqual(logged.count, 1, "ZIPFoundation's own error is logged once: \(lines)")
+        XCTAssertFalse(
+            (thrown?.localizedDescription ?? "").contains("ZIPFoundation"),
+            "the raw error reached the listener: \(String(describing: thrown))"
+        )
+        guard case .malformedXML(let file, _)? = thrown as? DOCXParserError else {
+            return XCTFail("Expected DOCXParserError.malformedXML, received \(String(describing: thrown))")
+        }
+        XCTAssertEqual(file, "word/document.xml")
+    }
+
+    /// The same damage in the styles part, which is read before the text,
+    /// names that part.
+    func testAStylesPartThatCannotBeDecodedIsNamedAsDamaged() throws {
+        let docx = try makeDOCX(compressionMethod: .deflate)
+        try damageData(of: DOCXParser.Part.styles, in: docx)
+
+        malformedXMLReason(naming: DOCXParser.Part.styles) { try DOCXParser.parse(url: docx) }
+    }
+
     // MARK: - Core Properties
 
     /// Intact core properties give the document its title and author.
@@ -672,6 +718,46 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertEqual(metadata.title, "Mending Cloth Spines")
         XCTAssertEqual(metadata.author, "Radka Oyelaran")
         XCTAssertEqual(try DOCXParser.parse(url: docx).title, "Mending Cloth Spines")
+    }
+
+    /// Core properties that name no title, or no author (an empty element, a
+    /// self-closing one, one of only spaces and line breaks, or none), leave
+    /// the document its file name and the unknown author, as a document with
+    /// no core properties has, rather than an empty title and author.
+    func testEmptyCorePropertiesFallBackLikeMissingOnes() throws {
+        func core(title: String, creator: String) -> Data {
+            Data("""
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+             xmlns:dc="http://purl.org/dc/elements/1.1/">\(title)\(creator)</cp:coreProperties>
+            """.utf8)
+        }
+        let cases: [(name: String, part: Data?)] = [
+            ("empty elements", core(title: "<dc:title></dc:title>", creator: "<dc:creator></dc:creator>")),
+            ("self-closing elements", core(title: "<dc:title/>", creator: "<dc:creator/>")),
+            ("spaces and line breaks", core(title: "<dc:title>  \n </dc:title>", creator: "<dc:creator> \t </dc:creator>")),
+            ("no elements", core(title: "", creator: "")),
+            ("no core properties at all", nil),
+        ]
+        for (name, part) in cases {
+            let docx = try part.map { try makeDOCX(replacing: [DOCXParser.Part.coreProperties: $0]) }
+                ?? makeDOCX(removing: [DOCXParser.Part.coreProperties])
+            let content = try DOCXParser.parse(url: docx)
+            XCTAssertEqual(content.title, Self.fileTitle, "title for \(name)")
+            XCTAssertEqual(content.author, Book.unknownAuthor, "author for \(name)")
+            XCTAssertEqual(content.chapters.map(\.text), [Self.spokenDocument], "text for \(name)")
+        }
+        // A title given with an empty author keeps the title, and the reverse.
+        let titleOnly = try makeDOCX(replacing: [
+            DOCXParser.Part.coreProperties: core(title: "<dc:title>Spine Notes</dc:title>", creator: "<dc:creator> </dc:creator>")
+        ])
+        XCTAssertEqual(try DOCXParser.parse(url: titleOnly).title, "Spine Notes")
+        XCTAssertEqual(try DOCXParser.parse(url: titleOnly).author, Book.unknownAuthor)
+        let authorOnly = try makeDOCX(replacing: [
+            DOCXParser.Part.coreProperties: core(title: "<dc:title> </dc:title>", creator: "<dc:creator>Ilse Varga</dc:creator>")
+        ])
+        XCTAssertEqual(try DOCXParser.parse(url: authorOnly).title, Self.fileTitle)
+        XCTAssertEqual(try DOCXParser.parse(url: authorOnly).author, "Ilse Varga")
     }
 
     /// Damaged core properties never fail the document. It is read under its
