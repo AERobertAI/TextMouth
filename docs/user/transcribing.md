@@ -71,7 +71,7 @@ Part of version 0.4.2. A transcript need not be made by recognition. An audioboo
 - Made by recognition: "Transcribed on October 4, 2026, in English (United States)."
 - Attached: "Attached from “lecture.vtt” on October 30, 2026." With several files, or a file whose name isn't known, it says "Attached from a WebVTT file on …" or "Attached from a file on …".
 - Found at import: "Attached from “lecture.vtt” when the book was imported, on October 30, 2026."
-- Found at import in files of more than one format, such as 01.vtt beside the first track and 02.srt beside the second: "Attached from WebVTT and SubRip files when the book was imported, on October 30, 2026." (It used to name only the first file's format.)
+- Found at import in files of more than one format, such as 01.vtt beside the first track and 02.srt beside the second: "Attached from WebVTT and SubRip files when the book was imported, on October 30, 2026."
 - A podcast's own: "The podcast's own transcript, downloaded with the episode on November 2, 2026."
 - If you edited it or cleaned it up, the line goes on with "You edited it on …" and "You cleaned it up on …".
 - A transcript only in the cloud: "The transcript is only in the cloud. Its details appear once the book is downloaded." Nothing is downloaded to say it.

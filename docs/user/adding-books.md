@@ -80,10 +80,10 @@ Part of [TextMouth's documentation](../../README.md).
 ## A transcript chosen with its audio
 
 - A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported. It is not imported as a book of its own, and nothing is refused.
-- It works in the Add to Library sheet, with Open Book…, and when you open the files from Finder or drop them on the Dock icon.
+- It works with Open Book… and when you open the files from Finder or drop them on the Dock icon.
 - The file must be the one the audio finds as its transcript: named as the track is, with its extension changed (01.vtt beside 01.mp3), and, when both are beside the audio, the .vtt (see [Transcribing an audiobook](transcribing.md)). A .srt chosen beside an audio file that has a .vtt of its own is not that audio's transcript.
 - A transcript file chosen without its audio, or with audio that does not find it, is refused as a book: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." For a .srt file it says ".srt".
-- If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is left out too, without a message.
+- If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is dropped too, silently.
 
 ## M3U and M3U8 playlists
 
