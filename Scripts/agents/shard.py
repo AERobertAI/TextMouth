@@ -20,8 +20,9 @@ sys.dont_write_bytecode = True
 
 # The times file, beside this script: {class name: seconds on the runner}.
 TIMES_FILE = Path(__file__).resolve().parent / "class-times.json"
-# What a class that the file does not list is counted as.
-DEFAULT_SECONDS = 5.0
+# What a class that the file does not list is counted as: a class under half a second is left out of the file,
+# and most of the 778 take well under a second, so the default is small.
+DEFAULT_SECONDS = 1.0
 # One shard's share, in seconds, past which another shard is worth its build.
 TARGET_SECONDS = 600
 # The most shards: a free account runs a few macOS jobs at once, and the rest would only queue.
