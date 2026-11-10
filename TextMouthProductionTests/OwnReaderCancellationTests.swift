@@ -117,6 +117,10 @@ final class OwnReaderCancellationTests: XCTestCase {
         after delay: TimeInterval,
         _ work: @escaping @Sendable () throws -> Void
     ) -> (thrown: (any Error)?, secondsAfterCancel: TimeInterval) {
+        // DIAGNOSTIC (cisuite): how long the same work takes uncancelled.
+        let fullStart = Date()
+        try? work()
+        let fullSeconds = Date().timeIntervalSince(fullStart)
         let cancellation = ImportCancellation()
         let thrown = LockedValue<(any Error)?>(nil)
         let endedAt = LockedValue<Date?>(nil)
@@ -136,6 +140,7 @@ final class OwnReaderCancellationTests: XCTestCase {
         let cancelledAt = Date()
         cancellation.cancel()
         wait(for: [ended], timeout: 60)
+        print("CANCELTIMING own full=\(fullSeconds) toEnd=\((endedAt.value ?? Date()).timeIntervalSince(cancelledAt))")
         return (thrown.value, (endedAt.value ?? Date()).timeIntervalSince(cancelledAt))
     }
 

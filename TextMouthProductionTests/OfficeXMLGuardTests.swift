@@ -213,6 +213,11 @@ final class OfficeXMLGuardTests: XCTestCase {
         line: UInt = #line
     ) throws {
         let url = try makeODT(content: content, compression: .deflate)
+        // DIAGNOSTIC (cisuite): how long the same read takes uncancelled, and when the throw came.
+        let fullStart = Date()
+        _ = try? ODTDocumentReader.html(of: url, includesPages: false)
+        let fullSeconds = Date().timeIntervalSince(fullStart)
+        let thrownAt = LockedValue<Date?>(nil)
         let cancellation = ImportCancellation()
         let outcome = TimedOutcome<String>()
         let done = DispatchSemaphore(value: 0)
@@ -220,6 +225,7 @@ final class OfficeXMLGuardTests: XCTestCase {
             outcome.result = Result {
                 try ImportCancellation.$current.withValue(cancellation) { try ODTDocumentReader.html(of: url, includesPages: false) }
             }
+            thrownAt.value = Date()
             done.signal()
         }
         thread.stackSize = 8 << 20
@@ -230,6 +236,7 @@ final class OfficeXMLGuardTests: XCTestCase {
         guard done.wait(timeout: .now() + 30) == .success else {
             return XCTFail("\(label): the read went on 30 seconds after Cancel", file: file, line: line)
         }
+        print("CANCELTIMING office \(label) full=\(fullSeconds) toThrow=\(thrownAt.value.map { $0.timeIntervalSince(cancelledAt) } ?? -1) toEnd=\(Date().timeIntervalSince(cancelledAt))")
         XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 2, "\(label): the read stopped late", file: file, line: line)
         guard case .failure(let error)? = outcome.result else {
             return XCTFail("\(label): the read finished before the cancel; the input is too small", file: file, line: line)
