@@ -4,6 +4,22 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.4 (November 10, 2026)
+### Quitting while work is under way
+- The hang after Quit Anyway, or after a save, is gone. While feed downloads, a book's text read again in another encoding, or a speech export were under way, choosing Quit Anyway in the alert about unsaved changes, or answering the Record window's question or an audio editor's Save or Discard, could leave TextMouth open with its windows stuck. Now the quit ends.
+- A second Command-Q, or the Dock's Quit, while TextMouth finishes that work no longer cuts it off. It used to quit at once, with a download's place not kept and a re-read or an export cut short.
+- TextMouth now says what it is doing when you quit during that work, in a small window titled "Quitting TextMouth" and through VoiceOver:
+  - "TextMouth is finishing up before it quits: <what>. It will quit as soon as that is done."
+  - What it says for downloads is "keeping the place of your feed downloads for next time". For a re-read it is "reading a book's text again in another encoding", and for an export "stopping a speech export with the chapters it finished kept". When several run, the sentence counts them, as in "reading the text of 3 books again in another encoding".
+  - Pressing Command-Q again says the same words again.
+  - The window does not take the keyboard from the window you were in.
+  - The waits are the same as before: 3 seconds for downloads, 10 for a re-read, and 5 for an export. Work that cannot end gives up after its wait.
+- Log out, restart, and shut down wait for the same work as before and are not cancelled by it. If you log out while TextMouth is finishing for your Quit, the log out goes on when the work has ended.
+- The alert about unsaved changes is not shown a second time when you chose Quit Anyway and TextMouth had to finish work first.
+- Not changed: a log out, restart, or shut down is still stopped by an alert about unsaved changes, or by a question from an audio editor, the Record window, or a library move.
+- A limit: if a question stops the quit after the downloads have stopped (Cancel in the unsaved-changes alert, say), TextMouth stays open and the downloads stay stopped for the rest of that session. They are asked for again at the next launch.
+- Not tried: a real log out or shut down. It was tested with the quit message the system sends, but not by logging out. Whether VoiceOver speaks the window's words when TextMouth is not the front app, as when you choose Quit in the Dock from another app, was not checked either.
+
 ## 0.4.3 (November 9, 2026)
 ### Kindle books: chapters at the licence, and no soft hyphens
 - A Kindle book from Project Gutenberg now ends its last chapter where the author did. The licence's opening words, which used to sit at the end of the last chapter, now open the licence's own chapter, as in the EPUB of the same book.
