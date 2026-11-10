@@ -6,6 +6,7 @@
 - **Nothing in this document has run on an iPhone yet.** Since November 8, 2026 the app builds and runs in the iOS 26.0.1 simulator (iPhone 17), where its unit tests and its XCUITests, with Apple's accessibility audit, run; VoiceOver, braille, and sound can't be checked there. `make typecheck-ios` compiles and links the app for a device. Where a behavior can only be known from a first run, the text says "Unverified", and the hand-check list near the end covers it.
 - The design rests on three research reports and two outside reviews, kept beside the briefs in `Scripts/agents/briefs/2026-11-07/iosui-research/`: `research-vo.md` (VoiceOver, braille, and what blind readers say), `research-code.md` (the code and the Mac's exact wording), `research-ios.md` (what iOS does to the app), and the reviews `review-user.md` (by a reviewer reading as the app's blind user) and `review-engineer.md` (by an iOS engineer who read the code). This version is revised from both reviews.
 - **For the experience, read to "How it fits an iPad", then "The hand-check list" and "The open questions".** The sections between, "The map to the code" and "The implementation slices", are for whoever builds it. The Headings rotor at level 2 moves between them.
+- **Search in Book is built (November 10, 2026),** on branch `ios/search-1109`, merged for 0.4.4: a button after Headings, and a sheet. It was the first addition after the core. "The reader" says what it does, and "What's deferred" no longer lists it. Like the rest, it has not run on an iPhone.
 - Questions 1 to 4 and 6 in `humanQuestions/2026-11-03.md` have no answers yet. This spec builds on the recommended answers: iPhone first, with layouts that also work on an iPad; the first version's list in question 2; a library of the phone's own; iOS 26 and later. Each stays reversible. New questions are in the last section.
 - What isn't in the first version is in three places: "What was rejected, and why", under the app's structure; "What the phone leaves out", under Settings; and "What's deferred".
 
@@ -96,7 +97,7 @@ Each is a rule of one plain type, `PhoneFocusPolicy`, so tests can read it. Rows
 - **Coming back from the background.** Focus is restored to where it was only after a true return from the background, never after Control Center or a call banner, which leave it alone.
 - **During playback,** nothing moves focus, ever. A chapter change, a book's end, and an interruption don't touch it.
 - **The next book, when listening goes on from one book to another.** The reader's screen stays, with the new book's title and text. It's never rebuilt, so focus stays on the control it was on. VoiceOver says the Mac's "Starting: Dune".
-- **Any focus event cancels a request still waiting,** so a delayed request can't pull focus from under a flick.
+- **VoiceOver landing on one of the reader's controls cancels every request still waiting,** so a delayed request can't pull focus from under a flick. A landing on Back or on the title cancels nothing: VoiceOver goes there by itself, and a request waiting to return focus after a sheet closes exists to correct that. Each request takes a ticket when it is made and asks for it back when its 0.35 seconds are up (`PhoneFocusRequests`), and the sheets, the alert, and the Speech Stopped sheet all ask this way. **Unverified:** whether VoiceOver lands on another control by itself as a sheet finishes closing, which would cancel the return.
 
 ### Announcements
 
@@ -262,8 +263,10 @@ The reader is the heart of the app, and the screen a person spends their time on
 
 The visual layout follows from the order, and it matters to VoiceOver as well, since a control always in one place is one touch from anywhere.
 
-- **No scrolling at default text sizes.** From the top: Book content, as a strip about six lines tall; Play, full width and tall, at the same height in every book; then a grid of three columns and five rows, in the order below.
-- **Rows of the grid:** Where Am I?, Navigation unit, Speed. Previous Heading, Next Heading, Add bookmark. Bookmarks, Headings, Go To. Return, Sleep Timer, Voice. Book Info, Skip backward, Skip forward.
+- **No scrolling at default text sizes.** From the top: Book content, as a strip about six lines tall; Play, full width and tall, at the same height in every book; then a grid of three columns and six rows, in the order below.
+- **Rows of the grid:** Where Am I?, Navigation unit, Speed. Previous Heading, Next Heading, Add bookmark. Bookmarks, Headings, Search in Book. Go To, Return, Sleep Timer. Voice, Book Info. Skip backward, Skip forward.
+  - With Search in Book there are sixteen controls in the grid. Three to a row would leave Skip forward alone in a sixth row, so the rows are broken to keep each pair together and the two skips side by side in the last row. The fifth row holds two.
+  - VoiceOver's order is the same however the rows break: the grid is read left to right and top to bottom.
 - **At large text sizes,** the grid becomes one column and the screen scrolls. VoiceOver scrolls it as focus moves.
 - **On a wide screen,** the column has a limited width, centered.
 - **Unverified:** that a person can find Play by touch, and that Item Chooser (a two-finger triple-tap, or Dots 2-4 with Space) lists every control by a usable name.
@@ -282,13 +285,14 @@ The visual layout follows from the order, and it matters to VoiceOver as well, s
 10. Add bookmark
 11. Bookmarks
 12. Headings
-13. Go To
-14. Return
-15. Sleep Timer
-16. Voice, or Audio Settings
-17. Book Info
-18. Skip backward
-19. Skip forward
+13. Search in Book
+14. Go To
+15. Return
+16. Sleep Timer
+17. Voice, or Audio Settings
+18. Book Info
+19. Skip backward
+20. Skip forward
 
 These never appear or vanish while the book is open. Their words change only as this section says.
 
@@ -435,6 +439,13 @@ One plain type, `PhoneMoveFeedback`, decides, whether the move came from adjusti
 - **Hint:** "Opens the list of headings."
 - **Traits:** button. Opens the Headings sheet, below.
 
+### Search in Book
+
+- **Label:** "Search in Book", the Mac's command. **Hint:** "Opens a search of the book's text."
+- **Traits:** button. Opens the Search in Book sheet, below, when the book has text to search.
+- **While the book loads,** it says "Loading <title>" and opens nothing.
+- **An audiobook with no transcript text** says why, in the Mac's words, and opens nothing: "<title> has no transcript to search." The phone cannot transcribe, so it never says to transcribe, and a stale transcript's reason is said without "Transcribe it again".
+
 ### Go To
 
 - **Label:** "Go To", the Mac's word on a list row. **Hint:** "Goes to a page, a percent, or a time."
@@ -519,6 +530,22 @@ A sheet, with a `NavigationStack`. VoiceOver's order:
 6. **Empty:** the Mac's "No headings found in this document."
 
 Choosing a heading works like choosing a bookmark.
+
+### The Search in Book sheet
+
+A sheet, with a `NavigationStack`, over the Mac's search (`BookSearchModel`, `BookSearchEngine`) and its words (`BookSearchWording`). VoiceOver's order:
+
+1. **Title:** "Search in Book".
+2. **Back to Book:** toolbar button, with the Mac's hint "Close search and return to the book". It stops a search still running.
+3. **The field:** "Search text". Its hint is the Mac's, "Type to search within the book", or "Type to search the book's transcript". **Focus lands here,** after 0.35 seconds, as in every sheet with one field. No capital letter or correction is put in the text.
+4. **The status line,** plain text: "Enter a search term above.", "Searching…", "No matches", "1 match", "12 matches", or the Mac's other sentences. Each completed search also says it, once, with low priority.
+5. **"Use regular expression":** a switch, with the Mac's hint.
+6. **"Search results":** a heading, there only when there are results.
+7. **The results,** in the order they lie in the book, one row each, a button read by the Mac's words: the context, the heading it is in, then where it is, as in "…Alice was beginning, Chapter 1, at 0.3 percent of book". A transcript's results say the time they are heard. The hint is "Goes to this result."
+
+- **A search waits for typing to pause for one second,** as the Library's does, so a listener typing with a braille display or Braille Screen Input is not told "No matches" between letters. The Mac waits a quarter second.
+- **Choosing a result** goes to it, keeps the old place for Return, closes the sheet, and returns focus to the Search in Book button. A transcript's result says "Moved to <the time>, <the heading>." once the sheet has closed; a text book's says nothing beyond what the reader says, as on the Mac. It plays on from there only if Auto-play after navigation is on.
+- **What the phone leaves out:** the Mac's Display picker (a text book's results say a percent, and a transcript's a time), and a clear-search button.
 
 ### The Go To sheet
 
@@ -868,7 +895,7 @@ Each of these is shared, and each has a test pinning it on the Mac. Each gets an
 - **The whole-book Read Text screen,** with VoiceOver focus as the place. It's a screen pushed from Book content, and the reader's controls stay.
 - **Follow in Braille as a design,** beyond the test switch.
 - **Sounds,** once the user decides which.
-- **Search in Book:** the Mac's search model is shared, and it's the one way to find a line, so it's the first addition after the core: a sheet, and a button after Headings.
+- **Search in Book** was deferred and is built (November 10, 2026): see "The reader".
 - **The drop folder in Files** (see "How a library reaches the phone").
 - **Next and Previous in Folder and in Reading List:** two more buttons in the reader. **Speak Info.** **Edit Mode** for many books at once. **The Reading List's options.** **Folder Settings.** **The view editor.**
 - **Restart Sleep Timer without unlocking,** from the AirPods' gesture as on the Mac, or by a shake, as some audiobook players do.
@@ -986,7 +1013,7 @@ In order. Each is a branch off `ios/interface`, merged only after both type-chec
 - **Slice 4, the reader:** its controls, Book content, the moves and their words, loading and failure.
 - **Slice 5, audio:** the session, interruptions, routes, the engine, Now Playing, remote commands.
 - **Slice 6, the life cycle:** saving, memory, thermal state, silent gaps, the sleep timer's deadline, reopening.
-- **Slice 7, the reader's panels:** the sheets, and Where Am I?. Then Search in Book, if time allows.
+- **Slice 7, the reader's panels:** the sheets, and Where Am I?. Then Search in Book, which was built after the other slices, on its own branch.
 - **Slice 8, VoiceOver:** the rotors, Read All, escape, and a sweep of every screen.
 - **Slice 9, Settings,** with Share Logs first.
 
