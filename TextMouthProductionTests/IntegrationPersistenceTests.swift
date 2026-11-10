@@ -38,7 +38,9 @@ final class IntegrationPersistenceTests: XCTestCase {
             XCTAssertTrue(model.createFolderReturningOutcome(name: folder.path, parentPath: "").succeeded)
             XCTAssertTrue(
                 waitUntil(timeout: 5) { !model.failureCenter.bannerRows.isEmpty },
-                "No banner row appeared for the library save that failed"
+                "No banner row appeared for the library save that failed; the center holds "
+                    + "\(model.failureCenter.outstandingFailures().count) outstanding failures, publishes "
+                    + "\(model.failureCenter.failures.count), and has dismissed \(model.failureCenter.dismissedSubsystems)"
             )
         }
 
