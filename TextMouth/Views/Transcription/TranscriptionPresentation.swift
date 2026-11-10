@@ -536,18 +536,20 @@ final class TranscriptionPresenter: ObservableObject {
         }
         services.transcribedBooks.record(book.id, isTranscribed: true)
         library.bookUpdates.transcriptReplaced(bookID: book.id, with: installation.text)
+        // The sentences the transcript holds; those of a file longer than 100
+        // hours past its hundredth hour are left out, and told as passages
+        // left out (`OutsideTranscript.withinTheLimitOfAFile(_:)`).
+        let sentenceCount = transcript.files.reduce(0) { $0 + $1.sentences.count }
         services.announce(
             TranscriptionWording.attached(
                 fileName: url.lastPathComponent,
                 bookTitle: book.title,
                 wordCount: transcript.wordCount,
-                skipped: document.skippedCueCount,
+                skipped: document.skippedCueCount + (sentences.count - sentenceCount),
                 cut: document.cutCueCount
             ),
             window
         )
-        // Counts and the format alone: never the transcript's words, nor a path.
-        let sentenceCount = transcript.files.reduce(0) { $0 + $1.sentences.count }
         DiagnosticLog.event(
             .storage,
             "TRANSCRIPT_ATTACHED: \(book.title): \(document.format.name) file, \(sentenceCount) sentences, "

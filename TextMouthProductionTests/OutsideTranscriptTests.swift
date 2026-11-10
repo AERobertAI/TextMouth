@@ -217,6 +217,43 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertLessThanOrEqual(longest, Transcript.maximumMilliseconds, "a sentence is past a single file's limit")
     }
 
+    /// One audio file of 101 hours, longer than the 100 a transcript times,
+    /// takes a caption file's cues up to its hundredth hour: a cue that
+    /// starts past it is left out, one that runs past it ends there, and
+    /// what is kept makes a transcript that is trusted, so the attach is not
+    /// refused whole. The cues past hour 100 were left out by the reader
+    /// before the readers took times to 1,000 hours.
+    func testAFileOfMoreThan100HoursKeepsTheCuesUpToItsHundredthHour() throws {
+        let files = [Self.planFile("long.wav", seconds: 363_600)]
+        let captions = """
+        WEBVTT
+
+        01:00:00.000 --> 01:00:05.000
+        Early.
+
+        99:59:50.000 --> 100:00:30.000
+        Straddling.
+
+        100:30:00.000 --> 100:30:05.000
+        Past the hundredth hour.
+        """
+        let limit = Transcript.maximumMilliseconds
+
+        let document = try TimedTextReader.read(Data(captions.utf8), as: .webVTT)
+        let split = OutsideTranscript.split(document.sentences, across: files)
+
+        XCTAssertEqual(document.cues.count, 3, "the reader should keep all three cues")
+        let kept = try XCTUnwrap(split["long.wav"])
+        XCTAssertEqual(kept.map(\.text), ["Early.", "Straddling."], "the cue past the hundredth hour was not left out, or another was")
+        XCTAssertEqual(kept.map(\.endMilliseconds), [3_605_000, limit], "the straddling cue was not held at the hundredth hour")
+        let transcript = TranscriptFixtures.transcript([(path: "long.wav", duration: 363_600_000, sentences: kept)])
+        XCTAssertNil(transcript.validationFailure(), "what was kept is not a transcript TextMouth trusts")
+
+        // The same for the cues of a track's own file found at import.
+        let ownFile = document.sentences.compactMap(OutsideTranscript.withinTheLimitOfAFile)
+        XCTAssertEqual(ownFile.map(\.text), ["Early.", "Straddling."])
+    }
+
     /// On a book of a 3-second file and a 2-second file, a sentence at the
     /// start stays as it is; one starting in the first file and running on
     /// into the second stays in the first, its end held at the file's end
