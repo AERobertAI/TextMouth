@@ -41,13 +41,23 @@ into each build". So agents no longer build on their own:
 Usage:
   build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]
   build-train.py status
-  build-train.py run [--base REF]
-  build-train.py loop [--every MINUTES (default 60)] [--hours HOURS] [--base REF]
+  build-train.py run [--base REF] [--remote]
+  build-train.py loop [--every MINUTES (default 60)] [--hours HOURS] [--base REF] [--remote [--soon MINUTES]]
+
+With --remote (November 9, 2026, after the user, finding the builds hard on this Mac's CPU, asked
+for GitHub Actions to do them) the train merges here as always, but then pushes the merged tree
+plus a request file to the branch TestBuild, waits for that commit's run (github_run.py), and
+reads the log and summary the run uploads. It takes no heavy-work lock, since it loads this Mac
+with a merge and a push only. If the push or the run fails, every agent is told and the requests
+go back in the queue for the next train. With --soon MINUTES the loop leaves MINUTES after a
+request comes instead of on the hour. The tests' command is made in test_command.py, the one
+place the train, run_suite.py, and the workflow all take it from.
 
 Paths are absolute, so any worktree's agent can call it. Requests, trains,
 and results live in the main checkout's gitignored build/orchestrator/train/.
 """
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -63,7 +73,9 @@ sys.dont_write_bytecode = True
 
 # The heavy-work lock, beside this script (python3 -I leaves its folder out of sys.path).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+import test_command  # noqa: E402
 
 ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
 TRAIN_DIR = ROOT / "build" / "orchestrator" / "train"
@@ -96,6 +108,14 @@ LOCK_WAIT_MINUTES = 50
 STATE = LOCK / "state.txt"
 # The board's limit on a post's topic.
 TOPIC_LIMIT = 200
+# After a remote train fails, how long the loop waits before it tries again, so that a
+# push that is refused or a GitHub that is down is not asked every few minutes.
+REMOTE_RETRY_MINUTES = 15
+# How often a loop with --soon looks at the queue, in seconds.
+SOON_POLL_SECONDS = 20
+# How long the loop waits after a train that found another train running or the heavy-work
+# lock busy, so that requests still waiting do not make it try again at once.
+BUSY_RETRY_SECONDS = 60
 
 
 def git(*args, cwd=None, check=True):
@@ -378,25 +398,32 @@ def watch_for_a_hung_run(log, finished, stopped):
                                  f"so its test host was killed; see the end of {log}", tag="notice")
 
 
-def run_tests(merged, train_dir):
-    """Runs the union of the merged requests' areas and classes; returns run-area's
-    output. Names the merged tree does not know are left out, and each request
-    keeps a list of its own, so its agent is told."""
+NO_TESTS_RAN = "no tests ran: every name asked for was unknown\nFAILED"
+
+
+def choose_tests(merged):
+    """The areas and classes to run for the merged requests: the union of what each
+    asked for. Names the merged tree does not know are left out, and each request
+    keeps a list of its own (`dropped`), so its agent is told. Local and remote
+    trains choose alike."""
     known_areas, known_classes = known_names(WORKTREE)
     areas, classes = [], []
     for request in merged:
         request["dropped"] = unknown_names(request, known_areas, known_classes)
         areas += [a for a in request["areas"] if a in known_areas and a not in areas]
         classes += [c for c in request["classes"] if c in known_classes and c not in classes]
-    names = ["all"] if "all" in areas else areas
-    if not names and not classes:
-        return "no tests ran: every name asked for was unknown\nFAILED"
-    command = ["python3", "-I", "Scripts/test/run-area.py", *names]
-    if classes and names != ["all"]:
-        command += ["--classes", ",".join(classes)]
+    return areas, classes
+
+
+def run_tests(merged, train_dir):
+    """Runs the union of the merged requests' areas and classes on this Mac;
+    returns run-area's output."""
+    areas, classes = choose_tests(merged)
+    if not areas and not classes:
+        return NO_TESTS_RAN
     # The orchestrator holds all three build slots while trains run, so no
     # agent can start a build of its own; the train itself runs outside them.
-    command += ["--jobs", "2", "--no-slot", "--derived-data", str(DERIVED), "--log", str(train_dir / "run.log")]
+    command = test_command.area_command(areas, classes, DERIVED, train_dir / "run.log", jobs=2, slot=False)
     (train_dir / "command.txt").write_text(" ".join(command) + "\n")
     # A test that hangs must not hold the train, and every agent behind it, for ever.
     finished, stopped = threading.Event(), threading.Event()
@@ -415,6 +442,47 @@ def run_tests(merged, train_dir):
     return output
 
 
+# A run that ended like one of these has no verdict on the tests: GitHub stopped it
+# (a newer push to TestBuild cancelled it, or its time ran out) or never started its job.
+UNFINISHED_RUNS = ("cancelled", "timed_out", "startup_failure", "skipped", "stale", "action_required")
+
+
+def remote_run_tests(merged, train_dir):
+    """Runs the union of the merged requests' areas and classes on GitHub Actions;
+    returns run-area's output, read from the run's summary, as run_tests does.
+
+    The merged tree plus the request file is pushed to TestBuild and the run of
+    that commit is waited for, with a limit. The run's log and summary come back to
+    the train's folder as run.log and run-summary.txt, and remote.json keeps the
+    run's link and minutes. A run that did not finish its tests (cancelled, timed
+    out) or left no results raises github_run.RemoteFailure, and the train then
+    puts its requests back; a run whose tests failed is an ordinary result."""
+    areas, classes = choose_tests(merged)
+    if not areas and not classes:
+        return NO_TESTS_RAN
+    request = {"areas": areas, "classes": classes, "full": False, "train": train_dir.name,
+               "requests": [{"agent": r["agent"], "branch": r["branch"], "head": r["head"]} for r in merged]}
+    (train_dir / "command.txt").write_text("remote: " + json.dumps(request) + "\n")
+    head = git("rev-parse", "HEAD", cwd=WORKTREE).stdout.strip()
+    # A retry of the same train (without a broken branch) downloads beside the first run's.
+    attempt = 1
+    while (train_dir / f"remote-{attempt}").exists():
+        attempt += 1
+    folder = train_dir / f"remote-{attempt}"
+    result = github_run.run_remotely(WORKTREE, head, request, folder, f"Test build: train {train_dir.name}",
+                                     progress=lambda text: set_state(f"train {train_dir.name}: {text}"))
+    (train_dir / "remote.json").write_text(json.dumps(result, indent=2) + "\n")
+    if result["conclusion"] in UNFINISHED_RUNS:
+        raise github_run.RemoteFailure(f"the run ended {result['conclusion']} after {result['minutes']} minutes: "
+                                       f"{result['url']}")
+    if not result["downloaded"] or not (folder / "run-summary.txt").exists():
+        raise github_run.RemoteFailure(f"the run ended {result['conclusion']} without results: {result['url']}")
+    for name in ("run.log", "run-summary.txt"):
+        if (folder / name).exists():
+            shutil.copyfile(folder / name, train_dir / name)
+    return (train_dir / "run-summary.txt").read_text(encoding="utf-8", errors="replace")
+
+
 def keep_aside(path, stem, suffix):
     """Renames a run's file to `stem` plus `suffix`, or to `stem-2` and on when an
     earlier retry of the same train already took that name, so every run's log is kept."""
@@ -426,7 +494,7 @@ def keep_aside(path, stem, suffix):
     path.rename(target)
 
 
-def without_broken_branches(base, train_id, train_dir, merged, conflicts, output, requests=None):
+def without_broken_branches(base, train_id, train_dir, merged, conflicts, output, requests=None, runner=None):
     """Builds the train again without the branches that broke its build.
 
     When the run compiled nothing and every compile error lies in a file that
@@ -442,7 +510,8 @@ def without_broken_branches(base, train_id, train_dir, merged, conflicts, output
     the order the requests came, with the branches that stay. Those that merge
     cleanly are kept (taken back); those that still conflict stay left out.
     `requests` is the train's requests in that order; without it, the merged
-    branches come before the conflicting ones.
+    branches come before the conflicting ones. `runner` runs the tests as
+    run_tests (the default) or remote_run_tests do.
 
     The first run's log and summary are kept beside the new ones, as
     run-with-all.log and run-summary-with-all.txt.
@@ -481,7 +550,7 @@ def without_broken_branches(base, train_id, train_dir, merged, conflicts, output
     if kept and regenerate_project():
         git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
         git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
-    output = run_tests(kept, train_dir) if kept else ""
+    output = (runner or run_tests)(kept, train_dir) if kept else ""
     return kept, conflicts, output, broken, taken_back
 
 
@@ -527,6 +596,16 @@ def failure_class(line):
     return match.group(1) if match else ""
 
 
+def remote_line(train_dir):
+    """A summary line naming the GitHub run a remote train used, with its minutes, or
+    "" for a train that ran on this Mac."""
+    try:
+        run = json.loads((train_dir / "remote.json").read_text())
+    except (OSError, ValueError):
+        return ""
+    return f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
+
+
 def report(train_id, base, merged, conflicts, output, train_dir, census=None, broken=(), taken_back=()):
     """Writes each agent's result and posts it to them on the board. `broken`
     holds the branches without_broken_branches left out, each as (request,
@@ -539,6 +618,9 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
                f"- Merged: {', '.join(r['branch'] + ' (' + r['agent'] + ')' for r in merged) or 'none'}",
                f"- Verdict: {verdict}", f"- {executed}", f"- Crash: {'yes' if crashed else 'no'}",
                f"- Log: {train_dir / 'run.log'}"]
+    remote = remote_line(train_dir)
+    if remote:
+        summary += [remote]
     if census:
         summary += [f"- iOS census of the merged tree: {census[0]} ({train_dir / 'ios-census.txt'})"]
     summary += [""]
@@ -569,6 +651,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         if any(request is other for other in taken_back):
             lines[2:2] = ["- Your branch first conflicted with a branch that broke the build, so it was left out; "
                           "the train then built again without that branch and your branch merged cleanly.", ""]
+        if remote:
+            lines += [remote]
         ios_note = ""
         if census:
             # The census's paths are repository-relative, as `touched` is.
@@ -604,30 +688,71 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
     print("\n".join(summary))
 
 
-def command_run(args):
-    """Runs one train now, if anything waits; returns 0 when it ran, had nothing
-    to do, or gave up waiting for the heavy-work lock (its requests then wait)."""
+def requeue(train_dir):
+    """Puts every request the train took back in the queue, under the name it had,
+    so the next train takes them in their old order. Nothing is deleted: the
+    files are moved."""
+    QUEUE.mkdir(parents=True, exist_ok=True)
+    for path in sorted((train_dir / "requests").glob("*.json")):
+        path.rename(QUEUE / path.name)
+
+
+def give_up_remote(train_id, train_dir, requests, reason):
+    """Ends a remote train whose push or run failed, leaving nothing half done:
+    its requests go back in the queue for the next train, each agent is told, and
+    the orchestrator gets a notice. A branch pushed to TestBuild stays there, which
+    is harmless; the next push replaces it."""
+    requeue(train_dir)
+    (train_dir / "remote-failure.txt").write_text(reason + "\n")
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    for request in requests:
+        agent = request["agent"]
+        (RESULTS / f"{agent}.md").write_text(
+            f"# {agent}: train {train_id}\n\n- Your branch: {request['branch']} at {request['head'][:8]}\n"
+            f"- The train could not test it: the run on GitHub failed ({reason}).\n"
+            "- Your request is back in the queue and goes with the next train. You need not ask again.\n")
+        post(agent, f"train {train_id}: the run on GitHub failed, so your request waits for the next train; "
+                    f"see {short_path(RESULTS / (agent + '.md'))}")
+    message = f"build-train: remote train {train_id} failed ({reason}); {len(requests)} requests wait for the next train"
+    print(message)
+    post("orchestrator", message, tag="notice")
+
+
+def run_one_train(args):
+    """Runs one train now, if anything waits, and says what happened: "none" (nothing
+    waited), "skipped" (no disk, or the heavy-work lock stayed busy), "busy" (another
+    train is running), "failed" (a remote train's push or run failed, and its requests
+    went back in the queue), or "ran". Its requests wait in every case but "ran" and
+    "none".
+
+    With `args.remote` the tests run on GitHub Actions (remote_run_tests): the train
+    still merges here, but it loads this Mac with a merge and a push only, so it takes
+    no heavy-work lock and skips the disk check and the iOS census."""
+    remote = getattr(args, "remote", False)
     waiting = list(QUEUE.glob("*.json")) if QUEUE.exists() else []
     if not waiting:
         print("build-train: nothing waits")
-        return 0
-    if free_gigabytes() < MIN_FREE_GB:
+        return "none"
+    if not remote and free_gigabytes() < MIN_FREE_GB:
         print(f"build-train: only {free_gigabytes()} GB free; this train waits for the next")
         post("orchestrator", f"build-train: skipped a train, only {free_gigabytes()} GB free", tag="notice")
-        return 0
+        return "skipped"
     if not take_lock():
         print("build-train: a train is running")
-        return 0
+        return "busy"
     try:
         def on_wait(holder):
             holder = holder or {}
             set_state(f"waiting for the heavy-work lock, held by {holder.get('name', '?')}")
             post("orchestrator", f"build-train: a train waits for the heavy-work lock, held by "
                                  f"{holder.get('name', '?')} since {holder.get('since', '?')}", tag="notice")
-        set_state("waiting for the heavy-work lock")
+        set_state("starting" if remote else "waiting for the heavy-work lock")
         # One heavy job at a time, as the user asked: the train waits its turn,
-        # first in line, and never runs beside another heavy job.
-        with heavy_lock.held("build-train", LOCK_WAIT_MINUTES * 60, on_wait, first=True) as taken:
+        # first in line, and never runs beside another heavy job. A remote train
+        # builds nowhere near this Mac, so it takes no part in that queue.
+        gate = (contextlib.nullcontext(True) if remote
+                else heavy_lock.held("build-train", LOCK_WAIT_MINUTES * 60, on_wait, first=True))
+        with gate as taken:
             if not taken:
                 holder = heavy_lock.owner() or {}
                 message = (f"build-train: the heavy-work lock stayed busy for {LOCK_WAIT_MINUTES} minutes, held by "
@@ -635,7 +760,7 @@ def command_run(args):
                            f"its requests wait for the next train")
                 print(message)
                 post("orchestrator", message, tag="notice")
-                return 0
+                return "skipped"
             # The requests are taken only now, so those made while the train
             # waited for the lock go with it.
             train_id = datetime.now().strftime("%m%d-%H%M")
@@ -643,51 +768,108 @@ def command_run(args):
             train_dir.mkdir(parents=True, exist_ok=True)
             set_state(f"train {train_id}: merging")
             requests = take_requests(train_dir)
-            prepare_worktree(args.base, train_id)
-            with open(train_dir / "merge.log", "w") as log:
-                merged, conflicts = merge_requests(requests, log)
-            if merged and regenerate_project():
-                git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
-                git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
-            output, census, broken, taken_back = "", None, [], []
-            if merged:
-                set_state(f"train {train_id}: building and testing "
-                          + ", ".join(f"{r['branch']} ({r['agent']})" for r in merged))
-                output = run_tests(merged, train_dir)
-                # The compiler stops at the first files it can't build, so a second
-                # broken branch shows only once the first is out: on November 7 one
-                # such branch kept every agent's tests from running. So retry, up
-                # to three times, while each pass finds branches to leave out.
-                for _ in range(3):
-                    merged, conflicts, output, more, back = without_broken_branches(
-                        args.base, train_id, train_dir, merged, conflicts, output, requests)
-                    if not more:
-                        break
-                    broken += more
-                    taken_back += back
-                # A branch taken back may itself have broken a later build.
-                taken_back = [request for request in taken_back if any(request is other for other in merged)]
-                census = ios_census(train_dir)
+            runner = remote_run_tests if remote else run_tests
+            # Only a remote train's push or run can fail in this way; a failure leaves the
+            # requests in the queue and tells the agents, and no report is written.
+            try:
+                prepare_worktree(args.base, train_id)
+                with open(train_dir / "merge.log", "w") as log:
+                    merged, conflicts = merge_requests(requests, log)
+                if merged and regenerate_project():
+                    git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
+                    git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
+                output, census, broken, taken_back = "", None, [], []
+                if merged:
+                    set_state(f"train {train_id}: building and testing "
+                              + ", ".join(f"{r['branch']} ({r['agent']})" for r in merged))
+                    output = runner(merged, train_dir)
+                    # The compiler stops at the first files it can't build, so a second
+                    # broken branch shows only once the first is out: on November 7 one
+                    # such branch kept every agent's tests from running. So retry, up
+                    # to three times, while each pass finds branches to leave out.
+                    # (A remote train's retry runs on GitHub again.)
+                    for _ in range(3):
+                        merged, conflicts, output, more, back = without_broken_branches(
+                            args.base, train_id, train_dir, merged, conflicts, output, requests,
+                            **({"runner": runner} if remote else {}))
+                        if not more:
+                            break
+                        broken += more
+                        taken_back += back
+                    # A branch taken back may itself have broken a later build.
+                    taken_back = [request for request in taken_back if any(request is other for other in merged)]
+                    # The census builds for iOS on this Mac, which a remote train keeps clear of.
+                    census = None if remote else ios_census(train_dir)
+            except github_run.RemoteFailure as failure:
+                give_up_remote(train_id, train_dir, requests, str(failure))
+                return "failed"
         report(train_id, args.base, merged, conflicts, output, train_dir, census, broken, taken_back)
     finally:
         release_lock()
+    return "ran"
+
+
+def command_run(args):
+    """Runs one train now, if anything waits; returns 0 when it ran, had nothing
+    to do, gave up waiting for the heavy-work lock (its requests then wait), or
+    could not finish a remote run (its requests then wait too)."""
+    run_one_train(args)
     return 0
+
+
+def next_train_time(args, now, queue_times, not_before=0):
+    """When the loop's next train should leave, or None when none should yet.
+
+    By default the schedule is clock time: the next whole multiple of `--every`
+    minutes, so trains leave on the hour. With `--soon MINUTES` (remote only), a train
+    leaves MINUTES after the oldest waiting request was made (`queue_times`, their
+    times in seconds), or at once if that has passed, and None means no request
+    waits. Either way it never leaves before `not_before`, which a failed remote
+    train sets so that the loop does not ask a broken GitHub every few minutes."""
+    if args.soon:
+        if not queue_times:
+            return None
+        return max(min(queue_times) + args.soon * 60, not_before, now)
+    period = args.every * 60
+    return max((int(now // period) + 1) * period, not_before)
+
+
+def waiting_times():
+    """The times, in seconds, at which the waiting requests were made."""
+    return [path.stat().st_mtime for path in QUEUE.glob("*.json")] if QUEUE.exists() else []
 
 
 def command_loop(args):
     """Runs a train every `--every` minutes, at whole multiples of that period (on
     the hour for the default 60, on the hour and the half hour for 30), for
     `--hours` hours. A train still running at its successor's time makes that
-    one wait for the next multiple, so trains never overlap."""
+    one wait for the next multiple, so trains never overlap.
+
+    With `--remote` the trains run on GitHub. With `--remote --soon MINUTES` the loop
+    stops keeping the clock: a train leaves MINUTES after a request comes, since a
+    remote train costs this Mac nothing (the default stays the hour). After a remote
+    train fails, the next waits REMOTE_RETRY_MINUTES."""
+    if args.soon and not args.remote:
+        print("build-train: --soon needs --remote: a train on this Mac takes its turn on the hour", file=sys.stderr)
+        return 2
     deadline = time.time() + args.hours * 3600
+    not_before = 0
     while time.time() < deadline:
-        now = time.time()
-        period = args.every * 60
-        next_time = (int(now // period) + 1) * period
+        due = next_train_time(args, time.time(), waiting_times(), not_before)
         NEXT.parent.mkdir(parents=True, exist_ok=True)
-        NEXT.write_text(datetime.fromtimestamp(next_time).strftime("%H:%M") + "\n")
-        time.sleep(max(0, next_time - time.time()))
-        command_run(args)
+        if due is None:
+            NEXT.write_text(f"within {args.soon:g} minutes of a request\n")
+            time.sleep(min(SOON_POLL_SECONDS, max(0, deadline - time.time())))
+            continue
+        NEXT.write_text(datetime.fromtimestamp(due).strftime("%H:%M") + "\n")
+        time.sleep(max(0, due - time.time()))
+        outcome = run_one_train(args)
+        # Requests that still wait after a train that did not run must not make the
+        # loop try again at once: a failed remote train waits longer than a busy one.
+        if outcome == "failed":
+            not_before = time.time() + REMOTE_RETRY_MINUTES * 60
+        elif outcome in ("busy", "skipped"):
+            not_before = time.time() + BUSY_RETRY_SECONDS
         sys.stdout.flush()
     NEXT.unlink(missing_ok=True)
     print("build-train: the loop ended")
@@ -707,10 +889,14 @@ def main(argv):
     sub.add_parser("status", help="show waiting requests and the next train")
     run = sub.add_parser("run", help="run one train now")
     run.add_argument("--base", default=DEFAULT_BASE)
+    run.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, no iOS census")
     loop = sub.add_parser("loop", help="run a train on a schedule")
     loop.add_argument("--every", type=int, default=60)
     loop.add_argument("--hours", type=float, default=12)
     loop.add_argument("--base", default=DEFAULT_BASE)
+    loop.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, no iOS census")
+    loop.add_argument("--soon", type=float, default=0, metavar="MINUTES",
+                      help="with --remote: leave MINUTES after a request comes, not on the hour")
     args = parser.parse_args(argv)
     return {"request": command_request, "status": command_status,
             "run": command_run, "loop": command_loop}[args.command](args)
