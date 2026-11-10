@@ -33,8 +33,11 @@ sys.dont_write_bytecode = True
 # The public repository, and the one branch anything is ever pushed to.
 REPO = "AERobertAI/TextMouth"
 BRANCH = "TestBuild"
-# The workflow file, and where in the pushed tree it finds its request.
-WORKFLOW = "test-build.yml"
+# The workflow's name (the `name:` of .github/workflows/test-build.yml), and where
+# in the pushed tree it finds its request. A run is found by this name and not by
+# `gh run list --workflow FILE`, which looks the file up on the default branch
+# and fails until the workflow has been merged into main.
+WORKFLOW_NAME = "Test build"
 REQUEST_PATH = ".github/test-request.json"
 # The artifact the workflow always uploads: the log, the summary, and the verdict.
 ARTIFACT = "test-build-results"
@@ -131,10 +134,10 @@ def find_run(sha):
     status. Waits up to RUN_APPEARS_SECONDS for GitHub to start it."""
     started = CLOCK()
     while True:
-        runs = gh_json("run", "list", "-R", REPO, "--workflow", WORKFLOW, "--branch", BRANCH, "--commit", sha,
-                       "--json", "databaseId,status,conclusion,headSha,url", "--limit", "5")
-        # The newest run of this exact commit (a rerun has the same SHA).
-        ours = [run for run in runs if run.get("headSha") == sha]
+        runs = gh_json("run", "list", "-R", REPO, "--branch", BRANCH, "--commit", sha,
+                       "--json", "databaseId,status,conclusion,headSha,url,workflowName", "--limit", "10")
+        # The newest run of this exact commit by this workflow (a rerun has the same SHA).
+        ours = [run for run in runs if run.get("headSha") == sha and run.get("workflowName") == WORKFLOW_NAME]
         if ours:
             return max(ours, key=lambda run: run["databaseId"])
         if CLOCK() - started > RUN_APPEARS_SECONDS:
