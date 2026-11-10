@@ -80,6 +80,22 @@ def time_limit_arguments(request):
 # 3 or 4 slower cores: a hostile-index read that is within 1.0 second here took 1.35 there. The development Mac never
 # sets it, so its limits stay as written. A request may carry "time_scale" to try another.
 RUNNER_TIME_SCALE = 2.5
+# The most a request may widen the limits: a hand-sent request cannot make a timing test pass by waiting for ever.
+MAX_TIME_SCALE = 10.0
+
+
+def time_scale_problem(request):
+    """Why the request's "time_scale" cannot be used, or None when it can (or is absent): it must be a number (not a
+    truth value or a word) from 1 to MAX_TIME_SCALE. A scale below 1 would only be read as 1 by the tests, and one
+    above the most would hide a slow test."""
+    if "time_scale" not in request:
+        return None
+    value = request["time_scale"]
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        return f"the request's time_scale {value!r} is not a number"
+    if not 1 <= value <= MAX_TIME_SCALE:
+        return f"the request's time_scale {value!r} is not from 1 to {MAX_TIME_SCALE:g}"
+    return None
 
 
 def runner_environment(request):
@@ -88,7 +104,9 @@ def runner_environment(request):
     TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1. xcodebuild hands each to the test host without its TEST_RUNNER_ prefix
     (as `make test PERFORMANCE_STRICT=1` does for the gate on the Mac)."""
     environment = dict(os.environ)
-    environment["TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"] = str(float(request.get("time_scale", RUNNER_TIME_SCALE)))
+    # main() refuses a request whose scale is no good before it gets here; the default stands in if one gets through.
+    scale = RUNNER_TIME_SCALE if time_scale_problem(request) else float(request.get("time_scale", RUNNER_TIME_SCALE))
+    environment["TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"] = str(scale)
     if request.get("strict_performance"):
         environment["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"] = "1"
     return environment
@@ -322,6 +340,12 @@ def main(argv):
     except BadSkipLine as error:
         print(f"run-on-runner: {error}", file=sys.stderr)
         return 2
+    problem = time_scale_problem(request)
+    if problem:
+        # An error, not a crash: the results are written, saying why no test ran, and the run fails.
+        write_results(request, out, f"no tests ran\nFAILED: {problem}\n", False, 0.0, len(selected_skips(request, read_skips())))
+        print((out / "summary.md").read_text())
+        return 1
     request = sliced(request, args.shard, args.of)
     started = time.monotonic()
     train = test_command.load_build_train()

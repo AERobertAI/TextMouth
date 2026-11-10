@@ -178,6 +178,30 @@ class GateRulesTests(RunnerTestCase):
         self.assertEqual(runner.runner_environment({"time_scale": 4})[name], "4.0")
         self.assertGreater(runner.RUNNER_TIME_SCALE, 1)
 
+    def test_a_time_scale_must_be_a_number_from_one_to_the_most(self):
+        for good in ({}, {"time_scale": 1}, {"time_scale": 2.5}, {"time_scale": runner.MAX_TIME_SCALE}):
+            with self.subTest(good=good):
+                self.assertIsNone(runner.time_scale_problem(good))
+        for bad in (0.5, 0, -2, runner.MAX_TIME_SCALE + 0.1, 1e9, "2.5", "many", None, True, [3], float("nan"), float("inf")):
+            with self.subTest(bad=bad):
+                self.assertIsNotNone(runner.time_scale_problem({"time_scale": bad}))
+
+    def test_a_request_with_a_bad_time_scale_is_an_error_with_results_written_and_no_test_run(self):
+        ran = []
+        for bad in ("many", 1000):
+            with self.subTest(bad=bad):
+                self.write_request({"areas": ["stats"], "classes": [], "time_scale": bad})
+                with mock.patch.object(test_command, "area_command",
+                                       lambda *args, **options: ran.append(args) or self.child("", None)(*args)):
+                    status, out = self.run_main()
+                self.assertEqual(status, 1)
+                self.assertEqual(ran, [], "no test may run under a scale nobody meant")
+                summary = (self.out / "run-summary.txt").read_text()
+                self.assertTrue(summary.rstrip().splitlines()[-1].startswith("FAILED: the request's time_scale"), summary)
+                self.assertIn("- Verdict: FAILED", (self.out / "summary.md").read_text())
+                self.assertIn("- Reason: the request's time_scale", (self.out / "summary.md").read_text())
+                self.assertTrue((self.out / "request.json").exists())
+
     def test_the_command_runs_in_that_environment(self):
         seen = {}
         real_popen = runner.subprocess.Popen
