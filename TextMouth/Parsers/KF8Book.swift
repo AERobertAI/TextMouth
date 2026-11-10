@@ -136,9 +136,10 @@ enum KF8Book {
             // that opens with no heading of its own goes on with the chapter before it (and no heading is made
             // of its <title>) in two cases, and only these:
             // - its <title> is the title of the piece before it (the pieces of one file share the file's title),
-            //   unless that piece is a `header` or other section of its own that this piece is not in: what
-            //   follows a whole section is not its second half, and only the shared title of a book's pages
-            //   (Project Gutenberg's header page and the essay after it) says they are one;
+            //   unless the piece before opens in a `header` or other section (not a footer) and this piece opens
+            //   in no section: then the shared title is the book's, not a document's (Project Gutenberg's
+            //   header page, and the essay after it in a `div`). A piece in another section is still taken for the
+            //   second half of a document cut inside its second section, which the cut opens again;
             // - its <title> is the heading the next piece opens with: calibre gave the first piece of a file
             //   the file's title, but the piece holds the end of the chapter before, and the chapter the title
             //   names begins with the next piece's heading.
@@ -590,12 +591,15 @@ enum KF8Book {
         static let names: Set<String> = ["header", "footer", "section", "article", "aside", "nav", "main"]
 
         /// Whether a piece that opens in `piece` (nil when it opens in none) is not the second half of the piece
-        /// before it, which opens in `previous`: that piece is a whole section other than a `footer`, which this
-        /// piece is not in. (What follows a footer is matter of the book's end, such as a back cover, and goes on
-        /// with it.)
+        /// before it, which opens in `previous`: the piece before opens in a section other than a `footer`, and
+        /// this piece opens in no section at all. A piece that opens in another section may still be the second
+        /// half of a document of two sections cut inside the second, which calibre and kindlegen open again, so
+        /// only a piece in no section is taken for a document of its own (Project Gutenberg's essay, a `div`,
+        /// after its header). What follows a footer is matter of the book's end, such as a back cover, and goes
+        /// on with it.
         static func endsBefore(_ previous: Container?, piece: Container?) -> Bool {
             guard let previous, previous.name != "footer" else { return false }
-            return previous != piece
+            return piece == nil
         }
     }
 

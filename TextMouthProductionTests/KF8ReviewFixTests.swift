@@ -570,19 +570,29 @@ final class KF8ReviewFixTests: XCTestCase {
                 + "The opening words of the license. THE FULL LICENSE The rest of the license.")
     }
 
-    /// What the container rules leave as it was: the second half of a section calibre opened again, a back page after
-    /// a footer, and a headless piece before a heading in another container are all still read in the chapter before.
+    /// What the container rules leave as it was: the second half of a section calibre opened again (in a document of
+    /// one section, and of two cut inside the second), a back page after a footer, and a headless piece before a
+    /// heading in another container are all still read in the chapter before; a plain piece after a section is its own.
     func testPiecesInTheSameSectionOrAfterAFooterOrBeforeAHeadingInAnotherSectionStillGoOn() throws {
         // A long chapter cut in two inside one `<section>`: the second half goes on.
         let halves = try prepared(pieces([
             "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<section id=\"c1\"><p>Two.</p></section>",
         ]))
         XCTAssertEqual(halves.chapters.count, 1, "the two halves of one section: \(chapters(of: halves))")
-        // The same title but another section, with no heading: a section of its own is a chapter of its own.
-        let other = try prepared(pieces([
-            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<section id=\"c2\"><p>Two.</p></section>",
+        // A document of two sections cut inside the second, which the cut opens again: the first piece opens in
+        // the first section, the second in the second, and the second goes on with the chapter before, as the
+        // EPUB reader reads the document whole (the outside review's case).
+        let cutInTheSecond = try prepared(pieces([
+            "<section id=\"c1\"><h1>One</h1><p>First.</p></section><section id=\"c2\"><h1>Two</h1><p>First half.</p></section>",
+            "<section id=\"c2\"><p>Second half.</p></section>",
         ]))
-        XCTAssertEqual(other.chapters.count, 2, "another section: \(chapters(of: other))")
+        XCTAssertEqual(cutInTheSecond.chapters.count, 1, "a cut inside the second of two sections: \(chapters(of: cutInTheSecond))")
+        XCTAssertTrue(text(of: cutInTheSecond, 0).contains("Second half."), chapters(of: cutInTheSecond))
+        // The same, but the piece after a section opens in a plain element: the essay's shape, its own chapter.
+        let afterASection = try prepared(pieces([
+            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<div><p>Two.</p></div>",
+        ]))
+        XCTAssertEqual(afterASection.chapters.count, 2, "a plain piece after a section: \(chapters(of: afterASection))")
         // A back page after a footer goes on with it, as Project Gutenberg's does after its license.
         let back = try prepared(pieces([
             "<h1>Chapter</h1><p>One.</p>", "<footer id=\"pg-footer\"><h2>The end</h2><p>Words.</p></footer>", "<div><p>back</p></div>",
@@ -682,6 +692,14 @@ final class KF8ReviewFixTests: XCTestCase {
         for spelling in spellings {
             XCTAssertEqual(ParserUtilities.removingSoftHyphens("pro\(spelling)duct"), "product", spelling)
         }
+        // The spellings the parser decodes that the first list lacked (the outside review's): &shy without its
+        // semicolon where no letter or digit follows, and a reference with more than twelve leading zeros.
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("hy&shy<i>phen</i> pro&shy duct end&shy"), "hy<i>phen</i> pro duct end")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("pro&#0000000000173;duct pro&#x0000000000000AD;duct"), "product product")
+        // Spelled as no entity is: &SHY; and &Shy; stay (the parser keeps them as text), as does &shy before a
+        // letter or digit, and a number past the soft hyphen's however many zeros come first.
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("&SHY; &Shy; &shy1 &shyx &#0000000000174; &#99999999999999999999;"),
+                       "&SHY; &Shy; &shy1 &shyx &#0000000000174; &#99999999999999999999;")
         // What is not one stays.
         XCTAssertEqual(ParserUtilities.removingSoftHyphens("&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}"), "&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}")
         XCTAssertEqual(ParserUtilities.removingSoftHyphens("plain"), "plain")

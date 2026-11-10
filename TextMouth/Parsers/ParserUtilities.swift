@@ -138,17 +138,20 @@ enum ParserUtilities {
 extension ParserUtilities {
 
     /// `text` without its soft hyphens (U+00AD): the character itself, and
-    /// every way markup spells it (`&shy;`, and a numeric reference to 173
-    /// in decimal or hexadecimal with any letter case and any number of
-    /// leading zeros, with or without its semicolon). A publisher puts them
+    /// every way the parser that reads the markup afterwards decodes it
+    /// (`&shy;` in lower case, `&shy` when no letter or digit follows, and a
+    /// numeric reference to 173 in decimal or hexadecimal, `x` in either
+    /// case, with any number of leading zeros, with or without its
+    /// semicolon). A publisher puts them
     /// inside words to say where a line may break; a person reading sees none
     /// in the middle of a line, and nothing that reads the words should meet
     /// one in the middle of a word. Measured on November 9, 2026, a soft
     /// hyphen left in a word:
     /// - hides the word from Search in Book (`hyphen` does not find
     ///   `hy\u{AD}phen`, nor does a regular expression);
-    /// - becomes a visible hyphen in braille (dots 3-6) and keeps the word
-    ///   from contracting;
+    /// - becomes a visible hyphen in braille (dots 3-6), the rest of the
+    ///   word unchanged where no contraction spans it (a cut inside a
+    ///   contraction was not measured);
     /// - is spoken as the hyphen it is taken for, a longer word with a
     ///   break in it (`Scripts/agents/probes/speech-soft-hyphen-probe.swift`).
     ///
@@ -186,8 +189,15 @@ extension ParserUtilities {
         // The character: C2 AD.
         if byte == 0xC2 { return position + 1 < bytes.count && bytes[position + 1] == 0xAD ? 2 : nil }
         guard byte == UInt8(ascii: "&"), position + 1 < bytes.count else { return nil }
-        // &shy; in any letter case.
-        if hasASCIIName(shyName, in: bytes, at: position + 1) { return 1 + shyName.count }
+        // &shy; as HTML spells it, in lower case only (&SHY; and &Shy; are no entities, and the parser keeps
+        // them as text); and &shy without its semicolon when no letter or digit follows, which the parser
+        // decodes too.
+        if hasName(shyName, in: bytes, at: position + 1) {
+            let end = position + 1 + shyName.count
+            if end < bytes.count, bytes[end] == UInt8(ascii: ";") { return 1 + shyName.count + 1 }
+            if end >= bytes.count || !isASCIILetterOrDigit(bytes[end]) { return 1 + shyName.count }
+            return nil
+        }
         // &#173; &#xAD; and their spellings.
         guard bytes[position + 1] == UInt8(ascii: "#") else { return nil }
         var cursor = position + 2
@@ -196,10 +206,12 @@ extension ParserUtilities {
             radix = 16
             cursor += 1
         }
+        // The number's value is what is limited, not its digits (a reference may have any number of leading
+        // zeros): a value past the soft hyphen's stays past it while the rest of the digits are read.
         var value = 0
         var digits = 0
-        while cursor < bytes.count, digits < 12, let digit = digitValue(bytes[cursor], radix: radix) {
-            value = value * radix + digit
+        while cursor < bytes.count, let digit = digitValue(bytes[cursor], radix: radix) {
+            value = min(value * radix + digit, 0xFFFF)
             digits += 1
             cursor += 1
         }
@@ -208,18 +220,19 @@ extension ParserUtilities {
         return cursor - position
     }
 
-    /// The name of the entity for a soft hyphen, with its semicolon.
-    private static let shyName = Array("shy;".utf8)
+    /// The name of the entity for a soft hyphen, without its semicolon.
+    private static let shyName = Array("shy".utf8)
 
-    /// Whether the lower-case ASCII `name` is in `bytes` at `position`, in any letter case.
-    private static func hasASCIIName(_ name: [UInt8], in bytes: [UInt8], at position: Int) -> Bool {
+    /// Whether `name` is in `bytes` at `position`, byte for byte.
+    private static func hasName(_ name: [UInt8], in bytes: [UInt8], at position: Int) -> Bool {
         guard position + name.count <= bytes.count else { return false }
-        for (index, expected) in name.enumerated() {
-            let byte = bytes[position + index]
-            let lowered = (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte) ? byte + 32 : byte
-            if lowered != expected { return false }
-        }
-        return true
+        return bytes[position..<(position + name.count)].elementsEqual(name)
+    }
+
+    /// Whether `byte` is an ASCII letter or digit, which goes on an entity's name.
+    private static func isASCIILetterOrDigit(_ byte: UInt8) -> Bool {
+        (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte) || (UInt8(ascii: "a")...UInt8(ascii: "z")).contains(byte)
+            || (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte)
     }
 
     /// The value of the digit `byte` in `radix` (10 or 16), or nil.
