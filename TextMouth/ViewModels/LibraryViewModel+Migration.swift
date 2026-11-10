@@ -2526,7 +2526,7 @@ struct TextMouthRelauncher {
                     }
                 }
             },
-            quit: { NSApplication.shared.terminate(nil) }
+            quit: { QuitRequest.ask() }
         )
         #else
         // iOS cannot open a second instance of the app, nor quit this one

@@ -71,7 +71,14 @@ final class SpeechExportsUnderWay {
         QuitHold.Work(
             isRunning: { self.isRunning },
             end: { await self.stopAll() },
-            longestWait: longestWait
+            longestWait: longestWait,
+            kind: "speech exports",
+            finishing: {
+                let count = self.stops.count
+                return count == 1
+                    ? "stopping a speech export with the chapters it finished kept"
+                    : "stopping \(count) speech exports with the chapters they finished kept"
+            }
         )
     }
 }

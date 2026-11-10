@@ -98,7 +98,7 @@ final class UnsavedChangesTerminationGuard {
         failureCenter: PersistenceFailureCenter = .shared,
         flush: @escaping @MainActor () -> Void = UnsavedChangesTerminationGuard.flushPendingWrites,
         prompt: @escaping @MainActor ([PersistenceFailure]) -> UnsavedChangesChoice = UnsavedChangesPrompt.run,
-        requestTermination: @escaping @MainActor () -> Void = { NSApp.terminate(nil) }
+        requestTermination: @escaping @MainActor () -> Void = { QuitRequest.ask() }
     ) {
         self.failureCenter = failureCenter
         self.flush = flush
@@ -128,7 +128,15 @@ final class UnsavedChangesTerminationGuard {
     /// its question would hold up the quit event. A request that arrives
     /// while the prompt is on its way or showing is cancelled without
     /// another prompt.
-    func reply() -> NSApplication.TerminateReply {
+    ///
+    /// When the quit is to go ahead, `whenQuitting` has the last word: it
+    /// may hold the quit for work to finish, answering `.terminateCancel`
+    /// (and asking to quit again itself later) or `.terminateLater`. A cancel
+    /// keeps Quit Anyway for the request that follows, which must not ask
+    /// about the unsaved changes again.
+    func reply(
+        whenQuitting answer: @MainActor () -> NSApplication.TerminateReply = { .terminateNow }
+    ) -> NSApplication.TerminateReply {
         guard !isPrompting else { return .terminateCancel }
         flush()
         let decision = TerminationDecision.decide(
@@ -136,10 +144,15 @@ final class UnsavedChangesTerminationGuard {
             userChoseQuitAnyway: userChoseQuitAnyway
         )
         // Quit Anyway answers one request: the one it makes.
+        let choseQuitAnyway = userChoseQuitAnyway
         userChoseQuitAnyway = false
         switch decision {
         case .terminate:
-            return .terminateNow
+            let reply = answer()
+            if reply == .terminateCancel {
+                userChoseQuitAnyway = choseQuitAnyway
+            }
+            return reply
         case .cancelAndPrompt:
             isPrompting = true
             DispatchQueue.main.async { [self] in
@@ -149,6 +162,14 @@ final class UnsavedChangesTerminationGuard {
         }
     }
 #endif
+
+    /// Forgets a Quit Anyway kept for the request that follows work a quit
+    /// waited for, when that request is cancelled before it reaches the guard
+    /// (a take, an editor's edits, or a library move began meanwhile): the
+    /// choice belonged to that quit, and a later one must ask again.
+    func forgetQuitAnyway() {
+        userChoseQuitAnyway = false
+    }
 
     /// Shows the prompt and carries out the choice. Changes saved since the
     /// request leave nothing to ask about: TextMouth asks to quit again at
@@ -190,83 +211,5 @@ final class UnsavedChangesTerminationGuard {
         LibraryPersistenceService.flushPendingSave()
         ReadingStatsService.shared.flushPendingSaves()
         ConfigService.shared.flushScheduledSave()
-    }
-}
-
-// MARK: - Holding a Quit
-
-/// Holds a quit that is sure to go ahead, with nothing unsaved or Quit
-/// Anyway chosen, while work a quit must not cut off reaches a safe end:
-/// feed downloads keeping their place (`FeedQuitHold`, FR03), a book's
-/// text being read again in another encoding (`TextRereads`,
-/// encodingchoice), and a book being spoken into an audio file, stopped with
-/// its chapters kept (`SpeechExportsUnderWay`, FMT43). The application
-/// delegate answers `.terminateLater` while it holds, and TextMouth quits
-/// once each piece of work has ended, or has had the longest it may wait, so
-/// a quit that leaves TextMouth open never stops anything.
-@MainActor
-enum QuitHold {
-    /// One piece of work a quit may wait for.
-    struct Work {
-        /// Whether the work runs now, so a quit waits for it.
-        let isRunning: @MainActor () -> Bool
-        /// Brings the work to its safe end, returning once it is there.
-        let end: @MainActor () async -> Void
-        /// The longest a quit waits for it: past this, TextMouth quits anyway.
-        let longestWait: Duration
-    }
-
-    /// Holds the quit while each of `works` that runs now reaches its end,
-    /// one after another, each for at most its longest wait, and returns
-    /// whether it holds it, for the delegate to answer `.terminateLater`.
-    /// `reply` is then called once, with true, as the last of them ends or
-    /// gives up waiting.
-    static func hold(_ works: [Work], reply: @escaping @MainActor (Bool) -> Void) -> Bool {
-        let running = works.filter { $0.isRunning() }
-        guard !running.isEmpty else { return false }
-        Task {
-            for work in running {
-                await end(work)
-            }
-            reply(true)
-        }
-        return true
-    }
-
-    /// Returns once `work` has ended or its longest wait has passed,
-    /// whichever comes first.
-    private static func end(_ work: Work) async {
-        await withCheckedContinuation { (ended: CheckedContinuation<Void, Never>) in
-            let resume = RunOnce { ended.resume() }
-            Task {
-                await work.end()
-                resume.run()
-            }
-            Task {
-                try? await Task.sleep(for: work.longestWait)
-                resume.run()
-            }
-        }
-    }
-}
-
-/// An action run once, by whichever of its callers comes first: a held
-/// quit's wait for one piece of work, ended by the work or by its longest
-/// wait (`QuitHold`).
-@MainActor
-private final class RunOnce {
-    /// The action, until it has run.
-    private var action: (() -> Void)?
-
-    /// An action run by the first call of `run()`.
-    init(_ action: @escaping @MainActor () -> Void) {
-        self.action = action
-    }
-
-    /// Runs the action, unless it has run already.
-    func run() {
-        guard let action else { return }
-        self.action = nil
-        action()
     }
 }

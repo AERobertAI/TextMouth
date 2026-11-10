@@ -395,16 +395,25 @@ final class AudioEditorSavingTests: XCTestCase {
         recorder.answers = ["Ferry Log": .discard]
         let repeated = QuitRecorder()
 
+        // The request to quit again arrives on a later turn of the run loop,
+        // as QuitRequest.ask() delivers it, not inside the review's own call:
+        // the mark that lets it quit must still be there when it arrives.
         XCTAssertTrue(controller.holdQuit(then: {
             repeated.quits += 1
-            repeated.held.append(controller.holdQuit(then: {}))
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    repeated.held.append(controller.holdQuit(then: {}))
+                }
+            }
         }))
         await controller.quitReview?.value
+        let askedAgain = await eventually { repeated.held.count == 1 }
 
+        XCTAssertTrue(askedAgain, "the review never asked to quit again")
         XCTAssertEqual(ferry.announcements.sentences.last, AudioEditorWording.discardKept)
         XCTAssertTrue(ferry.model.session.hasUnsavedEdits)
         XCTAssertEqual(repeated.quits, 1)
-        XCTAssertEqual(repeated.held, [false], "the request the review made quits")
+        XCTAssertEqual(repeated.held, [false], "the request the review made, on a later turn, was asked about again")
         XCTAssertTrue(controller.holdQuit(then: {}), "a later request asks again")
         await controller.quitReview?.value
     }

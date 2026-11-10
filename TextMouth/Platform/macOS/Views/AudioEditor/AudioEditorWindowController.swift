@@ -226,7 +226,11 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
     private(set) var quitReview: Task<Void, Never>?
 
     /// Set by a review that let every editor go, for the one request to
-    /// quit it makes, so that request quits.
+    /// quit it makes, so that request quits. The request arrives later than
+    /// the review's end, so the next `holdQuit` clears it, not the review;
+    /// if another hold cancels that request first (a take, a library move),
+    /// the mark waits for the next quit, whose editors were all answered for
+    /// just before.
     private var quitReviewed = false
 
     /// Holds a request to quit while an editor needs something first, as the
@@ -268,10 +272,11 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
             let goesOn = await review(open)
             quitReview = nil
             guard goesOn else { return }
+            // `quit()` only schedules the request (`QuitRequest.ask()`), which
+            // arrives on a later turn of the run loop, so the mark is not
+            // cleared here: the next `holdQuit` uses it up.
             quitReviewed = true
             quit()
-            // A request another hold cancelled leaves the next one asking.
-            quitReviewed = false
         }
         return true
     }

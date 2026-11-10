@@ -430,7 +430,7 @@ enum WatchedProcess {
             gate.clear()
             registry.withLockUnchecked { _ = $0.removeValue(forKey: pid) }
             // However the child ended, the reaper has nothing left to do.
-            if let reaper, reaper.isRunning { reaper.terminate() }
+            if let reaper, reaper.isRunning { reaper.terminate() } // quit-ok: ends a helper Process, not TextMouth
         }
 
         let started = uptime()
