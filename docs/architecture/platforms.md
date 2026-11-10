@@ -82,7 +82,7 @@ The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it w
 
 ## The iPhone app
 
-The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below).
+The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repository root, which holds the design and the hand-check list. This section says how the code is put together. It describes the code main holds since November 8, 2026: the interface of branch `ios/lead-1108`, and the fixes of branch `ios/fix-c-1108` (the sheet buttons and the full-contrast text, below). The Search in Book of branch `ios/search-1109` (below) is merged into main with 0.4.4, with the focus requests and `PhoneSession.closeBook(id:)`.
 
 ### The frame
 
@@ -102,13 +102,14 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
 
 ### PhoneLaunchRequest
 
-- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has two variables.
+- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has three variables.
   - `TEXTMOUTH_UI_TEST` set to exactly "1" gives the launch a library and preferences in a sandbox of its own, as a hosted test has. An empty or mistyped value leaves the app as it is.
   - `TEXTMOUTH_OPEN_AT_LAUNCH` set to an absolute path sends the app that file, as another app would send one at a cold launch. A relative path is ignored.
+  - `TEXTMOUTH_SEARCH_IN_BOOK` set to text opens the Search in Book sheet with its field already holding that text, so a UI test shows the results without typing (`PhoneLaunchRequest.searchText(_:)`). An empty value is ignored.
 - It exists in debug builds only (0.4.3).
   - The whole of `PhoneLaunchRequest.swift` is inside `#if DEBUG`. So are its tests: `PhoneLaunchRequestTests` on the Mac, and the two tests of `IOSRuntimeTests` that read it.
-  - The two places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), and the scene delegate, which opens the file.
-  - A release build holds neither the type nor its two variable names, so no environment variable can steer it. A Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one.
+  - The three places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), the scene delegate, which opens the file, and the Search in Book sheet, which fills its field (`fillFieldForTesting()`). `PhoneLaunchRequestTests.testTheRequestIsReadOnlyInTheIPhonesDebugBuild` pins those reads, and `testTheTypeIsCompiledIntoDebugBuildsOnly` that the type is debug only.
+  - A release build holds neither the type nor its three variable names, so no environment variable can steer it. When it had two variables, a Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one. It was not measured again with the third.
   - The Mac's Release build was not checked for it by a build. By reading, the Mac's Release code never names it.
 - A UI test needs it because XCTest names its configuration (`XCTestConfigurationFilePath`) only in a process that hosts a test bundle, and the app a UI test drives does not host one. Without the sandbox, each test would find what the last one left in the app's real container.
 - The book comes in the way a person's would: held until the library starts, copied by the import's copier, imported, and opened. The file is never moved or deleted.
@@ -284,9 +285,60 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
 - Not verified: the order on a phone with VoiceOver, since VoiceOver does not run in the simulator. The simulator's tree is what the tests read.
 - A related fix from the same round: a `Slider` in the Voice sheet is labeled by its label closure alone. A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
+### Search in Book
+
+- The reader's sixteenth control, `PhoneReaderControl.searchInBook`, comes after Headings and before Go To in VoiceOver's order. Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text." (`PhoneBookSearchVocabulary`). It opens `PhoneReaderSheet.search`.
+- `PhoneReaderModel.openSearch()` decides whether it opens, and returns true only when the book has text to search (`ReaderViewModel.canSearchText`).
+  - While the book loads, it says "Loading <title>" with medium priority and opens nothing.
+  - For an audiobook with no transcript text, it says why, in the Mac's words (`ReaderViewModel.announceNoTextToSearch`), and opens nothing.
+  - For a text book that failed to load, it says nothing: that screen shows the failure in place of the controls.
+- The grid has six rows (`PhoneReaderControl.gridRows`), each a slice of `grid`, so VoiceOver's order is the same however the rows break:
+  - Where Am I?, Navigation unit, Speed;
+  - Previous Heading, Next Heading, Add bookmark;
+  - Bookmarks, Headings, Search in Book;
+  - Go To, Return, Sleep Timer;
+  - Voice, Book Info;
+  - Skip backward, Skip forward.
+- A plain three to a row would leave Skip forward alone in a sixth row. So the rows are broken to keep each pair together, and the two skips are the last row, as in the spec. The fifth row holds two, and the spec had five rows.
+  - `testTheGridRowsKeepOrderAndPairs` pins the order, at most three to a row, the three groups, and the last row. It does not pin the exact rows.
+  - The comments on `PhoneReaderControl.grid` ("three to a row") and above `testTheControlsAreInTheSpecsOrder` ("five full rows and a sixth") still say the old count.
+- The sheet is `PhoneSearchSheet` (`Platform/iOS/Views/Reader/`), thin over `PhoneBookSearchSource` and over the Mac's `BookSearchModel` and `BookSearchEngine`.
+  - VoiceOver's order is the title, Back to Book, the field, the status line, the regular-expression switch, a "Search results" heading, and then the results in the order they lie in the book.
+  - The Mac's words are shared through `BookSearchWording` (`Views/Reader/BookSearchView.swift`): the field's label "Search text" and its two hints, the switch's label "Use regular expression" and its hint, the "Search results" label, and Back to Book's hint "Close search and return to the book". The Mac's sheet reads them from there too, with the values unchanged.
+  - Only what the phone adds is in `PhoneBookSearchVocabulary`: the button's hint, a result row's hint "Goes to this result." (the Mac's "Activate to navigate to this result" names a gesture), and the typing pause.
+  - A text book's results say where the match is as a percent, the Mac's default. There is no Display picker, and there is no clear-search button.
+  - Focus lands in the field 0.35 seconds after the sheet opens, unless VoiceOver has landed on a reader control meanwhile (the tickets, below).
+  - The field turns off capital letters and correction, so the listener's text goes in as typed.
+- A search waits for typing to pause for one second (`PhoneBookSearchVocabulary.typingPause`), as the Library's search does, so that a listener typing with a braille display or Braille Screen Input is not told "No matches" between letters. The Mac waits a quarter second.
+  - `BookSearchModel` has a `debounceInterval` parameter for it, `init(corpus:debounceInterval:announce:)`. `BookSearchModel.debounceInterval` is the default, 250 milliseconds, so the Mac's one call passes none and behaves as before.
+  - `PhoneBookSearchSource.makeModel(announce:)` passes the phone's second.
+  - `testNothingIsSaidUntilTypingHasPausedForASecond` sets the query, waits 0.6 seconds, and requires that the status is still "Searching…" with nothing said. It would fail at 250 milliseconds.
+  - Each completed search says its status once, with low priority (`PhoneAnnouncer`), so typing is never cut off. The status line holds the same words for anyone who flicks to it.
+- A result goes to its place with `ReaderViewModel.goToSearchResult(chapterIndex:characterOffset:inTranscript:)`, which the Mac's sheet now calls too, so one place decides the move: a transcript's result moves the audio to the start of the sentence holding the match, and any other book's moves the place to the match.
+  - The Return place is kept, the sheet closes, and the session counts the book as opened (`PhoneReaderModel.noteJumped`).
+  - What the jump says is collected and said after the sheet has closed (`PhoneSheetFarewell`). A transcript jump says "Moved to <the time>, <the heading>." (`BookSearchWording.movedTo(time:location:)`), and a text book's jump says nothing beyond what the reader says, as on the Mac. It plays on from the result if Auto-play after navigation is on.
+  - Back to Book, and the sheet disappearing any other way, stop a search still running (`cancelSearch()`), so nothing is said for a sheet that is gone.
+- `offersTranscription` is a parameter of `BookSearchWording.noTextToSearch` and `ReaderViewModel.announceNoTextToSearch`, true by default. The phone cannot transcribe, so `openSearch()` passes false.
+  - An audiobook with no transcript hears "<title> has no transcript to search." and not the Mac's "Transcribe it first, with Transcribe Audio."
+  - A stale transcript hears its reason without "Transcribe it again, then search the new transcript."
+  - Two tests in `PhoneReaderModelTests` pin it: a packaged audiobook that `isTranscribable` must not mention "ranscribe" on the phone, and the Mac's words must still name the command.
+  - The phone's words for a held edit still mention "your editor" and "content.md". The phone cannot hold an edit, so this is a follow-up only.
+- The focus requests are `PhoneFocusRequests` (`Phone/PhoneFocusRequests.swift`), a plain value with no clock, which the Mac's tests drive by calls alone, and `PhoneFocusRegistry` (`Platform/iOS/Views/`), which observes VoiceOver's landings.
+  - A request that waits 0.35 seconds takes a ticket (`request()`, through `PhoneFocusRegistry.beginRequest()`), and asks for it back when its time comes (`claim(_:)`, through `claimRequest(_:)`). It posts only if the ticket is still good.
+  - VoiceOver landing on any of the reader's controls (`PhoneControlKind`) spends every ticket still waiting, since that is the listener's own move (`focusLanded(on:)`).
+  - A landing on Back or the title cancels nothing. The spec said "Any focus event cancels a request still waiting", and now says what the code does. `PhoneFocusPolicy` already exempted those two, and cancelling on them could stop focus from ever returning after a sheet closes. This needs a phone to check.
+  - The sheet's focus into its field, the alert's and Speech Stopped's returns, and a sheet's return to its control all go through the tickets. The Library's list-focus helper is not wired to them.
+  - `PhoneFocusRequestsTests` has six cases, including every kind of control, so a control whose landing fails to cancel is named. Nothing tests the iOS posting path.
+  - Unverified: whether VoiceOver lands on another reader control by itself as a sheet finishes closing. If it does, the return of focus is cancelled by VoiceOver rather than the listener.
+- `PhoneSession.closeBook(id:)` closes only that book's reader. A book on screen with another behind it hands the screen to the one behind, as Back does (`leaveReader`), and a book that is not open does nothing. The Library's Remove calls it (`PhoneLibraryView`), so removing the book that plays behind the screen no longer stops the other.
+  - `PhoneSessionTests` pin four cases: the book behind, the book on screen, the only book, and a book not open.
+  - The on-screen case also checks which reader Now Playing follows, but with only two readers it passes with or without the hand-over, so it does not prove it. A third reader would.
+- Files: Phone/PhoneBookSearch.swift, Phone/PhoneFocusRequests.swift, Phone/PhoneReaderState.swift, Phone/PhoneReaderModel.swift, Phone/PhoneLaunchRequest.swift, Phone/PhoneSession.swift, Platform/iOS/Views/Reader/PhoneSearchSheet.swift, Platform/iOS/Views/PhoneFocusRegistry.swift, ViewModels/BookSearchModel.swift, ViewModels/ReaderViewModel+Bookmarks.swift, Views/Reader/BookSearchView.swift.
+- The tests are in [Testing TextMouth](../developer/testing.md).
+
 ## What is left
 
-- These are not done: the rotors on Play, Book content's language, Search in Book, the Files drop folder, sounds, and `PhoneSession.closeBook(id:)`. [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
+- These are not done: the rotors on Play, Book content's language, the Files drop folder, and sounds. [Testing TextMouth](../developer/testing.md) lists the audit findings that are still open.
 - Phase 1 left these places empty or approximate, and the first run has not settled them:
   - the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
   - a recording backend, if recording comes to iOS;
