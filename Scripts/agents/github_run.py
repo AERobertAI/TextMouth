@@ -48,7 +48,8 @@ ARTIFACT = "test-build-results"
 PUSH_REMOTE = "origin"
 ORIGIN_URLS = ("git@github.com:AERobertAI/TextMouth.git", "ssh://git@github.com/AERobertAI/TextMouth.git",
                "https://github.com/AERobertAI/TextMouth.git", "https://github.com/AERobertAI/TextMouth")
-# Origin's main, whose workflow files a pushed tree must not change once the workflow is on it.
+# Origin's main, whose workflow files a pushed tree must not change once test-build.yml is on it (the guard is off
+# until then: see check_workflows).
 MAIN_REF = "origin/main"
 WORKFLOW_FOLDER = ".github/workflows"
 # What a pushed tree may not change either: the repository's own actions, which the workflows run (setup-xcode).
@@ -169,12 +170,16 @@ def workflow_listing(cwd, ref):
 
 
 def check_workflows(cwd, commit):
-    """Once this workflow is on origin's main, raises RemoteFailure when `commit`'s .github/workflows or .github/actions
-    differ from main's. GitHub runs the workflow files (and the local actions they use) of the pushed tree, so a merged
-    branch that widened `permissions:` or added a step would run it on the public repository; only a change that is
-    already on main may run. (A change the
-    orchestrator merged into the local main is refused until origin's main has it: the safe way round.) Before the
-    workflow is on main there is nothing to compare with, and the check passes."""
+    """Raises RemoteFailure when `commit`'s .github/workflows or .github/actions differ from origin's main, but only once
+    origin's main holds .github/workflows/test-build.yml. GitHub runs the workflow files (and the local actions they use)
+    of the pushed tree, so a branch that widened `permissions:` or added a step would run it on the public repository;
+    once the guard is on, only a change that is already on origin's main may run.
+
+    THE GUARD IS OFF until then. On November 10, 2026 origin's main (05327665) holds only check.yml, so this returns at
+    once and every push to TestBuild runs its own tree's workflows with no comparison. Pushing main after the branch that
+    adds tests.yml and the action is merged switches the guard on, with workflows that match the local main's; after
+    that, a change to a workflow or an action runs on TestBuild only once it has been pushed to main. (A change the
+    orchestrator merged into the local main is refused until origin's main has it: the safe way round.)"""
     main = workflow_listing(cwd, MAIN_REF)
     if main is None or not any(entry.endswith("\t" + WORKFLOW_FILE) for entry in main):
         return
