@@ -9,15 +9,16 @@ final class PhoneReaderControlsTests: XCTestCase {
     // MARK: - Order
 
     /// The elements after Back and the title, in VoiceOver's order, and the
-    /// grid of three columns and five rows under Play.
+    /// grid of three columns under Play: five full rows, and a sixth holding
+    /// the last control, since Search in Book follows Headings.
     func testTheControlsAreInTheSpecsOrder() {
         XCTAssertEqual(PhoneReaderControl.allCases, [
             .bookContent, .play, .whereAmI, .navigationUnit, .speed,
             .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
-            .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo,
+            .searchInBook, .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo,
             .skipBackward, .skipForward,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 15)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 16)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
     }
@@ -35,9 +36,27 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(PhoneReaderControl.navigationUnit.sheet, .navigationUnit)
         XCTAssertEqual(PhoneReaderControl.headings.sheet, .headings)
         XCTAssertEqual(PhoneReaderControl.voice.sheet, .voice)
+        XCTAssertEqual(PhoneReaderControl.searchInBook.sheet, .search)
         XCTAssertNil(PhoneReaderControl.play.sheet)
         XCTAssertNil(PhoneReaderControl.addBookmark.sheet)
         XCTAssertEqual(Set(PhoneReaderControl.allCases.compactMap(\.sheet)), Set(PhoneReaderSheet.allCases))
+    }
+
+    // MARK: - Search in Book
+
+    /// Search in Book is the Mac's command, a button with a hint saying what
+    /// it opens, no value, and no actions; it follows Headings and comes
+    /// before Go To, in every state.
+    func testSearchInBook() {
+        let search = describe(.searchInBook, in: state())
+        XCTAssertEqual(search.label, "Search in Book")
+        XCTAssertEqual(search.value, "")
+        XCTAssertEqual(search.hint, "Opens a search of the book's text.")
+        XCTAssertEqual(search.traits, .button)
+        XCTAssertEqual(search.actions, [])
+        let order = PhoneReaderControl.allCases
+        XCTAssertEqual(order.firstIndex(of: .searchInBook), order.firstIndex(of: .headings).map { $0 + 1 })
+        XCTAssertEqual(order.firstIndex(of: .goTo), order.firstIndex(of: .searchInBook).map { $0 + 1 })
     }
 
     // MARK: - Play

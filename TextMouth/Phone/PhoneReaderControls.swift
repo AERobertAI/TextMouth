@@ -72,6 +72,12 @@ enum PhoneReaderControls {
                 hint: PhoneReaderWording.headingsHint,
                 traits: .button
             )
+        case .searchInBook:
+            return PhoneControlDescription(
+                label: PhoneBookSearchVocabulary.title,
+                hint: PhoneBookSearchVocabulary.buttonHint,
+                traits: .button
+            )
         case .goTo:
             return PhoneControlDescription(
                 label: PhoneReaderWording.goTo,

@@ -6,6 +6,7 @@ import Foundation
 enum PhoneReaderSheet: String, Identifiable, CaseIterable, Sendable {
     case bookmarks
     case headings
+    case search
     case goTo
     case sleepTimer
     case voice

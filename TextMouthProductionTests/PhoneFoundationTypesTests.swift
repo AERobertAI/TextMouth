@@ -264,12 +264,12 @@ final class PhoneAnnouncerTests: XCTestCase {
     }
 }
 
-/// `PhoneReaderSheet`: the seven sheets, each its own.
+/// `PhoneReaderSheet`: the eight sheets, each its own.
 final class PhoneReaderSheetTests: XCTestCase {
     /// Seven sheets, each with an identity of its own.
     func testEachSheetIsItsOwn() {
-        XCTAssertEqual(PhoneReaderSheet.allCases.count, 7)
-        XCTAssertEqual(Set(PhoneReaderSheet.allCases.map(\.id)).count, 7)
+        XCTAssertEqual(PhoneReaderSheet.allCases.count, 8)
+        XCTAssertEqual(Set(PhoneReaderSheet.allCases.map(\.id)).count, 8)
     }
 }
 

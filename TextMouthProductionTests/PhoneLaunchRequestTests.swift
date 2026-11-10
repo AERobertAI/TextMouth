@@ -48,6 +48,17 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(PhoneLaunchRequest.filesToOpen(["TEXTMOUTH_OPEN_AT_LAUNCH": "/tmp/a.epub"]).first?.isFileURL, true)
     }
 
+    // MARK: - The Search Filled In
+
+    /// A non-empty value is the text the Search in Book field starts with;
+    /// a missing or empty one leaves the field empty.
+    func testTheSearchTextIsWhatTheVariableHolds() {
+        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "Cheshire"]), "Cheshire")
+        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "two words"]), "two words")
+        XCTAssertNil(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": ""]))
+        XCTAssertNil(PhoneLaunchRequest.searchText([:]))
+    }
+
     // MARK: - Where It Is Read
 
     /// Each place that reads the request does so in a debug build of the

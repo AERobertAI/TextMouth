@@ -224,13 +224,65 @@ final class PhoneReaderModelTests: XCTestCase {
         model.returnToPreviousPlace()
     }
 
+    // MARK: - Search in Book
+
+    /// A text book with its text loaded opens the search, and says nothing.
+    func testSearchInBookOpensForABookWithText() {
+        let (model, _) = makeModel()
+
+        XCTAssertTrue(model.openSearch())
+        XCTAssertEqual(posted, [], "Opening the sheet said something")
+    }
+
+    /// While the book loads, the button doesn't open the sheet, and says the
+    /// Mac's "Loading" words, so a press is never met with silence.
+    func testSearchInBookWhileLoadingSaysSo() {
+        let (model, reader) = makeModel()
+        reader.isLoading = true
+        reader.content = nil
+
+        XCTAssertFalse(model.openSearch())
+        XCTAssertEqual(posted.map(\.message), ["Loading Weather Notes"])
+        XCTAssertEqual(delays, [PhoneAnnouncer.delay], "The words didn't wait for the activation's own sounds")
+    }
+
+    /// An audiobook with no transcript text doesn't open the sheet, and says
+    /// the Mac's words for why, which name Transcribe Audio only where the
+    /// book offers it.
+    func testSearchInBookForAnUntranscribedAudiobookSaysWhy() {
+        let (model, reader) = makeModel(format: .audio)
+
+        XCTAssertFalse(model.openSearch())
+        XCTAssertEqual(posted.map(\.message), [
+            BookSearchWording.noTextToSearch(
+                bookTitle: reader.book.title,
+                canTranscribe: LibraryAudioCommand.isTranscribable(reader.book),
+                hasTranscript: false,
+                withheld: nil
+            ),
+        ])
+    }
+
+    /// With no book open, the button does nothing and says nothing.
+    func testSearchInBookWithNoBookDoesNothing() {
+        let model = PhoneReaderModel(
+            currentReader: { nil },
+            readers: Empty<ReaderViewModel?, Never>().eraseToAnyPublisher(),
+            playOrPause: {},
+            post: { [weak self] in self?.posted.append($0) }
+        )
+
+        XCTAssertFalse(model.openSearch())
+        XCTAssertEqual(posted, [])
+    }
+
     // MARK: - Helpers
 
     /// A model over a paused reader of "Weather Notes", three chapters of
     /// two sentences each, a heading at each chapter's start, moving by
     /// Sentence, its announcements caught here and posted at once.
-    private func makeModel() -> (PhoneReaderModel, ReaderViewModel) {
-        let reader = makeReader()
+    private func makeModel(format: BookFormat = .txt) -> (PhoneReaderModel, ReaderViewModel) {
+        let reader = makeReader(format: format)
         let model = PhoneReaderModel(
             currentReader: { reader },
             readers: Just(reader).map(Optional.some).eraseToAnyPublisher(),
@@ -256,10 +308,10 @@ final class PhoneReaderModelTests: XCTestCase {
 
     /// A stopped reader of a text book held in memory: nothing plays, and
     /// nothing is read from disk.
-    private func makeReader() -> ReaderViewModel {
+    private func makeReader(format: BookFormat = .txt) -> ReaderViewModel {
         let book = Book(
             title: "Weather Notes",
-            format: .txt,
+            format: format,
             filePath: "/tmp/\(UUID().uuidString)-weather-notes.txt",
             md5Hash: UUID().uuidString
         )

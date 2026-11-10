@@ -19,6 +19,9 @@ import Foundation
 /// has: an empty library and preferences in a sandbox of its own, feeds that
 /// never reach the network, and no joining of the system's media session.
 ///
+/// With `searchVariable`, the Search in Book sheet opens with its field
+/// already filled.
+///
 /// With `openVariable`, the scene delegate hands the file to the life cycle
 /// as if another app had sent it at a cold launch, so the book comes in the
 /// way a person's would: held until the library starts, copied by the
@@ -33,6 +36,18 @@ enum PhoneLaunchRequest {
     static let sandboxVariable = "TEXTMOUTH_UI_TEST"
     /// An absolute path: the file the launch is sent, as another app would send it.
     static let openVariable = "TEXTMOUTH_OPEN_AT_LAUNCH"
+
+    /// Text the Search in Book sheet fills its field with as it opens, so that a
+    /// UI test can show the sheet's results without typing, which the
+    /// software keyboard would click aloud.
+    static let searchVariable = "TEXTMOUTH_SEARCH_IN_BOOK"
+
+    /// The text `environment` fills the Search in Book field with, or none
+    /// when the variable is missing or empty.
+    static func searchText(_ environment: [String: String]) -> String? {
+        guard let text = environment[searchVariable], !text.isEmpty else { return nil }
+        return text
+    }
 
     /// Whether `environment` asks for a sandbox: only the exact value "1", so
     /// an empty or mistyped value leaves the app as it is.

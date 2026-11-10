@@ -2,7 +2,9 @@ import SwiftUI
 import UIKit
 
 /// The reader's screen: Book content, Play, and a grid of three columns and
-/// five rows, in the spec's order and layout (the spec, under "The reader").
+/// six rows, the last holding one control, in the spec's order and layout
+/// (the spec, under "The reader"; Search in Book follows Headings, which
+/// makes sixteen).
 ///
 /// The view is thin. It reads the session's snapshot, which changes only
 /// when the book's title, playing, or loading does, never as the place moves;
@@ -201,6 +203,14 @@ struct PhoneReaderView: View {
             }
         case .returnToPlace:
             return { model.returnToPreviousPlace() }
+        case .searchInBook:
+            return {
+                // Opens only for a book with text to search; any other is told
+                // why, and nothing opens (`PhoneReaderModel.openSearch`).
+                guard model.openSearch() else { return }
+                sheetOpener = item
+                sheet = item.sheet
+            }
         case .navigationUnit, .bookmarks, .headings, .goTo, .sleepTimer, .voice, .bookInfo:
             return {
                 sheetOpener = item

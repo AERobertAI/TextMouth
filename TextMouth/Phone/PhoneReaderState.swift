@@ -24,6 +24,9 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     case bookmarks
     /// Opens the Headings sheet.
     case headings
+    /// Opens the Search in Book sheet, or says why the book has no text to
+    /// search.
+    case searchInBook
     /// Opens the Go To sheet.
     case goTo
     /// Goes back to where the last jump began.
@@ -58,6 +61,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .addBookmark: return .addBookmark
         case .bookmarks: return .bookmarks
         case .headings: return .headings
+        case .searchInBook: return .searchInBook
         case .goTo: return .goTo
         case .returnToPlace: return .returnToPlace
         case .sleepTimer: return .sleepTimer
@@ -74,6 +78,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .navigationUnit: return .navigationUnit
         case .bookmarks: return .bookmarks
         case .headings: return .headings
+        case .searchInBook: return .search
         case .goTo: return .goTo
         case .sleepTimer: return .sleepTimer
         case .voice: return .voice
