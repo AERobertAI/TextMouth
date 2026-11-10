@@ -833,6 +833,92 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey))
     }
 
+    /// The reopen keys go with the crash guard, as the session is made, not
+    /// only when the first activation acts on the verdict: the guard is gone
+    /// from disk at that moment, so an app that ends again before its first
+    /// activation must find no keys naming the book it ended opening. The
+    /// launch after that one reopens nothing and says nothing.
+    func testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysGuard")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysGuard")
+        // As the run that ended while opening the book left the disk.
+        preferences.set(book.id.uuidString, forKey: PhoneSession.openingBookKey)
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        preferences.set(true, forKey: PhoneSession.reopenShowsReaderKey)
+        preferences.set(true, forKey: PhoneSession.reopenFromReadingListKey)
+
+        // This launch's session is made; the app ends before the first
+        // activation, so `takeReopeningAtLaunch` never runs.
+        let crashedLaunch = makeSession(in: world, preferences: preferences)
+        let keys = [
+            PhoneSession.openingBookKey, PhoneSession.reopenBookKey,
+            PhoneSession.reopenShowsReaderKey, PhoneSession.reopenFromReadingListKey,
+        ]
+        let leftOnDisk = keys.filter { preferences.object(forKey: $0) != nil }
+        XCTAssertEqual(leftOnDisk, [], "These keys outlived the crash guard's clearing: \(leftOnDisk)")
+
+        // The next launch, made before the crashed launch ever takes its
+        // verdict, as after a crash before activation: nothing to reopen.
+        // (With the keys still on disk, it would reopen the book.)
+        let nextLaunch = makeSession(in: world, preferences: preferences)
+        XCTAssertNil(nextLaunch.bookToReopenAtLaunch, "The book that crashed the app reopens")
+        XCTAssertEqual(nextLaunch.takeReopeningAtLaunch(fileOpened: false), .nothing)
+
+        // The launch that decides still knows, from memory, to say so.
+        XCTAssertNil(crashedLaunch.bookToReopenAtLaunch)
+        XCTAssertEqual(
+            crashedLaunch.takeReopeningAtLaunch(fileOpened: false),
+            .closedWhileOpening("TextMouth closed while opening Tide Tables, so it wasn't reopened.")
+        )
+    }
+
+    /// A book opened since the session was made, as a Play from the lock
+    /// screen opens one before the first activation, keeps its reopen keys
+    /// when the verdict on the crashed book is taken: the verdict says the
+    /// crashed book wasn't reopened, and clears nothing of the open one's.
+    /// (The keys of the crashed book were cleared as the session was made.)
+    func testTheVerdictLeavesTheKeysOfABookOpenedSince() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysSince")
+        let crashed = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let playing = try world.makeSilentAudioBook(title: "Salt Marsh", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysSince")
+        // The last run ended while opening Tide Tables.
+        preferences.set(crashed.id.uuidString, forKey: PhoneSession.openingBookKey)
+        let session = makeSession(in: world, preferences: preferences)
+
+        // A Play from the lock screen opens Salt Marsh before any activation.
+        let reader = try XCTUnwrap(session.open(playing))
+        waitForReaderToLoad(reader)
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.reopenBookKey), playing.id.uuidString, "Salt Marsh's keys were not written")
+
+        // The first activation: a book is open, so no file or reopening wins,
+        // and the verdict on the crashed book is taken.
+        XCTAssertEqual(
+            session.takeReopeningAtLaunch(fileOpened: true),
+            .closedWhileOpening("TextMouth closed while opening Tide Tables, so it wasn't reopened.")
+        )
+        XCTAssertEqual(
+            preferences.string(forKey: PhoneSession.reopenBookKey), playing.id.uuidString,
+            "The verdict cleared the keys of the book opened since"
+        )
+    }
+
+    /// With no crash guard, the session being made leaves the reopen keys for
+    /// the first activation, which opens the book.
+    func testTheReopenKeysStandWhenNoCrashGuardIsFound() throws {
+        let world = try makeIntegrationWorld("PhoneReopenKeysStand")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneReopenKeysStand")
+        preferences.set(book.id.uuidString, forKey: PhoneSession.reopenBookKey)
+        preferences.set(true, forKey: PhoneSession.reopenShowsReaderKey)
+
+        let session = makeSession(in: world, preferences: preferences)
+
+        XCTAssertEqual(preferences.string(forKey: PhoneSession.reopenBookKey), book.id.uuidString)
+        XCTAssertEqual(session.bookToReopenAtLaunch?.id, book.id)
+    }
+
     /// A book no longer in the library, or a damaged value, clears what is kept.
     func testABookGoneFromTheLibraryClearsWhatIsKept() throws {
         let world = try makeIntegrationWorld("PhoneReopenGone")

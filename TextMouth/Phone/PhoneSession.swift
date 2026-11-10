@@ -139,6 +139,14 @@ final class PhoneSession: ObservableObject {
         // Before anything can write its own mark (`openingBookKey`).
         openingBookAtLastEnd = preferences.string(forKey: Self.openingBookKey)
         preferences.removeObject(forKey: Self.openingBookKey)
+        // The reopen keys go with the guard, in the same breath: the guard is
+        // gone from disk now, so a crash before the first activation
+        // (`takeReopeningAtLaunch`) must not find the keys still naming the
+        // book the app ended opening, and open it again at the next launch.
+        // The verdict stays in `openingBookAtLastEnd`.
+        if openingBookAtLastEnd != nil {
+            Self.forgetReopening(in: preferences)
+        }
         self.library = library
         self.soundEffects = soundEffects
         self.autoplayRequests = requests
@@ -651,8 +659,10 @@ final class PhoneSession: ObservableObject {
     /// wins over reopening.
     func takeReopeningAtLaunch(fileOpened: Bool) -> PhoneLaunchReopening {
         if let opening = openingBookAtLastEnd {
+            // The reopen keys were cleared when the guard was (in `init`); not
+            // again here, since a book opened since then (a Play from the
+            // lock screen) has written keys of its own, which stand.
             openingBookAtLastEnd = nil
-            forgetReopening()
             let title = UUID(uuidString: opening).flatMap { library.bookByID($0) }?.title
             return title.map { .closedWhileOpening(PhoneAppWording.closedWhileOpening($0)) } ?? .nothing
         }
@@ -669,7 +679,14 @@ final class PhoneSession: ObservableObject {
 
     /// Keeps nothing to reopen.
     private func forgetReopening() {
-        for key in [Self.reopenBookKey, Self.reopenShowsReaderKey, Self.reopenFromReadingListKey] {
+        Self.forgetReopening(in: preferences)
+    }
+
+    /// Removes the three keys that name the book to reopen from `preferences`:
+    /// the one place they are listed, so the session's instance and its `init`
+    /// (which cannot call an instance method before it has finished) share it.
+    private static func forgetReopening(in preferences: UserDefaults) {
+        for key in [reopenBookKey, reopenShowsReaderKey, reopenFromReadingListKey] {
             preferences.removeObject(forKey: key)
         }
     }

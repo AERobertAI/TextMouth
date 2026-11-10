@@ -1,6 +1,9 @@
 import XCTest
 @testable import TextMouth
 
+// `PhoneLaunchRequest` exists in debug builds only, and so do these tests of it.
+#if DEBUG
+
 /// `PhoneLaunchRequest`: what a UI test, or a run in the iOS simulator, asks
 /// of the iPhone app through its environment. The words are read here, on the
 /// Mac; the two places that act on them are iOS's alone and debug builds'
@@ -64,6 +67,19 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(scene.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "PhoneLaunchRequest is read outside #if DEBUG")
     }
 
+    /// The type itself is compiled into debug builds only: its file opens
+    /// `#if DEBUG` before the enum and closes it after the enum's last brace,
+    /// so a release build holds neither the type nor its variable names.
+    func testTheTypeIsCompiledIntoDebugBuildsOnly() throws {
+        let type = try Self.source("Phone/PhoneLaunchRequest.swift")
+        let guardStart = try XCTUnwrap(type.range(of: "\n#if DEBUG\n"), "PhoneLaunchRequest.swift has no #if DEBUG line")
+        let enumStart = try XCTUnwrap(type.range(of: "enum PhoneLaunchRequest {"), "The enum moved")
+        XCTAssertLessThan(guardStart.lowerBound, enumStart.lowerBound, "#if DEBUG comes after the enum")
+        // Counted as whole lines: the file's comment names the condition too.
+        XCTAssertEqual(type.split(separator: "\n").filter { $0 == "#if DEBUG" }.count, 1, "Not exactly one #if DEBUG line in PhoneLaunchRequest.swift")
+        XCTAssertTrue(type.hasSuffix("}\n\n#endif\n"), "The enum is not the last thing inside the #if DEBUG")
+    }
+
     // MARK: - Reading the Source
 
     /// The text of the source file at `path` in the app's source folder.
@@ -78,3 +94,5 @@ final class PhoneLaunchRequestTests: XCTestCase {
         return String(source[first.lowerBound..<last.lowerBound])
     }
 }
+
+#endif
