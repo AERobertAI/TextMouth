@@ -140,6 +140,65 @@ The scripts in `Scripts/test/` run part of the hosted suite, check what a branch
   - `Scripts/test/import-fuzz.sh [--seed N] [--docs a,b] [--pdf]` damages each book in TestData under 300 KB in seeded ways (truncated, emptied, bytes flipped, a window zeroed, removed, or doubled, random bytes added, a ZIP's ends corrupted, NULs or invalid UTF-8 put into text, a megabyte line, deeply nested HTML) and imports every copy as the library does: 103 copies of 6 books, in 3 seconds of tests. It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs; a damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`. The textfmt team's run over those 21 made 351 damaged copies, and no check broke. It checks that each import finishes, refuses cleanly, or gives a book that loads, that a refused import leaves nothing behind, and that the damaged file is left alone. `--pdf` adds the two small PDFs. A crash of the test host is a finding, not a script failure; the script exits 1 when a case breaks one of those checks and 3 when the test host crashed or the sweep did not finish.
   - `Scripts/test/storage-drill.sh` unplugs or fills a small disk image part-way through an import, a library save, and a data-directory move, checks by checksum that the original files and the previous library survive every reported failure, and says whether any image is left attached: about 20 seconds of tests. Each test makes a disk image of 3 to 16 MB in the test host's sandbox, in the temporary folder, and deletes it when the test ends. It never touches `~/.TextMouth`, the preferences, or any volume but its own images: the fill that makes a disk full writes only to an image's own mounted volume, and throws when the image is not attached. Its last line is the verdict. `Storage drill: PASSED` means at least one drill test ran and not every one skipped, none failed, and no image is left attached. `Storage drill: FAILED` means a test failed or an image is left attached. `Storage drill: NOT RUN: ...` means no drill test ran, as with `--dry-run`, `--list`, or `--clean`, or when every test skipped. It exits 0 only for PASSED, 1 for FAILED, and 2 for a setup error and for NOT RUN. `Scripts/test/storage-drill-selftest.sh`, which `make check-selftest` runs, tests those verdicts in a second, without building, with stand-ins for `run-area.py` and `hdiutil`.
 
+## Tests on GitHub Actions
+
+Since November 9, 2026 the build train and the orchestrator's full suite can build and test on GitHub's macOS runners instead of this Mac, so the user's Mac is free for its own work. The repository is public (`github.com/AERobertAI/TextMouth`), the runners are free, and nothing runs there except for a push to the branch `TestBuild`. Building.md (Builds on GitHub Actions) has the design; this section is for reading a run and knowing what a run cannot tell you.
+
+### What runs where
+
+- **On this Mac:** merging the requests, pushing, waiting, reading the result. A remote train takes no heavy-work lock and counts no iOS errors (that needs this Mac).
+- **On GitHub:** generating the project, building, and running the tests, in up to four jobs at once ("shards").
+- **Still on this Mac:** the type-checks (`make typecheck-mac`, `make typecheck-ios`), the lints, `make check`, anything that needs the development Mac's voices, accessibility session, or signing identity, and the tests the runner leaves out (below).
+
+### How a run goes
+
+1. **The request.** A train or a suite pushes a commit of the tree to test plus `.github/test-request.json`: `areas`, `classes`, `full`, and `shards`. The Mac chooses `shards` from the classes' times on the runner (`Scripts/agents/class-times.json`, one shard per 10 minutes of tests, 1 to 4); the full suite asks for 4.
+2. **Plan** (Linux, seconds). `Scripts/agents/plan_shards.py` reads the request and says how many test jobs to start.
+3. **Test** (macOS, one job per shard). Each job restores the last run's build products from the cache, restarts the audio service, generates the project, and runs its share of the classes through `Scripts/agents/run-on-runner.py`, which takes the same test command the train and `run_suite.py` use from `Scripts/agents/test_command.py` and adds a 90-second limit for any one test and the tests left out. Each uploads its log and summary as `shard-results-N`.
+4. **Collect** (Linux, seconds). `Scripts/agents/merge_shards.py` joins the shards into one `test-build-results` artifact: `run-summary.txt` (the form `summarize` reads: the Executed line, each FAILED and ERROR line, a last line of PASSED or FAILED), `run.log` (the shards' logs one after another), `summary.md`, and `request.json`. The run fails if any shard failed or reported nothing.
+5. **The Mac** finds the run by its commit's SHA, waits for it (up to 110 minutes), downloads that artifact into the train's folder, and reports from it as for a local train. The result file of each agent carries a line "Run on GitHub" with the run's link.
+
+### Reading a run
+
+- **From the Mac:** the train's folder, `build/orchestrator/train/trains/<id>/`, holds `run.log`, `run-summary.txt`, `summary.md`, and `remote.json` (the run's link and minutes); a retry without a broken branch keeps each run's download in `remote-1`, `remote-2`. `run_suite.py --remote` writes the log to the LOG it was given.
+- **By hand:** `gh run list -R AERobertAI/TextMouth --branch TestBuild`, then `gh run view <id>` for the jobs and `gh run download <id> -n test-build-results -D <new empty folder>` for the files. A shard's own files are the artifacts `shard-results-1` to `-4`, kept for two days; the joined one is kept five. The run's page also shows `summary.md`.
+- **Counts:** a run's tests are counted from the log's own `Test Case` lines. The `Executed` line that xcodebuild closes with counts only the test host's last launch, so after a restart it understates (a shard that restarted 14 times said 967 tests with 2,882 results in its log).
+- **The three kinds of failed run:** the tests failed (the files come back, and the verdict is FAILED); the run was cancelled, timed out, or never started (nothing is trusted, and a train puts its requests back in the queue); the push failed. Only the first is a result.
+
+### What differs from this Mac
+
+The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), no display session, no sound hardware that works, and no Accessibility permission.
+
+- **Audio.** AudioQueue cannot start there ("_Start: Error (-4) getting reporterIDs"), though the machine lists an Apple Virtual Sound Device. Restarting `coreaudiod` before the tests (the workflow's "Restart the audio service" step) made the tests that read silent audio files run in a minute instead of waiting out their 5-minute limits (the reading-list area: 101 tests in 63 seconds; without the restart each of its tests waited 300 seconds). A virtual device installed from Homebrew did no better than the restart alone. Tests that play audio through the engine still hang.
+- **The 90-second limit.** `-test-timeouts-enabled` fails a test that passes 90 seconds, and xcodebuild restarts the test host and goes on, so one hung test costs about 100 seconds and not 5 minutes (or all night: the first full run spent 80 minutes on 214 tests). The slowest test on this Mac takes 21 seconds.
+- **Tests left out.** `Scripts/agents/runner-skips.conf` lists what the runner does not run: 76 entries, 9 of them whole classes, about 311 of the 11,854 tests. Each is `Class.testName  # reason` (or `Class  # reason`), and each reason says why the test cannot work on the runner, and that it still runs on this Mac. Most hang the test host there because audio cannot be read or played (the audio engine, AVFoundation reads, recording); the rest need something a virtual machine lacks (goldens recorded on another macOS, a Mac model identifier, labelled fields in an accessibility session, Keyboard navigation, a logged-in session's progress service for file presenters). A run's `summary.md` says how many entries it left out. They pass on this Mac, so run them here before a release: `python3 -I Scripts/test/run-area.py --classes <their classes>`. A test that is renamed or removed must be taken out of the file; `test_run_on_runner.py` checks that each entry still names a test, that its reason says the Mac still runs it, and that version control keeps the file (`*.txt` is ignored, which the first sharded run found: its skips file was never pushed).
+- **Accessibility tests skip,** as they do on any session that exposes none (the HOSTED_ACCESSIBILITY_UNAVAILABLE and SWIFTUI_ELEMENTS_UNEXPOSED lines in the log; 155 tests skipped in the final full run, against 81 on this Mac at e0ea3b9d, where these tests find an accessibility session).
+
+### Time
+
+Measured on November 9 and 10, 2026, on the `macos-26` runner (Xcode 26.0.1):
+
+- **Build:** about 8 minutes from nothing (7.5 to 9.5), and 1.3 to 1.5 minutes with the last run's products restored (the 640 MB cache restores in 20 seconds).
+- **A few areas:** 8 to 10 minutes from the push to the downloaded results, the first runs on a cold cache; `reading-list` (101 tests) ran in 63 seconds of tests inside a step of 6.6 minutes, nearly all of it the build.
+- **The full suite, first try:** stopped at its 80-minute limit with 214 of 11,853 tests done. Audio tests each waited out a 5-minute limit, and the host sat silent 15 minutes before being restarted.
+- **The full suite, tuned** (four shards, the audio service restarted, the 90-second limit, the skip list, a warm cache): 14.5 minutes from the push to the downloaded results (run 42772606048), the four jobs taking 9, 9, 12, and 14 minutes, 11,528 test results counted from the logs. The tests alone are about 19 minutes of serial time on the runner (1,128 seconds against this Mac's 1,181 for the same classes), so the runner is as fast as this Mac, and the shards divide that by four.
+- **What this Mac spends:** a merge, a push, and a wait. No build, no test host, no heavy-work lock.
+
+### Flaky or unexplained on the runner
+
+These failed on the runner in some runs and not others, or once with a cause the logs do not show to be the runner's. They are not skipped, and nobody raised their limits. Expect them to appear in a remote result now and then; one that appears twice in a row on a quiet change deserves a look on this Mac.
+
+- Timings that missed their limit on the slower, shared machine: `OfficeXMLGuardTests.testCancelLandsInTheMiddleOfARead` (2.17 and 2.32 seconds against 2.0), `OwnReaderCancellationTests.testCancelPartwayThroughALargeWordDocumentIsHeardAtOnce` (1.74 and 1.78 against 1.5), `MOBIHostileFileTests.testAHundredThousandFileposLinksReadQuicklyAndEachGetsItsDestination` (1.59 against 1.5), `PreferenceStoreTests.testChangeFromAnotherThreadReachesTheHandlerOnTheMainThread` (a 5-second wait), `MigrationStagingLeftoversTests.testTheBackgroundSweepRunsOnlyOutsideHostedTests` and `ReaderLifecycleAuditTests.testNegativeSavedReadingPositionIsClampedWhenContentLoads` (10-second waits).
+- Failed once, cause not shown: `NowPlayingOwnershipTests.testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses` (the command handler never returned), `MenuKeyShortcutTests.testTheMenusShowTheKeysInForceAndFollowAChange`, `HostedTestIsolationTests.testSoundEffectsDefaultToThisProcessPreferences`.
+
+
+### Safety
+
+The workflow reads the repository and nothing else: a read-only token, no secrets, GitHub's own actions pinned to commit hashes, and a trigger of a push to `TestBuild` alone, so a pull request or a fork starts no job. `Scripts/agents/github_run.py` pushes only `<commit>:refs/heads/TestBuild`, builds that refspec from a constant, makes the commit from tracked files with git's plumbing, and refuses a tree that holds a path under `build/`, `humanQuestions/`, or `humanReports/`. `.github/workflows/check.yml` (`make check`) runs for pushes to `main` and for pull requests, and not for `TestBuild`; a test keeps it so. The workflow tests (`Scripts/agents/tests/test_workflow.py`) pin these rules.
+
+The tests of all of this are in `Scripts/agents/tests`: the fake `gh`, the bare throwaway repository used as the push target, and the pretend clock mean none reaches GitHub or waits.
+
+
 ## Testing the iPhone app
 
 The iPhone app is tested in two places: on the Mac's test host, for everything that does not need iOS, and in the iOS simulator, for what only iOS compiles. See [The two apps and the platform folders](../architecture/platforms.md) for how the code is divided, and [Building TextMouth](building.md) for how the simulator is built.
