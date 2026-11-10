@@ -254,6 +254,52 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertEqual(ownFile.map(\.text), ["Early.", "Straddling."])
     }
 
+    /// The two ways a transcript is made for a file of 101 hours, through the
+    /// functions themselves, with a small real file standing for the audio
+    /// (only its fingerprint is read): from a track's own cues
+    /// (`transcript(sentencesByFile:)`, the import's way), and from a book's
+    /// whole timeline (`transcript(bookTimeline:)`, Attach's way). Neither is
+    /// refused: the cue past the hundredth hour is left out of the transcript,
+    /// and the straddling one ends there. The number left out is what Attach
+    /// tells, the cues read less the sentences the transcript holds.
+    func testATranscriptOfAFileOfMoreThan100HoursLeavesOutTheCuesPastItsHundredthHour() throws {
+        let folder = try makeSandboxDirectory("Outside Transcript Long File")
+        let audio = folder.appendingPathComponent("long.wav")
+        try Data("standing for 101 hours of sound".utf8).write(to: audio)
+        let plan = TranscriptionPlan(files: [TranscriptionPlan.File(path: "long.wav", url: audio, duration: 363_600)])
+        let captions = """
+        WEBVTT
+
+        01:00:00.000 --> 01:00:05.000
+        Early.
+
+        99:59:50.000 --> 100:00:30.000
+        Straddling.
+
+        100:30:00.000 --> 100:30:05.000
+        Past the hundredth hour.
+        """
+        let limit = Transcript.maximumMilliseconds
+        let sentences = try TimedTextReader.read(Data(captions.utf8), as: .webVTT).sentences
+        XCTAssertEqual(sentences.count, 3, "the reader should keep all three cues")
+
+        let ownFile = try OutsideTranscript.transcript(
+            sentencesByFile: ["long.wav": sentences], plan: plan, source: Self.lectureSource
+        )
+        let timeline = try OutsideTranscript.transcript(bookTimeline: sentences, plan: plan, source: Self.lectureSource)
+
+        for (way, transcript) in [("a track's own file", ownFile), ("the book's timeline", timeline)] {
+            let kept = transcript.files.flatMap(\.sentences)
+            XCTAssertEqual(kept.map(\.text), ["Early.", "Straddling."], "\(way): the cue past the hundredth hour was not left out")
+            XCTAssertEqual(kept.map(\.endMilliseconds), [3_605_000, limit], "\(way): the straddling cue was not held at the hundredth hour")
+            XCTAssertNil(transcript.validationFailure(), "\(way): what was kept is not a transcript TextMouth trusts")
+            XCTAssertEqual(
+                sentences.count - kept.count, 1,
+                "\(way): Attach would not tell one passage left out"
+            )
+        }
+    }
+
     /// On a book of a 3-second file and a 2-second file, a sentence at the
     /// start stays as it is; one starting in the first file and running on
     /// into the second stays in the first, its end held at the file's end
