@@ -70,6 +70,24 @@ enum BookSearchWording {
 
     /// The search field's hint when the book searched is a transcript.
     static let transcriptFieldHint = "Type to search the book's transcript"
+
+    /// The search field's label.
+    static let fieldLabel = "Search text"
+
+    /// The search field's hint when the book searched is a text book.
+    static let fieldHint = "Type to search within the book"
+
+    /// The Use Regex switch's label.
+    static let regexLabel = "Use regular expression"
+
+    /// The Use Regex switch's hint.
+    static let regexHint = "When enabled, search text is treated as a regular expression"
+
+    /// The label of the list of results.
+    static let resultsLabel = "Search results"
+
+    /// The hint of the button that closes the sheet.
+    static let backToBookHint = "Close search and return to the book"
 }
 
 /// Case-insensitive matching shared by book search: literal text, or a
@@ -507,7 +525,7 @@ struct BookSearchView: View {
                 Spacer()
                 Button("Back to Book") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
-                    .accessibilityHint("Close search and return to the book")
+                    .accessibilityHint(BookSearchWording.backToBookHint)
             }
             .padding()
 
@@ -516,8 +534,8 @@ struct BookSearchView: View {
                 TextField("Search text", text: $model.query)
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
-                    .accessibilityLabel("Search text")
-                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : "Type to search within the book")
+                    .accessibilityLabel(BookSearchWording.fieldLabel)
+                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : BookSearchWording.fieldHint)
                     .accessibilityIdentifier(voiceOverFocusID)
                     .background(VoiceOverFocus(delay: 1.2))
 
@@ -532,8 +550,8 @@ struct BookSearchView: View {
                 HStack {
                     Toggle("Use Regex", isOn: $model.useRegex)
                         .checkboxToggleStyle()
-                        .accessibilityLabel("Use regular expression")
-                        .accessibilityHint("When enabled, search text is treated as a regular expression")
+                        .accessibilityLabel(BookSearchWording.regexLabel)
+                        .accessibilityHint(BookSearchWording.regexHint)
 
                     Spacer()
 
@@ -602,7 +620,7 @@ struct BookSearchView: View {
                 // The status line above gives the count, which "N matches
                 // found" here would repeat, and misstate once the result
                 // limit is reached.
-                .accessibilityLabel("Search results")
+                .accessibilityLabel(BookSearchWording.resultsLabel)
                 .accessibilityRotor("Search Results") {
                     ForEach(model.results) { result in
                         AccessibilityRotorEntry(result.timedLabel ?? result.contextAndLocation, id: result.id)
