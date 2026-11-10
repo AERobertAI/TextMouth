@@ -536,6 +536,83 @@ final class KF8ReviewFixTests: XCTestCase {
         XCTAssertFalse(text(of: book, 0).contains("The essay words."))
     }
 
+    /// Project Gutenberg's A Modest Proposal (ebook 1080) as calibre made it: the header page, which holds the book's
+    /// title page too, in a `<header>`; the essay, a document with no heading, whose `<title>` is the same; and the
+    /// license, cut in two inside one `<footer>` (the license's opening words, then its heading). The essay was read
+    /// in the header's chapter, and the license's opening words at the end of the essay, so there were two chapters
+    /// where the EPUB has three.
+    func testAnEssayAfterAWholeHeaderIsItsOwnChapterAndALicenseKeepsItsOpeningWords() throws {
+        var fixture = try pieces([
+            "<header id=\"pg-header\"><h2>The Project Gutenberg eBook of A Modest Proposal</h2><p>Header words.</p></header>",
+            "<div class=\"chapter\" id=\"calibre_pb_0\"><p>The essay words.</p></div>",
+            "<footer id=\"pg-footer\"><div>The end marker of the eBook</div><p>The opening words of the license.</p></footer>",
+            "<footer id=\"pg-footer\"><h2>THE FULL LICENSE</h2><p>The rest of the license.</p></footer>",
+        ], titles: ["A Modest Proposal", "A Modest Proposal", "THE FULL LICENSE", "THE FULL LICENSE"])
+        fixture.entries = [KF8Fixture.Entry(label: "THE FULL LICENSE", document: 3)]
+        let book = try prepared(fixture)
+        let found = chapters(of: book)
+        XCTAssertEqual(
+            book.chapters.map(\.chapter.title),
+            ["The Project Gutenberg eBook of A Modest Proposal", "A Modest Proposal", "THE FULL LICENSE"], found)
+        XCTAssertEqual(headings(of: book, 1), ["A Modest Proposal"], "the essay is headed by its title: \(found)")
+        XCTAssertFalse(text(of: book, 0).contains("The essay words."), "the essay is read in the header's chapter: \(found)")
+        XCTAssertTrue(text(of: book, 1).contains("The essay words."), found)
+        XCTAssertFalse(text(of: book, 1).contains("opening words of the license"), "the license's opening is read at the essay's end: \(found)")
+        // The license's chapter begins with its opening words and goes on to its heading and the rest.
+        let license = text(of: book, 2)
+        let order = ["The end marker of the eBook", "opening words of the license", "THE FULL LICENSE", "The rest of the license."]
+        let places = order.map { license.range(of: $0)?.lowerBound }
+        XCTAssertFalse(places.contains { $0 == nil }, "the license's chapter lacks a part: \(found)")
+        XCTAssertEqual(places.compactMap { $0 }, places.compactMap { $0 }.sorted(), "the license's parts are out of order: \(license)")
+        XCTAssertEqual(
+            words(book).joined(separator: " "),
+            "The Project Gutenberg eBook of A Modest Proposal Header words. The essay words. The end marker of the eBook "
+                + "The opening words of the license. THE FULL LICENSE The rest of the license.")
+    }
+
+    /// What the container rules leave as it was: the second half of a section calibre opened again (in a document of
+    /// one section, and of two cut inside the second), a back page after a footer, and a headless piece before a
+    /// heading in another container are all still read in the chapter before; a plain piece after a section is its own.
+    func testPiecesInTheSameSectionOrAfterAFooterOrBeforeAHeadingInAnotherSectionStillGoOn() throws {
+        // A long chapter cut in two inside one `<section>`: the second half goes on.
+        let halves = try prepared(pieces([
+            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<section id=\"c1\"><p>Two.</p></section>",
+        ]))
+        XCTAssertEqual(halves.chapters.count, 1, "the two halves of one section: \(chapters(of: halves))")
+        // A document of two sections cut inside the second, which the cut opens again: the first piece opens in
+        // the first section, the second in the second, and the second goes on with the chapter before, as the
+        // EPUB reader reads the document whole (the outside review's case).
+        let cutInTheSecond = try prepared(pieces([
+            "<section id=\"c1\"><h1>One</h1><p>First.</p></section><section id=\"c2\"><h1>Two</h1><p>First half.</p></section>",
+            "<section id=\"c2\"><p>Second half.</p></section>",
+        ]))
+        XCTAssertEqual(cutInTheSecond.chapters.count, 1, "a cut inside the second of two sections: \(chapters(of: cutInTheSecond))")
+        XCTAssertTrue(text(of: cutInTheSecond, 0).contains("Second half."), chapters(of: cutInTheSecond))
+        // The same, but the piece after a section opens in a plain element: the essay's shape, its own chapter.
+        let afterASection = try prepared(pieces([
+            "<section id=\"c1\"><h1>Chapter</h1><p>One.</p></section>", "<div><p>Two.</p></div>",
+        ]))
+        XCTAssertEqual(afterASection.chapters.count, 2, "a plain piece after a section: \(chapters(of: afterASection))")
+        // A back page after a footer goes on with it, as Project Gutenberg's does after its license.
+        let back = try prepared(pieces([
+            "<h1>Chapter</h1><p>One.</p>", "<footer id=\"pg-footer\"><h2>The end</h2><p>Words.</p></footer>", "<div><p>back</p></div>",
+        ], titles: ["Chapter", "The end", "The end"]))
+        XCTAssertEqual(back.chapters.map(\.chapter.title), ["Chapter", "The end"], "a back page after a footer: \(chapters(of: back))")
+        XCTAssertTrue(text(of: back, 1).contains("back"), chapters(of: back))
+        // The end of a chapter, in a section of its own, before the next chapter's heading in another: it goes on
+        // with the chapter before it, as the end of a chapter does.
+        let tail = try prepared(pieces([
+            "<h1>CHAPTER X</h1><p>Words of ten.</p>", "<section id=\"a\"><p>The end of ten.</p></section>",
+            "<section id=\"b\"><h1>CHAPTER XI</h1><p>Words of eleven.</p></section>",
+        ], titles: ["CHAPTER X", "CHAPTER XI", "CHAPTER XI"]))
+        XCTAssertEqual(tail.chapters.count, 2, chapters(of: tail))
+        XCTAssertTrue(text(of: tail, 0).contains("The end of ten."), chapters(of: tail))
+        XCTAssertFalse(text(of: tail, 1).contains("The end of ten."), chapters(of: tail))
+        // A section with no id names nothing: the same shape as the essay, but nothing says the pieces are not one.
+        let anonymous = try prepared(pieces(["<header><h1>Chapter</h1><p>One.</p></header>", "<p>Two.</p>"]))
+        XCTAssertEqual(anonymous.chapters.count, 1, chapters(of: anonymous))
+    }
+
     /// The last document, with no heading and a title of its own, keeps its chapter, whether or not the guide
     /// names it (the review's toc-epilogue book: the guide names the epilogue). The guide does not decide it.
     func testAHeadlessLastPieceTheGuideNamesKeepsItsChapter() throws {
@@ -613,12 +690,20 @@ final class KF8ReviewFixTests: XCTestCase {
     func testEverySpellingOfASoftHyphenIsLeftOut() {
         let spellings = ["\u{AD}", "&shy;", "&#173;", "&#173", "&#xAD;", "&#xad;", "&#xAd;", "&#x00AD;", "&#00173;", "&#X0ad;"]
         for spelling in spellings {
-            XCTAssertEqual(MOBIMarkup.removingSoftHyphens("pro\(spelling)duct"), "product", spelling)
+            XCTAssertEqual(ParserUtilities.removingSoftHyphens("pro\(spelling)duct"), "product", spelling)
         }
+        // The spellings the parser decodes that the first list lacked (the outside review's): &shy without its
+        // semicolon where no letter or digit follows, and a reference with more than twelve leading zeros.
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("hy&shy<i>phen</i> pro&shy duct end&shy"), "hy<i>phen</i> pro duct end")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("pro&#0000000000173;duct pro&#x0000000000000AD;duct"), "product product")
+        // Spelled as no entity is: &SHY; and &Shy; stay (the parser keeps them as text), as does &shy before a
+        // letter or digit, and a number past the soft hyphen's however many zeros come first.
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("&SHY; &Shy; &shy1 &shyx &#0000000000174; &#99999999999999999999;"),
+                       "&SHY; &Shy; &shy1 &shyx &#0000000000174; &#99999999999999999999;")
         // What is not one stays.
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens("&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}"), "&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}")
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens("plain"), "plain")
-        XCTAssertEqual(MOBIMarkup.removingSoftHyphens(""), "")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}"), "&shyx; &#174; &#xAE; &#17 &amp; &#; \u{AE}")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens("plain"), "plain")
+        XCTAssertEqual(ParserUtilities.removingSoftHyphens(""), "")
     }
 
     func testALabelLosesItsSoftHyphensToo() throws {

@@ -112,7 +112,10 @@ enum KF8Book {
         // The SVG flows already put back; each is put back once.
         var inlinedFlows: Set<Int> = []
         var previousTitle: String?
+        var previousContainer: Container?
         var previousEndsMidParagraph = false
+        // Whether the piece before this one is the opening of this piece's section (see below).
+        var previousOpensThisSection = false
         var anyWords = false
         for (index, part) in layout.parts.enumerated() {
             // A very large book is cancelled between its documents.
@@ -120,6 +123,8 @@ enum KF8Book {
             let joined = try layout.markup(of: part, in: text, anchors: anchors)
             if index == contentsPageCandidate,
                isGeneratedContents(joined, labels: contents.labels, encoding: headers.encoding) {
+                // Left out, so the piece after it is not the section the piece before it opened.
+                previousOpensThisSection = false
                 continue
             }
             let markup = rewritingTags(in: joined, layout: layout, text: text, inlinedFlows: &inlinedFlows)
@@ -130,32 +135,56 @@ enum KF8Book {
             // A document of the EPUB that calibre cut into pieces: a piece that no contents entry names and
             // that opens with no heading of its own goes on with the chapter before it (and no heading is made
             // of its <title>) in two cases, and only these:
-            // - its <title> is the title of the piece before it (the pieces of one file share the file's title);
+            // - its <title> is the title of the piece before it (the pieces of one file share the file's title),
+            //   unless the piece before opens in a `header` or other section (not a footer) and this piece opens
+            //   in no section: then the shared title is the book's, not a document's (Project Gutenberg's
+            //   header page, and the essay after it in a `div`). A piece in another section is still taken for the
+            //   second half of a document cut inside its second section, which the cut opens again;
             // - its <title> is the heading the next piece opens with: calibre gave the first piece of a file
             //   the file's title, but the piece holds the end of the chapter before, and the chapter the title
             //   names begins with the next piece's heading.
+            // In that second case, when the piece and the next piece are inside one container (a `footer` that
+            // calibre opened again in the second piece, as Project Gutenberg's license is: the words of the
+            // license's opening, then its heading), the piece is not the end of the chapter before. It is the
+            // opening of the next piece's section, which goes on with it.
             // Any other piece stands alone, titled as it always was. Only the book's first piece with words,
             // which has no chapter before it (a cover of pictures does not count), is never a continuation.
             let rawTitle = rawDocumentTitle(in: text[part.skeleton], encoding: headers.encoding)
             let start = documentOpening(of: markup)
-            var continues = false
+            let container = openingContainer(of: markup)
+            var continues = previousOpensThisSection
+            // Whether the cut falls between two pieces of the chapter (so a paragraph may run across it).
+            var cutsAChapter = false
+            var opensNextSection = false
             if titles[index] == nil, !start.hasHeading, hasChapterBefore, let title = rawTitle {
-                continues = title == previousTitle
+                if title == previousTitle, !Container.endsBefore(previousContainer, piece: container) {
+                    continues = true
+                    cutsAChapter = true
+                }
                 if !continues, index + 1 < layout.parts.count {
                     let next = try layout.markup(of: layout.parts[index + 1], in: text, anchors: anchors)
-                    continues = openingHeading(of: next, encoding: headers.encoding) == title
+                    if openingHeading(of: next, encoding: headers.encoding) == title {
+                        if let container, container == openingContainer(of: next) {
+                            opensNextSection = true
+                        } else {
+                            continues = true
+                            cutsAChapter = true
+                        }
+                    }
                 }
             }
             sections.append(MOBIBook.Section(
                 title: titles[index] ?? displayTitle(of: rawTitle, differentFrom: bookTitle),
-                html: MOBIMarkup.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
+                html: ParserUtilities.removingSoftHyphens(MOBIText.decode(markup, encoding: headers.encoding)),
                 headingTargets: headingTargets,
                 stripsDuplicateNavigation: true,
                 documentNumber: index + 1,
                 continuesPrevious: continues,
-                joinsParagraph: continues && previousEndsMidParagraph && start.hasSplitMarker
+                joinsParagraph: cutsAChapter && previousEndsMidParagraph && start.hasSplitMarker
             ))
             previousTitle = rawTitle
+            previousContainer = container
+            previousOpensThisSection = opensNextSection
             previousEndsMidParagraph = endsMidParagraph(markup)
         }
         guard anyWords else { throw FileImportError.noTextToRead }
@@ -211,7 +240,7 @@ enum KF8Book {
     /// when it holds nothing to read.
     private static func readableLabel(_ label: String) -> String {
         let unescaped = (try? Entities.unescape(label)) ?? label
-        return MOBIMarkup.removingSoftHyphens(unescaped).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return ParserUtilities.removingSoftHyphens(unescaped).split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     // MARK: A Contents Page Made for the Book
@@ -546,6 +575,56 @@ enum KF8Book {
         words.append(contentsOf: markup[position..<text.upperBound])
         let heading = readableLabel(MOBIText.decode(words, encoding: encoding))
         return heading.contains(where: { $0.isLetter || $0.isNumber }) ? heading : nil
+    }
+
+    /// A section the document's markup opens with: the first element under the `<body>` when it is a sectioning
+    /// element with an `id`, as `<footer id="pg-footer">` and `<header id="pg-header">` are in Project Gutenberg's
+    /// books. calibre opens the same element again at the start of the piece it cuts out of the middle of one
+    /// (so the license's first piece and its second piece are both in `footer#pg-footer`), which is how two pieces
+    /// are known to be halves of one element.
+    private struct Container: Equatable {
+        var name: String
+        var id: String
+
+        /// The elements that hold a section of their own, which a book's markup puts around a chapter, its
+        /// header, or its footer.
+        static let names: Set<String> = ["header", "footer", "section", "article", "aside", "nav", "main"]
+
+        /// Whether a piece that opens in `piece` (nil when it opens in none) is not the second half of the piece
+        /// before it, which opens in `previous`: the piece before opens in a section other than a `footer`, and
+        /// this piece opens in no section at all. A piece that opens in another section may still be the second
+        /// half of a document of two sections cut inside the second, which calibre and kindlegen open again, so
+        /// only a piece in no section is taken for a document of its own (Project Gutenberg's essay, a `div`,
+        /// after its header). What follows a footer is matter of the book's end, such as a back cover, and goes
+        /// on with it.
+        static func endsBefore(_ previous: Container?, piece: Container?) -> Bool {
+            guard let previous, previous.name != "footer" else { return false }
+            return piece == nil
+        }
+    }
+
+    /// The most bytes of a document's body looked through for the element it opens with.
+    private static let containerSearchLength = 2_048
+
+    /// The section element `markup` opens with (see `Container`), nil when its body opens with words, with
+    /// another element, or with a section that has no `id`. Anchors (`<a>` tags, which the reader writes
+    /// where the contents names a place, and a book writes where it is linked to) and comments are passed over.
+    private static func openingContainer(of markup: [UInt8]) -> Container? {
+        let start = bodyStart(of: markup)
+        var cursor = start
+        var found: Container?
+        var decided = false
+        MOBIMarkup.forEachTag(in: markup, within: start..<min(markup.count, start + containerSearchLength)) { tag in
+            guard !decided else { return }
+            // Words before the tag: the document does not open with an element.
+            if hasWord(markup[cursor..<max(cursor, tag.lowerBound)]) { decided = true; return }
+            cursor = max(cursor, tag.upperBound)
+            guard let name = tagName(markup, tag), name != "a", name != "/a" else { return }
+            decided = true
+            guard Container.names.contains(name), let id = attribute("id", in: markup, tag: tag) else { return }
+            found = Container(name: name, id: String(decoding: markup[id.value], as: UTF8.self))
+        }
+        return found
     }
 
     /// Where the words of a document begin: after its `<body>` tag, else after its head, else at the start.

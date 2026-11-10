@@ -37,13 +37,14 @@ final class PagesUpgradeTests: XCTestCase {
     /// with its table styles and document defaults, and its symbols by font,
     /// since) and Word 2003 XML (.wordml, read by its own reader since FMT53,
     /// with hidden row marks and symbols by font since) at 1.3.0, OpenDocument
-    /// text (.odt) at 1.1.0, and the rest at 1.0.0.
+    /// text (.odt) at 1.1.0, Kindle books (.mobi, .azw3) at 1.1.0 (soft hyphens left out of MOBI 6
+    /// books too, and the KF8 chapter rule), and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub, .html: return "1.0.3"
         case .rtf, .rtfd: return "1.2.0"
         case .doc, .docx, .wordml: return "1.3.0"
-        case .odt: return "1.1.0"
+        case .odt, .mobi: return "1.1.0"
         default: return "1.0.0"
         }
     }

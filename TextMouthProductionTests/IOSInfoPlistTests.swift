@@ -18,7 +18,8 @@ import XCTest
 /// `CFBundleTypeExtensions`, so most of these tests read those keys. The iOS
 /// types are the Mac's less what needs a program iOS cannot start (the audio
 /// the import converts with afconvert, and the braille files, which need the
-/// braille helper), with `.azw3` added to the Kindle MOBI type.
+/// braille helper). The Mac's own Kindle MOBI type names `.azw3` (since 0.4.2),
+/// so iOS needs nothing added for it.
 final class IOSInfoPlistTests: XCTestCase {
 
     // MARK: - Fixtures
@@ -128,15 +129,17 @@ final class IOSInfoPlistTests: XCTestCase {
     // MARK: - Document types
 
     /// iOS declares each of the Mac's document types, as the Mac declares it,
-    /// less the ones it refuses, and the Kindle MOBI type with `.azw3` too.
+    /// less the ones it refuses; the Kindle MOBI type is the Mac's too, which
+    /// names `.azw3`.
     func testIOSDeclaresTheMacsDocumentTypesLessWhatItRefuses() throws {
         let mac = try documentTypes(of: macPlist())
         let ios = try documentTypes(of: iosPlist())
         XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.refused))
         XCTAssertTrue(Self.refused.isSubset(of: Set(mac.keys)), "a refused type the Mac does not have")
-        for (name, type) in ios where name != "Kindle Book (MOBI)" {
+        for (name, type) in ios {
             XCTAssertEqual(NSDictionary(dictionary: type), NSDictionary(dictionary: try XCTUnwrap(mac[name])), name)
         }
+        // The Mac's own Kindle MOBI type names .azw3, so iOS offers those files with no addition of its own.
         let mobi = try XCTUnwrap(ios["Kindle Book (MOBI)"])
         XCTAssertEqual(mobi["CFBundleTypeExtensions"] as? [String], ["mobi", "prc", "azw", "azw3"])
         XCTAssertEqual(mobi["LSItemContentTypes"] as? [String], ["com.textmouth.mobi"])
@@ -178,26 +181,19 @@ final class IOSInfoPlistTests: XCTestCase {
     // MARK: - Type declarations
 
     /// The imported declarations iOS reads, which tag the extensions of the
-    /// types, are the Mac's less the braille files', with `.azw3` tagged on the
-    /// MOBI type; and the exported ones are the Mac's.
+    /// types, are the Mac's less the braille files' (the MOBI type's `.azw3`
+    /// tag is the Mac's own); and the exported ones are the Mac's.
     func testTheDeclarationsAreTheMacsLessTheBrailleFiles() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
         XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.brailleTypes))
-        for (identifier, declaration) in ios where identifier != "com.textmouth.mobi" {
+        for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
-        // MOBI: the same but for the extension.
-        var mobi = try XCTUnwrap(ios["com.textmouth.mobi"])
-        var tags = try XCTUnwrap(mobi["UTTypeTagSpecification"] as? [String: Any])
+        // The MOBI type tags .azw3 in the Mac's own plist, so iOS's copy of it does too.
+        let mobi = try XCTUnwrap(ios["com.textmouth.mobi"])
+        let tags = try XCTUnwrap(mobi["UTTypeTagSpecification"] as? [String: Any])
         XCTAssertEqual(tags["public.filename-extension"] as? [String], ["mobi", "prc", "azw", "azw3"])
-        var macMobi = try XCTUnwrap(mac["com.textmouth.mobi"])
-        var macTags = try XCTUnwrap(macMobi["UTTypeTagSpecification"] as? [String: Any])
-        tags["public.filename-extension"] = nil
-        macTags["public.filename-extension"] = nil
-        mobi["UTTypeTagSpecification"] = tags
-        macMobi["UTTypeTagSpecification"] = macTags
-        XCTAssertEqual(NSDictionary(dictionary: mobi), NSDictionary(dictionary: macMobi))
         // The exported type (a TextMouth book's package) is the Mac's.
         let exported = (try iosPlist())["UTExportedTypeDeclarations"] as? [[String: Any]]
         let macExported = (try macPlist())["UTExportedTypeDeclarations"] as? [[String: Any]]
