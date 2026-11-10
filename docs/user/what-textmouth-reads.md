@@ -420,13 +420,31 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 
 - TextMouth takes a file's text encoding from the file where it can, using the first of these that applies:
   - A byte-order mark for UTF-8, UTF-16, or UTF-32.
-  - UTF-16 without a mark, if it is mostly Latin letters, which shows in its zero bytes.
+  - UTF-16 or UTF-32 without a mark, found by the pattern of its bytes (since 0.4.3), as described in the next section.
+  - For an HTML file that declares ISO-2022-JP (Japanese in 7-bit text) and holds its escape codes, that encoding, since such a file is valid UTF-8 too.
   - Bytes that are valid UTF-8.
   - For an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
 
+#### UTF-16 and UTF-32 without a mark
+
+- Since 0.4.3 TextMouth finds these by the pattern of their bytes:
+  - UTF-16 in Latin letters, which shows in its zero bytes, as before;
+  - UTF-32, in either byte order;
+  - UTF-16 in Greek, Cyrillic, Armenian, Hebrew, or Arabic, from 16 bytes up;
+  - UTF-16 in other scripts, such as Chinese, Japanese, or Korean, when the text also holds at least 8 ordinary characters (spaces, digits, or line ends).
+- A reading counts only if the result is plain text. A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16.
+- What it does not find:
+  - UTF-16 in the scripts of India (Devanagari, Bengali, and the others near them).
+  - Short Chinese, Japanese, or Korean UTF-16 with few spaces, digits, or line ends. In testing, a Chinese file needed about 46 characters and a Korean one about 28, and a Japanese file with only 5 spaces, digits, or line ends was not found.
+  - Chinese, Japanese, or Korean UTF-16 with no such characters at all, whose bytes look the same as Shift JIS, GBK, or EUC text.
+  - A file that is not found is read as one of the other encodings, with the wrong letters, or as Windows-1252.
+- UTF-16 and UTF-32 have no item in the Text Encoding pop-up (see [The Library window](library-window.md)), so a file that is not found cannot be set right there. Save it as UTF-8, or in UTF-16 with a byte-order mark, and add it again.
+- A book that recorded its encoding when you added it is read again in that encoding, and only UTF-16 in Latin letters can overrule it. A web archive's page that names no encoding is read as it was before. Your own choice in Text Encoding overrules all of this.
+- The first time 0.4.3 opens, every plain text and HTML book is read again once, and your place follows its words. A book whose file reads as it did before has the same text. A Markdown book is read the new way when it is added, or when its text is built again, as Redo Text Extraction does.
+
 #### A file that none of these settles
 
-- A file that none of these settles, because it is neither UTF-8 nor UTF-16 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters.
+- A file that none of these settles, because it is neither UTF-8, UTF-16, nor UTF-32 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters.
 - Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
 - Only a file you add yourself is guessed at: a feed's article is read as it always was.
 
