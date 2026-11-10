@@ -118,7 +118,7 @@ struct PhoneSearchSheet: View {
     }
 
     /// Fills the field with the text a UI test asks for, in debug builds only
-    /// (`PhoneLaunchRequest.searchVariable`): a test must not type, since the
+    /// (the launch request's search variable): a test must not type, since the
     /// software keyboard clicks aloud.
     private func fillFieldForTesting() {
         #if DEBUG
