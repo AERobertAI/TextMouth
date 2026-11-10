@@ -22,6 +22,7 @@ the tests.
 Usage: run_suite.py [--remote COMMIT] NAME LOG
 """
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -140,6 +141,30 @@ def fresh_folder(stem):
     return f"{stem}-{number}"
 
 
+# How many files a remote suite names in its report of the iPhone build's errors.
+IOS_FILES_NAMED = 30
+
+
+def report_iphone_build(folder):
+    """Prints what the remote run's iPhone build (the app and its UI tests, built for the iOS Simulator beside the
+    tests) made: its verdict and error count, then the files its errors are in, with how many each holds. Prints nothing
+    when the run made none (a request that left it out). It is information: the suite's verdict and exit status
+    are the tests'. The details are in ios-errors.txt and ios.log in `folder`."""
+    found = _train.remote_ios_result(Path(folder))
+    if not found:
+        return
+    count, errors, label = found
+    print(f"run_suite: {label}: {count}", flush=True)
+    per_file = {}
+    for error in errors:
+        path = error.split(":", 1)[0] if re.match(r"^[^ :]+:\d+:\d+: error", error) else "(no file)"
+        per_file[path] = per_file.get(path, 0) + 1
+    for path, number in sorted(per_file.items())[:IOS_FILES_NAMED]:
+        print(f"run_suite:   {path}: {number} error{'s' if number != 1 else ''}", flush=True)
+    if len(per_file) > IOS_FILES_NAMED:
+        print(f"run_suite:   and {len(per_file) - IOS_FILES_NAMED} more files, in {Path(folder) / 'ios-errors.txt'}", flush=True)
+
+
 def run_remote(name, log, commit, cwd=None):
     """Runs the full suite on GitHub Actions for `commit`'s tree, writes the run's log
     to `log`, and returns the exit status: as a local run's, or 3 when a train held
@@ -167,6 +192,7 @@ def run_remote(name, log, commit, cwd=None):
     finally:
         _train.release_lock()
     print(f"run_suite: run {result['url']} {result['conclusion']} after {result['minutes']} minutes", flush=True)
+    report_iphone_build(folder)
     downloaded = Path(folder) / "run.log"
     if (result["conclusion"] in _train.UNFINISHED_RUNS or not result["downloaded"]
             or not downloaded.exists()):
