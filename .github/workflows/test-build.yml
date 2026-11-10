@@ -87,6 +87,26 @@ jobs:
             build/remote-DerivedData/SourcePackages
           key: swiftpm-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
 
+      # What sound hardware macOS shows on this runner. The first trial run (November 9, 2026)
+      # found every test that reads an audio file stuck for its 5-minute limit.
+      - name: Show the audio devices
+        run: |
+          system_profiler SPAudioDataType || true
+          ls /Library/Audio/Plug-Ins/HAL || true
+
+      # A trial only, for a request that says "virtual_audio": true: a virtual sound device
+      # (BlackHole, from Homebrew), to see whether the audio tests then run as they do on the Mac.
+      - name: Install a virtual audio device
+        run: |
+          if grep -q '"virtual_audio": true' .github/test-request.json; then
+            brew install --cask blackhole-2ch
+            sudo killall coreaudiod || true
+            sleep 5
+            system_profiler SPAudioDataType || true
+          else
+            echo "Not asked for."
+          fi
+
       # A push without a request has nothing to run: say so, plainly.
       - name: Read the request
         run: |

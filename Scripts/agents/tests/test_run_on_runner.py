@@ -128,6 +128,22 @@ class AreaRunTests(RunnerTestCase):
         self.assertEqual(status, 1)
         self.assertIn("the run was stopped after 0.02 minutes", (self.out / "run-summary.txt").read_text())
 
+    def test_a_request_may_shorten_the_time_limit_but_not_lengthen_it(self):
+        for asked, expected in ((0.02, 0.02), (500, 5)):
+            with self.subTest(asked=asked):
+                self.write_request({"areas": ["stats"], "classes": [], "limit_minutes": asked})
+                limits = []
+                real_judge = runner.judge
+
+                def spy(train, output, log, timed_out, limit):
+                    limits.append(limit)
+                    return real_judge(train, output, log, timed_out, limit)
+
+                with mock.patch.object(runner, "judge", spy), \
+                        mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+                    self.run_main(limit_minutes=5)
+                self.assertEqual(limits, [expected])
+
     def test_the_command_gets_the_requests_areas_classes_and_the_runners_jobs(self):
         seen = {}
 
@@ -139,6 +155,35 @@ class AreaRunTests(RunnerTestCase):
             self.run_main()
         self.assertEqual((seen["areas"], seen["classes"], seen["jobs"]), (["stats"], ["FooTests"], runner.RUNNER_JOBS))
         self.assertEqual(Path(seen["log"]).resolve(), (self.out / "run.log").resolve())
+
+
+class ProgressTests(RunnerTestCase):
+    """The runner says where a long run has got to, since a step's log is empty until it ends."""
+
+    def test_a_slow_run_prints_the_last_line_of_its_log(self):
+        log = self.folder / "live.log"
+        log.write_text("Compiling Foo.swift\nCompiling Bar.swift\n")
+        out = io.StringIO()
+        with mock.patch.object(runner, "PROGRESS_SECONDS", 0.05), contextlib.redirect_stdout(out):
+            finished = runner.threading.Event()
+            thread = runner.threading.Thread(target=runner.print_progress, args=(log, finished))
+            thread.start()
+            runner.time.sleep(0.3)
+            finished.set()
+            thread.join(5)
+        self.assertIn("last: Compiling Bar.swift", out.getvalue())
+        self.assertIn("log 40 bytes", out.getvalue())
+
+    def test_a_log_not_written_yet_is_said_so(self):
+        out = io.StringIO()
+        with mock.patch.object(runner, "PROGRESS_SECONDS", 0.05), contextlib.redirect_stdout(out):
+            finished = runner.threading.Event()
+            thread = runner.threading.Thread(target=runner.print_progress, args=(self.folder / "none.log", finished))
+            thread.start()
+            runner.time.sleep(0.2)
+            finished.set()
+            thread.join(5)
+        self.assertIn("(nothing yet)", out.getvalue())
 
 
 class FullSuiteTests(RunnerTestCase):

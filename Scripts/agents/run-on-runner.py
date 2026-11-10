@@ -14,6 +14,8 @@ the workflow uploads and the Mac downloads:
                      a last line of PASSED or FAILED
   summary.md         the same in a few lines, for the run's summary page
 
+A request may carry "limit_minutes" to shorten that limit (it cannot lengthen it).
+
 It exits 0 when the tests passed and 1 when they did not. Every wait has a
 limit: the whole run (--limit-minutes), and a test host that writes nothing
 to the log for too long is killed, as the Mac's train kills one.
@@ -56,6 +58,28 @@ def read_request(path):
     return request
 
 
+# How often, in seconds, the runner prints where the log has got to.
+PROGRESS_SECONDS = 60
+
+
+def print_progress(log, finished):
+    """Prints, every PROGRESS_SECONDS until `finished` is set, how long the run has
+    gone and the last line of its log, so that the run's page shows what a long
+    build or a silent test is doing; a step's log is otherwise empty until it ends."""
+    started = time.monotonic()
+    while not finished.wait(PROGRESS_SECONDS):
+        try:
+            with open(log, "rb") as handle:
+                handle.seek(0, 2)
+                size = handle.tell()
+                handle.seek(max(0, size - 4096))
+                lines = [l for l in handle.read().decode("utf-8", "replace").splitlines() if l.strip()]
+        except OSError:
+            size, lines = 0, []
+        print(f"progress: {(time.monotonic() - started) / 60:.0f} min, log {size} bytes, last: "
+              f"{lines[-1].strip()[:160] if lines else '(nothing yet)'}", flush=True)
+
+
 def run_tests(train, request, out, limit_minutes):
     """Runs the request's tests; returns (the printed result, whether the time
     limit stopped the run). The result is run-area.py's own output, or, for the
@@ -81,6 +105,7 @@ def run_tests(train, request, out, limit_minutes):
     finished = threading.Event()
     threading.Thread(target=train.watch_for_a_hung_run, args=(log, finished, threading.Event()),
                      daemon=True).start()
+    threading.Thread(target=print_progress, args=(log, finished), daemon=True).start()
     timed_out = False
     try:
         output, _ = process.communicate(timeout=limit_minutes * 60)
@@ -151,8 +176,10 @@ def main(argv):
         return 2
     started = time.monotonic()
     train = test_command.load_build_train()
-    output, timed_out = run_tests(train, request, out, args.limit_minutes)
-    output, passed = judge(train, output, out / "run.log", timed_out, args.limit_minutes)
+    # A request may ask for a shorter limit than the default (never a longer one), as a trial run does.
+    limit = min(args.limit_minutes, float(request.get("limit_minutes", args.limit_minutes)))
+    output, timed_out = run_tests(train, request, out, limit)
+    output, passed = judge(train, output, out / "run.log", timed_out, limit)
     write_results(request, out, output, passed, time.monotonic() - started)
     print((out / "summary.md").read_text())
     return 0 if passed else 1
