@@ -44,6 +44,7 @@ sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
 import shard  # noqa: E402
 import test_command  # noqa: E402
+from runner_skips import (BadSkipLine, SKIPS_FILE, read_skips, selected_skips, skip_arguments)  # noqa: E402,F401
 
 # The repository's root, where the commands run.
 ROOT = AGENTS.parents[1]
@@ -52,8 +53,10 @@ ROOT = AGENTS.parents[1]
 DEFAULT_LIMIT_MINUTES = 80
 # The longest one test may take on the runner, in seconds. xcodebuild fails a test that passes it, so a test
 # that waits for something the runner lacks costs this and not its own limit (5 minutes for an audio read).
-# The slowest test on the development Mac takes 21 seconds, so 90 leaves a wide margin.
-TEST_SECONDS = 90
+# xcodebuild rounds the limit up to a whole minute (its logs say "exceeded execution time allowance of 2
+# minutes"), so 120 is what is meant: a hung test costs two minutes plus the host's restart, not 90 seconds.
+# The slowest test on the development Mac takes 21 seconds, so 120 leaves a wide margin.
+TEST_SECONDS = 120
 # xcodebuild's -jobs on the runner (a free macOS runner has 3 or 4 cores).
 RUNNER_JOBS = 3
 
@@ -69,43 +72,6 @@ def time_limit_arguments(request):
 def runner_arguments(request, skips):
     """Every extra xcodebuild argument the runner adds: the time limit, and the tests left out."""
     return time_limit_arguments(request) + skip_arguments(selected_skips(request, skips))
-
-
-# The tests that are not run on the runner, one "Class.testName  # reason" per line, beside this script.
-SKIPS_FILE = AGENTS / "runner-skips.conf"
-
-
-def read_skips(path=SKIPS_FILE):
-    """What the runner leaves out, as [(class, test or None, reason)], from the skips file: a line is
-    "Class.testName" for one test or "Class" for a whole class, then optionally "# reason"; a line that is
-    blank or starts with "#" is a comment. A missing file is no skips."""
-    try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
-    skips = []
-    for line in lines:
-        name, _, reason = line.partition("#")
-        name = name.strip()
-        if not name:
-            continue
-        owner, _, test = name.partition(".")
-        if owner.isidentifier() and (not test or test.isidentifier()):
-            skips.append((owner, test or None, reason.strip()))
-    return skips
-
-
-def selected_skips(request, skips):
-    """The skips that apply to this job: all of them for a full-suite run or a run of areas (which could
-    hold any class), and only those of its own classes for a run of named classes (a shard's command stays short)."""
-    if request["full"] or request["areas"]:
-        return list(skips)
-    return [skip for skip in skips if skip[0] in set(request["classes"])]
-
-
-def skip_arguments(skips):
-    """The xcodebuild arguments that leave `skips` out: -skip-testing for each test or class."""
-    return [f"-skip-testing:TextMouthProductionTests/{owner}" + (f"/{test}" if test else "") for owner, test, _ in skips]
 
 
 def read_request(path):
@@ -184,7 +150,9 @@ def run_tests(train, request, out, limit_minutes):
         sink = open(log, "wb")
     else:
         command = test_command.area_command(request["areas"], request["classes"], derived, log,
-                                            jobs=RUNNER_JOBS, extra=runner_arguments(request, read_skips()))
+                                            jobs=RUNNER_JOBS,
+                                            extra=runner_arguments(request, read_skips())
+                                            + ["-resultBundlePath", str(out / "result.xcresult")])
         sink = subprocess.PIPE
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT)
@@ -268,6 +236,11 @@ def main(argv):
         return 2
     if not 1 <= args.shard <= max(1, args.of):
         print(f"run-on-runner: shard {args.shard} is not among {args.of}", file=sys.stderr)
+        return 2
+    try:
+        read_skips()  # A bad line stops the job before the build, naming the line.
+    except BadSkipLine as error:
+        print(f"run-on-runner: {error}", file=sys.stderr)
         return 2
     request = sliced(request, args.shard, args.of)
     started = time.monotonic()

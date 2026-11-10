@@ -189,10 +189,10 @@ class ProgressTests(RunnerTestCase):
 class TimeLimitTests(RunnerTestCase):
     """A test that waits for something the runner lacks fails after a short limit, not its own long one."""
 
-    def test_the_default_limit_is_ninety_seconds_and_a_request_may_change_it(self):
+    def test_the_default_limit_is_two_minutes_and_a_request_may_change_it(self):
         self.assertEqual(runner.time_limit_arguments({}),
-                         ["-test-timeouts-enabled", "YES", "-default-test-execution-time-allowance", "90",
-                          "-maximum-test-execution-time-allowance", "90"])
+                         ["-test-timeouts-enabled", "YES", "-default-test-execution-time-allowance", "120",
+                          "-maximum-test-execution-time-allowance", "120"])
         self.assertIn("30", runner.time_limit_arguments({"test_seconds": 30}))
 
     def test_both_commands_get_the_limit(self):
@@ -216,8 +216,26 @@ class TimeLimitTests(RunnerTestCase):
         self.assertEqual(seen["area"][:len(limit)], limit)
         self.assertEqual(seen["full"][:len(limit)], limit)
 
+    def test_an_area_run_keeps_its_result_bundle_where_the_workflow_uploads_it_from(self):
+        seen = {}
+
+        def spy(areas, classes, derived, log, jobs=3, extra=()):
+            seen["extra"] = list(extra)
+            return self.child(SUMMARY_PASSED, LOG_PASSED)(areas, classes, derived, log)
+
+        with mock.patch.object(test_command, "area_command", spy):
+            self.run_main()
+        extra = seen["extra"]
+        self.assertEqual(Path(extra[extra.index("-resultBundlePath") + 1]).resolve(), (self.out / "result.xcresult").resolve())
+
     def test_the_limit_is_far_above_the_slowest_test_on_the_development_mac(self):
         self.assertGreaterEqual(runner.TEST_SECONDS, 4 * 21, "the slowest local test took 21 seconds on November 6, 2026")
+
+
+def runner_skips_read(path):
+    """runner_skips.read_skips on `path` (the module the runner takes its skips from)."""
+    import runner_skips
+    return runner_skips.read_skips(path)
 
 
 class SkipTests(RunnerTestCase):
@@ -230,9 +248,28 @@ class SkipTests(RunnerTestCase):
         return path
 
     def test_a_skips_file_is_read_as_class_test_and_reason(self):
-        path = self.skips_file("# a comment\n\nFooTests.testBar  # hangs on the runner\nBazTests.testQux\nnot-a-test-name\nWholeTests  # the class\n")
+        path = self.skips_file("# a comment\n\nFooTests.testBar  # hangs on the runner\nBazTests.testQux  # x\nWholeTests  # the class\n")
         self.assertEqual(runner.read_skips(path), [("FooTests", "testBar", "hangs on the runner"),
-                                                   ("BazTests", "testQux", ""), ("WholeTests", None, "the class")])
+                                                   ("BazTests", "testQux", "x"), ("WholeTests", None, "the class")])
+
+    def test_a_line_that_does_not_parse_raises_naming_it(self):
+        # The review's probe: a stray comma made a whole entry vanish and the test still pass.
+        for bad in ("PublishedFileProgressTests,  # reason", "Foo Tests.testBar  # reason", "FooTests.testBar", "FooTests.testBar  #",
+                    "FooTests.test-bar  # reason", "Foo.Bar.baz  # reason", "not-a-test-name  # reason"):
+            with self.subTest(line=bad):
+                path = self.skips_file(f"GoodTests  # fine\n{bad}\n")
+                with self.assertRaises(runner.BadSkipLine) as caught:
+                    runner.read_skips(path)
+                self.assertIn(":2:", str(caught.exception), "the message names the line")
+
+    def test_a_bad_skips_file_stops_the_job_before_the_build(self):
+        path = self.skips_file("FooTests,  # stray\n")
+        with mock.patch.object(runner, "read_skips", side_effect=lambda: runner_skips_read(path)), \
+                contextlib.redirect_stderr(io.StringIO()) as err, \
+                mock.patch.object(test_command, "area_command", side_effect=AssertionError("must not build")):
+            status, _ = self.run_main()
+        self.assertEqual(status, 2)
+        self.assertIn("FooTests,", err.getvalue())
 
     def test_a_whole_class_becomes_a_skip_testing_argument_of_the_class(self):
         self.assertEqual(runner.skip_arguments([("WholeTests", None, "x")]),
@@ -261,20 +298,47 @@ class SkipTests(RunnerTestCase):
         self.assertEqual(arguments[:2], ["-test-timeouts-enabled", "YES"])
         self.assertEqual(arguments[-1], "-skip-testing:TextMouthProductionTests/FooTests/testBar")
 
-    def test_the_real_skips_file_names_only_tests_that_exist(self):
-        # A skip of a test that was renamed or removed would silently skip nothing, and its reason would lie.
+    @staticmethod
+    def declared_tests():
+        """{class name: {test names}} read from the hosted test sources: a test is a `func test...()` indented one
+        level inside a class or an extension of it (a line scanner, as testkit's)."""
+        import re
         root = Path(test_command.AGENTS).parents[1]
-        text = {path.name: path.read_text(encoding="utf-8", errors="replace")
-                for path in (root / "TextMouthProductionTests").glob("*.swift")}
-        everything = "\n".join(text.values())
+        declared = {}
+        for source in (root / "TextMouthProductionTests").glob("*.swift"):
+            current = None
+            for text in source.read_text(encoding="utf-8", errors="replace").splitlines():
+                if text.startswith("}"):
+                    current = None
+                    continue
+                match = re.match(r"^(?:(?:private|fileprivate|internal|public|open|final)\s+)*(class|extension|struct|enum)\s+([A-Za-z_][\w.]*)", text)
+                if match:
+                    current = match.group(2) if match.group(1) in ("class", "extension") else None
+                    if current:
+                        declared.setdefault(current, set())
+                    continue
+                match = re.match(r"^    (?:@\w+\s+)*(?:(?:private|fileprivate|override)\s+)*func\s+(test\w*)\s*\(\s*\)", text)
+                if current and match:
+                    declared[current].add(match.group(1))
+        return declared
+
+    def test_the_real_skips_file_names_only_tests_that_exist_each_in_its_own_class(self):
+        # A skip of a test that was renamed or removed would silently skip nothing, and its reason would lie. A test is
+        # looked for in its own class, not anywhere in the sources (the review's probe found the substring check too loose).
+        declared = self.declared_tests()
         for owner, test, reason in runner.read_skips():
             with self.subTest(skip=f"{owner}.{test}"):
-                self.assertIn(f"class {owner}", everything, f"{owner} is not a test class")
+                self.assertIn(owner, declared, f"{owner} is not a test class")
                 if test:
-                    self.assertIn(f"func {test}(", everything, f"{test} is not a test")
+                    self.assertIn(test, declared[owner], f"{owner} has no test {test}")
                 self.assertTrue(reason, "every skip says why")
                 self.assertIn("still runs on the development Mac", reason, "every skip says the Mac still runs it")
                 self.assertNotIn("timing", reason.lower().split(";")[0], "a timing failure is flaky, not a reason to skip")
+
+    def test_a_test_named_under_another_class_is_not_found_in_its_own(self):
+        declared = self.declared_tests()
+        self.assertIn("testARefusedRenderIsReportedAtOnce", declared["AudioEngineBehaviorTests"])
+        self.assertNotIn("testARefusedRenderIsReportedAtOnce", declared["PlaylistImportTests"])
 
     def test_the_real_skips_file_exists_is_not_empty_and_is_not_ignored_by_version_control(self):
         # The first sharded run on GitHub left out no test at all because "*.txt" is ignored, so the file
