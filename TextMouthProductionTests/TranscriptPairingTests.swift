@@ -491,15 +491,14 @@ final class TranscriptPairingTests: XCTestCase {
     }
 
     /// A transcript file refused as a book says how to use it: import its
-    /// audio and attach it, or name it like its audio; another unsupported
-    /// file says only what it always did.
+    /// audio, open the book, and attach it; another unsupported file says
+    /// only what it always did.
     func testATranscriptFileRefusedAsABookSaysHowToAttachIt() {
         let vtt = FileImportError.unsupportedFormat("vtt").errorDescription ?? ""
         XCTAssertEqual(
             vtt,
-            "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, then choose "
-                + "Attach Transcript… from the Book menu. A transcript named like its audio and beside it "
-                + "is attached when the audio is imported."
+            "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, "
+                + "and choose Attach Transcript… from the Book menu."
         )
         XCTAssertTrue(FileImportError.unsupportedFormat("SRT").errorDescription?.contains("Attach Transcript…") == true)
         XCTAssertEqual(FileImportError.unsupportedFormat("xyz").errorDescription, "Unsupported file format: .xyz")
