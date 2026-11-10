@@ -89,9 +89,30 @@ final class VoiceCatalog: ObservableObject {
         listing?.cancel()
         let listVoices = listVoices
         listing = Task { [weak self] in
-            let listed = await Task.detached(priority: .utility) { listVoices() }.value
+            let listed = await Self.list(with: listVoices)
             guard !Task.isCancelled else { return }
             self?.publish(listed)
+        }
+    }
+
+    /// The one queue that lists voices, so that at most one thread of the app is ever inside the system's
+    /// listing. Listing blocks its thread on the speech service's answer (a semaphore with no limit, in
+    /// TextToSpeech), which comes in tens of milliseconds on a Mac but not on one without that service, as a
+    /// virtual machine (a GitHub runner) can be.
+    private nonisolated static let listingQueue = DispatchQueue(label: "com.textmouth.VoiceCatalog.listing",
+                                                                qos: .utility)
+
+    /// Runs `listVoices` on `listingQueue` and returns its voices, without holding a thread of Swift's
+    /// concurrency pool while it waits. The pool has one thread for each core and a task that blocks in
+    /// it takes one for good: on a 3-core runner where the listing never came back, three listings blocked
+    /// all three, and every other task in the process (a download's, a reader's, a test's) waited behind
+    /// them for ever, as the spindumps of two tests that hung in the run of November 10, 2026 show. A blocked
+    /// dispatch queue costs one thread of its own and nothing else.
+    private nonisolated static func list(
+        with listVoices: @escaping @Sendable () -> [AVSpeechSynthesisVoice]
+    ) async -> [AVSpeechSynthesisVoice] {
+        await withCheckedContinuation { continuation in
+            listingQueue.async { continuation.resume(returning: listVoices()) }
         }
     }
 

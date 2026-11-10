@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import os
 import XCTest
 @testable import TextMouth
 
@@ -50,6 +51,38 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(lister.calls, 2)
         XCTAssertEqual(catalog.listingCount, 2)
         XCTAssertEqual(catalog.voices.map(\.identifier), lister.voices.map(\.identifier))
+    }
+
+    /// A listing that never comes back, as the system's does on a machine whose speech service does
+    /// not answer (a GitHub runner), must not hold a thread of Swift's concurrency pool: the pool has
+    /// one thread for each core, so a listing in it for each core stops every task of the process,
+    /// which hung tests in the full suites on GitHub. Here more catalogs than cores each ask
+    /// for a listing that waits for the test to let it go, and a task of the pool must still run.
+    func testListingsThatNeverComeBackLeaveTheConcurrencyPoolFree() {
+        let gate = DispatchSemaphore(value: 0)
+        // Each blocked listing is let go (below), and gives up by itself after a minute if the test dies.
+        let blocked: @Sendable () -> [AVSpeechSynthesisVoice] = {
+            _ = gate.wait(timeout: .now() + 60)
+            return []
+        }
+        let catalogs = (0..<ProcessInfo.processInfo.activeProcessorCount + 2).map { _ in
+            VoiceCatalog(notificationCenter: NotificationCenter(), listVoices: blocked)
+        }
+        defer { for _ in catalogs { gate.signal() } }
+        catalogs.forEach { $0.reload() }
+        // Give the listings time to start (the run loop turns, so the catalogs' tasks can begin).
+        let settle = expectation(description: "The listings had time to start")
+        settle.isInverted = true
+        wait(for: [settle], timeout: 0.5)
+
+        // A task of the pool, with up to ten seconds to run (the run loop turns while it waits).
+        let probeRan = OSAllocatedUnfairLock(initialState: false)
+        Task.detached { probeRan.withLock { $0 = true } }
+        let deadline = Date().addingTimeInterval(10)
+        while !probeRan.withLock({ $0 }) && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        XCTAssertTrue(probeRan.withLock { $0 }, "a task could not run on the concurrency pool while listings were held")
     }
 
     /// The voices for a language are those whose language starts with its
