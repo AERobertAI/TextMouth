@@ -620,9 +620,9 @@ struct PhoneLibraryView: View {
     private func remove(_ book: Book) {
         let neighbor = rows.neighbor(of: .book(book.id))
         let session = model.session
-        if session.reader?.book.id == book.id || session.listeningReader?.book.id == book.id {
-            session.closeReader()
-        }
+        // Only this book's reader closes; a different book that plays on
+        // behind the screen is left alone (nothing happens if it isn't open).
+        session.closeBook(id: book.id)
         library.removeBooksAndDelete([book])
         guard library.bookByID(book.id) == nil else { return }
         rows.rebuild()

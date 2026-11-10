@@ -147,6 +147,76 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertFalse(pair.first.hasClosed)
     }
 
+    // MARK: - Closing One Book
+
+    /// Removing the book that plays on behind the screen closes it alone: the
+    /// book on screen stays open, with nothing behind it any more, and is the
+    /// one kept for the next launch (board message #5368: both readers used
+    /// to close).
+    func testClosingTheBookBehindLeavesTheBookOnScreenOpen() throws {
+        let pair = try makePlayingPair("PhoneCloseBehind")
+
+        pair.session.closeBook(id: pair.firstBook.id)
+
+        XCTAssertTrue(pair.first.hasClosed, "The book behind is still open")
+        XCTAssertFalse(pair.second.hasClosed, "The book on screen closed with it")
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertNil(pair.session.listeningSnapshot)
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.secondBook.id)
+        XCTAssertEqual(
+            pair.preferences.string(forKey: PhoneSession.reopenBookKey), pair.secondBook.id.uuidString,
+            "The next launch should reopen the book that is left"
+        )
+    }
+
+    /// Removing the book on screen closes it alone: the book that plays behind
+    /// it comes forward and goes on playing.
+    func testClosingTheBookOnScreenBringsTheBookBehindForward() throws {
+        let pair = try makePlayingPair("PhoneCloseOnScreen")
+
+        pair.session.closeBook(id: pair.secondBook.id)
+
+        XCTAssertTrue(pair.second.hasClosed, "The book on screen is still open")
+        XCTAssertFalse(pair.first.hasClosed, "The book behind closed with it")
+        XCTAssertTrue(pair.session.reader === pair.first)
+        XCTAssertNil(pair.session.listeningReader)
+        XCTAssertEqual(pair.session.snapshot?.bookID, pair.firstBook.id)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing, "The book that plays on stopped")
+    }
+
+    /// With a single book open, closing it leaves no reader and nothing to
+    /// reopen.
+    func testClosingTheOnlyOpenBookLeavesNothingOpen() throws {
+        let world = try makeIntegrationWorld("PhoneCloseOnly")
+        let book = try world.makeSilentAudioBook(title: "Lone Volume", trackDurations: [5])
+        let preferences = makeSandboxedPreferences("PhoneCloseOnly")
+        let session = makeSession(in: world, preferences: preferences)
+        let reader = try XCTUnwrap(session.open(book))
+        waitForReaderToLoad(reader)
+
+        session.closeBook(id: book.id)
+
+        XCTAssertTrue(reader.hasClosed)
+        XCTAssertNil(session.reader)
+        XCTAssertNil(session.snapshot)
+        XCTAssertNil(preferences.string(forKey: PhoneSession.reopenBookKey), "A closed book is still kept for reopening")
+    }
+
+    /// Closing a book that isn't open touches neither reader.
+    func testClosingABookThatIsNotOpenChangesNothing() throws {
+        let pair = try makePlayingPair("PhoneCloseOther")
+        let other = try pair.world.makeSilentAudioBook(title: "Shelved Volume", trackDurations: [5])
+
+        pair.session.closeBook(id: other.id)
+
+        XCTAssertFalse(pair.first.hasClosed)
+        XCTAssertFalse(pair.second.hasClosed)
+        XCTAssertTrue(pair.session.reader === pair.second)
+        XCTAssertTrue(pair.session.listeningReader === pair.first)
+        XCTAssertTrue(pair.first.isPlaybackActivelyAdvancing)
+    }
+
     // MARK: - Engaging
 
     /// A mistaken double-tap on a row leaves the book as it was: still "New",
