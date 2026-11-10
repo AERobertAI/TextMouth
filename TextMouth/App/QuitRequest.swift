@@ -10,15 +10,16 @@ import Foundation
 /// library move's end, the end of work a quit waited for, Quit in the
 /// data-directory screens, and a relaunch.
 ///
-/// Why one helper: another work may hold the request. When a quit is held
-/// (`applicationShouldTerminate` answers `.terminateLater`), AppKit waits for
-/// the reply inside the main queue's drain, and that wait runs no main-queue
-/// work. A quit asked again from a main-queue block or a main-actor Task then
-/// never lets the hold's own Task start, so nothing replies and TextMouth
-/// stays open with its main actor stopped. A run-loop timer fires outside the
-/// drain, so the request goes through one (found on November 9, 2026 by the
-/// review of the transcript branch, and shown by
-/// `Scripts/test/quit-while-held.py`).
+/// Why one helper: when a quit is held (`applicationShouldTerminate` answers
+/// `.terminateLater`), AppKit waits for the reply inside the main queue's
+/// drain, and that wait runs no main-queue work. A quit asked again from a
+/// main-queue block or a main-actor Task then never lets the hold's own Task
+/// start, so nothing replies and TextMouth stays open with its main actor
+/// stopped. A run-loop timer fires outside the drain, so the request goes
+/// through one (found on November 9, 2026 by the review of the transcript
+/// branch, and shown by `Scripts/test/quit-while-held.py`). A quit the person
+/// asks for is no longer left pending (`QuitFinisher`), but the system ending
+/// the session still is, and one helper keeps every other path safe too.
 @MainActor
 enum QuitRequest {
     /// How a request reaches AppKit. At first the one this process's runtime

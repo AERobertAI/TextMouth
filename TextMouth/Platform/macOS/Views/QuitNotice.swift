@@ -33,11 +33,6 @@ final class QuitNotice {
         panel?.orderOut(nil)
     }
 
-    /// Whether the panel is on screen.
-    var isShowing: Bool {
-        panel?.isVisible ?? false
-    }
-
     /// Builds the panel: a titled utility window, with no close button since
     /// the work cannot be skipped, holding the message as wrapped text.
     private func makePanel() -> NSPanel {
