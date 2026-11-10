@@ -34,8 +34,9 @@ sys.dont_write_bytecode = True
 
 # The repository's root, where the build runs.
 ROOT = Path(__file__).resolve().parents[2]
-# The longest the build may take, in minutes: well under the workflow job's own limit.
-DEFAULT_LIMIT_MINUTES = 45
+# The longest the build may take, in minutes: under the workflow job's limit of 30, which the platform download (about 3
+# minutes) comes out of. A build from nothing took 8 to 10 minutes on November 10, 2026.
+DEFAULT_LIMIT_MINUTES = 20
 # The scheme and destination: the committed TextMouthiOS scheme, and any iOS Simulator (no device needs to exist).
 SCHEME = "TextMouthiOS"
 DESTINATION = "generic/platform=iOS Simulator"
