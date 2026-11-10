@@ -122,7 +122,7 @@ enum AudioMediaProbe {
             let start = CMTimeGetSeconds(audio.timeRange.start)
             let end = CMTimeGetSeconds(audio.timeRange.end)
             let span = start.isFinite && end.isFinite && end > start ? start...end : 0...seconds
-            if let problem = decodingProblem(of: audio.track, in: asset, over: span) {
+            if let problem = await decodingProblemOffThePool(of: audio.track, in: asset, over: span) {
                 return .failure(problem)
             }
         }
@@ -152,6 +152,26 @@ enum AudioMediaProbe {
             }
         }
         return nil
+    }
+
+    /// The queue the decoding checks run on, many at once (the prober runs up to four probes).
+    private static let decodeQueue = DispatchQueue(label: "com.textmouth.AudioMediaProbe.decode", qos: .utility,
+                                                   attributes: .concurrent)
+
+    /// `decodingProblem(of:in:over:)`, run on `decodeQueue` and not in a task of Swift's concurrency pool. The
+    /// check blocks its thread in `AVAssetReaderOutput.copyNextSampleBuffer()`, a few milliseconds on a Mac with
+    /// working audio. On a GitHub runner it sometimes never returned (the spindump of a hung test, run 42856695469,
+    /// shows three probes in it), and a task of the pool that blocks takes one of its few threads for good: the
+    /// threads of the process were all held, and the tests after the hung one failed with it. A thread of a
+    /// dispatch queue held for ever costs nothing else.
+    private static func decodingProblemOffThePool(
+        of track: AVAssetTrack,
+        in asset: AVAsset,
+        over span: ClosedRange<TimeInterval>
+    ) async -> AudioMediaProblem? {
+        await withCheckedContinuation { continuation in
+            decodeQueue.async { continuation.resume(returning: decodingProblem(of: track, in: asset, over: span)) }
+        }
     }
 
     /// Why `track` fails to decode, checked at the opening of `span` (the
