@@ -32,11 +32,14 @@ class TextMouthUITestCase: XCTestCase {
     /// cold launch (TEXTMOUTH_OPEN_AT_LAUNCH). With no book playing, the app
     /// imports the book and opens it, and Play waits unpressed.
     /// With `textSize`, the launch uses that content size category (as in
-    /// `Self.largestText`), as the Larger Text setting would.
-    func launch(sendingTheBook: Bool, textSize: String? = nil) throws -> XCUIApplication {
+    /// `Self.largestText`), as the Larger Text setting would. `environment`
+    /// adds launch variables the app reads in debug builds only.
+    func launch(sendingTheBook: Bool, textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
+        // Debug-only requests of the app, such as `TEXTMOUTH_SEARCH_IN_BOOK`.
+        app.launchEnvironment.merge(environment) { _, asked in asked }
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
@@ -55,8 +58,8 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches with the book and waits for the reader it opens, with the
     /// book loaded: Play is there, and its value no longer says "Loading".
-    func launchIntoTheReader(textSize: String? = nil) throws -> XCUIApplication {
-        let app = try launch(sendingTheBook: true, textSize: textSize)
+    func launchIntoTheReader(textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
+        let app = try launch(sendingTheBook: true, textSize: textSize, environment: environment)
         let play = app.buttons["Play"]
         XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
@@ -154,6 +157,43 @@ class TextMouthUITestCase: XCTestCase {
             }
             from = elements.index(after: index)
         }
+    }
+
+    // MARK: - The Reader's Sheets
+
+    /// Opens the reader's sheet from its control, waits for the sheet's
+    /// navigation bar and for the button `element`, and returns the sheet's
+    /// elements in order.
+    func openReaderSheet(
+        _ control: String,
+        titled title: String,
+        waitingFor element: String,
+        in app: XCUIApplication
+    ) throws -> [Element] {
+        // The tap is repeated if the sheet does not come: a first tap was seen
+        // to do nothing (Bookmarks, pass 5, November 9, 2026).
+        tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")
+        XCTAssertTrue(
+            app.buttons[element].waitForExistence(timeout: Self.patience),
+            "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
+        )
+        return try elementsOfSheet(titled: title, in: app)
+    }
+
+    /// The elements of the sheet titled `title`, in order: everything from its
+    /// title on. A sheet's navigation bar is known by its identifier and
+    /// carries no label, so the order holds its title as the text inside it.
+    /// The screen under a sheet may still be in the tree before it, and a
+    /// control there can share the sheet's name ("Bookmarks", "Navigation
+    /// unit"), but that is a button: the last titled element that isn't one
+    /// is where the sheet begins.
+    func elementsOfSheet(titled title: String, in app: XCUIApplication) throws -> [Element] {
+        let elements = try elementsInOrder(of: app)
+        guard let start = elements.lastIndex(where: { $0.label == title && $0.type != .button }) else {
+            XCTFail("No navigation bar titled \"\(title)\" in: \(elements.map(\.label).joined(separator: " | "))")
+            return []
+        }
+        return Array(elements[start...])
     }
 
     // MARK: - The Audit and the Record

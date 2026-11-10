@@ -217,41 +217,6 @@ final class ScreenOrderUITests: TextMouthUITestCase {
 
     // MARK: - Helpers
 
-    /// Opens the reader's sheet from its control, waits for the sheet's
-    /// navigation bar and for the button `element`, and returns the sheet's
-    /// elements in order.
-    private func openReaderSheet(
-        _ control: String,
-        titled title: String,
-        waitingFor element: String,
-        in app: XCUIApplication
-    ) throws -> [Element] {
-        // The tap is repeated if the sheet does not come: a first tap was seen
-        // to do nothing (Bookmarks, pass 5, November 9, 2026).
-        tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")
-        XCTAssertTrue(
-            app.buttons[element].waitForExistence(timeout: Self.patience),
-            "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
-        )
-        return try elementsOfSheet(titled: title, in: app)
-    }
-
-    /// The elements of the sheet titled `title`, in order: everything from its
-    /// title on. A sheet's navigation bar is known by its identifier and
-    /// carries no label, so the order holds its title as the text inside it.
-    /// The screen under a sheet may still be in the tree before it, and a
-    /// control there can share the sheet's name ("Bookmarks", "Navigation
-    /// unit"), but that is a button: the last titled element that isn't one
-    /// is where the sheet begins.
-    private func elementsOfSheet(titled title: String, in app: XCUIApplication) throws -> [Element] {
-        let elements = try elementsInOrder(of: app)
-        guard let start = elements.lastIndex(where: { $0.label == title && $0.type != .button }) else {
-            XCTFail("No navigation bar titled \"\(title)\" in: \(elements.map(\.label).joined(separator: " | "))")
-            return []
-        }
-        return Array(elements[start...])
-    }
-
     /// Every element of a screen longer than the display: the screen as it
     /// stands, then scrolled a page at a time (a swipe up, which is silent)
     /// until a page adds nothing new, at most `limit` times. Each new element
