@@ -89,7 +89,12 @@ enum WebArchiveReader {
             let finished = TextFileDecoder.normalizingLineEndings(TextFileDecoder.droppingLeadingByteOrderMarks(text))
             return MainPage(text: finished, isHTML: isHTML)
         }
-        let decoded = try TextFileDecoder.decode(bytes, fileName: fileName, format: isHTML ? .html : .txt)
+        // The old evidence: this reader has no page reader version to raise, so what
+        // it reads does not change with the book decoder's newer rules
+        // (`TextFileDecoder.Evidence.legacy`).
+        let decoded = try TextFileDecoder.decode(
+            bytes, fileName: fileName, format: isHTML ? .html : .txt, evidence: .legacy
+        )
         return MainPage(text: decoded.text, isHTML: isHTML)
     }
 
