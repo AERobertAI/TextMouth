@@ -172,6 +172,12 @@ class GateRulesTests(RunnerTestCase):
             with self.subTest(request=request):
                 self.assertNotIn("TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT", runner.runner_environment(request))
 
+    def test_the_runner_hands_the_test_host_its_time_scale_and_a_request_may_change_it(self):
+        name = "TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"
+        self.assertEqual(runner.runner_environment({})[name], str(runner.RUNNER_TIME_SCALE))
+        self.assertEqual(runner.runner_environment({"time_scale": 4})[name], "4.0")
+        self.assertGreater(runner.RUNNER_TIME_SCALE, 1)
+
     def test_the_command_runs_in_that_environment(self):
         seen = {}
         real_popen = runner.subprocess.Popen

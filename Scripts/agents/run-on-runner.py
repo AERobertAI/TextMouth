@@ -75,11 +75,20 @@ def time_limit_arguments(request):
             "-maximum-test-execution-time-allowance", seconds]
 
 
+# How much longer than on the development Mac the few timing tests that cannot compare the app with itself may let it
+# take on the runner (TestMachine.timeScale in HostedTestIsolationSupport.swift). The runner is a virtual machine with
+# 3 or 4 slower cores: a hostile-index read that is within 1.0 second here took 1.35 there. The development Mac never
+# sets it, so its limits stay as written. A request may carry "time_scale" to try another.
+RUNNER_TIME_SCALE = 2.5
+
+
 def runner_environment(request):
-    """The environment the test command runs in: this process's own, plus, for a request that asks for strict
-    performance baselines, TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1, which xcodebuild hands to the test host
-    without its TEST_RUNNER_ prefix (as `make test PERFORMANCE_STRICT=1` does for the gate on the Mac)."""
+    """The environment the test command runs in: this process's own, plus TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE (the
+    runner's time scale), and, for a request that asks for strict performance baselines,
+    TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1. xcodebuild hands each to the test host without its TEST_RUNNER_ prefix
+    (as `make test PERFORMANCE_STRICT=1` does for the gate on the Mac)."""
     environment = dict(os.environ)
+    environment["TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"] = str(float(request.get("time_scale", RUNNER_TIME_SCALE)))
     if request.get("strict_performance"):
         environment["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"] = "1"
     return environment

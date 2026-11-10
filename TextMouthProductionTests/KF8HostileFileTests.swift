@@ -79,7 +79,7 @@ final class KF8HostileFileTests: XCTestCase {
         file: StaticString = #filePath, line: UInt = #line
     ) -> MOBIBook? {
         let started = Date()
-        defer { XCTAssertLessThan(Date().timeIntervalSince(started), 1.0, "\(what) took too long", file: file, line: line) }
+        defer { XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(1.0), "\(what) took too long", file: file, line: line) }
         let book: MOBIBook
         do {
             book = try MOBIBook(bytes: bytes, hybrid: hybrid)
@@ -103,7 +103,7 @@ final class KF8HostileFileTests: XCTestCase {
         XCTAssertThrowsError(try MOBIBook(bytes: bytes), what, file: file, line: line) {
             guard case .damaged? = $0 as? MOBIError else { return XCTFail("\(what): \($0)", file: file, line: line) }
         }
-        XCTAssertLessThan(Date().timeIntervalSince(started), 1.0, "\(what) took too long", file: file, line: line)
+        XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(1.0), "\(what) took too long", file: file, line: line)
     }
 
     /// A book of one document of a body of `count` short paragraphs, the last
@@ -354,7 +354,7 @@ final class KF8HostileFileTests: XCTestCase {
             guard case .damaged(let detail)? = $0 as? MOBIError else { return XCTFail("\($0)") }
             XCTAssertTrue(detail.contains("too many numbers"), detail)
         }
-        XCTAssertLessThan(Date().timeIntervalSince(started), 1.0)
+        XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(1.0))
         // The same entry named a hundred times is within the bound, and read.
         var fewer = record
         MOBIFixture.put32(&fewer, 24, 90)
@@ -424,7 +424,7 @@ final class KF8HostileFileTests: XCTestCase {
         }
         let started = Date()
         let book = try MOBIBook(bytes: fixture.data())
-        XCTAssertLessThan(Date().timeIntervalSince(started), 3.0)
+        XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(3.0))
         XCTAssertEqual(book.sections.count, 1)
         XCTAssertEqual(book.sections[0].headingTargets.count, 999)   // the first entry names the whole document
         XCTAssertEqual(book.sections[0].html.anchorsRemoved, fixture.documents[0].html)
@@ -458,7 +458,7 @@ final class KF8HostileFileTests: XCTestCase {
         }
         let started = Date()
         let book = try MOBIBook(bytes: fixture.data())
-        XCTAssertLessThan(Date().timeIntervalSince(started), 3.0)
+        XCTAssertLessThan(Date().timeIntervalSince(started), TestMachine.allowed(3.0))
         XCTAssertEqual(book.sections[0].headingTargets.count, 2_999)   // the first entry names the whole document
     }
 

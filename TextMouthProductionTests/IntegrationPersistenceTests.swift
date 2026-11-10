@@ -36,12 +36,22 @@ final class IntegrationPersistenceTests: XCTestCase {
 
         let failing = recordingAnnouncements {
             XCTAssertTrue(model.createFolderReturningOutcome(name: folder.path, parentPath: "").succeeded)
-            XCTAssertTrue(
-                waitUntil(timeout: 5) { !model.failureCenter.bannerRows.isEmpty },
-                "No banner row appeared for the library save that failed; the center holds "
-                    + "\(model.failureCenter.outstandingFailures().count) outstanding failures, publishes "
-                    + "\(model.failureCenter.failures.count), and has dismissed \(model.failureCenter.dismissedSubsystems)"
-            )
+            let appeared = waitUntil(timeout: 5) { !model.failureCenter.bannerRows.isEmpty }
+            var diagnosis = ""
+            if !appeared {
+                // Where did it stop? Does the main queue run a block queued now, and does the row appear when the
+                // publish is made by hand? (The row took 4.7 to 9 seconds, or never, in full runs on the runner.)
+                var canary = false
+                DispatchQueue.main.async { canary = true }
+                let queueRuns = waitUntil(timeout: 3) { canary }
+                let publishedBeforeByHand = model.failureCenter.failures.count
+                model.failureCenter.publish()
+                diagnosis = "; the center holds \(model.failureCenter.outstandingFailures().count) outstanding failures and "
+                    + "had published \(publishedBeforeByHand) (dismissed \(model.failureCenter.dismissedSubsystems)); "
+                    + "the main queue \(queueRuns ? "ran" : "did not run") a block queued after the wait; "
+                    + "a publish by hand gives \(model.failureCenter.bannerRows.count) rows"
+            }
+            XCTAssertTrue(appeared, "No banner row appeared for the library save that failed\(diagnosis)")
         }
 
         let row = try XCTUnwrap(model.failureCenter.bannerRows.first)
