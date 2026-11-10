@@ -185,10 +185,20 @@ class SummaryTests(TypecheckTestsCase):
         self.assertEqual(count, 0)
         self.assertIn("Warnings in the app and its tests: 1", summary)
 
+    def test_a_clean_build_of_the_test_target_alone_succeeds(self):
+        summary, count, _ = self.summarize(["Build of target: 'TextMouthProductionTests' complete! (1.00s)"])
+        self.assertEqual(count, 0)
+        self.assertIn("BUILD SUCCEEDED", summary)
+
+    def test_a_build_that_neither_finished_nor_named_an_error_does_not_succeed(self):
+        summary, count, _ = self.summarize(["[3/9] Compiling TextMouth A.swift"])
+        self.assertIn("FAILED", summary)
+
     def test_a_clean_build_succeeds(self):
         summary, count, _ = self.summarize(["Build complete! (1.0s)"])
         self.assertEqual(count, 0)
         self.assertIn("BUILD SUCCEEDED", summary)
+        self.assertIn("compiled, not linked", summary)
 
 
 class MainTests(TypecheckTestsCase):
@@ -239,14 +249,17 @@ class MainTests(TypecheckTestsCase):
 
     def test_tests_mode_builds_the_tests_under_the_lock_in_a_folder_of_its_own(self):
         self.assertEqual(self.main("--platform", "macos", "--tests"), 0)
-        self.assertIn("--build-tests", self.commands[0])
+        # Only the test target's module is built (--build-tests cannot be combined with --target,
+        # and its test-runner link step fails on this toolchain).
+        self.assertNotIn("--build-tests", self.commands[0])
+        self.assertEqual(self.commands[0][self.commands[0].index("--target") + 1], typecheck.TEST_TARGET)
         self.assertEqual(self.lock_seen, [True], "the build ran without the heavy-work lock")
         self.assertFalse(heavy_lock.LOCK.exists(), "the lock was left held")
         self.assertTrue((typecheck.WORK_ROOT / "macos-tests" / "src" / typecheck.TEST_TARGET).is_dir())
 
     def test_the_plain_mac_check_does_not_build_the_tests(self):
         self.assertEqual(self.main("--platform", "macos"), 0)
-        self.assertNotIn("--build-tests", self.commands[0])
+        self.assertNotIn("--target", self.commands[0])
         self.assertFalse((typecheck.WORK_ROOT / "macos" / "src" / typecheck.TEST_TARGET).exists())
 
     def test_tests_mode_is_for_the_mac_only(self):

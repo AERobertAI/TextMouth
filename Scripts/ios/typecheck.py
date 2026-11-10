@@ -16,12 +16,12 @@ Both link the C libraries the apps link (LAME and the Objective-C exception
 catcher), so a clean run means the app compiles and links.
 
 With `--tests` (macOS only) the package also holds the Mac's hosted test target,
-TextMouthProductionTests, built with `swift build --build-tests`, so a test file
+TextMouthProductionTests, built with `swift build --target`, so a test file
 that does not compile is found without xcodebuild. The target's sources are the
 folder of that name plus the files of TextMouthTests/Sources/Tests that
 project.yml lists for it (read from project.yml at the commit, so the two cannot
 drift apart); errors in those files are reported under their repository paths.
-It compiles the tests and the app, and links the test bundle, but runs nothing.
+It compiles the tests and the app, but links no test bundle and runs nothing.
 Do this before asking the build train for a build.
 
 The census (`--census`, iOS only) reads `import AppKit` as `import UIKit` in
@@ -294,7 +294,9 @@ def summarize(log_text, src, header, out, tests=False):
         entry = (relative, int(match.group(2)), int(match.group(3)), match.group(5))
         (errors if match.group(4) == "error" else warnings).add(entry)
     link_lines = [l for l in log_text.splitlines() if LINK_FAILURE.search(l)]
-    succeeded = "Build complete!" in log_text and not errors
+    # "Build complete!" ends a whole-package build; a build of one target (--tests) ends "Build of target: 'X' complete!".
+    finished = "Build complete!" in log_text or re.search(r"Build of target: '[^']*' complete!", log_text)
+    succeeded = bool(finished) and not errors
     ordered = sorted(errors)
     per_file = {}
     for entry in ordered:
@@ -312,7 +314,7 @@ def summarize(log_text, src, header, out, tests=False):
              f"- Errors in the app{' and its tests' if tests else ''}: **{len(ordered)}** in **{len(per_file)}** files",
              f"- Warnings in the app{' and its tests' if tests else ''}: {len(warnings)}",
              f"- Errors inside the Swift packages: {package_problems}",
-             f"- Link: {'failed' if link_lines and not ordered else 'not reached' if ordered else 'ok' if succeeded else 'unknown'}",
+             f"- Link: {'not attempted (the tests are compiled, not linked)' if tests else 'failed' if link_lines and not ordered else 'not reached' if ordered else 'ok' if succeeded else 'unknown'}",
              ""]
     if link_lines and not ordered:
         lines += ["## Linker", "", *[f"    {l}" for l in link_lines[:20]], ""]
@@ -389,7 +391,11 @@ def main(argv):
         if args.platform == "ios":
             command += ["--triple", f"arm64-apple-ios{args.ios_target}"]
         if args.tests:
-            command += ["--build-tests"]
+            # Only the test target's module (and the app it needs) is built: SwiftPM's last step for
+            # --build-tests (which cannot be combined with --target), the synthesized test-runner module, stops on "unexpected input file:
+            # .../plugins/testing" with this Xcode's toolchain after every file has compiled, so
+            # nothing is linked.
+            command += ["--target", TEST_TARGET]
         say("building (about two minutes for the app alone)")
         result = subprocess.run(command, cwd=work / "src", capture_output=True, text=True,
                                 env={**os.environ, "SWIFTCI_USE_LOCAL_DEPS": "1"})
