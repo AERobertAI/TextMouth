@@ -34,11 +34,6 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A Word document whose title is empty takes its file's name, and one whose creator is empty has the author "Unknown", as if it had none.
 - A ZIP holding a DAISY book with audio is kept, and the "Book Imported" alert says why, even when a SMIL file in it has a tag with too many attributes for TextMouth to parse. Before, the archive could be offered for deletion although it held the only copy of the text.
 
-### Older versions
-- The first time this version opens, every .mobi book (.azw3, .azw, and .prc too) is read again once, for the chapters and soft hyphens above (page reader line 1.1.0). Your place follows its words.
-- The first time this version opens, every plain text and HTML book is read again once, for the encodings above (page reader lines 1.0.1 and 1.0.4). Its text is the same unless its file is one the new rules read. EPUB books are not read again.
-- Markdown books are read the new way when they are added, or when their text is built again.
-
 ### Transcripts
 - Attach Transcript… reads a transcript for a book of more than 100 hours. Its times may run to 1,000 hours, and they are cut into the book's audio files. A single audio file is timed for only its first 100 hours: a passage that starts after a file's hundredth hour is left out and counted with the passages that could not be read, as in "2 timed passages couldn't be read and were left out." (see [Transcribing an audiobook](transcribing.md)).
 - A passage of more than 10,000 characters is cut short at the end of a sentence, or between words, and Attach says so: "1 timed passage was too long and was cut short." A file that is one huge passage no longer makes one huge sentence in the book.
@@ -48,6 +43,10 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A podcast episode's chapters come back when you undo every edit of its audio and save. They are set aside when edits are saved, since the edited audio no longer fits them. After Start Over they do not come back (see [Editing audio](editing-audio.md)).
 - Not fixed: quitting TextMouth while it fetches a podcast episode's transcript makes the next launch download the episode again.
 
+### Older versions
+- The first time this version opens, every .mobi book (.azw3, .azw, and .prc too) is read again once, for the chapters and soft hyphens above (page reader line 1.1.0). Your place follows its words.
+- The first time this version opens, every plain text and HTML book is read again once, for the encodings above (page reader lines 1.0.1 and 1.0.4). Its text is the same unless its file is one the new rules read. EPUB books are not read again.
+- Markdown books are read the new way when they are added, or when their text is built again.
 
 ## 0.4.2 (November 8, 2026)
 ### Export a text book as spoken audio
