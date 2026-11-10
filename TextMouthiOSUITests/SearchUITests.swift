@@ -30,7 +30,7 @@ final class SearchUITests: TextMouthUITestCase {
 
     /// Waits, for at most `patience`, until a static text of the sheet reads
     /// `ending` (the search's status), and returns the sheet's elements in
-    /// order. The status is "Searching…" until the search, which waits a
+    /// order, from the sheet's title on. The status is "Searching…" until the search, which waits a
     /// second for typing to pause, has finished.
     private func waitForStatus(ending suffixes: [String], in app: XCUIApplication) throws -> [Element] {
         let predicate = NSPredicate(format: suffixes.map { _ in "label ENDSWITH %@" }.joined(separator: " OR "), argumentArray: suffixes)
@@ -39,7 +39,7 @@ final class SearchUITests: TextMouthUITestCase {
             status.waitForExistence(timeout: Self.patience),
             "No status ending \(suffixes) appeared. The screen:\n\(app.debugDescription)"
         )
-        return try elementsInOrder(of: app)
+        return try elementsOfSheet(titled: "Search in Book", in: app)
     }
 
     // MARK: - What it reads
