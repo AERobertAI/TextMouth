@@ -14,7 +14,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 Run these from the repository root:
 
-- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 20 MB: without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces. The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)). It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links. The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB. Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths. The full build log is build/xcodebuild-Release.log. It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so. The build products in build/DerivedData stay as Xcode made them.
+- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 23 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces. The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)). It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links. The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB. Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths. The full build log is build/xcodebuild-Release.log. It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so. The build products in build/DerivedData stay as Xcode made them.
 - `make debug` builds the Debug configuration instead.
 - `make run` and `make open` build the app and open it.
 - `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only. `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
@@ -32,6 +32,26 @@ Run these from the repository root:
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
+
+## The Mac app's size
+
+The user's target for the Mac app is 25 MB or less. `make check` fails the app only above its hard limit of 50 MB (see The make check gate, below). This is what a measurement of the Release build showed on November 9, 2026, at commit e0ea3b9d.
+
+- **The totals.**
+  - The Release executable, `TextMouth.app/Contents/MacOS/TextMouth`, is 22.7 MB (22,737,216 bytes), and the whole bundle is about 23 MB.
+  - Both are under the 25 MB target, with about 2 MB to spare.
+  - The braille helper is 186 KB of the bundle.
+- **The largest pieces.**
+  - SwiftSoup is 3.0 MB, 13% of the executable and the largest single piece.
+  - swift-markdown is 0.6 MB.
+  - Of the app's own files, `LibraryView` is the largest at 0.36 MB.
+- **The iPhone's code costs little.**
+  - `TextMouth/Phone/` is compiled into the Mac app too. The linker strips what the Mac never reaches, and 59 KB stays, 0.27% of the executable.
+  - Leaving `Phone/` out would save at most that, and would give up the Mac's tests of it in a Release build. So it is not left out.
+- **How the sizes were found.**
+  - The linker's own map lists every object and its bytes. Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see Building TextMouthiOS for the simulator, below).
+  - Do not set `LD_MAP_FILE_PATH` on the command line. Every target's link shares that one path, and Xcode stops with "Multiple commands produce" the one map file. With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
+  - The measurement used `Scripts/agents/run_locked.py`, since a Release build is heavy work.
 
 ## The iOS app
 
