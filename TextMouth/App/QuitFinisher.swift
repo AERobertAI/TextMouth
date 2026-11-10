@@ -186,13 +186,14 @@ final class QuitFinisher {
         finishing = nil
         message = nil
         finished()
+        let waited = waitingFor
+        waitingFor = []
         if let reply = sessionReply {
             sessionReply = nil
             reply(true)
             return
         }
-        waitedFor = waitingFor
-        waitingFor = []
+        waitedFor = waited
         askAgain()
     }
 }
