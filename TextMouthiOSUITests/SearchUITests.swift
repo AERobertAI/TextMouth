@@ -152,14 +152,22 @@ final class SearchUITests: TextMouthUITestCase {
             note.lifetime = .keepAlways
             add(note)
         }
-        // Contrast is reported and not failed. Pass 1 (keyboard up) found 7 on
-        // rows under the keyboard; pass 3 (keyboard away, list scrolled) found
-        // one, on a result's heading text at y 71, under the navigation bar:
-        // "Contrast failed for SwiftUI.AccessibilityNode", the same words as
-        // the false positive proven on Settings (`Accepted.firstHeader`). That
-        // this one is false is unproven: the phone draws every result in the
-        // primary label color. It is kept with the results as "findings
-        // reported, not failed", for a look at the screenshot.
-        try audit(app, screen: "Search in Book sheet", informing: .contrast, accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge])
+        // Every contrast finding fails but one. Pass 1 (keyboard up) found 7
+        // on rows under the keyboard; pass 3 (keyboard away, list scrolled by
+        // the drag above) found one, on the first result's heading text at y 71,
+        // under the navigation bar: "Contrast failed for SwiftUI
+        // .AccessibilityNode", the words of the false positive proven on
+        // Settings (`Accepted.firstHeader`). That this one is false is
+        // unproven: the phone draws every result in the primary label color,
+        // and the text is under the bar's glass. It is accepted by its exact
+        // label and the contrast kind alone, and kept with the results.
+        let underTheBar = Accepted(
+            type: .contrast, label: "CHAPTER VI. Pig and Pepper",
+            why: "the first result's heading, scrolled under the navigation bar's glass; unproven, see the test"
+        )
+        try audit(
+            app, screen: "Search in Book sheet",
+            accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge, underTheBar]
+        )
     }
 }

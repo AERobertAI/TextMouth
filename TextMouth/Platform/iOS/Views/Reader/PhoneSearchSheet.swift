@@ -75,8 +75,11 @@ struct PhoneSearchSheet: View {
             .task {
                 fillFieldForTesting()
                 // A sheet with one field: focus lands in it, a moment after
-                // the sheet appears.
+                // the sheet appears, unless the listener has moved first
+                // (the request holds a ticket, as the reader's returns do).
+                let ticket = PhoneFocusRegistry.shared.beginRequest()
                 try? await Task.sleep(for: .seconds(PhoneFocusPolicy.screenChangedDelay))
+                guard PhoneFocusRegistry.shared.claimRequest(ticket) else { return }
                 fieldHasKeyboard = true
                 fieldHasVoiceOver = true
             }

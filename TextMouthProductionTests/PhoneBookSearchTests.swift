@@ -115,6 +115,25 @@ final class PhoneBookSearchTests: XCTestCase {
         XCTAssertEqual(said, ["2 matches"], "One count, for the final text")
     }
 
+    /// Nothing is searched or said while typing has paused for less than a
+    /// second: after 0.6 seconds the model is still waiting, and the Mac's
+    /// quarter second would already have said the count. Then the count comes.
+    func testNothingIsSaidUntilTypingHasPausedForASecond() async throws {
+        var said: [String] = []
+        let model = Self.source(chapters: ["The ferry left late."]).makeModel { said.append($0) }
+
+        model.query = "ferry"
+        try await Task.sleep(for: .milliseconds(600))
+
+        XCTAssertEqual(model.status, .searching, "The search ran before typing had paused for a second")
+        XCTAssertEqual(model.results, [])
+        XCTAssertEqual(said, [], "A count was said before typing had paused for a second")
+
+        await model.searchTask?.value
+        XCTAssertEqual(model.status, .found(count: 1))
+        XCTAssertEqual(said, ["1 match"])
+    }
+
     /// A word not in the book says "No matches", with no results, and a
     /// pattern that isn't a regular expression says why, with none.
     func testTheModelSaysNoMatchesAndInvalidPatterns() async throws {

@@ -33,14 +33,20 @@ enum BookSearchWording {
     ///   - hasTranscript: Whether the book has a transcript, as the library's
     ///     rows and the Book menu know it (`TranscribedBooks`).
     ///   - withheld: Why its text is not shown, when the reader knows.
+    ///   - offersTranscription: Whether the app can transcribe at all. The
+    ///     iPhone app cannot, so it passes false, and no sentence tells the
+    ///     listener to transcribe or transcribe again.
     static func noTextToSearch(
         bookTitle: String,
         canTranscribe: Bool,
         hasTranscript: Bool,
-        withheld: TranscriptTextWithheld?
+        withheld: TranscriptTextWithheld?,
+        offersTranscription: Bool = true
     ) -> String {
         guard hasTranscript else {
-            return canTranscribe ? noTranscript(bookTitle: bookTitle) : "\(bookTitle) has no transcript to search."
+            return canTranscribe && offersTranscription
+                ? noTranscript(bookTitle: bookTitle)
+                : "\(bookTitle) has no transcript to search."
         }
         let lead = "\(bookTitle) has no transcript text to search now"
         switch withheld {
@@ -51,7 +57,8 @@ enum BookSearchWording {
         case .textInCloud?:
             return "\(lead). \(TranscriptionWording.textInCloud)"
         case .audioChanged?:
-            return "\(lead), because \(BookTextEditWording.transcriptStaleReason) Transcribe it again, then search the new transcript."
+            let because = "\(lead), because \(BookTextEditWording.transcriptStaleReason)"
+            return offersTranscription ? "\(because) Transcribe it again, then search the new transcript." : because
         case .editHeld(let refusal, let keptCopy)?:
             let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
             return "\(lead), because its edited text can't be used: \(why) \(BookTextEditWording.kept(keptCopy))"

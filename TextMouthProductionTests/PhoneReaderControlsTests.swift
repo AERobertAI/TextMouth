@@ -23,6 +23,26 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
     }
 
+    /// The grid's rows hold the controls in the grid's order, at most three
+    /// to a row, with each pair kept in one row: the headings, the skips, and
+    /// Bookmarks with Headings.
+    func testTheGridRowsKeepOrderAndPairs() {
+        XCTAssertEqual(PhoneReaderControl.gridRows.flatMap { $0 }, PhoneReaderControl.grid, "The rows change VoiceOver's order")
+        for row in PhoneReaderControl.gridRows {
+            XCTAssertLessThanOrEqual(row.count, 3, "\(row)")
+        }
+        let together: [[PhoneReaderControl]] = [
+            [.previousHeading, .nextHeading], [.skipBackward, .skipForward], [.bookmarks, .headings, .searchInBook],
+        ]
+        for group in together {
+            XCTAssertTrue(
+                PhoneReaderControl.gridRows.contains { row in group.allSatisfy { row.contains($0) } },
+                "\(group) are split across rows: \(PhoneReaderControl.gridRows)"
+            )
+        }
+        XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
+    }
+
     /// Every control has a focus kind of its own, and every kind belongs to
     /// a control, so a landing on any control is the listener's.
     func testEveryControlHasItsOwnFocusKind() {

@@ -277,6 +277,33 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(reader.currentChapterIndex, 0)
     }
 
+    /// `goToSearchResult` takes the transcript's move for a transcript's
+    /// result, to the sentence holding the match with "Moved to" waiting, and
+    /// the text book's move otherwise, to the match itself with nothing waiting.
+    func testGoToSearchResultChoosesTheMoveByTheBookSearched() async throws {
+        let reader = try await transcribedReader("Search Go To Result")
+        let transcript = try XCTUnwrap(reader.content?.transcript)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        let ferry = try XCTUnwrap(matches("ferry", in: corpus).first)
+
+        reader.goToSearchResult(chapterIndex: ferry.chapterIndex, characterOffset: ferry.characterOffset, inTranscript: true)
+
+        XCTAssertEqual(
+            reader.currentCharacterOffset,
+            transcript.audioOffset(atTextOffset: ferry.characterOffset, inChapter: ferry.chapterIndex),
+            "A transcript result didn't move the audio to its sentence"
+        )
+        XCTAssertNotNil(reader.pendingJumpAnnouncement, "A transcript result left no \"Moved to\" waiting")
+        XCTAssertTrue(reader.hasSavedPosition)
+        reader.announcePendingJump()
+
+        reader.goToSearchResult(chapterIndex: 0, characterOffset: 7, inTranscript: false)
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 7, "A text result moved by the transcript's text-to-audio map")
+        XCTAssertNil(reader.pendingJumpAnnouncement)
+    }
+
     /// Without a transcript, a transcript result moves nothing and says
     /// nothing; announcing with none pending says nothing either.
     func testWithoutATranscriptNothingMoves() async throws {

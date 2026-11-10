@@ -46,6 +46,24 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// Where Am I? to Skip forward.
     static let grid: [PhoneReaderControl] = Array(allCases.drop { $0 != .whereAmI })
 
+    /// The grid's rows, left to right and top to bottom in `grid`'s order, so
+    /// that VoiceOver's order is the same however the rows break. The spec's
+    /// layout ("The layout") has three to a row, ending with Book Info, Skip
+    /// backward, and Skip forward. Search in Book makes sixteen, so a plain
+    /// three to a row would leave Skip forward alone; the rows are broken so
+    /// that each pair stays together instead: Previous and Next Heading in
+    /// the second row, Bookmarks, Headings, and Search in Book in the third,
+    /// and the two skips side by side in the last, as the spec's last row
+    /// has them. The fifth row, Voice and Book Info, holds two.
+    static let gridRows: [[PhoneReaderControl]] = [
+        [.whereAmI, .navigationUnit, .speed],
+        [.previousHeading, .nextHeading, .addBookmark],
+        [.bookmarks, .headings, .searchInBook],
+        [.goTo, .returnToPlace, .sleepTimer],
+        [.voice, .bookInfo],
+        [.skipBackward, .skipForward],
+    ]
+
     /// The kind `PhoneFocusRegistry` knows the control by, for focus on
     /// arrival and on return from a sheet: every control has one, so a
     /// landing on any of them counts as the listener's in `PhoneFocusPolicy`.

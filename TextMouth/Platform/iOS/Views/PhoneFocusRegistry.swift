@@ -42,15 +42,28 @@ final class PhoneFocusRegistry {
     /// `skip` answers true when the time comes. Does nothing if the control
     /// has no view then.
     func requestFocus(on kind: PhoneControlKind, after delay: TimeInterval, unless skip: @escaping @MainActor () -> Bool = { false }) {
-        let ticket = requests.request()
+        let ticket = beginRequest()
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             MainActor.assumeIsolated {
                 // Claimed first, so a request that is skipped is spent too.
-                guard let self, self.requests.claim(ticket), !skip() else { return }
+                guard let self, self.claimRequest(ticket), !skip() else { return }
                 guard let view = self.view(for: kind) else { return }
                 UIAccessibility.post(notification: .layoutChanged, argument: view)
             }
         }
+    }
+
+    /// Notes a request for focus that is about to wait, for a caller that
+    /// makes the request itself (a sheet putting focus in its field): it
+    /// asks `claimRequest(_:)` when its time comes.
+    func beginRequest() -> PhoneFocusRequests.Ticket {
+        requests.request()
+    }
+
+    /// The time of the request with `ticket` has come: true, once, unless the
+    /// listener's landing on a reader control has cancelled it meanwhile.
+    func claimRequest(_ ticket: PhoneFocusRequests.Ticket) -> Bool {
+        requests.claim(ticket)
     }
 
     /// A view held without keeping it.

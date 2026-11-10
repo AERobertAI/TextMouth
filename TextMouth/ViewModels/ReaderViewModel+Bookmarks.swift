@@ -311,12 +311,16 @@ extension ReaderViewModel {
     /// command it names, if any, is the one the menu offers. A reason the
     /// load found for the text not being shown means the book has a
     /// transcript whatever the rows have noted of it yet.
-    func announceNoTextToSearch(hasTranscript: Bool) {
+    ///
+    /// `offersTranscription` is false on the iPhone, which cannot transcribe:
+    /// the words then name no command and tell no one to transcribe.
+    func announceNoTextToSearch(hasTranscript: Bool, offersTranscription: Bool = true) {
         announceToVoiceOver(BookSearchWording.noTextToSearch(
             bookTitle: book.title,
             canTranscribe: LibraryAudioCommand.isTranscribable(book),
             hasTranscript: hasTranscript || transcriptWithheld != nil,
-            withheld: transcriptWithheld
+            withheld: transcriptWithheld,
+            offersTranscription: offersTranscription
         ))
     }
 

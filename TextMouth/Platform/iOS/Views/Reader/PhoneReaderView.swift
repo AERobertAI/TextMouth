@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// The reader's screen: Book content, Play, and a grid of three columns and
-/// six rows, the last holding one control, in the spec's order and layout
-/// (the spec, under "The reader"; Search in Book follows Headings, which
-/// makes sixteen).
+/// The reader's screen: Book content, Play, and a grid of up to three columns
+/// and six rows (`PhoneReaderControl.gridRows`), in the spec's order and
+/// layout (the spec, under "The reader"; Search in Book follows Headings,
+/// which makes sixteen controls).
 ///
 /// The view is thin. It reads the session's snapshot, which changes only
 /// when the book's title, playing, or loading does, never as the place moves;
@@ -124,7 +124,7 @@ struct PhoneReaderView: View {
                     control(item)
                 }
             } else {
-                ForEach(gridRows, id: \.self) { row in
+                ForEach(PhoneReaderControl.gridRows, id: \.self) { row in
                     HStack(spacing: 12) {
                         ForEach(row, id: \.self) { item in
                             control(item)
@@ -132,13 +132,6 @@ struct PhoneReaderView: View {
                     }
                 }
             }
-        }
-    }
-
-    /// The grid's rows, three controls to a row, in the spec's order.
-    private var gridRows: [[PhoneReaderControl]] {
-        stride(from: 0, to: PhoneReaderControl.grid.count, by: 3).map {
-            Array(PhoneReaderControl.grid[$0..<min($0 + 3, PhoneReaderControl.grid.count)])
         }
     }
 

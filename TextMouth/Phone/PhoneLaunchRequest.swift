@@ -1,9 +1,9 @@
 import Foundation
 
-// The whole of this file is compiled into debug builds only: both of its uses
-// (`TextMouthRuntime.detect` and the iPhone's scene delegate) are inside
-// `#if DEBUG`, so a release build holds neither the type nor its two variable
-// names, and no environment variable can steer it.
+// The whole of this file is compiled into debug builds only: each of its three
+// uses (`TextMouthRuntime.detect`, the iPhone's scene delegate, and the Search
+// in Book sheet) is inside `#if DEBUG`, so a release build holds neither the
+// type nor its three variable names, and no environment variable can steer it.
 #if DEBUG
 
 /// What a UI test, or a run in the iOS simulator, asks of the iPhone app at

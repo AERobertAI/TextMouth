@@ -460,8 +460,8 @@ final class PhoneReaderModel {
     /// place"):
     /// - while the book loads, "Loading Moby-Dick";
     /// - for an audiobook with no transcript text, the Mac's words for why
-    ///   (`ReaderViewModel.announceNoTextToSearch(hasTranscript:)`), which
-    ///   name Transcribe Audio only where the book offers it;
+    ///   (`ReaderViewModel.announceNoTextToSearch`) without any that tell the
+    ///   listener to transcribe, since the phone has no Transcribe Audio;
     /// - for a text book that failed to load, nothing: its screen shows the
     ///   failure in place of the controls.
     func openSearch() -> Bool {
@@ -474,7 +474,10 @@ final class PhoneReaderModel {
             )])
         } else if reader.isAudioBook {
             answer {
-                $0.announceNoTextToSearch(hasTranscript: TranscribedBooks.shared.contains($0.book.id))
+                $0.announceNoTextToSearch(
+                    hasTranscript: TranscribedBooks.shared.contains($0.book.id),
+                    offersTranscription: false
+                )
             }
         }
         return false

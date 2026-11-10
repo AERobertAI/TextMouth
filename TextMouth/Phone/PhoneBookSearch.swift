@@ -60,10 +60,7 @@ struct PhoneBookSearchSource: Sendable {
     /// actor, and says each completed search's status through `announce`.
     @MainActor
     func makeModel(announce: @escaping @MainActor (String) -> Void) -> BookSearchModel {
-        let corpus = corpus
-        return BookSearchModel(debounceInterval: PhoneBookSearchVocabulary.typingPause, announce: announce) { query, useRegex in
-            try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
-        }
+        BookSearchModel(corpus: corpus, debounceInterval: PhoneBookSearchVocabulary.typingPause, announce: announce)
     }
 
     /// The row of `result`: the words VoiceOver and the screen give it. On the

@@ -173,9 +173,14 @@ final class PhoneSessionTests: XCTestCase {
     /// Removing the book on screen closes it alone: the book that plays behind
     /// it comes forward and goes on playing.
     func testClosingTheBookOnScreenBringsTheBookBehindForward() throws {
-        let pair = try makePlayingPair("PhoneCloseOnScreen")
+        let media = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let pair = try makePlayingPair("PhoneCloseOnScreen", nowPlaying: media)
+        XCTAssertEqual(media.focusedOwnerID, pair.second.nowPlayingService.ownerID, "The book on screen isn't focused to begin with")
 
         pair.session.closeBook(id: pair.secondBook.id)
+
+        // A remote Play reaches the book that came forward.
+        XCTAssertEqual(media.focusedOwnerID, pair.first.nowPlayingService.ownerID, "The book that came forward is not focused")
 
         XCTAssertTrue(pair.second.hasClosed, "The book on screen is still open")
         XCTAssertFalse(pair.first.hasClosed, "The book behind closed with it")
@@ -1026,12 +1031,12 @@ final class PhoneSessionTests: XCTestCase {
     }
 
     /// Makes a `PlayingPair`, failing the test when the first never plays.
-    private func makePlayingPair(_ label: String) throws -> PlayingPair {
+    private func makePlayingPair(_ label: String, nowPlaying: NowPlayingService? = nil) throws -> PlayingPair {
         let world = try makeIntegrationWorld(label)
         let firstBook = try world.makeSilentAudioBook(title: "Playing Volume", trackDurations: [30])
         let secondBook = try world.makeSilentAudioBook(title: "Looked-At Volume", trackDurations: [30])
         let preferences = makeSandboxedPreferences(label)
-        let session = makeSession(in: world, preferences: preferences)
+        let session = makeSession(in: world, preferences: preferences, nowPlaying: nowPlaying)
         let first = try XCTUnwrap(session.open(firstBook))
         waitForReaderToLoad(first)
         session.togglePlayPause()
