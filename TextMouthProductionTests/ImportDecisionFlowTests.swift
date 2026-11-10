@@ -143,6 +143,34 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(scene.opened.ids, [copy.id])
     }
 
+    /// A WebVTT file opened from Finder (or the Dock) together with the audio
+    /// it sits beside is not refused as a book: the audio's import attaches it,
+    /// and the import shows no error. Opened without the audio, it is refused
+    /// as before.
+    func testATranscriptOpenedFromFinderWithItsAudioIsAttachedNotRefused() throws {
+        let scene = try makeScene()
+        useAfterImportingBehavior(.keepOriginal)
+        let audio = scene.sources.appendingPathComponent("Tide.wav")
+        try AudioTestFixtures.writeSilence(to: audio, duration: 1)
+        let captions = scene.sources.appendingPathComponent("Tide.vtt")
+        try Data("WEBVTT\n\n00:00.000 --> 00:00.800\nThe slip is clear.\n".utf8).write(to: captions)
+
+        scene.model.importAndOpenFiles(urls: [captions, audio])
+        drainImports(of: scene.model)
+
+        XCTAssertFalse(scene.model.showError, "the transcript was refused as a book: \(scene.model.errorMessage ?? "-")")
+        let books = scene.model.library.books
+        XCTAssertEqual(books.map(\.title), ["Tide"], "the transcript file was imported as a book of its own, or the audio was not")
+        let book = try XCTUnwrap(books.first)
+        XCTAssertTrue(TranscriptStore.hasTranscript(of: book), "the audio's import did not attach the transcript")
+
+        // Alone, the same file is still refused, with the way to attach it.
+        scene.model.importAndOpenFiles(urls: [captions])
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.showError)
+        XCTAssertEqual(scene.model.library.books.count, 1)
+    }
+
     // MARK: - Questions of Every Kind
 
     /// A duplicate, a new book, and a ZIP archive of two books are imported
