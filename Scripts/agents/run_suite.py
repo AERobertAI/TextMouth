@@ -132,6 +132,14 @@ def take_train_lock():
     return True
 
 
+def fresh_folder(stem):
+    """`stem-1`, or `stem-2` and on when earlier runs already made theirs: a name nothing is in yet."""
+    number = 1
+    while Path(f"{stem}-{number}").exists():
+        number += 1
+    return f"{stem}-{number}"
+
+
 def run_remote(name, log, commit, cwd=None):
     """Runs the full suite on GitHub Actions for `commit`'s tree, writes the run's log
     to `log`, and returns the exit status: as a local run's, or 3 when a train held
@@ -140,7 +148,9 @@ def run_remote(name, log, commit, cwd=None):
     if not take_train_lock():
         print(f"run_suite: {name} found a train on GitHub for {TRAIN_WAIT_SECONDS // 60} minutes", file=sys.stderr)
         return 3
-    folder = f"{log}.remote"
+    # A folder of this run's own, never one an earlier run of the same LOG left: gh will not overwrite
+    # files, and a run that brings nothing back must not be judged by an earlier run's log.
+    folder = fresh_folder(f"{log}.remote")
     try:
         # The full suite is long, so it runs as the most shards there are. It names "all" as well as "full" so
         # the runner can deal its classes out: the area "all" is every test of the scheme (11,854 counted in
@@ -158,7 +168,8 @@ def run_remote(name, log, commit, cwd=None):
         _train.release_lock()
     print(f"run_suite: run {result['url']} {result['conclusion']} after {result['minutes']} minutes", flush=True)
     downloaded = Path(folder) / "run.log"
-    if result["conclusion"] in _train.UNFINISHED_RUNS or not downloaded.exists():
+    if (result["conclusion"] in _train.UNFINISHED_RUNS or not result["downloaded"]
+            or not downloaded.exists()):
         print(f"run_suite: the run ended {result['conclusion']} without a log, so the tests have no verdict",
               file=sys.stderr)
         return 4

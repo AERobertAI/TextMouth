@@ -107,6 +107,28 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.assertIn("cancelled", err)
         self.assertFalse(self.log.exists(), "a log from an older run must not be mistaken for this one's")
 
+    def test_a_rerun_with_the_same_log_is_never_judged_by_an_earlier_runs_log(self):
+        # An earlier run left a passing log where this one's results would go (the review's blocker).
+        for older in ("suite.log.remote", "suite.log.remote-1"):
+            with self.subTest(older=older):
+                folder = self.folder / older
+                folder.mkdir(parents=True, exist_ok=True)
+                (folder / "run.log").write_text(SUITE_PASSED)
+                # This run ended in failure and brought back nothing.
+                self.gh_runs({"fail": True}, view={**DONE, "conclusion": "failure"})
+                status, _, err = self.run_remote()
+                self.assertEqual(status, 4, "a run with no results has no verdict")
+                self.assertIn("without a log", err)
+                self.assertFalse(self.log.exists())
+
+    def test_each_run_downloads_into_a_folder_of_its_own(self):
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        self.run_remote()
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        self.run_remote()
+        folders = sorted(path.name for path in self.folder.glob("suite.log.remote-*"))
+        self.assertEqual(folders, ["suite.log.remote-1", "suite.log.remote-2"])
+
     def test_a_push_that_fails_is_exit_four_and_frees_the_train_lock(self):
         self.patch_github(PUSH_REMOTE=str(self.folder / "no-such-remote.git"))
         status, _, err = self.run_remote()
