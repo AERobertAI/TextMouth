@@ -6,7 +6,9 @@ Nothing reaches GitHub (see remote_case.py): the push goes to a bare repository 
 temporary folder, `gh` is a stand-in, and the clock is pretend, so no test waits.
 """
 import json
+import subprocess
 import unittest
+from pathlib import Path
 
 # remote_case puts the scripts' folder on the path, so it is imported first.
 from remote_case import (FAILING_LOG, FAILING_SUMMARY, PASSING_LOG, PASSING_SUMMARY, STARTED, RemoteTestCase,
@@ -82,6 +84,152 @@ class PushTests(RemoteTestCase):
     def test_the_branch_and_the_repository_are_fixed(self):
         self.assertEqual(github_run.BRANCH, "TestBuild")
         self.assertEqual(github_run.REPO, "AERobertAI/TextMouth")
+
+
+class PrivatePathTests(RemoteTestCase):
+    """The review's three cases for the privacy guard, and its neighbours."""
+
+    def refused(self, parent):
+        """Pushes a request commit on `parent`; asserts it is refused as private and that nothing reached the remote."""
+        commit = github_run.commit_with_request(self.repo, parent, REQUEST, "Test build: x")
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            github_run.push(self.repo, commit)
+        self.assertIn("private", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {}, "a refused tree must not reach the remote at all")
+
+    def test_names_git_would_quote_are_still_checked(self):
+        # git quotes non-ASCII letters and quote marks in `ls-tree --name-only` unless told to use NUL separators.
+        for private in ("build/kfx-private/Caf\u00e9.kfx", 'humanReports/a "b".txt', "humanQuestions/line\nbreak.md"):
+            with self.subTest(private=private):
+                parent = self.commit(private)
+                self.refused(parent)
+                self.git("reset", "-q", "--hard", self.head)
+
+    def test_a_private_file_in_history_behind_the_tip_is_refused_though_the_tip_no_longer_has_it(self):
+        self.commit("build/kfx-private/old.kfx")
+        self.git("rm", "-q", "build/kfx-private/old.kfx")
+        self.git("commit", "-q", "-m", "remove it again")
+        tip = self.git("rev-parse", "HEAD")
+        self.assertNotIn("build/kfx-private/old.kfx", self.git("ls-tree", "-r", "--name-only", tip))
+        self.refused(tip)
+
+    def test_history_that_origin_already_has_is_not_checked_again(self):
+        # The same old commit, once origin's refs hold it, is not something this push would send.
+        self.commit("build/kfx-private/old.kfx")
+        self.git("rm", "-q", "build/kfx-private/old.kfx")
+        self.git("commit", "-q", "-m", "remove it again")
+        tip = self.git("rev-parse", "HEAD")
+        self.git("update-ref", "refs/remotes/origin/main", tip)
+        commit = github_run.commit_with_request(self.repo, tip, REQUEST, "Test build: x")
+        github_run.push(self.repo, commit)
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"])
+
+    def test_a_file_named_like_a_private_folder_is_refused_too(self):
+        parent = self.commit("build")
+        self.refused(parent)
+
+    def test_a_folder_that_only_starts_like_a_private_one_is_fine(self):
+        parent = self.commit("builder/notes.txt")
+        commit = github_run.commit_with_request(self.repo, parent, REQUEST, "Test build: x")
+        github_run.push(self.repo, commit)
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"])
+
+    def test_humanreports_is_ignored_by_version_control_as_a_folder(self):
+        ignored = subprocess.run(["git", "check-ignore", "-q", "humanReports/anything.csv"],
+                                 cwd=Path(github_run.__file__).resolve().parents[2]).returncode
+        self.assertEqual(ignored, 0, "/humanReports/ must be in .gitignore, not only its .md and .txt files")
+
+
+class WorkflowGuardTests(RemoteTestCase):
+    """Once the workflow is on main, no pushed tree may change .github/workflows."""
+
+    WORKFLOW = "name: Test build\non:\n  push:\n    branches: [TestBuild]\npermissions:\n  contents: read\n"
+
+    def main_has_the_workflow(self):
+        """Commits the workflow, and makes it origin's main."""
+        main = self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW)
+        self.git("update-ref", "refs/remotes/origin/main", main)
+        return main
+
+    def push_of(self, parent):
+        """A request commit on `parent`, pushed; returns nothing or raises."""
+        commit = github_run.commit_with_request(self.repo, parent, REQUEST, "Test build: x")
+        github_run.push(self.repo, commit)
+
+    def test_a_tree_with_main_s_workflow_may_be_pushed(self):
+        self.push_of(self.main_has_the_workflow())
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"])
+
+    def test_a_branch_that_widens_the_workflow_s_permissions_is_refused(self):
+        self.main_has_the_workflow()
+        widened = self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW.replace("read", "write"))
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_of(widened)
+        self.assertIn(".github/workflows differs", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_branch_that_adds_another_workflow_is_refused(self):
+        self.main_has_the_workflow()
+        added = self.commit(".github/workflows/extra.yml", "on: push\n")
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_of(added)
+        self.assertIn("extra.yml", str(caught.exception))
+
+    def test_a_branch_that_removes_the_workflow_is_refused(self):
+        self.main_has_the_workflow()
+        self.git("rm", "-q", github_run.WORKFLOW_FILE)
+        self.git("commit", "-q", "-m", "remove it")
+        with self.assertRaises(github_run.RemoteFailure):
+            self.push_of(self.git("rev-parse", "HEAD"))
+
+    def test_before_the_workflow_is_on_main_nothing_is_compared(self):
+        self.git("update-ref", "refs/remotes/origin/main", self.head)  # main has no workflow yet
+        self.push_of(self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW))
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"])
+
+    def test_with_no_origin_main_at_all_nothing_is_compared(self):
+        self.push_of(self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW))
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"])
+
+    def test_the_request_file_beside_the_workflows_is_not_a_workflow_change(self):
+        self.push_of(self.main_has_the_workflow())  # the commit adds .github/test-request.json
+        names = self.git("ls-tree", "-r", "--name-only", self.pushed_refs()["refs/heads/TestBuild"], cwd=self.remote)
+        self.assertIn(github_run.REQUEST_PATH, names)
+
+
+class PushSafetyTests(RemoteTestCase):
+    """What keeps a push to one branch of one repository."""
+
+    def test_tags_are_not_pushed_even_when_the_user_asked_git_to_follow_them(self):
+        self.git("config", "push.followTags", "true")
+        self.git("tag", "-a", "-m", "a release", "v9.9.9", self.head)
+        commit = github_run.commit_with_request(self.repo, self.head, REQUEST, "Test build: x")
+        github_run.push(self.repo, commit)
+        self.assertEqual(list(self.pushed_refs()), ["refs/heads/TestBuild"], "an annotated tag reachable from the commit went too")
+
+    def test_origin_must_be_this_repository(self):
+        self.patch_github(PUSH_REMOTE="origin")
+        self.git("remote", "add", "origin", str(self.remote))
+        commit = github_run.commit_with_request(self.repo, self.head, REQUEST, "Test build: x")
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            github_run.push(self.repo, commit)
+        self.assertIn("push URL", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {}, "nothing is pushed to a remote that is not this repository")
+
+    def test_the_urls_of_this_repository_pass_the_check(self):
+        self.patch_github(PUSH_REMOTE="origin")
+        for url in github_run.ORIGIN_URLS:
+            with self.subTest(url=url):
+                self.git("remote", "remove", "origin") if "origin" in self.git("remote").split() else None
+                self.git("remote", "add", "origin", url)
+                github_run.check_remote(self.repo)
+
+    def test_a_push_url_that_differs_from_the_fetch_url_is_the_one_checked(self):
+        self.patch_github(PUSH_REMOTE="origin")
+        self.git("remote", "add", "origin", github_run.ORIGIN_URLS[0])
+        self.git("remote", "set-url", "--push", "origin", str(self.remote))
+        with self.assertRaises(github_run.RemoteFailure):
+            github_run.check_remote(self.repo)
 
 
 class FindingTheRunTests(RemoteTestCase):

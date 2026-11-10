@@ -92,6 +92,7 @@ featureExp/
 
 # Questions for the user and their answers, kept on this Mac only (AGENTS.md)
 /humanQuestions/
+/humanReports/
 # Files the user hands to the agents (test manifests and the like), kept on this Mac only
 /HumanFiles/
 

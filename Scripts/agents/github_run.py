@@ -41,17 +41,25 @@ WORKFLOW_NAME = "Test build"
 REQUEST_PATH = ".github/test-request.json"
 # The artifact the workflow always uploads: the log, the summary, and the verdict.
 ARTIFACT = "test-build-results"
-# The remote `git push` goes to. Tests replace it with a throwaway repository.
+# The remote `git push` goes to. Tests replace it with a throwaway repository. While it is the name
+# "origin", the push first checks that origin's push URL is this repository's (ORIGIN_URLS).
 PUSH_REMOTE = "origin"
+ORIGIN_URLS = ("git@github.com:AERobertAI/TextMouth.git", "ssh://git@github.com/AERobertAI/TextMouth.git",
+               "https://github.com/AERobertAI/TextMouth.git", "https://github.com/AERobertAI/TextMouth")
+# Origin's main, whose workflow files a pushed tree must not change once the workflow is on it.
+MAIN_REF = "origin/main"
+WORKFLOW_FOLDER = ".github/workflows"
+WORKFLOW_FILE = ".github/workflows/test-build.yml"
 # The program that talks to GitHub. Tests replace it with a stand-in.
 GH = "gh"
 # Folders of the checkout the user keeps private; none may be in a pushed tree.
 PRIVATE_PREFIXES = ("build/", "humanQuestions/", "humanReports/")
 # How long to wait for GitHub to start the run a push caused.
 RUN_APPEARS_SECONDS = 5 * 60
-# How long a run may take from the push to its end: the workflow's own job
-# limit (90 minutes) and the wait for a runner.
-RUN_LIMIT_MINUTES = 110
+# How long a run may take from the push to its end. Its jobs have limits of 5 (plan), 100 (each test job) and 10
+# (collect) minutes, 115 in all if every one ran to its limit; the runner script stops the tests at 80 minutes,
+# so a run really ends within about 100. This is a little over the 115 and adds a wait for a runner.
+RUN_LIMIT_MINUTES = 125
 # How often to ask GitHub how the run is going.
 POLL_SECONDS = 30
 # How long one `gh` or `git` call may take before it counts as failed.
@@ -99,20 +107,89 @@ def commit_with_request(cwd, parent, request, message):
     return git(cwd, "commit-tree", tree, "-p", parent, "-m", message)
 
 
+def nul_split(text):
+    """The non-empty NUL-separated parts of `text`."""
+    return [part for part in text.split("\0") if part]
+
+
+def is_private(path):
+    """Whether `path` is, or is inside, a folder the user keeps private."""
+    return any(path == prefix.rstrip("/") or path.startswith(prefix) for prefix in PRIVATE_PREFIXES)
+
+
+def tree_paths(cwd, commit):
+    """Every path in `commit`'s tree, exactly as git has it: NUL-separated, so a name with a quote, a
+    newline, or a non-ASCII letter is not wrapped in quotes and escapes."""
+    result = call(["git", "ls-tree", "-r", "-z", "--name-only", commit], cwd=cwd)
+    if result.returncode != 0:
+        raise RemoteFailure(f"git ls-tree failed: {(result.stderr or result.stdout).strip()[:300]}")
+    return nul_split(result.stdout)
+
+
+def pushed_paths(cwd, commit):
+    """The path of every object the push would send: all that `commit` reaches and no ref of origin does, so the
+    commits behind the tip count, and a private file committed and later removed is still found. With
+    `-z`, git prints each object's id, then `path=<path>` for those that have one."""
+    result = call(["git", "rev-list", "--objects", "-z", commit, "--not", "--remotes=origin"], cwd=cwd)
+    if result.returncode != 0:
+        raise RemoteFailure(f"git rev-list failed: {(result.stderr or result.stdout).strip()[:300]}")
+    return [part[len("path="):] for part in nul_split(result.stdout) if part.startswith("path=")]
+
+
 def check_public_tree(cwd, commit):
-    """Raises RemoteFailure when `commit`'s tree holds a path in a private
-    folder. The repository is public, and a push publishes the whole tree."""
-    paths = git(cwd, "ls-tree", "-r", "--name-only", commit).splitlines()
-    private = [path for path in paths if path.startswith(PRIVATE_PREFIXES)]
-    if private:
-        raise RemoteFailure(f"refusing to push {commit[:8]}: its tree holds private paths, such as {private[0]}")
+    """Raises RemoteFailure when anything the push would publish is in a private folder: a path of the tip's tree,
+    or of any object in the history behind it that origin does not have. The repository is public."""
+    for paths in (tree_paths(cwd, commit), pushed_paths(cwd, commit)):
+        private = [path for path in paths if is_private(path)]
+        if private:
+            raise RemoteFailure(f"refusing to push {commit[:8]}: it would publish private paths, such as {private[0]!r}")
+
+
+def workflow_listing(cwd, ref):
+    """The set of `mode type blob<TAB>path` entries under .github/workflows in `ref`'s tree, or None when `ref` is
+    not a commit here."""
+    if call(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"], cwd=cwd).returncode != 0:
+        return None
+    result = call(["git", "ls-tree", "-r", "-z", ref, "--", WORKFLOW_FOLDER], cwd=cwd)
+    if result.returncode != 0:
+        raise RemoteFailure(f"git ls-tree failed: {(result.stderr or result.stdout).strip()[:300]}")
+    return set(nul_split(result.stdout))
+
+
+def check_workflows(cwd, commit):
+    """Once this workflow is on origin's main, raises RemoteFailure when `commit`'s .github/workflows differs from
+    main's. GitHub runs the workflow files of the pushed tree, so a merged branch that widened `permissions:` or added a
+    step would run it on the public repository; only a change that is already on main may run. (A change the
+    orchestrator merged into the local main is refused until origin's main has it: the safe way round.) Before the
+    workflow is on main there is nothing to compare with, and the check passes."""
+    main = workflow_listing(cwd, MAIN_REF)
+    if main is None or not any(entry.endswith("\t" + WORKFLOW_FILE) for entry in main):
+        return
+    ours = workflow_listing(cwd, commit)
+    if ours != main:
+        changed = sorted({entry.split("\t", 1)[1] for entry in ours ^ main})
+        raise RemoteFailure(f"refusing to push {commit[:8]}: its {WORKFLOW_FOLDER} differs from {MAIN_REF}'s in "
+                            f"{', '.join(changed)}; only workflow changes already on main may run")
+
+
+def check_remote(cwd):
+    """Raises RemoteFailure when the push would go to something other than this repository: while PUSH_REMOTE is
+    the name "origin", its push URL must be one of ORIGIN_URLS."""
+    if PUSH_REMOTE != "origin":
+        return
+    result = call(["git", "remote", "get-url", "--push", "origin"], cwd=cwd)
+    url = result.stdout.strip()
+    if result.returncode != 0 or url not in ORIGIN_URLS:
+        raise RemoteFailure(f"refusing to push: origin's push URL is {url or 'unknown'}, not {ORIGIN_URLS[0]}")
 
 
 def push(cwd, commit):
-    """Pushes `commit` to the branch TestBuild with --force, and to nothing else.
-    The refspec is built here, from the constant, and from no caller's text."""
+    """Pushes `commit` to the branch TestBuild with --force, and to nothing else. The refspec is built here, from the
+    constant, and from no caller's text; --no-follow-tags keeps a user's push.followTags from sending tags too."""
     check_public_tree(cwd, commit)
-    result = call(["git", "push", "--force", PUSH_REMOTE, f"{commit}:refs/heads/{BRANCH}"], cwd=cwd)
+    check_workflows(cwd, commit)
+    check_remote(cwd)
+    result = call(["git", "push", "--force", "--no-follow-tags", PUSH_REMOTE, f"{commit}:refs/heads/{BRANCH}"], cwd=cwd)
     if result.returncode != 0:
         raise RemoteFailure(f"git push to {BRANCH} failed: {(result.stderr or result.stdout).strip()[:300]}")
 
