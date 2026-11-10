@@ -169,9 +169,19 @@ enum AudioMediaProbe {
         in asset: AVAsset,
         over span: ClosedRange<TimeInterval>
     ) async -> AudioMediaProblem? {
-        await withCheckedContinuation { continuation in
-            decodeQueue.async { continuation.resume(returning: decodingProblem(of: track, in: asset, over: span)) }
+        // The track and the asset are used by this one check alone, on one thread, so handing them over is safe.
+        let job = DecodeJob(track: track, asset: asset)
+        return await withCheckedContinuation { continuation in
+            decodeQueue.async {
+                continuation.resume(returning: decodingProblem(of: job.track, in: job.asset, over: span))
+            }
         }
+    }
+
+    /// A track and its asset on their way to `decodeQueue`.
+    private struct DecodeJob: @unchecked Sendable {
+        let track: AVAssetTrack
+        let asset: AVAsset
     }
 
     /// Why `track` fails to decode, checked at the opening of `span` (the
