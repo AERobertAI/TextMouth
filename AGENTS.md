@@ -105,7 +105,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   - `make generate` through `regenerate-project.py`, so `make install` leaves no noise;
   - trains that take back a branch left out only for a conflict;
   - `make typecheck-tests`, the step before every train request.
-- Then main went to version 0.4.4, tagged `v0.4.4`, after midnight. It holds the quit fix (`fix/quit-while-held`: a quit asked again never hangs, a second Command-Q never cuts held work off, a log out still waits) and the iPhone's Search in Book (`ios/search-1109`, unshipped). Full suite 11,962 tests, 93 skipped, 0 failures; `make build` (Release) succeeded.
+- Then main went to version 0.4.4, tagged `v0.4.4`, after midnight. It holds the quit fix (`fix/quit-while-held`: a quit asked again never hangs, a second Command-Q never cuts held work off, a log out still waits) and the iPhone's Search in Book (`ios/search-1109`, unshipped). Full suite 11,962 tests, 93 skipped, 0 failures; the Release build compiled, and only its signing failed, with the login keychain locked after midnight.
 - Under way: `ci/github-actions`.
 - The user's line for the day is 45% of the week left; nothing new starts until the work under way is done.
 - Lessons of that day, which hold for any campaign:
