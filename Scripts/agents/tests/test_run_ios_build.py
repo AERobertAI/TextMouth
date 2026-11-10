@@ -57,6 +57,11 @@ class ParsingTests(unittest.TestCase):
             "error: Unable to find a destination matching the provided destination specifier",
             "error: symbol(s) not found"])
 
+    def test_xcodebuilds_own_error_line_is_an_error_without_a_file(self):
+        log = "xcodebuild: error: Unable to find a destination matching the provided destination specifier:\n"
+        self.assertEqual(ios.parse_errors(log, RUNNER_ROOT),
+                         ["error: Unable to find a destination matching the provided destination specifier:"])
+
     def test_a_path_outside_the_repository_stays_whole(self):
         log = "/Users/runner/Library/Foo.swift:2:3: error: bad\n"
         self.assertEqual(ios.parse_errors(log, RUNNER_ROOT), ["/Users/runner/Library/Foo.swift:2:3: error: bad"])

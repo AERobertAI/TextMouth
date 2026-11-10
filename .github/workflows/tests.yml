@@ -236,9 +236,18 @@ jobs:
         if: ${{ needs.plan.outputs.cold != 'true' }}
         run: python3 -I -B Scripts/agents/restore_mtimes.py build/remote-cache-ios/manifest.json
 
-      # The iOS platforms and simulator runtimes the image holds, for the log: the build needs the Simulator SDK.
-      - name: List the iOS SDKs
-        run: xcodebuild -showsdks | grep -i "ios" || true
+      # Xcode 26 keeps the iOS platform (the Simulator SDK's contents and runtime) apart from the app: the runner image's
+      # Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed. Please download and install the platform"
+      # (run 42856695469), so it is downloaded here, as `xcodebuild -downloadPlatform iOS` does on a Mac. A failed
+      # download does not stop the job: the build that follows says what is missing, in the result the Mac reads.
+      - name: Download the iOS platform
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          df -h / | tail -1
+          xcodebuild -downloadPlatform iOS
+          xcodebuild -showsdks | grep -i "ios" || true
+          df -h / | tail -1
 
       - name: Build the iPhone app and its UI tests
         run: python3 -I -B Scripts/agents/run-ios-build.py --out build/remote-ios

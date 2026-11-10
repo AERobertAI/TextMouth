@@ -42,7 +42,7 @@ DESTINATION = "generic/platform=iOS Simulator"
 # A compiler or linker diagnostic with a file: "<path>:<line>:<column>: error: <message>".
 LOCATED_ERROR = re.compile(r"^(?P<path>/[^:\n]+?):(?P<line>\d+):(?P<column>\d+): error: (?P<message>.*)$")
 # An error that names no file ("error: ...", "ld: ...", "clang: error: ..."), such as a missing SDK or a link failure.
-UNLOCATED_ERROR = re.compile(r"^(?:error: |ld: |clang: error: |fatal error: )(?P<message>.*)$")
+UNLOCATED_ERROR = re.compile(r"^(?:xcodebuild: error: |error: |ld: |clang: error: |fatal error: )(?P<message>.*)$")
 # What xcodebuild prints when the runner image has no iOS Simulator SDK or platform.
 MISSING_PLATFORM = ("iOS 26.0 is not installed", "is not installed. To use with Xcode", "Unable to find a destination",
                     "SDK \"iphonesimulator\" cannot be located")

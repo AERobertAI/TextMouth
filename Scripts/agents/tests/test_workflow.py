@@ -236,7 +236,9 @@ class JobsTests(unittest.TestCase):
         ios = self.job("ios")
         self.assertIn("run-ios-build.py", ios)
         self.assertIn("if: ${{ needs.plan.outputs.ios == 'true' }}", ios.split("runs-on:")[0])
-        self.assertNotIn("xcodebuild", ios.replace("xcodebuild -showsdks", ""), "the build command lives in run-ios-build.py")
+        self.assertNotIn("xcodebuild", ios.replace("xcodebuild -showsdks", "").replace("xcodebuild -downloadPlatform iOS", ""),
+                         "the build command lives in run-ios-build.py")
+        self.assertIn("xcodebuild -downloadPlatform iOS", ios.split("run-ios-build.py")[0], "the platform comes before the build")
 
     def test_the_request_path_is_the_one_the_mac_pushes(self):
         self.assertIn(github_run.REQUEST_PATH, self.code)
