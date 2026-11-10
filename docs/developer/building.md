@@ -14,7 +14,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 Run these from the repository root:
 
-- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 20 MB: without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces. The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)). It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links. The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB. Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths. The full build log is build/xcodebuild-Release.log. It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so. The build products in build/DerivedData stay as Xcode made them.
+- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 23 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces. The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)). It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links. The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB. Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths. The full build log is build/xcodebuild-Release.log. It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so. The build products in build/DerivedData stay as Xcode made them.
 - `make debug` builds the Debug configuration instead.
 - `make run` and `make open` build the app and open it.
 - `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only. `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
@@ -32,6 +32,26 @@ Run these from the repository root:
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
+
+## The Mac app's size
+
+The user's target for the Mac app is 25 MB or less. `make check` fails the app only above its hard limit of 50 MB (see The make check gate, below). This is what a measurement of the Release build showed on November 9, 2026, at commit e0ea3b9d.
+
+- **The totals.**
+  - The Release executable, `TextMouth.app/Contents/MacOS/TextMouth`, is 22.7 MB (22,737,216 bytes), and the whole bundle is about 23 MB.
+  - Both are under the 25 MB target, with about 2 MB to spare.
+  - The braille helper is 186 KB of the bundle.
+- **The largest pieces.**
+  - SwiftSoup is 3.0 MB, 13% of the executable and the largest single piece.
+  - swift-markdown is 0.6 MB.
+  - Of the app's own files, `LibraryView` is the largest at 0.36 MB.
+- **The iPhone's code costs little.**
+  - `TextMouth/Phone/` is compiled into the Mac app too. The linker strips what the Mac never reaches, and 59 KB stays, 0.27% of the executable.
+  - Leaving `Phone/` out would save at most that, and would give up the Mac's tests of it in a Release build. So it is not left out.
+- **How the sizes were found.**
+  - The linker's own map lists every object and its bytes. Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see Building TextMouthiOS for the simulator, below).
+  - Do not set `LD_MAP_FILE_PATH` on the command line. Every target's link shares that one path, and Xcode stops with "Multiple commands produce" the one map file. With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
+  - The measurement used `Scripts/agents/run_locked.py`, since a Release build is heavy work.
 
 ## The iOS app
 
@@ -85,27 +105,21 @@ The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xc
 - **A build.**
   - `build-for-testing` compiles the app and both test bundles without running them. Its command has this shape, run under `run_locked.py`: `xcodebuild build-for-testing -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`.
   - The repository does not record the command line the iPhone team used, so check this shape against `xcodebuild -help` before relying on it.
+- **A test pass and its result bundle.**
+  - A pass of the iPhone team's last round ran `xcodebuild test-without-building` after a `build-for-testing`, with the `TextMouthiOS` scheme, the one build folder, `-parallel-testing-enabled NO`, and `-resultBundlePath` naming a `.xcresult` bundle for the pass. The destination was the iPhone 17 simulator, named by its id.
+  - **Give each pass a new result-bundle name** (`pass4.xcresult`, then `pass5.xcresult`). The round's report says `xcodebuild` wants a new name for each pass, and nobody deletes anything during a run, so an old bundle stays where it is. The exact message of a repeated name was not recorded.
+  - The bundle holds each test's results, the screenshots, and the notes the audits keep (see [Testing TextMouth](testing.md)).
 - **Installing and launching.**
   - The app's bundle identifier is `com.textmouth.TextMouth.iOS`, and the product is TextMouth.app.
   - `xcrun simctl install` puts the built app on the booted device, and `xcrun simctl launch` starts it. `xcrun simctl io booted screenshot FILE` takes a screenshot, and the app's log is the other way to see what it did.
   - Afterward run `xcrun simctl shutdown all`, since the Mac has 8 GB of memory.
 - **The `SIMCTL_CHILD_` launch variables.**
   - `xcrun simctl launch` passes an environment variable to the app when its name starts with `SIMCTL_CHILD_`, and drops that prefix.
-  - The app reads three variables, `TEXTMOUTH_UI_TEST`, `TEXTMOUTH_OPEN_AT_LAUNCH`, and `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, in Debug builds only. The first two are described in PhoneLaunchRequest, and the third in PhoneSheetButton, both in [The two apps and the platform folders](../architecture/platforms.md).
+  - The app reads two variables, `TEXTMOUTH_UI_TEST` and `TEXTMOUTH_OPEN_AT_LAUNCH`, in Debug builds only. Both are described in PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md). A Release build does not hold the type or the variable names, so no environment variable can steer it.
+  - The placement probe's variable, `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, is gone, with the probe test. Setting it now does nothing.
   - `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1` gives the launch a library of its own, in a sandbox. Without it, a run uses the simulator app's real container.
   - `SIMCTL_CHILD_TEXTMOUTH_OPEN_AT_LAUNCH=/absolute/path/to/book.epub` sends the app that file at launch, as another app would. The path must be absolute. The app copies the file and never moves or deletes the original.
   - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
-- **The placement probe.**
-  - `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT=1` makes every sheet button take the system's `.cancellationAction` in place of `.topBarTrailing`, so that a test can read what iOS shows for that placement. It is read in Debug builds only (`#if DEBUG` in `PhoneSheetButtonPlacement`). A Release build ignores it.
-  - Any other value, or none, leaves the buttons where `PhoneSheetButtonPlacement.placement` puts them.
-  - `ToolbarPlacementProbeUITests` sets it through the UI test's `launchEnvironment`, which needs no `SIMCTL_CHILD_` prefix. To set it by hand, use `SIMCTL_CHILD_TEXTMOUTH_PROBE_SYSTEM_PLACEMENT=1 xcrun simctl launch`.
-  - The test opens Book Information from the reader and records, in a note kept with its results and printed in the log on a line starting `TOOLBAR-PROBE`:
-    - each navigation bar's identifier, and each button in it by label, identifier, and frame;
-    - the sheet's whole accessibility order, with each button marked;
-    - each element's type and label;
-    - a screenshot, "Book Information with .cancellationAction".
-  - It judges nothing and fails only when the sheet never opens. It passed on November 8, 2026, and its answer is in PhoneSheetButton's comment: the buttons exist, and they come before the title (see PhoneSheetButton in [The two apps and the platform folders](../architecture/platforms.md)).
-  - Once the answer is read, the test and the variable can be removed together.
 - **Never press Play.** The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio, and nothing types, since the keyboard's clicks are sounds too.
 
 ## Versions

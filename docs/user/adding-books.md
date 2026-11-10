@@ -69,6 +69,11 @@ Part of [TextMouth's documentation](../../README.md).
 - A folder holding neither a DAISY book nor tracks is refused, and the alert says what it holds.
 - A folder you import is never deleted or offered for deletion, whatever Storage settings say about originals, since it holds files that were not copied.
 - Deleting an original also refuses a folder, or a link to one, whatever asked for it: nothing is deleted or sent to the Trash, and the debug log records ORIGINAL_KEPT with the folder's name.
+- A folder that is a link (a symbolic link, such as `ln -s` makes) is read as the folder it points to, since you named it, and is imported as choosing that folder would be.
+  - The book takes the name of the folder the link leads to, not the link's name, and that folder is what the book records as its source.
+  - Links inside the folder are listed but not followed, so a link inside a folder cannot lead the import elsewhere.
+  - A link to nothing is still an error. A link to a file is left as it is.
+  - A link to a folder of DAISY books in folders is refused, as choosing the folder itself is.
 - A folder holding DAISY books in folders inside it is not a book itself and is refused: choose the book folders instead, several at once.
   - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
 
@@ -206,6 +211,12 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password. Save a copy without the password, then import that copy."
 
+### A Word document's title and author
+
+- A Word document's (.docx) title and author come from the document's core properties, its title and its creator.
+- A title that the properties leave empty, or hold only spaces, is not a name: the book takes the file's name, as a document with no properties does.
+- A creator left empty is not a name either: the author is "Unknown", as for a document with no creator at all.
+
 ### XML parts TextMouth can't safely read
 
 - A Word document, an EPUB, a DAISY book, or an SSML file with a part TextMouth can't safely read is refused, naming the part, in one of three sentences.
@@ -216,6 +227,11 @@ Part of [TextMouth's documentation](../../README.md).
     - The container is "this document" for a Word document, "this EPUB book" for an EPUB, or "this DAISY book" for a DAISY book.
     - An SSML file says "This SSML file is damaged or incomplete: it has a tag with too many attributes for TextMouth to read safely."
     - A tag's length is not limited, only its attributes.
+  - A part of the ZIP archive that cannot be unpacked is damaged in the same words (0.4.3), with the reason that its data cannot be read: "The file “word/document.xml” in this document is damaged or incomplete: its compressed data could not be decoded. Get a fresh copy of the document, then import it again."
+    - The reason is "its compressed data could not be decoded" for a compressed part, and "its data could not be read" for a stored one.
+    - A DAISY book says "in this DAISY book" and "Get a fresh copy of the book", and an EPUB says "in this EPUB book", with the same reasons. Before this, a Word or DAISY file with a damaged ZIP part showed the ZIP library's own error.
+    - The ZIP library's own error goes to the debug log, in a line that begins DOCX_ZIP_ERROR, DAISY_ZIP_ERROR, or EPUB_ZIP_ERROR, with the part's name inside the archive and no path on this Mac.
+    - A write that fails while a DAISY file is copied, such as a full disk, is not called damage. It is reported as the error it is.
   - A part that defines entities of its own in its document type declaration (an internal subset, in square brackets) is refused: "TextMouth can't safely read the file “word/document.xml” in this document, because it defines entities of its own. Open the document in the program that made it, save it again, then import it again."
     - An EPUB or DAISY book says "this EPUB book" or "this DAISY book" and "Open the book in the program that made it".
     - An SSML file says "TextMouth can't safely read this SSML file, because it defines entities of its own. Open it in a text editor, take the entity definitions out, save it, then import it again."
@@ -417,6 +433,7 @@ Part of [TextMouth's documentation](../../README.md).
 ## A ZIP holding a DAISY book with audio
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
+- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above). TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion. Before 0.4.3 it could.
 - For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
