@@ -72,7 +72,7 @@ def runner_arguments(request, skips):
 
 
 # The tests that are not run on the runner, one "Class.testName  # reason" per line, beside this script.
-SKIPS_FILE = AGENTS / "runner-skips.txt"
+SKIPS_FILE = AGENTS / "runner-skips.conf"
 
 
 def read_skips(path=SKIPS_FILE):
@@ -243,7 +243,7 @@ def write_results(request, out, output, passed, seconds, left_out=0):
     lines = ["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
              f"- Asked for: {wanted}", f"- Minutes: {seconds / 60:.1f}",
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
-             f"- Left out on the runner: {left_out} tests (Scripts/agents/runner-skips.txt)",
+             f"- Left out on the runner: {left_out} tests (Scripts/agents/runner-skips.conf)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
     if len(failed) > 40:
         lines += [f"  - and {len(failed) - 40} more, in run-summary.txt"]

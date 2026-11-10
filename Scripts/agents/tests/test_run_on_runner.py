@@ -268,6 +268,17 @@ class SkipTests(RunnerTestCase):
                 self.assertIn(f"func {test}(", everything, f"{test} is not a test")
                 self.assertTrue(reason, "every skip says why")
 
+    def test_the_real_skips_file_exists_is_not_empty_and_is_not_ignored_by_version_control(self):
+        # The first sharded run on GitHub left out no test at all because "*.txt" is ignored, so the file
+        # named runner-skips.txt was never committed or pushed.
+        import subprocess
+        root = Path(test_command.AGENTS).parents[1]
+        self.assertTrue(runner.SKIPS_FILE.exists(), "the skips file is missing")
+        self.assertGreater(len(runner.read_skips()), 0)
+        for name in ("class-times.json", "runner-skips.conf"):
+            ignored = subprocess.run(["git", "check-ignore", "-q", str(runner.AGENTS / name)], cwd=root).returncode
+            self.assertEqual(ignored, 1, f"{name} is ignored, so the runner would never have it")
+
     def test_the_summary_says_how_many_tests_were_left_out(self):
         with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)), \
                 mock.patch.object(runner, "read_skips", return_value=[("FooTests", "testBar", "x")]):
