@@ -220,52 +220,22 @@ enum QuitHold {
     /// one after another, each for at most its longest wait, and returns
     /// whether it holds it, for the delegate to answer `.terminateLater`.
     /// `reply` is then called once, with true, as the last of them ends or
-    /// gives up waiting. A one-off hold: the application holds its quits
-    /// with one `Holder`, so a second request while a quit is held does not
-    /// answer twice.
+    /// gives up waiting.
     static func hold(_ works: [Work], reply: @escaping @MainActor (Bool) -> Void) -> Bool {
-        Holder().hold(works, reply: reply)
-    }
-
-    /// The holder of an application's quits: one hold at a time, whatever
-    /// kind of work it waits for. AppKit asks again to quit when the person
-    /// presses Command-Q while a quit is held (`.terminateLater`), and a
-    /// second hold would stop the same work a second time and reply to
-    /// AppKit a second time, which AppKit does not accept. While a hold
-    /// waits, a request to hold again is told it is held, and starts, and
-    /// replies, nothing: the hold under way replies once.
-    @MainActor
-    final class Holder {
-        /// Whether a hold waits for its work to end now.
-        private var isHolding = false
-
-        /// A holder with no hold under way.
-        init() {}
-
-        /// Holds the quit as `QuitHold.hold(_:reply:)` does, unless a hold
-        /// is under way already, which then answers it: this returns true
-        /// and does nothing more.
-        func hold(_ works: [Work], reply: @escaping @MainActor (Bool) -> Void) -> Bool {
-            guard !isHolding else { return true }
-            let running = works.filter { $0.isRunning() }
-            guard !running.isEmpty else { return false }
-            isHolding = true
-            Task {
-                for work in running {
-                    await QuitHold.end(work)
-                }
-                // Free again before the reply, in case the quit that follows
-                // is refused and a later one must hold afresh.
-                isHolding = false
-                reply(true)
+        let running = works.filter { $0.isRunning() }
+        guard !running.isEmpty else { return false }
+        Task {
+            for work in running {
+                await end(work)
             }
-            return true
+            reply(true)
         }
+        return true
     }
 
     /// Returns once `work` has ended or its longest wait has passed,
     /// whichever comes first.
-    fileprivate static func end(_ work: Work) async {
+    private static func end(_ work: Work) async {
         await withCheckedContinuation { (ended: CheckedContinuation<Void, Never>) in
             let resume = RunOnce { ended.resume() }
             Task {

@@ -139,9 +139,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Holds a quit while the failure center reports unsaved changes.
     private let terminationGuard = UnsavedChangesTerminationGuard()
-    /// Holds a quit that waits for work to end, once, however often the
-    /// person asks to quit meanwhile (`QuitHold.Holder`).
-    private let quitHold = QuitHold.Holder()
 
     /// Asks AppKit to quit again, once a library move stopped for a quit
     /// has ended; tests replace it, so nothing quits.
@@ -220,7 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             TextRereads.shared.quitWork(),
             SpeechExportsUnderWay.shared.quitWork(),
         ]
-        if reply == .terminateNow, quitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
+        if reply == .terminateNow, QuitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
             return .terminateLater
         }
         return reply
