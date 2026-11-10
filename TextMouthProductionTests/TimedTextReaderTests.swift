@@ -1079,6 +1079,13 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertTrue(insideAWord.hasSuffix(" abcdefgh"), "cut mid-word: ...\(insideAWord.suffix(12))")
         XCTAssertEqual(insideAWord.count, 9_998)
 
+        // A cut that falls between two words, where the text itself ends a
+        // sentence, keeps all of it: 1,000 words of 9 characters and 999
+        // spaces are 9,999 characters, the 1,001st word being left out.
+        let sentences = try webVTTCue(Array(repeating: "abcdefgh.", count: 1_001).joined(separator: " "))
+        XCTAssertTrue(sentences.isCutShort)
+        XCTAssertEqual(sentences.text.count, 9_999, "the last whole sentence before the limit was cut back with the rest")
+
         let unbroken = try webVTTCue(String(repeating: "x", count: limit * 3)).text
         XCTAssertEqual(unbroken.count, limit)
 

@@ -160,6 +160,9 @@ struct TimedTextCue: Equatable, Sendable {
     /// back to its last space (a sentence's end is still preferred).
     private static func cutBack(_ text: String, endsAtWordEnd: Bool) -> String {
         let characters = Array(text)
+        // Cut between two words, the text may itself end a sentence there:
+        // then nothing goes back at all.
+        if endsAtWordEnd, endsSentence(characters) { return text }
         var lastSpace: Int?
         var index = characters.count - 1
         while index >= characters.count / 2 {
