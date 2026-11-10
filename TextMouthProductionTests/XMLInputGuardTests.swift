@@ -492,6 +492,84 @@ final class XMLInputGuardTests: XCTestCase {
 
     // MARK: - Cancel
 
+    /// `count` empty start tags, as the text of a part.
+    private func tags(_ count: Int) -> Data {
+        Data(String(repeating: "<a/>", count: count).utf8)
+    }
+
+    /// The walk asks whether to stop every 4,096 start tags, ends where an answer of true finds it, and
+    /// walks the whole part when the answer is false or nobody asks.
+    func testTheWalkOfStartTagsAsksWhetherToStopAndEndsWhenToldTo() {
+        let part = tags(10_000)
+        func walked(_ cancelled: (() -> Bool)?) -> (begun: Int, asked: Int) {
+            var begun = 0
+            var asked = 0
+            part.withUnsafeBytes { raw in
+                XMLInputGuard.walkStartTags(
+                    in: XMLInputGuard.CodeUnits(raw.bindMemory(to: UInt8.self)),
+                    begin: { _ in begun += 1 },
+                    attribute: { _, _ in .proceed },
+                    cancelled: cancelled.map { ask in { asked += 1; return ask() } })
+            }
+            return (begun, asked)
+        }
+        XCTAssertEqual(walked(nil).begun, 10_000)
+        XCTAssertEqual(walked({ false }).begun, 10_000)
+        XCTAssertEqual(walked({ false }).asked, 2, "10,000 tags are asked after the 4,096th and the 8,192nd")
+        let stopped = walked({ true })
+        XCTAssertEqual(stopped.asked, 1)
+        XCTAssertEqual(stopped.begun, 4_095, "the walk ends at the 4,096th tag, before it begins it")
+    }
+
+    /// A part that is not asked to stop on cancel is scanned to its end whatever the import is doing, and one
+    /// that is, still finds a tag of too many attributes before the cancel.
+    func testTheGuardStopsOnCancelOnlyWhenAskedTo() {
+        let hostile = Data("<r><p \(attributes(1_025))/></r>".utf8)
+        let cancelled = ImportCancellation()
+        cancelled.cancel()
+        ImportCancellation.$current.withValue(cancelled) {
+            XCTAssertEqual(XMLInputGuard.problem(with: hostile, stoppingWhenCancelled: true), .tooManyAttributes,
+                           "a scan that finds the damage before it reaches a check still reports it")
+            XCTAssertEqual(XMLInputGuard.problem(with: hostile), .tooManyAttributes)
+        }
+        // Outside an import, or in one that is not cancelled, asking to stop on cancel changes nothing.
+        XCTAssertEqual(XMLInputGuard.problem(with: hostile, stoppingWhenCancelled: true), .tooManyAttributes)
+        ImportCancellation.$current.withValue(ImportCancellation()) {
+            XCTAssertEqual(XMLInputGuard.problem(with: hostile, stoppingWhenCancelled: true), .tooManyAttributes)
+        }
+    }
+
+    /// The scan of a large part ends soon after Cancel instead of at the part's end, and a reader that hands
+    /// the part to the parser only after it throws `ImportCancelled`. Measured against the same scan
+    /// uncancelled on the same machine, which is a measure that slower machines keep: Cancel is heard in a
+    /// small part of the time the scan takes, on this Mac or on a GitHub runner.
+    func testACancelledImportEndsTheGuardsScanAtOnceAndNoParserSeesThePart() throws {
+        let part = tags(400_000)
+        let started = Date()
+        XCTAssertNil(XMLInputGuard.problem(with: part, stoppingWhenCancelled: true))
+        let wholeScan = Date().timeIntervalSince(started)
+
+        let cancelled = ImportCancellation()
+        cancelled.cancel()
+        try ImportCancellation.$current.withValue(cancelled) {
+            let cancelledAt = Date()
+            XCTAssertNil(XMLInputGuard.problem(with: part, stoppingWhenCancelled: true), "a cut-short scan finds nothing")
+            XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), wholeScan / 4,
+                              "the scan went on after Cancel; the whole of it takes \(wholeScan) seconds")
+            // The reader's next step, before any parser: it throws, as the flag stays set.
+            XCTAssertThrowsError(try ImportCancellation.throwIfCancelled()) { error in
+                XCTAssertEqual(error as? ImportCancelled, ImportCancelled())
+            }
+            // And the whole of a reader built on PackageSAXParser ends the same way, without reading an element.
+            let reader = ODTMetadataReader(data: part, file: "meta.xml")
+            let readAt = Date()
+            XCTAssertThrowsError(try reader.read()) { error in
+                XCTAssertEqual(error as? ImportCancelled, ImportCancelled())
+            }
+            XCTAssertLessThan(Date().timeIntervalSince(readAt), wholeScan / 4)
+        }
+    }
+
     /// A DTBook conversion hears Cancel: cancelled before it begins, a
     /// document of thousands of elements ends with `ImportCancelled` (the check
     /// is every 256 parser events), and one that is not cancelled finishes.
