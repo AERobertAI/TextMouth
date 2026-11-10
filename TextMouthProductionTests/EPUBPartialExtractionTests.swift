@@ -43,6 +43,28 @@ final class EPUBPartialExtractionTests: XCTestCase {
         }
     }
 
+    /// The ZIP library's own error for a member that cannot be decoded is
+    /// kept in the debug log as one EPUB_ZIP_ERROR line naming the member,
+    /// while the listener hears the damage sentence alone.
+    func testAMemberThatCannotBeDecompressedLogsTheArchivesOwnError() async throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let epub = try makeEPUB(chapters: Self.threeChapters, compression: .deflate)
+        try damageData(of: "OEBPS/content.opf", in: epub)
+
+        var thrown: Error?
+        let lines = try await debugLogLines {
+            do { _ = try EPUBParser.parse(url: epub) } catch { thrown = error }
+        }
+
+        XCTAssertNotNil(thrown, "the damaged package document was read")
+        XCTAssertFalse(
+            (thrown?.localizedDescription ?? "").contains("ZIPFoundation"),
+            "the raw error reached the listener: \(String(describing: thrown))"
+        )
+        let logged = lines.filter { $0.contains("EPUB_ZIP_ERROR: OEBPS/content.opf: ") }
+        XCTAssertFalse(logged.isEmpty, "no EPUB_ZIP_ERROR line for the member in \(lines)")
+    }
+
     /// Checksums are compared for real books, not only for fixtures: every
     /// file in the bundled EPUB, stored or compressed, passes.
     func testBundledEPUBPassesEveryChecksum() throws {

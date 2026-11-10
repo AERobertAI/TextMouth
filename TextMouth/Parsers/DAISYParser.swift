@@ -198,8 +198,9 @@ class ArchiveFileProvider: DAISYFileProvider {
     }
 
     /// A failure to write a file out while it is copied, which `withinBounds`
-    /// passes on as it was: the error itself, not ZIP damage.
-    private struct WriteFailure: Error {
+    /// passes on as it was: the error itself, not ZIP damage. Internal so that
+    /// a test can throw one, since a full disk cannot be made in a test.
+    struct WriteFailure: Error {
         /// The error the write threw.
         let underlying: Error
     }
@@ -209,7 +210,7 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// keeping that on the budget. ZIPFoundation's own error for the second
     /// is logged as `DAISY_ZIP_ERROR`, not shown. A failed write
     /// (`WriteFailure`) is the error it was.
-    private func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
+    func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
         let reason: String
         do {
             return try body()

@@ -329,6 +329,73 @@ final class DAISYMalformedXMLTests: XCTestCase {
         XCTAssertEqual(try provider.readFile(at: "ncc.html"), Data(Self.ncc.utf8), "a file beside it")
     }
 
+    /// What `withinBounds` makes of each thing that can go wrong while a file
+    /// is read or copied: a failed write (a full disk) is the error it was and
+    /// never called damage in the book; an error of ZIPFoundation's is the
+    /// damage sentence, with the raw error logged as DAISY_ZIP_ERROR; and a
+    /// file past its limit is damage too.
+    func testAFailedWriteIsNotCalledDamageButAnArchiveErrorIs() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let zip = try makeTemporaryZip(
+            prefix: "TextMouthDAISYTest",
+            entries: Self.daisy202Package().mapValues { Data($0.utf8) },
+            compressionMethod: .deflate
+        )
+        defer { try? FileManager.default.removeItem(at: zip) }
+        let archive = try Archive(url: zip, accessMode: .read)
+        let provider = ArchiveFileProvider(archive: archive)
+        let entry = try XCTUnwrap(archive["text.html"], "the fixture has no text.html")
+
+        // A write that fails: the error comes out as it went in.
+        XCTAssertThrowsError(
+            try provider.withinBounds(of: entry, { () throws -> Void in
+                throw ArchiveFileProvider.WriteFailure(underlying: CocoaError(.fileWriteOutOfSpace))
+            })
+        ) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace, "a full disk was called \(error)")
+            XCTAssertFalse(error is DAISYParserError, "a full disk was called damage in the book: \(error)")
+        }
+
+        // An error of the archive's own: damage, named, with the raw error logged.
+        var thrown: Error?
+        let marker = "text.html"
+        let lines = debugLogLinesWritten {
+            do {
+                try provider.withinBounds(of: entry, { () throws -> Void in throw Archive.ArchiveError.invalidCRC32 })
+            } catch { thrown = error }
+        }
+        XCTAssertEqual(
+            thrown?.localizedDescription,
+            "The file “\(marker)” in this DAISY book is damaged or incomplete: its compressed data could not be decoded. "
+                + "Get a fresh copy of the book, then import it again."
+        )
+        XCTAssertEqual(
+            lines.filter { $0.contains("DAISY_ZIP_ERROR: \(marker): invalidCRC32") }.count, 1,
+            "ZIPFoundation's own error is logged once: \(lines)"
+        )
+
+        // A file past its limit: damage, with its own reason, nothing logged as a ZIP error.
+        let overflow = ArchiveEntryOverflow.pastLimit(path: marker, limit: 10)
+        XCTAssertThrowsError(try provider.withinBounds(of: entry, { () throws -> Void in throw overflow })) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                DAISYParserError.malformedXML(file: marker, reason: overflow.reason).localizedDescription
+            )
+        }
+    }
+
+    /// The debug-log lines written while `body` runs.
+    private func debugLogLinesWritten(during body: () -> Void) -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
+    }
+
     // MARK: - Text Beyond the Audio
 
     /// An archive's SMIL file that the XML guard refuses (1,025 attributes on

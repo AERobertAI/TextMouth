@@ -349,53 +349,90 @@ final class TextFileDecoderTests: XCTestCase {
         XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows were taken for unmarked Unicode")
     }
 
-    /// TestData's text samples (plain text, Markdown, HTML, XML, and the
-    /// subtitle, playlist, and braille formats) are never taken for unmarked
-    /// Unicode, whole, nor in any of many windows of them: every prefix and
-    /// suffix of a small file, and 400 windows of a large one such as
-    /// pride.txt, from a fixed seed. Files with a NUL byte are not 8-bit
-    /// text and are left out; the count of those swept is asserted so that
-    /// a moved folder cannot empty the sweep.
-    func testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode() throws {
+    /// A fixed sequence of numbers, so a failure of a sweep can be repeated.
+    private struct SeededNumbers {
+        private var state: UInt64 = 0x9E37_79B9_7F4A_7C15
+
+        /// The next number below `limit`.
+        mutating func next(below limit: Int) -> Int {
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return Int(state >> 33) % limit
+        }
+    }
+
+    /// The file extensions of TestData's text samples: plain text, Markdown,
+    /// HTML, XML, and the subtitle, playlist, and braille formats.
+    private static let textSampleExtensions: Set<String> = [
+        "txt", "md", "markdown", "html", "htm", "xhtml", "xml", "csv", "tsv", "srt", "vtt", "lrc", "m3u", "m3u8", "cue",
+        "json", "xspf", "pls", "ttml", "opml", "ssml", "fb2", "dtbook", "brf", "brl", "pef", "eml", "mbox", "edl",
+        "smil", "opf", "ncx",
+    ]
+
+    /// TestData's text samples that hold no NUL byte (a file with one is not
+    /// 8-bit text), by file name, with their bytes.
+    private func testDataTextSamples() throws -> [(name: String, data: Data)] {
         let testData = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("TestData", isDirectory: true)
-        let textExtensions: Set<String> = [
-            "txt", "md", "markdown", "html", "htm", "xhtml", "xml", "csv", "tsv", "srt", "vtt", "lrc", "m3u", "m3u8", "cue",
-            "json", "xspf", "pls", "ttml", "opml", "ssml", "fb2", "dtbook", "brf", "brl", "pef", "eml", "mbox", "edl",
-            "smil", "opf", "ncx",
-        ]
         let enumerator = try XCTUnwrap(
             FileManager.default.enumerator(at: testData, includingPropertiesForKeys: [.isRegularFileKey]),
             "TestData cannot be listed at \(testData.path)"
         )
-        var generator: UInt64 = 0x9E37_79B9_7F4A_7C15
-        /// The next number of a fixed sequence, so a failure can be repeated.
-        func next(below limit: Int) -> Int {
-            generator = generator &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-            return Int(generator >> 33) % limit
-        }
-        var failures: [String] = []
-        var files = 0
-        var windows = 0
-        for case let url as URL in enumerator where textExtensions.contains(url.pathExtension.lowercased()) {
+        var samples: [(name: String, data: Data)] = []
+        for case let url as URL in enumerator where Self.textSampleExtensions.contains(url.pathExtension.lowercased()) {
             let data = try Data(contentsOf: url)
-            guard !data.contains(0) else { continue }
-            files += 1
-            let name = url.lastPathComponent
-            var ranges: [Range<Int>] = [0..<data.count]
-            if data.count <= 2_048 {
-                // Every prefix and every suffix of a small file.
-                for end in 16..<max(16, data.count) { ranges.append(0..<end) }
-                for start in 1..<max(1, data.count - 16) { ranges.append(start..<data.count) }
-            } else {
-                for _ in 0..<400 {
-                    let length: Int = min(16 + next(below: 4_081), data.count - 1)
-                    let start: Int = next(below: data.count - length)
-                    ranges.append(start..<(start + length))
-                }
+            if !data.contains(0) { samples.append((url.lastPathComponent, data)) }
+        }
+        return samples
+    }
+
+    /// The windows of `data` a sweep reads: the whole file; for a small file
+    /// every prefix and every suffix of at least 16 bytes; for a large one,
+    /// such as pride.txt, 400 windows of 16 to 4,096 bytes.
+    private func sweepWindows(of data: Data, _ numbers: inout SeededNumbers) -> [Range<Int>] {
+        var ranges: [Range<Int>] = [0..<data.count]
+        if data.count <= 2_048 {
+            for end in 16..<max(16, data.count) { ranges.append(0..<end) }
+            for start in 1..<max(1, data.count - 16) { ranges.append(start..<data.count) }
+        } else {
+            for _ in 0..<400 {
+                let length: Int = min(16 + numbers.next(below: 4_081), data.count - 1)
+                let start: Int = numbers.next(below: data.count - length)
+                ranges.append(start..<(start + length))
             }
-            for range in ranges where range.count >= 16 {
+        }
+        return ranges.filter { $0.count >= 16 }
+    }
+
+    /// `data` with `count` NUL bytes put in it at seeded places, as a stray
+    /// few are in a file that is not Unicode text.
+    private func insertingNULs(_ count: Int, into data: Data, _ numbers: inout SeededNumbers) -> Data {
+        var places: [Int] = []
+        for _ in 0..<count { places.append(numbers.next(below: data.count + 1)) }
+        var result = Data()
+        var copied = 0
+        for place in places.sorted() {
+            result.append(data[copied..<place])
+            result.append(0)
+            copied = place
+        }
+        result.append(data[copied...])
+        return result
+    }
+
+    /// TestData's text samples are never taken for unmarked Unicode, whole,
+    /// nor in any of many windows of them (`sweepWindows(of:_:)`). Files with
+    /// a NUL byte are left out, and the count of those swept is asserted so
+    /// that a moved folder cannot empty the sweep. (Without a NUL byte only
+    /// rule 3 could fire, which needs bytes no text holds; the sweep with NULs
+    /// below is the one that can fail.)
+    func testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode() throws {
+        var numbers = SeededNumbers()
+        var failures: [String] = []
+        var windows = 0
+        let samples = try testDataTextSamples()
+        for (name, data) in samples {
+            for range in sweepWindows(of: data, &numbers) {
                 windows += 1
                 if let read = TextFileDecoder.unmarkedUnicode(in: Data(data[range])) {
                     failures.append("\(name) bytes \(range): read as \(TextFileDecoder.name(of: read.encoding)) \(read.text.prefix(16).debugDescription)")
@@ -406,8 +443,143 @@ final class TextFileDecoderTests: XCTestCase {
                 failures.append("\(name) decoded as unmarked Unicode")
             }
         }
-        XCTAssertGreaterThan(files, 20, "TestData holds too few text samples to prove anything (\(files))")
-        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows of \(files) files were taken for unmarked Unicode")
+        XCTAssertGreaterThan(samples.count, 20, "TestData holds too few text samples to prove anything (\(samples.count))")
+        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows of \(samples.count) files were taken for unmarked Unicode")
+    }
+
+    /// The same sweep with one to four NUL bytes put in each window at seeded
+    /// places, as the review of the first version asked: a few stray NULs in
+    /// 8-bit text, in a file that is not Unicode, must not make it Unicode
+    /// text. This is the sweep that can fail: rules 2 and 4 need zero bytes.
+    func testTheTextSamplesInTestDataWithStrayNULsAreNeverTakenForUnmarkedUnicode() throws {
+        var numbers = SeededNumbers()
+        var failures: [String] = []
+        var windows = 0
+        let samples = try testDataTextSamples()
+        for (name, data) in samples {
+            for range in sweepWindows(of: data, &numbers) {
+                let count = 1 + numbers.next(below: 4)
+                let window = insertingNULs(count, into: Data(data[range]), &numbers)
+                windows += 1
+                if let read = TextFileDecoder.unmarkedUnicode(in: window) {
+                    failures.append("\(name) bytes \(range) with \(count) NULs: read as \(TextFileDecoder.name(of: read.encoding)) \(read.text.prefix(16).debugDescription)")
+                }
+            }
+        }
+        XCTAssertGreaterThan(samples.count, 20, "TestData holds too few text samples to prove anything (\(samples.count))")
+        XCTAssertGreaterThan(windows, 5_000, "the sweep covered too little to prove anything")
+        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(windows) windows with NULs were taken for unmarked Unicode")
+    }
+
+    /// Valid UTF-8 and 8-bit text in every script, with one to four stray
+    /// NUL bytes put in at seeded places, is not taken for UTF-16: the review
+    /// found that two NULs made Russian, Greek, and Hebrew read as Hangul and
+    /// Han in a third of the places they could stand. The decoder as a whole
+    /// reads UTF-8 text with its NULs, as it always did.
+    func testStrayNULsDoNotTurnTextIntoUnmarkedUnicode() throws {
+        let encodings: [(script: String, names: [String])] = [
+            ("Russian", ["utf-8", "windows-1251"]),
+            ("Greek", ["utf-8", "windows-1253"]),
+            ("Hebrew", ["utf-8", "windows-1255"]),
+            ("Arabic", ["utf-8", "windows-1256"]),
+            ("Japanese", ["utf-8", "shift_jis", "euc-jp"]),
+            ("Chinese", ["utf-8", "gbk", "gb18030"]),
+            ("Korean", ["utf-8", "euc-kr"]),
+            ("Latin", ["utf-8", "windows-1252"]),
+        ]
+        var numbers = SeededNumbers()
+        var failures: [String] = []
+        var placements = 0
+        for (script, names) in encodings {
+            let text = String(repeating: Self.unmarkedSamples.first { $0.script == script }?.text ?? "", count: 3)
+            for name in names {
+                guard let encoding = TextEncodingFixtures.encoding(named: name),
+                      let data = TextEncodingFixtures.writable(text, in: encoding).data(using: encoding) else { continue }
+                for _ in 0..<150 {
+                    let count = 1 + numbers.next(below: 4)
+                    let damaged = insertingNULs(count, into: data, &numbers)
+                    placements += 1
+                    if let read = TextFileDecoder.unmarkedUnicode(in: damaged) {
+                        failures.append("\(script) in \(name) with \(count) NULs: read as \(TextFileDecoder.name(of: read.encoding)) \(read.text.prefix(16).debugDescription)")
+                    }
+                }
+            }
+        }
+        XCTAssertGreaterThan(placements, 2_000, "the sweep covered too little to prove anything")
+        XCTAssertEqual(Array(failures.prefix(20)), [], "\(failures.count) of \(placements) placements read as Unicode")
+
+        // The review's case, whole: two NULs in Russian UTF-8 read as UTF-8, NULs kept.
+        let russian = try XCTUnwrap(Self.unmarkedSamples.first { $0.script == "Russian" }?.text)
+        for (first, second) in [(7, 31), (0, 2), (50, 51), (3, 100)] {
+            // NULs go between characters, so the UTF-8 stays valid.
+            var scalars = Array(russian.unicodeScalars)
+            scalars.insert("\u{0}", at: second)
+            scalars.insert("\u{0}", at: first)
+            var view = String.UnicodeScalarView()
+            view.append(contentsOf: scalars)
+            let decoded = try decode(Array(String(view).utf8))
+            XCTAssertEqual(decoded.basis, .validUTF8, "NULs at \(first) and \(second)")
+            XCTAssertEqual(decoded.text.replacingOccurrences(of: "\u{0}", with: ""), russian, "NULs at \(first) and \(second)")
+        }
+    }
+
+    /// A book that recorded its encoding keeps it against bytes that pass the
+    /// new rules, as it did before they were added: only rule 1 is asked
+    /// under `.recorded`. The same bytes under the fallback are Unicode, and
+    /// a reader of the old evidence (`Evidence.legacy`) asks rule 1 alone
+    /// too, and reads no ISO-2022-JP declaration.
+    func testARecordedEncodingAndTheLegacyEvidenceAskOnlyTheOldRule() throws {
+        // No « or »: with bytes of 0x80 or more the UTF-16 would not be valid UTF-8.
+        let russian = "Привет, мир! Это проверка текста.\n"
+        let bytes = UnmarkedForm.utf16LittleEndian.bytes(of: russian)
+        XCTAssertNotNil(TextFileDecoder.unmarkedUnicode(in: Data(bytes)), "the fixture is not unmarked Unicode")
+        XCTAssertNotNil(String(data: Data(bytes), encoding: .utf8), "the fixture is not valid UTF-8")
+        XCTAssertNil(TextFileDecoder.unmarkedUnicode(in: Data(bytes), latinOnly: true))
+
+        XCTAssertEqual(try decode(bytes, policy: .fallback).basis, .unmarkedUnicode, "the fallback policy")
+        XCTAssertEqual(try decode(bytes, policy: .guess).basis, .unmarkedUnicode, "the guessing policy")
+        let recorded = try decode(bytes, policy: .recorded("windows-1251"))
+        XCTAssertEqual(recorded.basis, .validUTF8, "a recorded encoding was overruled by a new rule: \(recorded)")
+        XCTAssertEqual(recorded.encoding, .utf8)
+        let legacy = try TextFileDecoder.decode(Data(bytes), fileName: "Fixture.txt", format: .txt, evidence: .legacy)
+        XCTAssertEqual(legacy.basis, .validUTF8, "legacy evidence read unmarked Unicode: \(legacy)")
+
+        // The Latin rule, the old one, still reads under both.
+        let latin = UnmarkedForm.utf16LittleEndian.bytes(of: "Café au lait, naïve “quoted” text.\n")
+        XCTAssertEqual(try decode(latin, policy: .recorded("windows-1251")).basis, .unmarkedUnicode)
+        XCTAssertEqual(
+            try TextFileDecoder.decode(Data(latin), fileName: "Fixture.txt", format: .txt, evidence: .legacy).basis,
+            .unmarkedUnicode
+        )
+
+        // An HTML file's declaration of ISO-2022-JP is read by the full evidence alone.
+        let japanese = "いろはにほへと ちりぬるを。\n"
+        let page = Data(Self.html(head: "<meta charset=\"iso-2022-jp\">", body: Array(try XCTUnwrap(japanese.data(using: .iso2022JP)))))
+        let full = try TextFileDecoder.decode(page, fileName: "Fixture.html", format: .html)
+        XCTAssertEqual(full.encoding, .iso2022JP, "the full evidence did not read the declaration")
+        let old = try TextFileDecoder.decode(page, fileName: "Fixture.html", format: .html, evidence: .legacy)
+        XCTAssertEqual(old.basis, .validUTF8, "legacy evidence read the declaration: \(old)")
+    }
+
+    /// A UTF-16 file of single characters, one to a line (a column of kanji,
+    /// or of Cyrillic capitals), has a zero byte at every fourth position, as
+    /// UTF-32 does; read as UTF-32 it reaches planes no text does, and the
+    /// UTF-16 rules read it instead, in both byte orders.
+    func testAUTF16ColumnOfSingleCharactersIsNotTakenForUTF32() throws {
+        let columns: [(name: String, text: String)] = [
+            ("kanji", "一二三四五六七八九十百千万".map { "\($0)\n" }.joined()),
+            ("Cyrillic capitals", "АБВГДЕЖЗИКЛМНОП".map { "\($0)\n" }.joined()),
+        ]
+        var failures: [String] = []
+        for (name, text) in columns {
+            for form in [UnmarkedForm.utf16LittleEndian, .utf16BigEndian] {
+                let decoded = try decode(form.bytes(of: text))
+                if decoded != DecodedText(text: text, encoding: form.encoding, basis: .unmarkedUnicode) {
+                    failures.append("\(name) as \(form): read as \(TextFileDecoder.name(of: decoded.encoding)) \(decoded.text.prefix(12).debugDescription)")
+                }
+            }
+        }
+        XCTAssertEqual(failures, [], "columns not read as UTF-16")
     }
 
     // MARK: - UTF-8
