@@ -741,6 +741,58 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: aside.path))
     }
 
+    /// Starting an edit history over, after its file could not be read, drops
+    /// the chapters set aside for the old history's original: undoing every
+    /// edit of the new history reaches audio that still lacks what the first
+    /// edits cut, which the podcast's chapters do not fit. The episode is one
+    /// chapter after the revert, the chapters are not brought back, and the
+    /// log does not say so.
+    func testStartingTheHistoryOverNeverBringsTheOldChaptersBack() async throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Start Over")
+        let title = uniqueTitle("Canal Survey")
+        let chapters = try PodcastChapters(chapters: [
+            PodcastChapter(startMilliseconds: 0, title: "Locks"),
+            PodcastChapter(startMilliseconds: 4_000, title: "Weirs"),
+            PodcastChapter(startMilliseconds: 8_000, title: "Towpaths"),
+        ]).normalizedJSON()
+        let book = try makeEpisode(in: world, title: title, fileName: "\(title).wav", keeping: chapters) { file in
+            try AudioTestFixtures.writeIdentityRamp(to: file, frames: 80_000, sampleRate: 8_000)
+        }
+        addTeardownBlock {
+            AudioEditScratch.remove(for: book.id)
+            ReadingTextCache.shared.remove(bookID: book.id)
+        }
+        let live = TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)
+        let aside = TextMouthPaths.podcastChaptersSetAsidePath(in: book.tmbDirectory)
+
+        // Edited and saved: the chapters are set aside.
+        let first = try await AudioEditSession.open(bookID: book.id, in: world.library)
+        try await first.perform(.cut(AudioTimeRange(start: 1, end: 2)))
+        let firstSave = try await first.save()
+        XCTAssertTrue(firstSave.rendered)
+        first.close()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: aside.path), "the chapters were not set aside")
+
+        // The history cannot be read; the listener starts it over, edits,
+        // saves, then undoes that edit and saves again.
+        try Data("not json".utf8).write(to: AudioEditPackage.historyURL(in: book.tmbDirectory))
+        let second = try await AudioEditSession.open(bookID: book.id, in: world.library, startingOver: true)
+        defer { second.close() }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: aside.path), "starting over left the old chapters set aside")
+        try await second.perform(.cut(AudioTimeRange(start: 3, end: 4)))
+        let editedSave = try await second.save()
+        XCTAssertTrue(editedSave.rendered)
+        while try await second.undo() != nil {}
+        let revertSave = try await second.save()
+        XCTAssertTrue(revertSave.rendered, "the reverted audio was not saved")
+        LibraryPersistenceService.flushPendingSave()
+
+        let saved = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(try indexedHeadings(of: saved), [title], "the old chapters came back over audio they do not fit")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: live.path))
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_RESTORED: \(title): "), [])
+    }
+
     /// Chapters that could not be set aside after an edit are not laid over the
     /// edited audio all the same: the save's analysis does not read them, so
     /// the episode is one chapter, the log says the file was left, and the
