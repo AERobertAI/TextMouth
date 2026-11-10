@@ -1,0 +1,45 @@
+# Selects the project's Xcode and installs its XcodeGen, for every macOS job of the repository's workflows
+# (tests.yml's test and iPhone jobs, and check.yml's gate), so that the toolchain is pinned in this one file.
+#
+# The toolchain matches the development Mac, and changes only deliberately:
+# - XCODE_VERSION is what `xcodebuild -version` reports there (26.0.1, build 17A400). The macos-26 image
+#   installs it beside a newer default, so the step selects it through DEVELOPER_DIR, which xcode-select(1)
+#   documents as the per-process override of the active developer directory. Every later step's xcodebuild,
+#   xcrun, and swift use it.
+# - XCODEGEN_VERSION is the development Mac's XcodeGen, and XCODEGEN_SHA256 is the digest GitHub publishes for
+#   that release's xcodegen.zip; the download is checked against it before it is unpacked.
+#
+# A local action runs the repository's own code, from the commit being tested, as the workflows' other steps do:
+# it uses no secret and the token of every caller only reads the repository.
+name: Set up Xcode and XcodeGen
+description: Selects Xcode 26.0.1 and installs XcodeGen 2.45.3 (checked against its published digest).
+runs:
+  using: composite
+  steps:
+    - name: Select Xcode
+      shell: bash
+      env:
+        XCODE_VERSION: "26.0.1"
+      run: |
+        developer_dir="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+        if [ ! -d "$developer_dir" ]; then
+          echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner image. Choose a new version deliberately and update XCODE_VERSION in .github/actions/setup-xcode/action.yml."
+          exit 1
+        fi
+        echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+        DEVELOPER_DIR="$developer_dir" xcodebuild -version
+        sw_vers
+
+    - name: Install XcodeGen
+      shell: bash
+      env:
+        XCODEGEN_VERSION: "2.45.3"
+        XCODEGEN_SHA256: 0c90f4d28ca57335f9fa78cf5bf6dabfe20a232036dabe36de2eef79cb7c0878
+      run: |
+        archive="$RUNNER_TEMP/xcodegen.zip"
+        curl --fail --silent --show-error --location --retry 3 --output "$archive" \
+          "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+        echo "${XCODEGEN_SHA256}  ${archive}" | shasum -a 256 --check
+        unzip -q "$archive" -d "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+        "$RUNNER_TEMP/xcodegen/bin/xcodegen" --version

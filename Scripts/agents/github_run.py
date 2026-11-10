@@ -51,6 +51,8 @@ ORIGIN_URLS = ("git@github.com:AERobertAI/TextMouth.git", "ssh://git@github.com/
 # Origin's main, whose workflow files a pushed tree must not change once the workflow is on it.
 MAIN_REF = "origin/main"
 WORKFLOW_FOLDER = ".github/workflows"
+# What a pushed tree may not change either: the repository's own actions, which the workflows run (setup-xcode).
+GUARDED_FOLDERS = (WORKFLOW_FOLDER, ".github/actions")
 WORKFLOW_FILE = ".github/workflows/test-build.yml"
 # The program that talks to GitHub. Tests replace it with a stand-in.
 GH = "gh"
@@ -153,20 +155,21 @@ def check_public_tree(cwd, commit):
 
 
 def workflow_listing(cwd, ref):
-    """The set of `mode type blob<TAB>path` entries under .github/workflows in `ref`'s tree, or None when `ref` is
-    not a commit here."""
+    """The set of `mode type blob<TAB>path` entries under the guarded folders (.github/workflows and .github/actions)
+    in `ref`'s tree, or None when `ref` is not a commit here."""
     if call(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"], cwd=cwd).returncode != 0:
         return None
-    result = call(["git", "ls-tree", "-r", "-z", ref, "--", WORKFLOW_FOLDER], cwd=cwd)
+    result = call(["git", "ls-tree", "-r", "-z", ref, "--", *GUARDED_FOLDERS], cwd=cwd)
     if result.returncode != 0:
         raise RemoteFailure(f"git ls-tree failed: {(result.stderr or result.stdout).strip()[:300]}")
     return set(nul_split(result.stdout))
 
 
 def check_workflows(cwd, commit):
-    """Once this workflow is on origin's main, raises RemoteFailure when `commit`'s .github/workflows differs from
-    main's. GitHub runs the workflow files of the pushed tree, so a merged branch that widened `permissions:` or added a
-    step would run it on the public repository; only a change that is already on main may run. (A change the
+    """Once this workflow is on origin's main, raises RemoteFailure when `commit`'s .github/workflows or .github/actions
+    differ from main's. GitHub runs the workflow files (and the local actions they use) of the pushed tree, so a merged
+    branch that widened `permissions:` or added a step would run it on the public repository; only a change that is
+    already on main may run. (A change the
     orchestrator merged into the local main is refused until origin's main has it: the safe way round.) Before the
     workflow is on main there is nothing to compare with, and the check passes."""
     main = workflow_listing(cwd, MAIN_REF)
@@ -175,8 +178,8 @@ def check_workflows(cwd, commit):
     ours = workflow_listing(cwd, commit)
     if ours != main:
         changed = sorted({entry.split("\t", 1)[1] for entry in ours ^ main})
-        raise RemoteFailure(f"refusing to push {commit[:8]}: its {WORKFLOW_FOLDER} differs from {MAIN_REF}'s in "
-                            f"{', '.join(changed)}; only workflow changes already on main may run")
+        raise RemoteFailure(f"refusing to push {commit[:8]}: its {' and '.join(GUARDED_FOLDERS)} differ from "
+                            f"{MAIN_REF}'s in {', '.join(changed)}; only workflow changes already on main may run")
 
 
 def check_remote(cwd):

@@ -1,0 +1,334 @@
+# The hosted tests on GitHub's macOS runners, and the iPhone app's build: the one way the repository runs its suite there.
+#
+# Two workflows call this one, and neither keeps a copy of any of it:
+#   test-build.yml  for a push to the branch TestBuild, which the orchestrator's build train
+#                   (Scripts/agents/build-train.py --remote) and full suite (Scripts/agents/run_suite.py --remote)
+#                   push with --force: a commit of the tree to test, plus the request file
+#                   .github/test-request.json, which says what to run (areas, test classes, or the full
+#                   suite) and in how many parallel jobs;
+#   check.yml       for the reproducibility gate on main, which gives the request as the input `request-json`
+#                   (the full suite, built from nothing, with strict performance baselines and no Swift warning).
+# Nothing runs for a pull request's fork here, no job holds a secret, and none may do more than read the repository.
+# It uses only GitHub's own actions, pinned to full commit hashes with their release tags alongside, and the
+# repository's own local action .github/actions/setup-xcode.
+#
+# Four jobs:
+#   plan     (Linux, seconds)  reads the request and says how many shards it wants, and whether the iPhone app is built.
+#   test     (macOS, a matrix)  one job per shard: builds the app, with last run's build products restored from the
+#                               cache so only what changed is compiled (a cold request builds from nothing), and runs
+#                               its share of the classes through Scripts/agents/run-on-runner.py, which builds the
+#                               command with Scripts/agents/test_command.py, the one place the train, the full suite,
+#                               and this workflow take it from. The app is signed ad hoc (CODE_SIGNING_ALLOWED=NO,
+#                               as on the Mac), since a runner has no identity.
+#   ios      (macOS)            beside the shards, builds the iPhone app (TextMouthiOS) and its UI-test bundle for
+#                               the iOS Simulator through Scripts/agents/run-ios-build.py: no signing, no test run. Its
+#                               errors are a result for the Mac to show by file; they never fail the tests.
+#   collect  (Linux, seconds)  joins the shards' results, and the iPhone build's, into the one result the Mac downloads
+#                               (artifact test-build-results: the log, the short summary the train reads, the request,
+#                               the iPhone build's summary and errors, and a page for the run's summary), kept a few days.
+name: Tests
+
+on:
+  workflow_call:
+    inputs:
+      request-json:
+        description: "The test request as JSON (Scripts/agents/test_command.py describes it). Empty: the request file of the checked-out commit, .github/test-request.json."
+        type: string
+        required: false
+        default: ""
+
+# The jobs only read the repository.
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: plan the shards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      request: ${{ steps.plan.outputs.request }}
+      ios: ${{ steps.plan.outputs.ios }}
+      cold: ${{ steps.plan.outputs.cold }}
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A push without a request has nothing to run: say so, plainly. The input, when a caller gave one, is the request.
+      # It goes through the environment and not into the script's text, so that no character of it is ever code.
+      - name: Read the request
+        id: plan
+        env:
+          REQUEST_JSON: ${{ inputs.request-json }}
+        run: |
+          if [ -n "$REQUEST_JSON" ]; then
+            printf '%s\n' "$REQUEST_JSON" > .github/test-request.json
+          fi
+          if [ ! -f .github/test-request.json ]; then
+            echo "::error::The commit has no .github/test-request.json and no request was given, so there is nothing to run."
+            exit 1
+          fi
+          cat .github/test-request.json
+          python3 -I -B Scripts/agents/plan_shards.py .github/test-request.json | tee -a "$GITHUB_OUTPUT"
+
+  test:
+    name: test (shard ${{ matrix.shard }} of ${{ needs.plan.outputs.shards }})
+    needs: plan
+    runs-on: macos-26
+    # The longest one job may take. The runner script stops the tests
+    # before this, at 80 minutes, so that the results are written and uploaded.
+    timeout-minutes: 100
+    strategy:
+      # A shard that fails must not cancel the others: the results of all are wanted.
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The request every job reads is the planned one, whether it was pushed or given as an input.
+      - name: Write the request
+        env:
+          REQUEST_JSON: ${{ needs.plan.outputs.request }}
+        run: printf '%s\n' "$REQUEST_JSON" > .github/test-request.json
+
+      # Xcode 26.0.1 and XcodeGen, as the development Mac has them.
+      - name: Set up Xcode and XcodeGen
+        uses: ./.github/actions/setup-xcode
+
+      # The day, UTC, for the cache key below: one cache a day, not one for every push (each was 0.6 to 0.9 GB,
+      # and a night of runs filled 9.8 of the repository's 10 GB, with only the newest ever restored).
+      - name: Name today's cache
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      # Yesterday's (or today's) build products, so this run compiles only what changed. An exact hit is
+      # today's cache; the prefix finds the newest of an earlier day. The manifest beside the products says which
+      # files they were built from; restore_mtimes.py, below, uses it. The Logs folder is left out: it only grows.
+      # A cold request (the reproducibility gate, which must see every warning) uses none of it.
+      - name: Restore the build products
+        id: cache
+        if: ${{ needs.plan.outputs.cold != 'true' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            build/remote-DerivedData
+            !build/remote-DerivedData/Logs
+            build/remote-cache
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+          restore-keys: |
+            build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-
+
+      # The runner image starts macOS's audio service before anyone is logged in, and with that
+      # service as it starts, every test that reads an audio file hangs: the first trial run
+      # (November 9, 2026) found each stuck for its 5-minute limit, with "AudioQueue _Start:
+      # Error -4" in the log, though the runner shows an Apple Virtual Sound Device. A second
+      # trial with a virtual device installed, and a third with only this restart, both ran the
+      # reading-list tests in a minute. So the service is restarted, and the devices are listed
+      # before and after for the log.
+      - name: Restart the audio service
+        run: |
+          system_profiler SPAudioDataType || true
+          sudo killall coreaudiod || true
+          sleep 5
+          system_profiler SPAudioDataType || true
+
+      # As `make generate` does: the project is generated from project.yml, with
+      # the copy-files phases kept in their committed order.
+      - name: Generate the Xcode project
+        run: make generate
+
+      # A fresh checkout gives every file a new time, which would make Xcode compile everything
+      # again. Files unchanged since the cached build get one fixed old time; changed files keep
+      # their new one. With no cache every file gets it, and the build is a complete one.
+      - name: Keep unchanged files looking unchanged
+        if: ${{ needs.plan.outputs.cold != 'true' }}
+        run: python3 -I -B Scripts/agents/restore_mtimes.py build/remote-cache/manifest.json
+
+      - name: Build and run this shard's tests
+        run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.shards }}
+
+      # The build products for tomorrow's runs, saved only when today has none yet (the restore above did not hit
+      # today's key): whether or not the tests passed (a failed test leaves good products), but not for a run that
+      # was cancelled part way. Every shard builds the same products, so the first shard saves them.
+      - name: Save the build products
+        if: ${{ !cancelled() && matrix.shard == 1 && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            build/remote-DerivedData
+            !build/remote-DerivedData/Logs
+            build/remote-cache
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+
+      # What the last job joins: this shard's log, summary, and request.
+      - name: Upload this shard's results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shard-results-${{ matrix.shard }}
+          path: |
+            build/remote/request.json
+            build/remote/run.log
+            build/remote/run-summary.txt
+            build/remote/summary.md
+          if-no-files-found: ignore
+          retention-days: 2
+
+      # The full suite's result bundle is large, so it is kept only to look into a failure.
+      - name: Upload the result bundle of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-build-result-bundle-${{ matrix.shard }}
+          path: build/remote/result.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
+
+  ios:
+    name: build the iPhone app
+    needs: plan
+    # A request that says "ios": false leaves the iPhone build out.
+    if: ${{ needs.plan.outputs.ios == 'true' }}
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Xcode and XcodeGen
+        uses: ./.github/actions/setup-xcode
+
+      - name: Name today's cache
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      # The iPhone app's own build products, kept as the Mac app's are (see the test job), under names of their own.
+      - name: Restore the build products
+        id: cache
+        if: ${{ needs.plan.outputs.cold != 'true' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            build/remote-DerivedData-ios
+            !build/remote-DerivedData-ios/Logs
+            build/remote-cache-ios
+          key: build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+          restore-keys: |
+            build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-
+
+      - name: Generate the Xcode project
+        run: make generate
+
+      - name: Keep unchanged files looking unchanged
+        if: ${{ needs.plan.outputs.cold != 'true' }}
+        run: python3 -I -B Scripts/agents/restore_mtimes.py build/remote-cache-ios/manifest.json
+
+      # The iOS platforms and simulator runtimes the image holds, for the log: the build needs the Simulator SDK.
+      - name: List the iOS SDKs
+        run: xcodebuild -showsdks | grep -i "ios" || true
+
+      - name: Build the iPhone app and its UI tests
+        run: python3 -I -B Scripts/agents/run-ios-build.py --out build/remote-ios
+
+      - name: Save the build products
+        if: ${{ !cancelled() && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            build/remote-DerivedData-ios
+            !build/remote-DerivedData-ios/Logs
+            build/remote-cache-ios
+          key: build-ios-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
+
+      - name: Upload the iPhone build's results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-results
+          path: |
+            build/remote-ios/ios-summary.txt
+            build/remote-ios/ios-errors.txt
+            build/remote-ios/ios.log
+          if-no-files-found: ignore
+          retention-days: 2
+
+  collect:
+    name: join the results
+    needs: [plan, test, ios]
+    # Whether the shards passed, failed, or were stopped; not when there was no plan to follow.
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A shard that never got as far as uploading has no artifact; the join names it.
+      - name: Download the shards' results
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: shard-results-*
+          path: build/shards
+
+      # Without the iPhone build (a request that leaves it out) there is nothing to download, and nothing is joined.
+      - name: Download the iPhone build's results
+        if: ${{ needs.plan.outputs.ios == 'true' }}
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ios-results
+          path: build/ios
+
+      - name: Join the results
+        env:
+          IOS: ${{ needs.plan.outputs.ios }}
+        run: |
+          mkdir -p build/shards build/ios
+          if [ "$IOS" = "true" ]; then
+            python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }} build/ios
+          else
+            python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }}
+          fi
+
+      # The result, as a page on the run, whether the tests passed or not.
+      - name: Show the summary
+        if: always()
+        run: |
+          if [ -f build/remote/summary.md ]; then
+            cat build/remote/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No summary was written; see the log of the step that failed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # What the Mac downloads: the log, the summary build-train.py reads, the request, and the iPhone build's results.
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-build-results
+          path: |
+            build/remote/request.json
+            build/remote/run.log
+            build/remote/run-summary.txt
+            build/remote/summary.md
+            build/remote/ios-summary.txt
+            build/remote/ios-errors.txt
+            build/remote/ios.log
+          if-no-files-found: ignore
+          retention-days: 5

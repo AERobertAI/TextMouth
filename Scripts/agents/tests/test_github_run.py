@@ -165,8 +165,25 @@ class WorkflowGuardTests(RemoteTestCase):
         widened = self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW.replace("read", "write"))
         with self.assertRaises(github_run.RemoteFailure) as caught:
             self.push_of(widened)
-        self.assertIn(".github/workflows differs", str(caught.exception))
+        self.assertIn(".github/workflows and .github/actions differ", str(caught.exception))
         self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_branch_that_changes_a_local_action_the_workflows_run_is_refused(self):
+        # The workflows run .github/actions/setup-xcode, so changing it changes what runs on the public repository.
+        self.main_has_the_workflow()
+        self.commit(".github/actions/setup-xcode/action.yml", "name: a\n")
+        self.git("update-ref", "refs/remotes/origin/main", self.git("rev-parse", "HEAD"))
+        changed = self.commit(".github/actions/setup-xcode/action.yml", "name: b\n")
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_of(changed)
+        self.assertIn(".github/actions/setup-xcode/action.yml", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_branch_that_adds_a_local_action_is_refused(self):
+        self.main_has_the_workflow()
+        added = self.commit(".github/actions/extra/action.yml", "name: x\n")
+        with self.assertRaises(github_run.RemoteFailure):
+            self.push_of(added)
 
     def test_a_branch_that_adds_another_workflow_is_refused(self):
         self.main_has_the_workflow()
