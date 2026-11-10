@@ -226,10 +226,9 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         waitingFor element: String,
         in app: XCUIApplication
     ) throws -> [Element] {
-        let opener = app.buttons[control]
-        XCTAssertTrue(opener.waitForExistence(timeout: Self.patience), "No \(control) control:\n\(app.debugDescription)")
-        opener.tap()
-        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: Self.patience), "The \(control) sheet never opened:\n\(app.debugDescription)")
+        // The tap is repeated if the sheet does not come: a first tap was seen
+        // to do nothing (Bookmarks, pass 5, November 9, 2026).
+        tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")
         XCTAssertTrue(
             app.buttons[element].waitForExistence(timeout: Self.patience),
             "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"

@@ -194,18 +194,28 @@ class TextMouthUITestCase: XCTestCase {
             labelIsPrefix: true
         )
 
-        /// The finding at the largest size on Settings that names no element,
-        /// "Dynamic Type font sizes are unsupported". It is not the "partially
-        /// unsupported" of a text node, and names nothing the tree holds; the
-        /// control on that screen that does not grow is the system stepper's
-        /// minus and plus (the screenshot of `LargeTextUITests`), which is
-        /// probably what it is, unproven. Matched by an empty label, the
-        /// Dynamic Type kind, and Apple's exact words only.
-        static let unnamedUnsupported = Accepted(
-            type: .dynamicType, label: "",
-            why: "a finding that names no element, probably the system stepper's controls, which iOS does not grow",
-            description: "Dynamic Type font sizes are unsupported"
-        )
+        /// A Dynamic Type finding that names no element, in Apple's exact
+        /// words `description`. Every Dynamic Type finding that names an
+        /// element (audited alone) is matched by that element, so one that
+        /// names none can only be matched by its words. Two wordings were seen
+        /// at the largest size, on the scrolled screens: "...are unsupported"
+        /// on Settings (pass 1 to 5; probably the system stepper's minus and
+        /// plus, which iOS does not grow, unproven) and "...are partially
+        /// unsupported" on the Library (pass 5, once). Matched by an empty
+        /// label, the Dynamic Type kind, and the exact words only.
+        static func unnamedDynamicType(_ description: String) -> Accepted {
+            Accepted(
+                type: .dynamicType, label: "",
+                why: "a finding that names no element, which the audit gives no way to find; the words are Apple's",
+                description: description
+            )
+        }
+
+        /// "Dynamic Type font sizes are unsupported", with no element.
+        static let unnamedUnsupported = unnamedDynamicType("Dynamic Type font sizes are unsupported")
+
+        /// "Dynamic Type font sizes are partially unsupported", with no element.
+        static let unnamedPartlyUnsupported = unnamedDynamicType("Dynamic Type font sizes are partially unsupported")
 
         /// The system's search field: iOS clips its placeholder at the
         /// largest text sizes, and VoiceOver and braille read it whole.

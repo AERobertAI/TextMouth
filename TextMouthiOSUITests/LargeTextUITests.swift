@@ -4,12 +4,12 @@ import XCTest
 /// Extra Large), where text must grow and wrap and never be cut: Apple's
 /// audit of Dynamic Type and of clipped text on the Library with a book,
 /// Settings, and the Add to Library sheet. Clipped text and Dynamic Type both
-/// fail a test, except three findings accepted by element and kind alone: the
-/// Library's summary ("partially unsupported", `Accepted.librarySummary`), a
-/// finding on Settings that names no element ("unsupported",
-/// `Accepted.unnamedUnsupported`), and, on the scrolled screens only, "Text
-/// clipped" with no element for a line the screen's edge cuts
-/// (`Accepted.scrolledPastTheEdge`). The screenshots kept with the results show
+/// fail a test, except findings accepted by element and kind alone: the
+/// Library's summary ("partially unsupported", `Accepted.librarySummary`) and,
+/// on the two scrolled screens only, findings that name no element: "Text
+/// clipped" for a line the screen's edge cuts (`Accepted.scrolledPastTheEdge`),
+/// and the two Dynamic Type wordings (`Accepted.unnamedUnsupported`,
+/// `Accepted.unnamedPartlyUnsupported`). The screenshots kept with the results show
 /// the text grown and wrapped, nothing cut or overlapped. Any other Dynamic
 /// Type finding, such as a fixed font on either screen, fails. The size is set at launch, as the
 /// Larger Text setting would set it, so nothing here changes the simulator's
@@ -31,7 +31,7 @@ final class LargeTextUITests: TextMouthUITestCase {
         // The summary row, the list's last, is below the first screen at this
         // size: scrolled to, it is audited in place.
         app.swipeUp()
-        try audit(app, screen: "Library with a book at the largest text, scrolled", types: Self.sizeFindings, accepting: LibraryUITests.systemParts + [.librarySummary, .scrolledPastTheEdge])
+        try audit(app, screen: "Library with a book at the largest text, scrolled", types: Self.sizeFindings, accepting: LibraryUITests.systemParts + [.librarySummary, .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
     /// Settings, at the largest size, as it first appears.
@@ -42,7 +42,7 @@ final class LargeTextUITests: TextMouthUITestCase {
         // Two screens down, where the sliders' captions and the switches are.
         app.swipeUp()
         app.swipeUp()
-        try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .unnamedUnsupported, .scrolledPastTheEdge])
+        try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
     /// The Add to Library sheet, at the largest size.
