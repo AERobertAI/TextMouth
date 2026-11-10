@@ -1,0 +1,139 @@
+# Builds TextMouth and runs the hosted tests a request names, on GitHub's
+# macOS runners instead of the development Mac.
+#
+# It runs only for a push to the branch TestBuild, which the orchestrator's
+# build train (Scripts/agents/build-train.py --remote) and full suite
+# (Scripts/agents/run_suite.py --remote) push with --force: a commit of the
+# tree to test, plus the request file .github/test-request.json, which says what
+# to run (areas, test classes, or the full suite). Nothing runs for a pull
+# request or a fork, so no outsider's code ever runs here, and the job holds no
+# secrets and may only read the repository. It uses only GitHub's own actions,
+# pinned to full commit hashes with their release tags alongside.
+#
+# The tests run through Scripts/agents/run-on-runner.py, which builds the
+# command with Scripts/agents/test_command.py, the one place the train, the
+# full suite, and this workflow take it from. The app is signed ad hoc
+# (CODE_SIGNING_ALLOWED=NO, as on the Mac), since a runner has no identity.
+#
+# It uploads, for a few days: the log, the short summary the train reads, the
+# request as it ran, and a page for the run's summary. The result bundle of a
+# full suite is uploaded only when the run fails.
+#
+# The toolchain matches check.yml (the reproducibility gate): the same Xcode,
+# the same XcodeGen with the same digest, the same pinned actions.
+name: Test build
+
+on:
+  push:
+    branches: [TestBuild]
+
+# The job only reads the repository.
+permissions:
+  contents: read
+
+# One run at a time on TestBuild: a newer push cancels the run before it, whose
+# train then sees it cancelled and keeps its requests for the next train.
+concurrency:
+  group: test-build
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: build and test
+    runs-on: macos-26
+    # The longest the whole job may take. The runner script stops the tests
+    # before this, at 80 minutes, so that the results are written and uploaded.
+    timeout-minutes: 100
+    env:
+      XCODE_VERSION: "26.0.1"
+      XCODEGEN_VERSION: "2.45.3"
+      XCODEGEN_SHA256: 0c90f4d28ca57335f9fa78cf5bf6dabfe20a232036dabe36de2eef79cb7c0878
+
+    steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Every later step's xcodebuild, xcrun, and swift use this Xcode.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          developer_dir="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          if [ ! -d "$developer_dir" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not installed on this runner image."
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$developer_dir" xcodebuild -version
+          sw_vers
+
+      - name: Install XcodeGen ${{ env.XCODEGEN_VERSION }}
+        run: |
+          archive="$RUNNER_TEMP/xcodegen.zip"
+          curl --fail --silent --show-error --location --retry 3 --output "$archive" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+          echo "${XCODEGEN_SHA256}  ${archive}" | shasum -a 256 --check
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" --version
+
+      # The Swift package repositories and checkouts, so a run need not fetch
+      # them again. The key changes whenever a pin or the Xcode version does.
+      - name: Cache Swift packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            build/remote-DerivedData/SourcePackages
+          key: swiftpm-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      # A push without a request has nothing to run: say so, plainly.
+      - name: Read the request
+        run: |
+          if [ ! -f .github/test-request.json ]; then
+            echo "::error::The pushed commit has no .github/test-request.json, so there is nothing to run."
+            exit 1
+          fi
+          cat .github/test-request.json
+
+      # As `make generate` does: the project is generated from project.yml, with
+      # the copy-files phases kept in their committed order.
+      - name: Generate the Xcode project
+        run: make generate
+
+      - name: Build and run the tests
+        run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote
+
+      # The result, as a page on the run, whether the tests passed or not.
+      - name: Show the summary
+        if: always()
+        run: |
+          if [ -f build/remote/summary.md ]; then
+            cat build/remote/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No summary was written; see the log of the step that failed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # What the Mac downloads: the log, the summary build-train.py reads, and the request.
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-build-results
+          path: |
+            build/remote/request.json
+            build/remote/run.log
+            build/remote/run-summary.txt
+            build/remote/summary.md
+          if-no-files-found: ignore
+          retention-days: 5
+
+      # The full suite's result bundle is large, so it is kept only to look into a failure.
+      - name: Upload the result bundle of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-build-result-bundle
+          path: build/remote/result.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
