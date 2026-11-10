@@ -75,6 +75,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
+import runner_skips  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
 
@@ -400,6 +401,12 @@ def watch_for_a_hung_run(log, finished, stopped):
 
 
 NO_TESTS_RAN = "no tests ran: every name asked for was unknown\nFAILED"
+# What a remote train's output says when every class asked for is one the runner does not run.
+NOTHING_RUNS_ON_GITHUB = ("no tests ran: every class asked for is one the GitHub runner does not run "
+                          "(see \"Not run on GitHub\" in each result)\nFAILED")
+# What a result tells an agent after the list of what was not run on GitHub.
+RUN_ON_THE_MAC = ("- The orchestrator can run those on this Mac: a local `build-train.py run` (without --remote) takes the "
+                  "heavy-work lock and builds here.")
 
 
 def choose_tests(merged):
@@ -459,6 +466,24 @@ def selected_classes(areas, classes):
     return list(dict.fromkeys(listed + list(classes)))
 
 
+def mark_what_the_runner_leaves_out(merged):
+    """Gives each merged request a `not_run` list: the entries of the merged tree's runner-skips.conf that cover a class
+    it asked for (its classes, and the classes of its areas), each as "Class (reason)" or "Class.test (reason)". Returns
+    whether every class the train asks for is one the runner skips whole, so that nothing would run at all. A bad
+    skips file raises github_run.RemoteFailure: the runner would refuse it too."""
+    try:
+        skips = runner_skips.read_skips(WORKTREE / "Scripts" / "agents" / "runner-skips.conf")
+    except runner_skips.BadSkipLine as error:
+        raise github_run.RemoteFailure(f"the merged tree's runner-skips.conf is malformed: {error}")
+    whole = {owner for owner, test, _ in skips if test is None}
+    asked = set()
+    for request in merged:
+        classes = selected_classes(request["areas"], request["classes"])
+        request["not_run"] = runner_skips.not_run_by(classes, skips)
+        asked.update(classes)
+    return bool(asked) and asked <= whole
+
+
 def remote_run_tests(merged, train_dir):
     """Runs the union of the merged requests' areas and classes on GitHub Actions;
     returns run-area's output, read from the run's summary, as run_tests does.
@@ -472,6 +497,9 @@ def remote_run_tests(merged, train_dir):
     areas, classes = choose_tests(merged)
     if not areas and not classes:
         return NO_TESTS_RAN
+    if mark_what_the_runner_leaves_out(merged):
+        (train_dir / "run-summary.txt").write_text(NOTHING_RUNS_ON_GITHUB)
+        return NOTHING_RUNS_ON_GITHUB
     # A long request runs as several jobs side by side; the times are those of the merged tree.
     times = shard.load_times(WORKTREE / "Scripts" / "agents" / "class-times.json")
     shards = shard.shard_count(selected_classes(areas, classes), times)
@@ -677,10 +705,15 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
             if len(my_ios) > 30:
                 lines += [f"  - … and {len(my_ios) - 30} more, in {train_dir / 'ios-census.txt'}"]
             ios_note = f"; iOS errors in your files: {len(my_ios)}"
+        not_run = runner_skips.not_run_lines(request.get("not_run", []))
+        if not_run:
+            lines += [*not_run, RUN_ON_THE_MAC]
         lines += [f"- Names left out, unknown to run-area.py on the merged tree: "
                   f"{', '.join(request.get('dropped', [])) or 'none'}",
                   f"- Every failure and error in the train: {train_dir / 'summary.md'}", ""]
         (RESULTS / f"{agent}.md").write_text("\n".join(lines))
+        if request.get("not_run"):
+            ios_note += f"; {len(request['not_run'])} of what you asked for NOT RUN on GitHub (see your result)"
         post(agent, f"train {train_id}: {verdict}; yours: {len(mine)} failures, {len(my_errors)} compile errors"
                     f"{ios_note}; see {short_path(RESULTS / (agent + '.md'))}; {executed}")
     for agent, (request, files) in conflicts.items():

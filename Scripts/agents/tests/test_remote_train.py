@@ -190,6 +190,68 @@ class RemoteTrainRunTests(RemoteTrainCase):
         self.assertEqual(self.pushed_refs(), {})
 
 
+class NotRunOnGitHubTests(RemoteTrainCase):
+    """A remote result names what the runner left out of what an agent asked for (review finding 3)."""
+
+    SKIPS = ("ReaderAudioFailureTests  # it plays audio; it still runs on the development Mac\n"
+             "FooTests.testHangs  # it hangs there; it still runs on the development Mac")
+
+    def branch_with_skips(self, agent, files=None, **more):
+        """A branch whose tree carries a skips file."""
+        return self.branch(agent, {"Scripts/agents/runner-skips.conf": self.SKIPS, **(files or {})}, **more)
+
+    def test_an_agent_is_told_which_of_its_classes_the_runner_skipped_and_why(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests", "FooTests", "BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests", "FooTests", "BarTests"])
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn("- Not run on GitHub, no verdict: ReaderAudioFailureTests (it plays audio; it still runs on the development Mac)", text)
+        self.assertIn("- Not run on GitHub, no verdict: FooTests.testHangs (it hangs there; it still runs on the development Mac)", text)
+        self.assertIn("local `build-train.py run`", text, "the result says how to run them here")
+        self.assertTrue(any("NOT RUN on GitHub" in topic for topic in self.posts_to("alpha")), self.posts)
+        self.assertIn("Verdict of the whole train: PASSED", text, "a PASSED verdict is for what ran, and the lines say what did not")
+
+    def test_an_agent_who_asked_for_nothing_the_runner_skips_hears_nothing_of_it(self):
+        self.branch_with_skips("alpha", classes=["BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["BarTests"])
+        self.run_train()
+        self.assertNotIn("Not run on GitHub", self.result_of("alpha"))
+
+    def test_each_agent_hears_only_about_its_own_request(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests"])
+        self.branch("beta", {"b.txt": "b"}, classes=["BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: list(classes) or ["BarTests"])
+        self.run_train()
+        self.assertIn("Not run on GitHub", self.result_of("alpha"))
+        self.assertNotIn("Not run on GitHub", self.result_of("beta"))
+
+    def test_the_classes_of_an_area_count_as_asked_for(self):
+        self.branch_with_skips("alpha", areas=["stats"], classes=[])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests", "BarTests"])
+        self.run_train()
+        self.assertIn("Not run on GitHub, no verdict: ReaderAudioFailureTests", self.result_of("alpha"))
+
+    def test_a_request_of_only_skipped_classes_pushes_nothing_and_says_why_it_has_no_verdict(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests"])
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests"])
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.pushed_refs(), {}, "with nothing to run there is nothing to push")
+        text = self.result_of("alpha")
+        self.assertIn("Not run on GitHub, no verdict: ReaderAudioFailureTests", text)
+        self.assertIn("the GitHub runner does not run", next(train.TRAINS.iterdir()).joinpath("run-summary.txt").read_text())
+
+    def test_a_malformed_skips_file_in_the_merged_tree_stops_the_train_and_puts_the_requests_back(self):
+        self.branch("alpha", {"Scripts/agents/runner-skips.conf": "ReaderAudioFailureTests,  # a stray comma"})
+        self.patch(train, selected_classes=lambda areas, classes: ["FooTests"])
+        self.assertEqual(self.run_train(), "failed")
+        self.assertEqual(len(self.queued()), 1)
+        self.assertIn("malformed", next(train.TRAINS.iterdir()).joinpath("remote-failure.txt").read_text())
+
+
 class RemoteTrainFailureTests(RemoteTrainCase):
     """A push or run that fails leaves nothing half done: the requests wait for the next train."""
 

@@ -38,6 +38,8 @@ def is_kept(line):
     return line.startswith(("ERROR ", "CRASH"))
 
 
+# The count of entries a shard's summary.md says the runner left out of it.
+LEFT_OUT = re.compile(r"Left out on the runner: (\d+)")
 # One test's result line in an xcodebuild log.
 TEST_CASE = re.compile(r"^Test Case '.*' (passed|failed|skipped) \(", re.M)
 
@@ -75,7 +77,12 @@ def read_shard(folder):
     by_log = case_counts(log)
     if by_log is not None:
         counts = (*by_log, counts[3] if counts else 0.0)
-    return {"summary": summary, "log": log, "passed": passed, "counts": counts}
+    summary_md = folder / "summary.md"
+    left_out = 0
+    if summary_md.exists():
+        found = LEFT_OUT.search(summary_md.read_text(encoding="utf-8", errors="replace"))
+        left_out = int(found.group(1)) if found else 0
+    return {"summary": summary, "log": log, "passed": passed, "counts": counts, "left_out": left_out}
 
 
 def shard_number(folder):
@@ -110,7 +117,7 @@ def merge(shards_dir, out_dir, expected):
             continue
         by_number[number] = read_shard(path)
         folder_of[number] = path
-    tests = skipped = failures = 0
+    tests = skipped = failures = left_out = 0
     seconds = 0.0
     lines, problems, logs = [], [], []
     for number in range(1, expected + 1):
@@ -119,6 +126,7 @@ def merge(shards_dir, out_dir, expected):
             problems.append(f"shard {number} of {expected} reported nothing (its job failed before the tests, or was cancelled)")
             logs.append(f"===== shard {number} of {expected}: no results =====\n")
             continue
+        left_out += shard["left_out"]
         if shard["counts"]:
             tests += shard["counts"][0]
             skipped += shard["counts"][1]
@@ -151,7 +159,8 @@ def merge(shards_dir, out_dir, expected):
     (out_dir / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
     (out_dir / "summary.md").write_text(
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
-                   f"- Shards: {expected}", f"- Failures and errors: {len(lines)}", *[f"  - {l}" for l in lines[:40]],
+                   f"- Shards: {expected}", f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
+                   f"- Failures and errors: {len(lines)}", *[f"  - {l}" for l in lines[:40]],
                    *[f"- Problem: {p}" for p in problems]]) + "\n", encoding="utf-8")
     return passed
 

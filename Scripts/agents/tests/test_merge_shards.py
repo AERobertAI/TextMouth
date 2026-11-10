@@ -143,6 +143,14 @@ class MergeShardsTests(unittest.TestCase):
         _, summary = self.merged(1)
         self.assertIn("shard 1 of 1 did not pass (the run was stopped after 80 minutes)", summary)
 
+    def test_the_count_of_entries_the_runner_left_out_is_kept_in_the_merged_summary(self):
+        for number, left_out in ((1, 3), (2, 5)):
+            self.shard(number, PASSING.format(n=5, s=0, t=1.0))
+            (self.shards / f"shard-results-{number}" / "summary.md").write_text(
+                f"# Test build\n\n- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)\n")
+        self.merged(2)
+        self.assertIn("- Left out on the runner: 8 tests or classes", (self.out / "summary.md").read_text())
+
     def test_the_four_files_are_written_and_the_request_is_one_shards(self):
         self.shard(1, PASSING.format(n=5, s=0, t=1.0))
         self.merged(1)
