@@ -157,6 +157,61 @@ class AreaRunTests(RunnerTestCase):
         self.assertEqual(Path(seen["log"]).resolve(), (self.out / "run.log").resolve())
 
 
+class GateRulesTests(RunnerTestCase):
+    """What the reproducibility gate asks of a run: strict baselines and no Swift warning."""
+
+    WARNING_LOG = (f"{runner.ROOT}/TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated\n"
+                   f"{runner.ROOT}/TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated\n"
+                   "<unknown>:0: warning: argument unused\n"
+                   "ld: warning: the linker's warning is not a Swift warning\n"
+                   "Test Case '-[A b]' passed (0.1 seconds).\n") + LOG_PASSED
+
+    def test_strict_baselines_reach_the_test_host_through_the_environment_xcodebuild_hands_on(self):
+        self.assertEqual(runner.runner_environment({"strict_performance": True})["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"], "1")
+        for request in ({}, {"strict_performance": False}):
+            with self.subTest(request=request):
+                self.assertNotIn("TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT", runner.runner_environment(request))
+
+    def test_the_command_runs_in_that_environment(self):
+        seen = {}
+        real_popen = runner.subprocess.Popen
+
+        def spy(command, **options):
+            seen["env"] = options.get("env")
+            return real_popen(command, **options)
+
+        self.write_request({"areas": ["stats"], "classes": [], "strict_performance": True})
+        with mock.patch.object(runner.subprocess, "Popen", spy), \
+                mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            self.run_main()
+        self.assertEqual(seen["env"]["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"], "1")
+
+    def test_swift_warnings_are_listed_once_with_the_checkouts_root_left_off_and_other_tools_warnings_are_not_swifts(self):
+        self.assertEqual(runner.swift_warnings(self.WARNING_LOG), [
+            "TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated",
+            "<unknown>:0: warning: argument unused"])
+
+    def test_a_request_with_no_warnings_fails_a_passing_run_whose_log_has_one_and_names_the_first(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 1)
+        summary = (self.out / "run-summary.txt").read_text()
+        self.assertIn("FAILED: 2 Swift warnings in the build (the gate allows none), the first 2: "
+                      "TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated", summary)
+
+    def test_a_request_with_no_warnings_passes_a_clean_log(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+
+    def test_without_the_rule_a_warning_is_no_failure(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+
+
 class ProgressTests(RunnerTestCase):
     """The runner says where a long run has got to, since a step's log is empty until it ends."""
 
