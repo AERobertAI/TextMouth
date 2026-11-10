@@ -35,6 +35,7 @@ import github_run  # noqa: E402  (imported by path, after sys.path is set)
 #   "download": the answers to `run download`, the same way: {"files": {name: text}},
 #               or {"fail": true}
 #   "fail":     a command word (such as "list") to answer with an error
+#   "fail_first": {command word: N}: that word's first N calls fail, and the rest are answered as usual
 # and appends each call's arguments to "calls".
 FAKE_GH = r'''#!/usr/bin/env python3
 import json, sys
@@ -62,6 +63,11 @@ def finish(code):
 
 
 word = arguments[1] if len(arguments) > 1 else ""
+first_failures = state.setdefault("fail_first", {})
+if first_failures.get(word, 0) > 0:
+    first_failures[word] -= 1
+    print("error connecting to api.github.com", file=sys.stderr)
+    finish(1)
 if state.get("fail") == word:
     print("gh: simulated failure", file=sys.stderr)
     finish(1)

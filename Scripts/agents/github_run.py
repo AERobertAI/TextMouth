@@ -71,6 +71,9 @@ RUN_APPEARS_SECONDS = 5 * 60
 RUN_LIMIT_MINUTES = 125
 # How often to ask GitHub how the run is going.
 POLL_SECONDS = 30
+# How many times in all a failed `gh` call that asks GitHub about runs is made, and the pause between them.
+GH_ATTEMPTS = 4
+GH_RETRY_SECONDS = 15
 # How long one `gh` or `git` call may take before it counts as failed.
 CALL_SECONDS = 120
 # The clock and the pause, which tests replace so that no test really waits.
@@ -239,8 +242,14 @@ def push(cwd, commit, idle_minutes=IDLE_WAIT_MINUTES, progress=None):
 
 def gh_json(*args):
     """Runs `gh` with `args` and returns its output parsed as JSON; a failure
-    to run, or an answer that is not JSON, is a RemoteFailure."""
-    result = call([GH, *args])
+    to run, or an answer that is not JSON, is a RemoteFailure. A call that fails is tried again up to GH_ATTEMPTS
+    times in all, GH_RETRY_SECONDS apart, since a connection to api.github.com drops now and then (it ended a wait
+    for a pushed run on November 10, 2026, which was going well): only the last failure counts."""
+    for attempt in range(1, GH_ATTEMPTS + 1):
+        result = call([GH, *args])
+        if result.returncode == 0 or attempt == GH_ATTEMPTS:
+            break
+        SLEEP(GH_RETRY_SECONDS)
     if result.returncode != 0:
         raise RemoteFailure(f"gh {args[0]} {args[1]} failed: {(result.stderr or result.stdout).strip()[:300]}")
     try:

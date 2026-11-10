@@ -283,11 +283,24 @@ class FindingTheRunTests(RemoteTestCase):
         self.assertIn("started no run", str(caught.exception))
         self.assertLessEqual(self.now, github_run.RUN_APPEARS_SECONDS + github_run.POLL_SECONDS)
 
-    def test_gh_failing_is_a_remote_failure(self):
+    def test_gh_failing_is_a_remote_failure_after_a_few_tries(self):
         self.gh_state({"fail": "list"})
         with self.assertRaises(github_run.RemoteFailure) as caught:
             github_run.find_run("a" * 40)
         self.assertIn("gh run list failed", str(caught.exception))
+        self.assertEqual(len(self.gh_calls()), github_run.GH_ATTEMPTS, "it should try the whole number of times and no more")
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS] * (github_run.GH_ATTEMPTS - 1))
+
+    def test_a_dropped_connection_is_tried_again_and_the_run_is_found(self):
+        # The wait for a pushed run on November 10, 2026 ended at one "error connecting to api.github.com".
+        self.gh_state({"list": [[STARTED]], "fail_first": {"list": 2}})
+        self.assertEqual(github_run.find_run("a" * 40)["databaseId"], 7001)
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS] * 2)
+
+    def test_a_watch_for_a_run_goes_on_after_a_dropped_connection(self):
+        done = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001"}
+        self.gh_state({"view": [done], "fail_first": {"view": 2}})
+        self.assertEqual(github_run.wait_for_run(STARTED)["conclusion"], "success")
 
     def test_gh_missing_is_a_remote_failure(self):
         self.patch_github(GH=str(self.folder / "no-gh"))
