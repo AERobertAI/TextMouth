@@ -77,6 +77,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A folder holding DAISY books in folders inside it is not a book itself and is refused: choose the book folders instead, several at once.
   - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
 
+## A transcript chosen with its audio
+
+- A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported. It is not imported as a book of its own, and nothing is refused.
+- It works in the Add to Library sheet, with Open Book…, and when you open the files from Finder or drop them on the Dock icon.
+- The file must be the one the audio finds as its transcript: named as the track is, with its extension changed (01.vtt beside 01.mp3), and, when both are beside the audio, the .vtt (see [Transcribing an audiobook](transcribing.md)). A .srt chosen beside an audio file that has a .vtt of its own is not that audio's transcript.
+- A transcript file chosen without its audio, or with audio that does not find it, is refused as a book: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." For a .srt file it says ".srt".
+- If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is left out too, without a message.
+
 ## M3U and M3U8 playlists
 
 - An M3U or M3U8 playlist (.m3u, .m3u8), chosen with Open Book…, imports as one audiobook of the files it lists, as a folder of the same tracks imports.

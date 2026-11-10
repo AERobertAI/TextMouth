@@ -30,6 +30,10 @@ Part of version 0.4.2. A transcript need not be made by recognition. An audioboo
 - A book of several tracks takes one file for the whole book, whose times run on across the tracks.
 - While the file is saved, VoiceOver hears "Attaching “lecture.vtt” to Moby-Dick." When it is done, VoiceOver hears "Attached “lecture.vtt” to Moby-Dick: 7,077 words."
 - If some timed passages of the file could not be read, the sentence goes on, as in "1 timed passage couldn't be read and was left out."
+- A book's whole transcript is one file timed from the start of its audio, so for a long book its times run past 100 hours. Attach reads times up to 1,000 hours, and cuts the file into the book's audio files, each time then counted from its own file's start.
+  - A single audio file can still be timed for only its first 100 hours. A passage that starts after a file's hundredth hour is left out and counted with the passages that could not be read, as in "2 timed passages couldn't be read and were left out." A passage that runs across the hundredth hour ends there.
+  - A file that runs further past the end of the book's audio than a few seconds is still refused.
+- A passage of more than 10,000 characters, some 1,700 words, is cut short, and the sentence goes on to say so, as in "1 timed passage was too long and was cut short." The cut falls at the end of a sentence in the passage's second half if there is one, else between two words. A speaker's name keeps its first 100 characters.
 - The book's text is then the transcript, and the book's row says Transcribed.
 
 ### When a book has a transcript already
@@ -48,7 +52,8 @@ Part of version 0.4.2. A transcript need not be made by recognition. An audioboo
 
 ### While a transcript is being attached
 
-- Transcribe Audio… is dimmed for that book. From any other route, a notice titled Transcribe Audio says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes."
+- Transcribe Audio… is dimmed for that book. From any other route, such as a library row's action or VoiceOver's, Transcribe Audio… waits: a notice titled Transcribe Audio says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes."
+- The notice is for one book. Transcribe Audio… for several books at once is refused by its own sheet, as before, whatever is being attached.
 - Attach Transcript… is dimmed for the book too, so a second file is never attached over the first.
 
 ### A transcript beside the audio at import
@@ -66,6 +71,7 @@ Part of version 0.4.2. A transcript need not be made by recognition. An audioboo
 - Made by recognition: "Transcribed on October 4, 2026, in English (United States)."
 - Attached: "Attached from “lecture.vtt” on October 30, 2026." With several files, or a file whose name isn't known, it says "Attached from a WebVTT file on …" or "Attached from a file on …".
 - Found at import: "Attached from “lecture.vtt” when the book was imported, on October 30, 2026."
+- Found at import in files of more than one format, such as 01.vtt beside the first track and 02.srt beside the second: "Attached from WebVTT and SubRip files when the book was imported, on October 30, 2026." (It used to name only the first file's format.)
 - A podcast's own: "The podcast's own transcript, downloaded with the episode on November 2, 2026."
 - If you edited it or cleaned it up, the line goes on with "You edited it on …" and "You cleaned it up on …".
 - A transcript only in the cloud: "The transcript is only in the cloud. Its details appear once the book is downloaded." Nothing is downloaded to say it.
