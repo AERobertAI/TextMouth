@@ -1153,8 +1153,6 @@ enum FileImportService {
         url.pathExtension.lowercased() == "rtfd" && isFolder(url)
     }
 
-    /// Whether the item at `url` is a folder (a package such as an .rtfd
-    /// included).
     /// `url` as the folder it leads to when it is a symbolic link to a folder,
     /// so that a link is imported as choosing the folder itself is. Any other
     /// item, a link to a file included, is returned as it is. The one place a
@@ -1164,6 +1162,8 @@ enum FileImportService {
         return resolved != url && isFolder(resolved) ? resolved : url
     }
 
+    /// Whether the item at `url` is a folder (a package such as an .rtfd
+    /// included).
     private static func isFolder(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
     }
