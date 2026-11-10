@@ -78,16 +78,38 @@ def read_shard(folder):
     return {"summary": summary, "log": log, "passed": passed, "counts": counts}
 
 
+def shard_number(folder):
+    """The number of the shard whose files are in `folder`: from the folder's name (shard-results-3), or, for
+    files with no such folder, from the request.json inside ("shard": "3 of 4"), else 1."""
+    named = re.search(r"(\d+)$", Path(folder).name)
+    if named and Path(folder).name.startswith("shard-results-"):
+        return int(named.group(1))
+    try:
+        request = json.loads((Path(folder) / "request.json").read_text(encoding="utf-8"))
+        return int(str(request.get("shard", "1")).split()[0])
+    except (OSError, ValueError, IndexError, AttributeError):
+        return 1
+
+
 def merge(shards_dir, out_dir, expected):
-    """Writes the merged four files into `out_dir`; returns True when the whole run passed."""
+    """Writes the merged four files into `out_dir`; returns True when the whole run passed.
+
+    The shards' folders are `shard-results-N` inside `shards_dir`. When only one shard's artifact matched
+    the download, actions/download-artifact puts its files straight into `shards_dir` with no folder of its own
+    (found by the first proof run of a train, which had one shard), so files there are one shard's too."""
     shards_dir, out_dir = Path(shards_dir), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     folders = sorted(path for path in shards_dir.iterdir() if path.is_dir()) if shards_dir.exists() else []
+    if (shards_dir / "run-summary.txt").exists() or (shards_dir / "request.json").exists():
+        folders.append(shards_dir)
     by_number = {}
+    folder_of = {}
     for path in folders:
-        number = re.search(r"(\d+)$", path.name)
-        if number:
-            by_number[int(number.group(1))] = read_shard(path)
+        number = shard_number(path)
+        if path != shards_dir and not path.name.startswith("shard-results-"):
+            continue
+        by_number[number] = read_shard(path)
+        folder_of[number] = path
     tests = skipped = failures = 0
     seconds = 0.0
     lines, problems, logs = [], [], []
@@ -122,7 +144,7 @@ def merge(shards_dir, out_dir, expected):
     (out_dir / "run.log").write_text("".join(logs) + "\n".join(closing) + "\n", encoding="utf-8")
     request = {}
     for number in sorted(by_number):
-        request_path = shards_dir / f"shard-results-{number}" / "request.json"
+        request_path = folder_of[number] / "request.json"
         if request_path.exists():
             request = json.loads(request_path.read_text(encoding="utf-8"))
             break

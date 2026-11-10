@@ -161,6 +161,28 @@ class MergeShardsTests(unittest.TestCase):
         self.assertNotIn("shard 10 of 10 reported nothing", summary)
         self.assertNotIn("shard 2 of 10 reported nothing", summary)
 
+    def test_one_artifact_downloaded_without_a_folder_of_its_own_is_the_only_shard(self):
+        # actions/download-artifact puts a lone matching artifact's files straight into the target folder.
+        self.shards.mkdir(parents=True)
+        (self.shards / "run-summary.txt").write_text(PASSING.format(n=40, s=1, t=2.0))
+        (self.shards / "run.log").write_text(LOG_PASSED)
+        (self.shards / "request.json").write_text(json.dumps({"areas": ["stats"]}))
+        passed, summary = self.merged(1)
+        self.assertTrue(passed, summary)
+        self.assertIn("Executed 40 tests", summary)
+        self.assertEqual(json.loads((self.out / "request.json").read_text())["areas"], ["stats"])
+
+    def test_a_lone_artifact_says_which_shard_it_is_by_its_request(self):
+        self.shards.mkdir(parents=True)
+        (self.shards / "run-summary.txt").write_text(PASSING.format(n=40, s=1, t=2.0))
+        (self.shards / "run.log").write_text(LOG_PASSED)
+        (self.shards / "request.json").write_text(json.dumps({"shard": "2 of 3"}))
+        passed, summary = self.merged(3)
+        self.assertFalse(passed)
+        self.assertIn("shard 1 of 3 reported nothing", summary)
+        self.assertIn("shard 3 of 3 reported nothing", summary)
+        self.assertNotIn("shard 2 of 3 reported nothing", summary, "shard 2 is the one that came")
+
     def test_a_missing_shards_folder_fails_the_run(self):
         passed, summary = self.merged(2)
         self.assertFalse(passed)
