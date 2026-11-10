@@ -230,8 +230,13 @@ class SkipTests(RunnerTestCase):
         return path
 
     def test_a_skips_file_is_read_as_class_test_and_reason(self):
-        path = self.skips_file("# a comment\n\nFooTests.testBar  # hangs on the runner\nBazTests.testQux\nnot-a-test-name\n")
-        self.assertEqual(runner.read_skips(path), [("FooTests", "testBar", "hangs on the runner"), ("BazTests", "testQux", "")])
+        path = self.skips_file("# a comment\n\nFooTests.testBar  # hangs on the runner\nBazTests.testQux\nnot-a-test-name\nWholeTests  # the class\n")
+        self.assertEqual(runner.read_skips(path), [("FooTests", "testBar", "hangs on the runner"),
+                                                   ("BazTests", "testQux", ""), ("WholeTests", None, "the class")])
+
+    def test_a_whole_class_becomes_a_skip_testing_argument_of_the_class(self):
+        self.assertEqual(runner.skip_arguments([("WholeTests", None, "x")]),
+                         ["-skip-testing:TextMouthProductionTests/WholeTests"])
 
     def test_a_missing_skips_file_skips_nothing(self):
         self.assertEqual(runner.read_skips(self.folder / "none.txt"), [])
@@ -265,7 +270,8 @@ class SkipTests(RunnerTestCase):
         for owner, test, reason in runner.read_skips():
             with self.subTest(skip=f"{owner}.{test}"):
                 self.assertIn(f"class {owner}", everything, f"{owner} is not a test class")
-                self.assertIn(f"func {test}(", everything, f"{test} is not a test")
+                if test:
+                    self.assertIn(f"func {test}(", everything, f"{test} is not a test")
                 self.assertTrue(reason, "every skip says why")
 
     def test_the_real_skips_file_exists_is_not_empty_and_is_not_ignored_by_version_control(self):
@@ -283,7 +289,7 @@ class SkipTests(RunnerTestCase):
         with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)), \
                 mock.patch.object(runner, "read_skips", return_value=[("FooTests", "testBar", "x")]):
             self.run_main()
-        self.assertIn("Left out on the runner: 1 tests", (self.out / "summary.md").read_text())
+        self.assertIn("Left out on the runner: 1 tests or classes", (self.out / "summary.md").read_text())
 
 
 class ShardTests(RunnerTestCase):

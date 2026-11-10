@@ -76,9 +76,9 @@ SKIPS_FILE = AGENTS / "runner-skips.conf"
 
 
 def read_skips(path=SKIPS_FILE):
-    """The tests the runner leaves out, as [(class, test, reason)], from the skips file: a line is
-    "Class.testName", then optionally "# reason"; a line that is blank or starts with "#" is a comment.
-    A missing file is no skips."""
+    """What the runner leaves out, as [(class, test or None, reason)], from the skips file: a line is
+    "Class.testName" for one test or "Class" for a whole class, then optionally "# reason"; a line that is
+    blank or starts with "#" is a comment. A missing file is no skips."""
     try:
         lines = Path(path).read_text(encoding="utf-8").splitlines()
     except OSError:
@@ -90,8 +90,8 @@ def read_skips(path=SKIPS_FILE):
         if not name:
             continue
         owner, _, test = name.partition(".")
-        if owner and test:
-            skips.append((owner, test, reason.strip()))
+        if owner.isidentifier() and (not test or test.isidentifier()):
+            skips.append((owner, test or None, reason.strip()))
     return skips
 
 
@@ -104,8 +104,8 @@ def selected_skips(request, skips):
 
 
 def skip_arguments(skips):
-    """The xcodebuild arguments that leave `skips` out: -skip-testing for each test."""
-    return [f"-skip-testing:TextMouthProductionTests/{owner}/{test}" for owner, test, _ in skips]
+    """The xcodebuild arguments that leave `skips` out: -skip-testing for each test or class."""
+    return [f"-skip-testing:TextMouthProductionTests/{owner}" + (f"/{test}" if test else "") for owner, test, _ in skips]
 
 
 def read_request(path):
@@ -243,7 +243,7 @@ def write_results(request, out, output, passed, seconds, left_out=0):
     lines = ["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
              f"- Asked for: {wanted}", f"- Minutes: {seconds / 60:.1f}",
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
-             f"- Left out on the runner: {left_out} tests (Scripts/agents/runner-skips.conf)",
+             f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
     if len(failed) > 40:
         lines += [f"  - and {len(failed) - 40} more, in run-summary.txt"]
