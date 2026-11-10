@@ -75,9 +75,11 @@ final class VoiceCatalogTests: XCTestCase {
         settle.isInverted = true
         wait(for: [settle], timeout: 0.5)
 
-        // A task of the pool, with up to ten seconds to run (the run loop turns while it waits).
+        // A task of the pool, with up to ten seconds to run (the run loop turns while it waits). It runs at the priority
+        // the old listing ran at, utility: the pool limits the threads of each priority apart, and a probe of a higher
+        // one ran beside the held listings (break run 42873809903) and proved nothing.
         let probeRan = OSAllocatedUnfairLock(initialState: false)
-        Task.detached { probeRan.withLock { $0 = true } }
+        Task.detached(priority: .utility) { probeRan.withLock { $0 = true } }
         let deadline = Date().addingTimeInterval(10)
         while !probeRan.withLock({ $0 }) && Date() < deadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.01))
