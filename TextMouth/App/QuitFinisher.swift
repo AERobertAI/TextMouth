@@ -1,4 +1,8 @@
+#if os(macOS)
+import AppKit
+#else
 import Foundation
+#endif
 
 /// The words TextMouth says, aloud and on screen, while it finishes work
 /// before it quits (`QuitFinisher`). One place, so the announcement and the
@@ -111,6 +115,28 @@ final class QuitFinisher {
         defer { hasFinished = false }
         return hasFinished
     }
+
+#if os(macOS)
+    /// The answer for a quit that is sure to go ahead, with nothing unsaved
+    /// or asked first: it goes ahead when `workIsDone` (`takeFinished()`) or
+    /// no work needs finishing. Otherwise the work is finished first. The
+    /// person's quit is cancelled while `finish(_:)` works and asks again;
+    /// the system ending the session (`endsTheSession`) is answered later,
+    /// with `.terminateLater` and `replyLater` called as the work ends,
+    /// since a cancel would stop the log out.
+    func reply(
+        forQuitWith works: [QuitHold.Work],
+        workIsDone: Bool,
+        endsTheSession: Bool,
+        replyLater: @escaping @MainActor (Bool) -> Void
+    ) -> NSApplication.TerminateReply {
+        guard !workIsDone else { return .terminateNow }
+        if endsTheSession {
+            return QuitHold.hold(works, reply: replyLater) ? .terminateLater : .terminateNow
+        }
+        return finish(works) ? .terminateCancel : .terminateNow
+    }
+#endif
 
     /// The work has ended or had its longest wait: the notice comes down and
     /// TextMouth asks to quit again.

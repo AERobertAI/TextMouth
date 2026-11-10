@@ -137,8 +137,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Termination
 
-    /// Holds a quit while the failure center reports unsaved changes.
-    private let terminationGuard = UnsavedChangesTerminationGuard()
+    /// Holds a quit while the failure center reports unsaved changes: the
+    /// app's, unless a test sets one of its own, whose flush and prompt show
+    /// and write nothing.
+    var terminationGuard = UnsavedChangesTerminationGuard()
 
     /// Asks AppKit to quit again, once a library move stopped for a quit,
     /// an editor or the Record window asked first, or an answered question
@@ -251,27 +253,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if audioEditors.holdQuit(then: requestTermination) {
             return .terminateCancel
         }
+        // Step 4, for a quit that is sure to go ahead.
         return terminationGuard.reply { [self] in
-            replyForHeldWork(to: sender, workIsDone: workIsDone)
+            quitFinisher.reply(
+                forQuitWith: heldWork(),
+                workIsDone: workIsDone,
+                endsTheSession: QuitReason.currentRequestEndsTheSession,
+                replyLater: { sender.reply(toApplicationShouldTerminate: $0) }
+            )
         }
-    }
-
-    /// The answer for a quit that is sure to go ahead (step 4): it goes ahead
-    /// when no work needs finishing, or `workIsDone`; otherwise the work is
-    /// finished first. The person's quit is cancelled while `quitFinisher`
-    /// finishes it and asks again; the system ending the session is answered
-    /// later, through `QuitHold`, since a cancel would stop it.
-    private func replyForHeldWork(
-        to sender: NSApplication,
-        workIsDone: Bool
-    ) -> NSApplication.TerminateReply {
-        guard !workIsDone else { return .terminateNow }
-        let works = heldWork()
-        if QuitReason.currentRequestEndsTheSession {
-            let held = QuitHold.hold(works) { sender.reply(toApplicationShouldTerminate: $0) }
-            return held ? .terminateLater : .terminateNow
-        }
-        return quitFinisher.finish(works) ? .terminateCancel : .terminateNow
     }
 
     func applicationWillTerminate(_ notification: Notification) {
