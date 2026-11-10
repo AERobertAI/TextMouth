@@ -72,6 +72,15 @@ class WorkflowTests(unittest.TestCase):
         bundle = self.code[self.code.index("Upload the result bundle"):]
         self.assertIn("if: failure()", bundle)
 
+    def test_the_gate_workflow_check_yml_does_not_also_run_for_a_push_to_testbuild(self):
+        # check.yml (make check) runs for every push to main and every pull request. A push to
+        # TestBuild must start this workflow alone: two builds of one commit would waste a runner.
+        check = (WORKFLOW.parent / "check.yml").read_text(encoding="utf-8")
+        code = "\n".join(line for line in check.splitlines() if not line.lstrip().startswith("#"))
+        on = re.search(r"^on:\n((?:[ \t]+.*\n|\n)+)", code + "\n", re.M).group(1)
+        self.assertRegex(on, r"push:\n\s+branches: \[main\]", "check.yml must name the branches it runs for")
+        self.assertNotIn(github_run.BRANCH, on)
+
     def test_the_workflow_is_named_as_github_run_looks_for_it(self):
         self.assertRegex(self.code, rf"(?m)^name: {re.escape(github_run.WORKFLOW_NAME)}\n")
 
