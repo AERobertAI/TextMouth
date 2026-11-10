@@ -5,7 +5,7 @@ less with cached build products), so a long run is faster as a few shards than a
 decides how many shards a request needs (`shard_count`), writing it into the request file; each
 shard job then takes its own slice (`split`) of the same list of classes, so the shards agree
 without talking to each other. The slices are balanced by each class's time on the runner
-(class-times.json, written by class_times.py from a run's log); a class not in the file counts
+(class-times.json, written by Scripts/agents/class_times.py from the log of a run on the runner); a class not in the file counts
 as DEFAULT_SECONDS. The split is deterministic: the same classes and times always give the same slices.
 
 Python 3 standard library only.

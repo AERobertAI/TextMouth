@@ -111,18 +111,25 @@ jobs:
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/xcodegen/bin/xcodegen" --version
 
-      # Last run's build products, so this run compiles only what changed. The newest cache
-      # for this Xcode is restored (the key ends with the commit, which is new on every push, so
-      # the prefix finds the last run's). The manifest beside it says which files those products
-      # were built from; restore_mtimes.py, below, uses it. Saved again after the tests, below.
+      # The day, UTC, for the cache key below: one cache a day, not one for every push (each was 0.6 to 0.9 GB,
+      # and a night of runs filled 9.8 of the repository's 10 GB, with only the newest ever restored).
+      - name: Name today's cache
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      # Yesterday's (or today's) build products, so this run compiles only what changed. An exact hit is
+      # today's cache; the prefix finds the newest of an earlier day. The manifest beside the products says which
+      # files they were built from; restore_mtimes.py, below, uses it. The Logs folder is left out: it only grows.
       - name: Restore the build products
+        id: cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
             build/remote-DerivedData
+            !build/remote-DerivedData/Logs
             build/remote-cache
-          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ github.sha }}
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ steps.day.outputs.day }}
           restore-keys: |
             build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-
 
@@ -154,18 +161,19 @@ jobs:
       - name: Build and run this shard's tests
         run: python3 -I -B Scripts/agents/run-on-runner.py --out build/remote --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.shards }}
 
-      # The build products for the next run, whether or not the tests passed (a failed test
-      # leaves good products), but not for a run that was cancelled part way. Every shard builds the
-      # same products, so the first shard saves them.
+      # The build products for tomorrow's runs, saved only when today has none yet (the restore above did not hit
+      # today's key): whether or not the tests passed (a failed test leaves good products), but not for a run that
+      # was cancelled part way. Every shard builds the same products, so the first shard saves them.
       - name: Save the build products
-        if: ${{ !cancelled() && matrix.shard == 1 }}
+        if: ${{ !cancelled() && matrix.shard == 1 && steps.cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
             build/remote-DerivedData
+            !build/remote-DerivedData/Logs
             build/remote-cache
-          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ github.sha }}
+          key: build-test-build-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ steps.day.outputs.day }}
 
       # What the last job joins: this shard's log, summary, and request.
       - name: Upload this shard's results

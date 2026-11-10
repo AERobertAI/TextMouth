@@ -109,7 +109,21 @@ class WorkflowTests(unittest.TestCase):
     def test_only_the_first_shard_saves_the_build_products_and_never_after_a_cancel(self):
         job = self.job("test")
         save = job[job.index("Save the build products"):]
-        self.assertIn("if: ${{ !cancelled() && matrix.shard == 1 }}", save.split("uses:")[0])
+        self.assertIn("!cancelled() && matrix.shard == 1 &&", save.split("uses:")[0])
+
+    def test_the_cache_is_one_a_day_saved_only_on_a_miss_and_without_the_logs_folder(self):
+        job = self.job("test")
+        keys = [line.strip() for line in job.splitlines() if line.strip().startswith("key:")]
+        self.assertEqual(len(keys), 2, "a restore and a save")
+        for key in keys:
+            self.assertIn("steps.day.outputs.day", key)
+            self.assertNotIn("github.sha", key, "a key that changes with every push fills the cache")
+        for step in ("Restore the build products", "Save the build products"):
+            part = job[job.index(step):]
+            part = part[:part.index("key:")]
+            self.assertIn("!build/remote-DerivedData/Logs", part, f"{step} must leave the Logs folder out")
+        save = job[job.index("Save the build products"):]
+        self.assertIn("steps.cache.outputs.cache-hit != 'true'", save.split("uses:")[0])
 
     def test_the_build_products_are_restored_before_the_files_times_are_set_and_the_build_runs(self):
         job = self.job("test")

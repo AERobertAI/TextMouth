@@ -14,8 +14,11 @@ A test request is a small dictionary, the same on this Mac and on GitHub:
 
 `areas` and `classes` name what Scripts/test/run-area.py runs (an area, a
 test class, or "all"). `full` asks instead for the orchestrator's full suite
-exactly as run_suite.py runs it, the scheme's whole test action. Python 3
-standard library only, and importing it leaves no __pycache__ folder.
+as run_suite.py runs it on this Mac, the scheme's whole test action. On the
+GitHub runner a request with more than one shard is run by classes, however
+it is flagged: the remote full suite always is, since run_suite.py --remote
+asks for the most shards, and run-on-runner.py deals the classes of "all" out.
+Python 3 standard library only, and importing it leaves no __pycache__ folder.
 """
 import importlib.util
 import sys

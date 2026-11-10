@@ -54,7 +54,7 @@ DEFAULT_LIMIT_MINUTES = 80
 # The longest one test may take on the runner, in seconds. xcodebuild fails a test that passes it, so a test
 # that waits for something the runner lacks costs this and not its own limit (5 minutes for an audio read).
 # xcodebuild rounds the limit up to a whole minute (its logs say "exceeded execution time allowance of 2
-# minutes"), so 120 is what is meant: a hung test costs two minutes plus the host's restart, not 90 seconds.
+# minutes"), so 120 is what is meant: a hung test costs two minutes plus the host's restart.
 # The slowest test on the development Mac takes 21 seconds, so 120 leaves a wide margin.
 TEST_SECONDS = 120
 # xcodebuild's -jobs on the runner (a free macOS runner has 3 or 4 cores).
