@@ -273,6 +273,8 @@ class SkipTests(RunnerTestCase):
                 if test:
                     self.assertIn(f"func {test}(", everything, f"{test} is not a test")
                 self.assertTrue(reason, "every skip says why")
+                self.assertIn("still runs on the development Mac", reason, "every skip says the Mac still runs it")
+                self.assertNotIn("timing", reason.lower().split(";")[0], "a timing failure is flaky, not a reason to skip")
 
     def test_the_real_skips_file_exists_is_not_empty_and_is_not_ignored_by_version_control(self):
         # The first sharded run on GitHub left out no test at all because "*.txt" is ignored, so the file
