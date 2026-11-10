@@ -106,9 +106,12 @@ class MergeShardsTests(unittest.TestCase):
     def test_the_merged_log_is_judged_by_the_whole_run_not_the_last_shard(self):
         # The first shard failed and the last passed: reading only the last shard's tail would say PASSED.
         self.shard(1, FAILING, log=LOG_FAILED)
-        self.shard(2, PASSING.format(n=5, s=0, t=1.0), log=LOG_PASSED)
+        # A long second log, so that the first shard's failure is far from the end, out of the tail a reader looks at.
+        self.shard(2, PASSING.format(n=5, s=0, t=1.0), log="Test Case '-[FooTests testBar]' passed (0.1 seconds).\n" * 200 + LOG_PASSED)
         self.merged(2)
         log = self.out / "run.log"
+        text = log.read_text()
+        self.assertGreater(len(text) - text.index("** TEST FAILED **"), 4096, "the first failure must be out of the tail")
         out = io.StringIO()
         with redirect_stdout(out):
             self.assertEqual(run_suite.judge_log(str(log)), 1)
