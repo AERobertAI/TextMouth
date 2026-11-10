@@ -212,11 +212,67 @@ class TimeLimitTests(RunnerTestCase):
 
         with mock.patch.object(test_command, "full_suite_command", spy_full):
             self.run_main()
-        self.assertEqual(seen["area"], runner.time_limit_arguments({}))
-        self.assertEqual(seen["full"], runner.time_limit_arguments({}))
+        limit = runner.time_limit_arguments({})
+        self.assertEqual(seen["area"][:len(limit)], limit)
+        self.assertEqual(seen["full"][:len(limit)], limit)
 
     def test_the_limit_is_far_above_the_slowest_test_on_the_development_mac(self):
         self.assertGreaterEqual(runner.TEST_SECONDS, 4 * 21, "the slowest local test took 21 seconds on November 6, 2026")
+
+
+class SkipTests(RunnerTestCase):
+    """Tests the runner leaves out, because the runner lacks what they need."""
+
+    def skips_file(self, text):
+        """Writes a skips file and returns its path."""
+        path = self.folder / "skips.txt"
+        path.write_text(text)
+        return path
+
+    def test_a_skips_file_is_read_as_class_test_and_reason(self):
+        path = self.skips_file("# a comment\n\nFooTests.testBar  # hangs on the runner\nBazTests.testQux\nnot-a-test-name\n")
+        self.assertEqual(runner.read_skips(path), [("FooTests", "testBar", "hangs on the runner"), ("BazTests", "testQux", "")])
+
+    def test_a_missing_skips_file_skips_nothing(self):
+        self.assertEqual(runner.read_skips(self.folder / "none.txt"), [])
+
+    def test_each_skip_becomes_a_skip_testing_argument(self):
+        self.assertEqual(runner.skip_arguments([("FooTests", "testBar", "")]),
+                         ["-skip-testing:TextMouthProductionTests/FooTests/testBar"])
+
+    def test_a_full_run_and_an_area_run_leave_out_every_skip(self):
+        skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
+        for request in ({"full": True, "areas": [], "classes": []}, {"full": False, "areas": ["stats"], "classes": []}):
+            with self.subTest(request=request):
+                self.assertEqual(len(runner.selected_skips(request, skips)), 2)
+
+    def test_a_run_of_named_classes_leaves_out_only_the_skips_of_those_classes(self):
+        skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
+        chosen = runner.selected_skips({"full": False, "areas": [], "classes": ["FooTests"]}, skips)
+        self.assertEqual(chosen, [("FooTests", "testBar", "")])
+
+    def test_the_arguments_hold_the_time_limit_and_the_skips(self):
+        arguments = runner.runner_arguments({"full": True, "areas": [], "classes": []}, [("FooTests", "testBar", "")])
+        self.assertEqual(arguments[:2], ["-test-timeouts-enabled", "YES"])
+        self.assertEqual(arguments[-1], "-skip-testing:TextMouthProductionTests/FooTests/testBar")
+
+    def test_the_real_skips_file_names_only_tests_that_exist(self):
+        # A skip of a test that was renamed or removed would silently skip nothing, and its reason would lie.
+        root = Path(test_command.AGENTS).parents[1]
+        text = {path.name: path.read_text(encoding="utf-8", errors="replace")
+                for path in (root / "TextMouthProductionTests").glob("*.swift")}
+        everything = "\n".join(text.values())
+        for owner, test, reason in runner.read_skips():
+            with self.subTest(skip=f"{owner}.{test}"):
+                self.assertIn(f"class {owner}", everything, f"{owner} is not a test class")
+                self.assertIn(f"func {test}(", everything, f"{test} is not a test")
+                self.assertTrue(reason, "every skip says why")
+
+    def test_the_summary_says_how_many_tests_were_left_out(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)), \
+                mock.patch.object(runner, "read_skips", return_value=[("FooTests", "testBar", "x")]):
+            self.run_main()
+        self.assertIn("Left out on the runner: 1 tests", (self.out / "summary.md").read_text())
 
 
 class ShardTests(RunnerTestCase):

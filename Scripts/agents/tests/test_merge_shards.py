@@ -130,6 +130,19 @@ class MergeShardsTests(unittest.TestCase):
         self.merged(2)
         self.assertFalse(self.train.tests_all_passed(self.out / "run.log"))
 
+    def test_tests_are_counted_from_the_logs_results_not_the_closing_line_after_restarts(self):
+        # The closing Executed line counts only the last launch of a host that restarted.
+        cases = "".join(f"Test Case '-[FooTests testNumber{i}]' passed (0.1 seconds).\n" for i in range(50))
+        cases += "Test Case '-[FooTests testSkipped]' skipped (0.0 seconds).\nTest Case '-[FooTests testBad]' failed (0.1 seconds).\n"
+        self.shard(1, PASSING.format(n=7, s=0, t=1.0), log=cases + LOG_PASSED)
+        _, summary = self.merged(1)
+        self.assertIn("Executed 52 tests, with 1 tests skipped and 1 failures", summary)
+
+    def test_a_shard_stopped_at_its_time_limit_says_so_in_the_merged_problem(self):
+        self.shard(1, "FAILED in 80 minutes\nFAILED: the run was stopped after 80 minutes\nFAILED\n")
+        _, summary = self.merged(1)
+        self.assertIn("shard 1 of 1 did not pass (the run was stopped after 80 minutes)", summary)
+
     def test_the_four_files_are_written_and_the_request_is_one_shards(self):
         self.shard(1, PASSING.format(n=5, s=0, t=1.0))
         self.merged(1)

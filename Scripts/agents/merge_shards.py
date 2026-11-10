@@ -38,6 +38,21 @@ def is_kept(line):
     return line.startswith(("ERROR ", "CRASH"))
 
 
+# One test's result line in an xcodebuild log.
+TEST_CASE = re.compile(r"^Test Case '.*' (passed|failed|skipped) \(", re.M)
+
+
+def case_counts(log):
+    """(tests, skipped, failures) counted from the log's own Test Case result lines, or None when it has none.
+    The log is the count to trust: after the test host restarts, xcodebuild's closing Executed line counts
+    only the last launch (a shard that restarted 29 times said it ran 539 tests when its log held 562 results,
+    and another said 967 of 2,882)."""
+    results = TEST_CASE.findall(log)
+    if not results:
+        return None
+    return len(results), results.count("skipped"), results.count("failed")
+
+
 def read_shard(folder):
     """What one shard folder holds: {"summary": text or None, "log": text, "passed": bool,
     "counts": (tests, skipped, failures, seconds) or None}. A folder without a summary reported nothing."""
@@ -57,6 +72,9 @@ def read_shard(folder):
                 counts = (int(match.group(1)), int(match.group(2) or 0), int(match.group(3)),
                           float(match.group(6) or 0))
                 break
+    by_log = case_counts(log)
+    if by_log is not None:
+        counts = (*by_log, counts[3] if counts else 0.0)
     return {"summary": summary, "log": log, "passed": passed, "counts": counts}
 
 
@@ -88,7 +106,9 @@ def merge(shards_dir, out_dir, expected):
             problems.append(f"shard {number} of {expected} ran no tests")
         lines += [line.strip() for line in shard["summary"].splitlines() if is_kept(line.strip())]
         if not shard["passed"]:
-            problems.append(f"shard {number} of {expected} did not pass")
+            reasons = [line.strip()[len("FAILED:"):].strip() for line in shard["summary"].splitlines()
+                       if line.strip().startswith("FAILED:")]
+            problems.append(f"shard {number} of {expected} did not pass" + (f" ({'; '.join(reasons)})" if reasons else ""))
         logs.append(f"===== shard {number} of {expected} =====\n{shard['log']}\n")
     passed = not problems and failures == 0
     executed = (f"Executed {tests} tests, with {skipped} tests skipped and {failures} failures "

@@ -66,6 +66,48 @@ def time_limit_arguments(request):
             "-maximum-test-execution-time-allowance", seconds]
 
 
+def runner_arguments(request, skips):
+    """Every extra xcodebuild argument the runner adds: the time limit, and the tests left out."""
+    return time_limit_arguments(request) + skip_arguments(selected_skips(request, skips))
+
+
+# The tests that are not run on the runner, one "Class.testName  # reason" per line, beside this script.
+SKIPS_FILE = AGENTS / "runner-skips.txt"
+
+
+def read_skips(path=SKIPS_FILE):
+    """The tests the runner leaves out, as [(class, test, reason)], from the skips file: a line is
+    "Class.testName", then optionally "# reason"; a line that is blank or starts with "#" is a comment.
+    A missing file is no skips."""
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    skips = []
+    for line in lines:
+        name, _, reason = line.partition("#")
+        name = name.strip()
+        if not name:
+            continue
+        owner, _, test = name.partition(".")
+        if owner and test:
+            skips.append((owner, test, reason.strip()))
+    return skips
+
+
+def selected_skips(request, skips):
+    """The skips that apply to this job: all of them for a full-suite run or a run of areas (which could
+    hold any class), and only those of its own classes for a run of named classes (a shard's command stays short)."""
+    if request["full"] or request["areas"]:
+        return list(skips)
+    return [skip for skip in skips if skip[0] in set(request["classes"])]
+
+
+def skip_arguments(skips):
+    """The xcodebuild arguments that leave `skips` out: -skip-testing for each test."""
+    return [f"-skip-testing:TextMouthProductionTests/{owner}/{test}" for owner, test, _ in skips]
+
+
 def read_request(path):
     """The request file as a dictionary, with its lists and flag filled in."""
     request = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -136,12 +178,13 @@ def run_tests(train, request, out, limit_minutes):
         return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"
                 "PASSED in 0 seconds\n"), False
     if request["full"]:
-        command = test_command.full_suite_command(derived, out / "result.xcresult", extra=time_limit_arguments(request))
+        command = test_command.full_suite_command(derived, out / "result.xcresult",
+                                                  extra=runner_arguments(request, read_skips()))
         # The suite's whole output is its log; run-area.py writes its own log.
         sink = open(log, "wb")
     else:
         command = test_command.area_command(request["areas"], request["classes"], derived, log,
-                                            jobs=RUNNER_JOBS, extra=time_limit_arguments(request))
+                                            jobs=RUNNER_JOBS, extra=runner_arguments(request, read_skips()))
         sink = subprocess.PIPE
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT)
@@ -186,7 +229,7 @@ def judge(train, output, log, timed_out, limit_minutes):
     return output, passed
 
 
-def write_results(request, out, output, passed, seconds):
+def write_results(request, out, output, passed, seconds, left_out=0):
     """Writes request.json, run-summary.txt and summary.md into `out`."""
     (out / "request.json").write_text(json.dumps(request, indent=2) + "\n")
     (out / "run-summary.txt").write_text(output)
@@ -200,6 +243,7 @@ def write_results(request, out, output, passed, seconds):
     lines = ["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
              f"- Asked for: {wanted}", f"- Minutes: {seconds / 60:.1f}",
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
+             f"- Left out on the runner: {left_out} tests (Scripts/agents/runner-skips.txt)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
     if len(failed) > 40:
         lines += [f"  - and {len(failed) - 40} more, in run-summary.txt"]
@@ -232,7 +276,8 @@ def main(argv):
     limit = min(args.limit_minutes, float(request.get("limit_minutes", args.limit_minutes)))
     output, timed_out = run_tests(train, request, out, limit)
     output, passed = judge(train, output, out / "run.log", timed_out, limit)
-    write_results(request, out, output, passed, time.monotonic() - started)
+    write_results(request, out, output, passed, time.monotonic() - started,
+                  len(selected_skips(request, read_skips())))
     print((out / "summary.md").read_text())
     return 0 if passed else 1
 
