@@ -30,6 +30,23 @@ TextMouth was measured against a library the size of its developer's on October 
   - While a book plays, its position is saved every 30 seconds into the book's own small record in its package, as before, but library.json, the index of the whole library, takes it within five minutes, or as the reader closes or TextMouth quits, rather than every 30 seconds. A feed's episode or article goes to its feed's own index the same way. A crash loses no more than before: the next launch takes the newer positions from the records (see [Where TextMouth keeps your library](where-your-library-lives.md)).
   - Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded. library.json and each feed's index are also written only when what they hold differs from what TextMouth last read or wrote of them, so a save that changes nothing in one writes nothing to it; listening to a feed's episode, whose place is in its feed's index, usually leaves library.json alone.
   - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
+- Quitting while work is under way (0.4.4):
+  - TextMouth waits for three kinds of work before it quits, and no longer cuts it off or hangs:
+    - feed episodes downloading or waiting to download keep their place, for up to 3 seconds;
+    - a book's text being read again in another encoding finishes, for up to 10 seconds;
+    - a speech export stops with the chapters it finished kept, for up to 5 seconds.
+  - When you press Command-Q, choose Quit from the TextMouth menu, or choose Quit in the Dock while any of that runs, a small window titled "Quitting TextMouth" appears and VoiceOver says the same words: "TextMouth is finishing up before it quits: " and what it is doing, then "It will quit as soon as that is done." TextMouth quits by itself when the work has ended.
+  - What it says for each kind of work:
+    - Downloads: "keeping the place of your feed downloads for next time".
+    - A re-read: "reading a book's text again in another encoding", or "reading the text of 3 books again in another encoding" when several run.
+    - A speech export: "stopping a speech export with the chapters it finished kept", or "stopping 2 speech exports with the chapters they finished kept" when several run.
+    - Work of several kinds is said in one sentence, joined with "and".
+  - The window does not take the keyboard from the window you were in.
+  - Pressing Command-Q again, or choosing Quit in the Dock again, while TextMouth finishes no longer quits at once and cuts the work off. TextMouth says the same words again and goes on finishing.
+  - Quit Anyway in the alert about changes that could not be saved still quits after the work has finished, and the alert is not shown a second time.
+  - While such work was under way, choosing Quit Anyway, or answering an audio editor's or the Record window's question, used to leave TextMouth open with its windows stuck. That hang is gone: the quit now ends.
+  - Log out, restart, and shut down wait for the same work as before, with the same words, and are not cancelled by it. If you log out while TextMouth is finishing for your Quit, the log out goes on when the work has ended.
+  - Work that cannot end gives up after its limit, so the waits add up to about 18 seconds at most (3, 10, and 5).
 - Opening and importing books:
   - Opening an EPUB no longer reads the book's package metadata from its file. The library keeps it for books imported since it began to, and for an older book the reader reads it in the background once the book shows, so Book Info has it a moment later, and keeps it on the book's row and in its record, so the book's later opens read nothing. Reopening a 1,447-chapter anthology from its kept text went from 112 to 65 milliseconds.
   - Importing a book, and rebuilding the text of the library's books, take far less time for large EPUB, HTML, Word, DAISY, and plain-text books: each EPUB document is parsed once, each file inside a book's archive is found without searching the whole archive, and HTML's emphasis and links, word counts, white space, and plain-text headings take time that grows only with the text. The text TextMouth makes is unchanged, byte for byte.
