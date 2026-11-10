@@ -275,7 +275,7 @@ class RemoteTrainFailureTests(RemoteTrainCase):
         self.assertEqual(self.run_train(), "failed")
         self.assert_put_back(requests)
         self.assertEqual(self.queued(), before, "the requests should keep their names, so their order")
-        self.assertEqual(self.gh_calls(), [])
+        self.assertEqual(self.gh_calls_about_the_run(), [])
 
     def test_a_run_cancelled_by_a_newer_push_puts_the_requests_back(self):
         requests = [self.branch("alpha", {"a.txt": "a"})]

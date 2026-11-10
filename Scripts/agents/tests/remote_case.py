@@ -27,8 +27,10 @@ sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (imported by path, after sys.path is set)
 
 # The stand-in for `gh`. It reads state.json beside itself:
-#   "list":     the answers to `run list`, one per call (the last repeats); "@SHA" in a
+#   "list":     the answers to `run list --commit SHA`, one per call (the last repeats); "@SHA" in a
 #               run's headSha stands for the commit the call asked for
+#   "active":   the answers to `run list` without --commit, which a push asks to see whether TestBuild
+#               is idle; the same way, and empty (idle) unless a test says otherwise
 #   "view":     the answers to `run view`, the same way
 #   "download": the answers to `run download`, the same way: {"files": {name: text}},
 #               or {"fail": true}
@@ -65,7 +67,7 @@ if state.get("fail") == word:
     finish(1)
 if word == "list":
     sha = arguments[arguments.index("--commit") + 1] if "--commit" in arguments else ""
-    runs = next_answer("list") or []
+    runs = next_answer("list" if sha else "active") or []
     print(json.dumps([{**run, "headSha": sha if run.get("headSha") == "@SHA" else run.get("headSha")} for run in runs]))
 elif word == "view":
     print(json.dumps(next_answer("view") or {}))
@@ -161,6 +163,15 @@ class RemoteTestCase(unittest.TestCase):
     def gh_calls(self):
         """The arguments of every call the fake gh has had, in order."""
         return json.loads((self.gh.parent / "state.json").read_text()).get("calls", [])
+
+    def gh_calls_about_the_run(self):
+        """Every call the fake gh has had except the push's look at whether TestBuild is idle (a `run list`
+        with no --commit): the calls that find, watch, and fetch a run of the pushed commit."""
+        return [call for call in self.gh_calls() if not (call[:2] == ["run", "list"] and "--commit" not in call)]
+
+    def idle_checks(self):
+        """How many times a push asked the fake gh whether TestBuild was idle."""
+        return len(self.gh_calls()) - len(self.gh_calls_about_the_run())
 
     def pushed_refs(self):
         """The refs of the fake remote: {ref name: commit}."""

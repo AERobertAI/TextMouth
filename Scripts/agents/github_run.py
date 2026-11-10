@@ -10,7 +10,9 @@ suite (run_suite.py --remote) go through here:
    working tree.
 2. `check_public_tree` refuses a tree that holds a path the user keeps
    private, since the repository is public and everything pushed is published.
-3. `push` pushes that commit to the branch TestBuild, and to no other ref.
+3. `push` waits, up to a limit, while another run is queued or going on TestBuild (a newer push
+   cancels the older run, so a sender must not cut off a run it did not start), then pushes that commit
+   to the branch TestBuild, and to no other ref.
 4. `find_run` and `wait_for_run` find the run that push started, by the
    commit's SHA, and wait for it, up to a limit.
 5. `download` brings the run's artifacts to a folder.
@@ -54,6 +56,11 @@ WORKFLOW_FILE = ".github/workflows/test-build.yml"
 GH = "gh"
 # Folders of the checkout the user keeps private; none may be in a pushed tree.
 PRIVATE_PREFIXES = ("build/", "humanQuestions/", "humanReports/")
+# How long a push waits for the runs already on TestBuild to end before it gives up, in minutes: as long
+# as one run may take, since the run in front may be a full suite.
+IDLE_WAIT_MINUTES = 125
+# How often a push waiting its turn asks GitHub whether TestBuild is idle.
+IDLE_POLL_SECONDS = 30
 # How long to wait for GitHub to start the run a push caused.
 RUN_APPEARS_SECONDS = 5 * 60
 # How long a run may take from the push to its end. Its jobs have limits of 5 (plan), 100 (each test job) and 10
@@ -183,15 +190,48 @@ def check_remote(cwd):
         raise RemoteFailure(f"refusing to push: origin's push URL is {url or 'unknown'}, not {ORIGIN_URLS[0]}")
 
 
-def push(cwd, commit):
-    """Pushes `commit` to the branch TestBuild with --force, and to nothing else. The refspec is built here, from the
-    constant, and from no caller's text; --no-follow-tags keeps a user's push.followTags from sending tags too."""
+def active_runs():
+    """The runs of the workflow on TestBuild that have not completed (queued, waiting, or in progress), as
+    {"databaseId", "status", "url"} dictionaries; empty when TestBuild is idle. A push cancels the run before it
+    (the workflow's concurrency group), so these are the runs a push now would cut off."""
+    runs = gh_json("run", "list", "-R", REPO, "--branch", BRANCH, "--json", "databaseId,status,url,workflowName",
+                   "--limit", "10")
+    return [run for run in runs if run.get("workflowName") == WORKFLOW_NAME and run.get("status") != "completed"]
+
+
+def wait_until_idle(limit_minutes=IDLE_WAIT_MINUTES, progress=None):
+    """Waits until no run is queued or going on TestBuild, so that a push after it cuts off nobody's run. Asks
+    every IDLE_POLL_SECONDS; past `limit_minutes` it raises RemoteFailure that names the run still going, and the
+    caller pushes nothing. `progress`, when given, is told once which run it is waiting for."""
+    started = CLOCK()
+    told = False
+    while True:
+        busy = active_runs()
+        if not busy:
+            return
+        if not told and progress:
+            progress(f"waiting for {busy[0].get('url')} to end before pushing")
+            told = True
+        if CLOCK() - started > limit_minutes * 60:
+            raise RemoteFailure(f"not pushed: {busy[0].get('url')} was still {busy[0].get('status')} on {BRANCH} "
+                                f"after {limit_minutes} minutes, and a push would cancel it")
+        SLEEP(IDLE_POLL_SECONDS)
+
+
+def push(cwd, commit, idle_minutes=IDLE_WAIT_MINUTES, progress=None):
+    """Pushes `commit` to the branch TestBuild with --force, and to nothing else, once no other run is on it
+    (wait_until_idle). Returns the clock's reading as the push began, which a caller measures its run from. The
+    refspec is built here, from the constant, and from no caller's text; --no-follow-tags keeps a user's
+    push.followTags from sending tags too. The checks come first, so a push that would be refused anyway never waits."""
     check_public_tree(cwd, commit)
     check_workflows(cwd, commit)
     check_remote(cwd)
+    wait_until_idle(idle_minutes, progress)
+    began = CLOCK()
     result = call(["git", "push", "--force", "--no-follow-tags", PUSH_REMOTE, f"{commit}:refs/heads/{BRANCH}"], cwd=cwd)
     if result.returncode != 0:
         raise RemoteFailure(f"git push to {BRANCH} failed: {(result.stderr or result.stdout).strip()[:300]}")
+    return began
 
 
 def gh_json(*args):
@@ -254,8 +294,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=RUN_L
     tests) comes back with downloaded False, and the caller decides what that
     means; a step that could not finish raises RemoteFailure."""
     commit = commit_with_request(cwd, parent, request, message)
-    started = CLOCK()
-    push(cwd, commit)
+    # The minutes count from the push itself, not from the wait for the run in front of it.
+    started = push(cwd, commit, progress=progress)
     progress(f"pushed {commit[:8]} to {BRANCH}; waiting for its run")
     run = find_run(commit)
     progress(f"run {run['url']}")
