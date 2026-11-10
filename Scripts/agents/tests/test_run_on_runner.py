@@ -212,6 +212,33 @@ class GateRulesTests(RunnerTestCase):
             self.run_main()
         self.assertIn("- Reason: 2 Swift warnings in the build (the gate allows none)", (self.out / "summary.md").read_text())
 
+    def test_a_run_with_no_failed_test_names_the_error_line_that_failed_it(self):
+        # Run 42911613586: 11,849 tests, 0 failures, and an ERROR line of the log; its page said "the tests did not pass".
+        error_summary = SUMMARY_PASSED.replace("PASSED in 5 seconds", "") + "ERROR Error Domain=NSCocoaErrorDomain Code=4099 x\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(error_summary, LOG_PASSED)):
+            self.run_main()
+        summary = (self.out / "run-summary.txt").read_text()
+        self.assertIn("FAILED: no test failed, but the log holds an error: ERROR Error Domain=NSCocoaErrorDomain Code=4099 x", summary)
+        self.assertIn("- Reason: no test failed, but the log holds an error: ERROR Error Domain", (self.out / "summary.md").read_text())
+
+    def test_a_run_with_no_failed_test_names_a_crash_line_when_that_is_all_there_is(self):
+        crash = "Executed 3 tests, with 0 failures\nCRASH the test host crashed or restarted: Restarting after unexpected exit\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(crash, LOG_PASSED)):
+            self.run_main()
+        self.assertIn("FAILED: no test failed, but CRASH the test host crashed or restarted", (self.out / "run-summary.txt").read_text())
+
+    def test_a_log_without_test_succeeded_says_so_when_nothing_else_explains_the_failure(self):
+        no_verdict = "Executed 3 tests, with 0 failures\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(no_verdict, "Test Suite 'Selected tests' passed at x\n")):
+            self.run_main()
+        self.assertIn("FAILED: no test failed, but xcodebuild never printed ** TEST SUCCEEDED ** in the log",
+                      (self.out / "run-summary.txt").read_text())
+
+    def test_a_failed_test_keeps_the_plain_reason_since_the_summary_names_it(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_FAILED, LOG_PASSED, status=1)):
+            self.run_main()
+        self.assertTrue((self.out / "run-summary.txt").read_text().rstrip().endswith("FAILED: the tests did not pass"))
+
     def test_a_request_with_no_warnings_passes_a_clean_log(self):
         self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
         with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):

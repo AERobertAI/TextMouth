@@ -218,8 +218,26 @@ def judge(train, output, log, timed_out, limit_minutes):
         passed, reason = False, "the log shows the test host restarted or its last suite did not pass"
     if not passed:
         # "FAILED:" with a colon is not a failed-test line, which has a space after FAILED.
-        output += f"\nFAILED: {reason or 'the tests did not pass'}\n"
+        output += f"\nFAILED: {reason or unexplained_failure(train, output, log)}\n"
     return output, passed
+
+
+def unexplained_failure(train, output, log):
+    """Why a run that did not pass says so, when no time limit or restart explains it: the first compile or log
+    ERROR line, else the first CRASH line, else (with a log that lacks it) that xcodebuild never printed TEST SUCCEEDED.
+    A failed test needs no reason, for it is named in the summary. Run 42911613586 had 11,849 tests and no failure and
+    was judged FAILED for an ERROR line of the log, and its page said only "the tests did not pass"."""
+    _, _, failures, errors, crashed = train.summarize(output)
+    if failures:
+        return "the tests did not pass"
+    if errors:
+        return f"no test failed, but the log holds an error: {errors[0][:240]}"
+    if crashed:
+        line = next((l.strip() for l in output.splitlines() if l.strip().startswith("CRASH")), "CRASH")
+        return f"no test failed, but {line[:240]}"
+    if log.exists() and "** TEST SUCCEEDED **" not in log.read_text(encoding="utf-8", errors="replace"):
+        return "no test failed, but xcodebuild never printed ** TEST SUCCEEDED ** in the log"
+    return "the tests did not pass"
 
 
 # A line in which the Swift compiler reports a warning: "<file>.swift:<line>:<column>: warning: ..." or, about its own
