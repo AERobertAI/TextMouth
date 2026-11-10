@@ -206,6 +206,12 @@ class GateRulesTests(RunnerTestCase):
         self.assertIn("FAILED: 2 Swift warnings in the build (the gate allows none), the first 2: "
                       "TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated", summary)
 
+    def test_the_reason_a_run_failed_is_in_its_summary_page_and_so_in_the_jobs_log(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            self.run_main()
+        self.assertIn("- Reason: 2 Swift warnings in the build (the gate allows none)", (self.out / "summary.md").read_text())
+
     def test_a_request_with_no_warnings_passes_a_clean_log(self):
         self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
         with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
