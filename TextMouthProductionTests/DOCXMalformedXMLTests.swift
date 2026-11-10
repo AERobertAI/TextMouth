@@ -675,7 +675,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
         try damageData(of: DOCXParser.Part.document, in: docx)
 
         var thrown: Error?
-        let lines = try debugLogLines { do { _ = try DOCXParser.parse(url: docx) } catch { thrown = error } }
+        let lines = debugLogLines { do { _ = try DOCXParser.parse(url: docx) } catch { thrown = error } }
 
         XCTAssertEqual(
             thrown?.localizedDescription,

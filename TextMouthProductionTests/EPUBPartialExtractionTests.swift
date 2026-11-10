@@ -52,7 +52,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
         try damageData(of: "OEBPS/content.opf", in: epub)
 
         var thrown: Error?
-        let lines = try await debugLogLines {
+        let lines = await debugLogLines {
             do { _ = try EPUBParser.parse(url: epub) } catch { thrown = error }
         }
 
