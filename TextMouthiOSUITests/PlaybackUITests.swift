@@ -184,8 +184,9 @@ final class PlaybackUITests: TextMouthUITestCase {
         let app = try launchIntoTheReader()
         try startSleepTimer("Stop at the end of the book and start playing", in: app)
         XCTAssertTrue(
-            app.buttons["Pause"].waitForExistence(timeout: Self.patience),
-            "The book did not start playing after the timer was set:\n\(app.debugDescription)"
+            app.buttons["Pause"].waitForExistence(timeout: 20),
+            "The book did not start playing after the timer was set. The control reads "
+                + "\"\(app.buttons["Play"].label)\", and the Sleep Timer reads \"\(value(of: app.buttons["Sleep Timer"]))\":\n\(app.debugDescription)"
         )
         let timer = app.buttons["Sleep Timer"]
         XCTAssertTrue(

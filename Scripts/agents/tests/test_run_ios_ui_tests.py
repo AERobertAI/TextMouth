@@ -213,14 +213,14 @@ class TheCommandTests(unittest.TestCase):
         self.assertEqual(command[command.index("-test-timeouts-enabled") + 1], "YES")
         self.assertEqual(command[command.index("-maximum-test-execution-time-allowance") + 1], str(uitests.TEST_SECONDS))
 
-    def test_the_tests_run_in_clones_of_the_simulator_unless_one_worker_is_asked_for(self):
-        command = self.command()
-        self.assertEqual(command[command.index("-parallel-testing-enabled") + 1], "YES")
-        self.assertEqual(command[command.index("-parallel-testing-worker-count") + 1], str(uitests.PARALLEL_WORKERS))
-        with mock.patch.object(uitests, "PARALLEL_WORKERS", 1):
-            single = self.command()
+    def test_the_tests_run_in_one_simulator_and_clones_only_when_more_workers_are_asked_for(self):
+        single = self.command()
         self.assertEqual(single[single.index("-parallel-testing-enabled") + 1], "NO")
         self.assertNotIn("-parallel-testing-worker-count", single)
+        with mock.patch.object(uitests, "PARALLEL_WORKERS", 2):
+            clones = self.command()
+        self.assertEqual(clones[clones.index("-parallel-testing-enabled") + 1], "YES")
+        self.assertEqual(clones[clones.index("-parallel-testing-worker-count") + 1], "2")
 
     def test_the_tests_are_handed_the_sound_variable_without_its_prefix_by_xcodebuild(self):
         self.assertEqual(uitests.RUNNER_SOUND_VARIABLE, "TEST_RUNNER_TEXTMOUTH_UI_SOUND")

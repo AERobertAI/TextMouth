@@ -65,8 +65,10 @@ BOOT_SECONDS = 300
 SIMCTL_SECONDS = 120
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
 TEST_SECONDS = 300
-# How many clones of the simulator run the tests at once (1: a single simulator).
-PARALLEL_WORKERS = 2
+# How many clones of the simulator run the tests at once (1: a single simulator). Two clones were tried on GitHub (run
+# 42952036750) and took no less time for the same 34 tests (17.1 minutes against 17.5), the runner having three slow cores,
+# and xcodebuild then printed no failure message or location for a failed test. So one simulator.
+PARALLEL_WORKERS = 1
 # The keyboard's own settings in the simulator, written before the first test: the one-time "Speed up your typing by
 # sliding your finger" page would otherwise cover the keyboard of the first test that types, and a correction or a
 # prediction could change what a test typed.
