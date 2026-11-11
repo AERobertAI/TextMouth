@@ -101,9 +101,10 @@ class BootTimedOut(SimulatorFailure):
     """A boot did not finish in the time it was given; the message holds what `simctl bootstatus` had printed."""
 
 
-def simctl(*args, timeout=SIMCTL_SECONDS):
+def simctl(*args, timeout=SIMCTL_SECONDS, tolerate_timeout=False):
     """Runs `xcrun simctl args`; returns the finished process (text). A call that hangs or cannot start is a
-    SimulatorFailure, so that no wait is without limit."""
+    SimulatorFailure, so that no wait is without limit; with `tolerate_timeout`, one that outlives its limit is stopped and
+    answered as a failed call (status 124, what it had printed in stderr) instead."""
     try:
         return subprocess.run(["xcrun", "simctl", *args], capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as expired:
@@ -111,8 +112,11 @@ def simctl(*args, timeout=SIMCTL_SECONDS):
         # November 11, 2026 lost their tests to "bootstatus did not finish in 300 seconds" with nothing else known).
         printed = "".join(part.decode("utf-8", "replace") if isinstance(part, bytes) else (part or "")
                           for part in (expired.stdout, expired.stderr)).strip()
-        raise SimulatorFailure(f"simctl {args[0]} did not finish in {timeout} seconds"
-                               + (f"; it had printed: {printed[-400:]}" if printed else "; it had printed nothing"))
+        said = (f"simctl {args[0]} did not finish in {timeout} seconds"
+                + (f"; it had printed: {printed[-400:]}" if printed else "; it had printed nothing"))
+        if tolerate_timeout:
+            return subprocess.CompletedProcess(args, 124, "", said)
+        raise SimulatorFailure(said)
     except OSError as error:
         raise SimulatorFailure(f"could not start simctl: {error}")
 
@@ -197,7 +201,11 @@ def ready_simulator(log):
             raise SimulatorFailure(f"the first boot did not finish ({stuck}) and a new device could not be made: {made.stderr.strip()[:300]}")
         wait_for_boot(udid, BOOT_SECONDS, log)
     for key, value in KEYBOARD_SETTINGS:
-        written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false")
+        # Best effort: a setting that is not written in time (run 43018768161: `simctl spawn` did not finish in 60 seconds after
+        # a boot that had finished) is noted in the log and the tests go on; the typing tests dismiss the keyboard's
+        # one-time page themselves, and a prediction bar or a correction would show in their failure.
+        written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
+                         tolerate_timeout=True)
         log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
     sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
     if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):

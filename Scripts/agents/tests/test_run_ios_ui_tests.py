@@ -432,7 +432,7 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         listing = {"runtimes": [self.RUNTIME] if runtimes is None else runtimes,
                    "devices": devices if devices is not None else {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
 
-        def fake_simctl(*args, timeout=0):
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
             """Answers simctl calls from the canned state."""
             calls.append(args)
             if args[0] == "create":
@@ -469,12 +469,45 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertEqual(udid, "NEWUDID")
         self.assertIn(("create", "TextMouth iPhone 17", uitests.DEVICE_TYPE, self.RUNTIME["identifier"]), calls)
 
+    def test_a_keyboard_setting_that_cannot_be_written_in_time_is_noted_and_the_set_up_goes_on(self):
+        # Run 43018768161: `simctl spawn ... defaults write` did not finish in 60 seconds and the whole step failed.
+        import subprocess
+
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+            """Every call succeeds but the writes of settings, which run out their time."""
+            if args[0] == "spawn":
+                self.assertTrue(tolerate_timeout, "a setting is written with the timeout tolerated")
+                return subprocess.CompletedProcess(args, 124, "", "simctl spawn did not finish in 60 seconds; it had printed nothing")
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """One runtime, one device."""
+            if args[0] == "runtimes":
+                return {"runtimes": [self.RUNTIME]}
+            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        log = io.StringIO()
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            udid, _ = uitests.ready_simulator(log)
+        self.assertEqual(udid, "OLDUDID")
+        self.assertEqual(log.getvalue().count("did not finish in 60 seconds"), len(uitests.KEYBOARD_SETTINGS))
+
+    def test_a_tolerated_timeout_is_answered_as_a_failed_call_and_an_untolerated_one_is_a_failure(self):
+        import subprocess
+        expired = subprocess.TimeoutExpired(["simctl"], 1)
+        with mock.patch.object(uitests.subprocess, "run", side_effect=expired):
+            answer = uitests.simctl("spawn", "U", timeout=1, tolerate_timeout=True)
+            self.assertEqual(answer.returncode, 124)
+            self.assertIn("it had printed nothing", answer.stderr)
+            with self.assertRaises(uitests.SimulatorFailure):
+                uitests.simctl("spawn", "U", timeout=1)
+
     def test_a_boot_that_hangs_is_given_up_on_and_the_tests_get_a_new_device(self):
         # Run 43005173856 and three before it: bootstatus stuck at "Waiting on BackBoard" for the whole 300 seconds.
         calls = []
         boots = []
 
-        def fake_simctl(*args, timeout=0):
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
             """The first device's boot runs out its time; the second's finishes; a new device has a new id."""
             calls.append((args[0], timeout))
             if args[0] == "bootstatus":
@@ -504,7 +537,7 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertEqual(sum(name == "spawn" for name in names), len(uitests.KEYBOARD_SETTINGS), "the settings go on the new device")
 
     def test_a_second_boot_that_hangs_too_is_a_failure(self):
-        def fake_simctl(*args, timeout=0):
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
             """Every boot runs out its time."""
             if args[0] == "bootstatus":
                 raise uitests.SimulatorFailure(f"simctl bootstatus did not finish in {timeout} seconds; it had printed: Waiting on BackBoard")
