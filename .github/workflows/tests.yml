@@ -297,8 +297,26 @@ jobs:
             build/remote-cache-ios
           key: build-ios-v2-${{ runner.os }}-${{ runner.arch }}-xcode-26.0.1-${{ steps.day.outputs.day }}
 
+      # The upload failed once on GitHub's side ("Failed to CreateArtifact: Unable to make request: ETIMEDOUT", run
+      # 42932008427), which left the join saying the iPhone build was NOT RUN. So it is tried again once if it failed. Neither
+      # attempt can fail the job: a good build stays a good job, and the join reports what it did not receive.
       - name: Upload the iPhone build's results
+        id: upload
         if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-results
+          path: |
+            build/remote-ios/ios-summary.txt
+            build/remote-ios/ios-errors.txt
+            build/remote-ios/ios.log
+          if-no-files-found: ignore
+          retention-days: 2
+
+      - name: Upload the iPhone build's results again
+        if: ${{ always() && steps.upload.outcome == 'failure' }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ios-results

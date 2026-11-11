@@ -175,9 +175,21 @@ class JobsTests(unittest.TestCase):
         for name, artifact in (("test", "shard-results-"), ("ios", "ios-results"), ("collect", github_run.ARTIFACT)):
             with self.subTest(job=name):
                 job = self.job(name)
-                step = job[job.index(f"name: {artifact}") - 150:]
+                step = job[job.index(f"name: {artifact}") - 300:]
                 self.assertIn("if: always()", step.split("path:")[0])
                 self.assertRegex(job, r"retention-days: [1-9]\b")
+
+    def test_the_iphone_builds_upload_is_tried_again_once_and_neither_try_can_fail_the_job(self):
+        # Run 42932008427: "Failed to CreateArtifact ... ETIMEDOUT" from GitHub left the iPhone build NOT RUN.
+        ios = self.job("ios")
+        first = ios[ios.index("name: Upload the iPhone build's results\n"):ios.index("name: Upload the iPhone build's results again")]
+        again = ios[ios.index("name: Upload the iPhone build's results again"):]
+        self.assertIn("id: upload", first)
+        self.assertIn("continue-on-error: true", first.split("uses:")[0])
+        self.assertIn("continue-on-error: true", again.split("uses:")[0])
+        self.assertIn("steps.upload.outcome == 'failure'", again.split("uses:")[0])
+        for attempt in (first, again):
+            self.assertIn("name: ios-results", attempt)
 
     def test_the_artifact_the_mac_downloads_is_made_by_the_join_alone(self):
         self.assertNotIn(f"name: {github_run.ARTIFACT}\n", self.job("test"))
