@@ -89,7 +89,7 @@ class TextMouthUITestCase: XCTestCase {
     func launchIntoTheReader(textSize: String? = nil) throws -> XCUIApplication {
         let app = try launch(sendingTheBook: true, textSize: textSize)
         let play = app.buttons["Play"]
-        XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "The reader never opened:\n\(app.debugDescription)")
+        XCTAssertTrue(play.appears(within: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
         let loaded = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "value == nil OR value != %@", "Loading"), object: play
@@ -105,10 +105,10 @@ class TextMouthUITestCase: XCTestCase {
     func pressPlay(in app: XCUIApplication) throws {
         try requireSound("Pressing Play")
         let play = app.buttons["Play"]
-        XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "No Play to press:\n\(app.debugDescription)")
+        XCTAssertTrue(play.appears(within: Self.patience), "No Play to press:\n\(app.debugDescription)")
         play.tap()
         XCTAssertTrue(
-            app.buttons["Pause"].waitForExistence(timeout: Self.patience),
+            app.buttons["Pause"].appears(within: Self.patience),
             "Play was pressed and the control never read Pause:\n\(app.debugDescription)"
         )
     }
@@ -118,10 +118,10 @@ class TextMouthUITestCase: XCTestCase {
     func pressPause(in app: XCUIApplication) throws {
         try requireSound("Pressing Pause")
         let pause = app.buttons["Pause"]
-        XCTAssertTrue(pause.waitForExistence(timeout: Self.patience), "No Pause to press:\n\(app.debugDescription)")
+        XCTAssertTrue(pause.appears(within: Self.patience), "No Pause to press:\n\(app.debugDescription)")
         pause.tap()
         XCTAssertTrue(
-            app.buttons["Play"].waitForExistence(timeout: Self.patience),
+            app.buttons["Play"].appears(within: Self.patience),
             "Pause was pressed and the control never read Play:\n\(app.debugDescription)"
         )
     }
@@ -134,7 +134,7 @@ class TextMouthUITestCase: XCTestCase {
         try requireSound("Setting a sleep timer, which starts the book playing")
         _ = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
         let choice = app.buttons[button]
-        XCTAssertTrue(choice.waitForExistence(timeout: Self.patience), "No \"\(button)\" in the sheet:\n\(app.debugDescription)")
+        XCTAssertTrue(choice.appears(within: Self.patience), "No \"\(button)\" in the sheet:\n\(app.debugDescription)")
         choice.tap()
         XCTAssertTrue(
             app.navigationBars["Sleep Timer"].waitForNonExistence(timeout: Self.patience),
@@ -151,7 +151,7 @@ class TextMouthUITestCase: XCTestCase {
     func type(_ text: String, intoFieldLabeled label: String, in app: XCUIApplication) throws {
         try requireSound("Typing")
         let field = app.textFields[label]
-        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "No field labeled \"\(label)\":\n\(app.debugDescription)")
+        XCTAssertTrue(field.appears(within: Self.patience), "No field labeled \"\(label)\":\n\(app.debugDescription)")
         if !app.keyboards.firstMatch.exists {
             field.tap()
         }
@@ -187,12 +187,12 @@ class TextMouthUITestCase: XCTestCase {
         for _ in 0..<3 {
             // A tap whose screen took longer than the wait to come has worked.
             if expected.exists { return }
-            guard element.waitForExistence(timeout: Self.patience) else {
+            guard element.appears(within: Self.patience) else {
                 XCTFail("No \(what) to tap:\n\(app.debugDescription)")
                 return
             }
             element.tap()
-            if expected.waitForExistence(timeout: 5) { return }
+            if expected.appears(within: 5) { return }
         }
         XCTFail("Tapping \(what) three times did not bring up what it should:\n\(app.debugDescription)")
     }
@@ -282,7 +282,7 @@ class TextMouthUITestCase: XCTestCase {
         // to do nothing (Bookmarks, pass 5, November 9, 2026).
         tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")
         XCTAssertTrue(
-            app.buttons[element].waitForExistence(timeout: Self.patience),
+            app.buttons[element].appears(within: Self.patience),
             "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
         )
         return try elementsOfSheet(titled: title, in: app)
@@ -541,5 +541,13 @@ class TextMouthUITestCase: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+}
+
+extension XCUIElement {
+    /// Whether the element exists within `timeout` seconds, looking first without waiting: a wait on an element that is
+    /// already there costs about a second of XCUITest's own bookkeeping (the review of ci/ios-ui-tests, finding on time).
+    func appears(within timeout: TimeInterval) -> Bool {
+        exists || waitForExistence(timeout: timeout)
     }
 }
