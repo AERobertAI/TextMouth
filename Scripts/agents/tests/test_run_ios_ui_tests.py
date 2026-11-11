@@ -213,6 +213,15 @@ class TheCommandTests(unittest.TestCase):
         self.assertEqual(command[command.index("-test-timeouts-enabled") + 1], "YES")
         self.assertEqual(command[command.index("-maximum-test-execution-time-allowance") + 1], str(uitests.TEST_SECONDS))
 
+    def test_the_tests_run_in_clones_of_the_simulator_unless_one_worker_is_asked_for(self):
+        command = self.command()
+        self.assertEqual(command[command.index("-parallel-testing-enabled") + 1], "YES")
+        self.assertEqual(command[command.index("-parallel-testing-worker-count") + 1], str(uitests.PARALLEL_WORKERS))
+        with mock.patch.object(uitests, "PARALLEL_WORKERS", 1):
+            single = self.command()
+        self.assertEqual(single[single.index("-parallel-testing-enabled") + 1], "NO")
+        self.assertNotIn("-parallel-testing-worker-count", single)
+
     def test_the_tests_are_handed_the_sound_variable_without_its_prefix_by_xcodebuild(self):
         self.assertEqual(uitests.RUNNER_SOUND_VARIABLE, "TEST_RUNNER_TEXTMOUTH_UI_SOUND")
         self.assertEqual(uitests.test_environment()["TEST_RUNNER_TEXTMOUTH_UI_SOUND"], "1")
@@ -229,7 +238,7 @@ class TheSoundRuleTests(unittest.TestCase):
     # whose comments explain the rule (test_the_workflow_never_sets_the_variable... checks it sets nothing), and the
     # documents. Nothing else may name it.
     ALLOWED = ("Scripts/agents/run-ios-ui-tests.py", "Scripts/agents/tests/", "TextMouthiOSUITests/",
-               ".github/workflows/tests.yml", "docs/", "AGENTS.md", "Scripts/agents/briefs/")
+               ".github/workflows/tests.yml", "project.yml", "docs/", "AGENTS.md", "Scripts/agents/briefs/")
 
     def tracked_files(self):
         """The files of the repository that git tracks (and not the build folders)."""

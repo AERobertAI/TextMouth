@@ -65,6 +65,8 @@ BOOT_SECONDS = 300
 SIMCTL_SECONDS = 120
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
 TEST_SECONDS = 300
+# How many clones of the simulator run the tests at once (1: a single simulator).
+PARALLEL_WORKERS = 2
 # The keyboard's own settings in the simulator, written before the first test: the one-time "Speed up your typing by
 # sliding your finger" page would otherwise cover the keyboard of the first test that types, and a correction or a
 # prediction could change what a test typed.
@@ -153,13 +155,23 @@ def ready_simulator(log):
     return udid, sentence
 
 
+def parallel_arguments():
+    """The xcodebuild arguments that run the tests in PARALLEL_WORKERS clones of the simulator at once, or none for one
+    simulator. The first run on GitHub (42948545901, one simulator) took 17.5 minutes for 34 tests, about 25 seconds each,
+    the runner being a slow virtual machine."""
+    if PARALLEL_WORKERS < 2:
+        return ["-parallel-testing-enabled", "NO"]
+    return ["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", str(PARALLEL_WORKERS),
+            "-maximum-parallel-testing-workers", str(PARALLEL_WORKERS)]
+
+
 def test_command(udid, derived_data, result_bundle, classes):
     """The argv of the run: `test-without-building` of the scheme, in the simulator `udid`, on the interface test bundle
     (or only `classes` of it, each as -only-testing), with a time limit for any one test."""
     only = [f"-only-testing:{BUNDLE}/{name}" for name in classes] if classes else [f"-only-testing:{BUNDLE}"]
     return ["xcodebuild", "test-without-building", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME,
             "-destination", f"id={udid}", "-derivedDataPath", str(derived_data), *only,
-            "-resultBundlePath", str(result_bundle), "-test-timeouts-enabled", "YES",
+            "-resultBundlePath", str(result_bundle), *parallel_arguments(), "-test-timeouts-enabled", "YES",
             "-default-test-execution-time-allowance", str(TEST_SECONDS),
             "-maximum-test-execution-time-allowance", str(TEST_SECONDS),
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"]

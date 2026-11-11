@@ -178,12 +178,21 @@ final class SearchUITests: TextMouthUITestCase {
         // reads the keyboard's own cells too (pass 1, November 9, 2026: three
         // "TUIPredictionViewCell" findings, and contrast findings on the rows
         // under the keyboard). Pass 2 showed that a swipe of the whole app
-        // did not put it away. A drag that begins on the results' heading is
-        // a scroll of the list, which is silent and puts the keyboard away
-        // (`scrollDismissesKeyboard`). If it stays, the audit runs all the
-        // same and says what it finds, with a note that the keyboard was up.
+        // did not put it away. The keyboard's own Search key is how a person
+        // puts it away, and leaves the list where it was, with no row under
+        // the navigation bar's glass (the first GitHub run, 42948545901, found
+        // two contrast findings on rows that the drag below had scrolled under
+        // and just below the bar). Only if the keyboard stays, a drag that
+        // begins on the results' heading is a scroll of the list, which is
+        // silent and puts the keyboard away (`scrollDismissesKeyboard`). If it
+        // stays still, the audit runs all the same and says what it finds,
+        // with a note that the keyboard was up.
+        let searchKey = app.keyboards.buttons["Search"]
+        if searchKey.waitForExistence(timeout: 5) {
+            searchKey.tap()
+        }
         let heading = app.staticTexts["Search results"].firstMatch
-        if heading.exists {
+        if heading.exists, !app.keyboards.firstMatch.waitForNonExistence(timeout: 5) {
             heading.press(forDuration: 0.1, thenDragTo: app.navigationBars["Search in Book"].firstMatch)
         }
         if !app.keyboards.firstMatch.waitForNonExistence(timeout: 10) {
