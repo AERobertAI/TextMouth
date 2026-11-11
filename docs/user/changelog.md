@@ -4,6 +4,17 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.5 (November 10, 2026)
+### Less waiting behind the Mac's slow parts
+- Cancel is now heard at once while TextMouth checks the markup of a large Word, OpenDocument, Word 2003 XML, DAISY, or SSML file before reading it. Before, that check ran to its end first, which for a very large file took a few seconds.
+- When macOS is slow to list its speech voices, the rest of TextMouth no longer waits behind it.
+  - The list is now fetched on a thread of its own. After 10 seconds with no answer, TextMouth stops waiting for it, and asks again the next time you open something that offers voices.
+  - Before, a listing that never came back held one of the few threads that TextMouth's background work shares, for good. Enough of them (three, on a Mac with three cores) stalled downloads, opening books, and the rest of that work until you quit.
+- When TextMouth checks that an audio file's sound can be decoded, as it does when it reads an audiobook's files, the check no longer holds up other work.
+  - If the check has not finished after 60 seconds, TextMouth stops it and uses the length the file's header gives.
+  - Before, a check that never finished held one of those shared threads for good, and whatever waited for it never went on.
+- Not changed: how any book reads, sounds, or is laid out.
+
 ## 0.4.4 (November 10, 2026)
 ### Quitting while work is under way
 - The hang after Quit Anyway, or after a save, is gone. While feed downloads, a book's text read again in another encoding, or a speech export were under way, choosing Quit Anyway in the alert about unsaved changes, or answering the Record window's question or an audio editor's Save or Discard, could leave TextMouth open with its windows stuck. Now the quit ends.
