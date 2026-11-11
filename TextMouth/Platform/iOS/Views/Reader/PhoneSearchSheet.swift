@@ -73,7 +73,6 @@ struct PhoneSearchSheet: View {
                 }
             }
             .task {
-                fillFieldForTesting()
                 // A sheet with one field: focus lands in it, a moment after
                 // the sheet appears, unless the listener has moved first
                 // (the request holds a ticket, as the reader's returns do).
@@ -115,17 +114,6 @@ struct PhoneSearchSheet: View {
                 .accessibilityHint(BookSearchWording.regexHint)
                 .phonePrimaryText()
         }
-    }
-
-    /// Fills the field with the text a UI test asks for, in debug builds only
-    /// (the launch request's search variable): a test must not type, since the
-    /// software keyboard clicks aloud.
-    private func fillFieldForTesting() {
-        #if DEBUG
-        if let text = PhoneLaunchRequest.searchText(ProcessInfo.processInfo.environment) {
-            model.query = text
-        }
-        #endif
     }
 
     // MARK: The results

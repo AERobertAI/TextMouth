@@ -48,24 +48,14 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(PhoneLaunchRequest.filesToOpen(["TEXTMOUTH_OPEN_AT_LAUNCH": "/tmp/a.epub"]).first?.isFileURL, true)
     }
 
-    // MARK: - The Search Filled In
-
-    /// A non-empty value is the text the Search in Book field starts with;
-    /// a missing or empty one leaves the field empty.
-    func testTheSearchTextIsWhatTheVariableHolds() {
-        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "Cheshire"]), "Cheshire")
-        XCTAssertEqual(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": "two words"]), "two words")
-        XCTAssertNil(PhoneLaunchRequest.searchText(["TEXTMOUTH_SEARCH_IN_BOOK": ""]))
-        XCTAssertNil(PhoneLaunchRequest.searchText([:]))
-    }
-
     // MARK: - Where It Is Read
 
     /// Each place that reads the request does so in a debug build of the
     /// iPhone app only: the runtime's sandbox inside `#if os(iOS)` and
-    /// `#if DEBUG`, the scene delegate's file, an iOS file, inside
-    /// `#if DEBUG`, and the Search in Book sheet's text, an iOS file, inside
-    /// `#if DEBUG`.
+    /// `#if DEBUG`, and the scene delegate's file, an iOS file, inside
+    /// `#if DEBUG`. The Search in Book sheet reads nothing of it: a UI test
+    /// types its search into the field, as a person does (it used to fill the
+    /// field from a launch variable, `TEXTMOUTH_SEARCH_IN_BOOK`, which is gone).
     func testTheRequestIsReadOnlyInTheIPhonesDebugBuild() throws {
         let runtime = try Self.source("App/TextMouthRuntime.swift")
         let detect = try Self.text(from: "static func detect(", upTo: "guard environment[testConfigurationVariable]", in: runtime)
@@ -79,9 +69,8 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(scene.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "PhoneLaunchRequest is read outside #if DEBUG")
 
         let sheet = try Self.source("Platform/iOS/Views/Reader/PhoneSearchSheet.swift")
-        let filling = try Self.text(from: "#if DEBUG", upTo: "#endif", in: sheet)
-        XCTAssertTrue(filling.contains("PhoneLaunchRequest.searchText(ProcessInfo.processInfo.environment)"))
-        XCTAssertEqual(sheet.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "The sheet reads PhoneLaunchRequest outside #if DEBUG")
+        XCTAssertFalse(sheet.contains("PhoneLaunchRequest"), "The Search in Book sheet reads the launch request")
+        XCTAssertFalse(sheet.contains("TEXTMOUTH_"), "The Search in Book sheet reads an environment variable")
     }
 
     /// The type itself is compiled into debug builds only: its file opens
