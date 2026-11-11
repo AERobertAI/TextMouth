@@ -1883,7 +1883,7 @@ extension ReaderViewModel {
     /// the end leaves nothing, and one inside a character starts at that
     /// character.
     nonisolated static func hasSpeakableText(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Bool {
-        hasSpeakableText(spokenText[spokenText.index(atUTF16Offset: spokenOffset)...])
+        firstSpeakableOffset(in: spokenText, fromSpokenOffset: spokenOffset) != nil
     }
 
     /// The index of the first chapter at or after `start` that `isSpeakable`

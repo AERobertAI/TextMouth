@@ -1208,6 +1208,13 @@ final class IntegrationSleepTimerTests: XCTestCase {
                 testCase.expected,
                 testCase.name
             )
+            // The rule for what says nothing is one: Play's own question
+            // (is anything speakable from here) is this one's answer.
+            XCTAssertEqual(
+                ReaderViewModel.hasSpeakableText(in: testCase.text, fromSpokenOffset: testCase.from),
+                testCase.expected != nil,
+                "\(testCase.name): hasSpeakableText(in:fromSpokenOffset:) disagrees"
+            )
         }
     }
 
