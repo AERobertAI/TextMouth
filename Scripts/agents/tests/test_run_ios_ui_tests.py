@@ -488,6 +488,24 @@ class RunningTheScriptTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIn("Reason: the run was stopped at its time limit", summary)
 
+    def test_a_set_up_that_leaves_the_step_too_little_time_fails_at_once_and_says_so(self):
+        with mock.patch.object(uitests, "STEP_BUDGET_MINUTES", 3):
+            status, summary, _ = self.run_main()
+        self.assertEqual(status, 1)
+        self.assertIn("Reason: the simulator's set-up took", summary)
+        self.assertIn("for the tests", summary)
+
+    def test_the_tests_limit_is_what_the_step_has_left_after_the_set_up_and_never_more_than_asked(self):
+        seen = []
+        with mock.patch.object(uitests, "run_tests", lambda command, log, limit: seen.append(limit) or (0, False)), \
+                mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stdout(io.StringIO()):
+            uitests.main(["--out", "out"])
+            with mock.patch.object(uitests, "STEP_BUDGET_MINUTES", 20):
+                uitests.main(["--out", "out"])
+        self.assertEqual(seen[0], uitests.DEFAULT_LIMIT_MINUTES, "a step with room gives the whole asked limit")
+        self.assertAlmostEqual(seen[1], 20 - uitests.KILL_GRACE_SECONDS / 60, delta=0.1)
+
     def test_a_request_naming_classes_runs_only_those(self):
         (self.root / "TextMouthiOSUITests" / "Other.swift").write_text("final class SearchUITests: TextMouthUITestCase {}\n")
         self.request({"classes": ["SearchUITests"]})

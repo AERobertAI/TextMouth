@@ -246,17 +246,47 @@ class JobsTests(unittest.TestCase):
         self.assertIn("if: ${{ failure() }}", bundle.split("uses:")[0])
         self.assertIn("path: build/remote-ios/ios-ui-result.xcresult", bundle)
 
-    def test_the_iphone_job_has_room_for_the_download_the_build_and_the_tests(self):
+    def scripts_constants(self):
+        """The limits the two iPhone scripts hold, as {script: module}."""
         import importlib.util
-        limits = {}
+        modules = {}
         for name in ("run-ios-build.py", "run-ios-ui-tests.py"):
-            spec = importlib.util.spec_from_file_location("limits", test_command.AGENTS / name)
+            spec = importlib.util.spec_from_file_location("limits_" + name[:-3].replace("-", "_"), test_command.AGENTS / name)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            limits[name] = module.DEFAULT_LIMIT_MINUTES
-        minutes = int(re.search(r"timeout-minutes: (\d+)", self.job("ios")).group(1))
-        # The platform download (3 to 4 minutes in practice, 15 at the most), the simulator's boot (5), and both limits.
-        self.assertGreaterEqual(minutes, sum(limits.values()) + 15 + 5, "the job's limit is under the sum of its steps' limits")
+            modules[name] = module
+        return modules
+
+    def step_limit(self, ios, step_name):
+        """The `timeout-minutes` of the step called `step_name`, or None when it has none."""
+        step = ios[ios.index(f"name: {step_name}"):]
+        step = step.split("\n      - name:")[0]
+        found = re.search(r"timeout-minutes: (\d+)", step)
+        return int(found.group(1)) if found else None
+
+    def test_the_interface_tests_step_has_a_limit_that_holds_the_scripts_whole_run(self):
+        # The script cuts its tests' limit by the set-up's time (STEP_BUDGET_MINUTES), so that it can write its results
+        # before the runner stops the step; that budget and the kill's grace must fit in the step's limit.
+        ui = self.scripts_constants()["run-ios-ui-tests.py"]
+        step = self.step_limit(self.job("ios"), "Run the iPhone interface tests")
+        self.assertEqual(step, 45)
+        self.assertLessEqual(ui.STEP_BUDGET_MINUTES + 1, step, "the budget and a minute's margin fit the step")
+        self.assertEqual(ui.DEFAULT_LIMIT_MINUTES, 35)
+        # The set-up's worst case: every simctl call at its limit and the boot's wait; the tests keep a useful time after it.
+        setup = (ui.SETUP_SIMCTL_CALLS * ui.SIMCTL_SECONDS + ui.BOOT_SECONDS) / 60
+        left = ui.STEP_BUDGET_MINUTES - setup - ui.KILL_GRACE_SECONDS / 60
+        self.assertGreaterEqual(left, ui.LEAST_TEST_MINUTES, "a set-up in which every call used its whole limit leaves no time for tests")
+
+    def test_the_iphone_job_has_room_for_every_steps_limit_added_up(self):
+        # The platform download, the build and its grace, and the interface tests' step (set-up, tests, and the kill's grace),
+        # each at its limit, must fit in the job's.
+        modules = self.scripts_constants()
+        ios = self.job("ios")
+        job = int(re.search(r"timeout-minutes: (\d+)", ios).group(1))
+        download = self.step_limit(ios, "Download the iOS platform")
+        build = modules["run-ios-build.py"].DEFAULT_LIMIT_MINUTES + 1
+        tests = self.step_limit(ios, "Run the iPhone interface tests")
+        self.assertGreaterEqual(job, download + build + tests, "the job's limit is under the sum of its steps' limits")
 
     def test_the_result_bundle_is_uploaded_only_on_failure(self):
         job = self.job("test")

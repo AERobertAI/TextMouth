@@ -219,9 +219,10 @@ jobs:
     # A request that says "ios": false leaves the iPhone build out.
     if: ${{ needs.plan.outputs.ios == 'true' }}
     runs-on: macos-26
-    # The limits of its steps added: the platform download (15 at most, 3 to 4 in practice), the build (20), the simulator's
-    # boot (5), and the interface tests (25).
-    timeout-minutes: 75
+    # The limits of its steps added (test_workflow.py adds them up): the platform download (15 at most, 3 to 4 in practice),
+    # the build (20 and a minute's grace), and the interface tests' step (45, which holds the simulator's set-up and the
+    # tests). Every run so far took 25 to 37 minutes.
+    timeout-minutes: 90
 
     steps:
       - name: Check out the commit
@@ -300,6 +301,8 @@ jobs:
       # which fails this job and nothing else: the steps below still run, and the join keeps the Mac tests' verdict apart.
       - name: Run the iPhone interface tests
         if: ${{ !cancelled() }}
+        # The script keeps to this: its tests' limit is cut by what the simulator's set-up used (STEP_BUDGET_MINUTES).
+        timeout-minutes: 45
         run: python3 -I -B Scripts/agents/run-ios-ui-tests.py --out build/remote-ios
 
       # Only products of a build that finished are worth keeping for the day: the cache is one for each day and is not

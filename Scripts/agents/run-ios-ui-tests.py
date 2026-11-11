@@ -57,12 +57,23 @@ RUNTIME_VERSION = "26.0"
 # The environment variable that lets a test make sound or type, and the name xcodebuild takes it by.
 SOUND_VARIABLE = "TEXTMOUTH_UI_SOUND"
 RUNNER_SOUND_VARIABLE = "TEST_RUNNER_" + SOUND_VARIABLE
-# The longest the interface tests may take, in minutes, under the job's limit of 45, which the platform download (about 3
-# minutes), the build (up to 20) and the simulator's boot come out of.
-DEFAULT_LIMIT_MINUTES = 25
+# The longest the interface tests may take, in minutes. The slowest full run so far took 21.0 minutes of tests (run
+# 42968173876), so 35 leaves room for a slower runner without a false "stopped at its time limit".
+DEFAULT_LIMIT_MINUTES = 35
+# The whole step, in minutes, as the workflow's step limit (`timeout-minutes: 45` of "Run the iPhone interface tests")
+# less a minute of margin: the tests' limit is cut by what the simulator's set-up used, so that this script always has
+# time to write its results before the runner stops the step.
+STEP_BUDGET_MINUTES = 44
+# The least time worth running the tests in, in minutes: with less left after a slow set-up, the run fails at once, saying so.
+LEAST_TEST_MINUTES = 5
 # The longest the simulator may take to boot, in seconds, and one `simctl` call to answer.
 BOOT_SECONDS = 300
-SIMCTL_SECONDS = 120
+SIMCTL_SECONDS = 60
+# How many `simctl` calls the set-up makes besides the boot's wait: the listing, the runtimes, the devices, the device
+# made when there is none, and one `defaults write` for each keyboard setting (the workflow test adds their limits up).
+SETUP_SIMCTL_CALLS = 4 + 4
+# How long a run past its limit is given to end after being asked to, before it is killed, in seconds.
+KILL_GRACE_SECONDS = 60
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
 TEST_SECONDS = 300
 # How many clones of the simulator run the tests at once (1: a single simulator). Two clones were tried on GitHub (run
@@ -289,14 +300,14 @@ def build_passed(out):
 
 def run_tests(command, log, limit_minutes):
     """Runs `command` with its whole output appended to `log`; returns (its exit status, whether the limit stopped it).
-    A run past the limit is asked to end, then killed a minute later."""
+    A run past the limit is asked to end, then killed KILL_GRACE_SECONDS later."""
     process = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, env=test_environment())
     try:
         return process.wait(timeout=limit_minutes * 60), False
     except subprocess.TimeoutExpired:
         process.terminate()
         try:
-            process.wait(timeout=60)
+            process.wait(timeout=KILL_GRACE_SECONDS)
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
@@ -344,10 +355,16 @@ def main(argv):
             return finish(not_run_lines("FAILED", f"the simulator could not be made ready: {failure}"), 1)
         log.flush()
         setup_seconds = time.monotonic() - started
+        # The tests get what the step has left, never more than they were asked to take.
+        left = STEP_BUDGET_MINUTES - (setup_seconds + KILL_GRACE_SECONDS) / 60
+        if left < LEAST_TEST_MINUTES:
+            return finish(not_run_lines("FAILED", f"the simulator's set-up took {setup_seconds / 60:.1f} minutes, leaving "
+                                        f"{left:.1f} of the step's {STEP_BUDGET_MINUTES} for the tests"), 1)
+        limit_minutes = min(args.limit_minutes, left)
         command = test_command(udid, ROOT / args.derived_data, out / "ios-ui-result.xcresult", named)
         print("command:", " ".join(command), flush=True)
         began = time.monotonic()
-        status, timed_out = run_tests(command, log, args.limit_minutes)
+        status, timed_out = run_tests(command, log, limit_minutes)
         seconds = time.monotonic() - began
     log_text = (out / "ios-ui.log").read_text(encoding="utf-8", errors="replace")
     parsed = parse_results(log_text)
