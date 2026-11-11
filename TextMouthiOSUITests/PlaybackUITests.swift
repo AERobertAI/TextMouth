@@ -137,10 +137,13 @@ final class PlaybackUITests: TextMouthUITestCase {
         let skipBackward = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip backward")).firstMatch
         XCTAssertTrue(skipForward.waitForExistence(timeout: Self.patience), "No Skip forward:\n\(app.debugDescription)")
 
-        // The first words of the opening and of each sentence after it, as Play says them while paused. Eighty characters:
-        // the opening sentence and the one after it begin alike for 25 (run 42995929013).
+        // The first words of each sentence the six presses reach, as Play says them while paused. Eighty characters: some
+        // sentences begin alike for 25 (run 42995929013). The first press reaches the sentence Book content shows as the
+        // opening, since the reading place is the silent cover and Book content shows the first chapter with words (run
+        // 43001624484), so the opening is kept apart and is not counted among them.
         func firstWords(_ text: String) -> String { String(squeezed(text).prefix(80)) }
-        var starts = [firstWords(opening)]
+        let openingWords = firstWords(opening)
+        var starts: [String] = []
         var previous = squeezed(value(of: app.buttons["Play"]))
         for number in 1...skips {
             skipForward.tap()
@@ -154,7 +157,7 @@ final class PlaybackUITests: TextMouthUITestCase {
             previous = now
             starts.append(firstWords(now))
         }
-        XCTAssertEqual(Set(starts).count, starts.count, "Six skips did not reach six different sentences: \(starts)")
+        XCTAssertEqual(Set(starts).count, skips, "Six skips did not reach six different sentences: \(starts)")
         for _ in 0..<skips {
             skipBackward.tap()
         }
@@ -163,10 +166,10 @@ final class PlaybackUITests: TextMouthUITestCase {
         let returning = Date().addingTimeInterval(Self.patience)
         while Date() < returning {
             back = try bookContent(in: app)
-            if firstWords(back) == starts[0] { break }
+            if firstWords(back) == openingWords { break }
             RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
-        XCTAssertEqual(firstWords(back), starts[0], "Six skips back did not return Book content to the opening: \(back.prefix(120))")
+        XCTAssertEqual(firstWords(back), openingWords, "Six skips back did not return Book content to the opening: \(back.prefix(120))")
 
         try pressPlay(in: app)
         for _ in 0..<skips {
@@ -181,8 +184,9 @@ final class PlaybackUITests: TextMouthUITestCase {
         let after = try waitForBookContent(movingFrom: opening, in: app)
         let landed = firstWords(after)
         if let reached = starts.dropLast().firstIndex(of: landed) {
-            XCTFail("\(skips) skips forward while playing reached only sentence \(reached): Book content begins \(after.prefix(120))")
+            XCTFail("\(skips) skips forward while playing reached only sentence \(reached + 1): Book content begins \(after.prefix(120))")
         }
+        XCTAssertNotEqual(landed, openingWords, "\(skips) skips forward while playing left Book content at the opening")
     }
 
     /// Skip backward at the start of the book moves nowhere. Paused, a move that
