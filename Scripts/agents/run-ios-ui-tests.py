@@ -97,8 +97,13 @@ def simctl(*args, timeout=SIMCTL_SECONDS):
     SimulatorFailure, so that no wait is without limit."""
     try:
         return subprocess.run(["xcrun", "simctl", *args], capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        raise SimulatorFailure(f"simctl {args[0]} did not finish in {timeout} seconds")
+    except subprocess.TimeoutExpired as expired:
+        # What the call had printed before it was stopped is the only clue to why it hung (three phone-area runs on
+        # November 11, 2026 lost their tests to "bootstatus did not finish in 300 seconds" with nothing else known).
+        printed = "".join(part.decode("utf-8", "replace") if isinstance(part, bytes) else (part or "")
+                          for part in (expired.stdout, expired.stderr)).strip()
+        raise SimulatorFailure(f"simctl {args[0]} did not finish in {timeout} seconds"
+                               + (f"; it had printed: {printed[-400:]}" if printed else "; it had printed nothing"))
     except OSError as error:
         raise SimulatorFailure(f"could not start simctl: {error}")
 
@@ -353,6 +358,11 @@ def main(argv):
             udid, simulator = ready_simulator(log)
         except SimulatorFailure as failure:
             log.write(f"simulator set-up failed: {failure}\n")
+            # What the devices were doing when it failed.
+            try:
+                log.write(f"$ xcrun simctl list devices booted\n{simctl('list', 'devices', 'booted').stdout}\n")
+            except SimulatorFailure as again:
+                log.write(f"(and the devices could not be listed: {again})\n")
             return finish(not_run_lines("FAILED", f"the simulator could not be made ready: {failure}"), 1)
         log.flush()
         setup_seconds = time.monotonic() - started

@@ -541,7 +541,9 @@ class RunningTheScriptTests(unittest.TestCase):
         fake = [sys.executable, "-c", script]
         printed = io.StringIO()
         simulator = mock.Mock(side_effect=ready) if isinstance(ready, Exception) else mock.Mock(return_value=ready)
+        # No real simctl ever runs here: the failure path lists the booted devices through it.
         with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", simulator), \
+                mock.patch.object(uitests, "simctl", return_value=mock.Mock(stdout="== Devices ==\n")), \
                 mock.patch.object(uitests, "test_command", return_value=fake), contextlib.redirect_stdout(printed):
             status = uitests.main(["--out", "out", *arguments])
         return status, (self.out / "ios-ui-summary.txt").read_text(), printed.getvalue()
@@ -587,6 +589,20 @@ class RunningTheScriptTests(unittest.TestCase):
         status, summary, _ = self.run_main(ready=AssertionError("the simulator must not start"))
         self.assertEqual(status, 0, "the build's failure is the build's result, not this one's")
         self.assertTrue(summary.startswith("iOS UI tests: NOT RUN\nReason: the iPhone build did not pass"))
+
+    def test_a_simctl_call_that_runs_out_its_limit_says_what_it_had_printed(self):
+        import subprocess
+        expired = subprocess.TimeoutExpired(["simctl"], 1, output=b"Monitoring boot status for iPhone 17.\nStatus=Waiting on BackBoard\n")
+        with mock.patch.object(uitests.subprocess, "run", side_effect=expired):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.simctl("bootstatus", "U", timeout=1)
+        self.assertIn("did not finish in 1 seconds; it had printed: Monitoring boot status", str(caught.exception))
+        self.assertIn("Waiting on BackBoard", str(caught.exception))
+        silent = subprocess.TimeoutExpired(["simctl"], 1)
+        with mock.patch.object(uitests.subprocess, "run", side_effect=silent):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.simctl("bootstatus", "U", timeout=1)
+        self.assertIn("it had printed nothing", str(caught.exception))
 
     def test_a_simulator_that_cannot_be_made_ready_fails_the_run_and_says_why(self):
         status, summary, _ = self.run_main(ready=uitests.SimulatorFailure("the runner has no iOS simulator runtime"))
