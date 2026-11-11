@@ -181,17 +181,13 @@ def finish_booting(udid, log, early=False):
     With `early` (the boot was started while the app built), the first wait is only EARLY_BOOT_SECONDS: the first try of
     this (run 42976557216) found such a boot still not finished after 300 seconds, so one that has not finished by then is
     shut down and booted again from nothing, which the wait that follows does."""
-    booted = None
     if early:
         first = simctl("bootstatus", udid, "-b", timeout=EARLY_BOOT_SECONDS, tolerate_timeout=True)
         log.write(f"$ xcrun simctl bootstatus {udid} -b (early boot, {EARLY_BOOT_SECONDS} s) -> {first.returncode}\n")
-        if first.returncode == 0:
-            booted = first
-        else:
+        if first.returncode != 0:
             shut = simctl("shutdown", udid)
             log.write(f"The early boot did not finish; $ xcrun simctl shutdown {udid} -> {shut.returncode} {shut.stderr.strip()}\n")
-    if booted is None:
-        booted = simctl("bootstatus", udid, "-b", timeout=BOOT_SECONDS)
+    booted = simctl("bootstatus", udid, "-b", timeout=BOOT_SECONDS)
     log.write(f"$ xcrun simctl bootstatus {udid} -b -> {booted.returncode}\n{booted.stdout[-2000:]}{booted.stderr[-2000:]}\n")
     if booted.returncode != 0:
         raise SimulatorFailure(f"the simulator {udid} did not boot: {(booted.stderr or booted.stdout).strip()[-300:]}")
