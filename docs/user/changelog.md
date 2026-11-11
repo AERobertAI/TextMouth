@@ -4,6 +4,13 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.6 (November 11, 2026)
+### The End of heading timer on a book's cover
+- A sleep timer set to End of heading on a book that opens at its cover, as a new Project Gutenberg EPUB does, no longer stops playback at once.
+  - Before, the cover has no words, so Play started at the chapter after it. The timer had taken that chapter's first heading as the one to stop at, so it ran out as soon as reading began and said "Sleep timer expired at the end of the heading" before a word was read.
+  - Now the timer stops where the heading that playback starts in ends, as the reader's description of End of heading says. The same goes wherever Play starts past the cursor: the blank lines that end a chapter, a section you skip, empty chapters, white space before a heading, and a long chapter whose speech Play waits for.
+- Not changed: a timer set while playing, at a heading's start, or in the last heading; an audiobook's timer; how any book reads.
+
 ## 0.4.5 (November 10, 2026)
 ### Less waiting behind the Mac's slow parts
 - Cancel is now heard at once while TextMouth checks the markup of a large Word, OpenDocument, Word 2003 XML, DAISY, or SSML file before reading it. Before, that check ran to its end first, which for a very large file took a few seconds.
