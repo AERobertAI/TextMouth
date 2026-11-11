@@ -203,8 +203,13 @@ final class PlaybackUITests: TextMouthUITestCase {
         )
         let first = try secondsLeft(app)
         XCTAssertTrue((540...600).contains(first), "A 10-minute timer just set has \(first) seconds left")
-        RunLoop.current.run(until: Date().addingTimeInterval(4))
-        let second = try secondsLeft(app)
+        // The value changes within a second or two of playing; wait for that, not for a fixed four seconds.
+        var second = first
+        let deadline = Date().addingTimeInterval(15)
+        while second >= first, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+            second = try secondsLeft(app)
+        }
         XCTAssertLessThan(second, first, "The timer did not count down while the book played (\(first), then \(second))")
 
         try pressPause(in: app)
