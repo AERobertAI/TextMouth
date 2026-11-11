@@ -99,15 +99,21 @@ final class LargeTextUITests: TextMouthUITestCase {
 
         let large = try openSearchSheet(typing: SearchUITests.word, textSize: Self.largestText)
         let largeHeights = try searchPartHeights(in: large)
+        // Every part's heights go in the log on every run, so that the bound can be read against them.
+        var shortfalls: [String] = []
         for part in Self.searchParts {
             let before = normalHeights[part] ?? 0
             let after = largeHeights[part] ?? 0
-            XCTAssertGreaterThan(
-                after, before * growth,
-                "\"\(part)\" is \(after) points tall at the largest text size and \(before) at the default: its text did not grow. "
-                    + "Heights at the largest size: \(largeHeights); at the default size: \(normalHeights)"
-            )
+            let line = "SEARCH-GROWTH \"\(part)\": default \(before) points, largest \(after) points, ratio \(before > 0 ? after / before : 0)"
+            print(line)
+            NSLog("%@", line)
+            if !(after > before * growth) {
+                shortfalls.append("\"\(part)\" is \(after) points tall at the largest text size and \(before) at the default")
+            }
         }
+        // MEASURING ONLY (removed once the heights are read): fail with the heights, which the run's log always carries.
+        XCTFail("SEARCH-GROWTH measured: default \(normalHeights); largest \(largeHeights)")
+        XCTAssertTrue(shortfalls.isEmpty, shortfalls.joined(separator: "; "))
         keepScreenshot(of: large, named: "Search in Book at the largest text")
         // The keyboard's own Search key puts it away, as the sheet's audit test does, so that the audit reads the sheet.
         let searchKey = large.keyboards.buttons["Search"]
