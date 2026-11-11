@@ -208,8 +208,12 @@ enum AudioMediaProbe {
                 if first { continuation.resume(returning: problem) }
             }
             decodeQueue.async { answer(check(job)) }
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + deadline) {
-                job.cancelReaders()
+            // The deadline holds the job weakly. A check that answers in time frees the job (the file's asset, its
+            // track, and the readers the check made) as soon as it returns, not a whole deadline later: an import
+            // probes many files a minute, and each job kept until its deadline kept that file's readers open. A
+            // check still running holds the job itself, so at the deadline its readers are still reached.
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + deadline) { [weak job] in
+                job?.cancelReaders()
                 answer(nil)
             }
         }

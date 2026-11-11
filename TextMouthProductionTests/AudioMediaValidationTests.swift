@@ -263,6 +263,39 @@ final class AudioMediaValidationTests: XCTestCase {
         }
     }
 
+    /// What a decoding check saw: whether it was given a job at all, and a weak reference to that job, so a test can
+    /// see when the job is freed.
+    private struct SeenJob {
+        var wasGiven = false
+        weak var job: AudioMediaProbe.DecodeJob?
+    }
+
+    /// A check that answers in time frees its job (the file's asset, its track, and the readers the check made) once
+    /// the probe has answered, not when the deadline passes. An import probes many files a minute, and a job kept
+    /// until its deadline keeps that file's readers open. With the deadline's timer holding the job, it lives on for
+    /// the whole deadline, here thirty seconds.
+    func testAJobIsFreedWhenItsCheckAnswersNotWhenItsDeadlinePasses() async throws {
+        let wave = folder.appendingPathComponent("freed.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let seen = OSAllocatedUnfairLock(initialState: SeenJob())
+
+        let outcome = await AudioMediaProbe.duration(of: wave, decoding: { job in
+            seen.withLock { (state: inout SeenJob) in
+                state.wasGiven = true
+                state.job = job
+            }
+            return nil
+        }, deadline: 30)
+
+        XCTAssertEqual(outcome, .success(2))
+        XCTAssertTrue(seen.withLock { $0.wasGiven }, "the decoding check never ran, so this test proves nothing")
+        for _ in 0..<40 where seen.withLock({ $0.job != nil }) {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertNil(seen.withLock { $0.job },
+                     "the job was still alive 2 seconds after its check answered: the deadline's timer held it")
+    }
+
     /// A plain text file named like an MP3 cannot be opened as audio.
     func testProbeRefusesTextNamedAsAudio() async throws {
         let file = folder.appendingPathComponent("note.mp3")
