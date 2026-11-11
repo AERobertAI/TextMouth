@@ -211,8 +211,8 @@ class JobsTests(unittest.TestCase):
 
     def test_the_iphone_job_writes_the_request_then_builds_then_runs_the_interface_tests_after_the_build(self):
         ios = self.job("ios")
-        order = [ios.index(text) for text in ("Write the request", "Download the iOS platform", "name: Start the simulator",
-                                               "run-ios-build.py", "Restart the audio service",
+        order = [ios.index(text) for text in ("Write the request", "Download the iOS platform", "Restart the audio service",
+                                               "name: Start the simulator", "run-ios-build.py",
                                                "name: Run the iPhone interface tests", "Did the build finish?")]
         self.assertEqual(order, sorted(order), "the steps are out of order")
 
@@ -274,7 +274,8 @@ class JobsTests(unittest.TestCase):
         self.assertLessEqual(ui.STEP_BUDGET_MINUTES + 1, step, "the budget and a minute's margin fit the step")
         self.assertEqual(ui.DEFAULT_LIMIT_MINUTES, 35)
         # The set-up's worst case: every simctl call at its limit and the boot's wait; the tests keep a useful time after it.
-        setup = (ui.SETUP_SIMCTL_CALLS * ui.SIMCTL_SECONDS + ui.BOOT_SECONDS) / 60
+        # ... plus the early boot's first wait and the shutdown after it, when that wait runs out.
+        setup = (ui.SETUP_SIMCTL_CALLS * ui.SIMCTL_SECONDS + ui.BOOT_SECONDS + ui.EARLY_BOOT_SECONDS + ui.SIMCTL_SECONDS) / 60
         left = ui.STEP_BUDGET_MINUTES - setup - ui.KILL_GRACE_SECONDS / 60
         self.assertGreaterEqual(left, ui.LEAST_TEST_MINUTES, "a set-up in which every call used its whole limit leaves no time for tests")
 

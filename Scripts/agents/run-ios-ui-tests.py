@@ -73,6 +73,9 @@ SIMCTL_SECONDS = 60
 # runtimes, the devices, the device made when there is none, the boot, and one `defaults write` for each keyboard
 # setting (the workflow test adds their limits up). Having been prepared, it makes only the last four.
 SETUP_SIMCTL_CALLS = 5 + 4
+# How long the first wait for a boot started early is, in seconds (see finish_booting), and so what that fallback adds to
+# the set-up's worst case, with the shutdown call.
+EARLY_BOOT_SECONDS = 150
 # The file `--prepare` leaves in the output folder: the UDID, a sentence naming the simulator, then its notes.
 PREPARED_FILE = "ios-ui-simulator.txt"
 # How long a run past its limit is given to end after being asked to, before it is killed, in seconds.
@@ -95,12 +98,15 @@ class SimulatorFailure(Exception):
     """The simulator could not be made ready; the message says which step failed and why."""
 
 
-def simctl(*args, timeout=SIMCTL_SECONDS):
+def simctl(*args, timeout=SIMCTL_SECONDS, tolerate_timeout=False):
     """Runs `xcrun simctl args`; returns the finished process (text). A call that hangs or cannot start is a
-    SimulatorFailure, so that no wait is without limit."""
+    SimulatorFailure, so that no wait is without limit; with `tolerate_timeout`, one that outlives its limit is stopped and
+    answered as a failed call (status 124) instead."""
     try:
         return subprocess.run(["xcrun", "simctl", *args], capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
+        if tolerate_timeout:
+            return subprocess.CompletedProcess(args, 124, "", f"simctl {args[0]} did not finish in {timeout} seconds")
         raise SimulatorFailure(f"simctl {args[0]} did not finish in {timeout} seconds")
     except OSError as error:
         raise SimulatorFailure(f"could not start simctl: {error}")
@@ -168,9 +174,19 @@ def start_simulator(log):
     return udid, sentence
 
 
-def finish_booting(udid, log):
+def finish_booting(udid, log, early=False):
     """Waits for the simulator `udid` to finish booting (it boots it first if nothing started it) and sets the keyboard's
-    settings. Every `simctl` call is written to `log`. A boot that does not finish raises SimulatorFailure."""
+    settings. Every `simctl` call is written to `log`. A boot that does not finish raises SimulatorFailure.
+
+    With `early` (the boot was started while the app built), the first wait is only EARLY_BOOT_SECONDS: the first try of
+    this (run 42976557216) found such a boot still not finished after 300 seconds, so one that has not finished by then is
+    shut down and booted again from nothing, which the wait that follows does."""
+    if early:
+        first = simctl("bootstatus", udid, "-b", timeout=EARLY_BOOT_SECONDS, tolerate_timeout=True)
+        log.write(f"$ xcrun simctl bootstatus {udid} -b (early boot, {EARLY_BOOT_SECONDS} s) -> {first.returncode}\n")
+        if first.returncode != 0:
+            shut = simctl("shutdown", udid)
+            log.write(f"The early boot did not finish; $ xcrun simctl shutdown {udid} -> {shut.returncode} {shut.stderr.strip()}\n")
     booted = simctl("bootstatus", udid, "-b", timeout=BOOT_SECONDS)
     log.write(f"$ xcrun simctl bootstatus {udid} -b -> {booted.returncode}\n{booted.stdout[-2000:]}{booted.stderr[-2000:]}\n")
     if booted.returncode != 0:
@@ -185,7 +201,7 @@ def ready_simulator(log, prepared=None):
     UDID and sentence that `--prepare` left, started booting while the app built) it only waits for that boot to finish;
     without it, it finds or makes the device and starts it first. Every `simctl` call is written to `log`."""
     udid, sentence = prepared if prepared else start_simulator(log)
-    finish_booting(udid, log)
+    finish_booting(udid, log, early=bool(prepared))
     return udid, sentence
 
 
