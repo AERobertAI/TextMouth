@@ -255,12 +255,45 @@ final class PlaybackUITests: TextMouthUITestCase {
         XCTAssertEqual(try secondsLeft(app), paused, "The timer went on counting while the book was paused")
     }
 
+    /// Stop At "End of heading", set at the book's opening, starts the book and
+    /// keeps it playing, and the Sleep Timer reads as the place it waits for.
+    ///
+    /// The book opens at its cover, an image with nothing to read, and Play
+    /// starts past it, at the first heading with words. Until version 0.4.6 the
+    /// timer took the heading after the cursor instead, which was that very
+    /// heading, so it ran out at once: the book stopped, said the timer had
+    /// expired, and the control read "Off" (the first GitHub run that tried it,
+    /// run 42948545901, saw the book not playing and "Off"; the cause was found
+    /// on November 11, 2026). The timer now waits for the heading Play starts
+    /// in. Three things are checked, each of which that fault breaks: the book
+    /// plays; it is still playing a few seconds later (a timer that had run out
+    /// pauses the book at once, and the control turns back into Play); and the
+    /// Sleep Timer's value names the end of the heading, not "Off".
+    func testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop() throws {
+        try requireSound("Setting a sleep timer, which starts the book playing")
+        let app = try launchIntoTheReader()
+        XCTAssertEqual(value(of: app.buttons["Sleep Timer"]), "Off", "The timer before one is set")
+        try startSleepTimer("Stop at the end of this heading and start playing", in: app)
+        XCTAssertTrue(
+            app.buttons["Pause"].waitForExistence(timeout: Self.patience),
+            "The book did not start playing after the End of heading timer was set at the cover. The control reads "
+                + "\"\(app.buttons["Play"].label)\", and the Sleep Timer reads \"\(value(of: app.buttons["Sleep Timer"]))\":\n\(app.debugDescription)"
+        )
+        // The value is read first, the moment the book plays: it is what a listener hears on the control.
+        let timer = app.buttons["Sleep Timer"]
+        XCTAssertTrue(
+            value(of: timer).localizedCaseInsensitiveContains("end of this heading"),
+            "The timer's value after it was set at the cover: \"\(value(of: timer))\" (\"Off\" means it ran out at once)"
+        )
+        // A timer that ran out at once pauses the book a moment after it started: hold, for a few seconds, that it plays on.
+        assertHolds(app.buttons["Pause"], what: "Pause after an End of heading timer was set at the cover", in: app)
+        try pressPauseIfPlaying(app)
+    }
+
     /// Stop At "End of the book" starts the book and reads as the place it
     /// waits for; Cancel Timer in the sheet ends it, and the control reads
-    /// "Off". (End of heading was tried first and is not used: at the book's
-    /// opening the timer set for it was gone, with the book not playing and
-    /// the control reading "Off", in the first GitHub run that tried it, run
-    /// 42948545901. Why is not known; the book opens at a chapter with no words.)
+    /// "Off". (The End of heading timer at the cover has a test of its own,
+    /// above.)
     func testAnEndOfBookTimerNamesItsStopAndCancelEndsIt() throws {
         try requireSound("Setting a sleep timer, which starts the book playing")
         let app = try launchIntoTheReader()
