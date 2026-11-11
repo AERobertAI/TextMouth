@@ -66,12 +66,17 @@ DEFAULT_LIMIT_MINUTES = 35
 STEP_BUDGET_MINUTES = 44
 # The least time worth running the tests in, in minutes: with less left after a slow set-up, the run fails at once, saying so.
 LEAST_TEST_MINUTES = 5
+# How long the first boot of a device is waited for, in seconds: a boot took 1 to 3 minutes in the runs that finished, and four
+# of the last seven on November 11, 2026 never finished ("Waiting on BackBoard", for 300 seconds). A boot not done by then
+# is given up on, and the tests get a new device (see ready_simulator), which is waited for BOOT_SECONDS.
+FIRST_BOOT_SECONDS = 180
 # The longest the simulator may take to boot, in seconds, and one `simctl` call to answer.
 BOOT_SECONDS = 300
 SIMCTL_SECONDS = 60
-# How many `simctl` calls the set-up makes besides the boot's wait: the listing, the runtimes, the devices, the device
-# made when there is none, and one `defaults write` for each keyboard setting (the workflow test adds their limits up).
-SETUP_SIMCTL_CALLS = 4 + 4
+# How many `simctl` calls the set-up makes besides the boots' waits, at the most: the listing, the runtimes, the devices, the
+# device made when there is none, the shutdown of a device that did not boot, the new device made for the second try, and one
+# `defaults write` for each keyboard setting (the workflow test adds their limits up, with FIRST_BOOT_SECONDS and BOOT_SECONDS).
+SETUP_SIMCTL_CALLS = 6 + 4
 # How long a run past its limit is given to end after being asked to, before it is killed, in seconds.
 KILL_GRACE_SECONDS = 60
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
@@ -90,6 +95,10 @@ KEYBOARD_SETTINGS = (("DidShowContinuousPathIntroduction", True), ("KeyboardAuto
 
 class SimulatorFailure(Exception):
     """The simulator could not be made ready; the message says which step failed and why."""
+
+
+class BootTimedOut(SimulatorFailure):
+    """A boot did not finish in the time it was given; the message holds what `simctl bootstatus` had printed."""
 
 
 def simctl(*args, timeout=SIMCTL_SECONDS):
@@ -144,6 +153,20 @@ def choose_device(devices, runtime_id, name=DEVICE_NAME):
     return None
 
 
+def wait_for_boot(udid, seconds, log):
+    """Boots the device `udid` if nothing has and waits up to `seconds` for it to finish (`simctl bootstatus -b`). Raises
+    BootTimedOut, holding what bootstatus had printed, when the time passes, and SimulatorFailure when the call fails."""
+    try:
+        booted = simctl("bootstatus", udid, "-b", timeout=seconds)
+    except SimulatorFailure as failure:
+        if "did not finish in" in str(failure):
+            raise BootTimedOut(str(failure))
+        raise
+    log.write(f"$ xcrun simctl bootstatus {udid} -b -> {booted.returncode}\n{booted.stdout[-2000:]}{booted.stderr[-2000:]}\n")
+    if booted.returncode != 0:
+        raise SimulatorFailure(f"the simulator {udid} did not boot: {(booted.stderr or booted.stdout).strip()[-300:]}")
+
+
 def ready_simulator(log):
     """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
@@ -160,10 +183,19 @@ def ready_simulator(log):
         log.write(f"$ xcrun simctl create -> {made.returncode}: {made.stdout}{made.stderr}\n")
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"could not make an {DEVICE_NAME} on {runtime['identifier']}: {made.stderr.strip()[:300]}")
-    booted = simctl("bootstatus", udid, "-b", timeout=BOOT_SECONDS)
-    log.write(f"$ xcrun simctl bootstatus {udid} -b -> {booted.returncode}\n{booted.stdout[-2000:]}{booted.stderr[-2000:]}\n")
-    if booted.returncode != 0:
-        raise SimulatorFailure(f"the simulator {udid} did not boot: {(booted.stderr or booted.stdout).strip()[-300:]}")
+    try:
+        wait_for_boot(udid, FIRST_BOOT_SECONDS, log)
+    except BootTimedOut as stuck:
+        # The device is stuck (it prints "Waiting on BackBoard" and goes no further): shut it down and boot a new one.
+        log.write(f"The boot of {udid} did not finish: {stuck}\n")
+        shut = simctl("shutdown", udid)
+        log.write(f"$ xcrun simctl shutdown {udid} -> {shut.returncode} {shut.stderr.strip()}\n")
+        made = simctl("create", f"TextMouth {DEVICE_NAME} second try", DEVICE_TYPE, runtime["identifier"])
+        udid = made.stdout.strip()
+        log.write(f"$ xcrun simctl create (a new device) -> {made.returncode}: {made.stdout}{made.stderr}\n")
+        if made.returncode != 0 or not udid:
+            raise SimulatorFailure(f"the first boot did not finish ({stuck}) and a new device could not be made: {made.stderr.strip()[:300]}")
+        wait_for_boot(udid, BOOT_SECONDS, log)
     for key, value in KEYBOARD_SETTINGS:
         written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false")
         log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")

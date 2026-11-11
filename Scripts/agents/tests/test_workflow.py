@@ -273,7 +273,7 @@ class JobsTests(unittest.TestCase):
         self.assertLessEqual(ui.STEP_BUDGET_MINUTES + 1, step, "the budget and a minute's margin fit the step")
         self.assertEqual(ui.DEFAULT_LIMIT_MINUTES, 35)
         # The set-up's worst case: every simctl call at its limit and the boot's wait; the tests keep a useful time after it.
-        setup = (ui.SETUP_SIMCTL_CALLS * ui.SIMCTL_SECONDS + ui.BOOT_SECONDS) / 60
+        setup = (ui.SETUP_SIMCTL_CALLS * ui.SIMCTL_SECONDS + ui.FIRST_BOOT_SECONDS + ui.BOOT_SECONDS) / 60
         left = ui.STEP_BUDGET_MINUTES - setup - ui.KILL_GRACE_SECONDS / 60
         self.assertGreaterEqual(left, ui.LEAST_TEST_MINUTES, "a set-up in which every call used its whole limit leaves no time for tests")
 

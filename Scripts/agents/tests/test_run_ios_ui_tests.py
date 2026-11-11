@@ -469,6 +469,60 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertEqual(udid, "NEWUDID")
         self.assertIn(("create", "TextMouth iPhone 17", uitests.DEVICE_TYPE, self.RUNTIME["identifier"]), calls)
 
+    def test_a_boot_that_hangs_is_given_up_on_and_the_tests_get_a_new_device(self):
+        # Run 43005173856 and three before it: bootstatus stuck at "Waiting on BackBoard" for the whole 300 seconds.
+        calls = []
+        boots = []
+
+        def fake_simctl(*args, timeout=0):
+            """The first device's boot runs out its time; the second's finishes; a new device has a new id."""
+            calls.append((args[0], timeout))
+            if args[0] == "bootstatus":
+                boots.append(args[1])
+                if len(boots) == 1:
+                    raise uitests.SimulatorFailure(f"simctl bootstatus did not finish in {timeout} seconds; it had printed: Waiting on BackBoard")
+            if args[0] == "create":
+                return mock.Mock(stdout="NEWUDID\n", stderr="", returncode=0)
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """One runtime, one device."""
+            if args[0] == "runtimes":
+                return {"runtimes": [self.RUNTIME]}
+            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        log = io.StringIO()
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            udid, sentence = uitests.ready_simulator(log)
+        self.assertEqual(udid, "NEWUDID")
+        self.assertIn("NEWUDID", sentence)
+        self.assertEqual(boots, ["OLDUDID", "NEWUDID"])
+        names = [name for name, _ in calls]
+        self.assertEqual(names[names.index("bootstatus"):names.index("bootstatus") + 4], ["bootstatus", "shutdown", "create", "bootstatus"])
+        self.assertEqual([timeout for name, timeout in calls if name == "bootstatus"], [uitests.FIRST_BOOT_SECONDS, uitests.BOOT_SECONDS])
+        self.assertIn("Waiting on BackBoard", log.getvalue())
+        self.assertEqual(sum(name == "spawn" for name in names), len(uitests.KEYBOARD_SETTINGS), "the settings go on the new device")
+
+    def test_a_second_boot_that_hangs_too_is_a_failure(self):
+        def fake_simctl(*args, timeout=0):
+            """Every boot runs out its time."""
+            if args[0] == "bootstatus":
+                raise uitests.SimulatorFailure(f"simctl bootstatus did not finish in {timeout} seconds; it had printed: Waiting on BackBoard")
+            if args[0] == "create":
+                return mock.Mock(stdout="NEWUDID\n", stderr="", returncode=0)
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """One runtime, one device."""
+            if args[0] == "runtimes":
+                return {"runtimes": [self.RUNTIME]}
+            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.ready_simulator(io.StringIO())
+        self.assertIn("did not finish in 300 seconds", str(caught.exception))
+
     def test_a_device_that_cannot_be_made_is_a_failure_that_says_so(self):
         failure, _, _ = self.run_setup(devices={}, create=("", 1))
         self.assertIsInstance(failure, uitests.SimulatorFailure)
