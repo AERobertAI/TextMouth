@@ -425,6 +425,100 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
+    /// An End of heading timer set while Play waits for a long chapter's
+    /// speech, after a cover, took the cursor's heading, which is the first
+    /// of the chapter Play was about to start in: when the speech was ready,
+    /// speech began there and the first refresh stopped the book at once, in
+    /// silence ("Sleep timer expired at the end of the heading"). Play now
+    /// settles the heading as it starts, so playback goes on and stops where
+    /// the next heading begins.
+    ///
+    /// The preparation is one the test finishes, so speech starts only when
+    /// the test hands its result over.
+    func testAnEndOfHeadingTimerSetWhilePlayWaitsForALongChapterStopsWhereTheNextHeadingBegins() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        try withReader(chapters: Self.coverBeforeALongChapter(seed: 67)) { reader, _ in
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+            XCTAssertTrue(inputs.isLong)
+            XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
+            let market = try XCTUnwrap(reader.headings.first { $0.text == "Market" }, "No Market heading")
+            reader.play()
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "Play did not wait for the speech")
+
+            reader.startSleepTimer(duration: .endOfHeading)
+            XCTAssertEqual(reader.sleepTimerNextHeading?.text, "Harbour", "The provisional choice is the cursor's heading")
+            reader.finishPreparingInBackground(inputs.prepare())
+            XCTAssertEqual([reader.currentChapterIndex, reader.currentCharacterOffset], [1, 0], "Speech did not start in the long chapter")
+
+            var timerInEffectAtStart = false
+            var spokeAtStart = false
+            var spokeIntoMarket = true
+            let recorder = recordingAnnouncements {
+                // The reader's first refresh of its view of the cursor.
+                reader.stopForSleepTimerIfPlaybackReachedHeadingEnd()
+                timerInEffectAtStart = timer.isActive
+                spokeAtStart = reader.speechService.isSpeaking
+                let spokenOffset = reader.currentOffsetMap?.toModified(market.characterOffset) ?? market.characterOffset
+                reader.speechService.onWordSpoken?(NSRange(location: spokenOffset, length: 1), "x")
+                reader.stopForSleepTimerIfPlaybackReachedHeadingEnd()
+                spokeIntoMarket = reader.speechService.isSpeaking
+            }
+            silence(reader)
+
+            XCTAssertTrue(timerInEffectAtStart, "The timer ended as the awaited speech started, in silence")
+            XCTAssertTrue(spokeAtStart, "Playback was stopped as it started")
+            XCTAssertFalse(spokeIntoMarket, "Speech went on into the Market heading")
+            XCTAssertEqual(
+                recorder.announcements.map(\.message),
+                ["Sleep timer expired at the end of the heading. Playback paused."],
+                "The listener must hear the timer end once, at the heading"
+            )
+            XCTAssertEqual(reader.currentCharacterOffset, market.characterOffset, "The cursor is not at Market")
+        }
+    }
+
+    /// Choosing the heading an End of heading timer waits for never prepares
+    /// speech on the main actor, which Play's own wait for a preparation
+    /// under way never does: setting the timer, and the refreshes a loaded
+    /// book and an edited text make (`refreshSleepTimerHeading()`), leave a
+    /// long chapter that is not kept alone, and start no preparation. The
+    /// cursor's heading stands in until Play starts.
+    func testChoosingTheTimersHeadingNeverPreparesALongChapterOnTheMainActor() throws {
+        preserveSharedSleepTimer()
+        let cases: [(name: String, beingPrepared: Bool)] = [
+            ("a chapter being prepared in the background", true),
+            ("a chapter nobody has begun preparing", false),
+        ]
+        for testCase in cases {
+            try withReader(chapters: Self.coverBeforeALongChapter(seed: 71)) { reader, _ in
+                let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1), testCase.name)
+                XCTAssertTrue(inputs.isLong, testCase.name)
+                if testCase.beingPrepared {
+                    XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs), testCase.name)
+                }
+
+                reader.startSleepTimer(duration: .endOfHeading)
+                reader.refreshSleepTimerHeading()
+
+                XCTAssertFalse(
+                    reader.chapterSpeechCache.isKept(inputs),
+                    "\(testCase.name): the long chapter was prepared on the main actor"
+                )
+                XCTAssertEqual(
+                    reader.chapterSpeechCache.isPreparingInBackground(inputs),
+                    testCase.beingPrepared,
+                    "\(testCase.name): a preparation was started or ended"
+                )
+                XCTAssertEqual(
+                    reader.sleepTimerNextHeading?.text,
+                    "Harbour",
+                    "\(testCase.name): the provisional heading"
+                )
+            }
+        }
+    }
+
     /// A change to what the chapter is prepared from, made while Play
     /// waits, is never missed: the speech the preparation then hands over,
     /// made from the settings before the change, is neither kept nor
@@ -1043,6 +1137,14 @@ final class SpeechPreparationCacheTests: XCTestCase {
         let length = SpeechRenderCoordinator.maximumTextLength + 20_000
         sections[sections.count - 1].body += "\n\n" + prose.text(utf16Length: length)
         return [chapters[0], chapter(sections: sections)]
+    }
+
+    /// A cover, a chapter of no words at all, then the long chapter of
+    /// `chaptersEndingInALongOne(seed:)` with its headings Harbour and
+    /// Market, so Play passes the cover over and waits for the long chapter's
+    /// speech when it is being prepared.
+    private static func coverBeforeALongChapter(seed: UInt64) -> [Chapter] {
+        [Chapter(title: "Cover", text: ""), chaptersEndingInALongOne(seed: seed)[1]]
     }
 
     /// `chapters` with `old` replaced by `new` in the middle chapter, as a

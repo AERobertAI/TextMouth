@@ -1163,20 +1163,31 @@ final class IntegrationSleepTimerTests: XCTestCase {
         }
     }
 
-    /// While the book plays, the heading playing is the cursor's: a timer set
-    /// then waits for the first heading after the cursor, as before.
-    func testEndOfHeadingTimerSetWhilePlayingWaitsForTheHeadingAfterTheCursor() throws {
+    /// While the book plays, the heading playing is the cursor's, even where
+    /// the cursor sits in white space that nothing says: playback in the
+    /// blank lines that end a chapter has the chapter's last heading still
+    /// playing, so a timer set then waits for the first heading of the next
+    /// chapter, where that heading ends. (Taken from where Play would start,
+    /// it would skip that heading and stop a heading late.)
+    func testEndOfHeadingTimerSetWhilePlayingInAChaptersLastBlankLinesWaitsForTheHeadingAfterTheCursor() throws {
         preserveSharedSleepTimer()
-        let harbour = harbourChapter()
-        try withSpeechReader("Sleep Timer Heading While Playing", chapters: [harbour.chapter]) { speech in
+        let opening = chapter(titled: "Moorings", text: "Moorings\n\nThe moorings are noted here.\n\n\n", headings: ["Moorings"])
+        let next = chapter(
+            titled: "Tides",
+            text: "Tides\n\nThe tides are noted here.\n\nQuays\n\nThe quays are noted here.",
+            headings: ["Tides", "Quays"]
+        )
+        try withSpeechReader("Sleep Timer Heading While Playing", chapters: [opening, next]) { speech in
             let reader = speech.reader
             reader.play()
             XCTAssertTrue(reader.isPlaybackUnderWay, "The book is not playing")
+            // Playback has reached the blank lines that end the chapter.
+            reader.currentCharacterOffset = opening.text.utf16.count - 2
 
             reader.startSleepTimer(duration: .endOfHeading)
             reader.speechService.stop()
 
-            XCTAssertEqual(reader.sleepTimerNextHeading?.text, "Tides")
+            XCTAssertEqual(reader.sleepTimerNextHeading?.text, "Tides", "A playing book's timer waits for the heading after the cursor")
         }
     }
 
