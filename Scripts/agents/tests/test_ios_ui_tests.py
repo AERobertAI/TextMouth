@@ -1,0 +1,124 @@
+"""Tests of ios_ui_tests.py: which of the iPhone's interface test classes a request asks for.
+
+Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
+
+Each test makes a throwaway folder with a few Swift files, so no test reads the real interface tests but the one that
+checks the repository's own folder is found.
+"""
+import tempfile
+import unittest
+from pathlib import Path
+
+from heavy_lock_case import HeavyLockTestCase  # noqa: F401  (puts the scripts' folder on the path)
+import ios_ui_tests as ui  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+class TreeCase(unittest.TestCase):
+    """A throwaway tree with a TextMouthiOSUITests folder holding the classes a test names."""
+
+    def tree(self, **files):
+        """Makes the tree (each keyword is a file's name, its value the source) and returns its path."""
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        root = Path(folder.name)
+        (root / ui.UI_FOLDER).mkdir()
+        for name, source in files.items():
+            (root / ui.UI_FOLDER / f"{name}.swift").write_text(source)
+        return root
+
+    def standard(self):
+        """A tree like the repository's: a base class, and three test classes in two files."""
+        return self.tree(
+            TextMouthUITestCase="@MainActor\nclass TextMouthUITestCase: XCTestCase {\n}\n",
+            ReaderUITests="final class ReaderUITests: TextMouthUITestCase {\n}\n",
+            Two="final class SearchUITests: TextMouthUITestCase {\n}\nclass PlaybackUITests: TextMouthUITestCase {\n}\n",
+        )
+
+
+class FindingTheClassesTests(TreeCase):
+    """The classes are those that inherit the base class, which is not itself one."""
+
+    def test_the_classes_inheriting_the_base_are_found_sorted_and_the_base_is_not_one(self):
+        self.assertEqual(ui.ui_classes(self.standard()), ["PlaybackUITests", "ReaderUITests", "SearchUITests"])
+
+    def test_a_class_that_inherits_something_else_is_not_one(self):
+        root = self.tree(Other="final class HelperTests: XCTestCase {\n}\nstruct S: TextMouthUITestCase {}\n")
+        self.assertEqual(ui.ui_classes(root), [])
+
+    def test_a_tree_without_the_folder_has_none(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.assertEqual(ui.ui_classes(folder.name), [])
+
+    def test_the_repositorys_own_interface_tests_are_found(self):
+        found = ui.ui_classes(ROOT)
+        for name in ("ReaderUITests", "LibraryUITests", "SearchUITests", "ScreenOrderUITests", "LargeTextUITests",
+                     "PlaybackUITests"):
+            self.assertIn(name, found)
+        self.assertNotIn("TextMouthUITestCase", found)
+
+
+class SplittingNamesTests(TreeCase):
+    """The interface classes named in a request's "classes" move to "ios_ui_classes"; the Mac's stay."""
+
+    def test_interface_classes_move_out_of_classes_and_mac_classes_stay(self):
+        request = {"areas": ["feeds"], "classes": ["FooTests", "SearchUITests", "BarTests"]}
+        split = ui.split_classes(request, self.standard())
+        self.assertEqual(split["classes"], ["FooTests", "BarTests"])
+        self.assertEqual(split["ios_ui_classes"], ["SearchUITests"])
+        self.assertEqual(split["areas"], ["feeds"])
+        self.assertEqual(request["classes"], ["FooTests", "SearchUITests", "BarTests"], "the request is not changed")
+
+    def test_names_already_in_ios_ui_classes_are_joined_once_each_in_order(self):
+        request = {"classes": ["SearchUITests"], "ios_ui_classes": ["ReaderUITests", "SearchUITests"]}
+        self.assertEqual(ui.split_classes(request, self.standard())["ios_ui_classes"], ["ReaderUITests", "SearchUITests"])
+
+    def test_a_request_with_no_interface_names_is_left_as_it_was(self):
+        request = {"classes": ["FooTests"], "areas": [], "full": False}
+        self.assertEqual(ui.split_classes(request, self.standard()), request)
+
+
+class WhichTestsAreAskedForTests(TreeCase):
+    """The rules of the module's comment, one test each."""
+
+    def wanted(self, request):
+        """The classes the request asks for in the standard tree."""
+        return ui.wanted(request, self.standard())
+
+    EVERY = ["PlaybackUITests", "ReaderUITests", "SearchUITests"]
+
+    def test_a_full_suite_runs_every_class(self):
+        self.assertEqual(self.wanted({"full": True, "areas": [], "classes": []}), self.EVERY)
+
+    def test_the_phone_area_and_the_area_all_run_every_class(self):
+        self.assertEqual(self.wanted({"areas": ["phone"], "classes": []}), self.EVERY)
+        self.assertEqual(self.wanted({"areas": ["feeds", "all"], "classes": []}), self.EVERY)
+
+    def test_another_area_or_a_mac_class_runs_none(self):
+        self.assertEqual(self.wanted({"areas": ["feeds", "audio"], "classes": ["FooTests"]}), [])
+        self.assertEqual(self.wanted({}), [])
+
+    def test_a_named_interface_class_runs_that_class_alone(self):
+        self.assertEqual(self.wanted({"areas": [], "classes": ["SearchUITests", "FooTests"]}), ["SearchUITests"])
+        self.assertEqual(self.wanted({"areas": ["feeds"], "ios_ui_classes": ["ReaderUITests"]}), ["ReaderUITests"])
+
+    def test_a_name_the_folder_does_not_hold_asks_for_nothing(self):
+        self.assertEqual(self.wanted({"ios_ui_classes": ["NoSuchUITests"]}), [])
+
+    def test_a_request_that_leaves_the_iphone_job_out_runs_none_whatever_else_it_says(self):
+        self.assertEqual(self.wanted({"ios": False, "full": True, "areas": ["phone"], "ios_ui": True}), [])
+
+    def test_ios_ui_false_runs_none_and_true_runs_the_named_or_all(self):
+        self.assertEqual(self.wanted({"ios_ui": False, "full": True}), [])
+        self.assertEqual(self.wanted({"ios_ui": True}), self.EVERY)
+        self.assertEqual(self.wanted({"ios_ui": True, "classes": ["ReaderUITests"]}), ["ReaderUITests"])
+
+    def test_a_value_that_is_not_a_truth_value_is_not_an_answer(self):
+        self.assertEqual(self.wanted({"ios_ui": "yes"}), [])
+        self.assertEqual(self.wanted({"ios_ui": "no", "full": True}), self.EVERY)
+
+
+if __name__ == "__main__":
+    unittest.main()

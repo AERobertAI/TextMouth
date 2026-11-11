@@ -12,7 +12,11 @@ suite (run_suite.py --remote) go through here:
    private, since the repository is public and everything pushed is published.
 3. `push` waits, up to a limit, while another run is queued or going on TestBuild (a newer push
    cancels the older run, so a sender must not cut off a run it did not start), then pushes that commit
-   to the branch TestBuild, and to no other ref.
+   to the branch TestBuild, and to no other ref. It holds one exclusive lock, shared by every worktree of
+   this repository on this Mac, from before its idle check until GitHub shows the run of its own push (matched
+   by the commit's SHA): GitHub takes a few seconds to register a run, and a second sender whose idle check ran
+   in that gap found nothing queued, pushed, and cancelled the first (November 11, 2026: run 43000459553, 3
+   seconds after it began).
 4. `find_run` and `wait_for_run` find the run that push started, by the
    commit's SHA, and wait for it, up to a limit.
 5. `download` brings the run's artifacts to a folder.
@@ -21,6 +25,8 @@ Every wait has a limit. A step that cannot finish raises RemoteFailure with a
 sentence for the agents and the orchestrator; callers then leave nothing half
 done. Python 3 standard library only.
 """
+import contextlib
+import fcntl
 import json
 import os
 import subprocess
@@ -72,6 +78,14 @@ RUN_APPEARS_SECONDS = 5 * 60
 RUN_LIMIT_MINUTES = 125
 # How often to ask GitHub how the run is going.
 POLL_SECONDS = 30
+# The lock every push holds (see `push`): its file's name, in the repository's common git folder, which all worktrees share.
+PUSH_LOCK_NAME = "textmouth-testbuild-push.lock"
+# How long a push waits, after pushing, for GitHub to show its run before it lets go of the lock and says so, and how often
+# it looks. About 90 seconds: the run showed within seconds in every run so far.
+REGISTER_SECONDS = 90
+REGISTER_POLL_SECONDS = 5
+# How often a push waiting for the lock looks again.
+LOCK_POLL_SECONDS = 2
 # How many times in all a failed `gh` call that asks GitHub about runs is made, and the pause between them.
 GH_ATTEMPTS = 4
 GH_RETRY_SECONDS = 15
@@ -229,19 +243,80 @@ def wait_until_idle(limit_minutes=IDLE_WAIT_MINUTES, progress=None):
         SLEEP(IDLE_POLL_SECONDS)
 
 
+def push_lock_path(cwd):
+    """The lock file's path: in the git common folder of the repository at `cwd`, which every worktree of the repository
+    shares (`git rev-parse --git-common-dir` is relative to `cwd` in the main checkout, absolute in a worktree)."""
+    common = Path(git(cwd, "rev-parse", "--git-common-dir"))
+    return (common if common.is_absolute() else Path(cwd) / common) / PUSH_LOCK_NAME
+
+
+@contextlib.contextmanager
+def push_lock(cwd, limit_seconds, progress=None):
+    """Holds the push lock (an exclusive `flock` on push_lock_path) for the `with` block. Waits for another holder, looking
+    again every LOCK_POLL_SECONDS, and raises RemoteFailure after `limit_seconds`. `progress`, when given, is told once
+    that it is waiting. The lock goes when the block ends, and when the process does, whatever happens."""
+    with open(push_lock_path(cwd), "a") as handle:
+        started = CLOCK()
+        told = False
+        while True:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if not told and progress:
+                    progress("waiting for another push from this Mac to be seen by GitHub before pushing")
+                    told = True
+                if CLOCK() - started > limit_seconds:
+                    raise RemoteFailure(f"not pushed: another push from this Mac held the push lock for {limit_seconds // 60} minutes")
+                SLEEP(LOCK_POLL_SECONDS)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def wait_for_registration(commit, progress=None):
+    """Waits, up to REGISTER_SECONDS, until GitHub lists a run of this workflow on TestBuild for `commit`: the push has
+    then started a run that a later push's idle check will see. Returns whether it did. It never raises: a `gh` that fails,
+    or a run that does not show in time, is told plainly through `progress` and the caller goes on (the lock is let go)."""
+    started = CLOCK()
+    while True:
+        try:
+            runs = gh_json("run", "list", "-R", REPO, "--branch", BRANCH, "--commit", commit,
+                           "--json", "databaseId,headSha,workflowName", "--limit", "10")
+        except RemoteFailure as failure:
+            if progress:
+                progress(f"could not ask GitHub whether {commit[:8]} started a run ({failure}); the push lock is let go")
+            return False
+        if any(run.get("headSha") == commit and run.get("workflowName") == WORKFLOW_NAME for run in runs):
+            return True
+        if CLOCK() - started > REGISTER_SECONDS:
+            if progress:
+                progress(f"GitHub showed no run of {commit[:8]} in {REGISTER_SECONDS} seconds; the push lock is let go, "
+                         f"so another push may cancel it")
+            return False
+        SLEEP(REGISTER_POLL_SECONDS)
+
+
 def push(cwd, commit, idle_minutes=IDLE_WAIT_MINUTES, progress=None):
     """Pushes `commit` to the branch TestBuild with --force, and to nothing else, once no other run is on it
     (wait_until_idle). Returns the clock's reading as the push began, which a caller measures its run from. The
     refspec is built here, from the constant, and from no caller's text; --no-follow-tags keeps a user's
-    push.followTags from sending tags too. The checks come first, so a push that would be refused anyway never waits."""
+    push.followTags from sending tags too. The checks come first, so a push that would be refused anyway never waits.
+
+    From before the idle check until GitHub shows the run of this push (wait_for_registration), one exclusive lock is
+    held, so that no other push from this Mac (of any worktree) can check for an idle branch in the gap between this push
+    and its run being listed, find it idle, and cancel this run."""
     check_public_tree(cwd, commit)
     check_workflows(cwd, commit)
     check_remote(cwd)
-    wait_until_idle(idle_minutes, progress)
-    began = CLOCK()
-    result = call(["git", "push", "--force", "--no-follow-tags", PUSH_REMOTE, f"{commit}:refs/heads/{BRANCH}"], cwd=cwd)
-    if result.returncode != 0:
-        raise RemoteFailure(f"git push to {BRANCH} failed: {(result.stderr or result.stdout).strip()[:300]}")
+    with push_lock(cwd, idle_minutes * 60 + REGISTER_SECONDS + 60, progress):
+        wait_until_idle(idle_minutes, progress)
+        began = CLOCK()
+        result = call(["git", "push", "--force", "--no-follow-tags", PUSH_REMOTE, f"{commit}:refs/heads/{BRANCH}"], cwd=cwd)
+        if result.returncode != 0:
+            raise RemoteFailure(f"git push to {BRANCH} failed: {(result.stderr or result.stdout).strip()[:300]}")
+        wait_for_registration(commit, progress)
     return began
 
 

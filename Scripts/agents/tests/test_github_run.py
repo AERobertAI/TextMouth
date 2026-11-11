@@ -348,14 +348,14 @@ class WaitingForAnIdleBranchTests(RemoteTestCase):
         return commit
 
     def test_an_idle_branch_is_pushed_to_at_once(self):
-        self.gh_state({"active": [[]]})
+        self.gh_state({"active": [[]], "list": [[STARTED]]})
         commit = self.push_it()
         self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
         self.assertEqual(self.pauses, [])
         self.assertEqual(self.idle_checks(), 1)
 
     def test_the_idle_check_asks_for_the_runs_on_the_testbuild_branch_of_the_public_repository(self):
-        self.gh_state({"active": [[]]})
+        self.gh_state({"active": [[]], "list": [[STARTED]]})
         self.push_it()
         call = self.gh_calls()[0]
         self.assertEqual(call[:2], ["run", "list"])
@@ -364,7 +364,7 @@ class WaitingForAnIdleBranchTests(RemoteTestCase):
         self.assertNotIn("--commit", call)
 
     def test_a_push_waits_for_a_run_going_and_a_run_queued_and_pushes_only_after_both_are_gone(self):
-        self.gh_state({"active": [[self.GOING], [self.QUEUED], [self.QUEUED, self.GOING], []]})
+        self.gh_state({"active": [[self.GOING], [self.QUEUED], [self.QUEUED, self.GOING], []], "list": [[STARTED]]})
         # Nothing may be on the remote while the push is still waiting.
         seen = []
         original = self.pause
@@ -376,7 +376,7 @@ class WaitingForAnIdleBranchTests(RemoteTestCase):
 
     def test_a_completed_run_and_a_run_of_another_workflow_do_not_hold_a_push_back(self):
         other_workflow = {**self.GOING, "databaseId": 6004, "workflowName": "Check"}
-        self.gh_state({"active": [[self.DONE, other_workflow]]})
+        self.gh_state({"active": [[self.DONE, other_workflow]], "list": [[STARTED]]})
         self.push_it()
         self.assertEqual(self.pauses, [])
 
@@ -411,10 +411,186 @@ class WaitingForAnIdleBranchTests(RemoteTestCase):
         self.assertEqual(self.pauses, [])
 
     def test_the_wait_is_told_once_which_run_it_is_waiting_for(self):
-        self.gh_state({"active": [[self.GOING], [self.GOING], []]})
+        self.gh_state({"active": [[self.GOING], [self.GOING], []], "list": [[STARTED]]})
         messages = []
         self.push_it(progress=messages.append)
         self.assertEqual(messages, ["waiting for https://github.example/runs/6001 to end before pushing"])
+
+
+class PushLockTests(RemoteTestCase):
+    """Every push holds one lock from before its idle check until GitHub shows the run of its own push, so that a second
+    push cannot check for an idle branch in the gap and cancel the first (November 11, 2026: run 43000459553 was cancelled
+    3 seconds after it began by another agent's push). Nothing real runs: gh, the push, and the checks are stand-ins."""
+
+    def setUp(self):
+        super().setUp()
+        import threading
+        import time
+        self.events = []
+        self.shown = set()      # the commits whose run GitHub lists
+        self.lock = threading.Lock()
+        # Real time and real threads for the lock; the pause is tiny.
+        self.patch_github(CLOCK=time.monotonic, SLEEP=lambda seconds: time.sleep(0.005), LOCK_POLL_SECONDS=0.005,
+                          REGISTER_POLL_SECONDS=0.005)
+        self.patch_github(check_public_tree=lambda cwd, commit: None, check_workflows=lambda cwd, commit: None,
+                          check_remote=lambda cwd: None)
+        self.patch_github(wait_until_idle=lambda minutes, progress=None: self.note("idle"))
+        self.real_call = github_run.call
+        self.patch_github(call=self.fake_call, gh_json=self.fake_gh_json)
+
+    def note(self, what):
+        """Records an event with the name of the thread it happened in."""
+        import threading
+        with self.lock:
+            self.events.append((what, threading.current_thread().name))
+
+    def fake_call(self, command, cwd=None, env=None, input_text=None):
+        """A git push that succeeds and is noted; any other call (the git that finds the lock's folder) really runs."""
+        if command[:2] != ["git", "push"]:
+            self.assertEqual(command[:2], ["git", "rev-parse"], command)
+            return self.real_call(command, cwd=cwd, env=env, input_text=input_text)
+        self.note("push")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    def fake_gh_json(self, *args):
+        """`gh run list --commit SHA` lists the run of a commit once the test has said GitHub shows it."""
+        commit = args[args.index("--commit") + 1]
+        if commit in self.shown:
+            self.note("seen")
+            return [{"databaseId": 1, "headSha": commit, "workflowName": github_run.WORKFLOW_NAME}]
+        return []
+
+    def start(self, name, commit, **options):
+        """Starts a push of `commit` in a thread called `name`; returns the thread."""
+        import threading
+        thread = threading.Thread(name=name, target=lambda: github_run.push(self.repo, commit, **options))
+        thread.start()
+        self.addCleanup(thread.join, 30)
+        return thread
+
+    def wait_for(self, condition, what):
+        """Waits (really, up to 10 seconds) until `condition()` holds."""
+        import time
+        deadline = time.monotonic() + 10
+        while not condition():
+            self.assertLess(time.monotonic(), deadline, f"never happened: {what}")
+            time.sleep(0.005)
+
+    def test_a_second_push_waits_until_the_first_ones_run_is_seen(self):
+        first = self.start("first", "a" * 40)
+        self.wait_for(lambda: ("push", "first") in self.events, "the first push")
+        second = self.start("second", "b" * 40)
+        # The first run is not yet shown: the second must not even check for an idle branch, let alone push.
+        import time
+        time.sleep(0.3)
+        self.assertNotIn(("idle", "second"), self.events, "the second push checked the branch before the first run was seen")
+        self.assertNotIn(("push", "second"), self.events)
+        self.shown.add("a" * 40)
+        first.join(10)
+        self.shown.add("b" * 40)
+        second.join(10)
+        order = [event for event in self.events if event[0] in ("idle", "push", "seen")]
+        self.assertEqual(order, [("idle", "first"), ("push", "first"), ("seen", "first"), ("idle", "second"),
+                                 ("push", "second"), ("seen", "second")])
+
+    def test_the_lock_is_let_go_when_the_run_is_seen_and_a_later_push_takes_it_at_once(self):
+        self.shown.update({"a" * 40, "b" * 40})
+        github_run.push(self.repo, "a" * 40)
+        github_run.push(self.repo, "b" * 40)
+        self.assertEqual([event[0] for event in self.events], ["idle", "push", "seen", "idle", "push", "seen"])
+
+    def test_a_run_that_never_shows_is_given_about_ninety_seconds_then_said_plainly_and_the_lock_is_let_go(self):
+        # Pretend time for this test: each pause moves the clock on.
+        self.patch_github(CLOCK=lambda: self.now, SLEEP=self.pause, REGISTER_POLL_SECONDS=5)
+        messages = []
+        github_run.push(self.repo, "a" * 40, progress=messages.append)
+        self.assertEqual(len(messages), 1)
+        self.assertIn("GitHub showed no run of aaaaaaaa in 90 seconds", messages[0])
+        self.assertIn("the push lock is let go", messages[0])
+        self.assertGreater(self.now, github_run.REGISTER_SECONDS)
+        self.assertLess(self.now, github_run.REGISTER_SECONDS + 10)
+        # The lock was let go: the next push takes it without waiting.
+        before = self.now
+        self.shown.add("b" * 40)
+        github_run.push(self.repo, "b" * 40)
+        self.assertEqual(self.now, before)
+
+    def test_gh_failing_while_the_run_is_looked_for_is_told_not_raised_and_the_lock_is_let_go(self):
+        def failing(*args):
+            raise github_run.RemoteFailure("gh run list failed: no network")
+
+        self.patch_github(gh_json=failing)
+        messages = []
+        github_run.push(self.repo, "a" * 40, progress=messages.append)
+        self.assertEqual(len(messages), 1)
+        self.assertIn("could not ask GitHub whether aaaaaaaa started a run", messages[0])
+        self.assertIn("gh run list failed: no network", messages[0])
+        self.patch_github(gh_json=self.fake_gh_json)
+        self.shown.add("b" * 40)
+        github_run.push(self.repo, "b" * 40)
+
+    def test_a_push_that_fails_lets_the_lock_go(self):
+        def refusing(command, cwd=None, env=None, input_text=None):
+            return subprocess.CompletedProcess(command, 1, "", "remote: refused")
+
+        self.patch_github(call=refusing)
+        with self.assertRaises(github_run.RemoteFailure):
+            github_run.push(self.repo, "a" * 40)
+        self.patch_github(call=self.fake_call)
+        self.shown.add("b" * 40)
+        github_run.push(self.repo, "b" * 40)
+
+    def test_a_push_that_cannot_get_the_lock_in_time_is_a_remote_failure_that_pushes_nothing(self):
+        import fcntl
+        self.patch_github(CLOCK=lambda: self.now, SLEEP=self.pause)
+        with open(github_run.push_lock_path(self.repo), "a") as holder:
+            fcntl.flock(holder, fcntl.LOCK_EX)
+            with self.assertRaises(github_run.RemoteFailure) as caught:
+                github_run.push(self.repo, "a" * 40, idle_minutes=1)
+        self.assertIn("held the push lock", str(caught.exception))
+        self.assertEqual(self.events, [], "nothing was checked or pushed")
+
+    def test_a_push_waiting_for_the_lock_says_so_once(self):
+        import fcntl
+        messages = []
+        ticks = []
+        original = github_run.SLEEP
+
+        def release_after_a_few(seconds):
+            ticks.append(seconds)
+            if len(ticks) == 3:
+                fcntl.flock(holder, fcntl.LOCK_UN)
+            original(seconds)
+
+        self.patch_github(SLEEP=release_after_a_few)
+        self.shown.add("a" * 40)
+        with open(github_run.push_lock_path(self.repo), "a") as holder:
+            fcntl.flock(holder, fcntl.LOCK_EX)
+            github_run.push(self.repo, "a" * 40, progress=messages.append)
+        self.assertEqual(messages, ["waiting for another push from this Mac to be seen by GitHub before pushing"])
+
+    def test_the_lock_file_is_in_the_git_common_folder_so_every_worktree_shares_it(self):
+        worktree = self.folder / "other-worktree"
+        self.git("worktree", "add", "-q", "-b", "other", str(worktree))
+        self.assertEqual(github_run.push_lock_path(worktree).resolve(), github_run.push_lock_path(self.repo).resolve())
+        self.assertEqual(github_run.push_lock_path(self.repo).name, github_run.PUSH_LOCK_NAME)
+        self.assertEqual(github_run.push_lock_path(self.repo).resolve().parent, (self.repo / ".git").resolve())
+
+    def test_a_registration_wait_asks_for_the_pushed_commit_on_testbuild_and_this_workflow_only(self):
+        asked = []
+
+        def recording(*args):
+            asked.append(args)
+            other = {"databaseId": 2, "headSha": "a" * 40, "workflowName": "Check"}
+            return [other]
+
+        self.patch_github(gh_json=recording, CLOCK=lambda: self.now, SLEEP=self.pause, REGISTER_POLL_SECONDS=30)
+        self.assertFalse(github_run.wait_for_registration("a" * 40))
+        first = asked[0]
+        self.assertEqual(first[:2], ("run", "list"))
+        self.assertEqual(first[first.index("--commit") + 1], "a" * 40)
+        self.assertEqual(first[first.index("--branch") + 1], "TestBuild")
+        self.assertEqual(first[first.index("-R") + 1], "AERobertAI/TextMouth")
 
 
 class RunRemotelyTests(RemoteTestCase):

@@ -24,8 +24,12 @@
 #                               and this workflow take it from. The app is signed ad hoc (CODE_SIGNING_ALLOWED=NO,
 #                               as on the Mac), since a runner has no identity.
 #   ios      (macOS)            beside the shards, builds the iPhone app (TextMouthiOS) and its UI-test bundle for
-#                               the iOS Simulator through Scripts/agents/run-ios-build.py: no signing, no test run. Its
-#                               errors are a result for the Mac to show by file; they never fail the tests.
+#                               the iOS Simulator through Scripts/agents/run-ios-build.py (no signing), then runs the
+#                               interface tests in an iPhone 17 simulator through Scripts/agents/run-ios-ui-tests.py
+#                               when the request asks for them (every full suite, the phone area, or a UI-test class).
+#                               They press Play and type, which only this job may do: that script alone lets them. Its
+#                               build errors and its failed interface tests are a result for the Mac to show; a failed
+#                               interface test fails this job, and never the Mac tests' verdict.
 #   collect  (Linux, seconds)  joins the shards' results, and the iPhone build's, into the one result the Mac downloads
 #                               (artifact test-build-results: the log, the short summary the train reads, the request,
 #                               the iPhone build's summary and errors, and a page for the run's summary), kept a few days.
@@ -215,13 +219,22 @@ jobs:
     # A request that says "ios": false leaves the iPhone build out.
     if: ${{ needs.plan.outputs.ios == 'true' }}
     runs-on: macos-26
-    timeout-minutes: 30
+    # The limits of its steps added (test_workflow.py adds them up): the platform download (15 at most, 3 to 4 in practice),
+    # the build (20 and a minute's grace), and the interface tests' step (45, which holds the simulator's set-up and the
+    # tests). Every run so far took 25 to 37 minutes.
+    timeout-minutes: 90
 
     steps:
       - name: Check out the commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # The interface tests read the request to see whether they are asked for, as the shards do.
+      - name: Write the request
+        env:
+          REQUEST_JSON: ${{ needs.plan.outputs.request }}
+        run: printf '%s\n' "$REQUEST_JSON" > .github/test-request.json
 
       - name: Set up Xcode and XcodeGen
         uses: ./.github/actions/setup-xcode
@@ -276,6 +289,22 @@ jobs:
       - name: Build the iPhone app and its UI tests
         run: python3 -I -B Scripts/agents/run-ios-build.py --out build/remote-ios
 
+      # The interface tests play the book and type, as a person does, so the simulator needs the audio service that the
+      # shards need (see the test job's step of this name). On a runner nobody listens.
+      - name: Restart the audio service
+        run: |
+          sudo killall coreaudiod || true
+          sleep 5
+
+      # Runs the interface tests when the request asks for them, and writes ios-ui-summary.txt either way. This script
+      # alone lets a test press Play and type (it sets TEXTMOUTH_UI_SOUND). It exits 1 when an asked-for test failed,
+      # which fails this job and nothing else: the steps below still run, and the join keeps the Mac tests' verdict apart.
+      - name: Run the iPhone interface tests
+        if: ${{ !cancelled() }}
+        # The script keeps to this: its tests' limit is cut by what the simulator's set-up used (STEP_BUDGET_MINUTES).
+        timeout-minutes: 45
+        run: python3 -I -B Scripts/agents/run-ios-ui-tests.py --out build/remote-ios
+
       # Only products of a build that finished are worth keeping for the day: the cache is one for each day and is not
       # saved again once it exists, so a build that stopped early (the first probe run, which lacked the platform) must
       # not take the day's place. The script exits 0 either way; its summary says which.
@@ -311,6 +340,8 @@ jobs:
             build/remote-ios/ios-summary.txt
             build/remote-ios/ios-errors.txt
             build/remote-ios/ios.log
+            build/remote-ios/ios-ui-summary.txt
+            build/remote-ios/ios-ui.log
           if-no-files-found: ignore
           retention-days: 2
 
@@ -324,8 +355,21 @@ jobs:
             build/remote-ios/ios-summary.txt
             build/remote-ios/ios-errors.txt
             build/remote-ios/ios.log
+            build/remote-ios/ios-ui-summary.txt
+            build/remote-ios/ios-ui.log
           if-no-files-found: ignore
           retention-days: 2
+
+      # The result bundle of a failed run is large (screenshots and element trees), so it is kept only to look into a failure.
+      - name: Upload the interface tests' result bundle
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-ui-result-bundle
+          path: build/remote-ios/ios-ui-result.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
 
   collect:
     name: join the results
@@ -392,5 +436,7 @@ jobs:
             build/remote/ios-summary.txt
             build/remote/ios-errors.txt
             build/remote/ios.log
+            build/remote/ios-ui-summary.txt
+            build/remote/ios-ui.log
           if-no-files-found: ignore
           retention-days: 5

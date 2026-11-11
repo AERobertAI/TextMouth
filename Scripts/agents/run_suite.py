@@ -145,11 +145,26 @@ def fresh_folder(stem):
 IOS_FILES_NAMED = 30
 
 
+def report_interface_tests(folder):
+    """Prints what the remote run's iPhone interface tests made (they press Play and type in the iOS Simulator, for a
+    full suite): their verdict and Executed line, then each failed test, named as the Mac's failures are. Prints nothing
+    when the run made no summary or was not asked for them. Like the iPhone build, it is information: the suite's
+    verdict and exit status are the Mac tests'. The details are in ios-ui-summary.txt and ios-ui.log in `folder`."""
+    found = _train.remote_ios_ui_result(Path(folder))
+    line = _train.ios_ui_line(found)
+    if not line:
+        return
+    print(f"run_suite:{line[1:]}", flush=True)
+    for failure in found[2]:
+        print(f"run_suite:   {failure}", flush=True)
+
+
 def report_iphone_build(folder):
     """Prints what the remote run's iPhone build (the app and its UI tests, built for the iOS Simulator beside the
     tests) made: its verdict and error count, then the files its errors are in, with how many each holds. Prints nothing
     when the run made none (a request that left it out). It is information: the suite's verdict and exit status
     are the tests'. The details are in ios-errors.txt and ios.log in `folder`."""
+    report_interface_tests(folder)
     found = _train.remote_ios_result(Path(folder))
     if not found:
         return

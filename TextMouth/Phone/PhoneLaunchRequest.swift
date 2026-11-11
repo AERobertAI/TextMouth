@@ -1,9 +1,9 @@
 import Foundation
 
-// The whole of this file is compiled into debug builds only: each of its three
-// uses (`TextMouthRuntime.detect`, the iPhone's scene delegate, and the Search
-// in Book sheet) is inside `#if DEBUG`, so a release build holds neither the
-// type nor its three variable names, and no environment variable can steer it.
+// The whole of this file is compiled into debug builds only: each of its two
+// uses (`TextMouthRuntime.detect` and the iPhone's scene delegate) is inside
+// `#if DEBUG`, so a release build holds neither the type nor its two variable
+// names, and no environment variable can steer it.
 #if DEBUG
 
 /// What a UI test, or a run in the iOS simulator, asks of the iPhone app at
@@ -19,9 +19,6 @@ import Foundation
 /// has: an empty library and preferences in a sandbox of its own, feeds that
 /// never reach the network, and no joining of the system's media session.
 ///
-/// With `searchVariable`, the Search in Book sheet opens with its field
-/// already filled.
-///
 /// With `openVariable`, the scene delegate hands the file to the life cycle
 /// as if another app had sent it at a cold launch, so the book comes in the
 /// way a person's would: held until the library starts, copied by the
@@ -36,18 +33,6 @@ enum PhoneLaunchRequest {
     static let sandboxVariable = "TEXTMOUTH_UI_TEST"
     /// An absolute path: the file the launch is sent, as another app would send it.
     static let openVariable = "TEXTMOUTH_OPEN_AT_LAUNCH"
-
-    /// Text the Search in Book sheet fills its field with as it opens, so that a
-    /// UI test can show the sheet's results without typing, which the
-    /// software keyboard would click aloud.
-    static let searchVariable = "TEXTMOUTH_SEARCH_IN_BOOK"
-
-    /// The text `environment` fills the Search in Book field with, or none
-    /// when the variable is missing or empty.
-    static func searchText(_ environment: [String: String]) -> String? {
-        guard let text = environment[searchVariable], !text.isEmpty else { return nil }
-        return text
-    }
 
     /// Whether `environment` asks for a sandbox: only the exact value "1", so
     /// an empty or mistyped value leaves the app as it is.

@@ -265,6 +265,104 @@ class IPhoneBuildTests(RemoteTrainCase):
         self.assertIsNone(train.remote_ios_result(self.folder / "no-such-folder"))
 
 
+def with_interface_tests(download, summary):
+    """A `gh run download` answer that also holds the interface tests' summary and log, as the join uploads them."""
+    return {"files": {**download["files"], "ios-ui-summary.txt": summary, "ios-ui.log": "xcodebuild output\n"}}
+
+
+UI_PASSED = ("iOS UI tests: PASSED\nExecuted 30 tests, with 6 tests skipped and 0 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+             "Classes: every class\n")
+UI_FAILED = ("iOS UI tests: FAILED\nExecuted 30 tests, with 6 tests skipped and 2 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+             "Classes: SearchUITests\n"
+             "FAILED SearchUITests.testA at TextMouthiOSUITests/SearchUITests.swift:9: no results\n"
+             "FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong\nReason: 2 test(s) failed\n")
+UI_NOT_ASKED = "iOS UI tests: NOT ASKED\nReason: the request does not ask for the interface tests\n"
+
+
+class InterfaceTestsTests(RemoteTrainCase):
+    """A remote train sends the iPhone's interface test classes to the iPhone job and reports what it made of them."""
+
+    FILES = {"TextMouthiOSUITests/SearchUITests.swift": "final class SearchUITests: TextMouthUITestCase {}\n",
+             "TextMouthiOSUITests/ReaderUITests.swift": "final class ReaderUITests: TextMouthUITestCase {}\n"}
+
+    def setUp(self):
+        super().setUp()
+        self.patch(train, known_names=lambda cwd: ({"all", "stats", "logs"}, {"FooTests", "BarTests", "SearchUITests", "ReaderUITests"}))
+
+    def test_interface_classes_go_in_the_request_apart_from_the_mac_classes(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests", "SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["areas"], request["classes"], request["ios_ui_classes"]),
+                         (["stats"], ["FooTests"], ["SearchUITests"]))
+        self.assertNotIn("SearchUITests", self.result_of("alpha").split("Names left out")[1], "an interface class is a known name")
+
+    def test_a_request_of_only_interface_classes_still_runs(self):
+        self.branch("alpha", self.FILES, areas=[], classes=["SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["areas"], request["classes"], request["ios_ui_classes"]), ([], [], ["SearchUITests"]))
+
+    def test_a_request_with_no_interface_class_has_no_such_key(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertNotIn("ios_ui_classes", self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"]))
+
+    def test_the_interface_tests_verdict_and_failures_are_in_the_summary_and_the_asking_agents_result(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.branch("beta", {"b.txt": "b"}, areas=["logs"], classes=["BarTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_FAILED))
+        self.assertEqual(self.run_train(), "ran")
+        alpha, beta = self.result_of("alpha"), self.result_of("beta")
+        self.assertIn(f"- {train.IOS_UI_LABEL}: FAILED; Executed 30 tests", alpha)
+        self.assertIn("Failures in the interface test classes you asked for: 1", alpha)
+        self.assertIn("  - FAILED SearchUITests.testA at TextMouthiOSUITests/SearchUITests.swift:9: no results", alpha)
+        self.assertNotIn("ReaderUITests.testB", alpha, "a failure in a class the agent did not ask for is not listed as theirs")
+        self.assertIn("FAILED; Executed 30 tests", beta, "every agent is told the verdict")
+        self.assertNotIn("interface test classes you asked for", beta)
+        summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
+        self.assertIn("## iPhone interface test failures", summary)
+        self.assertIn("- FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong", summary)
+        self.assertIn("Verdict: PASSED", summary, "failed interface tests never change the Mac tests' verdict")
+
+    def test_the_summary_and_the_log_are_kept_in_the_trains_folder(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_PASSED))
+        self.run_train()
+        folder = next(train.TRAINS.iterdir())
+        self.assertEqual((folder / "ios-ui-summary.txt").read_text(), UI_PASSED)
+        self.assertTrue((folder / "ios-ui.log").exists())
+
+    def test_a_run_that_was_not_asked_for_them_has_no_interface_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_NOT_ASKED))
+        self.run_train()
+        self.assertNotIn("interface tests", self.result_of("alpha"))
+        self.assertNotIn("interface", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_interface_classes_asked_for_but_not_run_are_told_to_the_agent(self):
+        # A run whose iPhone job left no summary (the workflow from before the interface tests, or the step cut off).
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertIn("Interface test classes you asked for (SearchUITests) did not run", self.result_of("alpha"))
+
+    def test_the_reading_of_the_summary(self):
+        folder = self.folder / "ui-dir"
+        folder.mkdir()
+        (folder / "ios-ui-summary.txt").write_text(UI_FAILED)
+        verdict, executed, failures, reasons = train.remote_ios_ui_result(folder)
+        self.assertEqual(verdict, "FAILED")
+        self.assertTrue(executed.startswith("Executed 30 tests"))
+        self.assertEqual(len(failures), 2)
+        self.assertEqual(reasons, ["2 test(s) failed"])
+        self.assertIsNone(train.remote_ios_ui_result(self.folder / "no-such-folder"))
+        self.assertEqual(train.ios_ui_line(None), "")
+
+
 class NotRunOnGitHubTests(RemoteTrainCase):
     """A remote result names what the runner left out of what an agent asked for (review finding 3)."""
 

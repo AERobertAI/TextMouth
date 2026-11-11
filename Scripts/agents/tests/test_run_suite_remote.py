@@ -200,6 +200,26 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.assertEqual(status, 1)
         self.assertIn("PASSED, 0 errors in 0 files", out)
 
+    def with_interface_tests(self, summary):
+        """A `gh run download` answer holding the suite's files and the interface tests' summary."""
+        files = results("PASSED\n", SUITE_PASSED)["files"]
+        return {"files": {**files, "ios-ui-summary.txt": summary, "ios-ui.log": "xcodebuild output\n"}}
+
+    def test_the_interface_tests_are_reported_with_each_failure_and_never_change_the_suites_verdict(self):
+        summary = ("iOS UI tests: FAILED\nExecuted 30 tests, with 6 tests skipped and 1 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+                   "FAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause\nReason: 1 test(s) failed\n")
+        self.gh_runs(self.with_interface_tests(summary))
+        status, out, _ = self.run_remote()
+        self.assertEqual(status, 0, "the Mac tests passed, whatever the interface tests did")
+        self.assertIn("run_suite: iPhone interface tests on GitHub", out)
+        self.assertIn("FAILED; Executed 30 tests, with 6 tests skipped and 1 failures", out)
+        self.assertIn("run_suite:   FAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause", out)
+
+    def test_interface_tests_not_asked_for_are_not_mentioned(self):
+        self.gh_runs(self.with_interface_tests("iOS UI tests: NOT ASKED\nReason: x\n"))
+        _, out, _ = self.run_remote()
+        self.assertNotIn("interface", out)
+
     def test_the_remote_option_needs_its_commit_name_and_log(self):
         err = io.StringIO()
         with mock.patch.object(sys, "argv", ["run_suite.py", "--remote", self.head, "suite"]), \
