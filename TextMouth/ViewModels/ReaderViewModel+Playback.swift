@@ -645,6 +645,61 @@ extension ReaderViewModel {
         return nil
     }
 
+    /// The place in the book where Play would begin reading aloud, as the
+    /// chapter and the UTF-16 offset in its original text of the first word
+    /// it would say: the cursor's own place when words follow it in its
+    /// chapter, and otherwise the start of the next chapter with something
+    /// to say (`speechStartFromCursor()`, the one rule that decides where
+    /// Play begins). White space before that word, and a skipped section, are
+    /// passed over, since nothing is said there.
+    ///
+    /// Nil for an audiobook, which plays files and not speech, and when
+    /// nothing speakable remains in the book.
+    func playbackStartPlace() -> (chapterIndex: Int, characterOffset: Int)? {
+        guard !isAudioBook, let start = speechStartFromCursor() else { return nil }
+        let spokenText = start.speech.text
+        // The first spoken character that is not white space is where the
+        // listener first hears the book. A start always has one
+        // (`hasSpeakableText`); falling back to the start's own offset keeps
+        // this safe if that ever changes.
+        let firstWord = Self.firstSpeakableOffset(in: spokenText, fromSpokenOffset: start.offset) ?? start.offset
+        var original = start.speech.offsetMap.toOriginal(firstWord)
+        if start.speech.chapterIndex == currentChapterIndex {
+            // Within the cursor's own chapter reading never goes backward,
+            // whatever a round trip through the offset maps gives.
+            original = max(original, currentCharacterOffset)
+        }
+        return (chapterIndex: start.speech.chapterIndex, characterOffset: original)
+    }
+
+    /// The offset in `spokenText`, from `spokenOffset` on, of the first
+    /// character that is not white space or a line break, which is where
+    /// speech starting at `spokenOffset` first says anything; nil when there
+    /// is none. An offset past the end leaves nothing, and one inside a
+    /// character starts at that character (as `hasSpeakableText(in:fromSpokenOffset:)`).
+    nonisolated static func firstSpeakableOffset(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Int? {
+        let rest = spokenText[spokenText.index(atUTF16Offset: spokenOffset)...]
+        return rest.firstIndex(where: { !$0.isWhitespace }).map { spokenText.utf16Offset(of: $0) }
+    }
+
+    /// The heading a timer for the end of the heading waits for: the first
+    /// heading after the place where the listener first hears the book, the
+    /// end of the heading playing there.
+    ///
+    /// While playback is under way that place is the cursor, which playback
+    /// carries along. Otherwise Play will begin at `playbackStartPlace()`,
+    /// which is later than the cursor where the cursor's own place says
+    /// nothing: a cover that is only an image, the end of a chapter after its
+    /// last words, a skipped section, or white space before a heading. The
+    /// heading after the cursor would then already have begun as Play starts,
+    /// and the timer would stop the book at once, in silence. Everything else
+    /// is as `headingAfterCursor`, which this is also for an audiobook and
+    /// where Play has nothing left to read, since the book ends there.
+    var headingAfterPlaybackStart: Heading? {
+        guard !isPlaybackUnderWay, let place = playbackStartPlace() else { return headingAfterCursor }
+        return Self.nextHeading(in: headings, chapterIndex: place.chapterIndex, characterOffset: place.characterOffset)
+    }
+
     /// What a search for where speech begins from the cursor found.
     enum SpeechStartSearch {
         /// Where speech begins.
@@ -3198,11 +3253,14 @@ extension ReaderViewModel {
     /// resumed or started, as Play does (`playUnlessUnderWay()`), so the
     /// armed timer has audio to count against; while Where Am I? speaks,
     /// the book plays as the announcement ends.
-    /// A timer for the end of the heading waits for the heading the cursor
-    /// is in now to end, where the next heading begins, or the book ends
-    /// after the last heading, for which nothing is kept (finding #787).
+    /// A timer for the end of the heading waits for the heading playing to
+    /// end, where the next heading begins, or the book ends after the last
+    /// heading, for which nothing is kept (finding #787). The heading playing
+    /// is the one in the cursor's place, or, where nothing is read there and
+    /// Play begins later, as at a book's cover, the one Play begins in
+    /// (`headingAfterPlaybackStart`).
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
-        sleepTimerNextHeading = duration == .endOfHeading ? headingAfterCursor : nil
+        sleepTimerNextHeading = duration == .endOfHeading ? headingAfterPlaybackStart : nil
         // Capture one value for both timer scheduling and direct-speech fade
         // planning. A settings edit while the timer runs must not make the
         // utterance queue disagree with the timer's already-armed duration.
