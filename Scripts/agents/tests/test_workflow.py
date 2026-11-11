@@ -211,8 +211,9 @@ class JobsTests(unittest.TestCase):
 
     def test_the_iphone_job_writes_the_request_then_builds_then_runs_the_interface_tests_after_the_build(self):
         ios = self.job("ios")
-        order = [ios.index(text) for text in ("Write the request", "Download the iOS platform", "run-ios-build.py",
-                                               "Restart the audio service", "run-ios-ui-tests.py", "Did the build finish?")]
+        order = [ios.index(text) for text in ("Write the request", "Download the iOS platform", "name: Start the simulator",
+                                               "run-ios-build.py", "Restart the audio service",
+                                               "name: Run the iPhone interface tests", "Did the build finish?")]
         self.assertEqual(order, sorted(order), "the steps are out of order")
 
     def test_the_interface_tests_step_runs_unless_cancelled_and_sets_nothing_itself(self):
@@ -285,8 +286,20 @@ class JobsTests(unittest.TestCase):
         job = int(re.search(r"timeout-minutes: (\d+)", ios).group(1))
         download = self.step_limit(ios, "Download the iOS platform")
         build = modules["run-ios-build.py"].DEFAULT_LIMIT_MINUTES + 1
+        start = self.step_limit(ios, "Start the simulator")
         tests = self.step_limit(ios, "Run the iPhone interface tests")
-        self.assertGreaterEqual(job, download + build + tests, "the job's limit is under the sum of its steps' limits")
+        self.assertGreaterEqual(job, download + start + build + tests, "the job's limit is under the sum of its steps' limits")
+
+    def test_the_simulator_starts_booting_before_the_build_and_can_never_fail_the_job(self):
+        ios = self.job("ios")
+        step = ios[ios.index("name: Start the simulator"):]
+        step = step.split("\n\n")[0]
+        self.assertIn("continue-on-error: true", step)
+        self.assertIn("run-ios-ui-tests.py --prepare", step)
+        self.assertLess(ios.index("name: Start the simulator"), ios.index("name: Build the iPhone app and its UI tests"))
+        # Its calls (the listing, runtimes, devices, a device made, the boot) at their limits fit its step.
+        ui = self.scripts_constants()["run-ios-ui-tests.py"]
+        self.assertLessEqual(5 * ui.SIMCTL_SECONDS / 60, self.step_limit(ios, "Start the simulator"))
 
     def test_the_result_bundle_is_uploaded_only_on_failure(self):
         job = self.job("test")
