@@ -116,24 +116,60 @@ final class PlaybackUITests: TextMouthUITestCase {
 
     // MARK: - The skip buttons while the book plays
 
-    /// Skipping forward by sentence while the book plays moves the place and
-    /// leaves the book playing: the control still reads Pause, and once the
-    /// book is paused, Book content starts at a sentence several sentences
-    /// after the one it started at ("Skip forward" activates a move that, while
-    /// playing, says nothing for a sentence: the book itself is heard from the
-    /// new place).
+    /// Skipping forward by sentence while the book plays moves the place six
+    /// sentences on and leaves the book playing. The sentences are learned first,
+    /// silently: paused, each Skip forward puts the sentence at its new place in
+    /// Play's value (the spec: "the whole sentence at the new place"), so six
+    /// presses give the sentences one to six from the opening. Skipping back six
+    /// returns to the opening. Then the book plays and the same six presses are
+    /// made while it plays: the control still reads Pause, and once the book is
+    /// paused Book content begins at the sixth sentence or a later one (speech
+    /// moves it on a little), never at the opening or the first five. The passage
+    /// is not searched for in the opening one, which is a short title page
+    /// (run 42986107227: the new place was in a later chapter).
     func testSkippingForwardWhilePlayingMovesTheBookAndKeepsItPlaying() throws {
         try requireSound("Pressing Play")
         let app = try launchIntoTheReader()
-        let before = try bookContent(in: app)
-        XCTAssertFalse(before.isEmpty, "Book content holds no text")
+        let opening = try bookContent(in: app)
+        XCTAssertFalse(opening.isEmpty, "Book content holds no text")
+        let skips = 6
+        let skipForward = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip forward")).firstMatch
+        let skipBackward = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip backward")).firstMatch
+        XCTAssertTrue(skipForward.waitForExistence(timeout: Self.patience), "No Skip forward:\n\(app.debugDescription)")
+
+        // The first words of the opening and of each sentence after it, as Play says them while paused.
+        func firstWords(_ text: String) -> String { String(squeezed(text).prefix(25)) }
+        var starts = [firstWords(opening)]
+        var previous = squeezed(value(of: app.buttons["Play"]))
+        for number in 1...skips {
+            skipForward.tap()
+            let deadline = Date().addingTimeInterval(Self.patience)
+            var now = previous
+            while now == previous, Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+                now = squeezed(value(of: app.buttons["Play"]))
+            }
+            XCTAssertFalse(now.isEmpty || now == previous, "Skip forward number \(number) put no new sentence in Play's value:\n\(app.debugDescription)")
+            previous = now
+            starts.append(firstWords(now))
+        }
+        XCTAssertEqual(Set(starts).count, starts.count, "Six skips did not reach six different sentences: \(starts)")
+        for _ in 0..<skips {
+            skipBackward.tap()
+        }
+        // Moving while paused brings Book content to the new place; wait for the opening to come back.
+        var back = ""
+        let returning = Date().addingTimeInterval(Self.patience)
+        while Date() < returning {
+            back = try bookContent(in: app)
+            if firstWords(back) == starts[0] { break }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+        XCTAssertEqual(firstWords(back), starts[0], "Six skips back did not return Book content to the opening: \(back.prefix(120))")
 
         try pressPlay(in: app)
-        let skips = 6
-        let skip = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip forward")).firstMatch
-        XCTAssertTrue(skip.waitForExistence(timeout: Self.patience), "No Skip forward:\n\(app.debugDescription)")
         for _ in 0..<skips {
-            skip.tap()
+            skipForward.tap()
         }
         // Skipping does not pause the book.
         XCTAssertTrue(app.buttons["Pause"].exists, "The book stopped after skipping:\n\(app.debugDescription)")
@@ -141,23 +177,11 @@ final class PlaybackUITests: TextMouthUITestCase {
 
         try pressPause(in: app)
         // Pausing brings Book content to the sentence just spoken, a moment later: wait for it to change.
-        let after = try waitForBookContent(movingFrom: before, in: app)
-        XCTAssertFalse(
-            after.hasPrefix(String(before.prefix(40))),
-            "Book content still begins where it began after \(skips) skips forward: \(after.prefix(120))"
-        )
-        // The book only moves forward: where the new passage lies in the old one, it is sentences on, not characters. The
-        // passage is in the old one (the opening chapter is far longer than six sentences), so the count always runs.
-        let squeezedBefore = squeezed(before)
-        let range = try XCTUnwrap(
-            squeezedBefore.range(of: String(squeezed(after).prefix(40))),
-            "The new passage is not inside the opening one, so the sentences between cannot be counted: now \(after.prefix(120))"
-        )
-        let sentences = squeezedBefore[..<range.lowerBound].filter { ".?!".contains($0) }.count
-        XCTAssertGreaterThanOrEqual(
-            sentences, skips - 2,
-            "The passage moved only \(sentences) sentences on after \(skips) skips: now \(after.prefix(120))"
-        )
+        let after = try waitForBookContent(movingFrom: opening, in: app)
+        let landed = firstWords(after)
+        if let reached = starts.dropLast().firstIndex(of: landed) {
+            XCTFail("\(skips) skips forward while playing reached only sentence \(reached): Book content begins \(after.prefix(120))")
+        }
     }
 
     /// Skip backward at the start of the book moves nowhere. Paused, a move that
