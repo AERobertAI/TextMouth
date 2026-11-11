@@ -3,8 +3,9 @@ import XCTest
 /// The reader, as XCUITest reads it in the simulator, opened on a text book
 /// sent to the app: its 20 elements in the spec's order (under "VoiceOver's
 /// order"), what its controls hold before anything is pressed, and Apple's
-/// accessibility audit. Nothing in the reader is pressed: Play would play, and
-/// Where Am I? speaks.
+/// accessibility audit. Nothing in the reader is pressed here: Play, which plays,
+/// is pressed in `PlaybackUITests` (it runs only where sound is allowed), and
+/// Where Am I? speaks, so no test presses it.
 final class ReaderUITests: TextMouthUITestCase {
 
     /// The reader's elements after Back and the title, in the spec's order:

@@ -10,7 +10,9 @@ import XCTest
 /// (`elementsInOrder`), which is what VoiceOver follows with a flick unless a
 /// container orders its own. Each test opens its screen with silent taps
 /// only. It never presses Play, Preview Voice, Where Am I?, a sleep timer's
-/// presets, or anything that opens the file picker, and it types nothing.
+/// presets, or anything that opens the file picker, and it types nothing:
+/// what plays or types is in `PlaybackUITests` and `SearchUITests`, which run
+/// only where sound is allowed (`TextMouthUITestCase.requireSound`).
 /// A failed order prints the whole order found.
 final class ScreenOrderUITests: TextMouthUITestCase {
 

@@ -509,8 +509,10 @@ targets:
   # VoiceOver would be given on the Library and the reader (each element's
   # label, value, and traits, and their order), and Apple's accessibility
   # audit of each screen. Each test launches the app with a library of its
-  # own and a public-domain book sent to it (PhoneLaunchRequest). Nothing in
-  # it presses Play, or anything else that makes a sound.
+  # own and a public-domain book sent to it (PhoneLaunchRequest). A test that
+  # presses Play or types makes sound, so it runs only where
+  # TEXTMOUTH_UI_SOUND is 1, which the GitHub runner's script sets and nothing
+  # on the development Mac does (TextMouthUITestCase.requireSound).
   TextMouthiOSUITests:
     type: bundle.ui-testing
     platform: iOS
