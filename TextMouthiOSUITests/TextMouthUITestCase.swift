@@ -38,12 +38,17 @@ class TextMouthUITestCase: XCTestCase {
         ProcessInfo.processInfo.environment[soundVariable] == "1"
     }
 
+    /// The words every skip for sound has in its reason. The runner's script looks for them, since it sets the
+    /// variable: a test that says them there never got it, and the run is judged failed
+    /// (`SOUND_SKIP_MARKER` in Scripts/agents/run-ios-ui-tests.py is this text, and a test pins that they agree).
+    static let soundSkipMarker = "runs only on a GitHub runner"
+
     /// Skips the test, saying why, unless this run may make sound. `what` is
     /// what the test does that sounds ("Pressing Play").
     func requireSound(_ what: String) throws {
         try XCTSkipUnless(
             Self.soundIsAllowed,
-            "\(what) makes sound, so it runs only on a GitHub runner, where \(Self.soundVariable) is 1 "
+            "\(what) makes sound, so it \(Self.soundSkipMarker), where \(Self.soundVariable) is 1 "
                 + "(Scripts/agents/run-ios-ui-tests.py sets it); on this Mac it is skipped."
         )
     }

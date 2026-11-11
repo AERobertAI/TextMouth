@@ -44,6 +44,27 @@ def ui_classes(root=ROOT):
     return sorted(found)
 
 
+# One test method of a class: `func testSomething(`.
+TEST_METHOD = re.compile(r"^\s*func (test[A-Za-z0-9_]*)\(", re.M)
+
+
+def test_counts(root=ROOT):
+    """How many test methods each interface test class holds, as {class: count}: the `func test...(` lines between a
+    class's declaration and the next one's. The runner checks that at least this many results came back (a run
+    that returns fewer has lost tests)."""
+    folder = Path(root) / UI_FOLDER
+    counts = {}
+    if not folder.is_dir():
+        return counts
+    for path in sorted(folder.glob("*.swift")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        starts = [(match.start(), match.group(1)) for match in CLASS_LINE.finditer(text)]
+        for index, (start, name) in enumerate(starts):
+            end = starts[index + 1][0] if index + 1 < len(starts) else len(text)
+            counts[name] = counts.get(name, 0) + len(TEST_METHOD.findall(text[start:end]))
+    return counts
+
+
 def split_classes(request, root=ROOT):
     """A copy of `request` with the interface test classes named in its "classes" moved to "ios_ui_classes" (joined
     with any already there, once each, in order), so that "classes" holds only Mac test classes for run-area.py."""

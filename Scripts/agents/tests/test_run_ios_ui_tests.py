@@ -131,9 +131,48 @@ class ReadingTheLogTests(unittest.TestCase):
 class TheVerdictTests(unittest.TestCase):
     """A run passes only when xcodebuild says so, nothing failed, and something ran."""
 
-    def judge(self, log, status=0, timed_out=False):
+    def judge(self, log, status=0, timed_out=False, expected=0):
         """The verdict for a log."""
-        return uitests.judge(status, timed_out, log, uitests.parse_results(log, RUNNER_ROOT))
+        return uitests.judge(status, timed_out, log, uitests.parse_results(log, RUNNER_ROOT), expected=expected)
+
+    # What the review of 1f5f5f4a fed the old verdict: every sound test skipped (the variable never reached the runner),
+    # and one passing test out of 34 asked. Both were judged passed.
+    SKIPPED_FOR_SOUND = "".join(
+        f"{RUNNER_ROOT}/TextMouthiOSUITests/TextMouthUITestCase.swift:44: -[TextMouthiOSUITests.PlaybackUITests testPlay{n}] : "
+        f"Test skipped - Pressing Play makes sound, so it {uitests.SOUND_SKIP_MARKER}, where TEXTMOUTH_UI_SOUND is 1 "
+        f"(Scripts/agents/run-ios-ui-tests.py sets it); on this Mac it is skipped.\n"
+        f"Test Case '-[TextMouthiOSUITests.PlaybackUITests testPlay{n}]' skipped (0.0 seconds).\n" for n in range(12)
+    ) + "Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n"
+
+    def test_a_run_whose_sound_tests_all_skipped_for_sound_is_not_a_pass(self):
+        passed, reasons = self.judge(self.SKIPPED_FOR_SOUND)
+        self.assertFalse(passed)
+        self.assertIn("12 test(s) skipped because they make sound", reasons[0])
+        self.assertIn("TEXTMOUTH_UI_SOUND did not reach the test runner", reasons[0])
+
+    def test_a_skip_for_another_reason_is_not_judged_as_a_sound_skip(self):
+        log = ("/x/A.swift:3: -[M.AUITests testX] : Test skipped - not on this device\n"
+               "Test Case '-[M.AUITests testX]' skipped (0.0 seconds).\n"
+               "Test Case '-[M.AUITests testY]' passed (0.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n")
+        self.assertEqual(self.judge(log), (True, []))
+
+    def test_fewer_results_than_the_asked_classes_hold_is_not_a_pass(self):
+        log = "Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n"
+        passed, reasons = self.judge(log, expected=34)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["1 test results came back, and the classes asked for hold 34"])
+        self.assertEqual(self.judge(log, expected=1), (True, []), "as many results as tests is a pass")
+
+    def test_the_skip_marker_is_the_text_the_swift_helper_writes(self):
+        swift = (ROOT / "TextMouthiOSUITests" / "TextMouthUITestCase.swift").read_text()
+        self.assertIn(f'static let soundSkipMarker = "{uitests.SOUND_SKIP_MARKER}"', swift)
+        self.assertIn("so it \\(Self.soundSkipMarker)", swift, "requireSound writes the marker in its reason")
+
+    def test_the_counts_of_tests_are_read_from_the_swift_files_of_each_class(self):
+        counts = uitests.ios_ui_tests.test_counts(ROOT)
+        self.assertEqual(counts["ReaderUITests"], 4)
+        self.assertEqual(set(counts), set(uitests.ios_ui_tests.ui_classes(ROOT)))
+        self.assertGreaterEqual(sum(counts.values()), 30)
 
     def test_a_log_of_passing_tests_with_the_success_line_passes(self):
         self.assertEqual(self.judge(PASSED_LOG), (True, []))

@@ -198,6 +198,10 @@ SKIP_LINE = re.compile(r"^(?:\S.*?):\d+: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) 
 # November 10, 2026 (run 42957244945, 34 tests with no failure judged FAILED), "** TEST EXECUTE SUCCEEDED **" for
 # `test-without-building`.
 SUCCESS_LINE = re.compile(r"\*\* TEST (?:EXECUTE )?SUCCEEDED \*\*")
+# The words every skip for sound has in its reason: TextMouthUITestCase.soundSkipMarker, the same text (a test pins that the
+# two agree). This script sets the sound variable, so a test that skipped for sound means the variable did not reach the
+# test runner, and the run proved nothing about those tests.
+SOUND_SKIP_MARKER = "runs only on a GitHub runner"
 # The longest a failure or skip message is kept, in characters: an assertion message can hold a screen's whole tree.
 MESSAGE_LIMIT = 300
 
@@ -231,9 +235,11 @@ def parse_results(log_text, root=ROOT):
     return {"cases": cases, "failures": failures, "skips": skips}
 
 
-def judge(status, timed_out, log_text, parsed):
+def judge(status, timed_out, log_text, parsed, expected=0):
     """(whether the run passed, the reasons it did not): xcodebuild exited 0 and printed TEST SUCCEEDED, the time limit
-    did not stop it, no case failed, and at least one test ran (a run of nothing is a mistake, not a pass)."""
+    did not stop it, no case failed, at least one test ran (a run of nothing is a mistake, not a pass), no test skipped
+    because it makes sound (this script sets the variable that allows it, so such a skip means it never arrived), and,
+    when `expected` is given, at least that many results came back (the tests the asked classes hold)."""
     reasons = []
     if timed_out:
         reasons.append("the run was stopped at its time limit")
@@ -243,6 +249,12 @@ def judge(status, timed_out, log_text, parsed):
         reasons.append(f"xcodebuild ended with status {status} and did not print TEST SUCCEEDED or TEST EXECUTE SUCCEEDED")
     if not parsed["cases"]:
         reasons.append("no test result was found in the log")
+    silenced = [line.split(":", 1)[0] for line in parsed["skips"] if SOUND_SKIP_MARKER in line]
+    if silenced:
+        reasons.append(f"{len(silenced)} test(s) skipped because they make sound, though this run allows sound: "
+                       f"{SOUND_VARIABLE} did not reach the test runner ({', '.join(silenced[:3])}{', ...' if len(silenced) > 3 else ''})")
+    if expected and len(parsed["cases"]) < expected:
+        reasons.append(f"{len(parsed['cases'])} test results came back, and the classes asked for hold {expected}")
     return not reasons, reasons
 
 
@@ -339,7 +351,8 @@ def main(argv):
         seconds = time.monotonic() - began
     log_text = (out / "ios-ui.log").read_text(encoding="utf-8", errors="replace")
     parsed = parse_results(log_text)
-    passed, reasons = judge(status, timed_out, log_text, parsed)
+    counts = ios_ui_tests.test_counts(ROOT)
+    passed, reasons = judge(status, timed_out, log_text, parsed, expected=sum(counts.get(name, 0) for name in classes))
     return finish(summary_lines("PASSED" if passed else "FAILED", parsed, seconds, setup_seconds, simulator, named,
                                 reasons), 0 if passed else 1)
 
