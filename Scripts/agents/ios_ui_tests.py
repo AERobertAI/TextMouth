@@ -38,54 +38,70 @@ UNIT_BUNDLE = UNIT_FOLDER
 BUNDLE_KIND = {UNIT_BUNDLE: "unit tests", UI_BUNDLE: "interface tests"}
 # The areas of Scripts/test/areas.conf whose request also runs every iPhone test: the iPhone's own, and everything.
 AREAS_THAT_RUN_THEM = ("phone", "all")
-# A test class of the interface folder: it inherits the shared base class, `TextMouthUITestCase`, which is not itself a
-# test class.
-CLASS_LINE = re.compile(r"^\s*(?:final\s+)?class\s+([A-Za-z0-9_]+)\s*:\s*TextMouthUITestCase\b", re.M)
-# A test class of the unit folder: it inherits XCTestCase itself.
-UNIT_CLASS_LINE = re.compile(r"^\s*(?:final\s+)?class\s+([A-Za-z0-9_]+)\s*:\s*XCTestCase\b", re.M)
-# One test method of a class: `func testSomething(`. A method inside `#if DEBUG` counts: the iPhone job builds Debug (the
-# scheme's test action says so, and a test pins it), and the Debug build holds it.
-TEST_METHOD = re.compile(r"^\s*func (test[A-Za-z0-9_]*)\(", re.M)
+# What may stand before a declaration on its line (or on the lines before it): attributes, with or without arguments
+# (`@MainActor`, `@available(iOS 26, *)`), and modifiers. `project.yml` compiles every Swift file under each test folder, so
+# the sources are read the same way, subfolders and all.
+_BEFORE = r"(?:(?:@\w+(?:\([^)]*\))?|public|internal|open|final|private|fileprivate|override|nonisolated)\s+)*"
+# A place where tests are declared: a class, or an extension of a type (an extension in another file or after another class
+# adds its tests to the type it names). `class` captures its name and its first base class; `extension` its type's name.
+_SCOPE = re.compile(
+    r"^[ \t]*" + _BEFORE + r"(?:class\s+(?P<class>[A-Za-z0-9_]+)\s*:\s*(?P<base>[A-Za-z0-9_.]+)|extension\s+(?P<ext>[A-Za-z0-9_.]+))",
+    re.M,
+)
+# The base class a test class of each folder inherits. The interface folder's own base class, `TextMouthUITestCase`, is not
+# a test class itself: it inherits XCTestCase, not itself.
+UI_BASE = "TextMouthUITestCase"
+UNIT_BASE = "XCTestCase"
+# One test method of a class: `func testSomething(`, with any attributes or modifiers before `func`
+# (`@MainActor func testA()`). A method inside `#if DEBUG` counts: the iPhone job builds Debug (the scheme's test action
+# says so, and a test pins it), and the Debug build holds it. A helper struct's `func test...(` also counts (a false red,
+# which is the safe side).
+TEST_METHOD = re.compile(r"^[ \t]*" + _BEFORE + r"func\s+(test[A-Za-z0-9_]*)\s*\(", re.M)
 
 
-def _classes_in(folder, class_line):
-    """The classes the `class_line` pattern finds in the Swift files of `folder`, sorted; none when the folder is absent
-    (a tree from before the tests)."""
+def swift_files(folder):
+    """The Swift files under `folder`, subfolders included, in path order; none when the folder is absent (a tree from
+    before the tests)."""
     folder = Path(folder)
-    if not folder.is_dir():
-        return []
-    found = set()
-    for path in folder.glob("*.swift"):
-        found.update(class_line.findall(path.read_text(encoding="utf-8", errors="replace")))
-    return sorted(found)
+    return sorted(folder.rglob("*.swift")) if folder.is_dir() else []
 
 
-def _counts_in(folder, class_line):
-    """How many test methods each class of `folder` holds, as {class: count}: the `func test...(` lines between a class's
-    declaration and the next one's. The runner checks that at least this many results came back (a run that returns
-    fewer has lost tests)."""
-    folder = Path(folder)
+def _counts_in(folder, base):
+    """How many test methods each test class of `folder` holds, as {class: count}: a test class is one that inherits `base`.
+    A method counts for the class or extension it follows, wherever that is in the folder: an extension of a test class
+    adds to its count, an extension of any other type (or a class that inherits something else) adds to none. The runner
+    checks that at least this many results came back (a run that returns fewer has lost tests)."""
+    texts = [path.read_text(encoding="utf-8", errors="replace") for path in swift_files(folder)]
+    # First every test class of the folder, so an extension may come before its class or in another file.
     counts = {}
-    if not folder.is_dir():
-        return counts
-    for path in sorted(folder.glob("*.swift")):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        starts = [(match.start(), match.group(1)) for match in class_line.finditer(text)]
-        for index, (start, name) in enumerate(starts):
-            end = starts[index + 1][0] if index + 1 < len(starts) else len(text)
-            counts[name] = counts.get(name, 0) + len(TEST_METHOD.findall(text[start:end]))
+    for text in texts:
+        for match in _SCOPE.finditer(text):
+            if match.group("class") and match.group("base").split(".")[-1] == base:
+                counts.setdefault(match.group("class"), 0)
+    for text in texts:
+        scopes = [(match.start(), match.group("class") or match.group("ext").split(".")[-1])
+                  for match in _SCOPE.finditer(text)]
+        for index, (start, name) in enumerate(scopes):
+            end = scopes[index + 1][0] if index + 1 < len(scopes) else len(text)
+            if name in counts:
+                counts[name] += len(TEST_METHOD.findall(text[start:end]))
     return counts
+
+
+def _classes_in(folder, base):
+    """The test classes of `folder` (those that inherit `base`), sorted; none when the folder is absent."""
+    return sorted(_counts_in(folder, base))
 
 
 def ui_classes(root=ROOT):
     """The interface test classes in `root`'s TextMouthiOSUITests folder, sorted: every class that inherits
     `TextMouthUITestCase`. An absent folder (a tree from before the interface tests) has none."""
-    return _classes_in(Path(root) / UI_FOLDER, CLASS_LINE)
+    return _classes_in(Path(root) / UI_FOLDER, UI_BASE)
 
 
 def unit_classes(root=ROOT):
     """The unit test classes in `root`'s TextMouthiOSTests folder, sorted: every class that inherits `XCTestCase`."""
-    return _classes_in(Path(root) / UNIT_FOLDER, UNIT_CLASS_LINE)
+    return _classes_in(Path(root) / UNIT_FOLDER, UNIT_BASE)
 
 
 def all_classes(root=ROOT):
@@ -102,12 +118,12 @@ def bundle_of(name, root=ROOT):
 
 def test_counts(root=ROOT):
     """How many test methods each interface test class holds, as {class: count}."""
-    return _counts_in(Path(root) / UI_FOLDER, CLASS_LINE)
+    return _counts_in(Path(root) / UI_FOLDER, UI_BASE)
 
 
 def unit_counts(root=ROOT):
     """How many test methods each unit test class holds, as {class: count}."""
-    return _counts_in(Path(root) / UNIT_FOLDER, UNIT_CLASS_LINE)
+    return _counts_in(Path(root) / UNIT_FOLDER, UNIT_BASE)
 
 
 def counts_by_bundle(names, root=ROOT):

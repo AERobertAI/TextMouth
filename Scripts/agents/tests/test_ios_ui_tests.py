@@ -5,6 +5,7 @@ Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
 Each test makes a throwaway folder with a few Swift files, so no test reads the real interface tests but the one that
 checks the repository's own folder is found.
 """
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -186,6 +187,69 @@ class TheUnitTestsTests(TreeCase):
         # Four in IOSRuntimeTests, two of them inside #if DEBUG, which the Debug build holds.
         self.assertEqual(ui.unit_counts(ROOT)["IOSRuntimeTests"], 4)
         self.assertGreaterEqual(sum(ui.unit_counts(ROOT).values()), 19)
+
+
+class CountingTheTestsTests(TreeCase):
+    """The counter reads Swift the way `project.yml` compiles it: attributes and modifiers, extensions, and subfolders."""
+
+    def folder_with(self, folder=None, **files):
+        """A tree whose TextMouthiOSUITests folder (or `folder`, relative to it) holds the given files."""
+        root = self.tree()
+        for name, source in files.items():
+            path = root / ui.UI_FOLDER / (folder or "") / f"{name}.swift"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(source)
+        return root
+
+    def test_a_test_with_an_attribute_or_modifier_on_its_line_is_counted(self):
+        root = self.folder_with(A="final class A: TextMouthUITestCase {\n    @MainActor func testA() {}\n"
+                                  "    @available(iOS 26, *) func testB() throws {}\n    override func testC() {}\n"
+                                  "    @MainActor\n    func testD() async {}\n    func testE() {}\n}\n")
+        self.assertEqual(ui.test_counts(root), {"A": 5})
+
+    def test_a_class_with_attributes_or_modifiers_before_class_is_found_and_counted(self):
+        root = self.folder_with(A="@MainActor final class A: TextMouthUITestCase {\n    func testA() {}\n}\n",
+                                B="@MainActor\nfinal class B: TextMouthUITestCase {\n    func testB() {}\n}\n",
+                                C="public class C: TextMouthUITestCase {\n    func testC() {}\n}\n")
+        self.assertEqual(ui.ui_classes(root), ["A", "B", "C"])
+        self.assertEqual(ui.test_counts(root), {"A": 1, "B": 1, "C": 1})
+
+    def test_a_test_in_an_extension_in_another_file_or_after_another_class_is_credited_to_its_class(self):
+        root = self.folder_with(
+            A="final class A: TextMouthUITestCase {\n    func testA() {}\n}\n",
+            B="final class B: TextMouthUITestCase {\n    func testB() {}\n}\nextension A {\n    func testMoreA() {}\n}\n",
+            C="extension B {\n    func testMoreB() {}\n    @MainActor func testEvenMoreB() {}\n}\n",
+        )
+        self.assertEqual(ui.test_counts(root), {"A": 2, "B": 3})
+
+    def test_an_extension_of_another_type_adds_nothing(self):
+        root = self.folder_with(A="final class A: TextMouthUITestCase {\n    func testA() {}\n}\n"
+                                  "extension XCUIApplication {\n    func testHelper() {}\n}\n")
+        self.assertEqual(ui.test_counts(root), {"A": 1})
+
+    def test_a_file_in_a_subfolder_is_read(self):
+        root = self.folder_with("Deeper/Still", A="final class A: TextMouthUITestCase {\n    func testA() {}\n}\n")
+        self.assertEqual(ui.ui_classes(root), ["A"])
+        self.assertEqual(ui.test_counts(root), {"A": 1})
+
+    def test_the_unit_folder_is_read_the_same_way(self):
+        root = self.folder_with()
+        folder = root / ui.UNIT_FOLDER / "Sub"
+        folder.mkdir(parents=True)
+        (folder / "U.swift").write_text("@MainActor final class UTests: XCTestCase {\n    @MainActor func testU() {}\n}\n"
+                                        "extension UTests {\n    func testV() {}\n}\n")
+        self.assertEqual(ui.unit_counts(root), {"UTests": 2})
+
+    def test_every_func_test_in_either_repository_folder_is_counted(self):
+        """The counter and a plain search of the sources agree: a `func test...(` left uncounted is a test that could be
+        lost without a red run. Comment lines are left out of the search; a false red here is the safe side."""
+        plain = re.compile(r"^(?!\s*//).*\bfunc\s+test\w*\s*\(", re.M)
+        for folder, counts in ((ui.UI_FOLDER, ui.test_counts(ROOT)), (ui.UNIT_FOLDER, ui.unit_counts(ROOT))):
+            found = sum(len(plain.findall(path.read_text(encoding="utf-8"))) for path in ui.swift_files(ROOT / folder))
+            self.assertGreater(found, 0, f"No test found in {folder}: the search itself is broken")
+            self.assertEqual(sum(counts.values()), found,
+                             f"{folder} holds {found} `func test` but the counter credits {sum(counts.values())} "
+                             f"({counts}): a test is in a form the counter misses")
 
 
 class TheCountsInASummaryTests(unittest.TestCase):
