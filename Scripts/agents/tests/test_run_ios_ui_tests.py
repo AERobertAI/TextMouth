@@ -413,6 +413,30 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertIn("the wanted iOS 26.0 runtime was not there", sentence)
 
 
+class TheSearchTestsRulesTests(unittest.TestCase):
+    """Rules of the typed search tests that a break would otherwise slip past (review of 1f5f5f4a, finding 7)."""
+
+    def source(self):
+        """SearchUITests.swift."""
+        return (ROOT / "TextMouthiOSUITests" / "SearchUITests.swift").read_text()
+
+    def test_a_status_ending_in_matches_is_never_waited_for_without_the_results_heading_first(self):
+        # "No matches" ends with " matches", so waiting for that ending alone passes a search that found nothing.
+        text = self.source()
+        waiting = text.count('waitForStatus(ending: [" matches", " match"]')
+        # The one inside waitForResults, and the correction test's, which waits for the heading just before it.
+        self.assertEqual(waiting, 2, "a test waits for the ' matches' status without waitForResults")
+        correction = text[text.index("func testACorrectionMadeWhileTypingIsSearchedFor"):]
+        self.assertLess(correction.index('staticTexts["Search results"].waitForExistence'),
+                        correction.index('waitForStatus(ending: [" matches", " match"]'))
+
+    def test_type_taps_the_field_only_when_the_keyboard_is_not_up(self):
+        base = (ROOT / "TextMouthiOSUITests" / "TextMouthUITestCase.swift").read_text()
+        body = base[base.index("func type("):]
+        body = body[:body.index("\n    }\n")]
+        self.assertIn("if !app.keyboards.firstMatch.exists {\n            field.tap()", body)
+
+
 class RunningTheScriptTests(unittest.TestCase):
     """main() with a stand-in for simctl and for xcodebuild, in a throwaway repository."""
 

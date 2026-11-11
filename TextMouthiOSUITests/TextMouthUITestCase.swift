@@ -143,13 +143,18 @@ class TextMouthUITestCase: XCTestCase {
     }
 
     /// Types `text` into the text field labeled `label`, as a person does: the
-    /// field is tapped to hold the keyboard, then the keys are pressed. Skips
-    /// the test where sound isn't allowed (the keyboard clicks).
+    /// field is tapped to hold the keyboard if it does not hold it yet, then
+    /// the keys are pressed. A second call finds the keyboard up and does not
+    /// tap again, which could move the insertion point (at large text sizes
+    /// the tap lands inside the text). Skips the test where sound isn't
+    /// allowed (the keyboard clicks).
     func type(_ text: String, intoFieldLabeled label: String, in app: XCUIApplication) throws {
         try requireSound("Typing")
         let field = app.textFields[label]
         XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "No field labeled \"\(label)\":\n\(app.debugDescription)")
-        field.tap()
+        if !app.keyboards.firstMatch.exists {
+            field.tap()
+        }
         dismissKeyboardIntroduction(in: app)
         field.typeText(text)
     }

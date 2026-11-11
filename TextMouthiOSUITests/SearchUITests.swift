@@ -49,6 +49,17 @@ final class SearchUITests: TextMouthUITestCase {
         return try elementsOfSheet(titled: "Search in Book", in: app)
     }
 
+    /// Waits for the "Search results" heading, which only a search that found something has, and then for the status
+    /// line of a search with matches, and returns the sheet's elements in order. "No matches" also ends with " matches",
+    /// so the status alone could be met by a search that found nothing: the heading is what says results came.
+    private func waitForResults(in app: XCUIApplication) throws -> [Element] {
+        XCTAssertTrue(
+            app.staticTexts["Search results"].waitForExistence(timeout: Self.patience),
+            "No results came. The screen:\n\(app.debugDescription)"
+        )
+        return try waitForStatus(ending: [" matches", " match"], in: app)
+    }
+
     // MARK: - What it reads
 
     /// With a search, the sheet reads its title, Back to Book, the field, the
@@ -56,7 +67,7 @@ final class SearchUITests: TextMouthUITestCase {
     /// heading, then the results, each ending with its place in the book.
     func testTheSearchSheetReadsItsFieldStatusSwitchAndResultsInOrder() throws {
         let app = try openSearchSheet(typing: Self.word)
-        let elements = try waitForStatus(ending: [" matches", " match"], in: app)
+        let elements = try waitForResults(in: app)
 
         assertOrder([
             "Search in Book", "Back to Book", "Search text", "Use regular expression", "Search results",
@@ -121,7 +132,7 @@ final class SearchUITests: TextMouthUITestCase {
     /// status asks for a term, and the results and their heading are gone.
     func testEmptyingTheFieldReturnsTheSheetToItsPrompt() throws {
         let app = try openSearchSheet(typing: Self.word)
-        _ = try waitForStatus(ending: [" matches", " match"], in: app)
+        _ = try waitForResults(in: app)
         try type(String(repeating: XCUIKeyboardKey.delete.rawValue, count: Self.word.count), intoFieldLabeled: Self.fieldLabel, in: app)
         let prompt = app.staticTexts["Enter a search term above."]
         XCTAssertTrue(prompt.waitForExistence(timeout: Self.patience), "The prompt never came back:\n\(app.debugDescription)")
@@ -135,7 +146,7 @@ final class SearchUITests: TextMouthUITestCase {
     /// the sheet is back, and nothing plays.
     func testAResultTakesTheReaderToItsPlace() throws {
         let app = try openSearchSheet(typing: Self.word)
-        let elements = try waitForStatus(ending: [" matches", " match"], in: app)
+        let elements = try waitForResults(in: app)
         let results = elements.drop { $0.label != "Search results" }.dropFirst()
         let first = try XCTUnwrap(results.first, "No result in: \(Self.describe(elements))")
 
@@ -173,7 +184,7 @@ final class SearchUITests: TextMouthUITestCase {
     /// own title and the sheet's bar button are accepted as on every sheet.
     func testTheSearchSheetPassesTheAudit() throws {
         let app = try openSearchSheet(typing: Self.word)
-        _ = try waitForStatus(ending: [" matches", " match"], in: app)
+        _ = try waitForResults(in: app)
         // The field holds the keyboard, as the spec has it, and the audit
         // reads the keyboard's own cells too (pass 1, November 9, 2026: three
         // "TUIPredictionViewCell" findings, and contrast findings on the rows
