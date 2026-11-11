@@ -469,60 +469,6 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertEqual(udid, "NEWUDID")
         self.assertIn(("create", "TextMouth iPhone 17", uitests.DEVICE_TYPE, self.RUNTIME["identifier"]), calls)
 
-    def test_a_device_booted_early_only_has_its_boot_waited_for(self):
-        # What --prepare left (the UDID and sentence): no listing, no creating, no second boot, just the wait and the settings.
-        calls = []
-
-        def fake_simctl(*args, timeout=0):
-            """Answers every call as a success and notes it."""
-            calls.append(args)
-            return mock.Mock(stdout="", stderr="", returncode=0)
-
-        log = io.StringIO()
-        with mock.patch.object(uitests, "simctl", fake_simctl):
-            answer = uitests.ready_simulator(log, ("PREPARED", "iPhone 17, iOS 26.0.1 (PREPARED)"))
-        self.assertEqual(answer, ("PREPARED", "iPhone 17, iOS 26.0.1 (PREPARED)"))
-        self.assertEqual([call[0] for call in calls], ["bootstatus"] + ["spawn"] * len(uitests.KEYBOARD_SETTINGS))
-
-    def test_starting_a_simulator_boots_it_and_does_not_wait_and_an_already_booted_one_is_fine(self):
-        (udid, _), calls, _ = self.run_start()
-        self.assertEqual(udid, "OLDUDID")
-        self.assertIn(("boot", "OLDUDID"), calls)
-        self.assertNotIn("bootstatus", [call[0] for call in calls], "starting does not wait for the boot")
-        self.assertFalse(any(call[0] == "spawn" for call in calls), "the keyboard settings need a booted device")
-        (udid, _), _, _ = self.run_start(boot=(149, "Unable to boot device in current state: Booted"))
-        self.assertEqual(udid, "OLDUDID")
-
-    def test_a_boot_that_cannot_start_is_a_failure(self):
-        failure, _, _ = self.run_start(boot=(2, "No such device"))
-        self.assertIsInstance(failure, uitests.SimulatorFailure)
-        self.assertIn("did not start booting", str(failure))
-
-    def run_start(self, boot=(0, "")):
-        """Runs start_simulator on the one existing device; returns (its answer or failure, the simctl calls, the log)."""
-        calls = []
-
-        def fake_simctl(*args, timeout=0):
-            """Answers simctl calls; the boot with `boot`'s status and words."""
-            calls.append(args)
-            if args[0] == "boot":
-                return mock.Mock(stdout="", stderr=boot[1], returncode=boot[0])
-            return mock.Mock(stdout="listing", stderr="", returncode=0)
-
-        def fake_json(*args):
-            """Answers `simctl list <what> -j`."""
-            if args[0] == "runtimes":
-                return {"runtimes": [self.RUNTIME]}
-            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
-
-        log = io.StringIO()
-        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
-            try:
-                answer = uitests.start_simulator(log)
-            except uitests.SimulatorFailure as failure:
-                answer = failure
-        return answer, calls, log.getvalue()
-
     def test_a_device_that_cannot_be_made_is_a_failure_that_says_so(self):
         failure, _, _ = self.run_setup(devices={}, create=("", 1))
         self.assertIsInstance(failure, uitests.SimulatorFailure)
@@ -671,52 +617,6 @@ class RunningTheScriptTests(unittest.TestCase):
                 uitests.main(["--out", "out"])
         self.assertEqual(seen[0], uitests.DEFAULT_LIMIT_MINUTES, "a step with room gives the whole asked limit")
         self.assertAlmostEqual(seen[1], 20 - uitests.KILL_GRACE_SECONDS / 60, delta=0.1)
-
-    def test_prepare_starts_the_simulator_and_leaves_what_the_test_step_uses(self):
-        out = self.out
-        with mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stdout(io.StringIO()), \
-                mock.patch.object(uitests, "start_simulator", lambda log: (log.write("$ boot\n"), ("U-1", "iPhone 17 (U-1)"))[1]):
-            self.assertEqual(uitests.main(["--out", "out", "--prepare"]), 0)
-        self.assertEqual((out / uitests.PREPARED_FILE).read_text(), "U-1\niPhone 17 (U-1)\n$ boot\n")
-        prepared, notes = uitests.read_prepared(out)
-        self.assertEqual(prepared, ("U-1", "iPhone 17 (U-1)"))
-        self.assertEqual(notes, "$ boot\n")
-
-    def test_the_test_step_waits_for_the_prepared_simulator_and_does_not_start_another(self):
-        (self.out / uitests.PREPARED_FILE).write_text("U-1\niPhone 17 (U-1)\n$ boot\n")
-        seen = []
-        real = uitests.ready_simulator
-
-        def spy(log, prepared=None):
-            """Records what the step was given, then fakes the wait."""
-            seen.append(prepared)
-            return prepared
-
-        script = "print(\"Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\"); print('** TEST EXECUTE SUCCEEDED **')"
-        with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", spy), \
-                mock.patch.object(uitests, "test_command", return_value=[sys.executable, "-c", script]), \
-                contextlib.redirect_stdout(io.StringIO()):
-            status = uitests.main(["--out", "out"])
-        self.assertEqual((status, seen), (0, [("U-1", "iPhone 17 (U-1)")]))
-        self.assertIn("$ boot", (self.out / "ios-ui.log").read_text(), "the prepare notes lead the log")
-
-    def test_prepare_starts_nothing_when_the_request_does_not_ask_for_the_tests_and_never_fails(self):
-        self.request({"areas": ["feeds"], "classes": ["FooTests"]})
-        started = []
-        with mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stdout(io.StringIO()), \
-                mock.patch.object(uitests, "start_simulator", lambda log: started.append(1)):
-            self.assertEqual(uitests.main(["--out", "out", "--prepare"]), 0)
-        self.assertEqual(started, [])
-        self.assertFalse((self.out / uitests.PREPARED_FILE).exists())
-        self.request({"full": True})
-
-        def broken(log):
-            raise uitests.SimulatorFailure("no runtime")
-
-        with mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stdout(io.StringIO()), \
-                mock.patch.object(uitests, "start_simulator", broken):
-            self.assertEqual(uitests.main(["--out", "out", "--prepare"]), 0, "a failure to prepare must not fail the job")
-        self.assertFalse((self.out / uitests.PREPARED_FILE).exists())
 
     def test_a_request_naming_classes_runs_only_those(self):
         (self.root / "TextMouthiOSUITests" / "Other.swift").write_text("final class SearchUITests: TextMouthUITestCase {}\n")

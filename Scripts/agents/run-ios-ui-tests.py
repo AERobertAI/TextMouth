@@ -69,12 +69,9 @@ LEAST_TEST_MINUTES = 5
 # The longest the simulator may take to boot, in seconds, and one `simctl` call to answer.
 BOOT_SECONDS = 300
 SIMCTL_SECONDS = 60
-# How many `simctl` calls the set-up makes besides the boot's wait, when `--prepare` left nothing: the listing, the
-# runtimes, the devices, the device made when there is none, the boot, and one `defaults write` for each keyboard
-# setting (the workflow test adds their limits up). Having been prepared, it makes only the last four.
-SETUP_SIMCTL_CALLS = 5 + 4
-# The file `--prepare` leaves in the output folder: the UDID, a sentence naming the simulator, then its notes.
-PREPARED_FILE = "ios-ui-simulator.txt"
+# How many `simctl` calls the set-up makes besides the boot's wait: the listing, the runtimes, the devices, the device
+# made when there is none, and one `defaults write` for each keyboard setting (the workflow test adds their limits up).
+SETUP_SIMCTL_CALLS = 4 + 4
 # How long a run past its limit is given to end after being asked to, before it is killed, in seconds.
 KILL_GRACE_SECONDS = 60
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
@@ -142,10 +139,10 @@ def choose_device(devices, runtime_id, name=DEVICE_NAME):
     return None
 
 
-def start_simulator(log):
-    """Finds or makes an iPhone 17 on the best iOS runtime and starts it booting, without waiting for the boot. Returns
+def ready_simulator(log):
+    """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
-    SimulatorFailure, naming it. The device is already booted when `simctl boot` says so, which is fine."""
+    SimulatorFailure, naming it."""
     listing = simctl("list")
     log.write(f"$ xcrun simctl list\n{listing.stdout}\n")
     runtime = choose_runtime(simctl_json("runtimes").get("runtimes", []))
@@ -158,19 +155,6 @@ def start_simulator(log):
         log.write(f"$ xcrun simctl create -> {made.returncode}: {made.stdout}{made.stderr}\n")
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"could not make an {DEVICE_NAME} on {runtime['identifier']}: {made.stderr.strip()[:300]}")
-    started = simctl("boot", udid)
-    log.write(f"$ xcrun simctl boot {udid} -> {started.returncode}\n{started.stdout[-500:]}{started.stderr[-500:]}\n")
-    if started.returncode != 0 and "Booted" not in started.stderr:
-        raise SimulatorFailure(f"the simulator {udid} did not start booting: {started.stderr.strip()[-300:]}")
-    sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
-    if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
-        sentence += f" (the wanted iOS {RUNTIME_VERSION} runtime was not there)"
-    return udid, sentence
-
-
-def finish_booting(udid, log):
-    """Waits for the simulator `udid` to finish booting (it boots it first if nothing started it) and sets the keyboard's
-    settings. Every `simctl` call is written to `log`. A boot that does not finish raises SimulatorFailure."""
     booted = simctl("bootstatus", udid, "-b", timeout=BOOT_SECONDS)
     log.write(f"$ xcrun simctl bootstatus {udid} -b -> {booted.returncode}\n{booted.stdout[-2000:]}{booted.stderr[-2000:]}\n")
     if booted.returncode != 0:
@@ -178,50 +162,10 @@ def finish_booting(udid, log):
     for key, value in KEYBOARD_SETTINGS:
         written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false")
         log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
-
-
-def ready_simulator(log, prepared=None):
-    """A booted iPhone 17 with the keyboard's settings written: the UDID and a sentence naming it. With `prepared` (the
-    UDID and sentence that `--prepare` left, started booting while the app built) it only waits for that boot to finish;
-    without it, it finds or makes the device and starts it first. Every `simctl` call is written to `log`."""
-    udid, sentence = prepared if prepared else start_simulator(log)
-    finish_booting(udid, log)
+    sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
+    if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
+        sentence += f" (the wanted iOS {RUNTIME_VERSION} runtime was not there)"
     return udid, sentence
-
-
-def read_prepared(out):
-    """What `--prepare` left in `out`: ((the UDID, the sentence), the notes it wrote), or (None, "") when it left nothing
-    usable (it never ran, or failed: the set-up then does the whole job itself)."""
-    try:
-        lines = (out / PREPARED_FILE).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return None, ""
-    if len(lines) < 2 or not lines[0].strip():
-        return None, ""
-    return (lines[0].strip(), lines[1].strip()), "\n".join(lines[2:]) + "\n"
-
-
-def prepare(out, request_path):
-    """The `--prepare` step, run while the app builds: when the request asks for the interface tests, finds or makes the
-    simulator and starts it booting (the boot takes minutes, the build is long, and CoreSimulator's own service does the
-    booting), then leaves its UDID and a sentence, and the notes of its calls, in PREPARED_FILE. It never fails the job:
-    any trouble is written down, and the set-up in the test step then does everything itself. Returns the exit status, 0."""
-    try:
-        request = json.loads(request_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        request = {}
-    if not ios_ui_tests.wanted(request if isinstance(request, dict) else {}, ROOT):
-        print("prepare: the request does not ask for the interface tests; no simulator is started")
-        return 0
-    import io
-    notes = io.StringIO()
-    try:
-        udid, sentence = start_simulator(notes)
-        (out / PREPARED_FILE).write_text(f"{udid}\n{sentence}\n{notes.getvalue()}", encoding="utf-8")
-        print(f"prepare: {sentence} is booting")
-    except SimulatorFailure as failure:
-        print(f"prepare: could not start the simulator ({failure}); the test step will")
-    return 0
 
 
 def parallel_arguments():
@@ -377,13 +321,9 @@ def main(argv):
     parser.add_argument("--derived-data", default="build/remote-DerivedData-ios")
     parser.add_argument("--request", default=".github/test-request.json")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
-    parser.add_argument("--prepare", action="store_true",
-                        help="only start the simulator booting, for the test step that follows the build")
     args = parser.parse_args(argv)
     out = (ROOT / args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    if args.prepare:
-        return prepare(out, ROOT / args.request)
     summary = out / "ios-ui-summary.txt"
 
     def finish(lines, code):
@@ -405,14 +345,12 @@ def main(argv):
     # All classes are one run of the whole bundle; a subset names each class.
     every = ios_ui_tests.ui_classes(ROOT)
     named = [] if classes == every else classes
-    prepared, prepared_notes = read_prepared(out)
     started = time.monotonic()
     # One fresh handle serves the set-up's notes and xcodebuild's output, which writes through the same file. It is opened
     # to write, not to append, so that a folder used before cannot lend this run an old run's results.
     with open(out / "ios-ui.log", "w", encoding="utf-8") as log:
-        log.write(prepared_notes)
         try:
-            udid, simulator = ready_simulator(log, prepared)
+            udid, simulator = ready_simulator(log)
         except SimulatorFailure as failure:
             log.write(f"simulator set-up failed: {failure}\n")
             return finish(not_run_lines("FAILED", f"the simulator could not be made ready: {failure}"), 1)
