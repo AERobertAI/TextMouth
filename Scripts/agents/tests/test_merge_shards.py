@@ -204,10 +204,61 @@ class MergeShardsTests(unittest.TestCase):
         self.shard(1, PASSING.format(n=5, s=0, t=1.0))
         ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 3.1\n")
         merge_shards.merge(self.shards, self.out, 1, ios)
+        # A run whose iPhone job left no interface-test summary gets one that says NOT RUN.
         self.assertEqual(sorted(path.name for path in self.out.iterdir()),
-                         ["ios-errors.txt", "ios-summary.txt", "ios.log", "request.json", "run-summary.txt", "run.log",
-                          "summary.md"])
+                         ["ios-errors.txt", "ios-summary.txt", "ios-ui-summary.txt", "ios.log", "request.json",
+                          "run-summary.txt", "run.log", "summary.md"])
         self.assertIn("- iOS build: PASSED; errors in the app: 0 in 0 files", (self.out / "summary.md").read_text())
+
+    def ui_results(self, ios, summary, log="xcodebuild output\n"):
+        """Adds the interface tests' two files to the iPhone folder."""
+        (ios / "ios-ui-summary.txt").write_text(summary)
+        (ios / "ios-ui.log").write_text(log)
+
+    UI_FAILED = ("iOS UI tests: FAILED\nExecuted 30 tests, with 4 tests skipped and 2 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+                 "Classes: every class\nFAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause\n"
+                 "FAILED SearchUITests.testB at TextMouthiOSUITests/SearchUITests.swift:7: no results\n"
+                 "Skipped X.testC: why\nReason: 2 test(s) failed\n")
+
+    def test_the_interface_tests_results_are_passed_on_and_summarised_with_each_failed_test_named(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        self.ui_results(ios, self.UI_FAILED)
+        merge_shards.merge(self.shards, self.out, 1, ios)
+        self.assertEqual((self.out / "ios-ui-summary.txt").read_text(), self.UI_FAILED)
+        self.assertEqual((self.out / "ios-ui.log").read_text(), "xcodebuild output\n")
+        summary = (self.out / "summary.md").read_text()
+        self.assertIn("- iOS UI tests: FAILED; executed 30 tests, with 4 tests skipped and 2 failures", summary)
+        self.assertIn("- Reason: 2 test(s) failed", summary)
+        self.assertIn("- iOS UI test failures: 2", summary)
+        self.assertIn("  - FAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause", summary)
+        self.assertNotIn("Skipped X.testC", summary, "a skip is not a failure")
+
+    def test_failed_interface_tests_never_fail_the_mac_tests_verdict(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        self.ui_results(ios, self.UI_FAILED)
+        self.assertTrue(merge_shards.merge(self.shards, self.out, 1, ios))
+        self.assertTrue((self.out / "run-summary.txt").read_text().rstrip().endswith("PASSED"))
+        self.assertNotIn("PlaybackUITests", (self.out / "run-summary.txt").read_text())
+        self.assertIn("- Verdict: PASSED", (self.out / "summary.md").read_text())
+        self.assertIn("- Failures and errors: 0", (self.out / "summary.md").read_text())
+
+    def test_interface_tests_not_asked_for_are_one_line_with_no_failures(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        self.ui_results(ios, "iOS UI tests: NOT ASKED\nReason: the request does not ask for them\n")
+        merge_shards.merge(self.shards, self.out, 1, ios)
+        summary = (self.out / "summary.md").read_text()
+        self.assertIn("- iOS UI tests: NOT ASKED", summary)
+        self.assertIn("- iOS UI test failures: 0", summary)
+
+    def test_an_interface_test_step_that_reported_nothing_is_said_to_have_not_run(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        merge_shards.merge(self.shards, self.out, 1, ios)
+        self.assertTrue((self.out / "ios-ui-summary.txt").read_text().startswith("iOS UI tests: NOT RUN"))
+        self.assertIn("- iOS UI tests: NOT RUN (the step reported nothing)", (self.out / "summary.md").read_text())
 
     def test_a_failed_iphone_build_does_not_fail_the_tests_but_its_errors_come_through(self):
         self.shard(1, PASSING.format(n=5, s=0, t=1.0))

@@ -582,6 +582,29 @@ class RequestTests(RunnerTestCase):
         self.write_request({})
         self.assertEqual(runner.read_request(self.request), {"areas": [], "classes": [], "full": False})
 
+    def test_interface_test_classes_move_out_of_the_mac_classes(self):
+        # run-area.py would refuse them as unknown classes; the iPhone job runs them (run-ios-ui-tests.py).
+        self.write_request({"areas": ["stats"], "classes": ["FooTests", "SearchUITests", "ReaderUITests"]})
+        request = runner.read_request(self.request)
+        self.assertEqual(request["classes"], ["FooTests"])
+        self.assertEqual(request["ios_ui_classes"], ["SearchUITests", "ReaderUITests"])
+
+    def test_a_request_naming_only_interface_test_classes_runs_no_mac_test_and_passes(self):
+        self.write_request({"areas": [], "classes": ["SearchUITests"], "full": False})
+        started = []
+        with mock.patch.object(test_command, "area_command", lambda *a, **k: started.append(a) or ["false"]):
+            status, _ = self.run_main()
+        self.assertEqual((status, started), (0, []), "no Mac test command may start for the iPhone's classes")
+        self.assertIn("Executed 0 tests", (self.out / "run-summary.txt").read_text())
+        self.assertIn("PASSED", (self.out / "run-summary.txt").read_text())
+
+    def test_a_request_that_asks_for_a_mac_area_still_runs_it_beside_interface_classes(self):
+        self.write_request({"areas": ["stats"], "classes": ["SearchUITests"], "full": False})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+        self.assertIn("Executed 3 tests", (self.out / "run-summary.txt").read_text())
+
     def test_a_request_that_cannot_be_read_exits_two_and_says_so(self):
         self.request.write_text("{not json")
         err = io.StringIO()

@@ -98,8 +98,11 @@ def shard_number(folder):
         return 1
 
 
-# The files the iPhone build job uploads (run-ios-build.py), which the join passes on beside the tests' own.
-IOS_FILES = ("ios-summary.txt", "ios-errors.txt", "ios.log")
+# The files the iPhone job uploads (run-ios-build.py's three, then run-ios-ui-tests.py's two), which the join passes on
+# beside the tests' own.
+IOS_FILES = ("ios-summary.txt", "ios-errors.txt", "ios.log", "ios-ui-summary.txt", "ios-ui.log")
+# How many failed interface tests summary.md names.
+IOS_UI_FAILURES_NAMED = 40
 
 
 def merge_ios(ios_dir, out_dir):
@@ -119,6 +122,28 @@ def merge_ios(ios_dir, out_dir):
             (out_dir / name).write_bytes((ios_dir / name).read_bytes())
     lines = summary_path.read_text(encoding="utf-8", errors="replace").splitlines()
     return f"- {lines[0]}; {lines[1].lower()}" if len(lines) > 1 else f"- {lines[0] if lines else 'iOS build: unknown'}"
+
+
+def merge_ios_ui(ios_dir, out_dir):
+    """Passes the interface tests' summary on into `out_dir` (merge_ios copies the files), and returns the lines
+    summary.md shows for it: the verdict with the Executed line, then each failed test. With no summary in `ios_dir`
+    (the step was cut off), writes one that says NOT RUN. The interface tests never decide whether the Mac tests
+    passed: their verdict is shown beside it."""
+    ios_dir, out_dir = Path(ios_dir), Path(out_dir)
+    path = ios_dir / "ios-ui-summary.txt"
+    if not path.exists():
+        (out_dir / "ios-ui-summary.txt").write_text(
+            "iOS UI tests: NOT RUN\nReason: the step reported nothing (it was cut off, or the job ended before it)\n",
+            encoding="utf-8")
+        return ["- iOS UI tests: NOT RUN (the step reported nothing)"]
+    lines = [line.strip() for line in path.read_text(encoding="utf-8", errors="replace").splitlines() if line.strip()]
+    verdict = lines[0] if lines else "iOS UI tests: unknown"
+    executed = next((line for line in lines if line.startswith("Executed ")), "")
+    failures = [line for line in lines if line.startswith("FAILED ")]
+    reasons = [line for line in lines if line.startswith("Reason: ")]
+    shown = f"- {verdict}" + (f"; {executed[0].lower()}{executed[1:]}" if executed else "")
+    return [shown, *[f"- {reason}" for reason in reasons],
+            f"- iOS UI test failures: {len(failures)}", *[f"  - {line}" for line in failures[:IOS_UI_FAILURES_NAMED]]]
 
 
 def merge(shards_dir, out_dir, expected, ios_dir=None):
@@ -181,7 +206,7 @@ def merge(shards_dir, out_dir, expected, ios_dir=None):
             request = json.loads(request_path.read_text(encoding="utf-8"))
             break
     (out_dir / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
-    ios_line = [merge_ios(ios_dir, out_dir)] if ios_dir is not None else []
+    ios_line = [merge_ios(ios_dir, out_dir), *merge_ios_ui(ios_dir, out_dir)] if ios_dir is not None else []
     (out_dir / "summary.md").write_text(
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
                    f"- Shards: {expected}", f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",

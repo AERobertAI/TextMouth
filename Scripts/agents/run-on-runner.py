@@ -48,6 +48,7 @@ sys.dont_write_bytecode = True
 AGENTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
+import ios_ui_tests  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
 from runner_skips import (BadSkipLine, SKIPS_FILE, read_skips, selected_skips, skip_arguments)  # noqa: E402,F401
@@ -118,12 +119,14 @@ def runner_arguments(request, skips):
 
 
 def read_request(path):
-    """The request file as a dictionary, with its lists and flag filled in."""
+    """The request file as a dictionary, with its lists and flag filled in. The names of the iPhone's interface test
+    classes are moved out of its "classes" into "ios_ui_classes": they are run by the iPhone job
+    (run-ios-ui-tests.py), and run-area.py would refuse them as unknown."""
     request = json.loads(Path(path).read_text(encoding="utf-8"))
     request.setdefault("areas", [])
     request.setdefault("classes", [])
     request.setdefault("full", False)
-    return request
+    return ios_ui_tests.split_classes(request, ROOT)
 
 
 # How often, in seconds, the runner prints where the log has got to.
@@ -180,8 +183,9 @@ def run_tests(train, request, out, limit_minutes):
     # train's own code on purpose: one definition of "hung" for the Mac and the runner.
     train.DERIVED = derived
     train.post = lambda to, topic, tag="build": print(f"{tag}: {topic}", flush=True)
-    if request.get("shard") and not request["classes"]:
-        # A shard dealt no classes (more shards than classes) has nothing to run.
+    if not request["full"] and not request["classes"] and (request.get("shard") or not request["areas"]):
+        # A shard dealt no classes (more shards than classes) has nothing to run, nor has a request that names only
+        # the iPhone's interface tests (which the iPhone job runs).
         log.write_text("This shard was dealt no test classes.\n"
                        "Test Suite 'Selected tests' passed at (nothing to run).\n")
         return ("Executed 0 tests, with 0 tests skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds\n"

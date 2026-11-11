@@ -201,6 +201,63 @@ class JobsTests(unittest.TestCase):
         for name in ("ios-summary.txt", "ios-errors.txt"):
             self.assertIn(f"build/remote/{name}", collect)
 
+    def test_the_join_passes_the_interface_tests_files_on_to_the_mac(self):
+        collect = self.job("collect")
+        for name in ("ios-ui-summary.txt", "ios-ui.log"):
+            self.assertIn(f"build/remote/{name}", collect)
+        ios = self.job("ios")
+        for name in ("ios-ui-summary.txt", "ios-ui.log"):
+            self.assertEqual(ios.count(f"build/remote-ios/{name}"), 2, f"both tries of the upload carry {name}")
+
+    def test_the_iphone_job_writes_the_request_then_builds_then_runs_the_interface_tests_after_the_build(self):
+        ios = self.job("ios")
+        order = [ios.index(text) for text in ("Write the request", "Download the iOS platform", "run-ios-build.py",
+                                               "Restart the audio service", "run-ios-ui-tests.py", "Did the build finish?")]
+        self.assertEqual(order, sorted(order), "the steps are out of order")
+
+    def test_the_interface_tests_step_runs_unless_cancelled_and_sets_nothing_itself(self):
+        ios = self.job("ios")
+        step = ios[ios.index("name: Run the iPhone interface tests"):]
+        step = step[:step.index("\n\n")]
+        self.assertIn("if: ${{ !cancelled() }}", step)
+        self.assertNotIn("env:", step, "the step sets no variable; the script alone lets a test make sound")
+        self.assertNotIn("TEXTMOUTH_UI_SOUND", ios, "the workflow does not name the sound variable in code")
+
+    def test_the_request_reaches_the_iphone_job_only_through_the_environment(self):
+        ios = self.job("ios")
+        step = ios[ios.index("name: Write the request"):]
+        step = step[:step.index("\n\n")]
+        self.assertIn("REQUEST_JSON: ${{ needs.plan.outputs.request }}", step)
+        self.assertIn("""printf '%s\\n' "$REQUEST_JSON" > .github/test-request.json""", step)
+
+    def test_a_failed_interface_test_fails_only_the_iphone_job_and_the_join_still_runs(self):
+        # The script exits 1 for a failed test; the later steps are not skipped, and the join runs whatever its needs did.
+        ios = self.job("ios")
+        for name in ("Did the build finish?", "Save the build products", "Upload the iPhone build's results"):
+            step = ios[ios.index(f"name: {name}"):]
+            self.assertRegex(step.split("uses:")[0].split("run:")[0], r"if: (\$\{\{ )?(!cancelled\(\)|always\(\))", name)
+        self.assertIn("needs: [plan, test, ios]", self.job("collect"))
+        between = ios[ios.index("name: Run the iPhone interface tests"):ios.index("name: Did the build finish?")]
+        self.assertNotIn("continue-on-error", between, "a failed interface test must fail the job")
+
+    def test_the_interface_tests_result_bundle_is_uploaded_only_on_failure(self):
+        ios = self.job("ios")
+        bundle = ios[ios.index("name: Upload the interface tests' result bundle"):]
+        self.assertIn("if: ${{ failure() }}", bundle.split("uses:")[0])
+        self.assertIn("path: build/remote-ios/ios-ui-result.xcresult", bundle)
+
+    def test_the_iphone_job_has_room_for_the_download_the_build_and_the_tests(self):
+        import importlib.util
+        limits = {}
+        for name in ("run-ios-build.py", "run-ios-ui-tests.py"):
+            spec = importlib.util.spec_from_file_location("limits", test_command.AGENTS / name)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            limits[name] = module.DEFAULT_LIMIT_MINUTES
+        minutes = int(re.search(r"timeout-minutes: (\d+)", self.job("ios")).group(1))
+        # The platform download (3 to 4 minutes in practice, 15 at the most), the simulator's boot (5), and both limits.
+        self.assertGreaterEqual(minutes, sum(limits.values()) + 15 + 5, "the job's limit is under the sum of its steps' limits")
+
     def test_the_result_bundle_is_uploaded_only_on_failure(self):
         job = self.job("test")
         bundle = job[job.index("Upload the result bundle"):]
