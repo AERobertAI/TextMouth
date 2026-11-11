@@ -194,6 +194,10 @@ CASE_SWIFT = re.compile(r"^Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (pas
 FAILURE_LINE = re.compile(r"^(\S.*?):(\d+): error: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\] : (.*)$", re.M)
 # A skip: "<path>:<line>: -[Module.Class test] : Test skipped - <why>".
 SKIP_LINE = re.compile(r"^(?:\S.*?):\d+: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\] : Test skipped - (.*)$", re.M)
+# What xcodebuild prints last when the tests passed: "** TEST SUCCEEDED **" for `test`, and, found by the full suite of
+# November 10, 2026 (run 42957244945, 34 tests with no failure judged FAILED), "** TEST EXECUTE SUCCEEDED **" for
+# `test-without-building`.
+SUCCESS_LINE = re.compile(r"\*\* TEST (?:EXECUTE )?SUCCEEDED \*\*")
 # The longest a failure or skip message is kept, in characters: an assertion message can hold a screen's whole tree.
 MESSAGE_LIMIT = 300
 
@@ -235,8 +239,8 @@ def judge(status, timed_out, log_text, parsed):
         reasons.append("the run was stopped at its time limit")
     if parsed["failures"]:
         reasons.append(f"{len(parsed['failures'])} test(s) failed")
-    elif not timed_out and (status != 0 or "** TEST SUCCEEDED **" not in log_text):
-        reasons.append(f"xcodebuild ended with status {status} and did not print TEST SUCCEEDED")
+    elif not timed_out and (status != 0 or not SUCCESS_LINE.search(log_text)):
+        reasons.append(f"xcodebuild ended with status {status} and did not print TEST SUCCEEDED or TEST EXECUTE SUCCEEDED")
     if not parsed["cases"]:
         reasons.append("no test result was found in the log")
     return not reasons, reasons

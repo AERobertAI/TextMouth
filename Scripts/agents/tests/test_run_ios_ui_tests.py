@@ -143,6 +143,11 @@ class TheVerdictTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertEqual(reasons, ["1 test(s) failed"])
 
+    def test_test_without_building_ends_with_execute_succeeded_and_that_is_a_pass(self):
+        # Run 42957244945: 34 tests passed and the run was judged FAILED for want of "** TEST SUCCEEDED **".
+        log = PASSED_LOG.replace("** TEST SUCCEEDED **", "** TEST EXECUTE SUCCEEDED **")
+        self.assertEqual(self.judge(log), (True, []))
+
     def test_a_run_that_ran_nothing_is_not_a_pass(self):
         passed, reasons = self.judge("** TEST SUCCEEDED **\n")
         self.assertFalse(passed)
@@ -151,7 +156,7 @@ class TheVerdictTests(unittest.TestCase):
     def test_a_zero_exit_without_the_success_line_is_not_a_pass(self):
         passed, reasons = self.judge("Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n")
         self.assertFalse(passed)
-        self.assertTrue(reasons[0].startswith("xcodebuild ended with status 0"))
+        self.assertTrue(reasons[0].startswith("xcodebuild ended with status 0 and did not print TEST SUCCEEDED"))
 
     def test_a_run_stopped_at_its_limit_fails(self):
         passed, reasons = self.judge(PASSED_LOG, status=-15, timed_out=True)
