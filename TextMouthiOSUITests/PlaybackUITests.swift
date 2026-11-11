@@ -194,9 +194,12 @@ final class PlaybackUITests: TextMouthUITestCase {
             "The timer's value: \"\(value(of: timer))\""
         )
 
-        // The sheet shows the running timer, with Cancel Timer.
+        // The sheet shows the running timer, with Reset Timer and Cancel Timer before New Timer. Its "Current Timer"
+        // heading and its status line are not asked for: the sheet opens with the list scrolled to the last timer
+        // used, End of the book, at the bottom (the spec: "Focus lands on the last timer used"), and the list, being
+        // lazy, leaves the rows above out of the tree (run 42955357534: Close, Reset Timer, Cancel Timer, New Timer).
         let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
-        assertOrder(["Sleep Timer", "Close", "Current Timer", "Cancel Timer"], in: elements)
+        assertOrder(["Sleep Timer", "Reset Timer", "Cancel Timer", "New Timer"], in: elements)
         app.buttons["Cancel Timer"].tap()
         XCTAssertTrue(
             app.buttons["Cancel Timer"].waitForNonExistence(timeout: Self.patience),
