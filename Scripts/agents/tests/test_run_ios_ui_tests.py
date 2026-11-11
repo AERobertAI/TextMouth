@@ -728,18 +728,24 @@ class TheSearchTestsRulesTests(unittest.TestCase):
     """Rules of the typed search tests that a break would otherwise slip past (review of 1f5f5f4a, finding 7)."""
 
     def source(self):
-        """SearchUITests.swift."""
-        return (ROOT / "TextMouthiOSUITests" / "SearchUITests.swift").read_text()
+        """The text of the three files that wait for the sheet's status, by name: SearchUITests, LargeTextUITests, and
+        TextMouthUITestCase, which holds the sheet's shared helpers (waitForResults) that the first two both use."""
+        folder = ROOT / "TextMouthiOSUITests"
+        return {name: (folder / f"{name}.swift").read_text() for name in ("SearchUITests", "TextMouthUITestCase", "LargeTextUITests")}
 
     def test_a_status_ending_in_matches_is_never_waited_for_without_the_results_heading_first(self):
         # "No matches" ends with " matches", so waiting for that ending alone passes a search that found nothing.
-        text = self.source()
-        waiting = text.count('waitForStatus(ending: [" matches", " match"]')
-        # The one inside waitForResults, and the correction test's, which waits for the heading just before it.
-        self.assertEqual(waiting, 2, "a test waits for the ' matches' status without waitForResults")
-        correction = text[text.index("func testACorrectionMadeWhileTypingIsSearchedFor"):]
-        self.assertLess(correction.index('staticTexts["Search results"].waitForExistence'),
-                        correction.index('waitForStatus(ending: [" matches", " match"]'))
+        files = self.source()
+        wait = 'waitForStatus(ending: [" matches", " match"]'
+        # The one inside waitForResults (in the shared base class), and the correction test's, which waits for the
+        # heading just before it; no other test, such as the large text one, waits for the status by itself.
+        self.assertEqual((files["TextMouthUITestCase"].count(wait), files["SearchUITests"].count(wait), files["LargeTextUITests"].count(wait)),
+                         (1, 1, 0), "a test waits for the ' matches' status without waitForResults")
+        shared = files["TextMouthUITestCase"]
+        shared = shared[shared.index("func waitForResults"):]
+        self.assertLess(shared.index('staticTexts["Search results"].waitForExistence'), shared.index(wait))
+        correction = files["SearchUITests"][files["SearchUITests"].index("func testACorrectionMadeWhileTypingIsSearchedFor"):]
+        self.assertLess(correction.index('staticTexts["Search results"].waitForExistence'), correction.index(wait))
 
     def test_type_taps_the_field_only_when_the_keyboard_is_not_up(self):
         base = (ROOT / "TextMouthiOSUITests" / "TextMouthUITestCase.swift").read_text()

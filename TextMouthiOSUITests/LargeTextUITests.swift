@@ -14,7 +14,11 @@ import XCTest
 /// Type finding, such as a fixed font on either screen, fails. The size is set at launch, as the
 /// Larger Text setting would set it, so nothing here changes the simulator's
 /// own settings. Nothing is pressed but a book's Back, Settings, and Add to
-/// Library, and nothing is typed.
+/// Library, and nothing is typed, except in the Search in Book sheet's test,
+/// which types a search (so it runs only where sound is allowed, on a GitHub
+/// runner) and measures that the sheet's text grows, in place of failing on
+/// Dynamic Type findings, which the sheet's own audit (`SearchUITests`) reports
+/// without failing.
 final class LargeTextUITests: TextMouthUITestCase {
 
     /// The kinds of finding that text size can cause.
@@ -50,5 +54,69 @@ final class LargeTextUITests: TextMouthUITestCase {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)
         tap(app.buttons["Add to Library"], until: app.buttons["Open Book…"], in: app, what: "Add to Library")
         try audit(app, screen: "Add to Library sheet at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Add to Library"), .barItem("Cancel")])
+    }
+
+    // MARK: - The Search in Book sheet
+
+    /// What the Search sheet's text sizes are checked on: the search field, the line that says what was found, the
+    /// regular-expression switch, and the "Search results" heading. These four were the findings of the sheet's audit that
+    /// said "Dynamic Type font sizes are partially unsupported" in run 43032983986 and in none of the three before it.
+    private static let searchParts = [TextMouthUITestCase.searchFieldLabel,"the status line", "Use regular expression", "Search results"]
+
+    /// The height in points of each of `searchParts`, as the sheet with results shows them in `app`.
+    private func searchPartHeights(in app: XCUIApplication) throws -> [String: CGFloat] {
+        let elements = try waitForResults(in: app)
+        let labels = [Self.searchFieldLabel, "Use regular expression", "Search results"]
+        var heights = Dictionary(uniqueKeysWithValues: labels.compactMap { label in
+            elements.first { $0.label == label }.map { (label, $0.frame.height) }
+        })
+        // The status line is known by how it ends ("7 matches"): the number changes with the book.
+        if let status = elements.first(where: { $0.label.hasSuffix(" matches") || $0.label.hasSuffix(" match") }) {
+            heights["the status line"] = status.frame.height
+        }
+        XCTAssertEqual(Set(heights.keys), Set(Self.searchParts), "The sheet is missing a part. The sheet's elements: \(Self.describe(elements))")
+        return heights
+    }
+
+    /// The Search in Book sheet with results, at the largest size: its text grows with the text size (so the findings of
+    /// Apple's Dynamic Type audit on it, which `SearchUITests` reports and does not fail, are not that text stays small),
+    /// and none of it is cut.
+    ///
+    /// **Growth** is measured, not left to the audit: each of the four parts the audit named is as tall at the largest size
+    /// as at the default size times `growth`, in the same test, on the same book and search. A part drawn in a fixed
+    /// font would be as tall at both sizes. **Clipping** is the audit's `textClipped` kind, which fails the test but
+    /// for the same findings as the other screens accept. Typing makes sound, so the test runs only where sound is
+    /// allowed, on a GitHub runner.
+    func testTheSearchSheetHoldsAtTheLargestText() throws {
+        // The least a part grows from the default size to the largest. The sizes' own factor is about 3 (body text is 17
+        // points at the default size and 53 at the largest), so a fifth is far below what growing text does and far
+        // above what text that does not grow could show.
+        let growth: CGFloat = 1.2
+        let normal = try openSearchSheet(typing: SearchUITests.word)
+        let normalHeights = try searchPartHeights(in: normal)
+        // One app at a time: the second launch is of the same app.
+        normal.terminate()
+
+        let large = try openSearchSheet(typing: SearchUITests.word, textSize: Self.largestText)
+        let largeHeights = try searchPartHeights(in: large)
+        for part in Self.searchParts {
+            let before = normalHeights[part] ?? 0
+            let after = largeHeights[part] ?? 0
+            XCTAssertGreaterThan(
+                after, before * growth,
+                "\"\(part)\" is \(after) points tall at the largest text size and \(before) at the default: its text did not grow. "
+                    + "Heights at the largest size: \(largeHeights); at the default size: \(normalHeights)"
+            )
+        }
+        keepScreenshot(of: large, named: "Search in Book at the largest text")
+        // The keyboard's own Search key puts it away, as the sheet's audit test does, so that the audit reads the sheet.
+        let searchKey = large.keyboards.buttons["Search"]
+        if searchKey.waitForExistence(timeout: 5) {
+            searchKey.tap()
+        }
+        try audit(
+            large, screen: "Search in Book sheet at the largest text", types: .textClipped,
+            accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge]
+        )
     }
 }
