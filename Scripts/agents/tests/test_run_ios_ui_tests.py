@@ -278,32 +278,83 @@ class TheCommandTests(unittest.TestCase):
 class TheSoundRuleTests(unittest.TestCase):
     """Only the runner's script lets a test make sound, and every test that does skips without it."""
 
-    # The folders and files that may name the variable: the script and its tests, the UI tests that read it, the workflow
-    # whose comments explain the rule (test_the_workflow_never_sets_the_variable... checks it sets nothing), and the
-    # documents. Nothing else may name it.
-    ALLOWED = ("Scripts/agents/run-ios-ui-tests.py", "Scripts/agents/tests/", "TextMouthiOSUITests/",
-               ".github/workflows/tests.yml", "project.yml", "docs/", "AGENTS.md", "Scripts/agents/briefs/")
+    # The exact files that may use the variable's name in code: the script that sets it, its tests (which assert about it), and
+    # the one Swift file that reads it.
+    CODE_FILES = frozenset({
+        "Scripts/agents/run-ios-ui-tests.py", "Scripts/agents/tests/test_run_ios_ui_tests.py",
+        "Scripts/agents/tests/test_workflow.py", "TextMouthiOSUITests/TextMouthUITestCase.swift",
+    })
+    # The exact files that may name it in comments only: the shared workflow and the project file.
+    COMMENT_ONLY_FILES = frozenset({".github/workflows/tests.yml", "project.yml"})
+    # Where prose may name it: the documents.
+    DOCUMENT_PREFIXES = ("docs/", "Scripts/agents/briefs/")
+    DOCUMENT_FILES = frozenset({"AGENTS.md", "README.md", "ARCHITECTURE.md", "CLAUDE.md"})
+    # What a setter looks like in any file: the name (with or without the runner's prefix) followed by ":" or "=" (a YAML or
+    # scheme key, an environment assignment), or `setenv`/`export` beside it.
+    SETTER = re.compile(r"(?:TEST_RUNNER_)?TEXTMOUTH_UI_SOUND[\"']?\s*(?:[:=]|</key>|value=)|(?:setenv|export)\b[^\n]*TEXTMOUTH_UI_SOUND")
 
-    def tracked_files(self):
-        """The files of the repository that git tracks (and not the build folders)."""
+    def offenders(self, files):
+        """The problems with `files` ({path: text}) for the rule that only the runner's script sets the variable: a file that
+        names it where it may not, a comment-only file that names it in code, and, in any file but the script's own and
+        the documents, a setter. Returns a list of sentences."""
+        problems = []
+        for name, content in sorted(files.items()):
+            if "TEXTMOUTH_UI_SOUND" not in content:
+                continue
+            if name == "Scripts/agents/run-ios-ui-tests.py":
+                continue
+            if name in self.DOCUMENT_FILES or name.startswith(self.DOCUMENT_PREFIXES):
+                continue
+            if self.SETTER.search(content) and name not in self.CODE_FILES:
+                problems.append(f"{name} sets the variable")
+            if name in self.COMMENT_ONLY_FILES:
+                code = [line for line in content.splitlines() if "TEXTMOUTH_UI_SOUND" in line and not line.lstrip().startswith("#")]
+                if code:
+                    problems.append(f"{name} names the variable outside a comment: {code[0].strip()}")
+            elif name not in self.CODE_FILES:
+                problems.append(f"{name} names the variable")
+        return problems
+
+    def tracked_texts(self):
+        """The text of every file git tracks that names the variable, {path: text}, found by `git grep -a` over every tracked
+        file (so a scheme, a test plan, a project file, a Makefile, the workflows, and the test data are all looked in)."""
         import subprocess
-        listing = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
-        return [name for name in listing.split("\0") if name and not name.startswith(("build/", "Vendor/", "TestData/"))]
+        found = subprocess.run(["git", "grep", "-l", "-a", "TEXTMOUTH_UI_SOUND"], cwd=ROOT, capture_output=True, text=True)
+        names = [name for name in found.stdout.splitlines() if name]
+        return {name: (ROOT / name).read_text(encoding="utf-8", errors="replace") for name in names if (ROOT / name).is_file()}
 
-    def test_no_file_but_the_runners_script_and_the_test_case_sets_the_sound_variable(self):
-        # The workflow and every other script must not set it, in any spelling.
-        offenders = []
-        for name in self.tracked_files():
-            path = ROOT / name
-            if not path.is_file() or path.suffix in {".png", ".epub", ".zip", ".pbxproj", ".xcprivacy"}:
-                continue
-            try:
-                text = path.read_text(encoding="utf-8")
-            except (UnicodeDecodeError, OSError):
-                continue
-            if "TEXTMOUTH_UI_SOUND" in text and not name.startswith(self.ALLOWED):
-                offenders.append(name)
-        self.assertEqual(offenders, [], "only run-ios-ui-tests.py may set TEXTMOUTH_UI_SOUND; these name it")
+    def test_no_tracked_file_names_or_sets_the_sound_variable_but_the_ones_allowed(self):
+        self.assertEqual(self.offenders(self.tracked_texts()), [])
+
+    def test_the_guard_catches_a_setter_wherever_one_would_go(self):
+        setters = {
+            "Makefile": "test:\n\tTEST_RUNNER_TEXTMOUTH_UI_SOUND=1 xcodebuild test\n",
+            "TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme":
+                '<EnvironmentVariable key = "TEXTMOUTH_UI_SOUND" value = "1" isEnabled = "YES">\n',
+            "TextMouth.xcodeproj/project.pbxproj": "GCC_PREPROCESSOR_DEFINITIONS = TEXTMOUTH_UI_SOUND;\n",
+            "TextMouthiOS.xctestplan": '{"environmentVariableEntries": [{"key": "TEXTMOUTH_UI_SOUND", "value": "1"}]}\n',
+            "TestData/odd.txt": "export TEXTMOUTH_UI_SOUND=1\n",
+            ".github/workflows/check.yml": "    env:\n      TEXTMOUTH_UI_SOUND: 1\n",
+            "Scripts/agents/run-on-runner.py": 'environment["TEXTMOUTH_UI_SOUND"] = "1"\n',
+            "TextMouthiOSUITests/PlaybackUITests.swift": 'setenv("TEXTMOUTH_UI_SOUND", "1", 1)\n',
+        }
+        for name, content in setters.items():
+            with self.subTest(name=name):
+                self.assertTrue(self.offenders({name: content}), f"{name}: a setter went unnoticed")
+
+    def test_the_guard_lets_the_comments_and_documents_name_it_and_the_script_set_it(self):
+        allowed = {
+            "project.yml": "  # TEXTMOUTH_UI_SOUND is 1 on the runner\n",
+            ".github/workflows/tests.yml": "      # alone lets a test press Play (it sets TEXTMOUTH_UI_SOUND)\n",
+            "docs/developer/testing.md": "run only where `TEXTMOUTH_UI_SOUND=1`\n",
+            "AGENTS.md": "TEXTMOUTH_UI_SOUND=1 on the runner\n",
+            "Scripts/agents/run-ios-ui-tests.py": 'environment = {**os.environ, "TEST_RUNNER_TEXTMOUTH_UI_SOUND": "1"}\n',
+        }
+        self.assertEqual(self.offenders(allowed), [])
+
+    def test_the_guard_catches_the_name_in_code_of_a_comment_only_file(self):
+        self.assertTrue(self.offenders({"project.yml": "      TEXTMOUTH_UI_SOUND: \"1\"\n"}))
+        self.assertTrue(self.offenders({".github/workflows/tests.yml": "        run: echo TEXTMOUTH_UI_SOUND\n"}))
 
     def test_the_workflow_never_sets_the_variable_and_runs_the_scripts_step(self):
         workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text()
@@ -329,17 +380,45 @@ class TheSoundRuleTests(unittest.TestCase):
                           f"{helper} does not ask requireSound first")
         # No other file types or presses Play and Pause itself, or sets a timer: they go through the helpers.
         for path in folder.glob("*UITests.swift"):
-            text = path.read_text()
-            for pattern in (r"\.typeText\(", r'buttons\["Play"\]\.tap\(', r'buttons\["Pause"\]\.tap\(',
-                            r'"Set timer for', r'"Stop at the end of'):
-                for match in re.finditer(pattern, text):
-                    line = text.count("\n", 0, match.start()) + 1
-                    surrounding = text.splitlines()[line - 1]
-                    # A string that names a button to look for (assertOrder lists, a helper's argument) is not a press.
-                    self.assertTrue(
-                        surrounding.strip().startswith(('"', "//", "///")) or "startSleepTimer(" in surrounding
-                        or "assertOrder" in surrounding,
-                        f"{path.name}:{line} makes sound by hand: {surrounding.strip()}")
+            self.assertEqual(self.sound_by_hand(path.read_text()), [], f"{path.name} makes sound by hand")
+
+    def sound_by_hand(self, source):
+        """The places in a Swift test file's `source` that make sound without the helpers: a typeText, a tap of the Play or
+        Pause button (direct, or through a variable the button was put in), and a Sleep Timer choice outside startSleepTimer."""
+        lines = source.splitlines()
+        found = []
+        held = set()
+        for number, line in enumerate(lines, start=1):
+            stripped = line.strip()
+            if stripped.startswith("//"):
+                continue
+            assignment = re.search(r'(?:let|var)\s+(\w+)\s*=\s*[\w.]*buttons\[\s*"(?:Play|Pause)"\s*\]', line)
+            if assignment:
+                held.add(assignment.group(1))
+            if re.search(r"\.typeText\(", line):
+                found.append(f"{number}: typeText")
+            if re.search(r'buttons\[\s*"(?:Play|Pause)"\s*\]\s*(?:\.firstMatch)?\s*\.tap\(', line):
+                found.append(f"{number}: taps Play or Pause")
+            for name in held:
+                if re.search(rf"\b{name}\.tap\(", line):
+                    found.append(f"{number}: taps {name}, which holds the Play or Pause button")
+            if re.search(r'buttons\[\s*"(?:Set timer for|Stop at the end of)', line) and "startSleepTimer(" not in line:
+                found.append(f"{number}: presses a timer choice by hand")
+        return found
+
+    def test_the_by_hand_check_catches_a_button_held_in_a_variable_and_tapped(self):
+        cases = {
+            "held and tapped": 'let play = app.buttons["Play"]\n        XCTAssertTrue(play.exists)\n        play.tap()\n',
+            "direct": 'app.buttons["Pause"].tap()\n',
+            "first match": 'app.buttons["Play"].firstMatch.tap()\n',
+            "typing": 'field.typeText("x")\n',
+            "timer": 'app.buttons["Set timer for 10 minutes and start playing"].tap()\n',
+        }
+        for name, source in cases.items():
+            with self.subTest(name=name):
+                self.assertTrue(self.sound_by_hand(source), f"{name} went unnoticed")
+        # Looking at a button is not pressing it.
+        self.assertEqual(self.sound_by_hand('let play = app.buttons["Play"]\nXCTAssertEqual(play.label, "Play")\n'), [])
 
 
 class SettingUpTheSimulatorTests(unittest.TestCase):
