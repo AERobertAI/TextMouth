@@ -286,14 +286,6 @@ jobs:
           xcodebuild -showsdks | grep -i "ios" || true
           df -h / | tail -1
 
-      # The interface tests play the book and type, as a person does, so the simulator needs the audio service that the
-      # shards need (see the test job's step of this name), and it is restarted before the simulator boots: a simulator
-      # booting while the service restarted never finished booting (run 42976557216).
-      - name: Restart the audio service
-        run: |
-          sudo killall coreaudiod || true
-          sleep 5
-
       # Starts the simulator booting when the request asks for the interface tests, so that it boots while the app builds
       # (the boot takes minutes, and CoreSimulator's service does it). It never fails the job: the test step does the
       # whole set-up itself if this left nothing.
@@ -304,6 +296,13 @@ jobs:
 
       - name: Build the iPhone app and its UI tests
         run: python3 -I -B Scripts/agents/run-ios-build.py --out build/remote-ios
+
+      # The interface tests play the book and type, as a person does, so the simulator needs the audio service that the
+      # shards need (see the test job's step of this name). On a runner nobody listens.
+      - name: Restart the audio service
+        run: |
+          sudo killall coreaudiod || true
+          sleep 5
 
       # Runs the interface tests when the request asks for them, and writes ios-ui-summary.txt either way. This script
       # alone lets a test press Play and type (it sets TEXTMOUTH_UI_SOUND). It exits 1 when an asked-for test failed,

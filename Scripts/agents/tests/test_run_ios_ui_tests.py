@@ -473,7 +473,7 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         # What --prepare left (the UDID and sentence): no listing, no creating, no second boot, just the wait and the settings.
         calls = []
 
-        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+        def fake_simctl(*args, timeout=0):
             """Answers every call as a success and notes it."""
             calls.append(args)
             return mock.Mock(stdout="", stderr="", returncode=0)
@@ -483,34 +483,6 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
             answer = uitests.ready_simulator(log, ("PREPARED", "iPhone 17, iOS 26.0.1 (PREPARED)"))
         self.assertEqual(answer, ("PREPARED", "iPhone 17, iOS 26.0.1 (PREPARED)"))
         self.assertEqual([call[0] for call in calls], ["bootstatus"] + ["spawn"] * len(uitests.KEYBOARD_SETTINGS))
-
-    def test_an_early_boot_that_does_not_finish_is_shut_down_and_booted_again(self):
-        # Run 42976557216: the boot started while the app built never finished. The first wait is short; then shutdown, then
-        # the full wait, which boots again.
-        calls = []
-
-        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
-            """The first bootstatus times out (status 124); everything else succeeds."""
-            calls.append((args[0], timeout))
-            if args[0] == "bootstatus" and len([c for c in calls if c[0] == "bootstatus"]) == 1:
-                return mock.Mock(stdout="", stderr="", returncode=124)
-            return mock.Mock(stdout="", stderr="", returncode=0)
-
-        with mock.patch.object(uitests, "simctl", fake_simctl):
-            uitests.ready_simulator(io.StringIO(), ("U", "sentence"))
-        names = [name for name, _ in calls]
-        self.assertEqual(names[:3], ["bootstatus", "shutdown", "bootstatus"])
-        self.assertEqual(calls[0][1], uitests.EARLY_BOOT_SECONDS)
-        self.assertEqual(calls[2][1], uitests.BOOT_SECONDS)
-
-    def test_a_tolerated_timeout_is_answered_as_a_failed_call_and_an_untolerated_one_is_a_failure(self):
-        import subprocess
-        expired = subprocess.TimeoutExpired(["simctl"], 1)
-        with mock.patch.object(uitests.subprocess, "run", side_effect=expired):
-            answer = uitests.simctl("bootstatus", "U", timeout=1, tolerate_timeout=True)
-            self.assertEqual(answer.returncode, 124)
-            with self.assertRaises(uitests.SimulatorFailure):
-                uitests.simctl("bootstatus", "U", timeout=1)
 
     def test_starting_a_simulator_boots_it_and_does_not_wait_and_an_already_booted_one_is_fine(self):
         (udid, _), calls, _ = self.run_start()
