@@ -164,8 +164,9 @@ def known_names(cwd):
         return out.splitlines()
     areas = {line.split(":", 1)[0].strip() for line in listed() if ":" in line}
     classes = {line.strip() for line in listed("all") if line.strip()}
-    # The iPhone's interface test classes are not Mac test classes, but a request may name them: GitHub's iPhone job runs them.
-    classes |= set(ios_ui_tests.ui_classes(cwd))
+    # The iPhone's test classes (unit and interface) are not Mac test classes, but a request may name them: GitHub's
+    # iPhone job runs them.
+    classes |= set(ios_ui_tests.all_classes(cwd))
     return areas | {"all"}, classes
 
 
@@ -420,7 +421,7 @@ def choose_tests(merged):
     keeps a list of its own (`dropped`), so its agent is told. Local and remote
     trains choose alike."""
     known_areas, known_classes = known_names(WORKTREE)
-    interface = set(ios_ui_tests.ui_classes(WORKTREE))
+    interface = set(ios_ui_tests.all_classes(WORKTREE))
     areas, classes = [], []
     for request in merged:
         request["dropped"] = unknown_names(request, known_areas, known_classes)
@@ -433,7 +434,7 @@ def choose_tests(merged):
 
 
 def choose_interface_tests(merged):
-    """The iPhone interface test classes the merged requests name (choose_tests found them), once each, in order."""
+    """The iPhone test classes (unit and interface) the merged requests name (choose_tests found them), once each, in order."""
     return list(dict.fromkeys(name for request in merged for name in request.get("ios_ui_classes", [])))
 
 
@@ -672,23 +673,24 @@ def remote_ios_result(train_dir):
     return count, errors, IOS_BUILD_LABEL
 
 
-# What the interface tests' lines of a train's result call them.
-IOS_UI_LABEL = "iPhone interface tests on GitHub (in the iOS Simulator; they press Play and type there)"
-# The verdict of a run that was not asked for the interface tests, which most requests are.
+# What the iPhone tests' lines of a train's result call them: the unit tests and the interface tests, which run together.
+IOS_UI_LABEL = ("iPhone tests on GitHub (unit tests and interface tests, in the iOS Simulator; "
+                "the interface tests press Play and type there)")
+# The verdict of a run that was not asked for the iPhone tests, which most requests are.
 IOS_UI_NOT_ASKED = "NOT ASKED"
 
 
 def remote_ios_ui_result(train_dir):
-    """The iPhone interface tests a remote train's run made on GitHub, read from the ios-ui-summary.txt that
-    remote_run_tests copied into `train_dir`: (the first line's verdict such as "FAILED", the Executed line or "", the
-    failed tests as "FAILED Class.test at path:line: message" lines, the reasons). None when the run left no summary
-    (a workflow from before the interface tests ran)."""
+    """The iPhone tests (unit and interface) a remote train's run made on GitHub, read from the ios-ui-summary.txt that
+    remote_run_tests copied into `train_dir`: (the first line's verdict such as "FAILED", the Executed line with how many
+    unit tests and how many interface tests ran, or "", the failed tests as "FAILED Class.test (Bundle) at path:line:
+    message" lines, the reasons). None when the run left no summary (a workflow from before the interface tests ran)."""
     try:
         lines = (train_dir / "ios-ui-summary.txt").read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return None
     verdict = lines[0].removeprefix("iOS UI tests: ").strip() if lines else "unknown"
-    executed = next((line.strip() for line in lines if line.startswith("Executed ")), "")
+    executed = ios_ui_tests.executed_with_counts(lines)
     failures = [line.strip() for line in lines if line.startswith("FAILED ")]
     reasons = [line.removeprefix("Reason: ").strip() for line in lines if line.startswith("Reason: ")]
     return verdict, executed, failures, reasons
@@ -771,7 +773,7 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
     if failures:
         summary += ["## Failures", *[f"- {f}" for f in failures], ""]
     if interface_line and interface[2]:
-        summary += ["## iPhone interface test failures", *[f"- {f}" for f in interface[2]], ""]
+        summary += ["## iPhone test failures", *[f"- {f}" for f in interface[2]], ""]
     for agent, (request, files) in conflicts.items():
         summary += [f"## Left out: {request['branch']} ({agent}) conflicts in", *[f"- {f}" for f in files], ""]
     for request, mine in broken:
@@ -801,12 +803,12 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         if interface_line:
             lines += [interface_line]
             if asked_ui:
-                # The failures in the interface test classes this agent asked for, named as the Mac's failures are.
+                # The failures in the iPhone test classes this agent asked for, named as the Mac's failures are.
                 mine_ui = [f for f in interface[2] if failure_class(f) in asked_ui]
-                lines += [f"- Failures in the interface test classes you asked for: {len(mine_ui)}",
+                lines += [f"- Failures in the iPhone test classes you asked for: {len(mine_ui)}",
                           *[f"  - {f}" for f in mine_ui]]
         elif asked_ui:
-            lines += [f"- Interface test classes you asked for ({', '.join(asked_ui)}) did not run: only GitHub's "
+            lines += [f"- iPhone test classes you asked for ({', '.join(asked_ui)}) did not run: only GitHub's "
                       f"iPhone job runs them, and this train did not use it, or it reported nothing"]
         ios_note = ""
         if census:

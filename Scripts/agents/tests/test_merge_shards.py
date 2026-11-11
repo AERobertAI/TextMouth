@@ -244,6 +244,23 @@ class MergeShardsTests(unittest.TestCase):
         self.assertIn("  - FAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause", summary)
         self.assertNotIn("Skipped X.testC", summary, "a skip is not a failure")
 
+    UI_BOTH = ("iOS UI tests: FAILED\nExecuted 52 tests, with 0 tests skipped and 1 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+               "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed\n"
+               "Interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed\n"
+               "FAILED PhoneValueRowTests.testA (TextMouthiOSTests) at TextMouthiOSTests/PhoneValueRowTests.swift:9: no\n"
+               "Reason: 1 test(s) failed\n")
+
+    def test_the_summary_says_how_many_unit_tests_and_how_many_interface_tests_ran_and_a_unit_failure_never_fails_the_mac(self):
+        self.shard(1, PASSING.format(n=5, s=0, t=1.0))
+        ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        self.ui_results(ios, self.UI_BOTH)
+        self.assertTrue(merge_shards.merge(self.shards, self.out, 1, ios), "a failed unit test is the iPhone job's, not the Mac's")
+        summary = (self.out / "summary.md").read_text()
+        self.assertIn("unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed", summary)
+        self.assertIn("interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed", summary)
+        self.assertIn("  - FAILED PhoneValueRowTests.testA (TextMouthiOSTests) at", summary)
+        self.assertIn("- Verdict: PASSED", summary)
+
     def test_failed_interface_tests_never_fail_the_mac_tests_verdict(self):
         self.shard(1, PASSING.format(n=5, s=0, t=1.0))
         ios = self.ios_results("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")

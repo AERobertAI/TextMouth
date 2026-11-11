@@ -211,7 +211,7 @@ class RunSuiteRemoteTests(RemoteTestCase):
         self.gh_runs(self.with_interface_tests(summary))
         status, out, _ = self.run_remote()
         self.assertEqual(status, 0, "the Mac tests passed, whatever the interface tests did")
-        self.assertIn("run_suite: iPhone interface tests on GitHub", out)
+        self.assertIn("run_suite: iPhone tests on GitHub", out)
         self.assertIn("FAILED; Executed 30 tests, with 6 tests skipped and 1 failures", out)
         self.assertIn("run_suite:   FAILED PlaybackUITests.testA at TextMouthiOSUITests/PlaybackUITests.swift:9: no Pause", out)
 

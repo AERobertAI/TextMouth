@@ -318,15 +318,35 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.assertEqual(self.run_train(), "ran")
         alpha, beta = self.result_of("alpha"), self.result_of("beta")
         self.assertIn(f"- {train.IOS_UI_LABEL}: FAILED; Executed 30 tests", alpha)
-        self.assertIn("Failures in the interface test classes you asked for: 1", alpha)
+        self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
         self.assertIn("  - FAILED SearchUITests.testA at TextMouthiOSUITests/SearchUITests.swift:9: no results", alpha)
         self.assertNotIn("ReaderUITests.testB", alpha, "a failure in a class the agent did not ask for is not listed as theirs")
         self.assertIn("FAILED; Executed 30 tests", beta, "every agent is told the verdict")
-        self.assertNotIn("interface test classes you asked for", beta)
+        self.assertNotIn("iPhone test classes you asked for", beta)
         summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
-        self.assertIn("## iPhone interface test failures", summary)
+        self.assertIn("## iPhone test failures", summary)
         self.assertIn("- FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong", summary)
         self.assertIn("Verdict: PASSED", summary, "failed interface tests never change the Mac tests' verdict")
+
+    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_never_changes_the_verdict(self):
+        unit = ("iOS UI tests: FAILED\nExecuted 52 tests, with 0 tests skipped and 1 failures (0 unexpected) in 9.0 (9.0) seconds\n"
+                "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed\n"
+                "Interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed\n"
+                "FAILED IOSRuntimeTests.testA (TextMouthiOSTests) at TextMouthiOSTests/IOSRuntimeTests.swift:9: no\n"
+                "Reason: 1 test(s) failed\n")
+        files = {**self.FILES, "TextMouthiOSTests/IOSRuntimeTests.swift": "final class IOSRuntimeTests: XCTestCase {}\n"}
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "IOSRuntimeTests", "SearchUITests"}))
+        self.branch("alpha", files, areas=["stats"], classes=["IOSRuntimeTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), unit))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["classes"], request["ios_ui_classes"]), ([], ["IOSRuntimeTests"]),
+                         "a unit class goes to the iPhone job, not to the Mac")
+        alpha = self.result_of("alpha")
+        self.assertIn("unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed", alpha)
+        self.assertIn("interface tests (TextMouthiOSUITests): 33 ran", alpha)
+        self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
+        self.assertIn("Verdict: PASSED", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
 
     def test_the_summary_and_the_log_are_kept_in_the_trains_folder(self):
         self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
@@ -348,7 +368,7 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
         self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
         self.run_train()
-        self.assertIn("Interface test classes you asked for (SearchUITests) did not run", self.result_of("alpha"))
+        self.assertIn("iPhone test classes you asked for (SearchUITests) did not run", self.result_of("alpha"))
 
     def test_the_reading_of_the_summary(self):
         folder = self.folder / "ui-dir"
