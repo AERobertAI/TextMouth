@@ -40,19 +40,22 @@ def is_kept(line):
 
 # The count of entries a shard's summary.md says the runner left out of it.
 LEFT_OUT = re.compile(r"Left out on the runner: (\d+)")
-# One test's result line in an xcodebuild log.
-TEST_CASE = re.compile(r"^Test Case '.*' (passed|failed|skipped) \(", re.M)
+# One test's result in an xcodebuild log, wherever it starts on its line: the app's own log lines (os_log) sometimes land in
+# the middle of a line, so a result can follow a time stamp ("2026-11-11 05Test Case '-[...]' passed"), and 3 to 10 of a
+# shard's 3,000 results were lost to an anchored pattern (the review of ci/ios-ui-tests, finding 10). The name is the key.
+TEST_CASE = re.compile(r"Test Case '(-\[[^'\]]*\])' (passed|failed|skipped) \(")
 
 
 def case_counts(log):
     """(tests, skipped, failures) counted from the log's own Test Case result lines, or None when it has none.
     The log is the count to trust: after the test host restarts, xcodebuild's closing Executed line counts
     only the last launch (a shard that restarted 29 times said it ran 539 tests when its log held 562 results,
-    and another said 967 of 2,882)."""
-    results = TEST_CASE.findall(log)
+    and another said 967 of 2,882). Each test counts once, by its name, with its last result."""
+    results = dict(TEST_CASE.findall(log))
     if not results:
         return None
-    return len(results), results.count("skipped"), results.count("failed")
+    outcomes = list(results.values())
+    return len(outcomes), outcomes.count("skipped"), outcomes.count("failed")
 
 
 def read_shard(folder):

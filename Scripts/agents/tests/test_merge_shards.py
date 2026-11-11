@@ -138,6 +138,16 @@ class MergeShardsTests(unittest.TestCase):
         _, summary = self.merged(1)
         self.assertIn("Executed 52 tests, with 1 tests skipped and 1 failures", summary)
 
+    def test_a_result_that_starts_in_the_middle_of_a_line_is_counted_and_a_repeated_one_once(self):
+        # Run 42968173876's shard 1, run.log:7746: the app's log line landed before the result on the same line.
+        cases = "".join(f"Test Case '-[FooTests testNumber{i}]' passed (0.1 seconds).\n" for i in range(5))
+        cases += "2026-11-11 05Test Case '-[FooTests testGarbled]' passed (0.1 seconds).\n"
+        cases += "2026-11-11 05:12:01.5 TextMouth[99:1] logTest Case '-[FooTests testGarbledToo]' failed (0.1 seconds).\n"
+        cases += "Test Case '-[FooTests testNumber0]' passed (0.1 seconds).\n"  # the host restarted and ran it again
+        self.shard(1, PASSING.format(n=3, s=0, t=1.0), log=cases + LOG_PASSED)
+        _, summary = self.merged(1)
+        self.assertIn("Executed 7 tests, with 0 tests skipped and 1 failures", summary)
+
     def test_a_shard_stopped_at_its_time_limit_says_so_in_the_merged_problem(self):
         self.shard(1, "FAILED in 80 minutes\nFAILED: the run was stopped after 80 minutes\nFAILED\n")
         _, summary = self.merged(1)
