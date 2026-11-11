@@ -107,8 +107,7 @@ final class SearchUITests: TextMouthUITestCase {
         try type(XCUIKeyboardKey.delete.rawValue, intoFieldLabeled: Self.fieldLabel, in: app)
         XCTAssertTrue(
             app.staticTexts["Search results"].waitForExistence(timeout: Self.patience),
-            "No results came after the stray letter was deleted:
-\(app.debugDescription)"
+            "No results came after the stray letter was deleted:\n\(app.debugDescription)"
         )
         let elements = try waitForStatus(ending: [" matches", " match"], in: app)
 
