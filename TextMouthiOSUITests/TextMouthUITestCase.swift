@@ -5,11 +5,16 @@ import XCTest
 /// waits that each have a limit, what VoiceOver would be given read in order,
 /// and Apple's accessibility audit with every finding listed.
 ///
-/// Nothing here presses Play, or anything else that makes a sound, since the
-/// simulator plays through the Mac's speakers, and no test types, since the
-/// keyboard's clicks are sounds too. Apple's iOS audits only inspect: the
-/// audit that weighs an element's actions exists on macOS alone
-/// (XCUIAccessibilityAuditTypes.h).
+/// **Sound.** A test may press Play and type, as a person does, but the
+/// simulator plays through the Mac's speakers and the keyboard clicks, so such
+/// a test runs only where nobody is listening: on a GitHub runner. The runner's
+/// script (`Scripts/agents/run-ios-ui-tests.py`) alone sets
+/// `TEXTMOUTH_UI_SOUND` to 1 for the test run, and `requireSound` skips a test,
+/// saying why, when it isn't. On the development Mac every such test skips. The
+/// helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`,
+/// `type`) ask first themselves, so a test that forgets still cannot make a
+/// sound there. Apple's iOS audits only inspect: the audit that weighs an
+/// element's actions exists on macOS alone (XCUIAccessibilityAuditTypes.h).
 @MainActor
 class TextMouthUITestCase: XCTestCase {
     /// The longest any wait lasts: a small book's import and opening take a
@@ -22,6 +27,27 @@ class TextMouthUITestCase: XCTestCase {
     /// Its author, as its row reads it.
     static let bookAuthor = "Lewis Carroll"
 
+    // MARK: - Sound
+
+    /// The environment variable that lets a test make sound: it is 1 only in a
+    /// run the GitHub runner's script made.
+    static let soundVariable = "TEXTMOUTH_UI_SOUND"
+
+    /// Whether this run may make sound (play the book, type).
+    static var soundIsAllowed: Bool {
+        ProcessInfo.processInfo.environment[soundVariable] == "1"
+    }
+
+    /// Skips the test, saying why, unless this run may make sound. `what` is
+    /// what the test does that sounds ("Pressing Play").
+    func requireSound(_ what: String) throws {
+        try XCTSkipUnless(
+            Self.soundIsAllowed,
+            "\(what) makes sound, so it runs only on a GitHub runner, where \(Self.soundVariable) is 1 "
+                + "(Scripts/agents/run-ios-ui-tests.py sets it); on this Mac it is skipped."
+        )
+    }
+
     // MARK: - Launching
 
     /// The largest text size iOS offers, Accessibility Extra Extra Extra Large.
@@ -32,14 +58,11 @@ class TextMouthUITestCase: XCTestCase {
     /// cold launch (TEXTMOUTH_OPEN_AT_LAUNCH). With no book playing, the app
     /// imports the book and opens it, and Play waits unpressed.
     /// With `textSize`, the launch uses that content size category (as in
-    /// `Self.largestText`), as the Larger Text setting would. `environment`
-    /// adds launch variables the app reads in debug builds only.
-    func launch(sendingTheBook: Bool, textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
+    /// `Self.largestText`), as the Larger Text setting would.
+    func launch(sendingTheBook: Bool, textSize: String? = nil) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
-        // Debug-only requests of the app, such as `TEXTMOUTH_SEARCH_IN_BOOK`.
-        app.launchEnvironment.merge(environment) { _, asked in asked }
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
@@ -58,8 +81,8 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Launches with the book and waits for the reader it opens, with the
     /// book loaded: Play is there, and its value no longer says "Loading".
-    func launchIntoTheReader(textSize: String? = nil, environment: [String: String] = [:]) throws -> XCUIApplication {
-        let app = try launch(sendingTheBook: true, textSize: textSize, environment: environment)
+    func launchIntoTheReader(textSize: String? = nil) throws -> XCUIApplication {
+        let app = try launch(sendingTheBook: true, textSize: textSize)
         let play = app.buttons["Play"]
         XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
@@ -68,6 +91,78 @@ class TextMouthUITestCase: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter().wait(for: [loaded], timeout: Self.patience), .completed, "The book never finished loading")
         return app
+    }
+
+    // MARK: - Playing and Typing
+
+    /// Presses Play and waits for the control to read "Pause". Skips the test
+    /// where sound isn't allowed.
+    func pressPlay(in app: XCUIApplication) throws {
+        try requireSound("Pressing Play")
+        let play = app.buttons["Play"]
+        XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "No Play to press:\n\(app.debugDescription)")
+        play.tap()
+        XCTAssertTrue(
+            app.buttons["Pause"].waitForExistence(timeout: Self.patience),
+            "Play was pressed and the control never read Pause:\n\(app.debugDescription)"
+        )
+    }
+
+    /// Presses Pause and waits for the control to read "Play". Skips the test
+    /// where sound isn't allowed.
+    func pressPause(in app: XCUIApplication) throws {
+        try requireSound("Pressing Pause")
+        let pause = app.buttons["Pause"]
+        XCTAssertTrue(pause.waitForExistence(timeout: Self.patience), "No Pause to press:\n\(app.debugDescription)")
+        pause.tap()
+        XCTAssertTrue(
+            app.buttons["Play"].waitForExistence(timeout: Self.patience),
+            "Pause was pressed and the control never read Play:\n\(app.debugDescription)"
+        )
+    }
+
+    /// Opens the Sleep Timer sheet, presses the button labeled `button` (a
+    /// preset or a Stop At choice, each of which starts the book playing), and
+    /// waits for the sheet to close, as the Mac's "Close sheet after setting
+    /// timer" has it. Skips the test where sound isn't allowed.
+    func startSleepTimer(_ button: String, in app: XCUIApplication) throws {
+        try requireSound("Setting a sleep timer, which starts the book playing")
+        _ = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
+        let choice = app.buttons[button]
+        XCTAssertTrue(choice.waitForExistence(timeout: Self.patience), "No \"\(button)\" in the sheet:\n\(app.debugDescription)")
+        choice.tap()
+        XCTAssertTrue(
+            app.navigationBars["Sleep Timer"].waitForNonExistence(timeout: Self.patience),
+            "The Sleep Timer sheet stayed open after \"\(button)\":\n\(app.debugDescription)"
+        )
+    }
+
+    /// Types `text` into the text field labeled `label`, as a person does: the
+    /// field is tapped to hold the keyboard, then the keys are pressed. Skips
+    /// the test where sound isn't allowed (the keyboard clicks).
+    func type(_ text: String, intoFieldLabeled label: String, in app: XCUIApplication) throws {
+        try requireSound("Typing")
+        let field = app.textFields[label]
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "No field labeled \"\(label)\":\n\(app.debugDescription)")
+        field.tap()
+        dismissKeyboardIntroduction(in: app)
+        field.typeText(text)
+    }
+
+    /// Presses Continue on the keyboard's one-time page about sliding a finger
+    /// across the letters, if it covers the keyboard: the runner's script turns
+    /// it off, and a fresh simulator that still shows it would otherwise keep
+    /// every key from the field.
+    func dismissKeyboardIntroduction(in app: XCUIApplication) {
+        let page = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Speed up your typing")).firstMatch
+        if page.waitForExistence(timeout: 2) {
+            app.buttons["Continue"].tap()
+        }
+    }
+
+    /// The text of the "Book content" element, or empty when it holds none.
+    func bookContent(in app: XCUIApplication) throws -> String {
+        try elementsInOrder(of: app).first { $0.label == "Book content" }?.value ?? ""
     }
 
     /// Taps `element` until `expected` shows, at most three times, five
