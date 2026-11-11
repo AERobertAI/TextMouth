@@ -87,6 +87,18 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertTrue(probeRan.withLock { $0 }, "a task could not run on the concurrency pool while listings were held")
     }
 
+    /// Whether `condition` comes true within `seconds`, asked every 20 milliseconds while the test awaits, so that the
+    /// main actor stays free for the tasks the catalog starts on it. (The run-loop spin of `waitUntil` is for the
+    /// tests that are not async: inside an async test it holds the main actor, and a catalog's task never starts.)
+    private func eventually(within seconds: TimeInterval, _ condition: () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        while !condition() {
+            guard Date() < deadline else { return false }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        return true
+    }
+
     /// A lister whose first call waits for `gate` (up to twenty seconds, so no test can hold a thread for ever) and
     /// whose other calls return at once with no voices; `calls` counts every call.
     private func listerHeldOnItsFirstCall(
@@ -116,7 +128,8 @@ final class VoiceCatalogTests: XCTestCase {
         )
         defer { gate.signal() }
         catalog.reload()
-        XCTAssertTrue(waitUntil(timeout: 5) { calls.withLock { $0 } == 1 }, "the first listing never started")
+        let startedFirst = await eventually(within: 5) { calls.withLock { $0 } == 1 }
+        XCTAssertTrue(startedFirst, "the first listing never started")
 
         catalog.reload()   // waits behind the first
         catalog.reload()   // replaces the one that waits
@@ -141,7 +154,8 @@ final class VoiceCatalogTests: XCTestCase {
         )
         defer { gate.signal() }
         catalog.reload()
-        XCTAssertTrue(waitUntil(timeout: 5) { calls.withLock { $0 } == 1 }, "the first listing never started")
+        let startedFirst = await eventually(within: 5) { calls.withLock { $0 } == 1 }
+        XCTAssertTrue(startedFirst, "the first listing never started")
         let hungWaited = await catalog.waitUntilListed(limit: 5)
         XCTAssertTrue(hungWaited, "the hung listing should have been given up on by its deadline")
         XCTAssertFalse(catalog.isLoaded, "a listing that gave up lists nothing")
