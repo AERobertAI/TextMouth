@@ -137,8 +137,9 @@ final class PlaybackUITests: TextMouthUITestCase {
         let skipBackward = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip backward")).firstMatch
         XCTAssertTrue(skipForward.waitForExistence(timeout: Self.patience), "No Skip forward:\n\(app.debugDescription)")
 
-        // The first words of the opening and of each sentence after it, as Play says them while paused.
-        func firstWords(_ text: String) -> String { String(squeezed(text).prefix(25)) }
+        // The first words of the opening and of each sentence after it, as Play says them while paused. Eighty characters:
+        // the opening sentence and the one after it begin alike for 25 (run 42995929013).
+        func firstWords(_ text: String) -> String { String(squeezed(text).prefix(80)) }
         var starts = [firstWords(opening)]
         var previous = squeezed(value(of: app.buttons["Play"]))
         for number in 1...skips {
