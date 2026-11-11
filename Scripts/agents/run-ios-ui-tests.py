@@ -346,8 +346,9 @@ def main(argv):
     every = ios_ui_tests.ui_classes(ROOT)
     named = [] if classes == every else classes
     started = time.monotonic()
-    # One handle in append mode serves the set-up's notes and xcodebuild's output, which writes through the same file.
-    with open(out / "ios-ui.log", "a", encoding="utf-8") as log:
+    # One fresh handle serves the set-up's notes and xcodebuild's output, which writes through the same file. It is opened
+    # to write, not to append, so that a folder used before cannot lend this run an old run's results.
+    with open(out / "ios-ui.log", "w", encoding="utf-8") as log:
         try:
             udid, simulator = ready_simulator(log)
         except SimulatorFailure as failure:

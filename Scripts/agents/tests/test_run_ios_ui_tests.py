@@ -483,6 +483,15 @@ class RunningTheScriptTests(unittest.TestCase):
         self.assertTrue(summary.startswith("iOS UI tests: FAILED"))
         self.assertIn("FAILED ReaderUITests.testA at /x/ReaderUITests.swift:9: XCTAssertEqual failed", summary)
 
+    def test_a_log_left_by_an_earlier_run_in_the_same_folder_is_not_read_as_this_runs(self):
+        # An old run's failed case and banner must not become this run's results (review of 1f5f5f4a, finding 11).
+        (self.out / "ios-ui.log").write_text("Test Case '-[M.ReaderUITests testOld]' failed (1.0 seconds).\n** TEST FAILED **\n")
+        script = "print(\"Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\"); print('** TEST EXECUTE SUCCEEDED **')"
+        status, summary, _ = self.run_main(script)
+        self.assertEqual(status, 0, summary)
+        self.assertNotIn("testOld", summary)
+        self.assertNotIn("testOld", (self.out / "ios-ui.log").read_text())
+
     def test_a_request_that_does_not_ask_writes_not_asked_and_starts_no_simulator(self):
         self.request({"full": False, "areas": ["feeds"], "classes": ["FooTests"]})
         status, summary, _ = self.run_main(ready=AssertionError("the simulator must not start"))
