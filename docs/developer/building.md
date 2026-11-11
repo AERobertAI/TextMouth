@@ -127,7 +127,7 @@ The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xc
   - `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1` gives the launch a library of its own, in a sandbox. Without it, a run uses the simulator app's real container.
   - `SIMCTL_CHILD_TEXTMOUTH_OPEN_AT_LAUNCH=/absolute/path/to/book.epub` sends the app that file at launch, as another app would. The path must be absolute. The app copies the file and never moves or deletes the original.
   - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
-- **Never press Play.** The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio, and nothing types, since the keyboard's clicks are sounds too.
+- **Do not press Play or type by hand, and run no sound test here.** The simulator plays through the Mac's speakers, which the user could hear at any hour, and the keyboard's clicks are sounds too. The interface tests that press Play or type run on GitHub's runners, where nobody listens; on this Mac they skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it (see [Testing TextMouth](testing.md)). Nothing records audio anywhere.
 
 ## Versions
 

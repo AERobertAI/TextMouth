@@ -102,14 +102,14 @@ The iPhone interface is built from IOS-INTERFACE-SPEC-2026-11-07.md, in the repo
 
 ### PhoneLaunchRequest
 
-- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has three variables.
+- `PhoneLaunchRequest` is what a UI test, or a run in the simulator, asks of the app at launch through its environment. It has two variables.
   - `TEXTMOUTH_UI_TEST` set to exactly "1" gives the launch a library and preferences in a sandbox of its own, as a hosted test has. An empty or mistyped value leaves the app as it is.
   - `TEXTMOUTH_OPEN_AT_LAUNCH` set to an absolute path sends the app that file, as another app would send one at a cold launch. A relative path is ignored.
-  - `TEXTMOUTH_SEARCH_IN_BOOK` set to text opens the Search in Book sheet with its field already holding that text, so a UI test shows the results without typing (`PhoneLaunchRequest.searchText(_:)`). An empty value is ignored.
 - It exists in debug builds only (0.4.3).
   - The whole of `PhoneLaunchRequest.swift` is inside `#if DEBUG`. So are its tests: `PhoneLaunchRequestTests` on the Mac, and the two tests of `IOSRuntimeTests` that read it.
-  - The three places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), the scene delegate, which opens the file, and the Search in Book sheet, which fills its field (`fillFieldForTesting()`). `PhoneLaunchRequestTests.testTheRequestIsReadOnlyInTheIPhonesDebugBuild` pins those reads, and `testTheTypeIsCompiledIntoDebugBuildsOnly` that the type is debug only.
-  - A release build holds neither the type nor its three variable names, so no environment variable can steer it. When it had two variables, a Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one. It was not measured again with the third.
+  - The two places that read the environment are inside `#if DEBUG` on iOS: `TextMouthRuntime.detect`, which sets the sandbox (also inside `#if os(iOS)`, so no Mac code names the type), and the scene delegate, which opens the file. `PhoneLaunchRequestTests.testTheRequestIsReadOnlyInTheIPhonesDebugBuild` pins those reads, and that the Search in Book sheet reads no launch variable, and `testTheTypeIsCompiledIntoDebugBuildsOnly` that the type is debug only.
+  - A third variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type. It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
+  - A release build holds neither the type nor its two variable names, so no environment variable can steer it. A Release build for the simulator succeeded, and `strings` found none of the type or its variables in the Release binary and three in the Debug one. That was measured when the type had two variables, which it has again.
   - The Mac's Release build was not checked for it by a build. By reading, the Mac's Release code never names it.
 - A UI test needs it because XCTest names its configuration (`XCTestConfigurationFilePath`) only in a process that hosts a test bundle, and the app a UI test drives does not host one. Without the sandbox, each test would find what the last one left in the app's real container.
 - The book comes in the way a person's would: held until the library starts, copied by the import's copier, imported, and opened. The file is never moved or deleted.

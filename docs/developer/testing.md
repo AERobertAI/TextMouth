@@ -342,12 +342,14 @@ The iPhone app is tested in two places: on the Mac's test host, for everything t
 
 #### SearchUITests
 
-- They drive the Search in Book sheet (0.4.4) in the simulator and, like every UI test here, type nothing and play nothing. The launch fills the field itself with `TEXTMOUTH_SEARCH_IN_BOOK` (see PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md)), debug builds only. The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit. A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
+- They drive the Search in Book sheet (0.4.4) in the simulator. Since November 10, 2026 the searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below). The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone. The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit. A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
 - The sheet's search waits a second for typing to pause, so each test first waits for the status line to end in " matches", " match", or "No matches", for up to the usual patience.
-- The five tests:
+- The seven tests (the first, third, fourth, fifth, sixth, and seventh type):
   - `testTheSearchSheetReadsItsFieldStatusSwitchAndResultsInOrder`: the title, Back to Book, the field, the status line between the field and the switch, the switch, the "Search results" heading, then the results. The first result is a button that holds the word and ends with " percent of book".
   - `testWithNothingSearchedTheSheetSaysSo`: with no search the status is "Enter a search term above." and there is no results heading.
   - `testAWordNotInTheBookGivesNoMatches`: "No matches", and no results heading.
+  - `testACorrectionMadeWhileTypingIsSearchedFor`: the word with a stray "x" typed after it gives "No matches"; one delete key later the results come and the field holds just the word.
+  - `testEmptyingTheFieldReturnsTheSheetToItsPrompt`: after a search with results, deleting every typed character brings back "Enter a search term above." and takes the results' heading away.
   - `testAResultTakesTheReaderToItsPlace`: choosing the first result closes the sheet, puts Search in Book back on the reader, leaves Play unpressed, and within the patience puts the word into Book content's text.
   - `testTheSearchSheetPassesTheAudit`: the audit of the sheet with results.
 - The audit's keyboard. The field takes the keyboard, which the audit reads too: with it up, pass 1 found 7 contrast findings on result rows under the keyboard and 3 "TUIPredictionViewCell" element-description findings of the system keyboard's own. A swipe of the whole app did not put the keyboard away in pass 2. So the test drags from the "Search results" heading to the navigation bar, a scroll of the list, which is silent and puts the keyboard away (`scrollDismissesKeyboard`). If the keyboard stays up, the audit runs all the same and a note says so.
@@ -383,12 +385,17 @@ These are findings with no known cause, and things not verified. The last passes
   - anything that needs VoiceOver.
 - **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)). That follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`, which the user has not answered. Undoing it is one line.
 
-### In the simulator, never press Play and never type
+### In the simulator, sound tests run on GitHub only
 
-- Never press Play, or anything else that makes a sound. The simulator plays through the Mac's speakers, which the user could hear at any hour. Nothing records audio.
-- Never type. The keyboard's clicks are sounds too. `TextMouthUITestCase` says so, and no test types.
+The old rule, "never press Play and never type in the simulator", was the orchestrator's, not the user's, and the user withdrew it on November 10, 2026 ("I definitely think those should be tested on the IOS"). The rule now:
+
+- The interface tests press Play and type, as a person does. That makes sound, since the simulator plays through the Mac's speakers and the keyboard clicks, so such a test runs only where nobody listens: on a GitHub runner.
+- A test that makes sound runs only when the environment variable `TEXTMOUTH_UI_SOUND` is 1. `Scripts/agents/run-ios-ui-tests.py` is the one place that sets it (as `TEST_RUNNER_TEXTMOUTH_UI_SOUND`, which `xcodebuild` hands to the test runner without the prefix), and it runs only on the runner. The workflow, the other scripts, and the Mac never set it: `test_run_ios_ui_tests.py` fails if another tracked file names it, if the workflow sets it, or if a test file presses Play or types by hand.
+- `TextMouthUITestCase` decides in one place. `requireSound(_:)` skips the test, saying why, unless the variable is 1. The helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`, `type`) call it first themselves, so a test that forgot still makes no sound on this Mac. A test that makes sound calls `requireSound` before it launches anything, so a skip is quick.
+- On this Mac those tests skip. Do not set the variable in a shell here. Nothing records audio anywhere.
 - A test that needs a book is sent one at launch (`TEXTMOUTH_OPEN_AT_LAUNCH`) and finds Play unpressed.
-- No test may trap, hang, or play sound aloud, and every wait has a limit.
+- Never play Ogg through Apple's frameworks, here or on the runner; the tests use the EPUB `TestData/alice.epub`.
+- No test may trap, hang, or use a microphone, and every wait has a limit.
 - VoiceOver does not run in the simulator. XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type. Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
 
 ### Type-checks and tests
