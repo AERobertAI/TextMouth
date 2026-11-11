@@ -196,14 +196,15 @@ extension ReaderViewModel {
     }
 
     /// Refreshes the heading a timer for the end of the heading waits for,
-    /// when this reader owns one: the heading after the cursor now. Called
+    /// when this reader owns one: the heading after the place where playback
+    /// reads now (`headingAfterPlaybackStart`). Called
     /// wherever the cursor or the headings change under such a timer: the
     /// book loading (a timer set while it loaded found no headings yet,
     /// finding #787), an edit of its text or manifest, a timer handed over to
     /// this reader, and a finished book starting over.
     func refreshSleepTimerHeading() {
         if sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) {
-            sleepTimerNextHeading = headingAfterCursor
+            sleepTimerNextHeading = headingAfterPlaybackStart
         }
     }
 
