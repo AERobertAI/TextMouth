@@ -35,6 +35,13 @@ final class PlaybackUITests: TextMouthUITestCase {
         }
     }
 
+    /// `text` with every run of white space (spaces, tabs, line breaks, a Gutenberg file's carriage returns) made one space,
+    /// so that two readings of the same words are alike wherever one lays them out differently: the first run that looked
+    /// for the new passage inside the opening one (fixphone4, 42986107227) did not find "org/ebooks/11" and what follows it.
+    private func squeezed(_ text: String) -> String {
+        text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
     /// Book content once it no longer begins as `passage` does, waiting up to the patience (pausing brings it to the
     /// sentence just spoken a moment later); the last text read when it never changes.
     private func waitForBookContent(movingFrom passage: String, in app: XCUIApplication) throws -> String {
@@ -102,7 +109,7 @@ final class PlaybackUITests: TextMouthUITestCase {
         let resumed = try bookContent(in: app)
         XCTAssertFalse(resumed.hasPrefix(String(opening.prefix(40))), "Play started the book over: Book content is at its opening again")
         XCTAssertNotNil(
-            stopped.range(of: String(resumed.prefix(40))),
+            squeezed(stopped).range(of: String(squeezed(resumed).prefix(40))),
             "Play did not resume from where the book was paused. Paused at: \(stopped.prefix(120)). Resumed to: \(resumed.prefix(120))"
         )
     }
@@ -141,11 +148,12 @@ final class PlaybackUITests: TextMouthUITestCase {
         )
         // The book only moves forward: where the new passage lies in the old one, it is sentences on, not characters. The
         // passage is in the old one (the opening chapter is far longer than six sentences), so the count always runs.
+        let squeezedBefore = squeezed(before)
         let range = try XCTUnwrap(
-            before.range(of: String(after.prefix(40))),
+            squeezedBefore.range(of: String(squeezed(after).prefix(40))),
             "The new passage is not inside the opening one, so the sentences between cannot be counted: now \(after.prefix(120))"
         )
-        let sentences = before[..<range.lowerBound].filter { ".?!".contains($0) }.count
+        let sentences = squeezedBefore[..<range.lowerBound].filter { ".?!".contains($0) }.count
         XCTAssertGreaterThanOrEqual(
             sentences, skips - 2,
             "The passage moved only \(sentences) sentences on after \(skips) skips: now \(after.prefix(120))"
