@@ -11,7 +11,9 @@ class ask for them; any other request does not, and this writes "NOT ASKED" and 
 **The sound rule.** These tests press Play and type, as a person does. That makes sound, so on the development Mac they
 skip: TextMouthUITestCase runs such a test only when the environment variable TEXTMOUTH_UI_SOUND is 1. This script is the
 one place that sets it (as TEST_RUNNER_TEXTMOUTH_UI_SOUND, which xcodebuild hands to the test runner without the prefix),
-and it runs only on a GitHub runner, where nobody listens. Never set it anywhere else.
+and it runs only on a GitHub runner, where nobody listens: anywhere else, where GITHUB_ACTIONS is not "true", it stops
+at once with exit status 2, before it reads a request, writes a file, or starts a simulator. Never set the variable
+anywhere else.
 
 It writes three files into the output folder, which the workflow uploads and the Mac downloads:
 
@@ -24,7 +26,8 @@ It writes three files into the output folder, which the workflow uploads and the
 
 It exits 0 when the tests passed or were not asked for or could not start for a reason that is not theirs (the build
 did not pass), and 1 when an asked-for test failed or the run could not be finished, so that the job's verdict follows
-the interface tests, and never the Mac's. Every wait has a limit.
+the interface tests, and never the Mac's. It exits 2, having done nothing, anywhere but on a GitHub runner. Every wait
+has a limit.
 
 Usage: python3 -I -B Scripts/agents/run-ios-ui-tests.py [--out DIR] [--derived-data DIR] [--request FILE]
                                                          [--limit-minutes N]
@@ -235,6 +238,13 @@ def test_command(udid, derived_data, result_bundle, classes):
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"]
 
 
+def on_github_runner(environment):
+    """Whether `environment` is a step of a GitHub Actions run: GitHub sets GITHUB_ACTIONS to exactly "true" in every
+    step, and nothing on the development Mac does. Only there may the tests press Play and type, since the simulator
+    plays through the speakers of the machine it runs on."""
+    return environment.get("GITHUB_ACTIONS") == "true"
+
+
 def test_environment():
     """The environment of the run: this process's own, plus the variable that lets the tests make sound and type. It is
     set here and nowhere else (see the module's comment)."""
@@ -367,6 +377,13 @@ def main(argv):
     parser.add_argument("--request", default=".github/test-request.json")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
     args = parser.parse_args(argv)
+    # The sound rule's guard: run on this Mac, the tests would boot a simulator and press Play aloud. So anywhere but a
+    # GitHub runner, stop before any request is read, any file written, or any simulator started.
+    if not on_github_runner(os.environ):
+        print("run-ios-ui-tests.py runs only on a GitHub Actions runner, and GITHUB_ACTIONS is not \"true\" here. "
+              "Its tests press Play and type, which makes sound wherever the simulator runs. To run them, ask a GitHub "
+              "run for them: a full suite, the phone area, or an interface test class.", file=sys.stderr)
+        return 2
     out = (ROOT / args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     summary = out / "ios-ui-summary.txt"

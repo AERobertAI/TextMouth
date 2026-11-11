@@ -9,6 +9,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import re
 import sys
 import tempfile
@@ -364,7 +365,6 @@ class TheSoundRuleTests(unittest.TestCase):
 
     def test_the_script_sets_the_variable_only_for_the_test_command(self):
         # Importing the script or building its command leaves this process's environment alone.
-        import os
         self.assertNotIn("TEST_RUNNER_TEXTMOUTH_UI_SOUND", os.environ)
         self.assertNotIn("TEXTMOUTH_UI_SOUND", os.environ)
         uitests.test_environment()
@@ -617,6 +617,10 @@ class RunningTheScriptTests(unittest.TestCase):
         (self.root / "TextMouthiOSUITests" / "ReaderUITests.swift").write_text("final class ReaderUITests: TextMouthUITestCase {}\n")
         self.request({"full": True, "areas": ["all"]})
         (self.out / "ios-summary.txt").write_text("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        # main() runs only on a GitHub runner, so these tests stand in for one.
+        runner = mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"})
+        runner.start()
+        self.addCleanup(runner.stop)
 
     def request(self, request):
         """Writes the request file the script reads."""
@@ -634,6 +638,30 @@ class RunningTheScriptTests(unittest.TestCase):
                 mock.patch.object(uitests, "test_command", return_value=fake), contextlib.redirect_stdout(printed):
             status = uitests.main(["--out", "out", *arguments])
         return status, (self.out / "ios-ui-summary.txt").read_text(), printed.getvalue()
+
+    def test_only_githubs_own_mark_counts_as_a_runner(self):
+        self.assertTrue(uitests.on_github_runner({"GITHUB_ACTIONS": "true"}))
+        for environment in ({}, {"GITHUB_ACTIONS": ""}, {"GITHUB_ACTIONS": "false"}, {"GITHUB_ACTIONS": "TRUE"},
+                            {"GITHUB_ACTIONS": "1"}, {"CI": "true"}):
+            self.assertFalse(uitests.on_github_runner(environment), environment)
+
+    def test_anywhere_but_a_github_runner_it_refuses_before_reading_writing_or_starting_anything(self):
+        # The development Mac stays quiet: run there, the tests would boot a simulator and press Play aloud (the check
+        # of b374793e). The output folder is a new one, so that making it would show.
+        for value in (None, "false"):
+            with self.subTest(GITHUB_ACTIONS=value):
+                environment = {key: text for key, text in os.environ.items() if key != "GITHUB_ACTIONS"}
+                if value is not None:
+                    environment["GITHUB_ACTIONS"] = value
+                said = io.StringIO()
+                with mock.patch.dict(os.environ, environment, clear=True), mock.patch.object(uitests, "ROOT", self.root), \
+                        mock.patch.object(uitests, "ready_simulator", side_effect=AssertionError("no simulator may start")), \
+                        mock.patch.object(uitests, "run_tests", side_effect=AssertionError("no test may run")), \
+                        contextlib.redirect_stderr(said), contextlib.redirect_stdout(io.StringIO()):
+                    status = uitests.main(["--out", "fresh"])
+                self.assertEqual(status, 2)
+                self.assertIn("runs only on a GitHub Actions runner", said.getvalue())
+                self.assertFalse((self.root / "fresh").exists(), "no folder or file is written")
 
     def test_passing_tests_write_a_passing_summary_and_exit_0(self):
         script = ("print(\"Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\"); print('** TEST SUCCEEDED **')")
