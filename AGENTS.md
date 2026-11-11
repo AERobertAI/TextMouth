@@ -91,6 +91,22 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 10, 2026
+
+- Main is version 0.4.5, tagged `v0.4.5`; 0.4.3 and 0.4.4 are tagged too, and the user still runs 0.4.2. It holds `ci/suite-clean`, which made the full suite clean on GitHub, with three fixes in the app:
+  - the voice listing (`VoiceCatalog`) and the audio decoding check (`AudioMediaProbe`) left Swift's concurrency pool, each with a deadline (10 and 60 seconds);
+  - Cancel is heard during the XML guard's scan of a large part.
+  Full suite 11,975 tests, 81 skipped, 0 failures; `make build` (Release) succeeded, signed, 23 MB, with no warning.
+- GitHub's main is 05327665 (0.4.4), which the user pushed at 00:59 on November 10. Until they push main with `tests.yml`, the workflow guard is off. The tags are only on this Mac, and every tagged commit up to v0.4.4 is on GitHub.
+- Trains leave on request. `build-train.py loop --remote --soon 5` sends one 5 minutes after the first waiting request, and it takes 3 to 4 minutes on GitHub. A push to TestBuild waits for the run in front of it.
+- The GitHub full suite ran clean three times in a row, in 13 to 16 minutes. It still fails now and then on a one-off test, so the Mac's `run_suite.py` stays the merge gate.
+- Every GitHub run builds the iPhone app. Next, at the user's wish, its interface tests move to GitHub, pressing Play and typing. The user withdrew the old rule against both in the simulator; it was the orchestrator's rule, not theirs.
+- Lessons of that day, which hold for any campaign:
+  - A test that hangs only on a 3-core runner can be the app blocking a thread of Swift's concurrency pool. The spindumps Xcode keeps for a test past its allowance showed it. Blocking work, such as listing voices or decoding with `AVAssetReader`, runs on dispatch queues, with deadlines.
+  - A deadline's timer must not hold what it guards. The merge's narrow check found every probe's asset held for a minute after its answer.
+  - Rebalanced shards change which classes share a test host, and that brings out order dependencies that a fixed order hid.
+  - Keep the user's rules apart from the orchestrator's. A rule the orchestrator wrote into briefs was later passed off as the user's.
+
 ## Where things stood on November 9, 2026
 
 - Main is version 0.4.3, tagged `v0.4.3`:
@@ -107,7 +123,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   - trains that take back a branch left out only for a conflict;
   - `make typecheck-tests`, the step before every train request.
 - Then main went to version 0.4.4, tagged `v0.4.4`, after midnight. It holds the quit fix (`fix/quit-while-held`: a quit asked again never hangs, a second Command-Q never cuts held work off, a log out still waits) and the iPhone's Search in Book (`ios/search-1109`, unshipped). Full suite 11,962 tests, 93 skipped, 0 failures; the Release build compiled, and only its signing failed, with the login keychain locked after midnight.
-- Under way: `ci/github-actions`.
+- Then `ci/github-actions` merged (20c38b46): trains and full suites on GitHub Actions.
 - The user's line for the day is 45% of the week left; nothing new starts until the work under way is done.
 - Lessons of that day, which hold for any campaign:
   - Never put a deliberate break on the build train: it tests every request in one tree, and two scratch branches with fixes broken on purpose failed other agents' classes. Prove a break with a harness through `run_locked.py`.
