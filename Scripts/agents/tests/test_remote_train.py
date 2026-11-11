@@ -190,6 +190,81 @@ class RemoteTrainRunTests(RemoteTrainCase):
         self.assertEqual(self.pushed_refs(), {})
 
 
+def with_iphone_build(download, summary, errors=""):
+    """A `gh run download` answer that also holds the iPhone build's files, as the join uploads them."""
+    return {"files": {**download["files"], "ios-summary.txt": summary, "ios-errors.txt": errors,
+                      "ios.log": "xcodebuild output\n"}}
+
+
+IOS_PASSED = "iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 3.1\n"
+
+
+class IPhoneBuildTests(RemoteTrainCase):
+    """A remote train reports the iPhone build its run made, by file, as a Mac train's census is reported."""
+
+    def test_a_passing_iphone_build_is_in_the_summary_and_in_each_agents_result_and_the_files_are_kept(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn(f"- {train.IOS_BUILD_LABEL}: PASSED, 0 errors in 0 files", text)
+        self.assertIn("iOS errors in files your branch changes: 0", text)
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertIn("iOS build of the merged tree on GitHub", (train_dir / "summary.md").read_text())
+        self.assertEqual((train_dir / "ios-summary.txt").read_text(), IOS_PASSED)
+        self.assertTrue((train_dir / "ios.log").exists())
+        self.assertTrue(any("iOS errors in your files: 0" in topic for topic in self.posts_to("alpha")), self.posts)
+
+    def test_the_errors_are_listed_by_the_files_each_branch_changes(self):
+        self.branch("alpha", {"TextMouth/Phone/A.swift": "a"})
+        self.branch("beta", {"TextMouth/Services/B.swift": "b"}, classes=["BarTests"])
+        errors = ("TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope\n"
+                  "TextMouth/Services/B.swift:9:1: error: expected declaration\n"
+                  "TextMouth/Elsewhere.swift:1:1: error: nobody here changed this\n")
+        summary = "iOS build: FAILED\nErrors in the app: 3 in 3 files\nMinutes: 4.0\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary, errors))
+        self.run_train()
+        alpha, beta = self.result_of("alpha"), self.result_of("beta")
+        self.assertIn("iOS errors in files your branch changes: 1", alpha)
+        self.assertIn("TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope", alpha)
+        self.assertNotIn("B.swift", alpha)
+        self.assertIn("iOS errors in files your branch changes: 1", beta)
+        self.assertIn("TextMouth/Services/B.swift:9:1: error: expected declaration", beta)
+        self.assertNotIn("Elsewhere", alpha + beta)
+        self.assertIn("FAILED, 3 errors in 3 files", alpha)
+
+    def test_a_failed_iphone_build_does_not_change_the_trains_verdict_on_the_tests(self):
+        self.branch("alpha", {"a.txt": "a"})
+        summary = "iOS build: FAILED\nErrors in the app: 0 in 0 files\nReason: the runner image lacks the iOS Simulator platform or SDK that this build needs\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn("Verdict of the whole train: PASSED", text)
+        self.assertIn("FAILED, 0 errors in 0 files (the runner image lacks the iOS Simulator platform or SDK", text)
+        self.assertEqual(self.queued(), [], "an iPhone build that failed is a result, not a reason to ask again")
+
+    def test_a_run_with_no_iphone_build_has_no_iphone_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertNotIn("iOS", self.result_of("alpha").replace("iOS errors", "").replace("Names left out", ""))
+        self.assertNotIn("iOS build", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_the_remote_train_never_runs_the_census_on_this_mac(self):
+        # setUp replaces ios_census with a trap; a train with an iPhone build to report passes through it.
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.assertEqual(self.run_train(), "ran")
+
+    def test_an_unreadable_summary_is_read_as_what_it_is(self):
+        folder = self.folder / "ios-dir"
+        folder.mkdir()
+        (folder / "ios-summary.txt").write_text("iOS build: NOT RUN\nReason: its job reported nothing\n")
+        count, errors, label = train.remote_ios_result(folder)
+        self.assertEqual((count, errors, label), ("NOT RUN (its job reported nothing)", [], train.IOS_BUILD_LABEL))
+        self.assertIsNone(train.remote_ios_result(self.folder / "no-such-folder"))
+
+
 class NotRunOnGitHubTests(RemoteTrainCase):
     """A remote result names what the runner left out of what an agent asked for (review finding 3)."""
 
@@ -275,7 +350,7 @@ class RemoteTrainFailureTests(RemoteTrainCase):
         self.assertEqual(self.run_train(), "failed")
         self.assert_put_back(requests)
         self.assertEqual(self.queued(), before, "the requests should keep their names, so their order")
-        self.assertEqual(self.gh_calls(), [])
+        self.assertEqual(self.gh_calls_about_the_run(), [])
 
     def test_a_run_cancelled_by_a_newer_push_puts_the_requests_back(self):
         requests = [self.branch("alpha", {"a.txt": "a"})]

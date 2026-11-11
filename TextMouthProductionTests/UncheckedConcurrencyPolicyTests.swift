@@ -14,7 +14,7 @@ final class UncheckedConcurrencyPolicyTests: XCTestCase {
     /// changes with the code, in the same commit: up for a new declaration,
     /// once it names what confines it, and down for one made checked.
     private static let pinnedCounts: [UncheckedConcurrencyScanner.Kind: Int] = [
-        .uncheckedSendable: 28,
+        .uncheckedSendable: 29,
         .nonisolatedUnsafe: 15,
     ]
 

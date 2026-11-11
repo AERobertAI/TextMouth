@@ -2,6 +2,32 @@ import CryptoKit
 import XCTest
 @testable import TextMouth
 
+// MARK: - The Machine's Speed
+
+/// How much longer than on the development Mac a test that times the app may let it take, for the few timing tests
+/// that cannot compare the app with itself on the same machine (the cancel tests do, and need no scale).
+///
+/// The factor is 1 everywhere except on a GitHub runner, whose script (`Scripts/agents/run-on-runner.py`) hands
+/// `TEXTMOUTH_TEST_TIME_SCALE` to the test host as `TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE`: a limit that holds on this
+/// Mac with room to spare, and a virtual machine's slower cores (a hostile index read took 1.35 s there against
+/// its limit of 1.0) would otherwise fail a test that checks only that the app does not run away. A value below 1, or one that is
+/// not a number, is read as 1, so the scale can only widen a limit, and nothing on the development Mac sets it.
+enum TestMachine {
+    /// The factor the limits of timing tests are multiplied by.
+    static let timeScale: Double = scale(from: ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"])
+
+    /// The factor `text` (the environment's value, or nil) stands for: the number when it is one of 1 or more, else 1.
+    static func scale(from text: String?) -> Double {
+        guard let text, let scale = Double(text), scale.isFinite, scale >= 1 else { return 1 }
+        return scale
+    }
+
+    /// `seconds` as a limit on this machine: the same on the development Mac, longer where the scale says.
+    static func allowed(_ seconds: TimeInterval) -> TimeInterval {
+        seconds * timeScale
+    }
+}
+
 // MARK: - The User's Real Account
 
 /// Facts about the real user account running the suite, looked up without

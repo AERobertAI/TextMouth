@@ -98,8 +98,32 @@ def shard_number(folder):
         return 1
 
 
-def merge(shards_dir, out_dir, expected):
-    """Writes the merged four files into `out_dir`; returns True when the whole run passed.
+# The files the iPhone build job uploads (run-ios-build.py), which the join passes on beside the tests' own.
+IOS_FILES = ("ios-summary.txt", "ios-errors.txt", "ios.log")
+
+
+def merge_ios(ios_dir, out_dir):
+    """Passes the iPhone build's results on into `out_dir`, and returns the line summary.md shows for them. With no
+    summary in `ios_dir` (its job failed before the build, or was cancelled), writes one that says NOT RUN, so the Mac
+    can tell a build that did not happen from one that passed. The iPhone build never decides whether the tests passed."""
+    ios_dir, out_dir = Path(ios_dir), Path(out_dir)
+    summary_path = ios_dir / "ios-summary.txt"
+    if not summary_path.exists():
+        (out_dir / "ios-summary.txt").write_text(
+            "iOS build: NOT RUN\nReason: its job reported nothing (it failed before the build, or was cancelled)\n",
+            encoding="utf-8")
+        (out_dir / "ios-errors.txt").write_text("", encoding="utf-8")
+        return "- iOS build: NOT RUN (its job reported nothing)"
+    for name in IOS_FILES:
+        if (ios_dir / name).exists():
+            (out_dir / name).write_bytes((ios_dir / name).read_bytes())
+    lines = summary_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    return f"- {lines[0]}; {lines[1].lower()}" if len(lines) > 1 else f"- {lines[0] if lines else 'iOS build: unknown'}"
+
+
+def merge(shards_dir, out_dir, expected, ios_dir=None):
+    """Writes the merged four files into `out_dir` (and, with `ios_dir`, the iPhone build's too, see merge_ios);
+    returns True when the whole run passed.
 
     The shards' folders are `shard-results-N` inside `shards_dir`. When only one shard's artifact matched
     the download, actions/download-artifact puts its files straight into `shards_dir` with no folder of its own
@@ -157,20 +181,21 @@ def merge(shards_dir, out_dir, expected):
             request = json.loads(request_path.read_text(encoding="utf-8"))
             break
     (out_dir / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
+    ios_line = [merge_ios(ios_dir, out_dir)] if ios_dir is not None else []
     (out_dir / "summary.md").write_text(
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
                    f"- Shards: {expected}", f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
-                   f"- Failures and errors: {len(lines)}", *[f"  - {l}" for l in lines[:40]],
+                   *ios_line, f"- Failures and errors: {len(lines)}", *[f"  - {l}" for l in lines[:40]],
                    *[f"- Problem: {p}" for p in problems]]) + "\n", encoding="utf-8")
     return passed
 
 
 def main(argv):
     """Merges and says the verdict; exits 0 when the whole run passed."""
-    if len(argv) != 3:
-        print("usage: merge_shards.py SHARDS_DIR OUT_DIR EXPECTED", file=sys.stderr)
+    if len(argv) not in (3, 4):
+        print("usage: merge_shards.py SHARDS_DIR OUT_DIR EXPECTED [IOS_DIR]", file=sys.stderr)
         return 2
-    passed = merge(argv[0], argv[1], int(argv[2]))
+    passed = merge(argv[0], argv[1], int(argv[2]), argv[3] if len(argv) == 4 else None)
     print("PASSED" if passed else "FAILED")
     return 0 if passed else 1
 

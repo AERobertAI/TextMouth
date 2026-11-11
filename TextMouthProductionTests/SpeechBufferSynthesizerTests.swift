@@ -121,19 +121,47 @@ final class SpeechBufferSynthesizerTests: XCTestCase {
     /// Stop pressed while the synthesizer is silent ends the write within a
     /// moment: it throws `CancellationError`, stops the synthesizer, and
     /// hands on nothing the synthesizer sends as it stops.
+    ///
+    /// Stop is pressed a moment after the write has *started*, not a moment after the test began: the test finds a
+    /// stand-in voice before the write can start, and on a slow machine that took longer than the 0.3 seconds the
+    /// test used to wait (full run 42902376383: the write began after Stop, ended at its first check with no
+    /// synthesizer made, and `writer.stops` was 0).
     func testStopEndsAWriteAtOnce() async throws {
         let writer = ScriptedBufferWriter(.nothing, callsBackAsItStops: true)
         let handedOn = Counter()
         let cancellation = BookExportCancellation()
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { cancellation.cancel() }
-        let started = ContinuousClock.now
+        let pressedAt = OSAllocatedUnfairLock<ContinuousClock.Instant?>(initialState: nil)
+        DispatchQueue.global().async {
+            // Waits for the write to begin (a minute at the most, so the test cannot hang), then for the synthesizer
+            // to have been silent a while.
+            let giveUp = Date().addingTimeInterval(60)
+            while !writer.hasStarted && Date() < giveUp { Thread.sleep(forTimeInterval: 0.01) }
+            Thread.sleep(forTimeInterval: 0.3)
+            pressedAt.withLock { $0 = .now }
+            cancellation.cancel()
+        }
 
         let error = await failure(of: writer, cancellation: cancellation, onBuffer: { _ in handedOn.add() })
 
         XCTAssertTrue(error is CancellationError, "\(String(describing: error))")
-        XCTAssertLessThan(started.duration(to: .now), .seconds(2), "Stop waited for the stall limit")
+        let pressed = try XCTUnwrap(pressedAt.withLock { $0 }, "Stop was never pressed")
+        XCTAssertLessThan(pressed.duration(to: .now), .seconds(2), "Stop waited for the stall limit")
         XCTAssertEqual(writer.stops, 1)
         XCTAssertEqual(handedOn.value, 0, "a buffer sent as the synthesizer stopped was handed on")
+    }
+
+    /// Stop pressed before the write has started ends it at its first check, with no synthesizer made and so none
+    /// to stop: the outcome that the test above used to meet by chance on a slow machine.
+    func testStopPressedBeforeTheWriteStartsEndsItWithNothingToStop() async throws {
+        let writer = ScriptedBufferWriter(.nothing, callsBackAsItStops: true)
+        let cancellation = BookExportCancellation()
+        cancellation.cancel()
+
+        let error = await failure(of: writer, cancellation: cancellation)
+
+        XCTAssertTrue(error is CancellationError, "\(String(describing: error))")
+        XCTAssertFalse(writer.hasStarted, "a synthesizer was started for a write that was stopped before it began")
+        XCTAssertEqual(writer.stops, 0)
     }
 
     /// A synthesizer that sends nothing stalls the write at the first
@@ -358,6 +386,11 @@ private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendab
     /// How many times the write stopped it.
     var stops: Int {
         lock.withLock { stopCount }
+    }
+
+    /// Whether the write has started it.
+    var hasStarted: Bool {
+        lock.withLock { onBuffer != nil }
     }
 
     func start(_ utterance: AVSpeechUtterance, onBuffer: @escaping (AVAudioBuffer) -> Void, onCancel: @escaping @Sendable () -> Void) {

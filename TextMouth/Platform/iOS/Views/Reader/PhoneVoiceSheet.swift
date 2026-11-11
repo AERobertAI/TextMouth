@@ -129,6 +129,9 @@ struct PhoneVoiceSheet: View {
             .task {
                 guard !shown.isAudioBook else { return }
                 VoiceCatalog.shared.loadIfNeeded()
+                // The wait has a limit. If it passes (the speech service does not answer), the sheet goes on with no
+                // voices and `voicesListed` false, which says nothing about voices being missing (a list still filling
+                // says nothing yet); opening the sheet again asks the catalog again.
                 await VoiceCatalog.shared.waitUntilListed()
                 model = PhoneVoiceModel(reader: reader)
                 voicesListed = VoiceCatalog.shared.isLoaded

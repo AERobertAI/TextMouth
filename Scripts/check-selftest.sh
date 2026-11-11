@@ -478,6 +478,31 @@ dry_run_cases() {
   expect_commands
   end_case
 
+  begin_case "a dry run with --without-tests reports three steps and never the suite"
+  run_gate -- --dry-run --without-tests
+  expect_status 0
+  expect_report "step 1 of 3: regenerate the Xcode project from project.yml"
+  expect_report "step 3 of 3: build the Release app"
+  expect_report "would run: make build"
+  expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB"
+  expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
+  expect_report "pins match Package.resolved: "
+  refute_report "step 4"
+  refute_report "make test"
+  refute_report "performance"
+  expect_verdict "check: PASSED (dry run)"
+  expect_commands
+  end_case
+
+  begin_case "a dry run with --without-tests still fails when the resolution changes a version"
+  run_gate TEXTMOUTH_CHECK_SIMULATE_RESOLVED="$FIXTURES/version-drift.resolved" -- --dry-run --without-tests
+  expect_status 1
+  expect_report "resolved to 999.0.0"
+  refute_report "step 3 of 3"
+  expect_verdict "check: FAILED: package resolution does not reproduce the committed Package.resolved"
+  end_case
+
   begin_case "a dry run removes no earlier build"
   plant_earlier_builds
   run_gate -- --dry-run
@@ -671,6 +696,19 @@ real_run_cases() {
   expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
   expect_report "no Swift warnings in build/check/test.log"
   expect_report "Package.resolved still holds the committed pins"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a run with --without-tests resolves and builds, checks the size, and never runs the suite"
+  run_gate -- --without-tests
+  expect_status 0
+  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_report "step 3 of 3: build the Release app"
+  expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
+  expect_report "Package.resolved still holds the committed pins"
+  refute_report "Executed"
   expect_verdict "check: PASSED"
   end_case
 

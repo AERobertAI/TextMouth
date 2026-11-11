@@ -163,6 +163,43 @@ class RunSuiteRemoteTests(RemoteTestCase):
             status = run_suite.main()
         self.assertEqual(status, 0, out.getvalue())
 
+    def with_iphone_build(self, summary, errors=""):
+        """A `gh run download` answer holding the suite's files and the iPhone build's."""
+        files = results("PASSED\n", SUITE_PASSED)["files"]
+        return {"files": {**files, "ios-summary.txt": summary, "ios-errors.txt": errors}}
+
+    def test_the_iphone_build_is_reported_by_file_and_never_changes_the_suites_verdict(self):
+        errors = ("TextMouth/Phone/A.swift:3:4: error: bad\nTextMouth/Phone/A.swift:9:1: error: worse\n"
+                  "TextMouth/Services/B.swift:1:1: error: also\nerror: Unable to find a destination\n")
+        summary = "iOS build: FAILED\nErrors in the app: 4 in 2 files\nMinutes: 4.2\n"
+        self.gh_runs(self.with_iphone_build(summary, errors))
+        status, out, _ = self.run_remote()
+        self.assertEqual(status, 0, "the tests passed, whatever the iPhone build did")
+        self.assertIn("run_suite: iOS build of the merged tree on GitHub", out)
+        self.assertIn("FAILED, 4 errors in 2 files", out)
+        self.assertIn("run_suite:   TextMouth/Phone/A.swift: 2 errors", out)
+        self.assertIn("run_suite:   TextMouth/Services/B.swift: 1 error\n", out)
+        self.assertIn("run_suite:   (no file): 1 error\n", out)
+
+    def test_a_passing_iphone_build_is_one_line(self):
+        self.gh_runs(self.with_iphone_build("iOS build: PASSED\nErrors in the app: 0 in 0 files\n"))
+        _, out, _ = self.run_remote()
+        self.assertIn("PASSED, 0 errors in 0 files", out)
+        self.assertNotIn("run_suite:   ", out)
+
+    def test_a_run_with_no_iphone_build_says_nothing_of_one(self):
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        _, out, _ = self.run_remote()
+        self.assertNotIn("iOS", out)
+
+    def test_the_iphone_build_is_reported_even_when_the_tests_failed(self):
+        files = results("FAILED\n", SUITE_FAILED)["files"]
+        self.gh_runs({"files": {**files, "ios-summary.txt": "iOS build: PASSED\nErrors in the app: 0 in 0 files\n"}},
+                     view={**DONE, "conclusion": "failure"})
+        status, out, _ = self.run_remote()
+        self.assertEqual(status, 1)
+        self.assertIn("PASSED, 0 errors in 0 files", out)
+
     def test_the_remote_option_needs_its_commit_name_and_log(self):
         err = io.StringIO()
         with mock.patch.object(sys, "argv", ["run_suite.py", "--remote", self.head, "suite"]), \

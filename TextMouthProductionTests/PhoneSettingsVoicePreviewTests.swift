@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import XCTest
 @testable import TextMouth
 
@@ -259,14 +260,15 @@ final class PhoneSettingsVoicePreviewTests: XCTestCase {
     func testARefusalDuringAPreviewLeavesItSpeaking() {
         let book = Book(isPlaying: true)
         let recorders = Recorders()
-        var allowed = true
+        // Read by the preview's closure and changed here: under a lock, since the closure is Sendable.
+        let allowed = OSAllocatedUnfairLock(initialState: true)
         let preview = PhoneSettingsVoicePreview(
             pauseBook: { book.pauseForPreview() },
-            audioMayStart: { allowed },
+            audioMayStart: { allowed.withLock { $0 } },
             makingSynthesizersWith: { recorders.make() }
         )
         preview.speak(sentence())
-        allowed = false
+        allowed.withLock { $0 = false }
 
         preview.speak(sentence())
 

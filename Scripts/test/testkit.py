@@ -319,7 +319,9 @@ _EXECUTED = re.compile(r"^\s*(Executed (\d+) tests?, with (?:\d+ tests? skipped 
 _TEST_ERROR = re.compile(r"^(.+?\.swift):(\d+): error: -\[(?:[\w.]+\.)?(\w+) (\w+)\] : (.*)$")
 _TEST_FAILED = re.compile(r"^Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
 _COMPILE_ERROR = re.compile(r"^(/.+?\.swift):(\d+):\d+: error: (.*)$")
-_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (.*)$")
+# A printed NSError ("error: Error Domain=...") is not one: interleaved output from two processes can leave such a
+# line starting at "error:".
+_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (?!Error Domain=)(.*)$")
 _WARNING = re.compile(r"^(/.+?\.swift):(\d+):\d+: warning: (.*)$")
 _CRASH = re.compile(r"crashed|Restarting after unexpected exit, crash, or test timeout")
 # The build wrapper copies the agent's unread board messages into the log

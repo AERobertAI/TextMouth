@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -182,6 +183,84 @@ final class AudioMediaValidationTests: XCTestCase {
         let outcome = await AudioMediaProbe.duration(of: file)
 
         XCTAssertEqual(outcome, .success(3))
+    }
+
+    // MARK: - A Decoding Check That Does Not Return
+
+    /// A decoding check that waits for `gate` (up to twenty seconds, so no test can hold a thread for ever), counts
+    /// each start in `started`, and then finds nothing wrong.
+    private func heldCheck(
+        gate: DispatchSemaphore,
+        started: OSAllocatedUnfairLock<Int>
+    ) -> AudioMediaProbe.DecodeCheck {
+        { _ in
+            started.withLock { (count: inout Int) in count += 1 }
+            _ = gate.wait(timeout: .now() + 20)
+            return nil
+        }
+    }
+
+    /// A problem the check finds is the probe's answer, so the seam changes nothing for a check that returns.
+    func testTheDecodingCheckThePassedInIsTheOneThatDecides() async throws {
+        let wave = folder.appendingPathComponent("two seconds.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+
+        let outcome = await AudioMediaProbe.duration(of: wave, decoding: { _ in .cannotDecode })
+
+        XCTAssertEqual(outcome, .failure(.cannotDecode))
+    }
+
+    /// A decoding check that never returns (as `AVAssetReader` did not on a GitHub runner) is waited for only until
+    /// the probe's deadline: the file then passes on its header's length, in well under the check's own wait.
+    /// Without the deadline the probe answers only when the check does, here twenty seconds later.
+    func testAHungDecodingCheckIsGivenUpOnAtItsDeadlineAndTheFilePassesOnItsHeader() async throws {
+        let wave = folder.appendingPathComponent("held.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let gate = DispatchSemaphore(value: 0)
+        defer { gate.signal() }
+        let started = OSAllocatedUnfairLock(initialState: 0)
+        let began = Date()
+
+        let outcome = await AudioMediaProbe.duration(
+            of: wave, decoding: heldCheck(gate: gate, started: started), deadline: 0.3)
+
+        XCTAssertEqual(outcome, .success(2))
+        XCTAssertEqual(started.withLock { $0 }, 1, "the check should have been started")
+        XCTAssertLessThan(Date().timeIntervalSince(began), 5, "the probe waited for the check, not for its deadline")
+    }
+
+    /// Decoding checks that wait hold dispatch threads and not the threads of Swift's concurrency pool, which has one
+    /// for each core: more probes than cores all reach their check at once, and a task of the pool still runs.
+    /// With the check run in the probe's own task, only as many probes as the pool has threads reach it.
+    func testHeldDecodingChecksLeaveTheConcurrencyPoolFree() async throws {
+        let wave = folder.appendingPathComponent("held many.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let count = ProcessInfo.processInfo.activeProcessorCount + 2
+        let gate = DispatchSemaphore(value: 0)
+        defer { for _ in 0..<count { gate.signal() } }
+        let started = OSAllocatedUnfairLock(initialState: 0)
+        let check = heldCheck(gate: gate, started: started)
+        let probes = (0..<count).map { _ in
+            Task.detached(priority: .utility) { await AudioMediaProbe.duration(of: wave, decoding: check, deadline: 30) }
+        }
+
+        for _ in 0..<200 where started.withLock({ $0 }) < count {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(started.withLock { $0 }, count,
+                       "only \(started.withLock { $0 }) of \(count) checks started: the rest could not get a thread")
+        let ran = OSAllocatedUnfairLock(initialState: false)
+        Task.detached(priority: .utility) { ran.withLock { $0 = true } }
+        for _ in 0..<100 where !ran.withLock({ $0 }) {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertTrue(ran.withLock { $0 }, "a task could not run on the concurrency pool while the checks were held")
+
+        for _ in 0..<count { gate.signal() }
+        for probe in probes {
+            let outcome = await probe.value
+            XCTAssertEqual(outcome, .success(2))
+        }
     }
 
     /// A plain text file named like an MP3 cannot be opened as audio.

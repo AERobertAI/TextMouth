@@ -51,7 +51,9 @@ reads the log and summary the run uploads. It takes no heavy-work lock, since it
 with a merge and a push only. If the push or the run fails, every agent is told and the requests
 go back in the queue for the next train. With --soon MINUTES the loop leaves MINUTES after a
 request comes instead of on the hour. The tests' command is made in test_command.py, the one
-place the train, run_suite.py, and the workflow all take it from.
+place the train, run_suite.py, and the workflow all take it from. The run also builds the iPhone
+app and its UI tests for the iOS Simulator (run-ios-build.py), and each agent's result lists the
+errors in the files its branch changes, as the census of a train on this Mac does.
 
 Paths are absolute, so any worktree's agent can call it. Requests, trains,
 and results live in the main checkout's gitignored build/orchestrator/train/.
@@ -520,7 +522,8 @@ def remote_run_tests(merged, train_dir):
                                        f"{result['url']}")
     if not result["downloaded"] or not (folder / "run-summary.txt").exists():
         raise github_run.RemoteFailure(f"the run ended {result['conclusion']} without results: {result['url']}")
-    for name in ("run.log", "run-summary.txt"):
+    # The tests' log and summary, and the iPhone build's summary, errors, and log.
+    for name in ("run.log", "run-summary.txt", "ios-summary.txt", "ios-errors.txt", "ios.log"):
         if (folder / name).exists():
             shutil.copyfile(folder / name, train_dir / name)
     return (train_dir / "run-summary.txt").read_text(encoding="utf-8", errors="replace")
@@ -622,6 +625,45 @@ def ios_census(train_dir):
     return count.replace("**", ""), errors
 
 
+# What the iOS line of a train's result calls itself. A train on this Mac counts the AppKit uses left in the
+# iOS sources (a census, which is no build); a train on GitHub builds the iPhone app and its UI tests for the Simulator.
+IOS_CENSUS_LABEL = "iOS census of the merged tree"
+IOS_BUILD_LABEL = "iOS build of the merged tree on GitHub (the app and its UI tests, for the Simulator, nothing run)"
+# The line of ios-summary.txt that counts the errors (run-ios-build.py writes it).
+IOS_ERRORS_LINE = re.compile(r"^Errors in the app: (\d+) in (\d+) files$", re.M)
+
+
+def remote_ios_result(train_dir):
+    """The iPhone build a remote train's run made on GitHub, read from the ios-summary.txt and ios-errors.txt that
+    remote_run_tests copied into `train_dir`, in the form ios_census returns plus its label: (the count line,
+    the errors as "path:line:col: error: ..." lines, the label). None when the run left no summary (a run of a
+    workflow from before the iPhone build, or a request that left it out)."""
+    try:
+        summary = (train_dir / "ios-summary.txt").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    lines = summary.splitlines()
+    verdict = lines[0].removeprefix("iOS build: ") if lines else "unknown"
+    counted = IOS_ERRORS_LINE.search(summary)
+    count = f"{verdict}, {counted.group(1)} errors in {counted.group(2)} files" if counted else verdict
+    reasons = [line.removeprefix("Reason: ") for line in lines if line.startswith("Reason: ")]
+    if reasons:
+        count += f" ({'; '.join(reasons)})"
+    try:
+        errors = (train_dir / "ios-errors.txt").read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        errors = []
+    return count, errors, IOS_BUILD_LABEL
+
+
+def ios_label_and_file(census, train_dir):
+    """The label and the details file of a result's iOS line: a census (two parts) has the first label and
+    ios-census.txt, an iPhone build from GitHub (three parts) its own label and ios-errors.txt."""
+    if len(census) > 2:
+        return census[2], train_dir / "ios-errors.txt"
+    return IOS_CENSUS_LABEL, train_dir / "ios-census.txt"
+
+
 def summarize(output):
     """The run's verdict, its Executed line, its failures, and its compile errors."""
     lines = output.splitlines()
@@ -665,7 +707,8 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
     if remote:
         summary += [remote]
     if census:
-        summary += [f"- iOS census of the merged tree: {census[0]} ({train_dir / 'ios-census.txt'})"]
+        ios_label, ios_file = ios_label_and_file(census, train_dir)
+        summary += [f"- {ios_label}: {census[0]} ({ios_file})"]
     summary += [""]
     if errors:
         summary += ["## Compile errors", *[f"- {e}" for e in errors], ""]
@@ -700,10 +743,10 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         if census:
             # The census's paths are repository-relative, as `touched` is.
             my_ios = [e for e in census[1] if e.split(":", 1)[0] in touched]
-            lines += [f"- iOS census of the merged tree: {census[0]}",
+            lines += [f"- {ios_label}: {census[0]}",
                       f"- iOS errors in files your branch changes: {len(my_ios)}", *[f"  - {e}" for e in my_ios[:30]]]
             if len(my_ios) > 30:
-                lines += [f"  - … and {len(my_ios) - 30} more, in {train_dir / 'ios-census.txt'}"]
+                lines += [f"  - … and {len(my_ios) - 30} more, in {ios_file}"]
             ios_note = f"; iOS errors in your files: {len(my_ios)}"
         not_run = runner_skips.not_run_lines(request.get("not_run", []))
         if not_run:
@@ -775,7 +818,7 @@ def run_one_train(args):
 
     With `args.remote` the tests run on GitHub Actions (remote_run_tests): the train
     still merges here, but it loads this Mac with a merge and a push only, so it takes
-    no heavy-work lock and skips the disk check and the iOS census."""
+    no heavy-work lock and skips the disk check and the iOS census (its run builds the iPhone app on GitHub instead)."""
     remote = getattr(args, "remote", False)
     waiting = list(QUEUE.glob("*.json")) if QUEUE.exists() else []
     if not waiting:
@@ -846,8 +889,9 @@ def run_one_train(args):
                         taken_back += back
                     # A branch taken back may itself have broken a later build.
                     taken_back = [request for request in taken_back if any(request is other for other in merged)]
-                    # The census builds for iOS on this Mac, which a remote train keeps clear of.
-                    census = None if remote else ios_census(train_dir)
+                    # A train on this Mac counts the iOS errors with a census here; a remote train keeps clear
+                    # of that and reports the iPhone build its run made on GitHub, if the run made one.
+                    census = remote_ios_result(train_dir) if remote else ios_census(train_dir)
             except github_run.RemoteFailure as failure:
                 give_up_remote(train_id, train_dir, requests, str(failure))
                 return "failed"
@@ -937,12 +981,12 @@ def main(argv):
     sub.add_parser("status", help="show waiting requests and the next train")
     run = sub.add_parser("run", help="run one train now")
     run.add_argument("--base", default=DEFAULT_BASE)
-    run.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, no iOS census")
+    run.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, and the iPhone app is built on GitHub too, not counted in a census here")
     loop = sub.add_parser("loop", help="run a train on a schedule")
     loop.add_argument("--every", type=int, default=60)
     loop.add_argument("--hours", type=float, default=12)
     loop.add_argument("--base", default=DEFAULT_BASE)
-    loop.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, no iOS census")
+    loop.add_argument("--remote", action="store_true", help="run the tests on GitHub Actions (a push to TestBuild) instead of on this Mac: no heavy-work lock, and the iPhone app is built on GitHub too, not counted in a census here")
     loop.add_argument("--soon", type=float, default=0, metavar="MINUTES",
                       help="with --remote: leave MINUTES after a request comes, not on the hour")
     args = parser.parse_args(argv)

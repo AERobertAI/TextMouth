@@ -1008,7 +1008,7 @@ final class TimedTextReaderTests: XCTestCase {
         }
 
         XCTAssertEqual(texts, ["Hello.", "Hello."])
-        XCTAssertLessThan(elapsed, .seconds(10))
+        XCTAssertLessThan(elapsed, .seconds(TestMachine.allowed(10)))
     }
 
     /// A hostile cue of 150,000 "<" and "{\" with no ">" or "}" after them
@@ -1027,7 +1027,7 @@ final class TimedTextReaderTests: XCTestCase {
         // up to the most one cue keeps.
         let kept = String(hostile.prefix(TimedTextLimits.maximumCueCharacters))
         XCTAssertEqual(texts.map { $0 == kept }, [true, true], "each cue keeps its first characters as text")
-        XCTAssertLessThan(elapsed, .seconds(10))
+        XCTAssertLessThan(elapsed, .seconds(TestMachine.allowed(10)))
     }
 
     // MARK: - One Cue's Length
@@ -1123,7 +1123,7 @@ final class TimedTextReaderTests: XCTestCase {
 
         XCTAssertEqual(cue?.isCutShort, true)
         XCTAssertLessThanOrEqual(cue?.text.count ?? .max, TimedTextLimits.maximumCueCharacters)
-        XCTAssertLessThan(elapsed, .seconds(10))
+        XCTAssertLessThan(elapsed, .seconds(TestMachine.allowed(10)))
     }
 }
 

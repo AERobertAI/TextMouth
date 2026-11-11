@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""plan_shards.py: tells the workflow how many parallel test jobs a request wants.
+"""plan_shards.py: tells the workflow how many parallel test jobs a request wants, and what else it asks.
 
-The workflow's first job runs this on the pushed request file and writes its two lines to
-$GITHUB_OUTPUT: `shards=N` and `matrix={"shard":[1,...,N]}`, which the test job's matrix expands.
+The workflow's first job runs this on the request file (pushed to TestBuild, or written from the input of a caller such
+as check.yml) and writes its lines to $GITHUB_OUTPUT:
+  shards=N                          and
+  matrix={"shard":[1,...,N]}        which the test job's matrix expands;
+  request=<the request, one line>   which every later job writes back to .github/test-request.json, so that a request
+                                    given as an input reaches them as a pushed one does;
+  ios=true|false                    whether the iPhone app is built too (a request says "ios": false to leave it out);
+  cold=true|false                   whether the build starts from nothing, with no cached build products ("cold": true).
 The Mac chose N when it made the request (the "shards" key, from shard.shard_count); this clamps
 it to 1..shard.MAX_SHARDS so that a request cannot ask for more jobs than the workflow allows, and
 treats a missing or odd value as 1.
@@ -28,6 +34,13 @@ def shard_total(request):
     return max(1, min(shard.MAX_SHARDS, wanted))
 
 
+def flag(request, key, default):
+    """The request's `key` as the word "true" or "false" that a workflow condition reads; `default` (a bool) when the
+    key is missing. Only a real true or false counts: any other value (a string, a number) means `default`."""
+    value = request.get(key, default)
+    return "true" if (value if isinstance(value, bool) else default) else "false"
+
+
 def main(argv):
     """Prints the two output lines for the request file named."""
     if len(argv) != 1:
@@ -38,9 +51,14 @@ def main(argv):
     except (OSError, ValueError) as error:
         print(f"plan_shards: cannot read the request {argv[0]}: {error}", file=sys.stderr)
         return 2
-    count = shard_total(request if isinstance(request, dict) else {})
+    request = request if isinstance(request, dict) else {}
+    count = shard_total(request)
     print(f"shards={count}")
     print("matrix=" + json.dumps({"shard": list(range(1, count + 1))}, separators=(",", ":")))
+    # One line, with no raw newline (ASCII escapes), since $GITHUB_OUTPUT reads a line as one value.
+    print("request=" + json.dumps(request, separators=(",", ":")))
+    print(f"ios={flag(request, 'ios', True)}")
+    print(f"cold={flag(request, 'cold', False)}")
     return 0
 
 

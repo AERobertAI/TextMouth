@@ -711,6 +711,13 @@ def selftest() -> int:
     check("errors are capped at 20 then 'and N more'",
           sum(l.startswith("ERROR ") for l in listed) == 20 and "and 5 more" in listed, listed)
 
+    # A printed NSError that two processes' interleaved output cut at the front ("... proxy " lost, "error: Error
+    # Domain=..." left at the start of a line) is no compile error: it failed a clean run of 11,849 tests (November 10).
+    noise = summary(_LOG_PASS + "error: Error Domain=NSCocoaErrorDomain Code=4099 \"The connection ... was invalidated\"\n")
+    check("an NSError cut at the front is no error", not noise.errors and noise.passed, noise.errors)
+    real = summary(_LOG_PASS + "error: Unable to find a destination\n")
+    check("a bare error line is still an error", bool(real.errors), real.errors)
+
     warned = testkit.format_summary(summary(_LOG_WARNING))
     check("a repository warning is listed once, a package's not",
           warned.count("WARNING Thing.swift:7: variable 'y' was never mutated") == 1

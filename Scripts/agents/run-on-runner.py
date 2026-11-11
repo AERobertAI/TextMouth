@@ -14,7 +14,11 @@ the workflow uploads and the Mac downloads:
                      a last line of PASSED or FAILED
   summary.md         the same in a few lines, for the run's summary page
 
-A request may carry "limit_minutes" to shorten that limit (it cannot lengthen it).
+A request may carry "limit_minutes" to shorten that limit (it cannot lengthen it). It may also carry
+"strict_performance": true, which runs the performance baselines strictly (a number more than twice its baseline
+fails, and a busy machine does not skip them), and "no_warnings": true, which fails the run when the build's log
+shows a Swift warning (xcodebuild reports a file's warnings only when it compiles that file, so this means
+something only for a build from nothing, "cold": true). Both are what the reproducibility gate (check.yml) asks.
 
 It exits 0 when the tests passed and 1 when they did not. Every wait has a
 limit: the whole run (--limit-minutes), and a test host that writes nothing
@@ -29,7 +33,9 @@ Run it from the repository root.
 """
 import argparse
 import json
+import os
 import platform
+import re
 import subprocess
 import sys
 import threading
@@ -67,6 +73,43 @@ def time_limit_arguments(request):
     seconds = str(int(request.get("test_seconds", TEST_SECONDS)))
     return ["-test-timeouts-enabled", "YES", "-default-test-execution-time-allowance", seconds,
             "-maximum-test-execution-time-allowance", seconds]
+
+
+# How much longer than on the development Mac the few timing tests that cannot compare the app with itself may let it
+# take on the runner (TestMachine.timeScale in HostedTestIsolationSupport.swift). The runner is a virtual machine with
+# 3 or 4 slower cores: a hostile-index read that is within 1.0 second here took 1.35 there. The development Mac never
+# sets it, so its limits stay as written. A request may carry "time_scale" to try another.
+RUNNER_TIME_SCALE = 2.5
+# The most a request may widen the limits: a hand-sent request cannot make a timing test pass by waiting for ever.
+MAX_TIME_SCALE = 10.0
+
+
+def time_scale_problem(request):
+    """Why the request's "time_scale" cannot be used, or None when it can (or is absent): it must be a number (not a
+    truth value or a word) from 1 to MAX_TIME_SCALE. A scale below 1 would only be read as 1 by the tests, and one
+    above the most would hide a slow test."""
+    if "time_scale" not in request:
+        return None
+    value = request["time_scale"]
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        return f"the request's time_scale {value!r} is not a number"
+    if not 1 <= value <= MAX_TIME_SCALE:
+        return f"the request's time_scale {value!r} is not from 1 to {MAX_TIME_SCALE:g}"
+    return None
+
+
+def runner_environment(request):
+    """The environment the test command runs in: this process's own, plus TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE (the
+    runner's time scale), and, for a request that asks for strict performance baselines,
+    TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1. xcodebuild hands each to the test host without its TEST_RUNNER_ prefix
+    (as `make test PERFORMANCE_STRICT=1` does for the gate on the Mac)."""
+    environment = dict(os.environ)
+    # main() refuses a request whose scale is no good before it gets here; the default stands in if one gets through.
+    scale = RUNNER_TIME_SCALE if time_scale_problem(request) else float(request.get("time_scale", RUNNER_TIME_SCALE))
+    environment["TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"] = str(scale)
+    if request.get("strict_performance"):
+        environment["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"] = "1"
+    return environment
 
 
 def runner_arguments(request, skips):
@@ -155,7 +198,7 @@ def run_tests(train, request, out, limit_minutes):
                                             + ["-resultBundlePath", str(out / "result.xcresult")])
         sink = subprocess.PIPE
     print("command:", " ".join(command), flush=True)
-    process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT, env=runner_environment(request))
     finished = threading.Event()
     threading.Thread(target=train.watch_for_a_hung_run, args=(log, finished, threading.Event()),
                      daemon=True).start()
@@ -193,8 +236,59 @@ def judge(train, output, log, timed_out, limit_minutes):
         passed, reason = False, "the log shows the test host restarted or its last suite did not pass"
     if not passed:
         # "FAILED:" with a colon is not a failed-test line, which has a space after FAILED.
-        output += f"\nFAILED: {reason or 'the tests did not pass'}\n"
+        output += f"\nFAILED: {reason or unexplained_failure(train, output, log)}\n"
     return output, passed
+
+
+def unexplained_failure(train, output, log):
+    """Why a run that did not pass says so, when no time limit or restart explains it: the first compile or log
+    ERROR line, else the first CRASH line, else (with a log that lacks it) that xcodebuild never printed TEST SUCCEEDED.
+    A failed test needs no reason, for it is named in the summary. Run 42911613586 had 11,849 tests and no failure and
+    was judged FAILED for an ERROR line of the log, and its page said only "the tests did not pass"."""
+    _, _, failures, errors, crashed = train.summarize(output)
+    if failures:
+        return "the tests did not pass"
+    if errors:
+        return f"no test failed, but the log holds an error: {errors[0][:240]}"
+    if crashed:
+        line = next((l.strip() for l in output.splitlines() if l.strip().startswith("CRASH")), "CRASH")
+        return f"no test failed, but {line[:240]}"
+    if log.exists() and "** TEST SUCCEEDED **" not in log.read_text(encoding="utf-8", errors="replace"):
+        return "no test failed, but xcodebuild never printed ** TEST SUCCEEDED ** in the log"
+    return "the tests did not pass"
+
+
+# A line in which the Swift compiler reports a warning: "<file>.swift:<line>:<column>: warning: ..." or, about its own
+# settings, "<unknown>:0: warning: ...". The same definition as Scripts/check.sh's SWIFT_WARNING_PATTERN; other tools'
+# warnings (the linker's) and anything a test prints are not Swift warnings.
+SWIFT_WARNING = re.compile(r"^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning: ")
+# How many warnings a failed run names.
+WARNINGS_NAMED = 5
+
+
+def swift_warnings(log_text, root=ROOT):
+    """The Swift warnings in a build log, each once and in the order first reported, with the checkout's root left off
+    the path (a Debug build compiles each file once, but a file shared by two targets can be reported twice)."""
+    prefix = str(root).rstrip("/") + "/"
+    seen = {}
+    for line in log_text.splitlines():
+        if SWIFT_WARNING.match(line):
+            seen.setdefault(line.replace(prefix, "", 1), None)
+    return list(seen)
+
+
+def enforce_no_warnings(request, output, passed, log):
+    """Returns (the output, whether the run passed) after the rule of a request that says "no_warnings": true, that
+    the build's log shows no Swift warning. A run that broke it fails, and says how many warnings and the first few."""
+    if not request.get("no_warnings") or not log.exists():
+        return output, passed
+    warnings = swift_warnings(log.read_text(encoding="utf-8", errors="replace"))
+    if not warnings:
+        return output, passed
+    named = " | ".join(warnings[:WARNINGS_NAMED])
+    output += (f"\nFAILED: {len(warnings)} Swift warnings in the build (the gate allows none), "
+               f"the first {min(len(warnings), WARNINGS_NAMED)}: {named}\n")
+    return output, False
 
 
 def write_results(request, out, output, passed, seconds, left_out=0):
@@ -213,6 +307,10 @@ def write_results(request, out, output, passed, seconds, left_out=0):
              f"- Runner: macOS {platform.mac_ver()[0]}, {platform.machine()}",
              f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
              f"- Failures and errors: {len(failed)}", *[f"  - {line}" for line in failed[:40]]]
+    # Why a run with no failed test failed (a host that restarted, a time limit, a Swift warning the gate allows none of),
+    # on the run's page and in the job's log, where the next reader looks first.
+    lines += [f"- Reason: {line.strip()[len('FAILED:'):].strip()}" for line in output.splitlines()
+              if line.strip().startswith("FAILED:")]
     if len(failed) > 40:
         lines += [f"  - and {len(failed) - 40} more, in run-summary.txt"]
     (out / "summary.md").write_text("\n".join(lines) + "\n")
@@ -242,6 +340,12 @@ def main(argv):
     except BadSkipLine as error:
         print(f"run-on-runner: {error}", file=sys.stderr)
         return 2
+    problem = time_scale_problem(request)
+    if problem:
+        # An error, not a crash: the results are written, saying why no test ran, and the run fails.
+        write_results(request, out, f"no tests ran\nFAILED: {problem}\n", False, 0.0, len(selected_skips(request, read_skips())))
+        print((out / "summary.md").read_text())
+        return 1
     request = sliced(request, args.shard, args.of)
     started = time.monotonic()
     train = test_command.load_build_train()
@@ -249,6 +353,7 @@ def main(argv):
     limit = min(args.limit_minutes, float(request.get("limit_minutes", args.limit_minutes)))
     output, timed_out = run_tests(train, request, out, limit)
     output, passed = judge(train, output, out / "run.log", timed_out, limit)
+    output, passed = enforce_no_warnings(request, output, passed, out / "run.log")
     write_results(request, out, output, passed, time.monotonic() - started,
                   len(selected_skips(request, read_skips())))
     print((out / "summary.md").read_text())

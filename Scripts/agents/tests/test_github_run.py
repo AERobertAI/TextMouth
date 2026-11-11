@@ -165,8 +165,25 @@ class WorkflowGuardTests(RemoteTestCase):
         widened = self.commit(github_run.WORKFLOW_FILE, self.WORKFLOW.replace("read", "write"))
         with self.assertRaises(github_run.RemoteFailure) as caught:
             self.push_of(widened)
-        self.assertIn(".github/workflows differs", str(caught.exception))
+        self.assertIn(".github/workflows and .github/actions differ", str(caught.exception))
         self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_branch_that_changes_a_local_action_the_workflows_run_is_refused(self):
+        # The workflows run .github/actions/setup-xcode, so changing it changes what runs on the public repository.
+        self.main_has_the_workflow()
+        self.commit(".github/actions/setup-xcode/action.yml", "name: a\n")
+        self.git("update-ref", "refs/remotes/origin/main", self.git("rev-parse", "HEAD"))
+        changed = self.commit(".github/actions/setup-xcode/action.yml", "name: b\n")
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_of(changed)
+        self.assertIn(".github/actions/setup-xcode/action.yml", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_branch_that_adds_a_local_action_is_refused(self):
+        self.main_has_the_workflow()
+        added = self.commit(".github/actions/extra/action.yml", "name: x\n")
+        with self.assertRaises(github_run.RemoteFailure):
+            self.push_of(added)
 
     def test_a_branch_that_adds_another_workflow_is_refused(self):
         self.main_has_the_workflow()
@@ -266,11 +283,24 @@ class FindingTheRunTests(RemoteTestCase):
         self.assertIn("started no run", str(caught.exception))
         self.assertLessEqual(self.now, github_run.RUN_APPEARS_SECONDS + github_run.POLL_SECONDS)
 
-    def test_gh_failing_is_a_remote_failure(self):
+    def test_gh_failing_is_a_remote_failure_after_a_few_tries(self):
         self.gh_state({"fail": "list"})
         with self.assertRaises(github_run.RemoteFailure) as caught:
             github_run.find_run("a" * 40)
         self.assertIn("gh run list failed", str(caught.exception))
+        self.assertEqual(len(self.gh_calls()), github_run.GH_ATTEMPTS, "it should try the whole number of times and no more")
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS] * (github_run.GH_ATTEMPTS - 1))
+
+    def test_a_dropped_connection_is_tried_again_and_the_run_is_found(self):
+        # The wait for a pushed run on November 10, 2026 ended at one "error connecting to api.github.com".
+        self.gh_state({"list": [[STARTED]], "fail_first": {"list": 2}})
+        self.assertEqual(github_run.find_run("a" * 40)["databaseId"], 7001)
+        self.assertEqual(self.pauses, [github_run.GH_RETRY_SECONDS] * 2)
+
+    def test_a_watch_for_a_run_goes_on_after_a_dropped_connection(self):
+        done = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001"}
+        self.gh_state({"view": [done], "fail_first": {"view": 2}})
+        self.assertEqual(github_run.wait_for_run(STARTED)["conclusion"], "success")
 
     def test_gh_missing_is_a_remote_failure(self):
         self.patch_github(GH=str(self.folder / "no-gh"))
@@ -301,6 +331,92 @@ class WaitingForTheRunTests(RemoteTestCase):
         self.assertLess(self.now, 10 * 60 + 2 * github_run.POLL_SECONDS, "it should stop soon after the limit")
 
 
+class WaitingForAnIdleBranchTests(RemoteTestCase):
+    """A push waits while another run is on TestBuild, since a newer push cancels the run before it."""
+
+    # A run that is going on TestBuild, and one that is waiting for a machine.
+    GOING = {"databaseId": 6001, "status": "in_progress", "url": "https://github.example/runs/6001",
+             "workflowName": "Test build"}
+    QUEUED = {**GOING, "databaseId": 6002, "status": "queued", "url": "https://github.example/runs/6002"}
+    DONE = {**GOING, "databaseId": 6003, "status": "completed", "url": "https://github.example/runs/6003"}
+
+    def push_it(self, **options):
+        """Pushes a request commit of the throwaway repository; returns the commit."""
+        commit = github_run.commit_with_request(self.repo, self.head, {"areas": [], "classes": ["A"]}, "m")
+        self.commit_pushed = commit
+        github_run.push(self.repo, commit, **options)
+        return commit
+
+    def test_an_idle_branch_is_pushed_to_at_once(self):
+        self.gh_state({"active": [[]]})
+        commit = self.push_it()
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+        self.assertEqual(self.pauses, [])
+        self.assertEqual(self.idle_checks(), 1)
+
+    def test_the_idle_check_asks_for_the_runs_on_the_testbuild_branch_of_the_public_repository(self):
+        self.gh_state({"active": [[]]})
+        self.push_it()
+        call = self.gh_calls()[0]
+        self.assertEqual(call[:2], ["run", "list"])
+        for flag, value in (("-R", "AERobertAI/TextMouth"), ("--branch", "TestBuild")):
+            self.assertEqual(call[call.index(flag) + 1], value)
+        self.assertNotIn("--commit", call)
+
+    def test_a_push_waits_for_a_run_going_and_a_run_queued_and_pushes_only_after_both_are_gone(self):
+        self.gh_state({"active": [[self.GOING], [self.QUEUED], [self.QUEUED, self.GOING], []]})
+        # Nothing may be on the remote while the push is still waiting.
+        seen = []
+        original = self.pause
+        self.patch_github(SLEEP=lambda seconds: (seen.append(dict(self.pushed_refs())), original(seconds)))
+        commit = self.push_it()
+        self.assertEqual(self.pauses, [github_run.IDLE_POLL_SECONDS] * 3)
+        self.assertEqual(seen, [{}, {}, {}], "the push must not happen while a run is on the branch")
+        self.assertEqual(self.pushed_refs(), {"refs/heads/TestBuild": commit})
+
+    def test_a_completed_run_and_a_run_of_another_workflow_do_not_hold_a_push_back(self):
+        other_workflow = {**self.GOING, "databaseId": 6004, "workflowName": "Check"}
+        self.gh_state({"active": [[self.DONE, other_workflow]]})
+        self.push_it()
+        self.assertEqual(self.pauses, [])
+
+    def test_a_branch_that_never_goes_idle_is_a_remote_failure_that_names_the_run_and_pushes_nothing(self):
+        self.gh_state({"active": [[self.GOING]]})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_it(idle_minutes=10)
+        message = str(caught.exception)
+        self.assertIn("https://github.example/runs/6001", message)
+        self.assertIn("after 10 minutes", message)
+        self.assertIn("would cancel it", message)
+        self.assertEqual(self.pushed_refs(), {}, "a push that gave up must have sent nothing")
+        self.assertLess(self.now, 10 * 60 + 2 * github_run.IDLE_POLL_SECONDS, "it should stop soon after the limit")
+
+    def test_the_default_wait_is_as_long_as_a_run_may_take(self):
+        self.assertGreaterEqual(github_run.IDLE_WAIT_MINUTES, github_run.RUN_LIMIT_MINUTES)
+
+    def test_gh_failing_while_it_looks_is_a_remote_failure_and_nothing_is_pushed(self):
+        self.gh_state({"fail": "list"})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            self.push_it()
+        self.assertIn("gh run list failed", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {})
+
+    def test_a_push_that_would_be_refused_anyway_does_not_wait(self):
+        self.commit("build/secret.txt")
+        self.gh_state({"active": [[self.GOING]]})
+        with self.assertRaises(github_run.RemoteFailure) as caught:
+            github_run.push(self.repo, self.git("rev-parse", "HEAD"))
+        self.assertIn("private", str(caught.exception))
+        self.assertEqual(self.gh_calls(), [])
+        self.assertEqual(self.pauses, [])
+
+    def test_the_wait_is_told_once_which_run_it_is_waiting_for(self):
+        self.gh_state({"active": [[self.GOING], [self.GOING], []]})
+        messages = []
+        self.push_it(progress=messages.append)
+        self.assertEqual(messages, ["waiting for https://github.example/runs/6001 to end before pushing"])
+
+
 class RunRemotelyTests(RemoteTestCase):
     """The whole round trip: push, find, wait, download."""
 
@@ -324,6 +440,17 @@ class RunRemotelyTests(RemoteTestCase):
         self.assertEqual(result["minutes"], round(github_run.POLL_SECONDS / 60, 1))
         self.assertTrue(any("pushed" in m for m in messages))
 
+    def test_a_run_that_waited_its_turn_counts_its_minutes_from_the_push_and_tells_why_it_waited(self):
+        done = {"status": "completed", "conclusion": "success", "url": "u"}
+        going = {"databaseId": 6001, "status": "in_progress", "url": "https://github.example/runs/6001",
+                 "workflowName": "Test build"}
+        self.gh_state({"active": [[going], [going], []], "list": [[STARTED]], "view": [done],
+                       "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        result, messages = self.run_it()
+        self.assertGreaterEqual(self.now, 2 * github_run.IDLE_POLL_SECONDS)
+        self.assertEqual(result["minutes"], round(github_run.POLL_SECONDS / 60, 1), "the wait must not be counted")
+        self.assertTrue(any("waiting for https://github.example/runs/6001" in m for m in messages))
+
     def test_a_run_whose_tests_failed_is_a_result_not_a_remote_failure(self):
         done = {"status": "completed", "conclusion": "failure", "url": "https://github.example/runs/7001"}
         self.gh_state({"list": [[STARTED]], "view": [done], "download": [results(FAILING_SUMMARY, FAILING_LOG)]})
@@ -344,11 +471,11 @@ class RunRemotelyTests(RemoteTestCase):
         self.assertEqual(call[2], "7001")
         self.assertEqual(call[call.index("-n") + 1], github_run.ARTIFACT)
 
-    def test_a_push_that_fails_never_asks_github_anything(self):
+    def test_a_push_that_fails_never_asks_github_about_a_run(self):
         self.patch_github(PUSH_REMOTE=str(self.folder / "no-such-remote.git"))
         with self.assertRaises(github_run.RemoteFailure):
             self.run_it()
-        self.assertEqual(self.gh_calls(), [])
+        self.assertEqual(self.gh_calls_about_the_run(), [])
 
     def test_the_pushed_commit_is_made_of_tracked_files_only(self):
         (self.repo / "scratch.txt").write_text("untracked\n")

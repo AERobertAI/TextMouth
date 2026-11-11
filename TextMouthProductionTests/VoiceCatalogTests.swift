@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import os
 import XCTest
 @testable import TextMouth
 
@@ -50,6 +51,142 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(lister.calls, 2)
         XCTAssertEqual(catalog.listingCount, 2)
         XCTAssertEqual(catalog.voices.map(\.identifier), lister.voices.map(\.identifier))
+    }
+
+    /// A listing that never comes back, as the system's does on a machine whose speech service does
+    /// not answer (a GitHub runner), must not hold a thread of Swift's concurrency pool: the pool has
+    /// one thread for each core, so a listing in it for each core stops every task of the process,
+    /// which hung tests in the full suites on GitHub. Here more catalogs than cores each ask
+    /// for a listing that waits for the test to let it go, and a task of the pool must still run.
+    func testListingsThatNeverComeBackLeaveTheConcurrencyPoolFree() {
+        let gate = DispatchSemaphore(value: 0)
+        // Each blocked listing is let go (below), and gives up by itself after a minute if the test dies.
+        let blocked: @Sendable () -> [AVSpeechSynthesisVoice] = {
+            _ = gate.wait(timeout: .now() + 60)
+            return []
+        }
+        let catalogs = (0..<ProcessInfo.processInfo.activeProcessorCount + 2).map { _ in
+            VoiceCatalog(notificationCenter: NotificationCenter(), listVoices: blocked)
+        }
+        defer { for _ in catalogs { gate.signal() } }
+        catalogs.forEach { $0.reload() }
+        // Give the listings time to start (the run loop turns, so the catalogs' tasks can begin).
+        let settle = expectation(description: "The listings had time to start")
+        settle.isInverted = true
+        wait(for: [settle], timeout: 0.5)
+
+        // A task of the pool, with up to ten seconds to run (the run loop turns while it waits). It runs at the priority
+        // the old listing ran at, utility: the pool limits the threads of each priority apart, and a probe of a higher
+        // one ran beside the held listings (break run 42873809903) and proved nothing.
+        let probeRan = OSAllocatedUnfairLock(initialState: false)
+        Task.detached(priority: .utility) { probeRan.withLock { $0 = true } }
+        let deadline = Date().addingTimeInterval(10)
+        while !probeRan.withLock({ $0 }) && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        XCTAssertTrue(probeRan.withLock { $0 }, "a task could not run on the concurrency pool while listings were held")
+    }
+
+    /// Whether `condition` comes true within `seconds`, asked every 20 milliseconds while the test awaits, so that the
+    /// main actor stays free for the tasks the catalog starts on it. (The run-loop spin of `waitUntil` is for the
+    /// tests that are not async: inside an async test it holds the main actor, and a catalog's task never starts.)
+    private func eventually(within seconds: TimeInterval, _ condition: () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        while !condition() {
+            guard Date() < deadline else { return false }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        return true
+    }
+
+    /// A lister whose first call waits for `gate` (up to twenty seconds, so no test can hold a thread for ever) and
+    /// whose other calls return at once with no voices; `calls` counts every call.
+    private func listerHeldOnItsFirstCall(
+        gate: DispatchSemaphore,
+        calls: OSAllocatedUnfairLock<Int>
+    ) -> @Sendable () -> [AVSpeechSynthesisVoice] {
+        {
+            let call = calls.withLock { (count: inout Int) -> Int in
+                count += 1
+                return count
+            }
+            if call == 1 { _ = gate.wait(timeout: .now() + 20) }
+            return []
+        }
+    }
+
+    /// A listing replaced while it waits on the queue behind a running one never runs: three reloads in a burst
+    /// list twice (the one that was running, and the last), not three times. Without the skip every listing
+    /// that was replaced still ran, one after the other.
+    func testAListingCancelledWhileItWaitsOnTheQueueIsSkipped() async {
+        let gate = DispatchSemaphore(value: 0)
+        let calls = OSAllocatedUnfairLock(initialState: 0)
+        let catalog = VoiceCatalog(
+            notificationCenter: NotificationCenter(),
+            listVoices: listerHeldOnItsFirstCall(gate: gate, calls: calls),
+            listingDeadline: 30
+        )
+        defer { gate.signal() }
+        catalog.reload()
+        let startedFirst = await eventually(within: 5) { calls.withLock { $0 } == 1 }
+        XCTAssertTrue(startedFirst, "the first listing never started")
+
+        catalog.reload()   // waits behind the first
+        catalog.reload()   // replaces the one that waits
+        gate.signal()
+        let waited = await catalog.waitUntilListed(limit: 10)
+
+        XCTAssertTrue(waited)
+        XCTAssertEqual(calls.withLock { $0 }, 2, "the listing that was replaced while it waited should not have run")
+        XCTAssertEqual(catalog.listingCount, 1, "only the last listing is published")
+    }
+
+    /// One listing that never returns does not stop the catalog from listing again: the queue gives up on it
+    /// after its deadline and goes on. Without the deadline the next listing waits behind the hung one for the
+    /// rest of the session, and `VoiceCatalog.shared` would never refresh again.
+    func testAListingThatNeverReturnsIsGivenUpOnAndTheNextOneIsListed() async {
+        let gate = DispatchSemaphore(value: 0)
+        let calls = OSAllocatedUnfairLock(initialState: 0)
+        let catalog = VoiceCatalog(
+            notificationCenter: NotificationCenter(),
+            listVoices: listerHeldOnItsFirstCall(gate: gate, calls: calls),
+            listingDeadline: 0.3
+        )
+        defer { gate.signal() }
+        catalog.reload()
+        let startedFirst = await eventually(within: 5) { calls.withLock { $0 } == 1 }
+        XCTAssertTrue(startedFirst, "the first listing never started")
+        let hungWaited = await catalog.waitUntilListed(limit: 5)
+        XCTAssertTrue(hungWaited, "the hung listing should have been given up on by its deadline")
+        XCTAssertFalse(catalog.isLoaded, "a listing that gave up lists nothing")
+
+        catalog.reload()
+        let waited = await catalog.waitUntilListed(limit: 5)
+
+        XCTAssertTrue(waited)
+        XCTAssertTrue(catalog.isLoaded, "the next listing never ran behind the hung one")
+        XCTAssertEqual(catalog.listingCount, 1)
+    }
+
+    /// Waiting for a listing that does not end has a limit, and says that it passed. Without the limit the wait
+    /// lasts as long as the listing's own deadline (here eight seconds) and answers as if it had been listed.
+    func testWaitingForAListingThatDoesNotEndGivesUpAtItsLimit() async {
+        let gate = DispatchSemaphore(value: 0)
+        let calls = OSAllocatedUnfairLock(initialState: 0)
+        let catalog = VoiceCatalog(
+            notificationCenter: NotificationCenter(),
+            listVoices: listerHeldOnItsFirstCall(gate: gate, calls: calls),
+            listingDeadline: 8
+        )
+        defer { gate.signal() }
+        catalog.reload()
+        let started = Date()
+
+        let waited = await catalog.waitUntilListed(limit: 0.3)
+
+        XCTAssertFalse(waited, "the limit passed before the listing ended")
+        XCTAssertLessThan(Date().timeIntervalSince(started), 4, "the wait ran past its limit")
+        XCTAssertFalse(catalog.isLoaded)
     }
 
     /// The voices for a language are those whose language starts with its

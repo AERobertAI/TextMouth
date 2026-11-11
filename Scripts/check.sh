@@ -56,6 +56,14 @@
 #                TEXTMOUTH_CHECK_SIMULATE_RESOLVED=<file>
 #                  treats <file> as the Package.resolved that resolution wrote.
 #
+#   --without-tests  Run steps 1 to 3 only: no hosted suite. GitHub's check
+#              workflow (.github/workflows/check.yml) runs the gate this way,
+#              and runs the suite beside it in parallel jobs, from nothing, on
+#              the same shards and skips as the TestBuild runs, with the
+#              strict baselines and the no-Swift-warning rule applied there
+#              (Scripts/agents/run-on-runner.py reads those from its request).
+#              A plain `make check` still runs all four steps.
+#
 # Build slots: during Claude Code agent sessions on the development Mac, a
 # wrapper script caps how many xcodebuild processes run at once. The resolve,
 # build, and test steps run inside that wrapper when there is one:
@@ -116,7 +124,8 @@ readonly SWIFT_WARNING_PATTERN='^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning:
 # How many warnings a step that fails on them names.
 readonly WARNINGS_NAMED=5
 
-readonly STEP_COUNT=4
+# How many steps this run has: four, or three with --without-tests.
+STEP_COUNT=4
 readonly UPDATE_HINT="If a package version changed on purpose, run make update-packages, review the Package.resolved diff, and commit it with project.yml."
 
 # jq definitions shared by the pin helpers. checked_pins rejects anything that
@@ -131,6 +140,7 @@ readonly JQ_PIN_DEFINITIONS='
 '
 
 dry_run=0            # 1 when --dry-run was given
+without_tests=0      # 1 when --without-tests was given
 slot=""              # path of the build-slot wrapper, or empty to build directly
 slot_origin=""       # how the wrapper was or was not chosen, for the report
 simulate_failure=""  # step a dry run should fail, from TEXTMOUTH_CHECK_SIMULATE_FAILURE
@@ -214,6 +224,7 @@ parse_arguments() {
   for argument in "$@"; do
     case $argument in
       --dry-run) dry_run=1 ;;
+      --without-tests) without_tests=1; STEP_COUNT=3 ;;
       -h|--help) usage; exit 0 ;;
       *) setup_error "unknown argument: $argument (see $0 --help)" ;;
     esac
@@ -610,11 +621,15 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
 
-  begin_step 4 "run the hosted XCTest suite"
-  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" PERFORMANCE_STRICT=1 || step_failed test $?
-  report_tests
-  report_performance
-  require_no_swift_warnings "$LOG_DIR/test.log"
+  if (( without_tests )); then
+    say "the hosted XCTest suite is not run by this gate (--without-tests)"
+  else
+    begin_step 4 "run the hosted XCTest suite"
+    run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" PERFORMANCE_STRICT=1 || step_failed test $?
+    report_tests
+    report_performance
+    require_no_swift_warnings "$LOG_DIR/test.log"
+  fi
 
   # No later step may re-resolve packages behind the gate's back.
   verify_pins "$RESOLVED_FILE" "Package.resolved changed during the build or tests"

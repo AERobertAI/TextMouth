@@ -207,6 +207,10 @@ enum XMLInputGuard {
 
     // MARK: Walking the start tags
 
+    /// How many start tags `walkStartTags` walks between two asks whether the import was cancelled: a few
+    /// milliseconds of the walk, even in a Debug build, and the ask (a task-local and a lock) costs nothing beside them.
+    private static let tagsBetweenCancelChecks = 4_096
+
     /// What a visitor of an attribute tells `walkStartTags`.
     enum ScanAction {
         /// Go on with the tag, after the `=`.
@@ -228,13 +232,20 @@ enum XMLInputGuard {
     ///     code unit of its name.
     ///   - attribute: Called for each `=` outside quotes, with its index and
     ///     the index of the tag's name; answers what to do next.
+    ///   - cancelled: Asked every `tagsBetweenCancelChecks` start tags, when
+    ///     given; the walk ends, as if the part ended there, once it answers
+    ///     true. A caller that passes it must itself refuse to go on with a
+    ///     part whose scan was cut short (`problem(throwingWhenCancelled:)`
+    ///     and so `PackageSAXParser.parseDocument()` do).
     static func walkStartTags(
         in units: CodeUnits,
         begin: (_ nameStart: Int) -> Void,
-        attribute: (_ equals: Int, _ nameStart: Int) -> ScanAction
+        attribute: (_ equals: Int, _ nameStart: Int) -> ScanAction,
+        cancelled: (() -> Bool)? = nil
     ) {
         let end = units.count
         var i = 0
+        var tags = 0
         while i < end {
             guard units.unit(i) == UInt8(ascii: "<") else { i += 1; continue }
             if units.matches("<!--", at: i) {
@@ -248,6 +259,8 @@ enum XMLInputGuard {
             } else if units.matches("</", at: i) {
                 i = units.skip(to: ">", from: i + 2)
             } else {
+                tags &+= 1
+                if tags % tagsBetweenCancelChecks == 0, cancelled?() == true { return }
                 begin(i + 1)
                 var j = i + 1
                 tag: while true {
@@ -436,7 +449,15 @@ enum XMLInputGuard {
     /// An attribute is an `=` outside the quotes of a value, so a value of
     /// any length (a picture in `o:gfxdata`) is one, and costs nothing
     /// (`walkStartTags`).
-    static func hasTag(withMoreAttributesThan limit: Int = mostAttributesInATag, in data: Data) -> Bool {
+    ///
+    /// With `cancelled`, the scan ends early once it answers true, and then
+    /// says only that it found no such tag *so far*: the caller must not
+    /// treat the part as checked (`problem(throwingWhenCancelled:)`).
+    static func hasTag(
+        withMoreAttributesThan limit: Int = mostAttributesInATag,
+        in data: Data,
+        cancelled: (() -> Bool)? = nil
+    ) -> Bool {
         data.withUnsafeBytes { raw in
             let units = CodeUnits(raw.bindMemory(to: UInt8.self))
             var attributes = 0
@@ -451,7 +472,8 @@ enum XMLInputGuard {
                         return .stop
                     }
                     return .proceed
-                })
+                },
+                cancelled: cancelled)
             return exceeded
         }
     }
@@ -488,6 +510,26 @@ enum XMLInputGuard {
         if let encoding = encodingProblem(of: data, isDecodedText: isDecodedText) { return encoding }
         if declaresInternalSubset(data) { return .ownDefinitions }
         if hasTag(withMoreAttributesThan: mostAttributesInATag, in: data) { return .tooManyAttributes }
+        return nil
+    }
+
+    /// `problem(with:isDecodedText:)` for a part read inside an import: the attribute count, the one long
+    /// pass (all of the part: seconds for a very large one in a Debug build), ends as soon as the import
+    /// running on this thread is cancelled, and then this throws `ImportCancelled`. It never answers nil
+    /// for a scan it did not finish, so a caller cannot hand an unchecked part to a parser by forgetting to
+    /// ask. A problem found before the cancel is still answered.
+    /// - Throws: `ImportCancelled` when the import was cancelled during the scan.
+    static func problem(throwingWhenCancelled data: Data, isDecodedText: Bool = false) throws -> Problem? {
+        if let encoding = encodingProblem(of: data, isDecodedText: isDecodedText) { return encoding }
+        if declaresInternalSubset(data) { return .ownDefinitions }
+        var stoppedByCancel = false
+        let tooMany = hasTag(withMoreAttributesThan: mostAttributesInATag, in: data) {
+            let cancelled = ImportCancellation.current?.isCancelled == true
+            if cancelled { stoppedByCancel = true }
+            return cancelled
+        }
+        if tooMany { return .tooManyAttributes }
+        if stoppedByCancel { throw ImportCancelled() }
         return nil
     }
 }

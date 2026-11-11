@@ -157,6 +157,124 @@ class AreaRunTests(RunnerTestCase):
         self.assertEqual(Path(seen["log"]).resolve(), (self.out / "run.log").resolve())
 
 
+class GateRulesTests(RunnerTestCase):
+    """What the reproducibility gate asks of a run: strict baselines and no Swift warning."""
+
+    WARNING_LOG = (f"{runner.ROOT}/TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated\n"
+                   f"{runner.ROOT}/TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated\n"
+                   "<unknown>:0: warning: argument unused\n"
+                   "ld: warning: the linker's warning is not a Swift warning\n"
+                   "Test Case '-[A b]' passed (0.1 seconds).\n") + LOG_PASSED
+
+    def test_strict_baselines_reach_the_test_host_through_the_environment_xcodebuild_hands_on(self):
+        self.assertEqual(runner.runner_environment({"strict_performance": True})["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"], "1")
+        for request in ({}, {"strict_performance": False}):
+            with self.subTest(request=request):
+                self.assertNotIn("TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT", runner.runner_environment(request))
+
+    def test_the_runner_hands_the_test_host_its_time_scale_and_a_request_may_change_it(self):
+        name = "TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"
+        self.assertEqual(runner.runner_environment({})[name], str(runner.RUNNER_TIME_SCALE))
+        self.assertEqual(runner.runner_environment({"time_scale": 4})[name], "4.0")
+        self.assertGreater(runner.RUNNER_TIME_SCALE, 1)
+
+    def test_a_time_scale_must_be_a_number_from_one_to_the_most(self):
+        for good in ({}, {"time_scale": 1}, {"time_scale": 2.5}, {"time_scale": runner.MAX_TIME_SCALE}):
+            with self.subTest(good=good):
+                self.assertIsNone(runner.time_scale_problem(good))
+        for bad in (0.5, 0, -2, runner.MAX_TIME_SCALE + 0.1, 1e9, "2.5", "many", None, True, [3], float("nan"), float("inf")):
+            with self.subTest(bad=bad):
+                self.assertIsNotNone(runner.time_scale_problem({"time_scale": bad}))
+
+    def test_a_request_with_a_bad_time_scale_is_an_error_with_results_written_and_no_test_run(self):
+        ran = []
+        for bad in ("many", 1000):
+            with self.subTest(bad=bad):
+                self.write_request({"areas": ["stats"], "classes": [], "time_scale": bad})
+                with mock.patch.object(test_command, "area_command",
+                                       lambda *args, **options: ran.append(args) or self.child("", None)(*args)):
+                    status, out = self.run_main()
+                self.assertEqual(status, 1)
+                self.assertEqual(ran, [], "no test may run under a scale nobody meant")
+                summary = (self.out / "run-summary.txt").read_text()
+                self.assertTrue(summary.rstrip().splitlines()[-1].startswith("FAILED: the request's time_scale"), summary)
+                self.assertIn("- Verdict: FAILED", (self.out / "summary.md").read_text())
+                self.assertIn("- Reason: the request's time_scale", (self.out / "summary.md").read_text())
+                self.assertTrue((self.out / "request.json").exists())
+
+    def test_the_command_runs_in_that_environment(self):
+        seen = {}
+        real_popen = runner.subprocess.Popen
+
+        def spy(command, **options):
+            seen["env"] = options.get("env")
+            return real_popen(command, **options)
+
+        self.write_request({"areas": ["stats"], "classes": [], "strict_performance": True})
+        with mock.patch.object(runner.subprocess, "Popen", spy), \
+                mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            self.run_main()
+        self.assertEqual(seen["env"]["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"], "1")
+
+    def test_swift_warnings_are_listed_once_with_the_checkouts_root_left_off_and_other_tools_warnings_are_not_swifts(self):
+        self.assertEqual(runner.swift_warnings(self.WARNING_LOG), [
+            "TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated",
+            "<unknown>:0: warning: argument unused"])
+
+    def test_a_request_with_no_warnings_fails_a_passing_run_whose_log_has_one_and_names_the_first(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 1)
+        summary = (self.out / "run-summary.txt").read_text()
+        self.assertIn("FAILED: 2 Swift warnings in the build (the gate allows none), the first 2: "
+                      "TextMouth/Foo.swift:12:9: warning: variable 'x' was never mutated", summary)
+
+    def test_the_reason_a_run_failed_is_in_its_summary_page_and_so_in_the_jobs_log(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            self.run_main()
+        self.assertIn("- Reason: 2 Swift warnings in the build (the gate allows none)", (self.out / "summary.md").read_text())
+
+    def test_a_run_with_no_failed_test_names_the_error_line_that_failed_it(self):
+        # Run 42911613586: 11,849 tests, 0 failures, and an ERROR line of the log; its page said "the tests did not pass".
+        error_summary = SUMMARY_PASSED.replace("PASSED in 5 seconds", "") + "ERROR Error Domain=NSCocoaErrorDomain Code=4099 x\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(error_summary, LOG_PASSED)):
+            self.run_main()
+        summary = (self.out / "run-summary.txt").read_text()
+        self.assertIn("FAILED: no test failed, but the log holds an error: ERROR Error Domain=NSCocoaErrorDomain Code=4099 x", summary)
+        self.assertIn("- Reason: no test failed, but the log holds an error: ERROR Error Domain", (self.out / "summary.md").read_text())
+
+    def test_a_run_with_no_failed_test_names_a_crash_line_when_that_is_all_there_is(self):
+        crash = "Executed 3 tests, with 0 failures\nCRASH the test host crashed or restarted: Restarting after unexpected exit\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(crash, LOG_PASSED)):
+            self.run_main()
+        self.assertIn("FAILED: no test failed, but CRASH the test host crashed or restarted", (self.out / "run-summary.txt").read_text())
+
+    def test_a_log_without_test_succeeded_says_so_when_nothing_else_explains_the_failure(self):
+        no_verdict = "Executed 3 tests, with 0 failures\nFAILED in 5 seconds\n"
+        with mock.patch.object(test_command, "area_command", self.child(no_verdict, "Test Suite 'Selected tests' passed at x\n")):
+            self.run_main()
+        self.assertIn("FAILED: no test failed, but xcodebuild never printed ** TEST SUCCEEDED ** in the log",
+                      (self.out / "run-summary.txt").read_text())
+
+    def test_a_failed_test_keeps_the_plain_reason_since_the_summary_names_it(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_FAILED, LOG_PASSED, status=1)):
+            self.run_main()
+        self.assertTrue((self.out / "run-summary.txt").read_text().rstrip().endswith("FAILED: the tests did not pass"))
+
+    def test_a_request_with_no_warnings_passes_a_clean_log(self):
+        self.write_request({"areas": ["stats"], "classes": [], "no_warnings": True})
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, LOG_PASSED)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+
+    def test_without_the_rule_a_warning_is_no_failure(self):
+        with mock.patch.object(test_command, "area_command", self.child(SUMMARY_PASSED, self.WARNING_LOG)):
+            status, _ = self.run_main()
+        self.assertEqual(status, 0)
+
+
 class ProgressTests(RunnerTestCase):
     """The runner says where a long run has got to, since a step's log is empty until it ends."""
 
@@ -292,6 +410,14 @@ class SkipTests(RunnerTestCase):
         skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
         chosen = runner.selected_skips({"full": False, "areas": [], "classes": ["FooTests"]}, skips)
         self.assertEqual(chosen, [("FooTests", "testBar", "")])
+
+    def test_a_probe_request_leaves_nothing_out_however_much_it_asks_for(self):
+        skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
+        for request in ({"full": True, "areas": [], "classes": []}, {"full": False, "areas": ["stats"], "classes": []},
+                        {"full": False, "areas": [], "classes": ["FooTests"]}):
+            with self.subTest(request=request):
+                self.assertEqual(runner.selected_skips({**request, "no_skips": True}, skips), [])
+                self.assertNotEqual(runner.selected_skips({**request, "no_skips": False}, skips), [])
 
     def test_the_arguments_hold_the_time_limit_and_the_skips(self):
         arguments = runner.runner_arguments({"full": True, "areas": [], "classes": []}, [("FooTests", "testBar", "")])

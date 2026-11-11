@@ -54,7 +54,11 @@ def skip_arguments(skips):
 
 def selected_skips(request, skips):
     """The skips that apply to a runner job: all of them for a full-suite run or a run of areas (which could hold
-    any class), and only those of its own classes for a run of named classes (a shard's command stays short)."""
+    any class), and only those of its own classes for a run of named classes (a shard's command stays short).
+    A request that says `"no_skips": true` is a probe, sent by hand to see whether a skipped test still hangs: it
+    leaves nothing out, and no train or suite ever sets it."""
+    if request.get("no_skips"):
+        return []
     if request["full"] or request["areas"]:
         return list(skips)
     return [skip for skip in skips if skip[0] in set(request["classes"])]

@@ -16,7 +16,7 @@ final class MOBIHostileFileTests: XCTestCase {
     /// The longest a read of any one hostile file may take. Far above what
     /// the reader needs (milliseconds), because the hosted tests share the
     /// Mac with the build train.
-    private let timeLimit: TimeInterval = 1.5
+    private let timeLimit: TimeInterval = TestMachine.allowed(1.5)
 
     /// Reads `bytes` as a book and returns what it threw, or nil when it
     /// read; fails when it took longer than `timeLimit`.

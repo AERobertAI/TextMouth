@@ -683,7 +683,7 @@ final class SpeechExportDialogTests: XCTestCase {
         let sheet = BookExportSheet(model: model, close: {}).frame(width: size.width, height: size.height)
 
         // Hosting the sheet runs its own `load()`, which lists the book.
-        try withHostedView(sheet, size: size, until: { self.checkboxes(in: $0).count == 4 && model.phase == .ready }) { hosting in
+        withHostedView(sheet, size: size, until: { self.checkboxes(in: $0).count == 4 && model.phase == .ready }) { hosting in
             XCTAssertTrue(self.popUps(in: hosting).isEmpty, "the options were drawn before the kind was checked")
             XCTAssertTrue(self.sliders(in: hosting).isEmpty, "the options were drawn before the kind was checked")
 
