@@ -91,6 +91,16 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 11, 2026
+
+- Main is version 0.4.6, tagged `v0.4.6`. It is 0.4.5 plus the End of heading fix (`fix/end-of-heading-silent-start`), which the iPhone interface tests found. Full suite 11,987 tests, 81 skipped, 0 failures; `make build` (Release) succeeded, signed with the TextMouth Developer certificate, 23 MB, with no compiler warning. The user still runs 0.4.2.
+- GitHub's main is still 05327665 (0.4.4), and the tags are only on this Mac.
+- Under way: `ci/ios-ui-tests`, in its fix round after an Opus review. It runs the iPhone interface tests on GitHub: 34 tests, which press Play and type only where `TEXTMOUTH_UI_SOUND` is 1, and only the runner's script sets it.
+- Lessons of that day, which hold for any campaign:
+  - Tests that act as a person does find what tests of the parts miss. The first iPhone test to set End of heading at a book's opening found a bug that the Mac's unit tests had never met.
+  - Two pushes to TestBuild seconds apart can cancel each other's run. GitHub registers a run a few seconds after its push, so an idle check alone can't see it. `ci/ios-ui-tests` adds a lock that every push from this Mac holds until its run appears.
+  - Code that asks where Play will start must not prepare speech to find out. Play's own waiting path exists so that a long chapter is never prepared on the main actor.
+
 ## Where things stood on November 10, 2026
 
 - Main is version 0.4.5, tagged `v0.4.5`; 0.4.3 and 0.4.4 are tagged too, and the user still runs 0.4.2. It holds `ci/suite-clean`, which made the full suite clean on GitHub, with three fixes in the app:
