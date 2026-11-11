@@ -35,11 +35,27 @@ final class PlaybackUITests: TextMouthUITestCase {
         }
     }
 
+    /// Book content once it no longer begins as `passage` does, waiting up to the patience (pausing brings it to the
+    /// sentence just spoken a moment later); the last text read when it never changes.
+    private func waitForBookContent(movingFrom passage: String, in app: XCUIApplication) throws -> String {
+        var now = passage
+        let deadline = Date().addingTimeInterval(Self.patience)
+        while Date() < deadline {
+            now = try bookContent(in: app)
+            if !now.isEmpty, !now.hasPrefix(String(passage.prefix(40))) { break }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+        return now
+    }
+
     // MARK: - Play and Pause
 
     /// Before Play is pressed the control reads "Play", a button with no value;
     /// after, "Pause", with no value, and it goes on reading Pause; after Pause
     /// is pressed, "Play" again, still with no value, since nothing was moved.
+    /// Then Play is pressed again, three sentences are skipped, and the book is
+    /// paused, played, and paused once more: the second Play resumes from where
+    /// the book was paused, and does not start it over.
     func testPlayBecomesPauseAndPauseBecomesPlay() throws {
         try requireSound("Pressing Play")
         let app = try launchIntoTheReader()
@@ -66,18 +82,29 @@ final class PlaybackUITests: TextMouthUITestCase {
         XCTAssertEqual(value(of: app.buttons["Play"]), "", "Play's value after Pause, with nothing moved")
         XCTAssertFalse(app.buttons["Pause"].exists, "Both Play and Pause are on the screen")
         keepScreenshot(of: app, named: "Reader, paused")
-    }
 
-    /// Play can be pressed again after Pause, and the book plays again: the
-    /// control reads Pause the second time too.
-    func testPlayWorksAgainAfterPause() throws {
-        try requireSound("Pressing Play")
-        let app = try launchIntoTheReader()
+        // Play again, move on three sentences while playing, and pause: Book content is then where the book stopped (C1).
+        let opening = try bookContent(in: app)
         try pressPlay(in: app)
-        try pressPause(in: app)
-        try pressPlay(in: app)
+        let skip = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip forward")).firstMatch
+        for _ in 0..<3 {
+            skip.tap()
+        }
         assertHolds(app.buttons["Pause"], what: "Pause after the second Play", in: app)
         try pressPause(in: app)
+        let stopped = try waitForBookContent(movingFrom: opening, in: app)
+        XCTAssertFalse(stopped.hasPrefix(String(opening.prefix(40))), "Three skips left Book content where it began")
+
+        // Resume: the book plays from there, so it is paused again at C1 or later in the same passage, never at the start.
+        try pressPlay(in: app)
+        assertHolds(app.buttons["Pause"], what: "Pause after the third Play", in: app)
+        try pressPause(in: app)
+        let resumed = try bookContent(in: app)
+        XCTAssertFalse(resumed.hasPrefix(String(opening.prefix(40))), "Play started the book over: Book content is at its opening again")
+        XCTAssertNotNil(
+            stopped.range(of: String(resumed.prefix(40))),
+            "Play did not resume from where the book was paused. Paused at: \(stopped.prefix(120)). Resumed to: \(resumed.prefix(120))"
+        )
     }
 
     // MARK: - The skip buttons while the book plays
@@ -107,38 +134,51 @@ final class PlaybackUITests: TextMouthUITestCase {
 
         try pressPause(in: app)
         // Pausing brings Book content to the sentence just spoken, a moment later: wait for it to change.
-        var after = before
-        let deadline = Date().addingTimeInterval(Self.patience)
-        while Date() < deadline {
-            after = try bookContent(in: app)
-            if !after.isEmpty, !after.hasPrefix(String(before.prefix(40))) { break }
-            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
-        }
+        let after = try waitForBookContent(movingFrom: before, in: app)
         XCTAssertFalse(
             after.hasPrefix(String(before.prefix(40))),
             "Book content still begins where it began after \(skips) skips forward: \(after.prefix(120))"
         )
-        // The book only moves forward: where the new passage lies in the old one, it is sentences on, not characters.
-        if let range = before.range(of: String(after.prefix(40))) {
-            let between = before[..<range.lowerBound]
-            let sentences = between.filter { ".?!".contains($0) }.count
-            XCTAssertGreaterThanOrEqual(
-                sentences, skips - 2,
-                "The passage moved only \(sentences) sentences on after \(skips) skips: now \(after.prefix(120))"
-            )
-        }
+        // The book only moves forward: where the new passage lies in the old one, it is sentences on, not characters. The
+        // passage is in the old one (the opening chapter is far longer than six sentences), so the count always runs.
+        let range = try XCTUnwrap(
+            before.range(of: String(after.prefix(40))),
+            "The new passage is not inside the opening one, so the sentences between cannot be counted: now \(after.prefix(120))"
+        )
+        let sentences = before[..<range.lowerBound].filter { ".?!".contains($0) }.count
+        XCTAssertGreaterThanOrEqual(
+            sentences, skips - 2,
+            "The passage moved only \(sentences) sentences on after \(skips) skips: now \(after.prefix(120))"
+        )
     }
 
-    /// Skip backward at the start of the book while it plays moves nowhere and
-    /// the book plays on: the spec says "No previous sentence." in that case, a
-    /// notice and not a change of any control, so the control must keep
-    /// reading Pause.
-    func testSkippingBackwardAtTheStartLeavesTheBookPlaying() throws {
+    /// Skip backward at the start of the book moves nowhere. Paused, a move that
+    /// goes nowhere answers in Play's value, in the spec's words ("No previous
+    /// sentence.", or the Mac's, when it says one), and Book content stays
+    /// where it was. Then, with the book playing, the same press leaves it
+    /// playing: the control keeps reading Pause.
+    func testSkippingBackwardAtTheStartSaysSoAndLeavesTheBookPlaying() throws {
         try requireSound("Pressing Play")
         let app = try launchIntoTheReader()
-        try pressPlay(in: app)
+        let opening = try bookContent(in: app)
         let skip = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Skip backward")).firstMatch
         XCTAssertTrue(skip.waitForExistence(timeout: Self.patience), "No Skip backward:\n\(app.debugDescription)")
+        skip.tap()
+        let answered = NSPredicate(format: "value != nil AND value != %@", "")
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: answered, object: app.buttons["Play"])], timeout: Self.patience),
+            .completed,
+            "Skipping back at the start put nothing in Play's value:\n\(app.debugDescription)"
+        )
+        XCTAssertTrue(
+            value(of: app.buttons["Play"]).localizedCaseInsensitiveContains("previous")
+                || value(of: app.buttons["Play"]).localizedCaseInsensitiveContains("start")
+                || value(of: app.buttons["Play"]).localizedCaseInsensitiveContains("beginning"),
+            "Play's value after skipping back at the start: \"\(value(of: app.buttons["Play"]))\""
+        )
+        XCTAssertEqual(try bookContent(in: app), opening, "Skipping back at the start moved Book content")
+
+        try pressPlay(in: app)
         skip.tap()
         assertHolds(app.buttons["Pause"], what: "Pause after skipping back at the start", in: app)
         try pressPause(in: app)
