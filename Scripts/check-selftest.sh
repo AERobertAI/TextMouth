@@ -906,6 +906,23 @@ makefile_cases() {
   expect_report "-configuration Release"
   expect_report "CLANG_COVERAGE_MAPPING=NO"
   end_case
+
+  # The Release app is compiled for size, the Swift packages' targets
+  # included, which only a setting on the command line reaches; Debug keeps
+  # its own level, so make debug must not pass it.
+  begin_case "make build compiles the Release app and its packages with -Osize, and make debug does not"
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  refute_report "SWIFT_COMPILATION_MODE"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build CONFIG=Debug 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Debug"
+  refute_report "SWIFT_OPTIMIZATION_LEVEL"
+  end_case
 }
 
 # A UUID of the form dwarfdump prints, made from a number, so each planted

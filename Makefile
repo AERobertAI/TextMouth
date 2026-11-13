@@ -48,6 +48,21 @@ BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 # separately and still gathers coverage.
 NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 
+# The Release app is compiled to be small: -Osize for the Swift packages as
+# well as the app's own code. project.yml gives the app's target the level
+# (its Release block), but not the packages' targets, which it cannot reach;
+# a setting on the command line does, as NO_COVERAGE's does. Given that way,
+# Xcode also compiles each package file by file instead of whole-module,
+# which makes SwiftSoup 1.06 MB smaller than -Osize whole-module would (the
+# November 13, 2026 size audit measured 2.08 MB saved on the three packages
+# together, at the price of slower HTML parsing at import, about 4 ms for a
+# megabyte of EPUB). So do not add SWIFT_COMPILATION_MODE=wholemodule: it
+# made the app 1.15 MB larger. Only Release gets it: `make debug` keeps
+# Debug's own level so that it can still be stepped through. `make check`
+# and `make install` build through the build rule, so they get it too; an
+# Xcode build from its window does not, as with NO_COVERAGE.
+SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
+
 # Xcode records the exact Swift package revisions here. The file is committed,
 # so every checkout and CI run builds the same package versions.
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
@@ -189,6 +204,7 @@ build: generate
 		-derivedDataPath "$(DERIVED_BUILD_DIR)" \
 		-destination 'platform=macOS' \
 		$(NO_COVERAGE) \
+		$(SMALL_CODE) \
 		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
 		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
 		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
