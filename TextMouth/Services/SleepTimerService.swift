@@ -81,16 +81,6 @@ final class SleepTimerService: ObservableObject {
         return decoded.toModel()
     }
 
-    /// Owner ID of the most recently started timer, preserved across
-    /// `stop()`. Used to route the .restartSleepTimer notification
-    /// from the gesture detector — when the app is backgrounded and
-    /// no window is "key", the gesture must still target the right
-    /// book reader. The reader whose readerID matches lastOwnerID is
-    /// the one that originally owned the (now expired) timer; that's
-    /// who should respond. Nil when no prior timer exists at all, or
-    /// when that reader has closed (`forgetLastOwner(_:)`).
-    private(set) var lastOwnerID: UUID?
-
     /// The reader that owned the timer when it last ran out, whether it
     /// stopped the book at once or after a fade, kept until a timer starts
     /// or changes hands, and which expiry it was (`lastExpiryNumber`). A
@@ -334,14 +324,6 @@ final class SleepTimerService: ObservableObject {
         // for later launches; stop() leaves it as it is.
         stop(reason: "replaced-before-start")
         self.ownerID = ownerID
-        // Track the most recent owner separately from `ownerID` so it
-        // survives stop() — the gesture notification routing depends
-        // on knowing which reader owned the previous timer even after
-        // it expired. Falls back to the active ownerID when we have
-        // one; nil only on tests that don't pass an owner.
-        if let ownerID = ownerID {
-            self.lastOwnerID = ownerID
-        }
         self.onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
         self.onFadeCancelled = onFadeCancelled
@@ -479,7 +461,6 @@ final class SleepTimerService: ObservableObject {
             return false
         }
         ownerID = newOwnerID
-        lastOwnerID = newOwnerID
         lastExpiredOwnerID = nil
         onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
@@ -763,7 +744,6 @@ final class SleepTimerService: ObservableObject {
         // listening goes on with; stopped first, as a new timer stops it.
         stop(reason: "replaced by a timer carried from another window")
         ownerID = newOwnerID
-        lastOwnerID = newOwnerID
         onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
         self.onFadeCancelled = onFadeCancelled
@@ -876,17 +856,6 @@ final class SleepTimerService: ObservableObject {
         guard expiredWhileHeldBookID == bookID else { return false }
         expiredWhileHeldBookID = nil
         return true
-    }
-
-    /// Forget `ownerID` as the owner of the most recent timer, because that
-    /// reader is closing: Restart Sleep Timer from a media gesture, which
-    /// belongs to no window, then goes to the focused reader rather than to
-    /// none. The duration last used is kept for it. Nothing changes when
-    /// another reader owned the most recent timer.
-    func forgetLastOwner(_ ownerID: UUID) {
-        guard lastOwnerID == ownerID else { return }
-        lastOwnerID = nil
-        timerLog(.event, "LAST_OWNER_FORGOTTEN owner=\(Self.ownerToken(ownerID))")
     }
 
     /// Returns true once after a fade reaches silence and the timer is
@@ -1268,7 +1237,6 @@ final class SleepTimerService: ObservableObject {
     /// later test isn't surprised by leaked state from earlier ones.
     func _resetForTesting() {
         stop(reason: "test-reset")
-        lastOwnerID = nil
         lastExpiredOwnerID = nil
         expiredWhileHeldBookID = nil
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)

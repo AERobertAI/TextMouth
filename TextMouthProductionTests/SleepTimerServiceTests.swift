@@ -166,7 +166,6 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertNil(service.ownerID)
         XCTAssertEqual(expirations, 0, "The expiry callback was called at the heading's end")
         XCTAssertEqual(service.lastUsedDuration, .endOfHeading)
-        XCTAssertEqual(service.lastOwnerID, owner)
         XCTAssertFalse(service.waitsForHeadingEnd(ownedBy: owner))
         XCTAssertFalse(service.expireAtHeadingEnd(by: owner), "An ended timer ended again")
     }
@@ -518,7 +517,6 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertNil(service.ownerID)
         XCTAssertEqual(expirations, 0, "The expiry callback was called at the chapter's end")
         XCTAssertEqual(service.lastUsedDuration, .endOfHeading)
-        XCTAssertEqual(service.lastOwnerID, owner)
         XCTAssertFalse(
             service.expireAtChapterEnd(endingTheHeading: true, endingTheBook: false, by: owner),
             "An ended timer ended again"
@@ -600,37 +598,14 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(service.remainingSeconds, 299)
     }
 
-    /// A reader that closes forgets itself as the last owner only when it
-    /// set the most recent timer; the duration is kept either way, for
-    /// Restart Sleep Timer in another reader.
-    func testForgettingTheLastOwnerKeepsTheDuration() {
-        start(.minutes(20))
-        service.stop()
-
-        service.forgetLastOwner(UUID())
-        XCTAssertEqual(service.lastOwnerID, owner, "Another reader's closing forgot the last owner")
-
-        service.forgetLastOwner(owner)
-        XCTAssertNil(service.lastOwnerID)
-        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
-    }
-
     func testLastUsedDurationSurvivesStop() {
         start(.minutes(20))
 
         service.stop()
 
         XCTAssertNil(service.duration)
-        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
-    }
-
-    func testLastOwnerSurvivesStop() {
-        start(.minutes(20))
-
-        service.stop()
-
         XCTAssertNil(service.ownerID)
-        XCTAssertEqual(service.lastOwnerID, owner)
+        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
     }
 
     func testNewStartOverwritesLastUsedDuration() {
@@ -812,9 +787,7 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     /// A hand-over changes the owner and nothing else: the time left, the
-    /// duration, and the running countdown are the same, and the last owner,
-    /// which Restart Sleep Timer from a media gesture routes by, is the new
-    /// one.
+    /// duration, and the running countdown are the same.
     func testAHandOverKeepsTheCountdownAndChangesTheOwner() {
         let next = UUID()
         start(.minutes(30))
@@ -825,7 +798,6 @@ final class SleepTimerServiceTests: XCTestCase {
 
         XCTAssertTrue(moved)
         XCTAssertEqual(service.ownerID, next)
-        XCTAssertEqual(service.lastOwnerID, next)
         XCTAssertEqual(service.remainingSeconds, before, "the hand-over reset the countdown")
         XCTAssertEqual(service.duration, .minutes(30))
         XCTAssertTrue(service.isActive)

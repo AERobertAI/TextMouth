@@ -1190,6 +1190,46 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
+    /// Whether a Restart Sleep Timer is this reader's to act on, on its own
+    /// window's timer (November 13, 2026: each reader window has a timer of
+    /// its own), which it writes to the timer's log as it decides:
+    /// - its key carries the window it was pressed in (`sourceWindow`): this
+    ///   reader's window, or a sheet over it;
+    /// - the media gesture, which belongs to no window and often comes while
+    ///   no window is key, names the reader that owns Now Playing
+    ///   (`NowPlayingService.restartGestureOwnerKey`), whose book the
+    ///   AirPods and the media keys reach: that reader, the one being heard;
+    /// - with neither, as for the gesture while no reader owns Now Playing:
+    ///   the focused reader, in the key or main window, or a reader with no
+    ///   window.
+    private func acceptsSleepTimerRestart(_ notification: Notification) -> Bool {
+        let bookToken = String(book.id.uuidString.prefix(8))
+        let readerToken = String(readerID.uuidString.prefix(8))
+        let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
+        let mediaOwner = notification.userInfo?[NowPlayingService.restartGestureOwnerKey] as? UUID
+        let mediaOwnerToken = mediaOwner.map { String($0.uuidString.prefix(8)) } ?? "none"
+        SleepTimerService.log(
+            .event,
+            "RESTART_ROUTE_RECEIVED book=\(bookToken) reader=\(readerToken) "
+                + "sourceWindow=\(hasSourceWindow) mediaOwner=\(mediaOwnerToken)"
+        )
+        let refusal: String?
+        if hasSourceWindow {
+            refusal = isTargetedNotification(notification) ? nil : "source-window-mismatch"
+        } else if let mediaOwner {
+            refusal = mediaOwner == readerID ? nil : "media-owner-mismatch"
+        } else {
+            let isFocused = hostWindow == nil || hostWindow?.isKeyWindow == true || hostWindow?.isMainWindow == true
+            refusal = isFocused ? nil : "no-focused-window"
+        }
+        if let refusal {
+            SleepTimerService.log(.event, "RESTART_ROUTE_REJECTED book=\(bookToken) reason=\(refusal)")
+            return false
+        }
+        SleepTimerService.log(.event, "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(sleepTimerService.isActive)")
+        return true
+    }
+
     private func setupNotifications() {
         let nc = notificationCenter
 
@@ -1361,65 +1401,12 @@ final class ReaderViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // Restart-sleep-timer notification — fires from either the
-        // keyboard shortcut or the experimental media-gesture detector.
-        // The two paths target different windows:
-        // - Keyboard path always carries `sourceWindow`, so the usual
-        //   focused-window gate applies.
-        // - Gesture path carries no sourceWindow because media keys
-        //   don't belong to a window. AirPods presses also commonly
-        //   arrive when the app is backgrounded (no key window). The
-        //   right reader to respond is whichever one most recently
-        //   owned a timer — the user is restarting THAT timer. Only
-        //   that reader responds, not another window of the same book.
-        //   Falls back to the focused window when no prior timer
-        //   exists yet (first-ever press), or its reader has closed.
+        // keyboard shortcut or the experimental media-gesture detector, and
+        // restarts the timer of the window it is for
+        // (`acceptsSleepTimerRestart(_:)`).
         nc.publisher(for: .restartSleepTimer)
             .sink { [weak self] notification in
-                guard let self = self else { return }
-                let bookToken = String(self.book.id.uuidString.prefix(8))
-                let readerToken = String(self.readerID.uuidString.prefix(8))
-                let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
-                let lastOwnerToken = self.sleepTimerService.lastOwnerID
-                    .map { String($0.uuidString.prefix(8)) } ?? "none"
-                SleepTimerService.log(
-                    .event,
-                    "RESTART_ROUTE_RECEIVED book=\(bookToken) reader=\(readerToken) "
-                        + "sourceWindow=\(hasSourceWindow) lastOwner=\(lastOwnerToken)"
-                )
-                if notification.userInfo?["sourceWindow"] != nil {
-                    guard self.isTargetedNotification(notification) else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=source-window-mismatch"
-                        )
-                        return
-                    }
-                } else if let lastOwner = self.sleepTimerService.lastOwnerID {
-                    guard lastOwner == self.readerID else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=last-owner-mismatch"
-                        )
-                        return
-                    }
-                } else {
-                    // No prior timer history — only the focused or
-                    // sole window should respond.
-                    guard self.hostWindow == nil
-                          || self.hostWindow?.isKeyWindow == true
-                          || self.hostWindow?.isMainWindow == true
-                    else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=no-focused-window"
-                        )
-                        return
-                    }
-                }
-                SleepTimerService.log(
-                    .event,
-                    "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(self.sleepTimerService.isActive)"
-                )
+                guard let self, self.acceptsSleepTimerRestart(notification) else { return }
                 self.restartOrStartLastSleepTimer()
             }
             .store(in: &cancellables)
@@ -2341,8 +2328,7 @@ final class ReaderViewModel: ObservableObject {
         // reader weakly, would otherwise pause nothing when it ran out. The
         // owner check leaves the timer alone when the reader that took this
         // window over owns it already, after a switch to the next book in
-        // place. A media gesture restarting the timer then goes to the
-        // focused reader rather than to this closed one.
+        // place.
         //
         // A timer held for the next book (0.2.5), by a move announced before
         // this window closed, goes on: the reader that takes the book adopts
@@ -2351,7 +2337,6 @@ final class ReaderViewModel: ObservableObject {
         if sleepTimerService.ownerID == readerID, !sleepTimerService.isHeld(from: readerID) {
             sleepTimerService.stop()
         }
-        sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).
         removeWorkingCopy()

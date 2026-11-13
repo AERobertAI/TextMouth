@@ -1310,35 +1310,57 @@ final class IntegrationSleepTimerTests: XCTestCase {
     }
 
     /// Restart Sleep Timer from a media gesture, which belongs to no window,
-    /// goes to the reader that set the last timer, not to every reader of
-    /// its book. Once that reader closes, which stops its timer, the gesture
-    /// goes to the reader left, which starts a timer of the last duration.
-    func testRestartFromAMediaGestureGoesToTheReaderThatSetTheTimer() throws {
-        let timer = SleepTimerService.shared
+    /// goes to the reader that owns Now Playing, which the gesture names
+    /// (`NowPlayingService.restartGestureOwnerKey`), and acts on that
+    /// reader's window's timer (November 13, 2026: each reader window has a
+    /// timer of its own), not on every reader of its book. With two windows
+    /// of one book, the gesture naming the owner of a running timer resets
+    /// it; naming the other window's reader, it starts that window's own
+    /// timer of the last duration and leaves the first; and once the first
+    /// window closes, which stops its timer, the gesture naming the reader
+    /// left resets that reader's own. Until then the gesture went to the
+    /// reader that set the last timer, whatever was being heard.
+    func testRestartFromAMediaGestureGoesToTheReaderThatOwnsNowPlaying() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("Sleep Timer Restart Route")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [30])
-        let owner = world.openReader(for: book)
-        let other = world.openReader(for: book)
+        let firstWindow = SleepTimerService()
+        let secondWindow = SleepTimerService()
+        let owner = world.openReader(for: book, sleepTimer: firstWindow)
+        let other = world.openReader(for: book, sleepTimer: secondWindow)
         waitForReaderToLoad(owner)
         waitForReaderToLoad(other)
         defer { other.stop() }
         owner.startSleepTimer(duration: .minutes(30))
+        firstWindow.remainingSeconds = 1000
 
-        let restart = recordingAnnouncements {
-            world.notifications.post(name: .restartSleepTimer, object: nil)
-        }
-        XCTAssertEqual(restart.announcements.map(\.message), ["Timer reset."], "Not just the owner restarted the timer")
-        XCTAssertEqual(timer.ownerID, owner.readerID)
+        let toTheOwner = recordingAnnouncements { postRestartGesture(naming: owner, in: world) }
+        XCTAssertEqual(toTheOwner.announcements.map(\.message), ["Timer reset."], "Not just the owner restarted its timer")
+        XCTAssertEqual(firstWindow.remainingSeconds, 30 * 60, "The owner's timer was not reset")
+        XCTAssertFalse(secondWindow.isActive, "The other window's reader started a timer")
+
+        firstWindow.remainingSeconds = 1000
+        let toTheOther = recordingAnnouncements { postRestartGesture(naming: other, in: world) }
+        XCTAssertEqual(toTheOther.announcements.map(\.message), ["Timer restarted: 30 minutes."])
+        XCTAssertEqual(secondWindow.ownerID, other.readerID)
+        XCTAssertEqual(firstWindow.remainingSeconds, 1000, "The gesture to the other window reset the first window's timer")
 
         owner.close()
-        XCTAssertFalse(timer.isActive, "Closing the owner's window left its timer running")
-        let restartAfterClosing = recordingAnnouncements {
-            world.notifications.post(name: .restartSleepTimer, object: nil)
-        }
-        XCTAssertEqual(restartAfterClosing.announcements.map(\.message), ["Timer restarted: 30 minutes."])
-        XCTAssertEqual(timer.ownerID, other.readerID)
-        XCTAssertEqual(timer.duration, .minutes(30))
+        XCTAssertFalse(firstWindow.isActive, "Closing the owner's window left its timer running")
+        let afterClosing = recordingAnnouncements { postRestartGesture(naming: other, in: world) }
+        XCTAssertEqual(afterClosing.announcements.map(\.message), ["Timer reset."])
+        XCTAssertEqual(secondWindow.ownerID, other.readerID)
+        XCTAssertEqual(secondWindow.duration, .minutes(30))
+    }
+
+    /// Posts Restart Sleep Timer in `world` as the media gesture does while
+    /// `reader` owns Now Playing.
+    private func postRestartGesture(naming reader: ReaderViewModel, in world: IntegrationWorld) {
+        world.notifications.post(
+            name: .restartSleepTimer,
+            object: nil,
+            userInfo: NowPlayingService.restartGestureUserInfo(owner: reader.readerID)
+        )
     }
 
     // MARK: - Helpers

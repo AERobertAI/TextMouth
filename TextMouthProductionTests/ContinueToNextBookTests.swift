@@ -634,7 +634,6 @@ final class ContinueToNextBookTests: XCTestCase {
         let timer = SleepTimerService.shared
         XCTAssertTrue(timer.isActive, "The timer ended with the book")
         XCTAssertEqual(timer.ownerID, nextReader.readerID, "The next reader does not own the timer")
-        XCTAssertEqual(timer.lastOwnerID, nextReader.readerID)
         XCTAssertEqual(timer.duration, .minutes(30))
         XCTAssertLessThanOrEqual(timer.remainingSeconds, before)
         XCTAssertGreaterThan(timer.remainingSeconds, before - 60, "The countdown was reset or lost")

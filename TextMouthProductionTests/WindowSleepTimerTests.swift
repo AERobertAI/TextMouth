@@ -511,6 +511,64 @@ final class WindowSleepTimerTests: XCTestCase {
         withExtendedLifetime((hostA, hostB)) {}
     }
 
+    /// The restart gesture of the AirPods or the media keys, which belongs to
+    /// no window, names the reader that owns Now Playing as it ends, and that
+    /// reader acts on its own window's timer. The user's case again: a paused
+    /// timer in one window and another book playing in another; the gesture
+    /// starts the playing book's own timer, of the duration last used, and
+    /// leaves the first window's timer and book alone. Until November 13 it
+    /// went to the reader that set the last timer: it restarted the paused
+    /// book's timer and played that book, pausing the one being heard.
+    func testTheRestartGestureReachesTheBookBeingHeard() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.text, titled: "Gesture A"), in: windowA)
+        a.startSleepTimer(duration: .minutes(15))
+        windowA.sleepTimer.remainingSeconds = 160
+        a.pause(playingPauseSound: false)
+        let b = openReader(for: try makeBook(.audio, titled: "Gesture B"), in: windowB)
+        b.play()
+        XCTAssertTrue(eventually { b.audioPlaybackService.isPlaying }, "B never played")
+        XCTAssertEqual(coordinator.activeOwnerID, b.readerID, "The book being heard does not own Now Playing")
+
+        let gesture = try restartGesture(through: coordinator)
+        XCTAssertEqual(
+            gesture[NowPlayingService.restartGestureOwnerKey] as? UUID, b.readerID,
+            "The gesture does not name the reader that owns Now Playing"
+        )
+        let recorder = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil, userInfo: gesture)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Timer restarted: 15 minutes."])
+        XCTAssertEqual(windowB.sleepTimer.ownerID, b.readerID, "The book being heard did not start its own timer")
+        XCTAssertEqual(windowB.sleepTimer.duration, .minutes(15))
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 160, "The gesture restarted the paused book's timer")
+        XCTAssertFalse(a.isPlaybackUnderWay, "The gesture played the paused book")
+        XCTAssertTrue(b.isPlaybackUnderWay, "The gesture paused the book being heard")
+    }
+
+    /// Makes `coordinator` see the restart gesture, twice Previous Track, as
+    /// the AirPods send it, and returns what its Restart Sleep Timer carries.
+    /// The coordinator posts it to the app's notification center, where no
+    /// reader of the test listens; the test hands it to its own.
+    private func restartGesture(
+        through coordinator: NowPlayingService,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> [AnyHashable: Any] {
+        var posted: Notification?
+        NotificationCenter.default.publisher(for: .restartSleepTimer)
+            .sink { posted = $0 }
+            .store(in: &subscriptions)
+        coordinator.updateGestureSettings(enabled: true, pattern: "previousTrack,previousTrack", window: 5)
+        defer { coordinator.updateGestureSettings(enabled: false, pattern: "previousTrack,previousTrack", window: 5) }
+        XCTAssertEqual(coordinator.acceptRemoteCommand(.previousTrack), .success, file: file, line: line)
+        XCTAssertEqual(coordinator.acceptRemoteCommand(.previousTrack), .success, file: file, line: line)
+        XCTAssertTrue(eventually { posted != nil }, "The gesture posted nothing", file: file, line: line)
+        return try XCTUnwrap(posted?.userInfo, "The gesture named no reader", file: file, line: line)
+    }
+
     /// A menu command, which carries no window, is the key window's, and a
     /// sheet's command its window's: Show Sleep Timer opens the sheet of that
     /// window's reader, which shows that window's timer.

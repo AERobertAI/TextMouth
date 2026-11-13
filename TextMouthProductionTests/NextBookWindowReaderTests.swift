@@ -183,8 +183,7 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// switches to it (0.2.5): it is held for the book from the announcement,
     /// still this reader's, with exactly one owner, until the reader that
     /// takes the window over has loaded; then it is that reader's, running,
-    /// with its time left as it was. The old reader's close leaves it running,
-    /// and the restart gesture's last owner is the new reader.
+    /// with its time left as it was. The old reader's close leaves it running.
     func testARunningSleepTimerGoesOnWithASwitchedWindow() throws {
         preserveSharedSleepTimer()
         let folder = try makeFolderWorld("SwitchTimer")
@@ -210,7 +209,6 @@ final class NextBookWindowReaderTests: XCTestCase {
         old.close()
         XCTAssertTrue(timer.isActive, "The old reader's close stopped the timer")
         XCTAssertEqual(timer.ownerID, new.readerID)
-        XCTAssertEqual(timer.lastOwnerID, new.readerID, "Restart Sleep Timer would go to the closed reader")
     }
 
     /// The timer goes on in a new window too, as a busy window or A New
