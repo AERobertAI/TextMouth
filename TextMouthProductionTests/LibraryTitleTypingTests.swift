@@ -77,18 +77,24 @@ final class LibraryTitleTypingTests: XCTestCase {
         let window = Self.window()
         let other = Self.window()
         let claim = TitleTypingSpaceClaim.shared
+        // The claim's clock, set by the test, which the manager reads too.
+        let start = ProcessInfo.processInfo.systemUptime
+        var now = start
+        let previousClock = TitleTypingSpaceClaim.clock
+        TitleTypingSpaceClaim.clock = { now }
         defer {
+            TitleTypingSpaceClaim.clock = previousClock
             claim.release(in: window)
             window.close()
             other.close()
         }
-        // Presses far apart on the events' time line, so none chains with
-        // another into a double press.
-        let start = ProcessInfo.processInfo.systemUptime
         let space = KeyBinding(key: "space")
         // The list has the keyboard unless a press names another responder.
         let list = NSTableView()
+        // Presses far apart on the events' time line, so none chains with
+        // another into a double press.
         func pressSpace(at offset: TimeInterval, in keyWindow: NSWindow, on responder: NSResponder? = nil) throws -> Bool {
+            now = start + offset
             let event = try ShortcutKeyPresses.keyPress(of: space, at: start + offset)
             return manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: responder ?? list)
         }
@@ -115,12 +121,22 @@ final class LibraryTitleTypingTests: XCTestCase {
     /// with titles inverted, "hobbit, t" is The Hobbit too.
     ///
     /// Only keys that reach a row, or that letter navigation takes, are
-    /// typed, since a key nobody takes would make the Mac beep.
+    /// typed, since a key nobody takes would make the Mac beep: the first H
+    /// of each choice that passes over articles reaches a row by AppKit's
+    /// type select too, and if that is what took it (Hamlet, not The
+    /// Hobbit, selected) the test stops there. Time is the test's own
+    /// clock, stepped past the interval for a pause, so nothing waits.
     func testTypedLettersSelectTheRowEachChoiceNames() throws {
         let recorder = InfoSynthesizerRecorder()
         let previousSynthesizer = LibraryInfoSpeaker.makeSynthesizer
         LibraryInfoSpeaker.makeSynthesizer = { recorder }
-        defer { LibraryInfoSpeaker.makeSynthesizer = previousSynthesizer }
+        var now = ProcessInfo.processInfo.systemUptime
+        let previousClock = TitleTypingSpaceClaim.clock
+        TitleTypingSpaceClaim.clock = { now }
+        defer {
+            LibraryInfoSpeaker.makeSynthesizer = previousSynthesizer
+            TitleTypingSpaceClaim.clock = previousClock
+        }
         let store = TextMouthRuntime.current.preferences
         preservePreferences([LeadingArticles.preference.key], in: store)
 
@@ -176,16 +192,18 @@ final class LibraryTitleTypingTests: XCTestCase {
                 let spoken = utterance.speechString
                 return spoken == LibraryInfoWording.nothingSelected ? nil : spoken.components(separatedBy: ". ").first
             }
-            /// Types `text` into the window, key by key, as the keyboard does.
+            /// Types `text` into the window, key by key, as the keyboard
+            /// does, each key a tenth of a second after the one before.
             func type(_ text: String) throws {
                 for character in text {
+                    now += 0.1
                     hosted.window.sendEvent(try Self.keyDown(character, in: hosted.window))
                     flush(hosted.hostingView)
                 }
             }
-            /// Waits out the time typed letters add up within.
+            /// Lets the time typed letters add up within pass.
             func pause() {
-                settle(hosted.hostingView, seconds: LibraryTitleTyping.interval + 0.3)
+                now += LibraryTitleTyping.interval + 0.5
             }
 
             switch choice {
@@ -194,6 +212,14 @@ final class LibraryTitleTypingTests: XCTestCase {
                 try type("h")
                 XCTAssertEqual(selectedTitle(), "Hamlet", "\(choice)")
             case .ignoredWhenTyping, .ignoredWhenTypingAndSorting:
+                // H reaches a row whoever takes it; only letter navigation
+                // that passes over articles reaches The Hobbit. Without it,
+                // no further key is typed, as one might reach nothing.
+                try type("h")
+                let first = selectedTitle()
+                guard first == "The Hobbit" else {
+                    return XCTFail("\(choice): H selected \(first ?? "nothing"), not The Hobbit; letter navigation did not take the key")
+                }
                 var steps: [String] = []
                 func expect(_ typed: String, _ title: String?, pausingFirst: Bool = true) throws {
                     if pausingFirst { pause() }
@@ -203,7 +229,6 @@ final class LibraryTitleTypingTests: XCTestCase {
                         steps.append("\"\(typed)\" selected \(selected ?? "nothing"), not \(title ?? "nothing")")
                     }
                 }
-                try expect("h", "The Hobbit", pausingFirst: false)
                 try expect("t", "Treasure Island")
                 try expect("the h", "The Hobbit")
                 try expect("ha", "Hamlet")
@@ -231,13 +256,17 @@ final class LibraryTitleTypingTests: XCTestCase {
     }
 
     /// Typing a title far down a long list selects it and scrolls it into
-    /// view, as the list's own type select does.
+    /// view, as the list's own type select does. The list ends with The
+    /// Zebra and then Theodora, so T reaches Theodora, the last row, only by
+    /// letter navigation that passes over articles, and The Zebra by
+    /// AppKit's own type select; either way T reaches a row, so nothing
+    /// beeps.
     func testTheRowTypedToIsScrolledIntoView() throws {
         let store = TextMouthRuntime.current.preferences
         preservePreferences([LeadingArticles.preference.key], in: store)
         LeadingArticles.preference.write(.ignoredWhenTyping, to: store)
         let folder = "Long Shelf"
-        let titles = (1...60).map { String(format: "Volume %02d", $0) } + ["The Zebra"]
+        let titles = (1...60).map { String(format: "Volume %02d", $0) } + ["The Zebra", "Theodora"]
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(
             books: titles.enumerated().map { index, title in
@@ -277,11 +306,11 @@ final class LibraryTitleTypingTests: XCTestCase {
         let visibleBefore = table.rows(in: table.visibleRect)
         XCTAssertLessThan(visibleBefore.location + visibleBefore.length, table.numberOfRows, "the whole list fit the window, so nothing could scroll")
 
-        hosted.window.sendEvent(try Self.keyDown("z", in: hosted.window))
+        hosted.window.sendEvent(try Self.keyDown("t", in: hosted.window))
         settle(hosted.hostingView, seconds: 0.5)
 
         let selected = table.selectedRow
-        XCTAssertEqual(selected, table.numberOfRows - 1, "Z did not select The Zebra, the last row")
+        XCTAssertEqual(selected, table.numberOfRows - 1, "T did not select Theodora, the last row (The Zebra is the row before)")
         let visible = table.rows(in: table.visibleRect)
         XCTAssertTrue(
             NSLocationInRange(selected, visible),

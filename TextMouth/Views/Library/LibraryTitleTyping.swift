@@ -46,13 +46,19 @@ struct LibraryTitleTyping: ViewModifier {
     }
 
     /// Acts on `press` as letter navigation: returns `.ignored` for a key
-    /// the list's own handling keeps, and `.handled` for one typed here.
+    /// the list's own handling keeps, and `.handled` for one typed here. A
+    /// key that is not typing, such as an arrow, ends the search, so the
+    /// next letter starts afresh.
     private func take(_ press: KeyPress, scrollingWith proxy: ScrollViewProxy) -> KeyPress.Result {
-        guard articles.typesWithoutArticles,
-              Self.isTyping(press.characters, modifiers: press.modifiers) else { return .ignored }
+        guard articles.typesWithoutArticles else { return .ignored }
+        guard Self.isTyping(press.characters, modifiers: press.modifiers) else {
+            search = TitleTypingSearch()
+            TitleTypingSpaceClaim.shared.release(in: window)
+            return .ignored
+        }
         // A held key types once; its repeats go nowhere.
         guard press.phase == .down else { return .handled }
-        let now = ProcessInfo.processInfo.systemUptime
+        let now = TitleTypingSpaceClaim.clock()
         let interval = Self.interval
         let listed = rows()
         let inverted = articles.sortsWithoutArticles
@@ -112,10 +118,15 @@ final class TitleTypingSpaceClaim {
     /// The one claim the app's Library windows share.
     static let shared = TitleTypingSpaceClaim()
 
+    /// The clock the list's letter navigation and its Space claim are both
+    /// timed by, read as each key is handled, in seconds of system uptime;
+    /// one clock, so the shortcut manager and the list never disagree on
+    /// whether a Space came in time. A test sets its own, so nothing waits.
+    static var clock: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+
     /// The window claiming a Space, held weakly; nil for none.
     private weak var window: PlatformWindow?
-    /// Until when, in seconds of system uptime, the clock key events are
-    /// stamped by.
+    /// Until when, by `clock`.
     private var until: TimeInterval = 0
 
     /// Claims a Space pressed in `window` until `time`, for its list.
@@ -137,5 +148,11 @@ final class TitleTypingSpaceClaim {
     func takesSpace(in window: PlatformWindow?, at time: TimeInterval) -> Bool {
         guard let window, let claimed = self.window, claimed === window else { return false }
         return time <= until
+    }
+
+    /// Whether a Space pressed in `window` now, by `clock`, continues a
+    /// title its list is typing.
+    func takesSpace(in window: PlatformWindow?) -> Bool {
+        takesSpace(in: window, at: Self.clock())
     }
 }
