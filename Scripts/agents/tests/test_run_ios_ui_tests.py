@@ -136,6 +136,27 @@ class ReadingTheLogTests(unittest.TestCase):
             "Test Case '-[M.AUITests testX]' failed (1.0 seconds).\n")
         self.assertLessEqual(len(parsed["failures"][0]), len("FAILED AUITests.testX at A.swift:1: ") + uitests.MESSAGE_LIMIT)
 
+    def test_a_test_that_started_and_never_finished_is_named_as_failed(self):
+        """The host app crashed in the middle of a test, or the time limit stopped the run there: no outcome line follows its
+        start, and the summary must still name it (with the bundle) and count it."""
+        parsed = self.parsed("Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' started.\n"
+                             "Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\n"
+                             "Test Case '-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n")
+        self.assertEqual(parsed["cases"], {"ReaderUITests.testA": "passed", "IOSRuntimeTests.testB": "failed"})
+        self.assertEqual(parsed["failures"], [
+            f"FAILED IOSRuntimeTests.testB (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_started_test_that_printed_an_error_keeps_the_errors_message(self):
+        parsed = self.parsed(f"Test Case '-[TextMouthiOSUITests.AUITests testX]' started.\n"
+                             f"{RUNNER_ROOT}/A.swift:7: error: -[TextMouthiOSUITests.AUITests testX] : it broke\n")
+        self.assertEqual(parsed["failures"], ["FAILED AUITests.testX (TextMouthiOSUITests) at A.swift:7: it broke"])
+
+    def test_a_test_that_started_twice_and_finished_once_is_not_unfinished(self):
+        parsed = self.parsed("Test Case '-[M.AUITests testX]' started.\nTest Case '-[M.AUITests testX]' started.\n"
+                             "Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n")
+        self.assertEqual(parsed["cases"], {"AUITests.testX": "passed"})
+        self.assertEqual(parsed["failures"], [])
+
     def test_a_test_printed_twice_counts_once(self):
         parsed = self.parsed("Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n"
                              "Test case 'AUITests.testX()' passed on 'iPhone 17 - X (1)' (1.0 seconds)\n")

@@ -272,6 +272,11 @@ def test_environment():
 # "Test case 'ReaderUITests.testX()' passed on 'iPhone 17 - TextMouthiOS (4242)' (3.4 seconds)".
 CASE_OBJC = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed|skipped) \(", re.M)
 CASE_SWIFT = re.compile(r"^Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (passed|failed|skipped) on ", re.M)
+# A test the test process began: "Test Case '-[TextMouthiOSUITests.ReaderUITests testX]' started." A test that began and has no
+# outcome line was cut off: the host app crashed in the middle of it, or the time limit stopped the run there.
+CASE_STARTED = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' started\.", re.M)
+# What the summary says of a test that began and never finished, in place of a failure message.
+UNFINISHED = "started and never finished (the host app crashed, or the run was stopped, in the middle of it)"
 # A failure the test process printed: "<path>:<line>: error: -[Module.Class test] : <message>".
 FAILURE_LINE = re.compile(r"^(\S.*?):(\d+): error: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\] : (.*)$", re.M)
 # A skip: "<path>:<line>: -[Module.Class test] : Test skipped - <why>".
@@ -296,7 +301,8 @@ def relative(path, root=ROOT):
 
 def parse_results(log_text, root=ROOT):
     """What an xcodebuild log says of the tests: a dictionary with
-    "cases" (a dictionary from "Class.test" to "passed", "failed" or "skipped"; a test printed twice keeps the last),
+    "cases" (a dictionary from "Class.test" to "passed", "failed" or "skipped"; a test printed twice keeps the last; a
+    test that started and has no outcome line, because the host app crashed in it or the run was stopped there, is "failed"),
     "bundles" (a dictionary from "Class.test" to the bundle the test is in, "TextMouthiOSTests" or
     "TextMouthiOSUITests", or "" when neither the log nor the sources under `root` say),
     "failures" ("FAILED Class.test (Bundle) at path:line: message", for each failed case, the first message of the case;
@@ -311,6 +317,16 @@ def parse_results(log_text, root=ROOT):
             modules[f"{owner}.{test}"] = module
     for owner, test, outcome in CASE_SWIFT.findall(log_text):
         cases[f"{owner}.{test}"] = outcome
+    # A test that started and has no outcome line is a failure, named: otherwise a crash in the middle of a test would show
+    # only through the status and the count, and the summary would not say which test it was.
+    unfinished = set()
+    for module, owner, test in CASE_STARTED.findall(log_text):
+        name = f"{owner}.{test}"
+        if name not in cases:
+            cases[name] = "failed"
+            unfinished.add(name)
+            if module in BUNDLES:
+                modules[name] = module
     # xcodebuild's own form names no bundle, so a class it does not name there is looked up in the sources.
     bundles = {name: modules.get(name) or ios_ui_tests.bundle_of(name.split(".", 1)[0], root) for name in cases}
     first_error = {}
@@ -320,7 +336,9 @@ def parse_results(log_text, root=ROOT):
     for name, outcome in cases.items():
         if outcome != "failed":
             continue
-        where, message = (f"{first_error[name][0]}:{first_error[name][1]}", first_error[name][2]) if name in first_error else ("(no location)", "failed")
+        # The first message the test printed, where it printed one; else why it has none.
+        where, message = (f"{first_error[name][0]}:{first_error[name][1]}", first_error[name][2]) if name in first_error \
+            else ("(no location)", UNFINISHED if name in unfinished else "failed")
         named = f"{name} ({bundles[name]})" if bundles[name] else name
         failures.append(f"FAILED {named} at {where}: {message}")
     why = {f"{owner}.{test}": reason.strip()[:MESSAGE_LIMIT] for owner, test, reason in SKIP_LINE.findall(log_text)}
