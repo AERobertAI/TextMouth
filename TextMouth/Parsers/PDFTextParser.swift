@@ -13,6 +13,9 @@ import os
 enum PDFParserError: LocalizedError {
     case fileNotFound(String)
     case cannotOpenPDF
+    /// The PDF opens but is locked by a password TextMouth does not have,
+    /// so PDFKit gives its pages neither text nor a drawing.
+    case passwordProtected
     case noTextContent
     /// No page has embedded text, and OCR could not run where it was
     /// needed, for this reason.
@@ -22,6 +25,7 @@ enum PDFParserError: LocalizedError {
         switch self {
         case .fileNotFound(let path): return "PDF file not found at: \(path)"
         case .cannotOpenPDF: return "The PDF file could not be opened."
+        case .passwordProtected: return "This PDF needs a password to open."
         case .noTextContent: return "No text content could be extracted from the PDF."
         case .ocrFailed(let reason):
             return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))."
@@ -98,7 +102,8 @@ enum PDFTextParser {
     ///   `/PageLabels` ("i", "ii", "1", "A-1"), or its number when it has
     ///   none. A page without text keeps its marker. False writes exactly
     ///   what cache format 3.0.7 wrote.
-    /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
+    /// - Throws: `PDFParserError.passwordProtected` when the PDF is locked
+    ///   by a password, `.ocrFailed` when no page has embedded text
     ///   and OCR could not run, `.noTextContent` when there is no text at
     ///   all, or why the file could not be opened.
     static func extract(
@@ -111,6 +116,13 @@ enum PDFTextParser {
         }
         guard let document = PDFDocument(url: url) else {
             throw PDFParserError.cannotOpenPDF
+        }
+        // A PDF locked by a password opens, but its pages give no text and
+        // cannot be drawn, so without this check it would be reported as a
+        // failure of OCR. Say what is true: it needs a password. (A PDF that
+        // restricts only copying or printing is not locked and reads as usual.)
+        guard !document.isLocked else {
+            throw PDFParserError.passwordProtected
         }
         // However the extraction ends, the outline it read is taken apart
         // before the document is released (`takeApartOutline(of:)`).

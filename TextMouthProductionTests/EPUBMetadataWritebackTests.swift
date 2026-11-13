@@ -1,5 +1,6 @@
 import Combine
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Saving edited EPUB metadata writes the library's copy of the EPUB file
@@ -112,6 +113,49 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         )
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
         XCTAssertEqual(SavedMetadata(try BookInfo.load(from: book.tmbDirectory)), SavedMetadata(book))
+    }
+
+    /// Saving a book's details finds the package document the way reading
+    /// does, without regard to case (ST09): a book whose container.xml names
+    /// `OEBPS/Content.opf` while its ZIP holds `oebps/content.opf` is saved,
+    /// the edit reads back, and the member keeps the spelling the ZIP used
+    /// (no second copy of the package document appears).
+    func testSavingDetailsFindsAPackageDocumentWhoseCaseDiffersFromTheContainers() throws {
+        let container = """
+        <?xml version="1.0"?>
+        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+        <rootfiles><rootfile full-path="OEBPS/Content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+        </container>
+        """
+        let opf = TextPipelineFixtures.packageDocument(
+            metadata: "<dc:title>Before</dc:title><dc:creator>Someone Else</dc:creator>"
+        )
+        let chapter = "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body><p>Words.</p></body></html>"
+        let epub = try TextPipelineFixtures.writeEPUB([
+            TestZIPEntry("mimetype", Data("application/epub+zip".utf8)),
+            TestZIPEntry("META-INF/container.xml", Data(container.utf8)),
+            TestZIPEntry("oebps/content.opf", Data(opf.utf8)),
+            TestZIPEntry("oebps/chapter.xhtml", Data(chapter.utf8)),
+        ], named: "lowercase-package.epub", for: self)
+        var metadata = try EPUBParser.readMetadata(url: epub)
+        XCTAssertEqual(metadata.title, "Before", "the fixture must be readable before it is written")
+        metadata.title = "After"
+
+        XCTAssertNoThrow(try EPUBParser.writeMetadata(metadata, to: epub))
+
+        XCTAssertEqual(try EPUBParser.readMetadata(url: epub).title, "After")
+        let archive = try XCTUnwrap(Archive.openedForReading(at: epub))
+        let paths = archive.map(\.path)
+        XCTAssertEqual(paths.filter { $0.lowercased() == "oebps/content.opf" }, ["oebps/content.opf"],
+                       "the package document keeps its own spelling and is not duplicated; the members are \(paths)")
+        // Every member is still there, once, and `mimetype` is still first,
+        // as the EPUB container format requires of the book's first entry.
+        XCTAssertEqual(
+            paths.sorted(),
+            ["META-INF/container.xml", "mimetype", "oebps/chapter.xhtml", "oebps/content.opf"],
+            "the members are \(paths)"
+        )
+        XCTAssertEqual(paths.first, "mimetype", "the members are \(paths)")
     }
 
     /// A save records the fields it changed as edited by hand, on the row

@@ -75,8 +75,9 @@ extension XCTestCase {
 
     /// The staged packages in this Mac's Import Staging folder, where an
     /// import builds a book's package before publishing it in the library;
-    /// none when the folder is not there.
-    private func stagedImportPackages() throws -> Set<String> {
+    /// none when the folder is not there. Tests that refuse an import for
+    /// another reason than its text compare it before and after.
+    func stagedImportPackages() throws -> Set<String> {
         try folderEntries(of: MachineLocalPaths.importStaging).filter(ImportStaging.isStagedPackageName)
     }
 }

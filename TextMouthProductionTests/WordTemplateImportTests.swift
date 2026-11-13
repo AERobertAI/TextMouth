@@ -187,6 +187,60 @@ final class WordTemplateImportTests: XCTestCase {
         XCTAssertEqual(allText(of: content), allText(of: expected))
     }
 
+    // MARK: - A document with no text
+
+    /// A Word document of the three forms and the plain .docx whose body
+    /// holds only empty paragraphs and white space is refused with "This
+    /// file has no text to read.", as a blank RTF or ODT is, instead of being
+    /// added as a silent, empty book.
+    func testAWordDocumentWithNoTextIsRefused() throws {
+        let blankBody = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+        <w:p/><w:p><w:r><w:t xml:space="preserve">   </w:t></w:r></w:p><w:p><w:r><w:tab/></w:r></w:p>
+        </w:body></w:document>
+        """
+        var blankDocuments = [try copyOfHeadingDocx(named: "blank.docx")]
+        for form in Self.forms {
+            blankDocuments.append(try makeForm(form))
+        }
+        for url in blankDocuments {
+            try replaceEntry("word/document.xml", in: url) { _ in blankBody }
+
+            XCTAssertThrowsError(try FileImportService.importFileWithReport(from: url), url.lastPathComponent) { error in
+                // The import wraps the refusal in a failure naming the file
+                // and the step it was at (reading the text).
+                guard let failure = error as? ImportFailure, case FileImportError.noTextToRead? = failure.underlying as? FileImportError else {
+                    return XCTFail("\(url.lastPathComponent): expected noTextToRead, got \(error)")
+                }
+                XCTAssertEqual(failure.step, .readingText, url.lastPathComponent)
+                XCTAssertEqual(failure.reason, "Reading its text failed: This file has no text to read.", url.lastPathComponent)
+            }
+        }
+    }
+
+    /// A Word document whose only text is in a table, or only in a text box,
+    /// holds text: it is not refused as blank, and the book opens with the
+    /// words. (A refusal that looked at the body's ordinary paragraphs alone
+    /// would turn both away.)
+    func testAWordDocumentWhoseOnlyTextIsInATableOrATextBoxIsNotRefused() throws {
+        let tableOnly = "<w:tbl><w:tblPr/><w:tr><w:tc><w:p><w:r><w:t>Cell words</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/>"
+        let textBoxOnly = "<w:p><w:r><w:pict><w:txbxContent><w:p><w:r><w:t>Boxed words</w:t></w:r></w:p></w:txbxContent></w:pict></w:r></w:p>"
+        for (label, body, words) in [("table", tableOnly, "Cell words"), ("text box", textBoxOnly, "Boxed words")] {
+            let url = try copyOfHeadingDocx(named: "\(label).docx")
+            try replaceEntry("word/document.xml", in: url) { _ in
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                    + "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>"
+                    + body + "</w:body></w:document>"
+            }
+
+            let imported = try importedForTest(url)
+
+            XCTAssertEqual(imported.book.format, .docx, label)
+            XCTAssertTrue(allText(of: try openedContent(of: imported.book)).contains(words), label)
+        }
+    }
+
     // MARK: - Making the copies
 
     /// A copy of TestData/test_book.docx (a real Word document with Heading
