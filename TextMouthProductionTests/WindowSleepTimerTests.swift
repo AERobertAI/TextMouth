@@ -760,7 +760,10 @@ final class WindowSleepTimerTests: XCTestCase {
                 // Posts the command until the key window's view has taken it:
                 // SwiftUI subscribes a hosted view to it a moment after the
                 // view is made, and a command posted before then is lost. A
-                // view that is not the key window's takes none.
+                // view that is not the key window's takes none; both are given
+                // a moment to subscribe first, so that a command the other
+                // view wrongly took would show.
+                spinMainRunLoop(for: 0.3)
                 let opened = waitUntil(timeout: 5) {
                     NotificationCenter.default.post(name: .showSleepTimer, object: nil)
                     return boxA.panels.sleepTimer
