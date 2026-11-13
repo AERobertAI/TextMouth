@@ -23,7 +23,9 @@ enum MarkdownDocParser {
     /// lists are counted before anything is built (`MarkdownNesting`) and
     /// refused past `deepestNesting`; and the parse, the walk, and the release
     /// of the tree all run on `MarkupGuard.onLargeStack`, the walk stopping at
-    /// the limit on the tree (`MarkupGuard.Limits.deepestParsedTree`).
+    /// the limit on the tree (`PlainTextExtractor.deepestTree`: the limit's
+    /// own `deepestTree` when set, else twice `deepestNesting` and 16 more,
+    /// 272 levels by default).
     ///
     /// - Parameter includeNavigationHeadings: Whether the generated markers of
     ///   content.md are read: heading annotations, which add navigation
