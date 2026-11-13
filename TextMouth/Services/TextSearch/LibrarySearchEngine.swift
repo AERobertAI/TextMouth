@@ -145,11 +145,13 @@ enum LibrarySearchOutcome: Equatable, Sendable {
 ///
 /// - **Exactly what Search in Book finds.** The chapters searched are the
 ///   reader's, from the same parse, and every match is found by the matcher
-///   Search in Book uses (`BookTextSearch.Matcher`), its context by the same
-///   function (`BookTextSearch.contextSnippet`), and where it is by the same
-///   rule (`BookSearchView.locationTitles`). A literal query is first looked
-///   for among a chapter's bytes (`LibrarySearchPrefilter`), which passes
-///   over the lines that can hold no match and changes nothing found.
+///   Search in Book uses (`BookTextSearch.Matcher`), over the whole chapter
+///   with the same calls, its context by the same function
+///   (`BookTextSearch.contextSnippet`), and where it is by the same rule
+///   (`BookSearchView.locationTitles`). For a literal query, a chapter's
+///   bytes are first looked over (`LibrarySearchPrefilter`), which passes
+///   over a chapter none of whose lines can hold a match and changes nothing
+///   found.
 /// - **Spread over the Mac's cores.** Books are searched in parallel on
 ///   Dispatch's threads, never in Swift's concurrency pool, which has one
 ///   thread a core and must stay free for the rest of the app: a plain
@@ -416,59 +418,40 @@ fileprivate struct BookScan {
     }
 
     /// Searches chapter `index`, whose UTF-8 is `bytes` and whose text is
-    /// `knownText` when the caller has it (it is made from the bytes when a
-    /// line may hold a match). Returns false once the book's search is done:
-    /// its count past the limit, or the search cancelled.
+    /// `knownText` when the caller has it (it is made from the bytes when the
+    /// chapter may hold a match). Returns false once the book's search is
+    /// done: its count past the limit, or the search cancelled.
     mutating func searchChapter(
         _ index: Int,
         bytes: UnsafeBufferPointer<UInt8>,
         text knownText: String?,
         isCancelled: () -> Bool
     ) -> Bool {
-        // Copied, so the closures below, which count each match into this
-        // scan, never overlap a read of the scan's own properties.
+        // Copied, so the closure below, which counts each match into this
+        // scan, never overlaps a read of the scan's own properties.
         let matcher = matcher
-        guard let prefilter else {
-            // A whole chapter, as Search in Book searches it.
-            let text = knownText ?? String(decoding: bytes, as: UTF8.self)
-            matcher.enumerateRanges(in: text, shouldStop: isCancelled) { match in
-                record(match, in: text, chapter: index)
+        // A chapter none of whose lines may hold a match is passed over
+        // without being decoded; any other is searched whole.
+        if let prefilter {
+            var mayHoldAMatch = false
+            prefilter.forEachCandidateLine(in: bytes) { _ in
+                mayHoldAMatch = true
+                return false
             }
-            return !reachedLimit && !isCancelled()
+            guard mayHoldAMatch else { return !isCancelled() }
         }
-
-        // Only the lines that may hold a match, each searched by the same
-        // matcher with the whole chapter around it.
-        var text = knownText
-        var nsText: NSString?
-        var countedBytes = 0
-        var countedUnits = 0
-        var goOn = true
-        prefilter.forEachCandidateLine(in: bytes) { line in
-            let chapterText = text ?? String(decoding: bytes, as: UTF8.self)
-            text = chapterText
-            let searched = nsText ?? (chapterText as NSString)
-            nsText = searched
-            countedUnits += UTF8Counting.utf16Length(of: UnsafeBufferPointer(rebasing: bytes[countedBytes..<line.lowerBound]))
-            countedBytes = line.lowerBound
-            // The line with the line feeds on either side of it, if any: the
-            // matcher sees what is around the line's first and last
-            // Characters as it does in the whole chapter, and no match can
-            // begin or end at a line feed, which the query does not hold.
-            let before = line.lowerBound > 0 ? 1 : 0
-            let after = line.upperBound < bytes.count ? 1 : 0
-            let units = UTF8Counting.utf16Length(of: UnsafeBufferPointer(rebasing: bytes[line]))
-            matcher.enumerateLiteralRanges(
-                in: searched,
-                within: NSRange(location: countedUnits - before, length: before + units + after),
-                shouldStop: isCancelled
-            ) { match in
-                record(match, in: chapterText, chapter: index)
-            }
-            goOn = !reachedLimit && !isCancelled()
-            return goOn
+        // The whole chapter, exactly as Search in Book searches it: the same
+        // text, the same calls from its start, so the same matches.
+        // Foundation's case-insensitive search does not answer a range alone
+        // as it answers the same text inside a longer one (it takes a digit's
+        // compatibility forms for the digit in a short range only; found on
+        // November 13, LIBRARY-SEARCH-RESEARCH-2026-11-13.md, section 3), so
+        // no part of a chapter is searched on its own.
+        let text = knownText ?? String(decoding: bytes, as: UTF8.self)
+        matcher.enumerateRanges(in: text, shouldStop: isCancelled) { match in
+            record(match, in: text, chapter: index)
         }
-        return goOn
+        return !reachedLimit && !isCancelled()
     }
 
     /// Moves past a chapter whose text is `utf16Length` units long.
