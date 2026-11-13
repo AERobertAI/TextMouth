@@ -381,35 +381,54 @@ extension LibraryViewModel {
 
     /// The books a Library window shows at `location`: its view's or
     /// folder's books in the order of the sort it shows (`sortState(at:)`),
-    /// narrowed to those whose title or author contains `search`, ignoring
-    /// case. An empty search narrows nothing.
+    /// titles read as the Leading articles setting says (`leadingArticles`),
+    /// narrowed to those `search` finds (`book(_:isFoundBy:articles:)`). An
+    /// empty search narrows nothing.
     ///
     /// Each list is derived once and kept until a book is added, removed,
-    /// or moved, a field it is sorted, searched, or filtered by changes, or
-    /// what its view's filter reads beyond the books changes (TODO PERF10,
-    /// `LibraryListCache`); any other change, such as a reading position,
-    /// reaches the books it returns without sorting them again. So a window
-    /// may read it as often as it draws.
+    /// or moved, a field it is sorted, searched, or filtered by changes, the
+    /// Leading articles setting changes, or what its view's filter reads
+    /// beyond the books changes (TODO PERF10, `LibraryListCache`); any other
+    /// change, such as a reading position, reaches the books it returns
+    /// without sorting them again. So a window may read it as often as it
+    /// draws.
     ///
     /// The Reading List is never sorted: it shows its books in the order
     /// the user arranged (FR09), and a search narrows that order.
     func displayedBooks(at location: LibraryLocation, matching search: String = "") -> [Book] {
         let sort = sortState(at: location)
+        let articles = leadingArticles
         // A feed's folder lists its items beside its books (FR11), so which
         // feed the folder shown holds is part of what the list is.
         let feedID = location.view.kind == .folders ? feedID(listedIn: location.folderPath) : nil
         let context = filterContext(for: location)
-        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "", feedID: feedID, context: context)
+        let unsearched = LibraryListCache.Key(
+            location: location, sort: sort, search: "", feedID: feedID, context: context, articles: articles
+        )
         let books = listCache.books(for: unsearched, in: library) {
-            let listed = self.books(listedAt: location, context: context)
-            return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort)
+            let listed = self.books(listedAt: location, context: context, articles: articles)
+            return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort, articles: articles)
         }
         guard !search.isEmpty else { return books }
         let query = search.lowercased()
-        let searched = LibraryListCache.Key(location: location, sort: sort, search: query, feedID: feedID, context: context)
+        let searched = LibraryListCache.Key(
+            location: location, sort: sort, search: query, feedID: feedID, context: context, articles: articles
+        )
         return listCache.books(for: searched, in: library) {
-            books.filter { $0.title.lowercased().contains(query) || $0.author.lowercased().contains(query) }
+            books.filter { Self.book($0, isFoundBy: query, articles: articles) }
         }
+    }
+
+    /// Whether a search for `query`, lowercased already, finds `book`: its
+    /// title holds the query, ignoring case, as it is written or, while the
+    /// list shows titles with their articles after them, as its row shows
+    /// it ("hobbit, the"); or its author does.
+    nonisolated static func book(_ book: Book, isFoundBy query: String, articles: LeadingArticles) -> Bool {
+        if book.title.lowercased().contains(query) || book.author.lowercased().contains(query) {
+            return true
+        }
+        guard articles.sortsWithoutArticles else { return false }
+        return articles.shownTitle(book.title, language: book.epubLanguage).lowercased().contains(query)
     }
 
     /// How many books are in the folder `path` and every folder below it,
@@ -428,12 +447,13 @@ extension LibraryViewModel {
 
     /// Sort books as `sort` orders them (TODO A06): the comparator the
     /// location's sort derives, which keeps manual order in the order the
-    /// user arranged. A File Size sort reads each book's size measured once
-    /// and kept until its file changes (TODO PERF10); no other sort reads
-    /// the disk.
-    func sortedBooks(_ books: [Book], by sort: LibrarySortState) -> [Book] {
+    /// user arranged, titles read as `articles` says, or, when nil, as the
+    /// Leading articles setting says (`leadingArticles`). A File Size sort
+    /// reads each book's size measured once and kept until its file changes
+    /// (TODO PERF10); no other sort reads the disk.
+    func sortedBooks(_ books: [Book], by sort: LibrarySortState, articles: LeadingArticles? = nil) -> [Book] {
         let sizes = sort.field == .fileSize ? listCache.fileSizes(of: books) : [:]
-        return sort.sorted(books, fileSizes: sizes)
+        return sort.sorted(books, fileSizes: sizes, articles: articles ?? leadingArticles)
     }
 
     /// The books, episodes, and articles `location` lists, before sorting
@@ -451,11 +471,13 @@ extension LibraryViewModel {
     /// standing for them. A limit chosen by the view's sort ranks the rows by
     /// `sort`, or by the sort saved for the location when nil, so the view
     /// editor counts a draft by its own sort (review of October 31, 2026,
-    /// finding 8).
+    /// finding 8). A limit breaks ties by title as `articles` reads titles,
+    /// or, when nil, as the Leading articles setting says.
     func books(
         listedAt location: LibraryLocation,
         context: LibraryViewFilterContext?,
-        sortedBy sort: LibrarySortState? = nil
+        sortedBy sort: LibrarySortState? = nil,
+        articles: LeadingArticles? = nil
     ) -> [Book] {
         switch location.view.kind {
         case .folders:
@@ -464,11 +486,13 @@ extension LibraryViewModel {
             return readingListBooks
         case .filter:
             guard let filter = location.view.filter else { return [] }
+            let articles = articles ?? leadingArticles
             return LibraryViewFilterEvaluator.items(
                 of: filter,
                 in: library.books,
                 context: context ?? LibraryViewFilterContext(),
-                sorted: { self.sortedBooks($0, by: sort ?? self.sortState(at: location)) }
+                sorted: { self.sortedBooks($0, by: sort ?? self.sortState(at: location), articles: articles) },
+                articles: articles
             )
         }
     }

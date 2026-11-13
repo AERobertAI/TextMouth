@@ -317,9 +317,10 @@ extension LibrarySortState {
     /// uses. Manual order is always ascending, because it has no direction.
     /// File sizes come from `fileSizes`, which `LibraryViewModel.sortedBooks`
     /// takes from sizes measured once per book and kept until its file
-    /// changes (`LibraryListCache`), never once per comparison.
-    func sorted(_ books: [Book], fileSizes: [UUID: Int] = [:]) -> [Book] {
-        LibraryBookSorter.sorted(books, by: field, ascending: isAscending, fileSizes: fileSizes)
+    /// changes (`LibraryListCache`), never once per comparison. Titles are
+    /// read as `articles`, the Leading articles setting, says.
+    func sorted(_ books: [Book], fileSizes: [UUID: Int] = [:], articles: LeadingArticles = .partOfTitle) -> [Book] {
+        LibraryBookSorter.sorted(books, by: field, ascending: isAscending, fileSizes: fileSizes, articles: articles)
     }
 }
 

@@ -15,9 +15,13 @@ import Foundation
 ///   their order in the library, and their folders; and which books the
 ///   reading list holds, in its order (FR09).
 /// - **Sort keys**: a field a sort, the Recent category, or a search reads:
-///   the title, the author, the dates added and last opened, the manual
-///   order, and the book's file (its path and content hash, which the size a
-///   File Size sort measures follows).
+///   the title, the author, the metadata language (whose articles a title
+///   may be sorted without, `LeadingArticles`), the dates added and last
+///   opened, the manual order, and the book's file (its path and content
+///   hash, which the size a File Size sort measures follows).
+///
+/// A list is also keyed by the Leading articles setting it was sorted
+/// under, so changing the setting derives each list again.
 ///
 /// Such a change bumps the list revision, which drops every list. Any other
 /// change, such as a reading position, a word count, or a voice setting,
@@ -61,17 +65,23 @@ final class LibraryListCache {
         /// the library, changes it, so the list is derived again although no
         /// book changed.
         let feedID: UUID?
+        /// How titles are read (the Leading articles setting), which a sort,
+        /// a tie broken by title, and a search all follow, so a list derived
+        /// before the setting changed is derived again.
+        let articles: LeadingArticles
 
         /// The list at `location`, in `sort`'s order, narrowed by `search`
         /// (already lowercased; "" for none), holding the items of the feed
         /// `feedID` when the folder shown is that feed's, its filter reading
-        /// `context` (`LibraryViewModel.filterContext(for:)`).
+        /// `context` (`LibraryViewModel.filterContext(for:)`), its titles
+        /// read as `articles` says.
         init(
             location: LibraryLocation,
             sort: LibrarySortState,
             search: String,
             feedID: UUID? = nil,
-            context: LibraryViewFilterContext? = nil
+            context: LibraryViewFilterContext? = nil,
+            articles: LeadingArticles = .partOfTitle
         ) {
             let showsFolders = location.view.kind == .folders
             view = location.view.id
@@ -82,6 +92,7 @@ final class LibraryListCache {
             isAscending = sort.isAscending
             self.search = search
             self.feedID = showsFolders ? feedID : nil
+            self.articles = articles
         }
     }
 
@@ -299,8 +310,9 @@ private extension Book {
     /// listed by their feed, FR11), its format (which a view's format
     /// condition tests, and which tells an episode from an article), the
     /// fields sorts and Recently Opened order by, the title and author a
-    /// search matches, and the file path and content hash a measured size
-    /// follows.
+    /// search matches, the metadata language whose articles a title sorts
+    /// and is searched without (`LeadingArticles`), and the file path and
+    /// content hash a measured size follows.
     func hasSameListFields(as other: Book) -> Bool {
         id == other.id
             && folderPath == other.folderPath
@@ -308,6 +320,7 @@ private extension Book {
             && format == other.format
             && title == other.title
             && author == other.author
+            && epubLanguage == other.epubLanguage
             && dateAdded == other.dateAdded
             && lastOpened == other.lastOpened
             && manualSortOrder == other.manualSortOrder
