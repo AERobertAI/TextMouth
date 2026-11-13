@@ -427,8 +427,7 @@ extension LibraryViewModel {
         if book.title.lowercased().contains(query) || book.author.lowercased().contains(query) {
             return true
         }
-        guard articles.sortsWithoutArticles else { return false }
-        return articles.shownTitle(book.title, language: book.epubLanguage).lowercased().contains(query)
+        return articles.rowTitle(of: book)?.lowercased().contains(query) ?? false
     }
 
     /// How many books are in the folder `path` and every folder below it,

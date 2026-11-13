@@ -347,6 +347,10 @@ struct LibraryView: View {
         // the model again.
         let allBooks = displayedBooks
         let books = filteredBooks
+        // How titles are sorted, shown, and found by typing (the Leading
+        // articles setting), read once for the rows, the rotor, and the
+        // Feeds section.
+        let articles = libraryViewModel.leadingArticles
         // Which views shown when applicable list something, asked once for
         // the body, and shared by the View pop-up and Go to View (review of
         // October 31, 2026, finding 4).
@@ -481,7 +485,13 @@ struct LibraryView: View {
                 // row also offers its feed's folder's commands, as the
                 // folder's row, left out where the feed's row stands for
                 // it, did.
-                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction) { row in
+                LibraryFeedsSection(
+                    center: feedFolders.center,
+                    location: location,
+                    articles: articles,
+                    open: openFeed,
+                    perform: performFeedAction
+                ) { row in
                     if let folder = folder(ofFeedRow: row) {
                         Divider()
                         folderMenu(folder)
@@ -502,8 +512,10 @@ struct LibraryView: View {
             }
             .searchable(text: $searchText, prompt: "Search books")
             .accessibilityRotor("Books") {
+                // Each title as its row shows it ("Hobbit, The" while sorting
+                // passes over articles), in the list's order.
                 ForEach(books) { book in
-                    AccessibilityRotorEntry(book.title, id: book.id)
+                    AccessibilityRotorEntry(articles.rowTitle(of: book) ?? book.title, id: book.id)
                 }
             }
             .accessibilityRotor("Folders") {
@@ -1148,6 +1160,8 @@ struct LibraryView: View {
         let selectionReadingListCommands: [ReadingListCommand]
         /// What the rows' commands do.
         let actions: LibraryBookRowActions
+        /// How the rows show titles (the Leading articles setting).
+        let articles: LeadingArticles
     }
 
     /// The context the rows of `books` share, for a list whose location
@@ -1181,7 +1195,8 @@ struct LibraryView: View {
                 isSelection: selection.count > 1,
                 inList: readingListIDs
             ),
-            actions: rowActions
+            actions: rowActions,
+            articles: libraryViewModel.leadingArticles
         )
     }
 
@@ -1197,6 +1212,8 @@ struct LibraryView: View {
         let isSelectionRow = targets.count > 1
         return LibraryBookListRow(
             book: book,
+            // "Hobbit, The" while sorting passes over articles.
+            shownTitle: context.articles.rowTitle(of: book),
             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
             wpm: settingsViewModel.wordsPerMinute,
             isEditMode: isEditMode,
@@ -1333,6 +1350,7 @@ struct LibraryView: View {
                 folderBooks: allBooks,
                 search: searchText,
                 wordsPerMinute: settingsViewModel.wordsPerMinute,
+                articles: context.articles,
                 bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
                 perform: performFeedItemAction
             )
@@ -1690,7 +1708,8 @@ struct LibraryView: View {
             selectedBookIDs,
             editSelection: editSelection,
             folders: shownFolderRows(of: libraryViewModel.subfoldersOf(currentFolderPath)).shown,
-            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center),
+            // In the order the Feeds section shows them.
+            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: libraryViewModel.leadingArticles),
             books: filteredBooks
         )
     }

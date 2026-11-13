@@ -67,6 +67,14 @@ enum LeadingArticles: String, CaseIterable, Sendable {
         guard sortsWithoutArticles else { return title }
         return FilingTitle(title, language: language).inverted
     }
+
+    /// The title `book`'s row shows in place of the book's own, in the
+    /// articles of English and of its metadata language: inverted while
+    /// sorting passes over articles; nil while titles are shown as written,
+    /// so the row shows the book's own title and makes no new text.
+    func rowTitle(of book: Book) -> String? {
+        sortsWithoutArticles ? shownTitle(book.title, language: book.epubLanguage) : nil
+    }
 }
 
 // MARK: - A Title as a Library Files It

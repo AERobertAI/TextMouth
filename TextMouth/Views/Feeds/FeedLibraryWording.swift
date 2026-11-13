@@ -213,7 +213,8 @@ extension FeedWording {
     /// hour, 4 minutes", each duration as `TimeFormatting.spoken` says it
     /// (#1936). A played item says no progress, only its bookmarks.
     static func itemRowLabel(_ row: FeedItemRowContent) -> String {
-        var parts = [row.title]
+        // The title as the row shows it (the Leading articles setting).
+        var parts = [row.rowTitle]
         if row.isPlayed { parts.append(playedNote(isArticle: row.isArticle)) }
         parts.append(row.state.spokenNote)
         if let reason = row.state.reason { parts.append(reason) }
