@@ -26,17 +26,20 @@ enum LibrarySearchJumpPlace {
     /// Whether the request's match is still at its place: the text of
     /// `chapterTexts` at the request's chapter and offset is a match for
     /// the request's query, with the request's options, and is the very
-    /// text that matched. It reads only that chapter, and for a literal
-    /// query only the few characters around the place, so it is cheap
-    /// enough to run on the main actor for a book of any size.
+    /// text that matched. It costs one lookup at the place, whatever comes
+    /// before it in the chapter, so it runs on the main actor:
+    /// - A literal query is looked for in a window one character either
+    ///   side of the match.
+    /// - A regular expression is tried once, anchored at the place
+    ///   (`BookTextSearch.Matcher.regexMatch(at:in:)`), with the chapter's
+    ///   text around it in view, so look-behind, word boundaries, and
+    ///   anchors read it as a search from the chapter's start does; the
+    ///   expression is never run over the text before the place.
     ///
-    /// A literal query is looked for in a window one character either side
-    /// of the match. A regular expression depends on the text around it
-    /// (anchors, look-behind), so it runs over the chapter's whole text.
-    ///
-    /// The check can only err toward "no", never accept text that is not a
-    /// match, so the caller then searches the whole book: for a literal
-    /// query, when an overlapping match began a character earlier.
+    /// The check never accepts text that is not a match there. It may say
+    /// "no" for a match that is there, and the caller then searches the
+    /// whole book off the main actor: for a literal query, when an
+    /// overlapping match began a character earlier.
     static func holds(for request: LibrarySearchJumpRequest, in chapterTexts: [String]) -> Bool {
         guard chapterTexts.indices.contains(request.chapterIndex),
               request.characterOffset >= 0,
@@ -47,29 +50,28 @@ enum LibrarySearchJumpPlace {
         let matchedLength = (request.matchedText as NSString).length
         guard matchedLength > 0, request.characterOffset + matchedLength <= chapterLength else { return false }
 
-        var found = false
         // Whether a range found is the very match: at the place, with the
-        // text that matched. Stops the search once it is, or once the
-        // search is past the place (matches come in reading order).
-        let visit: (NSRange) -> Bool = { range in
+        // text that matched.
+        func isTheMatch(_ range: NSRange) -> Bool {
+            range.location == request.characterOffset && chapterText.substring(with: range) == request.matchedText
+        }
+
+        guard matcher.isLiteral else {
+            return matcher.regexMatch(at: request.characterOffset, in: chapterTexts[request.chapterIndex])
+                .map(isTheMatch) ?? false
+        }
+        var found = false
+        // One character either side, kept within the chapter. The search
+        // stops once it finds the place, or once it is past it (matches
+        // come in reading order).
+        let start = max(0, request.characterOffset - 1)
+        let end = min(chapterLength, request.characterOffset + matchedLength + 1)
+        matcher.enumerateLiteralRanges(in: chapterText, within: NSRange(location: start, length: end - start)) { range in
             if range.location == request.characterOffset {
-                found = chapterText.substring(with: range) == request.matchedText
+                found = isTheMatch(range)
                 return false
             }
             return range.location < request.characterOffset
-        }
-
-        if matcher.isLiteral {
-            // One character either side, kept within the chapter.
-            let start = max(0, request.characterOffset - 1)
-            let end = min(chapterLength, request.characterOffset + matchedLength + 1)
-            matcher.enumerateLiteralRanges(
-                in: chapterText,
-                within: NSRange(location: start, length: end - start),
-                visit: visit
-            )
-        } else {
-            matcher.enumerateRanges(in: chapterText as String, visit: visit)
         }
         return found
     }
@@ -133,10 +135,11 @@ extension ReaderViewModel {
     /// - A book with no text to search (an audiobook without a transcript)
     ///   says so, as Search in Book does, and stays where it is.
     /// - Otherwise the place itself is checked first, on the main actor,
-    ///   which costs the few characters around it
+    ///   with one lookup there, a literal query's in the few characters
+    ///   around it and a regular expression's as one attempt anchored there
     ///   (`LibrarySearchJumpPlace.holds(for:in:)`): when the text there is
     ///   still the match, as it nearly always is, the move is made at once,
-    ///   in a book of any size.
+    ///   however far into its chapter the match is.
     /// - Only when the place no longer holds the match (the text changed
     ///   since the search) is the whole book searched, off the main actor,
     ///   by the engine Search in Book and Search Library share; the reader

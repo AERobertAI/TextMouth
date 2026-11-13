@@ -152,13 +152,34 @@ enum BookTextSearch {
             }
         }
 
+        /// The match of the regular expression that begins exactly at
+        /// `location` of `text`, or nil when none begins there, and always
+        /// nil for literal text. It is one match attempt, anchored at the
+        /// place, over a range that runs on to the text's end with
+        /// transparent bounds and without anchoring bounds: look-behind and
+        /// word boundaries read the text before the place, and `^` and `$`
+        /// match only at the text's own line and text boundaries, so the
+        /// attempt is the very one a search from the text's start makes when
+        /// it tries that place. It costs that one attempt, not a run of the
+        /// expression over everything before the place.
+        func regexMatch(at location: Int, in text: String) -> NSRange? {
+            guard case .regex(let regex) = pattern else { return nil }
+            let length = text.utf16Length
+            guard location >= 0, location <= length else { return nil }
+            return regex.firstMatch(
+                in: text,
+                options: [.anchored, .withTransparentBounds, .withoutAnchoringBounds],
+                range: NSRange(location: location, length: length - location)
+            )?.range
+        }
+
         /// Report each literal match that lies wholly in `range` of `text`,
         /// in reading order, as `enumerateRanges(in:shouldStop:visit:)`
         /// reports a whole text's: the first match at or after the range's
         /// start, then the first at or after that match's end, and so on.
         /// Does nothing for a regular expression, whose matches depend on the
-        /// whole text it runs over (anchors, look-behind), so it is only ever
-        /// run over a whole chapter.
+        /// whole text it runs over (anchors, look-behind): the place of a
+        /// regular expression's match is checked by `regexMatch(at:in:)`.
         ///
         /// The reader checks a library search's match at its place with this,
         /// over the few characters around it (`LibrarySearchJumpPlace`).

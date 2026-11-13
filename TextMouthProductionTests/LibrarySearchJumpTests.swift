@@ -359,8 +359,8 @@ final class LibrarySearchJumpTests: XCTestCase {
     /// The place check: the match is still at its place when the chapter's
     /// text there is the text that matched, and not when the text moved, was
     /// edited, differs in case under Match Case, or the chapter or offset is
-    /// outside the text. A regular expression is checked over its whole
-    /// chapter, since what it matches depends on the text around it.
+    /// outside the text. A regular expression is checked by one attempt at
+    /// the place, which sees the chapter's text around it.
     func testThePlaceCheck() {
         let chapters = ["The word is here. A second word.", "Nothing at all.", "Wörd wörd 🙂 word"]
         func holds(_ request: LibrarySearchJumpRequest, _ texts: [String]? = nil) -> Bool {
@@ -395,7 +395,7 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertFalse(holds(request(chapter: 0, offset: 4, text: "")), "empty matched text")
         XCTAssertFalse(holds(request(chapter: 0, offset: 4), []), "no chapters")
 
-        // A regular expression runs over the chapter's whole text.
+        // A regular expression sees the chapter's text around the place.
         let pattern = TextSearchOptions(matchCase: false, isRegularExpression: true)
         XCTAssertTrue(
             holds(request(chapter: 0, offset: 0, query: "^The", text: "The", options: pattern)),
@@ -412,6 +412,83 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertTrue(
             holds(request(chapter: 0, offset: 4, query: "(?<=The )word", text: "word", options: pattern)),
             "look-behind pattern"
+        )
+    }
+
+    /// A regular expression's place is checked by one attempt anchored
+    /// there, never by running the expression over the chapter from its
+    /// start, which on the main actor cost about 0.4 seconds for a match 20
+    /// MB into a chapter (the review of November 13, finding 1). So a match
+    /// at the place is seen even behind an earlier match that overlaps it,
+    /// which a run from the start would have taken instead ("aba" at 2 in
+    /// "ababa"); look-behind and word boundaries read the text before the
+    /// place; and `^` and `$` match only at the chapter's own start and end,
+    /// never at the place itself.
+    func testARegularExpressionIsCheckedByOneAttemptAtItsPlace() {
+        let pattern = TextSearchOptions(matchCase: false, isRegularExpression: true)
+        // "line" at 6 and at 18; "second" at 11, just after a line feed.
+        let chapters = ["ababa", "first line\nsecond line"]
+        func holds(_ query: String, chapter: Int = 0, at offset: Int, text: String) -> Bool {
+            LibrarySearchJumpPlace.holds(
+                for: request(chapter: chapter, offset: offset, query: query, text: text, options: pattern),
+                in: chapters
+            )
+        }
+
+        XCTAssertTrue(holds("aba", at: 2, text: "aba"), "a match at the place, behind an earlier match overlapping it")
+        XCTAssertTrue(holds("(?<=b)aba", at: 2, text: "aba"), "look-behind that the text before the place passes")
+        XCTAssertFalse(holds("(?<=a)aba", at: 2, text: "aba"), "look-behind that the text before the place fails")
+        XCTAssertFalse(holds("\\baba", at: 2, text: "aba"), "a word boundary inside a word")
+        XCTAssertFalse(holds("^aba", at: 2, text: "aba"), "^ at the place, which is not the chapter's start")
+        XCTAssertTrue(holds("aba$", at: 2, text: "aba"), "$ at the chapter's end")
+        XCTAssertFalse(holds("ab", at: 1, text: "ab"), "a place where no match begins")
+        XCTAssertFalse(holds("ab.*", at: 2, text: "ab"), "a match at the place longer than the text that matched")
+        XCTAssertTrue(holds("^first", chapter: 1, at: 0, text: "first"), "^ at the chapter's start")
+        XCTAssertFalse(holds("^second", chapter: 1, at: 11, text: "second"), "^ after a line feed, without multiline anchors")
+        XCTAssertFalse(holds("line$", chapter: 1, at: 6, text: "line"), "$ before a line feed in the middle of the chapter")
+        XCTAssertTrue(holds("line$", chapter: 1, at: 18, text: "line"), "$ at the chapter's end, after a line feed")
+    }
+
+    /// A regular expression's place is checked in the time of one match
+    /// attempt, however far into its chapter the match is: for the last
+    /// match of a chapter of about 7.7 MB, the check takes a small fraction
+    /// of a scan of the chapter by the same expression, which is what the
+    /// check was until November 13 (a probe on the development Mac: under a
+    /// tenth of a millisecond, against 0.1 seconds for a 19 MB chapter). Both
+    /// are timed on the machine running the test, the check at its best of
+    /// three, so the comparison holds on a slow or busy machine too.
+    func testARegularExpressionsPlaceIsCheckedInAFractionOfAScanOfItsChapter() throws {
+        let sentence = "The deckhand coiled the rope beside the winch and counted the crates. "
+        let withWord = "The deckhand coiled the lanyard beside the winch and counted the crates. "
+        var chapter = ""
+        for index in 0..<110_000 {
+            chapter += index % 10 == 0 ? withWord : sentence
+        }
+        let pattern = TextSearchOptions(matchCase: false, isRegularExpression: true)
+        let last = (chapter as NSString).range(of: "lanyard", options: .backwards).location
+        let atPlace = request(chapter: 0, offset: last, query: "lan.?yard", text: "lanyard", options: pattern)
+
+        var bestCheck = Double.infinity
+        for attempt in 1...3 {
+            let started = Date()
+            let held = LibrarySearchJumpPlace.holds(for: atPlace, in: [chapter])
+            bestCheck = min(bestCheck, Date().timeIntervalSince(started))
+            XCTAssertTrue(held, "attempt \(attempt): the last match was not found at its place")
+        }
+        let matcher = try XCTUnwrap(try BookTextSearch.Matcher(query: "lan.?yard", options: pattern))
+        let scanStarted = Date()
+        var count = 0
+        matcher.enumerateRanges(in: chapter) { _ in
+            count += 1
+            return true
+        }
+        let scan = Date().timeIntervalSince(scanStarted)
+
+        print("LibrarySearchJumpTests: checked a regular expression's place in \(bestCheck) seconds; scanned its chapter of \(chapter.utf16.count) characters in \(scan) seconds")
+        XCTAssertEqual(count, 11_000, "matches in the chapter")
+        XCTAssertLessThan(
+            bestCheck * 10, scan,
+            "checking the place took \(bestCheck) seconds, a tenth or more of the \(scan) a scan of the chapter takes"
         )
     }
 
