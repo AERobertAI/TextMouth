@@ -412,6 +412,84 @@ final class LibrarySearchModelTests: XCTestCase {
         XCTAssertEqual(model.groups, [])
     }
 
+    // MARK: Stopping
+
+    /// Stop keeps what a running search has found: it lists those books,
+    /// says "Stopped after 1 of 3 books:" with what was found, announces
+    /// that once, tells the runner to stop, and lists nothing the runner
+    /// reports afterwards.
+    func testStopKeepsWhatWasFoundAndIgnoresWhatComesAfter() async throws {
+        let log = RunLog()
+        let announcements = AnnouncementLog()
+        let books = (0..<3).map { makeBook($0) }
+        let list = BookList(books)
+        let firstResult = makeResult(books[2], order: 2, kept: 4)
+        let lateResult = makeResult(books[0], order: 0, kept: 5)
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+
+        let model = makeModel(list, announcements) { query, options, books, limits, isCancelled, report in
+            log.record(query: query, options: options, books: books, limits: limits)
+            // One book is found, then the search runs on, slowly, until told
+            // to stop, and reports one more book and finishes anyway.
+            report(firstResult, makeTally(given: 3, searched: 1, withMatches: 1, matches: 4))
+            log.recordCancellation(waitUntil(isCancelled))
+            waitForGate(release)
+            report(lateResult, makeTally(given: 3, searched: 2, withMatches: 2, matches: 9))
+            return .finished(makeTally(given: 3, searched: 3, withMatches: 2, matches: 9))
+        }
+
+        model.query = "needle"
+        let started = await eventually { log.queries == ["needle"] }
+        XCTAssertTrue(started, "The search should have started; calls: \(log.queries)")
+        let search = try XCTUnwrap(model.searchTask)
+
+        model.stopSearch()
+
+        XCTAssertEqual(model.groups.map(\.order), [2], "What was found so far is listed; actual: \(model.groups.map(\.order))")
+        XCTAssertEqual(
+            model.status, .finished("Stopped after 1 of 3 books: 4 matches in 1 book"), "Actual: \(model.status)"
+        )
+        XCTAssertEqual(announcements.messages, ["Stopped after 1 of 3 books: 4 matches in 1 book"], "Announced once; actual: \(announcements.messages)")
+        let cancelled = await eventually { log.cancellations == [true] }
+        XCTAssertTrue(cancelled, "The runner should be told to stop; cancellations: \(log.cancellations)")
+        XCTAssertFalse(model.status.isSearching)
+
+        // The runner ends late, reporting one more book; none of it counts.
+        release.signal()
+        await search.value
+        XCTAssertEqual(model.groups.map(\.order), [2], "Nothing reported after Stop is listed")
+        XCTAssertEqual(
+            model.status, .finished("Stopped after 1 of 3 books: 4 matches in 1 book"), "Actual: \(model.status)"
+        )
+        XCTAssertEqual(announcements.messages.count, 1, "Still one announcement; actual: \(announcements.messages)")
+    }
+
+    /// Stop does nothing while typing pauses, before the runner is called,
+    /// and when nothing is typed.
+    func testStopDoesNothingBeforeTheSearchRuns() async {
+        let log = RunLog()
+        let announcements = AnnouncementLog()
+        let list = BookList([makeBook(0)])
+        let model = makeModel(list, announcements, debounce: .seconds(30)) { query, options, books, limits, _, report in
+            log.record(query: query, options: options, books: books, limits: limits)
+            return playOut([], given: books.count, report: report)
+        }
+
+        model.stopSearch()
+        XCTAssertEqual(model.status, .idle, "Nothing is typed, so Stop changes nothing")
+
+        model.query = "needle"
+        let statusBefore = model.status
+        model.stopSearch()
+
+        XCTAssertEqual(model.status, statusBefore, "Stop changes nothing while typing pauses; actual: \(model.status)")
+        XCTAssertNotNil(model.searchTask, "The pending search stays pending")
+        XCTAssertEqual(announcements.messages, [])
+        XCTAssertEqual(log.queries, [])
+        model.cancelSearch()
+    }
+
     // MARK: Batches
 
     /// Results reach the list in batches while the runner is still running,
