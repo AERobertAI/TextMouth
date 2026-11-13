@@ -138,6 +138,13 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Library > Add Feed…, a menu command whose key is its menu item's key
     /// equivalent (FR12's branch D).
     case addFeed = "Add Feed…"
+    /// Edit > Find > Search Library…, a menu command whose key is its menu
+    /// item's key equivalent, as Search in Book's is. It opens the Search
+    /// Library window, which searches the text of every book, from any
+    /// window. It is listed last of the Library group, whose actions the
+    /// Shortcuts tab lists whole and in `allCases` order (#1528), though its
+    /// menu is Edit's.
+    case searchLibrary = "Search Library…"
 
     // The File menu's commands (FR12's branch D): a group named as their
     // menu is, each a key equivalent of its menu item.
@@ -297,6 +304,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .decreaseSpeed: return .decreaseSpeed
         case .copyReadingPosition: return .copyReadingPosition
         case .searchInBook: return .searchInBook
+        case .searchLibrary: return .searchLibrary
         case .goToLibrary: return .goToLibrary
         case .goBack: return .goBack
         case .goForward: return .goForward
@@ -383,7 +391,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .moveToLibrary, .selectAll, .toggleEditMode,
              .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .folderOrFeedSettings,
              .goToView1, .goToView2, .goToView3, .goToView4, .goToView5, .goToView6, .goToView7, .goToView8, .goToView9,
-             .importDAISYFolder, .addFeed:
+             .importDAISYFolder, .addFeed, .searchLibrary:
             return "Library"
         case .openBook, .newFromText, .newRecording:
             return Self.fileCategory
@@ -630,7 +638,7 @@ extension ShortcutAction {
     /// it; the shortcut manager never takes it. A command added later joins
     /// them here.
     static let keyEquivalentActions: Set<ShortcutAction> = [
-        .copyReadingPosition, .searchInBook, .importDAISYFolder, .addFeed,
+        .copyReadingPosition, .searchInBook, .searchLibrary, .importDAISYFolder, .addFeed,
         .openBook, .newFromText, .newRecording,
         .recordingRecord, .recordingPauseOrResume, .recordingStop,
     ]
@@ -1621,6 +1629,12 @@ extension ShortcutAction {
             // menu item or button.
             .copyReadingPosition: [KeyBinding(key: "p", command: true, shift: true)],
             .searchInBook: [KeyBinding(key: "f", command: true)],
+            // Option-Command-F, which no other default uses, no menu of the
+            // app has, and `KeyBinding.systemCommands` does not list (a test
+            // checks each): Search Library… works in every window, so its key
+            // may be no window's other action, and Command-F is Search in
+            // Book's in a reader.
+            .searchLibrary: [KeyBinding(key: "f", command: true, option: true)],
             .goToLibrary: [
                 KeyBinding(key: "l", command: true)
             ],

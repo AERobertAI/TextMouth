@@ -52,7 +52,7 @@ final class LibraryViewGoToTests: XCTestCase {
         let all = ShortcutAction.allCases
         let settings = try XCTUnwrap(all.firstIndex(of: .folderOrFeedSettings))
         XCTAssertEqual(Array(all.dropFirst(settings + 1).prefix(actions.count)), actions)
-        XCTAssertEqual(all.filter { $0.category == "Library" }.suffix(2), [.importDAISYFolder, .addFeed])
+        XCTAssertEqual(all.filter { $0.category == "Library" }.suffix(3), [.importDAISYFolder, .addFeed, .searchLibrary])
     }
 
     /// Each has Command and its digit by default, a key no other default

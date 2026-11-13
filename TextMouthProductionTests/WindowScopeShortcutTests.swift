@@ -32,6 +32,7 @@ final class WindowScopeShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.addFeed.availableScopes, [.library])
         XCTAssertEqual(ShortcutAction.copyReadingPosition.availableScopes, [.reader])
         XCTAssertEqual(ShortcutAction.searchInBook.availableScopes, [.reader])
+        XCTAssertEqual(ShortcutAction.searchLibrary.availableScopes, [.app], "Edit's command works in every window")
         XCTAssertEqual(ShortcutAction.recordingStop.availableScopes, [.recording])
         XCTAssertEqual(ShortcutAction.editorPlayPause.availableScopes, [.audioEditor])
         for action in ShortcutAction.allCases {
