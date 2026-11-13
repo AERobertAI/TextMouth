@@ -20,6 +20,17 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     /// Subscriptions a test keeps until it ends.
     private var subscriptions = Set<AnyCancellable>()
 
+    /// Every reader here is in a window of its own, with a sleep timer of its
+    /// own (`openReader`): no timer a test starts may outlive the test, and
+    /// the duration last used is put back (`preserveSleepTimers()`). Set up
+    /// once, before any reader or timer of the test, so a reader opened after
+    /// a timer started never stops it. The asynchronous override runs on the
+    /// main actor, as this class does.
+    override func setUp() async throws {
+        try await super.setUp()
+        preserveSleepTimers()
+    }
+
     // MARK: - The Episode Below
 
     /// With "Play the episode below" and the next episode not here, the end
@@ -1290,16 +1301,13 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     /// a sleep timer of its own (`sleepTimerService`). Readers given the same
     /// `nowPlaying` coordinator share its media controls, as two reader
     /// windows do. Every timer there is stops when the test ends, and the
-    /// duration last used is put back, with the reader closed first.
+    /// duration last used is put back, with the reader closed first
+    /// (`setUp()`).
     private func openReader(
         for book: Book,
         in setup: Setup,
         nowPlaying: NowPlayingService? = nil
     ) throws -> ReaderViewModel {
-        // Before the reader exists, so the reader is closed before this runs
-        // at the test's end; and before any timer of the test starts, since
-        // it stops every timer that runs.
-        preserveSleepTimers()
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: setup.world.library,
