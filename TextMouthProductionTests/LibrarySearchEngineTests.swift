@@ -179,15 +179,15 @@ final class LibrarySearchEngineTests: XCTestCase {
     /// none of them stops the search of the rest.
     func testEmptyUnreadableAndMissingTextsAreCountedApart() throws {
         let library = try makeLibrary([("Empty", ""), ("Words", "a fox"), ("Broken", "placeholder"), ("Missing", "x")])
-        try Data([0x66, 0x6F, 0x78, 0xFF, 0xFE, 0x20]).write(to: library.books[2].contentURL)
-        try FileManager.default.removeItem(at: library.books[3].contentURL)
+        try Data([0x66, 0x6F, 0x78, 0xFF, 0xFE, 0x20]).write(to: (try library.book(2)).contentURL)
+        try FileManager.default.removeItem(at: (try library.book(3)).contentURL)
         let found = search("fox", TextSearchOptions(), in: library)
         let tally = try XCTUnwrap(found.tally, "the search did not finish")
         XCTAssertEqual(tally.booksSearched, 2, "the empty book and the one with words are searched: \(tally)")
         XCTAssertEqual(tally.booksUnreadable, 1, "the book whose content.md is not UTF-8: \(tally)")
         XCTAssertEqual(tally.booksWithoutText, 1, "the book with no content.md: \(tally)")
         XCTAssertEqual(found.results.count, 1, "only the book with words matches")
-        XCTAssertEqual(found.results[library.books[1].id]?.matchCount, 1)
+        XCTAssertEqual(found.results[(try library.book(1)).id]?.matchCount, 1)
     }
 
     /// A book whose content.md, or whose package, is only in the cloud is
@@ -195,8 +195,8 @@ final class LibrarySearchEngineTests: XCTestCase {
     /// downloads it.
     func testBooksInTheCloudAreCountedAndNeverRead() throws {
         let library = try makeLibrary([("Here", "the fox"), ("Text in the Cloud", "the fox"), ("Package in the Cloud", "the fox")])
-        let cloudText = library.books[1].contentURL.standardizedFileURL.path
-        let cloudPackage = try XCTUnwrap(library.books[2].packageURL).standardizedFileURL.path
+        let cloudText = (try library.book(1)).contentURL.standardizedFileURL.path
+        let cloudPackage = try XCTUnwrap((try library.book(2)).packageURL).standardizedFileURL.path
         let access = MaintenanceFileAccess(isDataless: { url in
             let path = url.standardizedFileURL.path
             return path == cloudText || path == cloudPackage
@@ -205,7 +205,7 @@ final class LibrarySearchEngineTests: XCTestCase {
         let tally = try XCTUnwrap(found.tally)
         XCTAssertEqual(tally.booksInCloud, 2, "\(tally)")
         XCTAssertEqual(tally.booksSearched, 1, "\(tally)")
-        XCTAssertEqual(Set(found.results.keys), [library.books[0].id])
+        XCTAssertEqual(Set(found.results.keys), [(try library.book(0)).id])
         for book in library.books.dropFirst() {
             XCTAssertFalse(
                 FileManager.default.fileExists(atPath: library.store.url(for: book.id).path),
@@ -235,15 +235,15 @@ final class LibrarySearchEngineTests: XCTestCase {
         let library = try makeLibrary([("Metronome", markdown)])
         let limits = LibrarySearchLimits(keptPerBook: 10, countedPerBook: 20)
         let found = search("tock", TextSearchOptions(), in: library, limits: limits)
-        let result = try XCTUnwrap(found.results[library.books[0].id])
+        let result = try XCTUnwrap(found.results[(try library.book(0)).id])
         XCTAssertEqual(result.matchCount, 20)
         XCTAssertTrue(result.countReachedLimit)
         XCTAssertEqual(result.matches, Array(oracle("tock", TextSearchOptions(), markdown: markdown, title: "Metronome").prefix(10)))
         XCTAssertEqual(found.tally?.booksPastTheLimit, 1)
 
         let exact = search("tock", TextSearchOptions(), in: library, limits: LibrarySearchLimits(keptPerBook: 10, countedPerBook: 50))
-        XCTAssertEqual(exact.results[library.books[0].id]?.matchCount, 50, "exactly the limit is no more than it")
-        XCTAssertEqual(exact.results[library.books[0].id]?.countReachedLimit, false)
+        XCTAssertEqual(exact.results[(try library.book(0)).id]?.matchCount, 50, "exactly the limit is no more than it")
+        XCTAssertEqual(exact.results[(try library.book(0)).id]?.countReachedLimit, false)
     }
 
     /// A search cancelled partway ends cancelled: with one worker, nothing
@@ -277,10 +277,10 @@ final class LibrarySearchEngineTests: XCTestCase {
     func testABookChangedSinceTheLastSearchIsPreparedAgain() throws {
         let library = try makeLibrary([("Changing", "the fox"), ("Steady", "the fox")])
         XCTAssertEqual(search("fox", TextSearchOptions(), in: library).tally?.booksPrepared, 2)
-        try "the hound and the fox and the fox".write(to: library.books[0].contentURL, atomically: true, encoding: .utf8)
+        try "the hound and the fox and the fox".write(to: (try library.book(0)).contentURL, atomically: true, encoding: .utf8)
         let found = search("fox", TextSearchOptions(), in: library)
         XCTAssertEqual(found.tally?.booksPrepared, 1, "only the changed book is prepared again")
-        XCTAssertEqual(found.results[library.books[0].id]?.matchCount, 2, "the changed book's new text is searched")
+        XCTAssertEqual(found.results[(try library.book(0)).id]?.matchCount, 2, "the changed book's new text is searched")
     }
 
     /// A store file cut short after its header (a disk that filled, a crash
@@ -289,8 +289,8 @@ final class LibrarySearchEngineTests: XCTestCase {
     func testABookWhoseStoreFileIsCutShortIsPreparedAgain() throws {
         let markdown = "<!-- chapter: One -->\nthe fox\n\n<!-- chapter: Two -->\n" + String(repeating: "a fox ran. ", count: 400)
         let library = try makeLibrary([("Cut Short", markdown)])
-        XCTAssertEqual(search("fox", TextSearchOptions(), in: library).results[library.books[0].id]?.matchCount, 401)
-        let file = library.store.url(for: library.books[0].id)
+        XCTAssertEqual(search("fox", TextSearchOptions(), in: library).results[(try library.book(0)).id]?.matchCount, 401)
+        let file = library.store.url(for: (try library.book(0)).id)
         let size = try XCTUnwrap(try FileManager.default.attributesOfItem(atPath: file.path)[.size] as? Int)
         let handle = try FileHandle(forWritingTo: file)
         try handle.truncate(atOffset: UInt64(size - 100))
@@ -298,7 +298,7 @@ final class LibrarySearchEngineTests: XCTestCase {
 
         let found = search("fox", TextSearchOptions(), in: library)
         XCTAssertEqual(found.tally?.booksPrepared, 1, "the book with a damaged file is prepared again")
-        XCTAssertEqual(found.results[library.books[0].id]?.matchCount, 401, "and searched whole")
+        XCTAssertEqual(found.results[(try library.book(0)).id]?.matchCount, 401, "and searched whole")
         let again = search("fox", TextSearchOptions(), in: library)
         XCTAssertEqual(again.tally?.booksPrepared, 0, "the file made again is used")
     }
@@ -336,6 +336,11 @@ final class LibrarySearchEngineTests: XCTestCase {
     private struct Library {
         let books: [LibrarySearchBook]
         let store: LibrarySearchTextStore
+
+        /// The `index`th book, or a test failure when there is none.
+        func book(_ index: Int) throws -> LibrarySearchBook {
+            try XCTUnwrap(books.indices.contains(index) ? books[index] : nil, "the library has no book \(index)")
+        }
     }
 
     /// Writes `books` as packages in a sandbox folder.
