@@ -160,6 +160,43 @@ struct FileCommands: Commands {
     }
 }
 
+/// Edit > Find > Search Library…, which opens the Search Library window
+/// (`LibrarySearchWindowController`) from any window, the Library's, a
+/// reader's, and the Search Library window itself among them. Its key is the
+/// menu item's key equivalent in force (`ShortcutAction.searchLibrary`,
+/// Option-Command-F unless changed in the Shortcuts tab), shown while the
+/// action's scope admits the window in front, which for the one scope it can
+/// have, every window, is always.
+///
+/// The submenu follows the Edit menu's own items (`.textEditing`), so
+/// VoiceOver reads Search Library… where it reads the other ways of finding.
+struct EditCommands: Commands {
+    /// The shortcuts, observed so the item's key equivalent follows a change
+    /// at once.
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The window in front, observed so the item acts only where its command
+    /// works, as every menu command's does.
+    @ObservedObject private var front = FrontWindowKind.shared
+
+    /// The Edit menu's Find submenu, its key that of `shortcuts`.
+    init(shortcuts: KeyboardShortcutManager) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Menu("Find") {
+                // The window listens for this name once a Library window has
+                // appeared (`LibrarySearchWindowController.attach`).
+                Button(ShortcutAction.searchLibrary.title) {
+                    NotificationCenter.default.post(name: .searchLibrary, object: nil)
+                }
+                .menuCommandKey(.searchLibrary, shortcuts: shortcuts, frontKind: front.kind)
+            }
+        }
+    }
+}
+
 struct PlaybackCommands: Commands {
     @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
     /// The shortcuts, observed so Copy Reading Position's and Search in

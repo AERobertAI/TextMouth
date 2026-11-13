@@ -33,12 +33,17 @@ struct TextMouthApp: App {
                     // Recordings are saved into this library, whichever menu
                     // opens the Record window (FR04).
                     RecordingWindowController.shared.attach(libraryViewModel)
+                    // Search Library… searches this library, whichever window
+                    // its menu command is chosen in.
+                    LibrarySearchWindowController.shared.attach(libraryViewModel)
                 }
         }
         .commands {
             // Open Book…, New from Text…, and New Recording… beside the
             // standard New Window (Command-N), each with its key in force.
             FileCommands(shortcuts: shortcutManager, library: libraryViewModel)
+            // Edit > Find > Search Library…, with its key in force.
+            EditCommands(shortcuts: shortcutManager)
             PlaybackCommands(shortcuts: shortcutManager)
             NavigationCommands()
             LibraryCommands(shortcuts: shortcutManager)

@@ -90,102 +90,18 @@ enum BookSearchWording {
     /// The Use Regex switch's hint.
     static let regexHint = "When enabled, search text is treated as a regular expression"
 
+    /// The Match Case checkbox's title and VoiceOver label, which Search
+    /// Library's checkbox shares.
+    static let matchCaseLabel = "Match Case"
+
+    /// The Match Case checkbox's hint.
+    static let matchCaseHint = "When checked, a match must have the same capital and small letters as the search text"
+
     /// The label of the list of results.
     static let resultsLabel = "Search results"
 
     /// The hint of the button that closes the sheet.
     static let backToBookHint = "Close search and return to the book"
-}
-
-/// Case-insensitive matching shared by book search: literal text, or a
-/// regular expression. Ranges are UTF-16 `NSRange`s, TextMouth's text
-/// coordinate system (see `OffsetMap.swift`).
-enum BookTextSearch {
-    /// Every match of `query` in `text`, in reading order. An empty query
-    /// matches nothing; an invalid regular expression throws.
-    static func ranges(in text: String, query: String, useRegex: Bool) throws -> [NSRange] {
-        guard let matcher = try Matcher(query: query, useRegex: useRegex) else { return [] }
-        var ranges: [NSRange] = []
-        matcher.enumerateRanges(in: text) { range in
-            ranges.append(range)
-            return true
-        }
-        return ranges
-    }
-
-    /// A query compiled once, so a search across many chapters parses its
-    /// regular expression a single time, and whose matching can stop early:
-    /// at a result limit, or when the search is cancelled.
-    struct Matcher {
-        /// The compiled form of a non-empty query.
-        private enum Pattern {
-            case literal(String)
-            case regex(NSRegularExpression)
-        }
-
-        private let pattern: Pattern
-
-        /// Compile `query`, or return nil for an empty query, which matches
-        /// nothing. Throws when `useRegex` is set and `query` is not a valid
-        /// regular expression.
-        init?(query: String, useRegex: Bool) throws {
-            guard !query.isEmpty else { return nil }
-            pattern = useRegex
-                ? .regex(try NSRegularExpression(pattern: query, options: [.caseInsensitive]))
-                : .literal(query)
-        }
-
-        /// Report each match in `text` to `visit`, in reading order, until
-        /// `visit` returns false, `shouldStop` returns true, or the text ends.
-        ///
-        /// How promptly a stop request is heard:
-        /// - Literal text: before each lookup. One lookup scans only as far as
-        ///   the next match, which takes tens of milliseconds even across a
-        ///   whole plain-text book held as a single chapter.
-        /// - Regular expression: `.reportProgress` makes Foundation call the
-        ///   block periodically during long-running matching, not only when a
-        ///   match is found. ICU calls back between match attempts and from
-        ///   inside a long backtracking attempt, so even a runaway pattern
-        ///   normally stops promptly.
-        ///
-        /// Known limitation: how often Foundation calls back is undocumented,
-        /// so a single pathological match attempt (catastrophic backtracking)
-        /// is not guaranteed to be interruptible mid-backtrack. The interface
-        /// stays responsive regardless: searches run off the main actor, and
-        /// a search superseded by a newer query is cancelled and its results
-        /// are discarded.
-        func enumerateRanges(
-            in text: String,
-            shouldStop: () -> Bool = { false },
-            visit: (NSRange) -> Bool
-        ) {
-            let fullRange = NSRange(location: 0, length: text.utf16Length)
-            switch pattern {
-            case .regex(let regex):
-                // Progress callbacks arrive without a result; like every
-                // match, each one is a chance to stop.
-                regex.enumerateMatches(in: text, options: [.reportProgress], range: fullRange) { result, _, stop in
-                    if shouldStop() {
-                        stop.pointee = true
-                    } else if let result, !visit(result.range) {
-                        stop.pointee = true
-                    }
-                }
-
-            case .literal(let query):
-                let nsText = text as NSString
-                var remaining = fullRange
-                while remaining.length > 0, !shouldStop() {
-                    let match = nsText.range(of: query, options: [.caseInsensitive], range: remaining)
-                    guard match.location != NSNotFound, visit(match) else { return }
-                    // Resume after the match, always moving forward so the
-                    // loop ends even if a lookup ever returned an empty range.
-                    let nextLocation = max(NSMaxRange(match), match.location + 1)
-                    remaining = NSRange(location: nextLocation, length: fullRange.length - nextLocation)
-                }
-            }
-        }
-    }
 }
 
 /// One match found by book search: where it is, and what its result row
@@ -296,7 +212,8 @@ enum BookSearchEngine {
     /// limit until then, took over a second and some 200 megabytes.
     static let resultLimit = 500
 
-    /// Search every chapter of `corpus` for `query`, in reading order.
+    /// Search every chapter of `corpus` for `query`, in reading order,
+    /// ignoring case.
     /// - Throws: `CancellationError` once `isCancelled` returns true. A
     ///   cancelled search reports nothing, never a partial result.
     static func search(
@@ -306,9 +223,30 @@ enum BookSearchEngine {
         limit: Int = resultLimit,
         isCancelled: () -> Bool = { Task.isCancelled }
     ) throws -> BookSearchOutcome {
+        try search(
+            query: query,
+            options: TextSearchOptions(matchCase: false, isRegularExpression: useRegex),
+            in: corpus,
+            limit: limit,
+            isCancelled: isCancelled
+        )
+    }
+
+    /// Search every chapter of `corpus` for `query` with `options`, in
+    /// reading order: the search Search in Book runs, and the one Search
+    /// Library's results agree with (`LibrarySearchEngine`).
+    /// - Throws: `CancellationError` once `isCancelled` returns true. A
+    ///   cancelled search reports nothing, never a partial result.
+    static func search(
+        query: String,
+        options: TextSearchOptions,
+        in corpus: BookSearchCorpus,
+        limit: Int = resultLimit,
+        isCancelled: () -> Bool = { Task.isCancelled }
+    ) throws -> BookSearchOutcome {
         let matcher: BookTextSearch.Matcher
         do {
-            guard let compiled = try BookTextSearch.Matcher(query: query, useRegex: useRegex) else {
+            guard let compiled = try BookTextSearch.Matcher(query: query, options: options) else {
                 return .matches([], isTruncated: false)
             }
             matcher = compiled
@@ -377,7 +315,7 @@ enum BookSearchEngine {
                     chapterIndex: chapterIndex,
                     characterOffset: match.location,
                     matchedText: String(chapterText[matchRange]),
-                    contextSnippet: contextSnippet(in: chapterText, around: matchRange),
+                    contextSnippet: BookTextSearch.contextSnippet(in: chapterText, around: matchRange),
                     globalOffset: chapterStart + match.location
                 ))
                 return true
@@ -391,22 +329,6 @@ enum BookSearchEngine {
         // found must not be reported as the complete answer.
         if isCancelled() { throw CancellationError() }
         return (results, isTruncated)
-    }
-
-    /// The match with up to 30 characters of context on each side, marking
-    /// with "..." any text cut off before or after.
-    private static func contextSnippet(in text: String, around matchRange: Range<String.Index>) -> String {
-        let beforeStart = text.index(matchRange.lowerBound, offsetBy: -30, limitedBy: text.startIndex) ?? text.startIndex
-        let afterEnd = text.index(matchRange.upperBound, offsetBy: 30, limitedBy: text.endIndex) ?? text.endIndex
-
-        let prefix = beforeStart > text.startIndex ? "..." : ""
-        let suffix = afterEnd < text.endIndex ? "..." : ""
-
-        let before = String(text[beforeStart..<matchRange.lowerBound])
-        let matched = String(text[matchRange])
-        let after = String(text[matchRange.upperBound..<afterEnd])
-
-        return "\(prefix)\(before)\(matched)\(after)\(suffix)"
     }
 }
 
@@ -555,6 +477,13 @@ struct BookSearchView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack {
+                    // Off by default, so the search ignores case, as it
+                    // always did.
+                    Toggle(BookSearchWording.matchCaseLabel, isOn: $model.matchCase)
+                        .checkboxToggleStyle()
+                        .accessibilityLabel(BookSearchWording.matchCaseLabel)
+                        .accessibilityHint(BookSearchWording.matchCaseHint)
+
                     Toggle("Use Regex", isOn: $model.useRegex)
                         .checkboxToggleStyle()
                         .accessibilityLabel(BookSearchWording.regexLabel)

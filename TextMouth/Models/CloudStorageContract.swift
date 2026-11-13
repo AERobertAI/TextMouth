@@ -690,4 +690,12 @@ enum MachineLocalPaths {
     static var readingTextCache: URL {
         caches.appendingPathComponent("Reading Text", isDirectory: true)
     }
+
+    /// Each book's reading text, kept for Search Library
+    /// (`LibrarySearchTextStore`): made again by a search whenever a book's
+    /// content.md changes, and by the next search when macOS empties the
+    /// Caches folder.
+    static var librarySearchText: URL {
+        caches.appendingPathComponent("Search Text", isDirectory: true)
+    }
 }

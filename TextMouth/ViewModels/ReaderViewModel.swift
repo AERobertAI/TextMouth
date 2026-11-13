@@ -269,6 +269,20 @@ final class ReaderViewModel: ObservableObject {
     /// read it from the list (FR09): the shared store, unless the reader
     /// was created with its own.
     let readingListRequests: ReadingListOpenRequests
+    /// Where the Search Library window asks this reader to move to a match
+    /// it found in this book (`claimLibrarySearchJump()`): the shared
+    /// store, unless the reader was created with its own.
+    let libraryJumpRequests: LibrarySearchJumpRequests
+    /// How many requests to move to a library search's match this reader
+    /// has claimed: a search for a match's new place that runs in the
+    /// background moves the cursor only if no later request was claimed
+    /// meanwhile (`claimLibrarySearchJump()`).
+    var libraryJumpGeneration = 0
+    /// The search of the whole book for a match that moved, while one runs
+    /// for the latest request claimed; cancelled when a later request is
+    /// claimed and when the reader closes (`cancelLibraryJumpSearch()`), so
+    /// it never runs on for a request or a reader that is gone.
+    var libraryJumpSearch: Task<BookSearchOutcome?, Never>?
     /// Where a reader that switched its window to this book asks this reader
     /// to see to the window's focus once it has found it (0.2.5): the shared
     /// store, unless the reader was created with its own.
@@ -746,6 +760,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - readingListRequests: Where this book is asked to be read from
     ///     the reading list (FR09). Nil uses the shared store; tests pass
     ///     their own.
+    ///   - libraryJumpRequests: Where the Search Library window asks this
+    ///     reader to move to a match. Nil uses the shared store; tests pass
+    ///     their own.
     ///   - notificationCenter: Where the reader listens for commands and for
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
@@ -768,6 +785,7 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
+        libraryJumpRequests: LibrarySearchJumpRequests? = nil,
         windowSwitchRequests: WindowSwitchRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
@@ -789,6 +807,7 @@ final class ReaderViewModel: ObservableObject {
         self.cloudServices = cloud ?? .app
         self.nowPlayingCoordinator = nowPlaying ?? .shared
         self.loadQueue = loadQueue ?? .global(qos: .userInitiated)
+        self.libraryJumpRequests = libraryJumpRequests ?? .shared
         self.bookmarks = book.bookmarks
 
         // A timer held for this book is this reader's to take, or to release
@@ -810,6 +829,7 @@ final class ReaderViewModel: ObservableObject {
         observeSpokenAudioSettings()
         observeLibraryUpdates()
         observeReadingList()
+        observeLibrarySearchJumps()
         observeSleepTimerHandOvers()
         forwardSpeechState()
         // TextMouth's memory is watched while this reader plays (B07).
@@ -864,6 +884,19 @@ final class ReaderViewModel: ObservableObject {
         updates.watch(book)
         updates.events(for: book.id)
             .sink { [weak self] event in self?.handleLibraryEvent(event) }
+            .store(in: &cancellables)
+    }
+
+    /// Listens for the Search Library window asking this reader to move to a
+    /// match while it is open already, as the book's window comes forward
+    /// for it, and claims the request at once (`claimLibrarySearchJump()`);
+    /// one made before this reader existed is claimed as its load ends.
+    /// Requests for other books are left for their own readers.
+    private func observeLibrarySearchJumps() {
+        let bookID = book.id
+        libraryJumpRequests.requestsMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimLibrarySearchJump() }
             .store(in: &cancellables)
     }
 
@@ -1770,6 +1803,10 @@ final class ReaderViewModel: ObservableObject {
         // A window a switch made this reader's has its focus seen to now that
         // the book has loaded (`attach(to:)`).
         placeFocusAfterSwitchIfDue()
+        // A match Search Library opened this book at is moved to now that
+        // the text is loaded, before any playback that is due starts from
+        // the cursor it leaves.
+        claimLibrarySearchJump()
         // A finished book may have continued to this one while
         // it loaded: start playing for it now.
         claimAutoplayRequest()
@@ -2271,6 +2308,8 @@ final class ReaderViewModel: ObservableObject {
         hasClosed = true
         // A closed reader hands nothing over when the next episode arrives.
         nextEpisodeWait = nil
+        // Nor does it look any further for a Search Library match that moved.
+        cancelLibraryJumpSearch()
         // A download the reader waits for is stopped, and the book's state
         // found afterwards recorded for the library list (FR02).
         endCloudWorkForClose()

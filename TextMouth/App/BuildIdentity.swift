@@ -28,6 +28,16 @@ struct BuildIdentity: Equatable {
         )
     }
 
+    /// This build as the caches this Mac keeps of a book's reading text name
+    /// their producer (`ReadingTextCache`, `LibrarySearchTextStore`): its
+    /// version, build number, commit, and date, so a file another build
+    /// wrote is never read. A development build carries no commit or date
+    /// ("unknown"), so those caches also key on what the build's parser
+    /// reads, where they need it.
+    var cacheProducer: String {
+        "app \(version) build \(buildNumber) commit \(gitCommit) built \(buildDate)"
+    }
+
     /// A single searchable line keeps support log collection screen-reader
     /// friendly and avoids requiring bundle inspection.
     var diagnosticLine: String {

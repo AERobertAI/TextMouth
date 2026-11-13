@@ -506,6 +506,44 @@ final class BookSearchEngineTests: XCTestCase {
         XCTAssertFalse(message.isEmpty)
     }
 
+    /// Match Case finds only the query's own case, for literal text and a
+    /// regular expression alike, and still counts a precomposed é and an e
+    /// with a combining acute as one; without it, every case is found. The
+    /// places are written out, not taken from the engine itself (the review
+    /// of November 13, finding 6).
+    func testMatchCaseFindsOnlyTheQuerysCase() throws {
+        // Chapter 0: "fox" at 4, "Fox" at 13, "FOX" at 26. Chapter 1: "Café"
+        // at 0, "Cafe" and a combining acute at 9, "CAFÉ" at 19.
+        let corpus = BookSearchCorpus(
+            chapterTexts: ["The fox, the Fox, and the FOX.", "Caf\u{E9} and Cafe\u{301} and CAF\u{C9}"],
+            chapterTitles: ["One", "Two"],
+            headings: [],
+            bookTitle: "Foxes"
+        )
+        let cases: [(query: String, options: TextSearchOptions, places: [[Int]])] = [
+            ("Fox", TextSearchOptions(matchCase: true, isRegularExpression: false), [[0, 13]]),
+            ("Fox", TextSearchOptions(matchCase: false, isRegularExpression: false), [[0, 4], [0, 13], [0, 26]]),
+            ("F.x", TextSearchOptions(matchCase: true, isRegularExpression: true), [[0, 13]]),
+            ("F.x", TextSearchOptions(matchCase: false, isRegularExpression: true), [[0, 4], [0, 13], [0, 26]]),
+            ("Caf\u{E9}", TextSearchOptions(matchCase: true, isRegularExpression: false), [[1, 0], [1, 9]]),
+            ("Caf\u{E9}", TextSearchOptions(matchCase: false, isRegularExpression: false), [[1, 0], [1, 9], [1, 19]]),
+        ]
+
+        for (query, options, places) in cases {
+            guard case let .matches(results, isTruncated) = try BookSearchEngine.search(
+                query: query, options: options, in: corpus, isCancelled: { false }
+            ) else {
+                XCTFail("\(query), \(options): not a search")
+                continue
+            }
+            XCTAssertEqual(
+                results.map { [$0.chapterIndex, $0.characterOffset] }, places,
+                "\(query), Match Case \(options.matchCase), regular expression \(options.isRegularExpression)"
+            )
+            XCTAssertFalse(isTruncated, "\(query): truncated")
+        }
+    }
+
     /// A result as the old view's result type saw it, for comparison with
     /// the oracle.
     private static func legacyFields(_ result: BookSearchResult) -> LegacySynchronousSearch.Result {
@@ -546,6 +584,8 @@ private final class SearchLog: @unchecked Sendable {
         let useRegex: Bool
         /// Whether the search ran on the main thread; it never should.
         let ranOnMainThread: Bool
+        /// Whether the search was asked to match case.
+        var matchCase = false
     }
 
     private let lock = NSLock()
@@ -553,8 +593,8 @@ private final class SearchLog: @unchecked Sendable {
     private var recordedCancellations: [Bool] = []
 
     /// Note a search starting. Call from inside the fake search.
-    func recordSearch(query: String, useRegex: Bool) {
-        let entry = Entry(query: query, useRegex: useRegex, ranOnMainThread: Thread.isMainThread)
+    func recordSearch(query: String, useRegex: Bool, matchCase: Bool = false) {
+        let entry = Entry(query: query, useRegex: useRegex, ranOnMainThread: Thread.isMainThread, matchCase: matchCase)
         lock.lock()
         defer { lock.unlock() }
         recordedEntries.append(entry)
@@ -653,8 +693,8 @@ final class BookSearchModelTests: XCTestCase {
         let announcements = AnnouncementLog()
         // Generous beside the pauses between edits, so a busy machine cannot
         // split the burst.
-        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -672,8 +712,8 @@ final class BookSearchModelTests: XCTestCase {
     /// Edits separated by more than the debounce interval each get a search.
     func testEditsAfterAPauseSearchAgain() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -698,8 +738,8 @@ final class BookSearchModelTests: XCTestCase {
         // Never leave a background thread blocked, whatever fails below.
         defer { releaseOldSearch.signal() }
 
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             if query == "old" {
                 oldSearchStarted.fulfill()
                 releaseOldSearch.wait()
@@ -738,8 +778,8 @@ final class BookSearchModelTests: XCTestCase {
         let releaseSearch = DispatchSemaphore(value: 0)
         defer { releaseSearch.signal() }
 
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             searchStarted.fulfill()
             releaseSearch.wait()
             log.recordCancellation(waitUntilCancelled())
@@ -828,8 +868,8 @@ final class BookSearchModelTests: XCTestCase {
     func testClearingTheQueryStopsThePendingSearch() async throws {
         let log = SearchLog()
         let announcements = AnnouncementLog()
-        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([fakeResult(for: query)], isTruncated: false)
         }
 
@@ -893,12 +933,63 @@ final class BookSearchModelTests: XCTestCase {
         XCTAssertEqual(announcements.messages, ["No matches", "3 matches"])
     }
 
+    /// Turning Match Case on searches the same text again, matching case,
+    /// with the real engine: of "fox", "Fox", and "FOX", only "Fox" is listed
+    /// then, at its own place. Until November 13 no test turned Match Case
+    /// on, so a model that never passed it on failed nothing (the review's
+    /// finding 6).
+    func testTurningOnMatchCaseSearchesAgainMatchingCase() async {
+        // "fox" at 4, "Fox" at 13, "FOX" at 26.
+        let corpus = BookSearchCorpus(
+            chapterTexts: ["The fox, the Fox, and the FOX."],
+            chapterTitles: ["One"],
+            headings: [],
+            bookTitle: "Foxes"
+        )
+        let (model, announcements) = makeModel(searching: corpus)
+        model.query = "Fox"
+        await model.searchTask?.value
+        XCTAssertEqual(model.results.map(\.matchedText), ["fox", "Fox", "FOX"], "ignoring case, by default")
+        XCTAssertFalse(model.options.matchCase, "Match Case is off by default")
+
+        model.matchCase = true
+        XCTAssertEqual(model.status, .searching, "turning Match Case on did not search again")
+        XCTAssertTrue(model.options.matchCase, "the next search's options")
+        await model.searchTask?.value
+
+        XCTAssertEqual(model.results.map(\.matchedText), ["Fox"], "matching case")
+        XCTAssertEqual(model.results.map(\.characterOffset), [13], "the place of the one match in the query's case")
+        XCTAssertEqual(announcements.messages, ["3 matches", "1 match"])
+    }
+
+    /// Match Case reaches the search as its option each time it changes,
+    /// and setting it to the value it has starts no search.
+    func testMatchCaseReachesTheSearchAsItsOption() async {
+        let log = SearchLog()
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression, matchCase: options.matchCase)
+            return .matches([], isTruncated: false)
+        }
+
+        model.query = "Fox"
+        await model.searchTask?.value
+        model.matchCase = true
+        await model.searchTask?.value
+        model.matchCase = true
+        XCTAssertNil(model.searchTask, "setting Match Case to its own value searched again")
+        model.matchCase = false
+        await model.searchTask?.value
+
+        XCTAssertEqual(log.entries.map(\.matchCase), [false, true, false], "Match Case as each search was given it")
+        XCTAssertEqual(log.queries, ["Fox", "Fox", "Fox"])
+    }
+
     /// Setting the same values again, as SwiftUI may while refreshing the
     /// field, starts no new search.
     func testUnchangedInputsDoNotSearchAgain() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -915,8 +1006,8 @@ final class BookSearchModelTests: XCTestCase {
     /// responsive however long one takes.
     func testSearchesRunOffTheMainThread() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -931,8 +1022,8 @@ final class BookSearchModelTests: XCTestCase {
     /// with a log of what it announces.
     private func makeModel(searching corpus: BookSearchCorpus) -> (BookSearchModel, AnnouncementLog) {
         let announcements = AnnouncementLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            try BookSearchEngine.search(query: query, options: options, in: corpus)
         }
         return (model, announcements)
     }

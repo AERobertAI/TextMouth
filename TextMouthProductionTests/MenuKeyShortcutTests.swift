@@ -7,7 +7,7 @@ import XCTest
 /// The menu commands' and the Record window's keys as shortcut actions of
 /// their own (FR12's branch D): Open Book…, New from Text…, New Recording…,
 /// Import DAISY Folder…, Add Feed…, Copy Reading Position, Search in Book,
-/// and the Record window's Record, Pause or Resume, and Stop. Each key is
+/// Search Library…, and the Record window's Record, Pause or Resume, and Stop. Each key is
 /// the key equivalent of its menu item or button, which acts on it; the
 /// shortcut manager never takes it, and no other action has it, pressed
 /// once or twice. Every store is the test's own.
@@ -24,15 +24,17 @@ final class MenuKeyShortcutTests: XCTestCase {
 
     // MARK: - The Actions
 
-    /// The ten keys fixed before are actions of their own, each in the
-    /// group named as its menu is, listed where its menu lists it, with its
-    /// old key as its default; each title is the menu's or button's own.
+    /// The ten keys fixed before, and Search Library…'s, are actions of their
+    /// own, each in the group named as its menu is, listed where its menu
+    /// lists it, with its old key as its default; each title is the menu's or
+    /// button's own.
     func testTheFixedKeysAreActionsWithTheirOldKeys() {
         let expected: [(action: ShortcutAction, title: String, group: String, key: KeyBinding)] = [
             (.copyReadingPosition, "Copy Reading Position", "Playback", shiftCommandP),
             (.searchInBook, "Search in Book", "Playback", KeyBinding(key: "f", command: true)),
             (.importDAISYFolder, "Import Folder…", "Library", KeyBinding(key: "o", command: true, shift: true)),
             (.addFeed, "Add Feed…", "Library", KeyBinding(key: "f", command: true, shift: true)),
+            (.searchLibrary, "Search Library…", "Library", KeyBinding(key: "f", command: true, option: true)),
             (.openBook, "Open Book…", "File", commandO),
             (.newFromText, "New from Text…", "File", shiftCommandT),
             (.newRecording, "New Recording…", "File", KeyBinding(key: "n", command: true, option: true)),
@@ -53,7 +55,9 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.recordingRecord.title, RecordingWording.recordTitle)
         XCTAssertEqual(ShortcutAction.recordingStop.title, RecordingWording.stopTitle)
         XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Playback" }.suffix(2), [.copyReadingPosition, .searchInBook])
-        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Library" }.suffix(2), [.importDAISYFolder, .addFeed])
+        // Search Library… is Edit's, but the Shortcuts tab lists it whole with
+        // the Library group, last of it (`testEveryActionIsListedWithItsGroup`).
+        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Library" }.suffix(3), [.importDAISYFolder, .addFeed, .searchLibrary])
     }
 
     /// The manager never posts a key equivalent's action: its notification
@@ -63,6 +67,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         let posted: [ShortcutAction: Notification.Name] = [
             .copyReadingPosition: .copyReadingPosition,
             .searchInBook: .searchInBook,
+            .searchLibrary: .searchLibrary,
             .importDAISYFolder: .importDAISYFolder,
             .addFeed: .addFeed,
             .openBook: .openBookFile,
@@ -93,6 +98,72 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertFalse(KeyBinding(key: "a", command: true).canBeKeyEquivalent)
         XCTAssertFalse(KeyBinding(key: "a", control: true).canBeKeyEquivalent, "Control-A moves to a line's start in a field")
         XCTAssertFalse(KeyBinding(key: "o", control: true).canBeKeyEquivalent, "Control-O opens a line in a field")
+    }
+
+    // MARK: - Search Library… (Edit > Find)
+
+    /// Search Library… is a menu command of Edit > Find on Option-Command-F:
+    /// a key equivalent in the Library group, titled as the Search Library
+    /// window is, posting the name the window listens for, and working in
+    /// every window, which is the one scope it can be given, so its menu item
+    /// shows its key whichever kind of window is in front.
+    func testSearchLibraryIsAMenuCommandOnOptionCommandFInEveryWindow() {
+        let action = ShortcutAction.searchLibrary
+        let optionCommandF = KeyBinding(key: "f", command: true, option: true)
+
+        XCTAssertEqual(action.rawValue, "Search Library…")
+        XCTAssertEqual(action.title, LibrarySearchWording.windowTitle + "…", "the menu item and the window are named alike")
+        XCTAssertEqual(action.category, "Library")
+        XCTAssertTrue(action.isKeyEquivalent)
+        XCTAssertEqual(action.notificationName, .searchLibrary)
+        XCTAssertEqual(Notification.Name.searchLibrary.rawValue, "searchLibrary")
+        XCTAssertEqual(ShortcutAction.defaultBindings[action], [optionCommandF])
+        XCTAssertTrue(optionCommandF.canBeKeyEquivalent)
+        XCTAssertNil(action.refusal(ofKeys: [optionCommandF]))
+        XCTAssertEqual(action.defaultScope, .app)
+        XCTAssertEqual(action.availableScopes, [.app], "a Library-group menu command's scope is fixed, and this one's is every window")
+        for kind in ShortcutWindowKind.allCases {
+            XCTAssertTrue(ShortcutScope.app.admitsMenuCommand(in: kind), "\(kind)")
+            XCTAssertTrue(ShortcutScope.app.windowKinds(of: action).contains(kind), "its key is claimed in a \(kind) window")
+        }
+        XCTAssertTrue(ShortcutScope.app.admitsMenuCommand(in: nil))
+        XCTAssertEqual(makeManager("search-library-key").keyEquivalent(for: action), optionCommandF)
+    }
+
+    /// Option-Command-F is Search Library…'s alone: no other action has it as
+    /// a default, once or twice, and none of macOS's own commands does.
+    func testNoOtherDefaultAndNoSystemCommandHasOptionCommandF() {
+        let optionCommandF = KeyBinding(key: "f", command: true, option: true)
+
+        for (other, keys) in ShortcutAction.defaultBindings where other != .searchLibrary {
+            XCTAssertFalse(keys.contains(optionCommandF), "\(other.rawValue) has Option-Command-F too")
+            XCTAssertFalse(keys.contains(optionCommandF.asDoublePress(true)), "\(other.rawValue) has Option-Command-F twice")
+        }
+        XCTAssertNil(KeyBinding.systemCommands[optionCommandF])
+        XCTAssertNil(KeyBinding.systemCommands[optionCommandF.asDoublePress(true)])
+        XCTAssertEqual(ShortcutAction.defaultBindings.values.flatMap { $0 }.filter { $0 == optionCommandF }.count, 1)
+    }
+
+    /// The running app's Edit menu offers Search Library… in a Find submenu
+    /// with Option-Command-F. Skipped when this run's menu bar has no Edit
+    /// menu.
+    func testTheEditMenuOffersSearchLibraryInFind() throws {
+        guard let edit = Self.menu(titled: "Edit") else {
+            throw XCTSkip("This run's menu bar has no Edit menu")
+        }
+        let found = try XCTUnwrap(Self.itemsAndParents(of: edit).first { $0.item.title == ShortcutAction.searchLibrary.title })
+
+        XCTAssertEqual(found.parentTitle, "Find")
+        XCTAssertEqual(Self.keyEquivalent(of: found.item).key, "f")
+        XCTAssertEqual(Self.keyEquivalent(of: found.item).modifiers, [.option, .command])
+        XCTAssertTrue(found.item.isEnabled)
+        // One Find submenu: none that SwiftUI adds of its own (as a
+        // searchable list might) beside ours, which VoiceOver would read as
+        // two menus of one name.
+        XCTAssertEqual(
+            edit.items.filter { $0.title == "Find" }.count, 1,
+            "the Edit menu's items: \(edit.items.map(\.title))"
+        )
     }
 
     // MARK: - Shift-Command-T in Its Two Kinds of Window (FR12's Branch E)
@@ -779,6 +850,16 @@ final class MenuKeyShortcutTests: XCTestCase {
         guard let menu = NSApp.mainMenu?.items.first(where: { $0.title == title })?.submenu else { return nil }
         menu.delegate?.menuNeedsUpdate?(menu)
         return menu
+    }
+
+    /// Every item of `menu` and of its submenus, each with the title of the
+    /// item whose submenu holds it (`parentTitle`, `menu`'s own title at the
+    /// top), every menu brought up to date first.
+    private static func itemsAndParents(of menu: NSMenu, parentTitle: String? = nil) -> [(item: NSMenuItem, parentTitle: String)] {
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu.items.flatMap { item -> [(item: NSMenuItem, parentTitle: String)] in
+            [(item, parentTitle ?? menu.title)] + (item.submenu.map { itemsAndParents(of: $0, parentTitle: item.title) } ?? [])
+        }
     }
 
     /// The item titled `title` in `menu`, brought up to date first.
