@@ -48,7 +48,7 @@ import XCTest
 /// 6. close B's reader | speech paused, no timer | covered by MediaCommandPlaybackTests.testClosingAWindowThatNeverPlayedKeepsThePausedBookShown
 /// 6. close B's reader | audio playing, minutes timer fading out | covered by IntegrationSleepTimerTests.testExpiringTimerPausesItsOwnBookOnceWhileAnotherBooksWindowCloses and ReaderLifecycleAuditTests.testInactiveReaderCannotCancelAnotherBooksFade; counting down, not fading, is tested here
 /// 6. close B's reader | the other ten rows | tested here
-/// 7. cancel, start, expire, restart a timer in B's reader | every row | tested here (IntegrationSleepTimerTests.testTheTimerBelongsToTheReaderThatSetItNotToItsBook and testRestartFromAMediaGestureGoesToTheReaderThatSetTheTimer pin two windows of one book, never a second book)
+/// 7. cancel, start, expire, restart a timer in B's reader | every row | tested here (IntegrationSleepTimerTests.testTheTimerBelongsToTheReaderThatSetItNotToItsBook and testRestartFromAMediaGestureGoesToTheReaderThatOwnsNowPlaying pin two windows of one book, never a second book; WindowSleepTimerTests pins two windows' timers)
 /// 8. sort, folder contents | every row | tested here
 /// 9. close every Library window, Finder open | routing only: LibraryWindowRouterTests.testClosingTheLastLibraryLeavesTheContinuedBookToAReaderWindow, testWithEveryLibraryWindowClosedAnActionOpensOneThatTakesIt, IntegrationWindowRoutingTests.testFinishedBookOpensOneReaderForTheNextBookWithNoLibraryWindow (A finished, not playing); A's state is tested here for every row
 /// 10. B starts playing | speech playing, no timer | covered by MediaCommandPlaybackTests.testClosingTheFormerBooksWindowLeavesTheCommandsWithTheBookNowPlaying (the first book is paused); NowPlayingOwnershipTests.testStartingFocusedReaderPausesPreviousReaderBeforePlaying pins the coordinator alone
@@ -69,6 +69,10 @@ import XCTest
 /// recorder in place of the synthesizer (`SpeechService.
 /// _directUtteranceRecorderForTesting`), announcements are recorded, and
 /// the windows the router is given are never shown.
+///
+/// Each reader window has a sleep timer of its own (November 13, 2026), so
+/// A's reader and each of B's are given windows' timers of their own, and
+/// "the timer" of a cell is A's window's.
 @MainActor
 final class WindowsMatrixTests: XCTestCase {
 
@@ -144,7 +148,7 @@ final class WindowsMatrixTests: XCTestCase {
 
     // MARK: - What Is Observed
 
-    /// The sleep timer as A's cell sees it.
+    /// A's window's sleep timer, as A's cell sees it.
     struct TimerObserved: Equatable {
         let active: Bool
         let owner: UUID?
@@ -177,16 +181,6 @@ final class WindowsMatrixTests: XCTestCase {
         case unchanged
         /// Another book started, which paused A if it was playing.
         case pausedByAnotherBook
-    }
-
-    /// What a cell expects of the one shared sleep timer.
-    enum ExpectedTimer {
-        /// Still in effect, still A's, not restarted.
-        case asBefore
-        /// Not in effect.
-        case ended
-        /// Set by another reader.
-        case takenBy(UUID, SleepTimerDuration)
     }
 
     /// The utterances a text book's speech handed over in place of the
@@ -229,11 +223,11 @@ final class WindowsMatrixTests: XCTestCase {
             otherReaders = []
         }
 
-        /// Close every reader of the stage and stop its timer.
+        /// Close every reader of the stage and stop A's window's timer.
         func close() {
             closeOtherReaders()
             a.close()
-            SleepTimerService.shared.stop(reason: "windows matrix stage ended")
+            a.sleepTimerService.stop(reason: "windows matrix stage ended")
         }
     }
 
@@ -291,7 +285,9 @@ final class WindowsMatrixTests: XCTestCase {
                 readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: Self.openingOffset)
             )
             world.library.library.addBook(book)
-            reader = world.openReader(for: book, renderScheduler: HeldRenderQueue(), nowPlaying: coordinator)
+            reader = world.openReader(
+                for: book, renderScheduler: HeldRenderQueue(), nowPlaying: coordinator, sleepTimer: SleepTimerService()
+            )
             reader.speechService._directUtteranceRecorderForTesting = { handedOver.utterances.append($0) }
             waitForReaderToLoad(reader)
             reader.errorMessage = nil
@@ -312,7 +308,7 @@ final class WindowsMatrixTests: XCTestCase {
                 trackDurations: [2, 60],
                 savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: 100)
             )
-            reader = world.openReader(for: book, nowPlaying: coordinator)
+            reader = world.openReader(for: book, nowPlaying: coordinator, sleepTimer: SleepTimerService())
             waitForReaderToLoad(reader)
             XCTAssertNil(reader.errorMessage, "\(row): A did not open")
             reader.play()
@@ -334,9 +330,10 @@ final class WindowsMatrixTests: XCTestCase {
         return stage
     }
 
-    /// Set A's timer of the row, or stop the timer when the row has none.
+    /// Set A's timer of the row, in A's window, or stop that timer when the
+    /// row has none.
     func armTimer(of stage: Stage) {
-        let timer = SleepTimerService.shared
+        let timer = stage.a.sleepTimerService
         guard let duration = stage.row.timer.duration else {
             timer.stop(reason: "windows matrix, no timer")
             return
@@ -371,10 +368,11 @@ final class WindowsMatrixTests: XCTestCase {
         try stage.world.makeSilentAudioBook(title: Self.titleOfB, trackDurations: [30])
     }
 
-    /// Open a reader for `book` in `stage`'s world, wait for it to load, and
-    /// keep it to be closed with the stage.
+    /// Open a reader for `book` in `stage`'s world, in a window of its own
+    /// with that window's sleep timer, wait for it to load, and keep it to be
+    /// closed with the stage.
     func openReader(for book: Book, in stage: Stage) -> ReaderViewModel {
-        let reader = stage.world.openReader(for: book, nowPlaying: stage.coordinator)
+        let reader = stage.world.openReader(for: book, nowPlaying: stage.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(reader)
         stage.keep(reader)
         return reader
@@ -385,7 +383,7 @@ final class WindowsMatrixTests: XCTestCase {
     /// What A is now.
     func observe(_ stage: Stage) -> Observed {
         let a = stage.a
-        let timer = SleepTimerService.shared
+        let timer = a.sleepTimerService
         let isAudio = !stage.row.playback.isSpeech
         return Observed(
             readerPlaying: a.isCurrentlyPlaying,
@@ -406,8 +404,11 @@ final class WindowsMatrixTests: XCTestCase {
         )
     }
 
-    /// Check that A, and the shared timer, are as `expectedPlayback` and
-    /// `expectedTimer` say, after `before`, naming `cell` in every failure.
+    /// Check that A is as `expectedPlayback` says after `before`, and that
+    /// A's window's timer is as it was, still in effect if it was, still A's,
+    /// and not restarted: nothing done in another window touches it, since
+    /// each window has its own (November 13, 2026). Every failure names
+    /// `cell`.
     ///
     /// A's place is never reset and never goes back; it may move forward
     /// only while A plays audio. Nothing is spoken to a speech A.
@@ -415,7 +416,6 @@ final class WindowsMatrixTests: XCTestCase {
         _ stage: Stage,
         since before: Observed,
         playback expectedPlayback: ExpectedPlayback = .unchanged,
-        timer expectedTimer: ExpectedTimer = .asBefore,
         _ cell: String,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -437,19 +437,10 @@ final class WindowsMatrixTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(after.offset, before.offset, "\(cell): A's place went back or was reset", file: file, line: line)
         XCTAssertGreaterThanOrEqual(after.audioTime, before.audioTime, "\(cell): A's audio time went back or was reset", file: file, line: line)
         XCTAssertEqual(after.utterances, before.utterances, "\(cell): A's speech was handed something new", file: file, line: line)
-        switch expectedTimer {
-        case .asBefore:
-            XCTAssertEqual(after.timer.active, before.timer.active, "\(cell): the timer's activity changed", file: file, line: line)
-            XCTAssertEqual(after.timer.owner, before.timer.owner, "\(cell): the timer changed hands", file: file, line: line)
-            XCTAssertEqual(after.timer.duration, before.timer.duration, "\(cell): the timer's duration changed", file: file, line: line)
-            XCTAssertLessThanOrEqual(after.timer.remaining, before.timer.remaining, "\(cell): the timer was reset", file: file, line: line)
-        case .ended:
-            XCTAssertFalse(after.timer.active, "\(cell): the timer is still in effect", file: file, line: line)
-        case .takenBy(let owner, let duration):
-            XCTAssertTrue(after.timer.active, "\(cell): the timer is not in effect", file: file, line: line)
-            XCTAssertEqual(after.timer.owner, owner, "\(cell): the timer is not the new owner's", file: file, line: line)
-            XCTAssertEqual(after.timer.duration, duration, "\(cell): the timer has another duration", file: file, line: line)
-        }
+        XCTAssertEqual(after.timer.active, before.timer.active, "\(cell): A's timer's activity changed", file: file, line: line)
+        XCTAssertEqual(after.timer.owner, before.timer.owner, "\(cell): A's timer changed hands", file: file, line: line)
+        XCTAssertEqual(after.timer.duration, before.timer.duration, "\(cell): A's timer's duration changed", file: file, line: line)
+        XCTAssertLessThanOrEqual(after.timer.remaining, before.timer.remaining, "\(cell): A's timer was reset", file: file, line: line)
     }
 
     /// A window that is never shown, for a router to be given.
@@ -637,64 +628,68 @@ final class WindowsMatrixTests: XCTestCase {
 
     // MARK: - Column 7: A Timer Cancelled, Started, Run Out, and Restarted in B's Window
 
-    /// The sleep timer is one for the whole app, owned by the reader that set
-    /// it. Four things happen to it in B's reader, for every row:
+    /// Each reader window has a sleep timer of its own (November 13, 2026:
+    /// "I want each sleep timer to be refactored to be per book view window
+    /// not global"). Four things happen to the timer of B's window, for every
+    /// row, and A's window's timer is as it was through all of them:
     ///
-    /// - B's reader cancels it. Anyone may cancel, so A's timer ends
-    ///   (`ReaderViewModel.cancelSleepTimer()`).
-    /// - B's reader starts one. It replaces A's, which A no longer owns.
-    /// - B's timer runs out. B pauses (it plays nothing) and says "Sleep
-    ///   timer expired. Playback paused." while A plays on. That is under
-    ///   question: the listener who set a timer in A and then set one in B
-    ///   hears that playback paused while the book they were listening to
-    ///   goes on. It is pinned as it is today.
-    /// - B's reader restarts the timer (the Restart Sleep Timer shortcut or
-    ///   a media gesture in B's window). It takes the duration of the timer
-    ///   in effect, or the last one used, owns it, and starts B playing,
-    ///   which pauses A. Also under question for the same reason: A's timer
-    ///   has become B's.
+    /// - B's reader cancels its timer, of which it has none: A's is left.
+    /// - B's reader starts one: B's window's own, beside A's.
+    /// - B's timer runs out: B pauses (it plays nothing) and says "Sleep
+    ///   timer expired. Playback paused.", for the timer the listener set in
+    ///   B's window, while A plays on.
+    /// - B's reader restarts its timer (the Restart Sleep Timer shortcut, or
+    ///   the media gesture reaching B's window): with none running there, it
+    ///   starts one of the duration last used in any window, which is A's,
+    ///   set again just before, for a row with a timer, and starts B playing,
+    ///   which pauses A.
     ///
-    /// In every case A is not stopped or moved by the timer's changes alone;
-    /// only the restart's play pauses it.
+    /// Until then the app had one timer, owned by the reader that set it:
+    /// B's cancel ended A's timer, B's start and restart took it over, and
+    /// B's timer running out ended it; all of that was pinned here "under
+    /// question".
     func testATimerCancelledStartedRunOutAndRestartedInAnotherBooksWindow() throws {
         preserveSleepTimers()
-        let timer = SleepTimerService.shared
         for (index, row) in Row.all.enumerated() {
             let stage = try makeStage(for: row, index: 100 + index)
             defer { stage.close() }
             let bReader = openReader(for: try makeB(in: stage), in: stage)
+            let bTimer = bReader.sleepTimerService
+            XCTAssertFalse(bTimer === stage.a.sleepTimerService, "\(row): A's and B's windows share a timer")
 
             // Cancelled in B's reader.
             var cell = "\(row) | cancel a timer in B's reader"
             var before = observe(stage)
             var recorder = recordingAnnouncements { bReader.cancelSleepTimer() }
-            assertA(stage, since: before, timer: .ended, cell)
+            assertA(stage, since: before, cell)
             XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
 
             // Started in B's reader.
-            armTimer(of: stage)
             cell = "\(row) | start a timer in B's reader"
             before = observe(stage)
             recorder = recordingAnnouncements { bReader.startSleepTimer(duration: .minutes(5)) }
-            assertA(stage, since: before, timer: .takenBy(bReader.readerID, .minutes(5)), cell)
+            assertA(stage, since: before, cell)
+            XCTAssertEqual(bTimer.ownerID, bReader.readerID, "\(cell): B's window's timer is not B's")
+            XCTAssertEqual(bTimer.duration, .minutes(5), cell)
             XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
 
             // B's timer runs out while A plays on.
             cell = "\(row) | B's timer runs out"
             before = observe(stage)
             recorder = recordingAnnouncements {
-                timer._expireForTesting()
-                XCTAssertTrue(eventually(within: 3) { !timer.isActive }, "\(cell): the timer never ended")
+                bTimer._expireForTesting()
+                XCTAssertTrue(eventually(within: 3) { !bTimer.isActive }, "\(cell): B's timer never ended")
                 handleQueuedCallbacks()
             }
-            assertA(stage, since: before, timer: .ended, cell)
+            assertA(stage, since: before, cell)
             XCTAssertEqual(recorder.announcements.map(\.message), [Self.expiredAnnouncement], "\(cell): what VoiceOver heard")
 
-            // Restarted in B's reader, which plays B and so pauses A.
+            // Restarted in B's reader, which plays B and so pauses A. A's
+            // timer is set again first, so for a row with a timer it is the
+            // one used last.
             armTimer(of: stage)
             cell = "\(row) | restart the timer in B's reader"
             let expectedDuration = row.timer.duration ?? .minutes(5)
-            let expectedWords = row.timer == .none ? "Timer restarted: 5 minutes." : "Timer reset."
             before = observe(stage)
             recorder = recordingAnnouncements {
                 bReader.restartOrStartLastSleepTimer()
@@ -702,14 +697,13 @@ final class WindowsMatrixTests: XCTestCase {
                 // the main queue's next turn.
                 handleQueuedCallbacks()
             }
-            assertA(
-                stage,
-                since: before,
-                playback: row.playback.isPlaying ? .pausedByAnotherBook : .unchanged,
-                timer: .takenBy(bReader.readerID, expectedDuration),
-                cell
+            assertA(stage, since: before, playback: row.playback.isPlaying ? .pausedByAnotherBook : .unchanged, cell)
+            XCTAssertEqual(bTimer.ownerID, bReader.readerID, "\(cell): B's window's timer is not B's")
+            XCTAssertEqual(bTimer.duration, expectedDuration, "\(cell): B's timer is not of the duration last used")
+            XCTAssertEqual(
+                recorder.announcements.map(\.message), ["Timer restarted: \(expectedDuration.displayName)."],
+                "\(cell): what VoiceOver heard"
             )
-            XCTAssertEqual(recorder.announcements.map(\.message), [expectedWords], "\(cell): what VoiceOver heard")
             XCTAssertTrue(bReader.isPlaybackUnderWay, "\(cell): B did not start playing")
         }
     }
@@ -741,7 +735,7 @@ final class WindowsMatrixTests: XCTestCase {
 
             assertA(stage, since: before, playback: row.playback.isPlaying ? .pausedByAnotherBook : .unchanged, cell)
             XCTAssertFalse(bReader.isCurrentlyPaused, "\(cell): B is paused")
-            XCTAssertNotEqual(SleepTimerService.shared.ownerID, bReader.readerID, "\(cell): B took the timer")
+            XCTAssertFalse(bReader.sleepTimerService.isActive, "\(cell): B's window has a timer")
             XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
         }
     }

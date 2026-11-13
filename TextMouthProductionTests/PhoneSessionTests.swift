@@ -644,14 +644,15 @@ final class PhoneSessionTests: XCTestCase {
         XCTAssertTrue(made.contains { $0 === onScreen })
     }
 
-    /// A running sleep timer goes on with the next book.
+    /// A running sleep timer goes on with the next book, as the phone's one
+    /// timer, which every reader of its session shares.
     func testASleepTimerGoesOnWithTheNextBook() throws {
         preserveSleepTimers()
         let folder = try makeFolderWorld("PhoneNextTimer")
         let session = makeSession(in: folder.world)
         let first = try XCTUnwrap(session.open(folder.first))
         waitForReaderToLoad(first)
-        let timer = SleepTimerService.shared
+        let timer = first.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: first.readerID, onExpire: {})
 
         first.handleEndOfBook()
@@ -660,6 +661,7 @@ final class PhoneSessionTests: XCTestCase {
         waitForReaderToLoad(second)
 
         XCTAssertTrue(first.hasClosed)
+        XCTAssertTrue(second.sleepTimerService === timer, "The phone's readers do not share its one timer")
         XCTAssertTrue(timer.isActive, "Closing the old reader stopped the timer")
         XCTAssertEqual(timer.ownerID, second.readerID, "The new reader did not take the timer")
         XCTAssertEqual(timer.duration, .minutes(30))
@@ -1075,6 +1077,9 @@ final class PhoneSessionTests: XCTestCase {
         nowPlaying: NowPlayingService? = nil
     ) -> PhoneSession {
         let media = nowPlaying ?? NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        // The phone shows one reader at a time, and its readers share one
+        // sleep timer, as `SleepTimerService.shared` is on an iPhone.
+        let phoneTimer = SleepTimerService()
         let session = PhoneSession(
             library: world.library,
             settings: world.settings,
@@ -1082,7 +1087,7 @@ final class PhoneSessionTests: XCTestCase {
             notificationCenter: world.notifications,
             autoplayRequests: world.autoplayRequests,
             preferences: preferences ?? makeSandboxedPreferences("Session"),
-            makeReader: { book in world.openReader(for: book, nowPlaying: media) }
+            makeReader: { book in world.openReader(for: book, nowPlaying: media, sleepTimer: phoneTimer) }
         )
         addTeardownBlock { session.closeReader() }
         return session
