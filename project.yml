@@ -193,6 +193,15 @@ targets:
           # can reach, such as the parts of the Swift packages' public API
           # that TextMouth never calls.
           DEAD_CODE_STRIPPING: true
+          # Compile the app's own code to be small rather than fastest
+          # (-Osize, where Release's default is -O): the app's own code is
+          # about 2.4 MB smaller, and the same code computes the same
+          # results, only 1% to 11% more slowly (a millisecond or less on
+          # each of the ten benchmarks of the November 13, 2026 size audit).
+          # The Makefile's build rule gives the Swift packages the same
+          # level from the command line, which project.yml cannot do. Debug,
+          # where the tests run, is left as it is.
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
     dependencies:
       - package: ZIPFoundation
       - package: SwiftSoup
