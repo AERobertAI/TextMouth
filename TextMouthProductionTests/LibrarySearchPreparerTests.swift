@@ -570,11 +570,11 @@ final class LibrarySearchPreparationTests: XCTestCase {
         XCTAssertTrue(preparer.isRunning, "no pass began once the library was ready")
 
         power.lowPowerMode = true
-        center.post(name: ProcessInfo.powerStateDidChangeNotification, object: nil)
+        center.post(name: Notification.Name.NSProcessInfoPowerStateDidChange, object: nil)
         XCTAssertTrue(waitUntil(timeout: 5) { !preparer.isRunning }, "Low Power Mode left the pass under way")
 
         power.lowPowerMode = false
-        center.post(name: ProcessInfo.powerStateDidChangeNotification, object: nil)
+        center.post(name: Notification.Name.NSProcessInfoPowerStateDidChange, object: nil)
         XCTAssertTrue(waitUntil(timeout: 5) { preparer.isRunning }, "no pass started once Low Power Mode was off")
     }
 }

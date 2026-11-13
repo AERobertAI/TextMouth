@@ -389,7 +389,7 @@ final class LibrarySearchPreparation {
             .removeDuplicates()
             .sink { [weak self] isMoving in self?.libraryMoving(isMoving) }
         powerObservation = notificationCenter.addObserver(
-            forName: ProcessInfo.powerStateDidChangeNotification, object: nil, queue: .main
+            forName: Notification.Name.NSProcessInfoPowerStateDidChange, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.powerStateChanged() }
         }
