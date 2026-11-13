@@ -113,16 +113,143 @@ final class TitleTypingTests: XCTestCase {
         XCTAssertNil(TitleTyping.firstRow(reachedBy: "h", in: [TypedRow<String>](), showingInverted: false))
     }
 
-    /// The first row in the list's order wins, wherever the selection is:
-    /// with two rows that a prefix reaches, the earlier one, and once the
-    /// list's order changes, the one now earlier.
-    func testTheFirstRowInTheListsOrderWins() {
+    /// With nothing selected, a search starts at the top, so the first row
+    /// in the list's order wins: with two rows that a prefix reaches, the
+    /// earlier one, and once the list's order changes, the one now earlier.
+    func testWithNothingSelectedTheFirstRowInTheListsOrderWins() {
         let twice = [
             TypedRow(id: "first", title: "The Hobbit", language: nil),
             TypedRow(id: "second", title: "Hobbit", language: nil),
         ]
         XCTAssertEqual(TitleTyping.firstRow(reachedBy: "hob", in: twice, showingInverted: false), "first")
         XCTAssertEqual(TitleTyping.firstRow(reachedBy: "hob", in: twice.reversed(), showingInverted: false), "second")
+        // A selection that is not in the list leaves the search at the top.
+        XCTAssertEqual(
+            TitleTyping.firstRow(reachedBy: "hob", in: twice, selection: ["elsewhere"], showingInverted: false),
+            "first"
+        )
+    }
+
+    /// Three H's among the books, in the list's order.
+    private let hRows: [TypedRow<String>] = [
+        TypedRow(id: "Treasure Island", title: "Treasure Island", language: nil),
+        TypedRow(id: "The Hobbit", title: "The Hobbit", language: nil),
+        TypedRow(id: "Hamlet", title: "Hamlet", language: nil),
+        TypedRow(id: "Moby Dick", title: "Moby Dick", language: nil),
+        TypedRow(id: "Hannibal", title: "Hannibal", language: nil),
+    ]
+
+    /// A new search starts at the row after the selected one, as AppKit's
+    /// type select does: H, a pause, and H again walk through the H's and
+    /// wrap round the end, and the selected row is the last one tried, so a
+    /// title that is the only match stays selected.
+    func testANewSearchStartsAfterTheSelectionAndWraps() {
+        func next(_ typed: String, from selected: String?) -> String? {
+            TitleTyping.firstRow(
+                reachedBy: typed,
+                in: hRows,
+                selection: selected.map { [$0] } ?? [],
+                isNewSearch: true,
+                showingInverted: false
+            )
+        }
+        // H, pause, H, pause, H, pause, H: the three H's, then round again.
+        XCTAssertEqual(next("h", from: nil), "The Hobbit")
+        XCTAssertEqual(next("h", from: "The Hobbit"), "Hamlet")
+        XCTAssertEqual(next("h", from: "Hamlet"), "Hannibal")
+        XCTAssertEqual(next("h", from: "Hannibal"), "The Hobbit", "the search wrapped past the end")
+        // From a row that is no H, the next H after it, and wrapping.
+        XCTAssertEqual(next("h", from: "Moby Dick"), "Hannibal")
+        XCTAssertEqual(next("t", from: "The Hobbit"), "Treasure Island", "wrapped to the top")
+        // A lone match stays where it is.
+        XCTAssertEqual(next("m", from: "Moby Dick"), "Moby Dick")
+        XCTAssertEqual(next("m", from: "Hamlet"), "Moby Dick")
+        // No match anywhere reaches nothing.
+        XCTAssertNil(next("z", from: "Hamlet"))
+    }
+
+    /// A search that adds letters to one under way starts at the selected
+    /// row itself: "ha" after "h" stays on Hamlet rather than moving on to
+    /// Hannibal, and moves on only when the selected row no longer matches.
+    func testAnExtendedSearchStartsAtTheSelectedRow() {
+        func extended(_ typed: String, from selected: String) -> String? {
+            TitleTyping.firstRow(
+                reachedBy: typed,
+                in: hRows,
+                selection: [selected],
+                isNewSearch: false,
+                showingInverted: false
+            )
+        }
+        XCTAssertEqual(extended("ha", from: "Hamlet"), "Hamlet")
+        XCTAssertEqual(extended("ham", from: "Hamlet"), "Hamlet")
+        XCTAssertEqual(extended("han", from: "Hamlet"), "Hannibal", "Hamlet no longer matches")
+        XCTAssertEqual(extended("ho", from: "Hamlet"), "The Hobbit", "wrapped to the row before the selection")
+        // The same letters as a new search skip the selected row.
+        XCTAssertEqual(
+            TitleTyping.firstRow(reachedBy: "ha", in: hRows, selection: ["Hamlet"], isNewSearch: true, showingInverted: false),
+            "Hannibal"
+        )
+    }
+
+    /// Of several rows selected, the last in the list's order is where a
+    /// search starts, whatever order the selection was made in.
+    func testOfSeveralSelectedRowsTheLastInTheListsOrderStartsTheSearch() {
+        let selection: Set<String> = ["Hamlet", "Treasure Island", "The Hobbit"]
+        XCTAssertEqual(TitleTyping.searchStart(in: hRows, selection: selection, isNewSearch: true), 3)
+        XCTAssertEqual(TitleTyping.searchStart(in: hRows, selection: selection, isNewSearch: false), 2)
+        XCTAssertEqual(
+            TitleTyping.firstRow(reachedBy: "h", in: hRows, selection: selection, showingInverted: false),
+            "Hannibal"
+        )
+        // The last row selected: a new search starts at the first.
+        XCTAssertEqual(TitleTyping.searchStart(in: hRows, selection: ["Hannibal"], isNewSearch: true), 0)
+        XCTAssertEqual(TitleTyping.searchStart(in: hRows, selection: [], isNewSearch: true), 0)
+        XCTAssertEqual(TitleTyping.searchStart(in: hRows, selection: [], isNewSearch: false), 0)
+    }
+
+    /// A person typing, letters gathered by `TitleTypingSearch` and each key
+    /// searched from the selection as `LibraryTitleTyping` does: H, a pause,
+    /// and H walks on through the H's; "h" then "a" within the interval
+    /// stays on the first row it reached; "h" then "o" moves on to the title
+    /// that "ho" reaches.
+    func testTypedKeysWalkThroughTheHsAsAppKitsDo() {
+        var search = TitleTypingSearch()
+        var selected: String?
+        var clock: TimeInterval = 100
+        /// Types `key` after `delay` seconds, selecting the row it reaches.
+        func press(_ key: String, after delay: TimeInterval) {
+            clock += delay
+            let isNew = search.add(key, at: clock, interval: 1.25)
+            if let row = TitleTyping.firstRow(
+                reachedBy: search.typed,
+                in: hRows,
+                selection: selected.map { [$0] } ?? [],
+                isNewSearch: isNew,
+                showingInverted: false
+            ) {
+                selected = row
+            }
+        }
+        press("h", after: 5)
+        XCTAssertEqual(selected, "The Hobbit")
+        press("h", after: 3)
+        XCTAssertEqual(selected, "Hamlet", "H again, a pause later, moved on")
+        press("h", after: 3)
+        XCTAssertEqual(selected, "Hannibal")
+        press("h", after: 3)
+        XCTAssertEqual(selected, "The Hobbit", "and wrapped")
+        // "h" then "a" at once: the new search moves to Hamlet, and adding
+        // the "a" stays on it (Hannibal matches "ha" too, but later).
+        press("h", after: 3)
+        XCTAssertEqual(selected, "Hamlet")
+        press("a", after: 0.25)
+        XCTAssertEqual(selected, "Hamlet", "an added letter stayed on the row it was on")
+        press("n", after: 0.25)
+        XCTAssertEqual(selected, "Hannibal")
+        // A key no title answers leaves the selection.
+        press("z", after: 0.25)
+        XCTAssertEqual(selected, "Hannibal")
     }
 
     // MARK: - The Letters Typed

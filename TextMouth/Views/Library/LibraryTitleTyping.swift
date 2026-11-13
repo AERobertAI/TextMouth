@@ -8,9 +8,11 @@ import AppKit
 /// The Library list's letter navigation while the Leading articles setting
 /// passes over articles when typing (its second and third choices,
 /// TITLE-ARTICLES-RESEARCH-2026-11-13.md): the first letters of a title
-/// typed while the list has the keyboard go to the first row, in the list's
-/// order, that they reach (`TitleTyping`), "h" to "The Hobbit" and "the h"
-/// to it too.
+/// typed while the list has the keyboard go to the first row that they
+/// reach (`TitleTyping`), "h" to "The Hobbit" and "the h" to it too,
+/// searching from the selection as AppKit's type select does: a new search
+/// starts after the selected row and wraps, one that adds letters starts at
+/// the selected row.
 ///
 /// The row is selected, which VoiceOver follows and reads as it reads any
 /// row, so nothing more is announced, and scrolled into view once the list
@@ -83,8 +85,14 @@ struct LibraryTitleTyping: ViewModifier {
             guard search.isUnderWay(at: now, interval: interval),
                   TitleTyping.spaceGoesOn(after: search.typed, in: listed, showingInverted: inverted) else { return .ignored }
         }
-        search.add(press.characters, at: now, interval: interval)
-        if let row = TitleTyping.firstRow(reachedBy: search.typed, in: listed, showingInverted: inverted) {
+        let isNewSearch = search.add(press.characters, at: now, interval: interval)
+        if let row = TitleTyping.firstRow(
+            reachedBy: search.typed,
+            in: listed,
+            selection: selection,
+            isNewSearch: isNewSearch,
+            showingInverted: inverted
+        ) {
             selection = [row]
             // SwiftUI's scroll also takes the selection to the table: on
             // GitHub's runner a row far down that the list had never drawn

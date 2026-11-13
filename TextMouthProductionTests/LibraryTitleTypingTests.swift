@@ -114,11 +114,14 @@ final class LibraryTitleTypingTests: XCTestCase {
     /// A Tale of Two Cities, in that manual order, typed letters select the
     /// row each choice names, which Speak Info then speaks (into a recorder,
     /// so nothing is heard): as written, H is Hamlet, by the list's own type
-    /// select; passing over articles, H is The Hobbit, T the first title
-    /// filed under T wherever the selection is, "the h" The Hobbit again, "a
-    /// t" the row after the selection, a letter no title begins with leaves
-    /// the selection where it was, letters a pause apart start afresh, and,
-    /// with titles inverted, "hobbit, t" is The Hobbit too.
+    /// select; passing over articles, H is The Hobbit, H again a pause later
+    /// Hamlet and then The Hobbit once more (a new search starts after the
+    /// selection and wraps), T the next title filed under T after the
+    /// selection, "the h" The Hobbit, "ha" Hamlet (an added letter starts at
+    /// the selected row), "a t" A Tale of Two Cities, a letter no title
+    /// begins with leaves the selection where it was, letters a pause apart
+    /// start afresh, and, with titles inverted, "hobbit, t" is The Hobbit
+    /// too.
     ///
     /// Only keys that reach a row, or that letter navigation takes, are
     /// typed, since a key nobody takes would make the Mac beep: the first H
@@ -229,16 +232,27 @@ final class LibraryTitleTypingTests: XCTestCase {
                         steps.append("\"\(typed)\" selected \(selected ?? "nothing"), not \(title ?? "nothing")")
                     }
                 }
+                // H again, a pause later, moves on to the next H after the
+                // selection, and wraps past the last, as AppKit's does.
+                try expect("h", "Hamlet")
+                try expect("h", "The Hobbit")
+                // T searches after the selection: A Tale of Two Cities is
+                // filed under T and follows The Hobbit; the next T wraps to
+                // Treasure Island.
+                try expect("t", "A Tale of Two Cities")
                 try expect("t", "Treasure Island")
                 try expect("the h", "The Hobbit")
+                // Letters that add up stay on the row they reached: "h"
+                // moves to Hamlet, and "a" added to it keeps it.
                 try expect("ha", "Hamlet")
-                // After the selection, then before it: the first in the list's order.
+                // The article typed as a word: "a" reaches nothing, the
+                // space joins it, and "t" reaches the title written with it.
                 try expect("a t", "A Tale of Two Cities")
                 try expect("t", "Treasure Island")
                 // No title begins with Z: the selection stays.
                 try expect("z", "Treasure Island")
                 // Letters a pause apart start afresh: T, then H on its own.
-                try expect("t", "Treasure Island")
+                try expect("t", "A Tale of Two Cities")
                 try expect("h", "The Hobbit")
                 // A held key types once: an A that only repeats adds nothing,
                 // so the search stays "h" rather than reaching Hamlet.

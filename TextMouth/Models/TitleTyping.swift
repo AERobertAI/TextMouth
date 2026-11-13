@@ -126,16 +126,49 @@ struct TitleTypingSearch: Equatable, Sendable {
 // MARK: - The Row Typing Goes To
 
 enum TitleTyping {
-    /// The first of `rows`, in the list's order, that `typed` reaches
-    /// (`FilingTitle.isReached(by:showingInverted:)`), or nil when none
-    /// does. `showingInverted` is whether the list shows titles as an index
-    /// does ("Hobbit, The"), as it does while sorting passes over articles.
+    /// The row typing `typed` goes to, found as AppKit's own type select
+    /// finds it (measured by `LibraryTypeSelectProbeTests`): the first of
+    /// `rows`, from where the search starts and wrapping round the end,
+    /// that `typed` reaches (`FilingTitle.isReached(by:showingInverted:)`);
+    /// nil when none does.
+    ///
+    /// - A new search starts at the row after the selected one (with
+    ///   several rows selected, the last in the list's order), so a letter
+    ///   typed again after a pause moves on to the next title with it, a
+    ///   lone match stays where it is, and H, a pause, and H walks through
+    ///   the H's and wraps.
+    /// - A search that adds letters to one under way starts at the
+    ///   selected row itself, so "ha" typed after "h" stays on Hamlet.
+    /// - With nothing selected, either starts at the top.
+    ///
+    /// `showingInverted` is whether the list shows titles as an index does
+    /// ("Hobbit, The"), as it does while sorting passes over articles.
     static func firstRow<ID: Hashable>(
         reachedBy typed: String,
         in rows: [TypedRow<ID>],
+        selection: Set<ID> = [],
+        isNewSearch: Bool = true,
         showingInverted: Bool
     ) -> ID? {
-        rows.first { $0.title.isReached(by: typed, showingInverted: showingInverted) }?.id
+        guard !rows.isEmpty else { return nil }
+        let start = searchStart(in: rows, selection: selection, isNewSearch: isNewSearch)
+        for offset in 0..<rows.count {
+            let row = rows[(start + offset) % rows.count]
+            if row.title.isReached(by: typed, showingInverted: showingInverted) {
+                return row.id
+            }
+        }
+        return nil
+    }
+
+    /// The index in `rows` a search starts at: the top when no row of
+    /// `rows` is selected; otherwise the last selected row, in the list's
+    /// order, or, for a new search, the row after it (the first row after
+    /// the last).
+    /// - Precondition: `rows` is not empty.
+    static func searchStart<ID: Hashable>(in rows: [TypedRow<ID>], selection: Set<ID>, isNewSearch: Bool) -> Int {
+        guard let selected = rows.lastIndex(where: { selection.contains($0.id) }) else { return 0 }
+        return isNewSearch ? (selected + 1) % rows.count : selected
     }
 
     /// Whether a Space typed after `typed` joins the search: some row of
