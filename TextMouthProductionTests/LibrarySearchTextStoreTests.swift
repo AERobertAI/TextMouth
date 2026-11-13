@@ -529,19 +529,76 @@ final class LibrarySearchTextStoreTests: XCTestCase {
         XCTAssertFalse(LibrarySearchTextStore.parserSample.isEmpty)
     }
 
-    /// The producer names the file layout, the content index's version, and
-    /// the parser's fingerprint, and a store made without one uses it.
-    func testCurrentProducerNamesTheLayoutTheIndexVersionAndTheParser() throws {
+    /// The producer names the file layout, the content index's version, this
+    /// build of the app, and the parser's fingerprint, and a store made
+    /// without one uses it. Keyed on the build as the reader's own cache is,
+    /// so no parser change a new build makes serves text an earlier build
+    /// stored, whatever the sample misses (the review of November 13,
+    /// finding 2: the index's version was never raised for a parser change).
+    func testCurrentProducerNamesTheLayoutTheIndexTheBuildAndTheParser() throws {
         let producer = LibrarySearchTextStore.currentProducer
+        let build = BuildIdentity.current
 
         XCTAssertTrue(producer.contains("layout \(LibrarySearchTextStore.formatVersion)"), "Actual: \(producer)")
         XCTAssertTrue(producer.contains("index \(BookContentIndex.currentVersion)"), "Actual: \(producer)")
+        XCTAssertTrue(producer.contains("build \(build.buildNumber)"), "Actual: \(producer)")
+        XCTAssertTrue(producer.contains("commit \(build.gitCommit)"), "Actual: \(producer)")
+        XCTAssertTrue(producer.contains("built \(build.buildDate)"), "Actual: \(producer)")
         XCTAssertTrue(producer.hasSuffix("parser \(LibrarySearchTextStore.parserFingerprint)"), "Actual: \(producer)")
         XCTAssertEqual(
             producer,
-            "layout \(LibrarySearchTextStore.formatVersion); index \(BookContentIndex.currentVersion); parser \(LibrarySearchTextStore.parserFingerprint)"
+            "layout \(LibrarySearchTextStore.formatVersion); index \(BookContentIndex.currentVersion); "
+                + "\(build.cacheProducer); parser \(LibrarySearchTextStore.parserFingerprint)"
         )
         XCTAssertEqual(try makeStore().producer, producer)
         XCTAssertEqual(LibrarySearchTextStore(folder: try makeSandboxDirectory("LibrarySearchText")).producer, producer)
+    }
+
+    /// A build is named by its version, build number, commit, and date, the
+    /// one description both of this Mac's reading-text caches key on, so
+    /// two Release builds never share a producer.
+    func testABuildIsNamedByItsVersionNumberCommitAndDate() {
+        let info = [
+            "CFBundleShortVersionString": "9.8.7",
+            "CFBundleVersion": "654",
+            "TextMouthGitCommit": "0123abcd",
+            "TextMouthBuildDate": "2026-12-01T08:00:00Z",
+        ]
+        let build = BuildIdentity(info: info, executablePath: nil)
+        var later = info
+        later["TextMouthGitCommit"] = "4567ef01"
+
+        XCTAssertEqual(build.cacheProducer, "app 9.8.7 build 654 commit 0123abcd built 2026-12-01T08:00:00Z")
+        XCTAssertNotEqual(build.cacheProducer, BuildIdentity(info: later, executablePath: nil).cacheProducer)
+        XCTAssertTrue(
+            ReadingTextCache.currentProducer.hasSuffix(BuildIdentity.current.cacheProducer),
+            "the reader's cache keys on the same description: \(ReadingTextCache.currentProducer)"
+        )
+    }
+
+    /// The sample the parser's fingerprint reads holds what ST05 changed the
+    /// reading of, which the sample missed until November 13 (the review's
+    /// finding 2): words after a page marker and after a heading annotation
+    /// at the start of their line, a quote led by a page marker, and a page
+    /// label written escaped. Each is read here as the parser reads it, so a
+    /// sample that loses one fails rather than fingerprinting less.
+    func testTheParserSampleHoldsTheConstructsAParserChangeReadsDifferently() {
+        let chapters = MarkdownCacheService.parseMultiChapterMarkdown(
+            LibrarySearchTextStore.parserSample, bookTitle: "Sample", bookAuthor: "Sample"
+        ).chapters
+        let text = chapters.map(\.text).joined(separator: "\n")
+        let pages = chapters.flatMap(\.pages).map(\.label)
+        let headings = chapters.flatMap(\.headings).map(\.text)
+
+        XCTAssertEqual(chapters.count, 2, "chapters of the sample")
+        XCTAssertTrue(text.contains("Words after a page marker at the start of their line."), "words after a leading page marker")
+        XCTAssertTrue(text.contains("words after a heading annotation."), "words after a leading heading annotation")
+        XCTAssertTrue(text.contains("A quoted line led by a page marker."), "a quote led by a page marker")
+        for label in ["12", "13", "14", "A--3>"] {
+            XCTAssertTrue(pages.contains(label), "page \(label) of the sample; pages: \(pages)")
+        }
+        for heading in ["Annotated destination", "Led by its marker"] {
+            XCTAssertTrue(headings.contains(heading), "heading \(heading) of the sample; headings: \(headings)")
+        }
     }
 }

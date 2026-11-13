@@ -200,9 +200,7 @@ struct ReadingTextCache: Sendable {
     /// carries its build number, commit, and date (`BuildIdentity`); each
     /// new installation therefore starts its cache afresh.
     static var currentProducer: String {
-        let build = BuildIdentity.current
-        return "index \(BookContentIndex.currentVersion); app \(build.version) build \(build.buildNumber) "
-            + "commit \(build.gitCommit) built \(build.buildDate)"
+        "index \(BookContentIndex.currentVersion); \(BuildIdentity.current.cacheProducer)"
     }
 
     /// Where the reading text of the book `bookID` is kept.

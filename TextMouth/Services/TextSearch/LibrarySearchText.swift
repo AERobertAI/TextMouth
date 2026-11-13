@@ -90,11 +90,16 @@ struct LibrarySearchTextBook: Sendable {
 ///   nothing else writes here.
 /// - **What makes one unusable:** another content.md, by its identity, or
 ///   another title (`LibrarySearchTextKey`); another layout of this file;
-///   or another producer: the content index's version, raised whenever the
-///   reading text a content.md gives changes, and the parser's own reading of
-///   a fixed sample (`parserFingerprint`), so a parser changed without that
-///   version being raised still reads nothing an earlier one stored. A new
-///   build of the app whose parser reads as before keeps the files.
+///   or another producer (`currentProducer`): another content index version,
+///   another build of the app, or another reading of a fixed sample by the
+///   parser. The build is keyed on as the reader's `ReadingTextCache` keys on
+///   it, since no version is raised for every change to what the parser
+///   reads (the content index's stayed 1.0.0 through eleven parser changes
+///   from September 1 to November 13, 2026), so no parser change can serve
+///   text an earlier build stored: each new installation prepares the
+///   library again, in the background (`LibrarySearchPreparer`). A
+///   development build carries no commit or date, so there the sample's
+///   reading (`parserFingerprint`) is what tells one parser from another.
 /// - **Where:** in this Mac's Caches folder (`MachineLocalPaths.librarySearchText`),
 ///   never in the data directory: a cloud library would upload every file,
 ///   a data-directory move would copy them, and the File Size sort would
@@ -147,9 +152,12 @@ struct LibrarySearchTextStore: Sendable {
     }
 
     /// This build's producer: the file layout, the content index's version,
-    /// and the parser's reading of a fixed sample.
+    /// this build of the app (`BuildIdentity.cacheProducer`: a Release
+    /// build's version, build number, commit, and date), and the parser's
+    /// reading of a fixed sample.
     static var currentProducer: String {
-        "layout \(formatVersion); index \(BookContentIndex.currentVersion); parser \(parserFingerprint)"
+        "layout \(formatVersion); index \(BookContentIndex.currentVersion); "
+            + "\(BuildIdentity.current.cacheProducer); parser \(parserFingerprint)"
     }
 
     /// Where the search text of the book `bookID` is kept.
@@ -321,12 +329,15 @@ struct LibrarySearchTextStore: Sendable {
     // MARK: The Parser's Fingerprint
 
     /// A digest of the reading text the parser gives a fixed sample of
-    /// content.md, which holds every construct the reader's parse reads: the
+    /// content.md, which holds the constructs the reader's parse reads: the
     /// chapter markers, headings of both kinds, emphasis, links, escapes and
     /// entities, code, lists, quotes, a table, HTML, heading annotations and
-    /// page markers. A parser that reads any of them differently gives
-    /// another digest, so no search reads what an older parser stored.
-    /// Worked out once a run, in about a millisecond.
+    /// page markers, a line led by a marker and followed by words (ST05), a
+    /// quote led by one, and a page label written escaped. A parser that
+    /// reads any of them differently gives another digest. It is what tells
+    /// one parser from another where the build cannot (a development build);
+    /// a parser change it misses is still caught by the build's identity
+    /// (`currentProducer`). Worked out once a run, in about a millisecond.
     static let parserFingerprint: String = {
         let chapters = MarkdownCacheService.parseMultiChapterMarkdown(
             parserSample, bookTitle: "Sample", bookAuthor: "Sample"
@@ -381,8 +392,15 @@ struct LibrarySearchTextStore: Sendable {
 
     <div>An HTML block</div>
 
-    <!-- heading: 2 Annotated destination -->
+    <!-- textmouth-heading: eyJsZXZlbCI6MiwidGV4dCI6IkFubm90YXRlZCBkZXN0aW5hdGlvbiJ9 -->
     A paragraph that a heading annotation names, with <!-- page: 12 --> a page inside.
+
+    <!-- page: 13 --> Words after a page marker at the start of their line.
+    <!-- textmouth-heading: eyJsZXZlbCI6MywidGV4dCI6IkxlZCBieSBpdHMgbWFya2VyIn0= --> words after a heading annotation.
+
+    > <!-- page: 14 --> A quoted line led by a page marker.
+
+    A page whose label is written escaped, <!-- page: A-%2D3%3E --> in a paragraph.
 
     ***
 
