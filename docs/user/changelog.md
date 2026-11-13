@@ -4,6 +4,53 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.7 (November 13, 2026)
+
+### Search Library
+- Edit > Find > Search Library… (Option-Command-F) searches the text of every book in the library at once, with Match Case and regular expressions, and opens a match in its book at those words (see [Search Library](search-library.md)).
+- With the search texts made, a plain search of a library of 750 books takes about a second.
+- TextMouth makes the search texts in the background after the first launch of each new installation, and a search made before then says "Preparing 120 of 737 books…" and takes several seconds.
+- Search in Book has a Match Case checkbox, unchecked unless you check it.
+
+### The Reading List
+- Remove books when finished, a new option in the Reading List's options bar, takes a book off the list once you have finished it, and is unchecked unless you check it.
+- A finished book stays on the list while its window rests on it, so Rewind, Play, and Next in Reading List still follow the list, and it leaves when that window goes on to another book or closes.
+- In a library in the cloud, Keep these books on this Mac, checked unless you clear it, keeps every book on the Reading List downloaded, as Keep on This Mac does, and downloads only the books that fit in the free space, leaving 1 GB free.
+- Remove Download and Stop Keeping on This Mac say when the Reading List keeps a book, and what lets it go.
+- The Reading List's options bar goes on to a second line in a narrow window instead of cutting a label.
+
+### Replace Existing
+- Replace Existing no longer freezes TextMouth while it reads a long braille book again: the sheet dims its buttons, shows "Replacing “Title”. This can take a moment.", and VoiceOver hears it if the work lasts more than a second.
+- Replace Existing keeps a text encoding you chose in Book Information, when the new copy is the same file or a file that names no encoding of its own and reads in your choice.
+- Replace Existing keeps a braille book's braille code, as it kept its braille file characters, and both together when both differ.
+- When a book is being replaced or read again with another braille code, what has to wait says so in a sentence of its own.
+
+### Book Information
+- A braille book's Braille Code is a pop-up button that reads the book again with another braille code, asking first, as the Text Encoding and Braille File Characters pop-ups do. An open reader follows the new code.
+- The Text Encoding pop-up also offers CP437 (US DOS), CP850 (Western European DOS), and Mac Central European. TextMouth takes them for a new file only when macOS's own guess names one, so no book you have is read differently.
+- Book Information for an audiobook stops waiting for the file's tags after 30 seconds and shows the details TextMouth keeps instead, where before a file that hung the system's audio reader left the sheet loading for good.
+- Saving in any metadata editor removes the spaces and line breaks around each value, so "Press " is saved as "Press" and spaces typed over an empty field change nothing.
+
+### Importing
+- A PDF locked by a password is refused with "This PDF needs a password to open." in place of a message about text recognition.
+- A Word document with no text is refused with "This file has no text to read.", where it used to import as an empty book.
+- A ZIP batch's alert is titled by what the batch did: Nothing Imported, Already in Library, Some Files Not Imported, Book Imported, or Books Imported, never Error over books that came in.
+- A folder of tracks or a playlist too big for the disk is refused before any track is copied, with "There isn’t enough free space on the disk.", and a track on the library's own disk counts as taking no room, since the copy shares its bytes.
+- Saving an EPUB's details works when the book's container file spells the package document's path in another case than the archive does.
+- A Markdown file whose block quotes and lists nest more than 128 levels deep is refused with a sentence, where it could once overflow TextMouth's stack.
+- A DAISY 3 book of several DTBook files is read in one order every time, and numbers a page that holds no words through the whole book, 1, 2, 3, 4, where each file began again at 1.
+- Every DAISY book is read again once at the first launch of this version, and your place follows its words; only a DAISY 3 book of several DTBook files can end with another text: its pages numbered through the whole book, and its files in their true order.
+- A DAISY book's audio times written with a unit, as "500ms", "2min", or "1h", read as the time they name, for a book imported again.
+- A web page named .doc, a web archive, and SSML read without pages when pages are not wanted, as they did before pages existed. Nothing you have is read differently.
+- An OPML export no longer writes an apostrophe as &apos;, and the feed, OPML, and SSML code share one escaper for text in XML.
+
+### Finder and size
+- Finder offers TextMouth in the Open With menu for .mp4, .m4v, and .mov files, and never as the default app. TextMouth plays their sound.
+- TextMouth's app is about 4.6 MB smaller, 19.0 MB where it was 23.5 MB, because it is compiled for size. HTML in an EPUB is read about 4 milliseconds slower for each megabyte at import, and nothing else you can notice changed.
+
+### Not changed
+- How any book other than a DAISY book reads, sounds, or is laid out.
+
 ## 0.4.6 (November 11, 2026)
 ### The End of heading timer on a book's cover
 - A sleep timer set to End of heading on a book that opens at its cover, as a new Project Gutenberg EPUB does, no longer stops playback at once.
