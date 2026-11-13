@@ -2252,12 +2252,19 @@ final class ReaderViewModel: ObservableObject {
     /// library estimates, preventing formula inputs from drifting apart. A
     /// text book's place carries the words around it (T06), by which a
     /// later text of the book can find it again (`anchorToSave(at:)`).
-    private func makeCurrentReadingPosition() -> ReadingPosition {
+    ///
+    /// - Parameter withAnchor: Whether to take the words around the place.
+    ///   A live position only moves a row's time estimate and nothing reads
+    ///   its words, so it asks for none (`publishLivePosition(now:)`): taking
+    ///   them cuts two strings out of the chapter each second.
+    private func makeCurrentReadingPosition(withAnchor: Bool = true) -> ReadingPosition {
         ReadingPosition(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
             globalCharacterOffset: currentGlobalOffset,
-            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+            anchor: withAnchor
+                ? anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+                : nil
         )
     }
 
@@ -2279,7 +2286,6 @@ final class ReaderViewModel: ObservableObject {
     /// Applies the latest cursor to the shared library and persists every
     /// thirty seconds during active playback to bound crash-related data loss.
     private func publishLivePosition(now: Date) {
-        let position = makeCurrentReadingPosition()
         let isActivelyPlaying: Bool
         if isAudioBook {
             isActivelyPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
@@ -2291,11 +2297,14 @@ final class ReaderViewModel: ObservableObject {
             lastCheckpoint: lastPersistedCheckpoint,
             now: now
         ) {
+            // A durable checkpoint carries the words around the place.
+            let position = makeCurrentReadingPosition()
             libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
             lastPersistedCheckpoint = now
             notePlaceSaved(position)
         } else {
-            libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
+            // A live position carries none: only its cursor is read.
+            libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: makeCurrentReadingPosition(withAnchor: false))
             hasPlayedSinceSave = true
         }
         lastLivePositionPublish = now
