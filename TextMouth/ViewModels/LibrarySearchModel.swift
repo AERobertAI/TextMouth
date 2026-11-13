@@ -78,6 +78,27 @@ struct LibrarySearchSection: Identifiable, Equatable, Sendable {
     let rows: [LibrarySearchMatchRow]
     /// What follows them.
     let more: More
+
+    /// The words of the row that follows the matches, in true numbers: Show
+    /// All's, which says how many of the book's matches it lists ("Show the
+    /// first 500 of 700 matches in …"), or the note once even Show All lists
+    /// fewer than the book holds ("Listing 500 of 700 matches: …"); empty
+    /// when every match is shown, and no row follows.
+    var moreLabel: String {
+        switch more {
+        case .nothing:
+            return ""
+        case .showAll:
+            return LibrarySearchWording.showAll(
+                matches: group.matchCount,
+                isLowerBound: group.countReachedLimit,
+                listing: LibrarySearchLimits.wholeBook.keptPerBook,
+                bookTitle: group.book.title
+            )
+        case .beyondShowAll:
+            return LibrarySearchWording.listedPart(rows.count, of: group.matchCount, isLowerBound: group.countReachedLimit)
+        }
+    }
 }
 
 // MARK: - The Model
@@ -565,12 +586,25 @@ final class LibrarySearchModel: ObservableObject {
         var updated = groups[index]
         if let result {
             updated.matches = result.matches
-            updated.matchCount = max(updated.matchCount, result.matchCount)
-            updated.countReachedLimit = updated.countReachedLimit || result.countReachedLimit
+            // Show All counts no further than it lists
+            // (`LibrarySearchLimits.wholeBook`), so its count is the book's
+            // only when it saw every match. Otherwise the library search's
+            // count, which goes up to a thousand, and its flag stay: a book
+            // of 700 matches still says 700, not "more than 500" or "more
+            // than 700" (the review of November 13, finding 4).
+            if !result.countReachedLimit {
+                updated.matchCount = result.matchCount
+                updated.countReachedLimit = false
+            }
         }
         updated.showsAll = true
         groups[index] = updated
-        announce(LibrarySearchWording.listedAll(updated.matches.count, bookTitle: group.book.title))
+        announce(LibrarySearchWording.listedAll(
+            updated.matches.count,
+            of: updated.matchCount,
+            isLowerBound: updated.countReachedLimit,
+            bookTitle: group.book.title
+        ))
     }
 
     // MARK: The Books of a Library

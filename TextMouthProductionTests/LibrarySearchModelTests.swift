@@ -780,6 +780,7 @@ final class LibrarySearchModelTests: XCTestCase {
         await searchAndWait(model, "needle")
         XCTAssertEqual(model.sections.first?.rows.count, 20)
         XCTAssertEqual(model.sections.first?.more, .showAll)
+        XCTAssertEqual(model.sections.first?.moreLabel, "Show all 150 matches in The Long Road")
 
         model.showAllMatches(in: book0.id)
         await model.showAllTask?.value
@@ -793,9 +794,49 @@ final class LibrarySearchModelTests: XCTestCase {
         XCTAssertEqual(model.sections.first?.rows.count, 150, "Every match kept is listed")
         XCTAssertEqual(model.sections.first?.more, .nothing)
         XCTAssertEqual(model.sections.last?.rows.count, 3, "The other book is unchanged")
-        XCTAssertEqual(announcements.messages.last, LibrarySearchWording.listedAll(150, bookTitle: "The Long Road"))
+        XCTAssertEqual(
+            announcements.messages.last,
+            LibrarySearchWording.listedAll(150, of: 150, isLowerBound: false, bookTitle: "The Long Road")
+        )
         XCTAssertEqual(announcements.messages.last, "Listing 150 matches in The Long Road")
+        XCTAssertEqual(model.sections.first?.group.heading, "The Long Road, by Author 0: 150 matches")
         XCTAssertNil(model.showAllTask)
+    }
+
+    /// A book of 501 to 1,000 matches is counted in full by the library
+    /// search and listed only to Show All's 500, so the row, the heading,
+    /// the note, and the announcement say 500 of its 700: Show All keeps
+    /// the book's own count and flag, where until November 13 the row said
+    /// "Show all 700 matches", listed 500, and the heading then said "more
+    /// than 700 matches" (the review's finding 4). The whole-book result is
+    /// what the engine gives for such a book with whole-book limits: 500
+    /// kept, counted to 500, the count stopped at its limit.
+    func testShowAllOfABookWithSevenHundredMatchesSaysTrueNumbers() async {
+        let announcements = AnnouncementLog()
+        let book = makeBook(0, title: "Seven Hundred")
+        let list = BookList([book])
+        let libraryResult = makeResult(book, order: 0, kept: 100, count: 700)
+        let wholeBookResult = makeResult(book, order: 0, kept: 500, reachedLimit: true)
+        let model = makeModel(list, announcements) { _, _, books, limits, _, report in
+            playOut([limits == .wholeBook ? wholeBookResult : libraryResult], given: books.count, report: report)
+        }
+        await searchAndWait(model)
+        XCTAssertEqual(model.sections.first?.rows.count, 20)
+        XCTAssertEqual(model.sections.first?.more, .showAll)
+        XCTAssertEqual(model.sections.first?.moreLabel, "Show the first 500 of 700 matches in Seven Hundred")
+        XCTAssertEqual(model.sections.first?.group.heading, "Seven Hundred, by Author 0: 700 matches")
+
+        model.showAllMatches(in: book.id)
+        await model.showAllTask?.value
+
+        let section = model.sections.first
+        XCTAssertEqual(section?.rows.count, 500, "Show All lists its 500")
+        XCTAssertEqual(section?.group.matchCount, 700, "the book's own count stays")
+        XCTAssertEqual(section?.group.countReachedLimit, false, "the book's own count was complete and stays so")
+        XCTAssertEqual(section?.group.heading, "Seven Hundred, by Author 0: 700 matches")
+        XCTAssertEqual(section?.more, .beyondShowAll)
+        XCTAssertEqual(section?.moreLabel, "Listing 500 of 700 matches: refine the search to see the rest")
+        XCTAssertEqual(announcements.messages.last, "Listing the first 500 of 700 matches in Seven Hundred")
     }
 
     /// When even the whole-book search stopped at its limit, the book lists
@@ -816,7 +857,16 @@ final class LibrarySearchModelTests: XCTestCase {
 
         XCTAssertEqual(model.sections.first?.rows.count, 500, "Everything kept is listed")
         XCTAssertEqual(model.sections.first?.more, .beyondShowAll)
-        XCTAssertEqual(announcements.messages.last, "Listing 500 matches in Endless", "Actual: \(announcements.messages)")
+        XCTAssertEqual(
+            model.sections.first?.moreLabel,
+            "Listing 500 of more than \(1_000.formatted()) matches: refine the search to see the rest"
+        )
+        XCTAssertEqual(model.sections.first?.group.heading, "Endless, by Author 0: more than \(1_000.formatted()) matches")
+        XCTAssertEqual(
+            announcements.messages.last,
+            "Listing the first 500 of more than \(1_000.formatted()) matches in Endless",
+            "Actual: \(announcements.messages)"
+        )
     }
 
     /// Show All for a book the list does not hold searches nothing.

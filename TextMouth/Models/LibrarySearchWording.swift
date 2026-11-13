@@ -145,26 +145,42 @@ enum LibrarySearchWording {
     static let matchHint = "Opens the book at this match"
 
     /// The row that lists the rest of a book's matches, kept to the first
-    /// ones until asked for: "Show all 212 matches in The Long Road".
-    static func showAll(matches: Int, isLowerBound: Bool, bookTitle: String) -> String {
-        let counted = isLowerBound ? "more than \(matches.formatted())" : "all \(matches.formatted())"
-        return "Show \(counted) matches in \(bookTitle)"
+    /// ones until asked for, where Show All lists up to `limit`: "Show all
+    /// 212 matches in The Long Road" when that is every one, and otherwise
+    /// how many it lists of how many the book holds, "Show the first 500 of
+    /// 700 matches in The Long Road", "Show the first 500 of more than 1,000
+    /// matches in The Long Road".
+    static func showAll(matches: Int, isLowerBound: Bool, listing limit: Int, bookTitle: String) -> String {
+        guard isLowerBound || matches > limit else {
+            return "Show all \(matches.formatted()) matches in \(bookTitle)"
+        }
+        return "Show the first \(limit.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)"
     }
 
     /// The Show All row's hint.
     static let showAllHint = "Lists up to 500 of this book's matches here"
 
-    /// The row under a book whose matches are many more than any list shows,
-    /// once it shows its most: "More than 500 matches: refine the search to
-    /// see the rest".
-    static func moreThanListed(_ shown: Int) -> String {
-        "More than \(shown.formatted()) matches: refine the search to see the rest"
+    /// The row under a book whose matches are more than even Show All lists,
+    /// once it lists its most: "Listing 500 of 700 matches: refine the
+    /// search to see the rest", "Listing 500 of more than 1,000 matches: …".
+    static func listedPart(_ shown: Int, of matches: Int, isLowerBound: Bool) -> String {
+        "Listing \(shown.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches: refine the search to see the rest"
     }
 
-    /// Said once a book has all its matches listed: "Listing 212 matches in
-    /// The Long Road".
-    static func listedAll(_ count: Int, bookTitle: String) -> String {
-        "Listing \(count == 1 ? "1 match" : "\(count.formatted()) matches") in \(bookTitle)"
+    /// Said once Show All has listed a book's matches: "Listing 212 matches
+    /// in The Long Road", or, when the book holds more than it lists,
+    /// "Listing the first 500 of 700 matches in The Long Road".
+    static func listedAll(_ count: Int, of matches: Int, isLowerBound: Bool, bookTitle: String) -> String {
+        guard isLowerBound || matches > count else {
+            return "Listing \(count == 1 ? "1 match" : "\(count.formatted()) matches") in \(bookTitle)"
+        }
+        return "Listing the first \(count.formatted()) of \(total(matches, isLowerBound: isLowerBound)) matches in \(bookTitle)"
+    }
+
+    /// A book's count of matches as a total: "700", or "more than 1,000"
+    /// when the count stopped at its limit.
+    private static func total(_ matches: Int, isLowerBound: Bool) -> String {
+        isLowerBound ? "more than \(matches.formatted())" : matches.formatted()
     }
 
     // MARK: - Opening a Match

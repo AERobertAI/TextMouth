@@ -202,18 +202,14 @@ private struct LibrarySearchSectionView: View {
         case .nothing:
             EmptyView()
         case .showAll:
-            Text(LibrarySearchWording.showAll(
-                matches: section.group.matchCount,
-                isLowerBound: section.group.countReachedLimit,
-                bookTitle: section.group.book.title
-            ))
-            .foregroundColor(.accentColor)
-            .tag(LibrarySearchWindowView.showAllRowID(section.id))
-            .accessibilityAddTraits(.isButton)
-            .accessibilityHint(LibrarySearchWording.showAllHint)
-            .accessibilityAction(.default) { model.showAllMatches(in: section.id) }
+            Text(section.moreLabel)
+                .foregroundColor(.accentColor)
+                .tag(LibrarySearchWindowView.showAllRowID(section.id))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(LibrarySearchWording.showAllHint)
+                .accessibilityAction(.default) { model.showAllMatches(in: section.id) }
         case .beyondShowAll:
-            Text(LibrarySearchWording.moreThanListed(section.rows.count))
+            Text(section.moreLabel)
                 .foregroundColor(.secondary)
         }
     }
