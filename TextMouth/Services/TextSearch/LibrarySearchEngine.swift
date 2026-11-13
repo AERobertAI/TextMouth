@@ -451,13 +451,16 @@ fileprivate struct BookScan {
             nsText = searched
             countedUnits += UTF8Counting.utf16Length(of: UnsafeBufferPointer(rebasing: bytes[countedBytes..<line.lowerBound]))
             countedBytes = line.lowerBound
-            // The line and the line feed after it, if any: the matcher sees
-            // what follows the line's last Character, as in the whole chapter.
+            // The line with the line feeds on either side of it, if any: the
+            // matcher sees what is around the line's first and last
+            // Characters as it does in the whole chapter, and no match can
+            // begin or end at a line feed, which the query does not hold.
+            let before = line.lowerBound > 0 ? 1 : 0
+            let after = line.upperBound < bytes.count ? 1 : 0
             let units = UTF8Counting.utf16Length(of: UnsafeBufferPointer(rebasing: bytes[line]))
-                + (line.upperBound < bytes.count ? 1 : 0)
             matcher.enumerateLiteralRanges(
                 in: searched,
-                within: NSRange(location: countedUnits, length: units),
+                within: NSRange(location: countedUnits - before, length: before + units + after),
                 shouldStop: isCancelled
             ) { match in
                 record(match, in: chapterText, chapter: index)
