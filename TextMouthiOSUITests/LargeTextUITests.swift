@@ -83,7 +83,8 @@ final class LargeTextUITests: TextMouthUITestCase {
     /// (`.accessibility2`, the largest cap that still shows growth) and what it measures uncapped, so that a cap at that
     /// size or at any smaller one fails and the sheet as it is passes, with room on both sides. The heights come from two
     /// GitHub runs of this test: 43066870675 (the sheet as it is) and 43374972739 (the proof branch, which capped the sheet
-    /// at `.accessibility2` and was never merged; this test failed there naming all four parts):
+    /// at `.accessibility2` and was never merged; run 43378144324 of the same branch with these bounds failed this test,
+    /// naming all four parts):
     ///
     /// | part                          | default | largest, as is | ratio | largest, capped | ratio | bound |
     /// | ----------------------------- | ------- | -------------- | ----- | --------------- | ----- | ----- |
