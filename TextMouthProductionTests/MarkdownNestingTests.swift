@@ -32,10 +32,10 @@ final class MarkdownNestingTests: XCTestCase {
     /// Runs `body` with the walk's limit on trees lifted, so that only the count of
     /// containers (the first layer) can refuse a text: a refusal seen inside `body` is
     /// the count's, not the walk's answering first for a tree that was parsed anyway.
-    private func whereOnlyTheCountRefuses(_ body: () throws -> Void) rethrows {
+    private func whereOnlyTheCountRefuses(_ body: () -> Void) {
         var limits = MarkupGuard.Limits.standard
         limits.deepestTree = .max
-        try MarkupGuard.$limits.withValue(limits, operation: body)
+        MarkupGuard.$limits.withValue(limits) { body() }
     }
 
     // MARK: - The count
