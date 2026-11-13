@@ -121,12 +121,15 @@ enum MarkdownNesting {
         var pendingColumns = 0
         // Whether the last token was a `>`, whose one following space is its own.
         var afterQuote = false
+        // Whether the last token was a list marker, whose following white space is its own.
+        var afterMarker = false
         while index < bytes.count {
             let byte = bytes[index]
             switch byte {
             case Byte.space, Byte.tab:
                 var columns = byte == Byte.tab ? 4 : 1
                 if afterQuote, columns == 1 { columns = 0 }
+                if afterMarker { columns = 0 }
                 afterQuote = false
                 pendingColumns += columns
                 index += 1
@@ -135,6 +138,7 @@ enum MarkdownNesting {
                 pendingColumns = 0
                 line.quotes += 1
                 afterQuote = true
+                afterMarker = false
                 index += 1
             default:
                 guard let width = markerWidth(in: bytes, at: index) else {
@@ -145,6 +149,7 @@ enum MarkdownNesting {
                 line.indentColumns += pendingColumns
                 pendingColumns = 0
                 afterQuote = false
+                afterMarker = true
                 line.markers += 1
                 if !line.hasMarker {
                     line.hasMarker = true

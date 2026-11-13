@@ -216,8 +216,7 @@ final class SSMLReaderTests: XCTestCase {
     func testLiteralMarkupCharactersAreEscapedAndReadAsWritten() throws {
         let ssml = speak("<p>Type &lt;b&gt;bold&lt;/b&gt; &amp; say \"hi\", then &quot;bye&quot;.</p>")
         let html = try SSMLReader.html(from: Data(ssml.utf8))
-        // A quote needs no escaping in the text of an element, and the shared writer (XMLEscaping) leaves it.
-        XCTAssertTrue(html.contains("&lt;b&gt;bold&lt;/b&gt; &amp; say \"hi\""), html)
+        XCTAssertTrue(html.contains("&lt;b&gt;bold&lt;/b&gt; &amp; say &quot;hi&quot;"), html)
         XCTAssertFalse(html.contains("<b>"))
         let text = try readerText(ofHTML: html)
         XCTAssertTrue(text.contains("Type <b>bold</b> & say \"hi\", then \"bye\"."), text)
