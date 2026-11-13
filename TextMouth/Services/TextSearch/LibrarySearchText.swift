@@ -218,6 +218,12 @@ struct LibrarySearchTextStore: Sendable {
 
     // MARK: Removing
 
+    /// Removes the search text kept for the book `bookID`, if any: a file
+    /// found damaged while it was read.
+    func remove(bookID: UUID) {
+        try? FileManager.default.removeItem(at: url(for: bookID))
+    }
+
     /// Removes the file of every book not in `bookIDs`, the books the library
     /// holds now, and every partial file a search that stopped left behind,
     /// unless it was written in the last `partialFileAge` seconds by a search

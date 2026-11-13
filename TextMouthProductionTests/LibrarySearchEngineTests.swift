@@ -283,6 +283,26 @@ final class LibrarySearchEngineTests: XCTestCase {
         XCTAssertEqual(found.results[library.books[0].id]?.matchCount, 2, "the changed book's new text is searched")
     }
 
+    /// A store file cut short after its header (a disk that filled, a crash
+    /// while it was copied) is not searched as far as it goes: it is removed,
+    /// and the book is prepared again and searched whole.
+    func testABookWhoseStoreFileIsCutShortIsPreparedAgain() throws {
+        let markdown = "<!-- chapter: One -->\nthe fox\n\n<!-- chapter: Two -->\n" + String(repeating: "a fox ran. ", count: 400)
+        let library = try makeLibrary([("Cut Short", markdown)])
+        XCTAssertEqual(search("fox", TextSearchOptions(), in: library).results[library.books[0].id]?.matchCount, 401)
+        let file = library.store.url(for: library.books[0].id)
+        let size = try XCTUnwrap(try FileManager.default.attributesOfItem(atPath: file.path)[.size] as? Int)
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.truncate(atOffset: UInt64(size - 100))
+        try handle.close()
+
+        let found = search("fox", TextSearchOptions(), in: library)
+        XCTAssertEqual(found.tally?.booksPrepared, 1, "the book with a damaged file is prepared again")
+        XCTAssertEqual(found.results[library.books[0].id]?.matchCount, 401, "and searched whole")
+        let again = search("fox", TextSearchOptions(), in: library)
+        XCTAssertEqual(again.tally?.booksPrepared, 0, "the file made again is used")
+    }
+
     // MARK: Speed
 
     /// A plain search of a prepared synthetic library takes no longer than a

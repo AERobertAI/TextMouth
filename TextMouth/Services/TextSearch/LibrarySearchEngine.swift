@@ -315,8 +315,15 @@ fileprivate struct BookReader: Sendable {
 
         if let file = store.open(bookID: book.id, key: key) {
             defer { file.close() }
+            var isDamaged = false
             for index in file.chapters.indices {
-                guard !isCancelled(), file.readChapter(index, into: &buffer) else { break }
+                guard !isCancelled() else { break }
+                // A file shorter than its header says is damaged: it goes,
+                // and the book is prepared again below.
+                guard file.readChapter(index, into: &buffer) else {
+                    isDamaged = true
+                    break
+                }
                 let count = file.chapters[index].byteCount
                 let goOn = buffer.withUnsafeBufferPointer { all in
                     scan.searchChapter(index, bytes: UnsafeBufferPointer(rebasing: all[0..<count]), text: nil, isCancelled: isCancelled)
@@ -324,7 +331,11 @@ fileprivate struct BookReader: Sendable {
                 guard goOn else { break }
                 scan.endChapter(utf16Length: file.chapters[index].utf16Length)
             }
-            return BookRead(state: .searched(prepared: false), result: scan.result(for: book, order: order, chapters: file.chapters))
+            if !isDamaged {
+                return BookRead(state: .searched(prepared: false), result: scan.result(for: book, order: order, chapters: file.chapters))
+            }
+            store.remove(bookID: book.id)
+            scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
         }
 
         guard let prepared = prepare(book, key: key) else {
