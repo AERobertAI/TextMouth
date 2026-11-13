@@ -291,15 +291,80 @@ final class LibrarySearchJumpTests: XCTestCase {
             globalOffset: 0,
             matchedText: "winch"
         ))
+        let earlierSearch = try XCTUnwrap(reader.libraryJumpSearch, "no search began for the place that holds nothing")
         // ...then one whose place holds its match, moved to at once.
         requests.request(bookID: book.id, match: bollard, query: "bollard", options: TextSearchOptions())
         XCTAssertEqual(reader.currentChapterIndex, bollard.chapterIndex, "chapter after the later request")
+        XCTAssertTrue(earlierSearch.isCancelled, "the later request left the earlier search running")
+        XCTAssertNil(reader.libraryJumpSearch, "the reader kept a search for a request it no longer serves")
 
         // Give the earlier search time to end: it must not move the cursor.
         _ = waitUntil(timeout: 1) { reader.currentChapterIndex != bollard.chapterIndex }
 
         XCTAssertEqual(reader.currentChapterIndex, bollard.chapterIndex, "chapter after the earlier search ended")
         XCTAssertEqual(reader.currentCharacterOffset, bollard.characterOffset, "offset after the earlier search ended")
+    }
+
+    /// Closing the reader stops its search for a moved match, which ran to
+    /// its end in Swift's pool after the reader had gone until November 13
+    /// (the review's finding 8).
+    func testClosingTheReaderStopsTheSearchForAMovedMatch() throws {
+        let world = try makeIntegrationWorld("Library Jump Closed")
+        let book = try makeRiverBook("River Closed", in: world)
+        let requests = LibrarySearchJumpRequests()
+        let reader = makeReader(for: book, in: world, requests: requests)
+        waitForReaderToLoad(reader)
+        // A place that holds no "winch", so the reader searches the book.
+        requests.add(LibrarySearchJumpRequest(
+            bookID: book.id,
+            createdAt: requests.currentDate,
+            query: "winch",
+            options: TextSearchOptions(),
+            chapterIndex: 0,
+            characterOffset: 2,
+            globalOffset: 0,
+            matchedText: "winch"
+        ))
+        let search = try XCTUnwrap(reader.libraryJumpSearch, "no search began for the place that holds nothing")
+
+        reader.close()
+
+        XCTAssertTrue(search.isCancelled, "closing the reader left its search running")
+        XCTAssertNil(reader.libraryJumpSearch, "a closed reader kept its search")
+    }
+
+    /// The search of the whole book for a moved match stops when its task is
+    /// cancelled, and gives nothing: over a book of about 8 MB, which takes
+    /// far longer to search than the cancel takes to come, a cancelled search
+    /// ends with no outcome, where it ran to the end until November 13.
+    func testTheWholeBookSearchForAMovedMatchStopsWhenCancelled() async throws {
+        // 40 chapters of about 205 KB, "lanyard" in one sentence of ten.
+        let plain = "The deckhand coiled the rope beside the winch and counted the crates. "
+        let withWord = "The deckhand coiled the lanyard beside the winch and counted the crates. "
+        let chapter = String(repeating: String(repeating: plain, count: 9) + withWord, count: 280)
+        let chapters = Array(repeating: chapter, count: 40)
+        let corpus = BookSearchCorpus(
+            chapterTexts: chapters,
+            chapterTitles: chapters.indices.map { "Chapter \($0 + 1)" },
+            headings: [],
+            bookTitle: "Synthetic"
+        )
+        let moved = request(chapter: 0, offset: 1, query: "lanyard", text: "lanyard")
+
+        let search = ReaderViewModel.searchWholeBook(for: moved, in: corpus, limit: ReaderViewModel.libraryJumpMatchLimit)
+        search.cancel()
+        let outcome = await search.value
+
+        XCTAssertNil(outcome, "a cancelled search gave an outcome: \(String(describing: outcome).prefix(200))")
+
+        // Uncancelled, the same search finds every match, so the nil above
+        // is the cancel's doing.
+        let whole = await ReaderViewModel.searchWholeBook(for: moved, in: corpus, limit: ReaderViewModel.libraryJumpMatchLimit).value
+        guard case let .matches(matches, isTruncated)? = whole else {
+            return XCTFail("the uncancelled search gave \(String(describing: whole).prefix(200))")
+        }
+        XCTAssertEqual(matches.count, 280 * 40, "matches in the book")
+        XCTAssertFalse(isTruncated, "the search stopped at its limit")
     }
 
     /// The choice of the nearest match: the nearest by offset from the

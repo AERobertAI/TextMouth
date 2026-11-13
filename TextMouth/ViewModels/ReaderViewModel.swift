@@ -278,6 +278,11 @@ final class ReaderViewModel: ObservableObject {
     /// background moves the cursor only if no later request was claimed
     /// meanwhile (`claimLibrarySearchJump()`).
     var libraryJumpGeneration = 0
+    /// The search of the whole book for a match that moved, while one runs
+    /// for the latest request claimed; cancelled when a later request is
+    /// claimed and when the reader closes (`cancelLibraryJumpSearch()`), so
+    /// it never runs on for a request or a reader that is gone.
+    var libraryJumpSearch: Task<BookSearchOutcome?, Never>?
     /// Where a reader that switched its window to this book asks this reader
     /// to see to the window's focus once it has found it (0.2.5): the shared
     /// store, unless the reader was created with its own.
@@ -2297,6 +2302,8 @@ final class ReaderViewModel: ObservableObject {
         hasClosed = true
         // A closed reader hands nothing over when the next episode arrives.
         nextEpisodeWait = nil
+        // Nor does it look any further for a Search Library match that moved.
+        cancelLibraryJumpSearch()
         // A download the reader waits for is stopped, and the book's state
         // found afterwards recorded for the library list (FR02).
         endCloudWorkForClose()

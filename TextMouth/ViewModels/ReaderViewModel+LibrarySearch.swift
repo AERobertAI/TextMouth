@@ -153,8 +153,10 @@ extension ReaderViewModel {
     func claimLibrarySearchJump() {
         guard !hasClosed, !isLoading else { return }
         guard let request = libraryJumpRequests.consume(for: book.id) else { return }
-        // A later claim supersedes a search for an earlier one still running.
+        // A later claim supersedes a search for an earlier one still running,
+        // which stops there and then.
         libraryJumpGeneration += 1
+        cancelLibraryJumpSearch()
 
         guard let corpus = searchCorpus else {
             // There is no text to find the match in. The words the Search in
@@ -174,29 +176,19 @@ extension ReaderViewModel {
     /// when the search ends, move to the match nearest the request's place,
     /// or say the match is gone. The move is made only if this reader is
     /// still open, still holds the same book, and has claimed no later
-    /// request meanwhile.
+    /// request meanwhile; either of those cancels the search
+    /// (`cancelLibraryJumpSearch()`).
     private func searchForLibraryMatchNearby(_ request: LibrarySearchJumpRequest, in corpus: BookSearchCorpus) {
         let generation = libraryJumpGeneration
         let bookID = book.id
-        // Read here, on the main actor, for the detached search to use.
-        let limit = Self.libraryJumpMatchLimit
+        let search = Self.searchWholeBook(for: request, in: corpus, limit: Self.libraryJumpMatchLimit)
+        libraryJumpSearch = search
         Task { [weak self] in
-            // Detached, so it runs off the main actor; the corpus and the
-            // request are Sendable copies. Searched without Search in
-            // Book's 500-match limit, so the nearest match is found
-            // wherever it falls.
-            let outcome = await Task.detached(priority: .userInitiated) {
-                try? BookSearchEngine.search(
-                    query: request.query,
-                    options: request.options,
-                    in: corpus,
-                    limit: limit,
-                    isCancelled: { false }
-                )
-            }.value
+            let outcome = await search.value
 
             guard let self, !self.hasClosed, self.book.id == bookID,
                   self.libraryJumpGeneration == generation else { return }
+            self.libraryJumpSearch = nil
             // An invalid pattern cannot be here (the search that found the
             // match compiled it), but if it were, no match can be found.
             guard case let .matches(matches, _)? = outcome,
@@ -206,6 +198,37 @@ extension ReaderViewModel {
             }
             self.moveToLibrarySearchMatch(found, isTranscript: corpus.timing != nil)
         }
+    }
+
+    /// Starts the search of the whole of `corpus` for `request`'s query, for
+    /// a request whose match is no longer at its place: detached, so it runs
+    /// off the main actor on Sendable copies, and without Search in Book's
+    /// 500-match limit (up to `limit`), so the nearest match is found
+    /// wherever it falls. Cancelling the task stops the search at once, as
+    /// Search in Book's does (before each chapter and inside each lookup), and
+    /// its outcome is then nil, as for a pattern that does not compile.
+    nonisolated static func searchWholeBook(
+        for request: LibrarySearchJumpRequest,
+        in corpus: BookSearchCorpus,
+        limit: Int
+    ) -> Task<BookSearchOutcome?, Never> {
+        Task.detached(priority: .userInitiated) {
+            try? BookSearchEngine.search(
+                query: request.query,
+                options: request.options,
+                in: corpus,
+                limit: limit,
+                isCancelled: { Task.isCancelled }
+            )
+        }
+    }
+
+    /// Stops the search for a moved match that runs for an earlier request,
+    /// if one does: when a later request is claimed, and when the reader
+    /// closes, so no search runs on for a request or a reader that is gone.
+    func cancelLibraryJumpSearch() {
+        libraryJumpSearch?.cancel()
+        libraryJumpSearch = nil
     }
 
     /// Move to `found` the way a Search in Book pick does, then say where
