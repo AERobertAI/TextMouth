@@ -7,8 +7,9 @@ import XCTest
 /// places are carried onto its text, when the choice is about the new file
 /// too (`DuplicateReplacement.textEncodingToReadAgain(replacing:with:)`): the
 /// same bytes, or bytes that name no encoding of their own. A new file that
-/// names its encoding keeps it; a copy that cannot be read in the choice is
-/// refused in the re-read's own words, with nothing changed; and a
+/// names its encoding, or one the choice cannot read, keeps its import's
+/// reading; the same bytes that cannot be read in the choice are refused in
+/// the re-read's own words, with nothing changed; and a
 /// replacement that does not go ahead puts the copy's text and record back as
 /// its import wrote them.
 ///
@@ -175,17 +176,47 @@ final class TextEncodingReplaceTests: CloudMaintenanceTestCase {
         XCTAssertNil(DuplicateReplacement.textEncodingToReadAgain(replacing: existing, with: copy))
     }
 
-    /// A copy whose bytes are not valid in the encoding chosen for the book,
-    /// and name no encoding of their own, is refused in the re-read's own
-    /// words and left as its import wrote it: taken as its import read it, it
-    /// would undo the choice. Here the book was read as UTF-8 by choice and
-    /// the new file is Windows-1251.
-    func testACopyNotValidInTheChoiceIsRefusedAndLeftAsImported() throws {
+    /// A copy of other bytes that are not valid in the encoding chosen for the
+    /// book is not the file the choice was made about: it keeps the reading
+    /// its import gave it, and Replace Existing goes ahead with it instead of
+    /// refusing, which would leave only Keep Both or Cancel. Here the book was
+    /// read as UTF-8 by choice and the new file is Windows-1251.
+    func testACopyNotValidInTheChoiceKeepsItsImportReadingAndReplaces() throws {
         let existing = try makeTextBook(
             "Atlas", hash: "old-bytes", text: "Ferry café, naïve, “quoted”.\n", writtenIn: "utf-8",
             record: TextEncodingRecord(identifier: "utf-8", source: .chosen)
         )
         let copy = try makeTextBook("Second Atlas", hash: "new-bytes")
+        let asImported = try textIndexAndRecord(in: copy.tmbDirectory)
+        let bytes = try Data(contentsOf: copy.bookFileURL)
+        XCTAssertThrowsError(
+            try TextFileDecoder.decode(bytes, fileName: "x.txt", format: .txt, policy: .chosen("utf-8")),
+            "the copy must be unreadable in the choice, or this proves nothing"
+        )
+
+        XCTAssertNil(DuplicateReplacement.textEncodingToReadAgain(replacing: existing, with: copy))
+        let preparation = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+
+        XCTAssertEqual(preparation.book.id, existing.id)
+        XCTAssertFalse(preparation.book.textEncodingRecord.isChosen, "the choice was carried over bytes it cannot read")
+        XCTAssertEqual(
+            try Data(contentsOf: TextMouthPaths.contentMarkdownPath(in: preparation.movedTo)), asImported[0],
+            "the copy was read again"
+        )
+        preparation.undo()
+        XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported)
+    }
+
+    /// The same bytes the choice was made about, held by a copy that the
+    /// choice cannot read (a hash that claims what the file does not), are
+    /// still refused in the re-read's own words and left as imported: the
+    /// listener's choice was made about exactly these bytes.
+    func testTheSameBytesNotValidInTheChoiceAreRefusedAndLeftAsImported() throws {
+        let existing = try makeTextBook(
+            "Gazetteer", hash: "same-bytes", text: "Ferry café, naïve, “quoted”.\n", writtenIn: "utf-8",
+            record: TextEncodingRecord(identifier: "utf-8", source: .chosen)
+        )
+        let copy = try makeTextBook("Second Gazetteer", hash: "same-bytes")
         let asImported = try textIndexAndRecord(in: copy.tmbDirectory)
 
         XCTAssertThrowsError(try DuplicateReplacement.prepare(replacing: existing, with: copy)) {
@@ -195,6 +226,27 @@ final class TextEncodingReplaceTests: CloudMaintenanceTestCase {
             XCTAssertEqual($0.localizedDescription, sentence)
         }
         XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported)
+    }
+
+    /// A well-formed ISO-2022-JP file is recognised by its structure, not
+    /// guessed, though its escape sequences are ASCII and so valid in Shift
+    /// JIS: read in a Shift JIS choice they would be text. Other bytes of
+    /// that structure keep the reading their import gave them.
+    func testAStructurallyRecognisedCopyIsNotReadInTheChoice() throws {
+        let japanese = "いろはにほへと ちりぬるを。\nフェリーは七時に出ます。\n"
+        let existing = try makeTextBook(
+            "Haiku", hash: "old-bytes", text: japanese, writtenIn: "shift_jis",
+            record: TextEncodingRecord(identifier: "shift_jis", source: .chosen)
+        )
+        let copy = try makeTextBook("Second Haiku", hash: "new-bytes", text: japanese, writtenIn: "iso-2022-jp")
+        let bytes = try Data(contentsOf: copy.bookFileURL)
+        XCTAssertNotNil(TextEncodingGuesser.guessSevenBit(bytes), "the copy must be recognised by its structure")
+        XCTAssertNoThrow(
+            try TextFileDecoder.decode(bytes, fileName: "x.txt", format: .txt, policy: .chosen("shift_jis")),
+            "the copy must be readable in the choice, or only the structure keeps it from being carried"
+        )
+
+        XCTAssertNil(DuplicateReplacement.textEncodingToReadAgain(replacing: existing, with: copy))
     }
 
     // MARK: - When a Copy Is Read Again

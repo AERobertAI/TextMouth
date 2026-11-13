@@ -42,7 +42,9 @@ import Foundation
 /// replacement (`brailleFileCodeToReadAgain(replacing:with:)`, braillecodes).
 /// So is a text copy in the encoding the user chose for the old copy there,
 /// when the choice is about the new file too (`textEncodingToReadAgain(replacing:with:)`,
-/// encodingchoice): the same bytes, or bytes that name no encoding.
+/// encodingchoice): the same bytes, or other bytes that name no encoding of
+/// their own and are valid in the choice. Other bytes the choice cannot read
+/// keep their import's reading, and the replacement goes ahead.
 ///
 /// The work is in three parts, so that the old copy's package goes only
 /// once the new copy is committed:
@@ -99,8 +101,8 @@ enum DuplicateReplacement {
         /// The new copy could not be read in the braille file characters
         /// (braillecodes) or the text encoding (encodingchoice) the copy in
         /// the library is read in, which the listener chose in Book
-        /// Information: taken as its import read it, it would undo that
-        /// choice. It carries the reading's own sentence
+        /// Information, though its bytes are the old copy's: taken as its
+        /// import read it, it would undo that choice. It carries the reading's own sentence
         /// (`readCopyAgain(_:as:access:)`), said as it is.
         case copyNotReadAgain(String)
 
@@ -1145,11 +1147,15 @@ enum DuplicateReplacement {
     ///   Automatic is what the import of the new copy does by itself, so
     ///   there is nothing to carry;
     /// - the choice is about this file: the two files are the same bytes
-    ///   (the same content hash), or the new file's bytes name no encoding
-    ///   of their own (no byte-order mark, no valid UTF-8, no declaration;
-    ///   `bytesNameNoEncoding(of:)`), as the old file's did when the listener
-    ///   chose. A new file that names its encoding is not the file the choice
-    ///   was made about, and is read as it says.
+    ///   (the same content hash), or the new file's bytes can be read in the
+    ///   choice and name no encoding of their own
+    ///   (`bytesMayBeReadInChoice(_:of:)`): no byte-order mark, no valid
+    ///   UTF-8, no declaration, and not a structure the decoder recognises
+    ///   (well-formed ISO-2022-JP), their import only guessed or fell back,
+    ///   and every byte is valid in the encoding chosen. A new file that
+    ///   names its encoding, or that the choice cannot read, is not the file
+    ///   the choice was made about, and keeps the reading its import gave it
+    ///   (Replace Existing goes ahead with it).
     /// The option is the old copy's choice as Book Information offers it
     /// (`TextEncodingChoices.option(forIdentifier:)`); an identifier no
     /// option names, as a later TextMouth may have recorded, is carried as
@@ -1160,23 +1166,36 @@ enum DuplicateReplacement {
         let standing = existing.recordedTextEncodingRecord()
         guard standing.isChosen, let identifier = standing.identifier else { return nil }
         let isSameFile = !copy.md5Hash.isEmpty && existing.md5Hash == copy.md5Hash
-        guard isSameFile || bytesNameNoEncoding(of: copy) else { return nil }
+        guard isSameFile || bytesMayBeReadInChoice(identifier, of: copy) else { return nil }
         return TextEncodingChoices.option(forIdentifier: identifier) ?? .encoding(identifier)
     }
 
-    /// Whether the bytes of the text book `book`'s file name no encoding of
-    /// their own, so that the listener's choice of an encoding for another
-    /// file decides how they are read: no byte-order mark, no unmarked
-    /// UTF-16 or UTF-32, no valid UTF-8, no declaration. They are read as an
-    /// import reads them, guessing, without logging; what is left to a guess
-    /// or to the Windows-1252 fallback names none. False for a file that
-    /// cannot be read, or whose declaration its bytes contradict.
-    private static func bytesNameNoEncoding(of book: Book) -> Bool {
-        guard let bytes = try? Data(contentsOf: book.bookFileURL),
-              let decoded = try? TextFileDecoder.decode(
-                  bytes, fileName: book.bookFileURL.lastPathComponent, format: book.format, policy: .guess
-              ) else { return false }
-        return decoded.basis == .guess || decoded.basis == .fallback
+    /// Whether the listener's choice of the encoding `identifier`, made for
+    /// another file, is also the right reading of the text book `book`'s
+    /// bytes (a different file from the one chosen about). Both must hold:
+    /// - the bytes name no encoding of their own. They are read as an import
+    ///   reads them, guessing, without logging; the reading must rest on the
+    ///   guesser's judgment (`DecodedText.Basis.guess`) or on the
+    ///   Windows-1252 fallback, never on a byte-order mark, unmarked Unicode,
+    ///   valid UTF-8, or a declaration. A guess the decoder makes by the
+    ///   bytes' structure (well-formed ISO-2022-JP, whose escape sequences
+    ///   are ASCII and so valid in many of the encodings a listener may have
+    ///   chosen) is a recognition, not a guess, and is kept
+    ///   (`TextEncodingGuesser.guessSevenBit(_:)`);
+    /// - every byte is valid in `identifier`, read strictly as the re-read
+    ///   will read it (`EncodingPolicy.chosen(_:)`). A copy the choice cannot
+    ///   read would be refused, and so could never replace the book.
+    /// False for a file that cannot be read, or whose declaration its bytes
+    /// contradict.
+    private static func bytesMayBeReadInChoice(_ identifier: String, of book: Book) -> Bool {
+        guard let bytes = try? Data(contentsOf: book.bookFileURL) else { return false }
+        let fileName = book.bookFileURL.lastPathComponent
+        // Recognised by structure: the import read it by what the bytes are.
+        guard TextEncodingGuesser.guessSevenBit(bytes) == nil,
+              let decoded = try? TextFileDecoder.decode(bytes, fileName: fileName, format: book.format, policy: .guess),
+              decoded.basis == .guess || decoded.basis == .fallback else { return false }
+        // Valid in the choice: the re-read refuses bytes that are not.
+        return (try? TextFileDecoder.decode(bytes, fileName: fileName, format: book.format, policy: .chosen(identifier))) != nil
     }
 
     /// The id of the braille file characters the stored braille file code
