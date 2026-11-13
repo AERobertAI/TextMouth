@@ -64,13 +64,22 @@ extension BookCloudStates {
 
     /// Whether the library row of the book `bookID` says it is kept on this
     /// Mac: only in a cloud location, where the rows have cloud notes, and
-    /// only for a book `kept` names.
+    /// only for a book `kept` keeps, whether the listener kept it or it is on
+    /// the reading list being kept (`KeptBooks.isKept(_:)`).
     func listsAsKept(_ bookID: UUID, in kept: KeptBooks) -> Bool {
-        showsCloudNotes && kept.contains(bookID)
+        showsCloudNotes && kept.isKept(bookID)
+    }
+
+    /// Whether Book Information adds "for the reading list" to the book
+    /// `bookID`'s kept note: in a cloud location, only when the reading list
+    /// alone keeps it (`KeptBooks.isKeptOnlyForReadingList(_:)`).
+    func listsAsKeptOnlyForReadingList(_ bookID: UUID, in kept: KeptBooks) -> Bool {
+        showsCloudNotes && kept.isKeptOnlyForReadingList(bookID)
     }
 
     /// How many of `books` the list's summary counts as kept on this Mac: in
-    /// a cloud location, the books `kept` names; always 0 elsewhere.
+    /// a cloud location, the books `kept` keeps for either reason; always 0
+    /// elsewhere.
     func countKept(_ books: [Book], in kept: KeptBooks) -> Int {
         showsCloudNotes ? kept.count(of: books) : 0
     }
@@ -82,6 +91,9 @@ extension BookCloudStates {
 enum KeptOnThisMacNote {
     /// The note's words, shown and spoken.
     static let text = "Kept on this Mac"
+    /// The words Book Information says when the reading list alone keeps the
+    /// book, not the listener's own choice.
+    static let forReadingListText = "Kept on this Mac for the reading list"
     /// The SF Symbol drawn before the words.
     static let symbolName = "pin.fill"
 }

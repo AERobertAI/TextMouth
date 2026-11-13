@@ -759,11 +759,51 @@ final class ReadingListViewTests: XCTestCase {
             "When a book is finished, take it off the reading list. "
                 + "Books finished before you turn this on stay on it. Books stay in the library."
         )
-        // Three controls, each told apart by its own label.
+        XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
         XCTAssertEqual(
-            Set([ReadingListWording.continuationLabel, ReadingListWording.skipFinishedLabel, ReadingListWording.removeFinishedLabel]).count,
-            3
+            ReadingListWording.keepBooksHint,
+            "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
+                + "This choice is this Mac's alone. Clearing it removes no download."
         )
+        // Four controls, each told apart by its own label.
+        XCTAssertEqual(
+            Set([
+                ReadingListWording.continuationLabel, ReadingListWording.skipFinishedLabel,
+                ReadingListWording.removeFinishedLabel, ReadingListWording.keepBooksLabel,
+            ]).count,
+            4
+        )
+    }
+
+    /// Hosted, the choice to keep the list's books on this Mac is a third
+    /// checkbox, shown only while the library is in the cloud, and checked as
+    /// the choice stands; outside the cloud the bar holds the two checkboxes
+    /// it always held. Read from the AppKit buttons, in layout order, as
+    /// `testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints` reads
+    /// them.
+    @MainActor
+    func testTheKeepChoiceIsShownOnlyInACloudLibrary() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        for (inCloud, keeps) in [(false, true), (true, true), (true, false)] {
+            let bar = ReadingListOptionsBar(
+                continuation: .playBookBelow,
+                skipsFinished: true,
+                removesFinished: false,
+                keepsBooks: keeps,
+                showsKeepChoice: inCloud,
+                chooseContinuation: { _ in },
+                chooseSkipsFinished: { _ in },
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
+            )
+            try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
+                let checkboxes = Self.checkboxes(in: hostingView, test: self)
+                XCTAssertEqual(checkboxes.count, inCloud ? 3 : 2, "in the cloud: \(inCloud)")
+                if inCloud {
+                    XCTAssertEqual(checkboxes.last?.state, keeps ? .on : .off)
+                }
+            }
+        }
     }
 
     /// Hosted, the picker is a pop-up button VoiceOver reads by its label,
@@ -785,9 +825,12 @@ final class ReadingListViewTests: XCTestCase {
                 continuation: continuation,
                 skipsFinished: skipsFinished,
                 removesFinished: removesFinished,
+                keepsBooks: true,
+                showsKeepChoice: false,
                 chooseContinuation: { _ in },
                 chooseSkipsFinished: { _ in },
-                chooseRemovesFinished: { _ in }
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
             )
             try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
                 let picker = try XCTUnwrap(Self.picker(in: accessibleControls(in: hostingView)), "\(continuation)")

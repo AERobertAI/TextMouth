@@ -60,6 +60,15 @@ enum ReadingListWording {
     static let removeFinishedHint = "When a book is finished, take it off the reading list. "
         + "Books finished before you turn this on stay on it. Books stay in the library."
 
+    /// The label of the options bar's checkbox for keeping the list's books
+    /// downloaded on this Mac, shown only while the library is in the cloud.
+    static let keepBooksLabel = "Keep these books on this Mac"
+
+    /// The checkbox's hint: what it does, and that the choice is this Mac's
+    /// own. Nothing is removed from this Mac by clearing it.
+    static let keepBooksHint = "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
+        + "This choice is this Mac's alone. Clearing it removes no download."
+
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the

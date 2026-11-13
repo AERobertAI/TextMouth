@@ -40,6 +40,10 @@ struct BookInfoFacts: Equatable {
     var isKeptOnThisMac: Bool
     /// Whether a reader window has the book open.
     var isOpenInWindow: Bool
+    /// Whether the book is kept on this Mac only because it is on the
+    /// reading list, which this Mac keeps downloaded, not by the listener's
+    /// own choice: Book Information then says "for the reading list".
+    var isKeptOnlyForReadingList: Bool = false
     /// The title of the feed an episode or an article in its feed's folder
     /// belongs to (FR11), which Speak Info names where it names a book's
     /// folder; nil for a book of the library's own.
@@ -743,7 +747,7 @@ enum LibraryInfoWording {
             parts.append(note)
         }
         if book.isKeptOnThisMac {
-            parts.append(KeptOnThisMacNote.text)
+            parts.append(book.isKeptOnlyForReadingList ? KeptOnThisMacNote.forReadingListText : KeptOnThisMacNote.text)
         }
         if book.isOpenInWindow {
             parts.append(openInWindowNote)

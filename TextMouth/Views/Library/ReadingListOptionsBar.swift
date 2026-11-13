@@ -2,12 +2,13 @@ import SwiftUI
 
 /// The options bar at the top of the Reading List (FR09): what a book
 /// opened from the reading list does when it ends, whether continuing
-/// passes over finished books, and whether a finished book leaves the list.
+/// passes over finished books, whether a finished book leaves the list, and,
+/// in a cloud library, whether this Mac keeps the list's books downloaded.
 ///
 /// All are AppKit controls the keyboard and VoiceOver reach as they reach
 /// any other, side by side with no group around them, so VoiceOver moves to
 /// each directly: a pop-up button, which speaks its label, the option
-/// chosen, and its hint, and two checkboxes, each of which speaks its
+/// chosen, and its hint, and the checkboxes, each of which speaks its
 /// label, whether it is checked, and its hint. Each choice is saved with
 /// the list at once, by the closures the window gives.
 struct ReadingListOptionsBar: View {
@@ -17,12 +18,20 @@ struct ReadingListOptionsBar: View {
     let skipsFinished: Bool
     /// Whether a book leaves the list as soon as it is finished.
     let removesFinished: Bool
+    /// Whether this Mac keeps the list's books downloaded; this Mac's own
+    /// choice, not the list's.
+    let keepsBooks: Bool
+    /// Whether the library is in a cloud location, which alone shows the
+    /// checkbox for keeping the list's books on this Mac.
+    let showsKeepChoice: Bool
     /// Saves a new choice of what a book does when it ends.
     let chooseContinuation: (ReadingList.Continuation) -> Void
     /// Saves skipping finished books on or off.
     let chooseSkipsFinished: (Bool) -> Void
     /// Saves removing finished books on or off.
     let chooseRemovesFinished: (Bool) -> Void
+    /// Saves keeping the list's books on this Mac on or off, on this Mac.
+    let chooseKeepsBooks: (Bool) -> Void
 
     var body: some View {
         HStack(spacing: 16) {
@@ -59,6 +68,19 @@ struct ReadingListOptionsBar: View {
             .help(ReadingListWording.removeFinishedHint)
             .accessibilityLabel(ReadingListWording.removeFinishedLabel)
             .accessibilityHint(ReadingListWording.removeFinishedHint)
+
+            // Only a cloud library has downloads to keep; elsewhere there is
+            // nothing to choose and no control to find.
+            if showsKeepChoice {
+                Toggle(ReadingListWording.keepBooksLabel, isOn: Binding(
+                    get: { keepsBooks },
+                    set: { chooseKeepsBooks($0) }
+                ))
+                .checkboxToggleStyle()
+                .help(ReadingListWording.keepBooksHint)
+                .accessibilityLabel(ReadingListWording.keepBooksLabel)
+                .accessibilityHint(ReadingListWording.keepBooksHint)
+            }
 
             Spacer()
         }

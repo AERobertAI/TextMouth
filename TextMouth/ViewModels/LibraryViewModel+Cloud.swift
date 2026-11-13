@@ -504,8 +504,9 @@ final class LibraryCloudCommands {
 
     /// The store the commands record into.
     private let states: BookCloudStates
-    /// The books this Mac keeps downloaded (Keep on This Mac).
-    private let kept: KeptBooks
+    /// The books this Mac keeps downloaded (Keep on This Mac, and the
+    /// reading list's books while this Mac keeps them).
+    let kept: KeptBooks
     /// The book storage, looked up when each command runs.
     private let storage: @MainActor () -> any BookCloudStorage
     /// Asks for a refresh once a removal has recorded its states, so that a
@@ -661,21 +662,36 @@ final class LibraryCloudCommands {
     ///   when no kept book needed downloading.
     @discardableResult
     func downloadEvictedKeptBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
-        guard states.showsCloudNotes, !kept.bookIDs.isEmpty else { return nil }
+        guard states.showsCloudNotes, kept.keepsAnyBook else { return nil }
         let time = now()
         let evicted = library.library.books.filter { book in
-            kept.contains(book.id)
+            kept.isKept(book.id)
                 && states.listedState(of: book.id) == .inCloud
                 && (keptBookRetryTimes[book.id].map { $0 <= time } ?? true)
         }
         return download(evicted, in: library, from: nil, origin: .keptBookRefresh)
     }
 
+    /// Downloads the books the listener has just added to the reading list
+    /// (Add to Reading List), as Download Now does and under its
+    /// announcements, when the library is in the cloud and this Mac keeps
+    /// the list's books. Books that reach the list another way, as a sync
+    /// from another Mac brings them, download quietly with the refresh's
+    /// kept books (`downloadEvictedKeptBooks(in:)`). Only books only in the
+    /// cloud download; the others change nothing.
+    /// - Returns: The task running the downloads, which tests await; nil
+    ///   when none started.
+    @discardableResult
+    func downloadBooksAddedToReadingList(_ books: [Book], in library: LibraryViewModel, from window: PlatformWindow?) -> Task<Void, Never>? {
+        guard states.showsCloudNotes, kept.keepsReadingListBooks else { return nil }
+        return download(books, in: library, from: window)
+    }
+
     /// Notes how a download of the book `bookID` ended, for a kept book: a
     /// failure makes refreshes wait `keptBookRetryDelay` before they try it
     /// again, and a success lets the next eviction be downloaded at once.
     private func noteKeptBookDownload(_ bookID: UUID, failed: Bool) {
-        guard kept.contains(bookID) else { return }
+        guard kept.isKept(bookID) else { return }
         keptBookRetryTimes[bookID] = failed ? now().addingTimeInterval(Self.keptBookRetryDelay) : nil
     }
 
@@ -869,8 +885,10 @@ final class LibraryCloudCommands {
     ///
     /// Only downloaded books take part, and none whose download the list is
     /// removing already, so asking twice removes once. A book open in a
-    /// reader, or one kept on this Mac, is refused at once, without asking
-    /// the storage (`BookCloudError.bookIsOpen`, `.keptOnThisMac`), and the
+    /// reader, or one kept on this Mac, by the listener's choice or for the
+    /// reading list, is refused at once, without asking the storage
+    /// (`BookCloudError.bookIsOpen`, `.keptOnThisMac`,
+    /// `.keptForReadingList`), and the
     /// storage refuses a book with changes not uploaded yet (`.notUploaded`);
     /// a refused book keeps its download. Nothing is deleted from the cloud,
     /// so nothing asks first. The removals read and change files, so they
@@ -900,6 +918,7 @@ final class LibraryCloudCommands {
         let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
             if library.openBookIDs.contains(book.id) { return .failure(.bookIsOpen) }
             if kept.contains(book.id) { return .failure(.keptOnThisMac) }
+            if kept.isKeptForReadingList(book.id) { return .failure(.keptForReadingList) }
             return .success(BookPackage(book))
         }
         DiagnosticLog.event(

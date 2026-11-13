@@ -162,6 +162,7 @@ extension BookInfoFacts {
             cloudNote: cloudState?.spokenNote,
             isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             isOpenInWindow: library.openBookIDs.contains(book.id),
+            isKeptOnlyForReadingList: cloudStates.listsAsKeptOnlyForReadingList(book.id, in: keptBooks),
             feedTitle: library.feedTitle(of: book),
             readingListPlace: ReadingListPlace(of: book.id, in: library.library),
             brailleCode: book.brailleCodeDescription,

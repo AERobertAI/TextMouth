@@ -147,6 +147,11 @@ final class LibraryViewModel: ObservableObject {
     /// may be saved short of it (P07); a book counted once stays counted,
     /// even when read again. Tests give their own.
     var finishedBookIDs: @MainActor () -> Set<UUID> = { ReadingStatsService.shared.stats.finishedBookIDs }
+    /// The cloud commands that keep the reading list's books on this Mac in
+    /// a cloud library (`observeReadingListKeeping()`,
+    /// `setKeepsReadingListBooks(_:)`); tests give their own, over their
+    /// own kept books and cloud states.
+    var cloudCommands: LibraryCloudCommands = .shared
     /// Where readers are between checkpoints (TODO PERF11), which the rows
     /// and the summary bar show: `updateLiveReadingPosition` reports there
     /// instead of changing the library, so a playing reader no longer
@@ -441,6 +446,8 @@ final class LibraryViewModel: ObservableObject {
         removeStaleAudioEditCachesInBackground()
         // A book finished leaves the reading list when it says to.
         observeFinishedBooks()
+        // The reading list's books are kept on this Mac in a cloud library.
+        observeReadingListKeeping()
         // The import overlay follows the import queue (FR10).
         observeImportActivity()
         // Speak Import Progress, from any window (FR10).

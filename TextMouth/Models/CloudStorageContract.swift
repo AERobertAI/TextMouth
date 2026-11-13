@@ -282,6 +282,10 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// Remove Download refused: the book is kept on this Mac (Keep on This
     /// Mac, `KeptBooks`).
     case keptOnThisMac
+    /// Remove Download refused: the book is on the reading list, which this
+    /// Mac keeps downloaded in a cloud library (`KeptBooks`), and the
+    /// listener did not keep the book themselves.
+    case keptForReadingList
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
@@ -311,6 +315,9 @@ enum BookCloudError: Error, Equatable, Sendable {
         case .keptOnThisMac:
             return "The book is kept on this Mac, so its download can't be removed. "
                 + "Choose Stop Keeping on This Mac first."
+        case .keptForReadingList:
+            return "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed. "
+                + "Take it off the reading list, or clear Keep these books on this Mac in the Reading List's options first."
         case .removalFailed(let message):
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
@@ -634,6 +641,14 @@ enum MachineLocalPaths {
     /// never reads, so it is kept here rather than in the data directory.
     static var keptBooks: URL {
         root.appendingPathComponent("Kept Books.json", isDirectory: false)
+    }
+
+    /// Whether this Mac keeps the reading list's books downloaded in a cloud
+    /// library (`KeptBooks.keepsReadingListBooks`): a choice of this Mac's
+    /// own, beside `keptBooks`, since another Mac sharing the library
+    /// decides for itself.
+    static var keepReadingListBooks: URL {
+        root.appendingPathComponent("Keep Reading List Books.json", isDirectory: false)
     }
 
     /// The hidden staging folders data-directory moves have begun and not yet

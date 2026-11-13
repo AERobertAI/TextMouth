@@ -76,6 +76,9 @@ extension LibraryViewModel {
                 alreadyIn: chosen.filter { listedBefore.contains($0.id) }.count
             )
         VoiceOverAnnouncer.announce(message, from: window)
+        // In a cloud library the books added are kept on this Mac, and those
+        // only in the cloud download at once, as Download Now's do.
+        cloudCommands.downloadBooksAddedToReadingList(added, in: self, from: window)
         return message
     }
 
@@ -196,6 +199,46 @@ extension LibraryViewModel {
     func setReadingListRemovesFinished(_ removesFinished: Bool) {
         editReadingList { list, _ in
             list.removesFinished = removesFinished
+        }
+    }
+
+    // MARK: - Keeping the Books on This Mac
+    //
+    // In a cloud library this Mac keeps the reading list's books downloaded
+    // (`KeptBooks`, the user, November 13, 2026), while the Reading List's
+    // "Keep these books on this Mac" is on, which it is until cleared. The
+    // set of books kept for the list is derived from the list each time the
+    // list changes, never stored.
+
+    /// Starts handing the reading list's books to `cloudCommands.kept` each
+    /// time the list changes, one turn of the main queue after the change,
+    /// then downloads the kept books only in the cloud, quietly
+    /// (`LibraryCloudCommands.downloadEvictedKeptBooks(in:)`): a book that
+    /// reached the list through a sync from another Mac downloads here. A
+    /// book the listener just added has been downloading since the turn
+    /// before, announced (`downloadBooksAddedToReadingList`), and is not
+    /// started twice. The library starts it once, with its other observers.
+    func observeReadingListKeeping() {
+        $library
+            .map { Set($0.readingList.bookIDs) }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] listed in
+                guard let self else { return }
+                cloudCommands.kept.setReadingListBooks(listed)
+                cloudCommands.downloadEvictedKeptBooks(in: self)
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Makes this Mac keep the reading list's books downloaded in a cloud
+    /// library, or not, and saves the choice in this Mac's own folder. Turning
+    /// it on downloads the list's books that are only in the cloud, quietly;
+    /// turning it off removes nothing from this Mac.
+    func setKeepsReadingListBooks(_ keeps: Bool) {
+        cloudCommands.kept.setKeepsReadingListBooks(keeps)
+        if keeps {
+            cloudCommands.downloadEvictedKeptBooks(in: self)
         }
     }
 

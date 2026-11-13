@@ -1021,9 +1021,12 @@ struct LibraryView: View {
                 continuation: list.continuation,
                 skipsFinished: list.skipsFinished,
                 removesFinished: list.removesFinished,
+                keepsBooks: keptBooks.keepsReadingListBooks,
+                showsKeepChoice: cloudStates.showsCloudNotes,
                 chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
                 chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) },
-                chooseRemovesFinished: { libraryViewModel.setReadingListRemovesFinished($0) }
+                chooseRemovesFinished: { libraryViewModel.setReadingListRemovesFinished($0) },
+                chooseKeepsBooks: { libraryViewModel.setKeepsReadingListBooks($0) }
             )
         }
     }
