@@ -304,10 +304,12 @@ test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
     // With Import Folder… (Import DAISY Folder… until FR17) and Add Feed…, the Library menu's commands
     // whose keys became editable (FR12's branch D), Move to Library…
-    // (FR11's branch D), Folder or Feed Settings (FR19), and Go to View 1
-    // to Go to View 9 (the Library views of October 30, 2026).
-    try assertEqual(libraryActions.count, 24, "Should have 24 library actions")
+    // (FR11's branch D), Folder or Feed Settings (FR19), Go to View 1
+    // to Go to View 9 (the Library views of October 30, 2026), and Search
+    // Library… (November 13, 2026: Edit > Find, listed with the Library group).
+    try assertEqual(libraryActions.count, 25, "Should have 25 library actions")
     let names = libraryActions.map { $0.rawValue }
+    try assertTrue(names.contains("Search Library…"))
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
     try assertTrue(names.contains("Move to Folder"))
