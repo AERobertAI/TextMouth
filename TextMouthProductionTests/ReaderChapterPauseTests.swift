@@ -205,7 +205,8 @@ final class ReaderChapterPauseTests: XCTestCase {
         reader.startSleepTimer(duration: .minutes(30))
         try playIntoThePause(reader)
 
-        SleepTimerService.shared._expireForTesting()
+        // The timer is the reader's window's.
+        reader.sleepTimerService._expireForTesting()
 
         XCTAssertFalse(reader.isWaitingOutChapterPause)
         XCTAssertTrue(reader.isCurrentlyPaused)

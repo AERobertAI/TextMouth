@@ -323,7 +323,8 @@ final class EndBehaviorMatrixTests: XCTestCase {
             reader.startSleepTimer(duration: .minutes(60))
         case .minutesExpired:
             reader.startSleepTimer(duration: .minutes(1))
-            SleepTimerService.shared._expireForTesting()
+            // The reader's window's timer is the one that runs out.
+            reader.sleepTimerService._expireForTesting()
         }
     }
 
@@ -370,7 +371,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
                         chapter: reader.currentChapterIndex,
                         nextAsked: nextAsked,
                         nextRequested: speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id),
-                        timerInEffect: SleepTimerService.shared.isActive
+                        timerInEffect: reader.sleepTimerService.isActive
                     ),
                     is: cell, title: speech.book.title, next: speech.nextBook.title, lastChapter: 2, content: "text"
                 )

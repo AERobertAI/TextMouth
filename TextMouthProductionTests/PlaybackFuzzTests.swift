@@ -590,7 +590,8 @@ final class PlaybackFuzzTests: XCTestCase {
         if run.held.requested.count != rendersAsked {
             return "the closed reader asked for a render"
         }
-        if SleepTimerService.shared.isActive {
+        // The closed reader's window's timer: a reader stops its own.
+        if reader.sleepTimerService.isActive {
             return "a sleep timer is still running"
         }
         return nil

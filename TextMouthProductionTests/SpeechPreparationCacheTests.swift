@@ -437,8 +437,9 @@ final class SpeechPreparationCacheTests: XCTestCase {
     /// the test hands its result over.
     func testAnEndOfHeadingTimerSetWhilePlayWaitsForALongChapterStopsWhereTheNextHeadingBegins() throws {
         preserveSleepTimers()
-        let timer = SleepTimerService.shared
         try withReader(chapters: Self.coverBeforeALongChapter(seed: 67)) { reader, _ in
+            // The timer of the reader's window.
+            let timer = reader.sleepTimerService
             let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
             XCTAssertTrue(inputs.isLong)
             XCTAssertTrue(reader.chapterSpeechCache.beginPreparingInBackground(inputs))
