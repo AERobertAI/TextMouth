@@ -199,14 +199,20 @@ extension FeedWording {
             report.newItemIDs.compactMap { center.store.record(of: report.feedID)?.item($0) }
         }
         let noun = ItemNoun.of(newItems)
-        let found = summary.newItemCount == 0
-            ? "nothing new."
-            : "\(summary.newItemCount) new \(summary.newItemCount == 1 ? noun.singular : noun.plural)."
+        let found = newItemsFound(summary.newItemCount, noun)
         var sentence = "Refreshed \(CountWording.phrase(summary.reports.count, singular: "feed", plural: "feeds")): \(found)"
         if !summary.failedFeedTitles.isEmpty {
             sentence += " Couldn't refresh \(CountWording.list(summary.failedFeedTitles))."
         }
         return sentence
+    }
+
+    /// What a refresh found, as the end of Refresh All Feeds' sentence:
+    /// "nothing new." for none, otherwise the count of new items of the kind
+    /// `noun` names, as in "1 new episode." and "3 new articles.".
+    static func newItemsFound(_ count: Int, _ noun: ItemNoun) -> String {
+        guard count > 0 else { return "nothing new." }
+        return CountWording.phrase(count, singular: "new \(noun.singular)", plural: "new \(noun.plural)") + "."
     }
 
     /// What Refresh All Feeds says with no feed in the library.
