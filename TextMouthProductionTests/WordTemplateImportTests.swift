@@ -208,10 +208,13 @@ final class WordTemplateImportTests: XCTestCase {
             try replaceEntry("word/document.xml", in: url) { _ in blankBody }
 
             XCTAssertThrowsError(try FileImportService.importFileWithReport(from: url), url.lastPathComponent) { error in
-                guard case FileImportError.noTextToRead? = error as? FileImportError else {
+                // The import wraps the refusal in a failure naming the file
+                // and the step it was at (reading the text).
+                guard let failure = error as? ImportFailure, case FileImportError.noTextToRead? = failure.underlying as? FileImportError else {
                     return XCTFail("\(url.lastPathComponent): expected noTextToRead, got \(error)")
                 }
-                XCTAssertEqual(error.localizedDescription, "This file has no text to read.")
+                XCTAssertEqual(failure.step, .readingText, url.lastPathComponent)
+                XCTAssertEqual(failure.reason, "Reading its text failed: This file has no text to read.", url.lastPathComponent)
             }
         }
     }
