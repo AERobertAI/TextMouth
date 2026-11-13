@@ -145,7 +145,7 @@ private final class RunLog: Sendable {
 
 /// Waits, on a fake runner's search thread, until `condition` holds or
 /// `timeout` seconds pass; false when it never held, which fails the test.
-private func waitUntil(timeout: TimeInterval = 10, _ condition: @Sendable () -> Bool) -> Bool {
+private func waitOnSearchThread(timeout: TimeInterval = 10, _ condition: @Sendable () -> Bool) -> Bool {
     let deadline = Date().addingTimeInterval(timeout)
     while !condition() {
         guard Date() < deadline else { return false }
@@ -339,7 +339,7 @@ final class LibrarySearchModelTests: XCTestCase {
             // waits to be told to stop, as a runaway pattern would, and ends
             // late, reporting one more book after the new search has ended.
             report(oldResult, makeTally(given: 2, searched: 1, withMatches: 1, matches: 2))
-            log.recordCancellation(waitUntil(isCancelled))
+            log.recordCancellation(waitOnSearchThread(isCancelled))
             waitForGate(releaseOld)
             report(lateOldResult, makeTally(given: 2, searched: 2, withMatches: 2, matches: 6))
             return .finished(makeTally(given: 2, searched: 2, withMatches: 2, matches: 6))
@@ -380,7 +380,7 @@ final class LibrarySearchModelTests: XCTestCase {
 
         let model = makeModel(list, announcements) { query, options, books, limits, isCancelled, report in
             log.record(query: query, options: options, books: books, limits: limits)
-            log.recordCancellation(waitUntil(isCancelled))
+            log.recordCancellation(waitOnSearchThread(isCancelled))
             waitForGate(release)
             return playOut([makeResult(book, order: 0, kept: 1)], given: books.count, report: report)
         }
@@ -438,7 +438,7 @@ final class LibrarySearchModelTests: XCTestCase {
             // One book is found, then the search runs on, slowly, until told
             // to stop, and reports one more book and finishes anyway.
             report(firstResult, makeTally(given: 3, searched: 1, withMatches: 1, matches: 4))
-            log.recordCancellation(waitUntil(isCancelled))
+            log.recordCancellation(waitOnSearchThread(isCancelled))
             waitForGate(release)
             report(lateResult, makeTally(given: 3, searched: 2, withMatches: 2, matches: 9))
             return .finished(makeTally(given: 3, searched: 3, withMatches: 2, matches: 9))
