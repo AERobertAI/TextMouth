@@ -49,9 +49,9 @@ Found by typing into hosted lists: a probe test class, `LibraryTypeSelectProbeTe
 - **Its label:** **Leading articles**, a pop-up, with the hint "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it."
 - **Its choices**, title case as the tab's other pop-ups are:
   1. **Part of the Title** (the default, so nothing changes until the user chooses): "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's."
-  2. **Ignored When Typing**: "Typing H goes to The Hobbit. The list keeps its order and shows each title as it is written."
-  3. **Ignored When Typing and Sorting**: "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H goes to it."
-- Under the pop-up, the choice in force's sentence and a second one: "A book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles too, such as Le and Die. Folder names stay as you typed them." The text is read by VoiceOver as text, so a listener with hints off still hears what the choice does.
+  2. **Ignored When Typing**: "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written."
+  3. **Ignored When Typing and Sorting**: "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's."
+- Under the pop-up, the choice in force's sentence and, under the second and third choices only (under the first nothing passes over an article), a second one: "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles too, such as Le and Die. Folder names stay as you typed them." The text is read by VoiceOver as text, so a listener with hints off still hears what the choice does.
 - **Stored** under `leadingArticles` in the preferences store and in `config.json`, as `"partOfTitle"`, `"ignoredWhenTyping"`, or `"ignoredWhenTypingAndSorting"`; an empty value, or any other word, leaves the choice alone, as the log location's does.
 
 ### What a title's leading article is

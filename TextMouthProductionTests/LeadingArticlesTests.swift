@@ -310,6 +310,31 @@ final class LeadingArticlesTests: XCTestCase {
         XCTAssertTrue(descriptions[2].contains("Hobbit, The"), descriptions[2])
     }
 
+    /// The words under the pop-up say only what is true of the choice in
+    /// force. Under the first, where nothing passes over an article, they
+    /// do not speak of languages whose articles are passed over; under the
+    /// other two they do, and begin so ("When articles are ignored"). No
+    /// choice promises that a letter goes to a title that only the first
+    /// of its letter's titles would be.
+    func testTheCaptionSaysOnlyWhatIsTrueOfTheChoiceInForce() {
+        let first = LeadingArticleWording.caption(for: .partOfTitle)
+        XCTAssertEqual(first, LeadingArticleWording.description(.partOfTitle))
+        XCTAssertFalse(first.contains("passes over"), first)
+        XCTAssertFalse(first.contains("French"), first)
+        for choice in [LeadingArticles.ignoredWhenTyping, .ignoredWhenTypingAndSorting] {
+            let caption = LeadingArticleWording.caption(for: choice)
+            XCTAssertTrue(caption.hasPrefix(LeadingArticleWording.description(choice)), caption)
+            XCTAssertTrue(caption.hasSuffix(LeadingArticleWording.languagesNote), caption)
+        }
+        XCTAssertTrue(LeadingArticleWording.languagesNote.hasPrefix("When articles are ignored"))
+        // Typing H goes to the first H, which may not be The Hobbit: the
+        // sentences say it is found among the H's, or counts as an H.
+        for choice in LeadingArticles.allCases {
+            XCTAssertFalse(LeadingArticleWording.description(choice).contains("Typing H goes to"), "\(choice)")
+        }
+        XCTAssertTrue(LeadingArticleWording.description(.ignoredWhenTypingAndSorting).contains("among the H's"))
+    }
+
     /// The choice is stored by its name, and anything the store holds that
     /// names no choice reads as the default.
     func testTheChoiceIsStoredByItsName() throws {

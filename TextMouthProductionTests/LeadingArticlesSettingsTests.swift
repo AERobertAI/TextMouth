@@ -123,7 +123,7 @@ final class LeadingArticlesSettingsTests: XCTestCase {
             XCTAssertTrue(chose, "choosing the third choice left \(LeadingArticles.preference.read(from: store))")
         }
         XCTAssertEqual(
-            LeadingArticlesSettingsSection.caption(for: .ignoredWhenTypingAndSorting),
+            LeadingArticleWording.caption(for: .ignoredWhenTypingAndSorting),
             LeadingArticleWording.description(.ignoredWhenTypingAndSorting) + " " + LeadingArticleWording.languagesNote
         )
     }

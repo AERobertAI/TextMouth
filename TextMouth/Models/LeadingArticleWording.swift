@@ -33,15 +33,23 @@ enum LeadingArticleWording {
         case .partOfTitle:
             return "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's."
         case .ignoredWhenTyping:
-            return "Typing H goes to The Hobbit. The list keeps its order and shows each title as it is written."
+            return "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written."
         case .ignoredWhenTypingAndSorting:
-            return "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H goes to it."
+            return "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's."
         }
     }
 
-    /// Which languages' articles count beside English's, under the
-    /// description.
-    static let languagesNote = "A book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, "
-        + "Catalan, Swedish, Danish, or Norwegian passes over that language's articles too, such as Le and Die. "
-        + "Folder names stay as you typed them."
+    /// Which languages' articles count beside English's, and that folder
+    /// names are left as typed: said only where articles are ignored (the
+    /// second and third choices), since under the first nothing passes over
+    /// an article, in any language.
+    static let languagesNote = "When articles are ignored, a book whose metadata names French, German, Spanish, "
+        + "Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles "
+        + "too, such as Le and Die. Folder names stay as you typed them."
+
+    /// The words under the pop-up for `choice`: what it does, and, for the
+    /// choices that ignore articles, which languages' articles count.
+    static func caption(for choice: LeadingArticles) -> String {
+        choice.typesWithoutArticles ? "\(description(choice)) \(languagesNote)" : description(choice)
+    }
 }

@@ -32,16 +32,10 @@ struct LeadingArticlesSettingsSection: View {
             .frame(maxWidth: 420)
             .accessibilityHint(Wording.pickerHint)
             .help(Wording.pickerHint)
-            Text(Self.caption(for: settingsViewModel.leadingArticles))
+            Text(Wording.caption(for: settingsViewModel.leadingArticles))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    /// The words under the pop-up: what `choice` does, then which
-    /// languages' articles count and that folder names stay as typed.
-    static func caption(for choice: LeadingArticles) -> String {
-        "\(LeadingArticleWording.description(choice)) \(LeadingArticleWording.languagesNote)"
     }
 }
