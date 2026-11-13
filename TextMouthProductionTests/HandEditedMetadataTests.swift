@@ -84,6 +84,47 @@ final class HandEditedMetadataTests: XCTestCase {
         XCTAssertEqual(Book.MetadataEdit(opened: [:], saved: [:]).changes, [:])
     }
 
+    /// Every value an edit saves loses the blanks around it: a field of
+    /// nothing but blanks over an empty or unknown one is no change (and
+    /// marks nothing as edited by hand), a typed value is saved trimmed,
+    /// and a value whose only change is its blanks is no change.
+    func testAnEditSavesEveryValueWithoutItsBlanks() {
+        let opened: Book.MetadataValues = [.title: "Tide Tables", .author: "Port Authority", .publisher: "Tollgate Press"]
+        let saved: Book.MetadataValues = [
+            .title: "Tide Tables ",
+            .author: "  Harbour Survey\n",
+            .publisher: "Tollgate Press",
+            .publicationDate: "   ",
+            .audioAlbum: "\t\n ",
+            .audioGenre: "  Field Recording "
+        ]
+
+        let edit = Book.MetadataEdit(opened: opened, saved: saved)
+
+        XCTAssertEqual(edit.changes, [.author: "Harbour Survey", .audioGenre: "Field Recording"])
+        var book = Self.makeBook()
+        book.applyMetadataEdit(Book.MetadataEdit(opened: [:], saved: [.publisher: "  ", .audioYear: " \n"]))
+        XCTAssertNil(book.handEdits, "blanks over empty fields marked something as edited by hand")
+        XCTAssertNil(book.epubPublisher)
+        XCTAssertNil(book.audioYear)
+    }
+
+    /// Clearing a field the editor opened with a value is still a change,
+    /// saved as empty; and a value an older version saved with blanks
+    /// around it, left alone, is no change, so it is not rewritten, while
+    /// retyping it without the blanks is.
+    func testClearingAFieldAndValuesSavedWithBlanksBefore() {
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: [.publisher: "Tollgate Press"], saved: [.publisher: "   "]).changes,
+            [.publisher: ""]
+        )
+        XCTAssertEqual(Book.MetadataEdit(opened: [.author: "  Port Authority "], saved: [.author: "  Port Authority "]).changes, [:])
+        XCTAssertEqual(
+            Book.MetadataEdit(opened: [.author: "  Port Authority "], saved: [.author: "Port Authority"]).changes,
+            [.author: "Port Authority"]
+        )
+    }
+
     /// The EPUB and the audio editors' edits are made of the values each
     /// shows (`Book.MetadataField.values(in:)`), as it opened with them and
     /// as they were saved.
