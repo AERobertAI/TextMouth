@@ -162,14 +162,14 @@ enum FeedOPML {
             if let site = feed.siteLink {
                 attributes.append(("htmlUrl", site.absoluteString))
             }
-            let written = attributes.map { "\($0.0)=\"\(escaped($0.1))\"" }.joined(separator: " ")
+            let written = attributes.map { "\($0.0)=\"\(XMLEscaping.attribute($0.1))\"" }.joined(separator: " ")
             return "    <outline \(written)/>"
         }
         let text = """
         <?xml version="1.0" encoding="UTF-8"?>
         <opml version="2.0">
           <head>
-            <title>\(escaped(title))</title>
+            <title>\(XMLEscaping.attribute(title))</title>
             <dateCreated>\(rfc822(date))</dateCreated>
           </head>
           <body>
@@ -179,33 +179,6 @@ enum FeedOPML {
 
         """
         return Data(text.utf8)
-    }
-
-    /// `text` escaped for an XML attribute or element: the five markup
-    /// characters as entities, and tabs and line breaks as character
-    /// references, which an attribute would otherwise read as spaces; a
-    /// Windows line break (CR LF) becomes "&#13;&#10;", so it reads back
-    /// whole. The text is walked by Unicode scalar, as XML reads it: a Swift
-    /// Character can hide what must be escaped, as CR LF is one Character,
-    /// and so is an "&", "<", or quote with a combining accent after it,
-    /// which written raw would break the markup.
-    static func escaped(_ text: String) -> String {
-        var result = ""
-        result.reserveCapacity(text.count)
-        for scalar in text.unicodeScalars {
-            switch scalar {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            case "'": result += "&apos;"
-            case "\t": result += "&#9;"
-            case "\n": result += "&#10;"
-            case "\r": result += "&#13;"
-            default: result.unicodeScalars.append(scalar)
-            }
-        }
-        return result
     }
 
     /// `date` as RFC 822 writes it, as OPML's dateCreated asks: "Sun, 04 Oct

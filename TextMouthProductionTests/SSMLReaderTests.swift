@@ -205,10 +205,19 @@ final class SSMLReaderTests: XCTestCase {
 
     // MARK: - Escaping
 
+    /// A markup character with a combining accent after it (one Character in
+    /// Swift) is escaped like any other, where it was once written raw.
+    func testAMarkupCharacterWithACombiningAccentIsEscaped() throws {
+        let html = try SSMLReader.html(from: Data(speak("<p>Fish &amp;\u{301} chips &lt;\u{301}</p>").utf8))
+        XCTAssertTrue(html.contains("&amp;\u{301} chips &lt;\u{301}"), html)
+        XCTAssertEqual(html.unicodeScalars.filter { $0 == "<" }.count, 6, "only the tags of the page, in <html><body><p>… and their ends: \(html)")
+    }
+
     func testLiteralMarkupCharactersAreEscapedAndReadAsWritten() throws {
         let ssml = speak("<p>Type &lt;b&gt;bold&lt;/b&gt; &amp; say \"hi\", then &quot;bye&quot;.</p>")
         let html = try SSMLReader.html(from: Data(ssml.utf8))
-        XCTAssertTrue(html.contains("&lt;b&gt;bold&lt;/b&gt; &amp; say &quot;hi&quot;"), html)
+        // A quote needs no escaping in the text of an element, and the shared writer (XMLEscaping) leaves it.
+        XCTAssertTrue(html.contains("&lt;b&gt;bold&lt;/b&gt; &amp; say \"hi\""), html)
         XCTAssertFalse(html.contains("<b>"))
         let text = try readerText(ofHTML: html)
         XCTAssertTrue(text.contains("Type <b>bold</b> & say \"hi\", then \"bye\"."), text)
