@@ -43,16 +43,21 @@ struct AskedMove: Equatable {
 /// timer this reader owns goes on with it: its owner becomes the reader that
 /// takes the book, and its countdown is never restarted or reset.
 ///
-/// The shared service holds the timer for the next book from the moment the
+/// Each reader window has a timer of its own (November 13, 2026). This
+/// reader's window's timer is held for the next book from the moment the
 /// move is announced (`noteMoveAnnounced(to:)`, `SleepTimerService.hold`): it
 /// stays this reader's, the one owner it has, whether this window closes in
 /// the half second before the book is asked for, the book takes a long time
 /// to download, or the book is opened in another window. The reader the book
 /// goes on to takes it once it has loaded, before anything plays
-/// (`claimSleepTimerHandOver()`), or at once when it is open already. When
-/// the timer runs out first, it has ended listening: the next book is not
-/// started. Every path that knows the book will not open releases the timer
-/// (`releaseSleepTimerHeld(forBook:)`).
+/// (`claimSleepTimerHandOver()`), or at once when it is open already: in
+/// this same window after a switch in place, the window's timer changes
+/// owner; in another window, that window's timer takes its running state
+/// (`SleepTimerService.take(heldForBook:from:as:...)`). The registry of every
+/// window's timer finds a timer held for a book, wherever it is
+/// (`sleepTimers`). When the timer runs out first, it has ended listening:
+/// the next book is not started. Every path that knows the book will not
+/// open releases the timer (`releaseSleepTimerHeld(forBook:)`).
 extension ReaderViewModel {
 
     /// Whether this reader owns a sleep timer that goes on with the next
@@ -64,11 +69,31 @@ extension ReaderViewModel {
     }
 
     /// Whether a move from this reader goes on carrying a sleep timer: this
-    /// reader owns one that goes on, or holds one itself: the timer is held
-    /// for this reader's book, which has not taken it yet because it is
-    /// still loading, and a move to another book passes it on.
+    /// reader owns one that goes on, or holds one itself: a timer is held for
+    /// this reader's book, in this window or the one it is coming from, which
+    /// has not taken it yet because it is still loading, and a move to
+    /// another book passes it on.
     var carriesSleepTimerOnAMove: Bool {
-        ownsCarriableSleepTimer || sleepTimerService.isHeld(forBook: book.id)
+        ownsCarriableSleepTimer || sleepTimers.isHeld(forBook: book.id)
+    }
+
+    /// A sleep timer on its way to this reader's book from another window:
+    /// held for the book by a move that opened it in a new window, or in its
+    /// own window brought forward, which this reader takes once it has loaded
+    /// (`claimSleepTimerHandOver()`). Nil when there is none, and for this
+    /// window's own timer, which a switch in place leaves held for the book.
+    var sleepTimerComingHere: SleepTimerService? {
+        guard let held = sleepTimers.timer(heldForBook: book.id), held !== sleepTimerService else { return nil }
+        return held
+    }
+
+    /// Stops the sleep timer on its way to this reader's book from another
+    /// window (`sleepTimerComingHere`), because a timer was started or
+    /// cancelled in this window: starting a timer replaced, and cancelling
+    /// ended, the one timer there was, and the listener has now chosen this
+    /// window's timer themselves.
+    func stopSleepTimerComingHere(because reason: String) {
+        sleepTimerComingHere?.stop(reason: reason)
     }
 
     /// Whether this reader's sleep timer is fading out, which ends listening
@@ -89,8 +114,9 @@ extension ReaderViewModel {
     }
 
     /// Holds the sleep timer this move carries for the book `nextBookID`: this
-    /// reader's own, or one held for this book that a move on passes to the
-    /// next. Nothing when no timer goes on (`carriesSleepTimerOnAMove`).
+    /// reader's own, or one held for this book, wherever it is held, that a
+    /// move on passes to the next. Nothing when no timer goes on
+    /// (`carriesSleepTimerOnAMove`).
     func holdSleepTimer(forBook nextBookID: UUID) {
         let service = sleepTimerService
         guard !service.isHeld(forBook: nextBookID) else { return }
@@ -98,9 +124,9 @@ extension ReaderViewModel {
             if service.hold(forBook: nextBookID, from: readerID, isBookOpen: bookIsOpenCheck) {
                 pendingMoveHold = .ownTimer(target: nextBookID)
             }
-        } else {
-            let wasAsked = service.isAsked(forBook: book.id)
-            if service.passOnHold(fromBook: book.id, toBook: nextBookID, isBookOpen: bookIsOpenCheck) {
+        } else if let carried = sleepTimers.timer(heldForBook: book.id) {
+            let wasAsked = carried.isAsked(forBook: book.id)
+            if carried.passOnHold(fromBook: book.id, toBook: nextBookID, isBookOpen: bookIsOpenCheck) {
                 pendingMoveHold = .passedOn(target: nextBookID, wasAsked: wasAsked)
             }
         }
@@ -171,26 +197,27 @@ extension ReaderViewModel {
     ///   does, and not only one that is still waiting out the half second.
     private func undo(_ hold: PendingMoveHold?, evenIfAsked: Bool) {
         guard let hold else { return }
-        let service = sleepTimerService
         let target = hold.target
-        _ = service.consumeExpiredWhileHeld(forBook: target)
-        guard service.isHeld(forBook: target), evenIfAsked || !service.isAsked(forBook: target) else { return }
+        _ = sleepTimers.consumeExpiredWhileHeld(forBook: target)
+        // The timer held for the move's target, in whichever window holds it.
+        guard let held = sleepTimers.timer(heldForBook: target),
+              evenIfAsked || !held.isAsked(forBook: target) else { return }
         switch hold {
         case .ownTimer:
             // Only a hold that is still this reader's: another reader's hold
             // for the same book is not this move's to undo (Y2).
-            if service.isHeld(from: readerID) {
-                service.dropHold(forBook: target)
+            if held.isHeld(from: readerID) {
+                held.dropHold(forBook: target)
             }
         case .passedOn(_, let wasAsked):
-            if service.passOnHold(
+            if held.passOnHold(
                 fromBook: target, toBook: book.id, isBookOpen: bookIsOpenCheck, returning: true
             ) {
-                if wasAsked { service.markAsked(forBook: book.id) }
+                if wasAsked { held.markAsked(forBook: book.id) }
             } else {
                 // Not the reader's to put back: nothing is left held for a book
                 // nobody will open.
-                service.dropHold(forBook: target)
+                held.dropHold(forBook: target)
             }
         }
     }
@@ -212,13 +239,16 @@ extension ReaderViewModel {
     /// loaded (the headings a timer for the end of a heading waits for are
     /// known by then), and before anything plays.
     ///
-    /// The timer changes hands (`SleepTimerService.adoptHeld`), and this
-    /// reader gives it what a timer does to its book
-    /// (`makeSleepTimerHandlers(fadeOutDuration:)`). A timer for the end of
-    /// a heading then waits for the end of the heading playing in this book,
-    /// and one for the end of the book for the end of this one. Its time
-    /// left, its duration, and a countdown halted by the previous reader's
-    /// pause are as they were; this reader's play resumes a halted one.
+    /// The timer changes hands into this reader's window's timer
+    /// (`SleepTimerService.take(heldForBook:from:as:...)`): the window's own,
+    /// after a switch in place, changes owner; another window's moves its
+    /// running state here and stops there. This reader gives it what a timer
+    /// does to its book (`makeSleepTimerHandlers(fadeOutDuration:)`). A timer
+    /// for the end of a heading then waits for the end of the heading playing
+    /// in this book, and one for the end of the book for the end of this one.
+    /// Its time left, its duration, and a countdown halted by the previous
+    /// reader's pause are as they were; this reader's play resumes a halted
+    /// one.
     ///
     /// A timer that ran out, or began to fade out, before this reader took it
     /// has ended listening, so the request to start this book is dropped, and
@@ -230,26 +260,27 @@ extension ReaderViewModel {
     /// loading claims as its load ends.
     func claimSleepTimerHandOver() {
         guard !hasClosed, !isLoading else { return }
-        let service = sleepTimerService
-        if service.consumeExpiredWhileHeld(forBook: book.id) {
+        if sleepTimers.consumeExpiredWhileHeld(forBook: book.id) {
             DiagnosticLog.trace(.playback, "next book: the sleep timer ended before this book took it; not starting")
             discardAutoplayRequest()
             return
         }
-        // Held for this book and asked for: a timer only held, for a move still
-        // waiting out the half second, is the old reader's until it asks.
-        guard service.isAsked(forBook: book.id) else { return }
+        // Held for this book, in whichever window, and asked for: a timer only
+        // held, for a move still waiting out the half second, is the old
+        // reader's until it asks.
+        guard let held = sleepTimers.timer(heldForBook: book.id), held.isAsked(forBook: book.id) else { return }
         // A fade begun before the take is putting the listener to sleep: it
         // ends listening, and the book is not started.
-        if service.isFadingOut {
+        if held.isFadingOut {
             DiagnosticLog.trace(.playback, "next book: the sleep timer began to fade out before this book took it; not starting")
-            service.dropHold(forBook: book.id)
+            held.dropHold(forBook: book.id)
             discardAutoplayRequest()
             return
         }
-        let handlers = makeSleepTimerHandlers(fadeOutDuration: service.fadeOutDuration)
-        guard service.adoptHeld(
-            forBook: book.id,
+        let handlers = makeSleepTimerHandlers(fadeOutDuration: held.fadeOutDuration)
+        guard sleepTimerService.take(
+            heldForBook: book.id,
+            from: held,
             as: readerID,
             onExpire: handlers.onExpire,
             onFadeStep: handlers.onFadeStep,
@@ -266,18 +297,18 @@ extension ReaderViewModel {
         DiagnosticLog.trace(.playback, "next book: took over the running sleep timer")
     }
 
-    /// Releases the sleep timer held for the book `bookID`, which truly could
-    /// not be opened: this reader's book failed to load or download, or the
-    /// book the window was asked for is gone
-    /// (`SleepTimerService.releaseHeld(forBook:announcingAfter:)`, which stops
-    /// the timer and tells the listener, after current speech and, for a book
-    /// that failed, once the reason has been read).
+    /// Releases the sleep timer held for the book `bookID`, in whichever
+    /// window, which truly could not be opened: this reader's book failed to
+    /// load or download, or the book the window was asked for is gone
+    /// (`SleepTimerRegistry.releaseHeld(forBook:reason:announcingAfter:)`,
+    /// which stops the timer and tells the listener, after current speech
+    /// and, for a book that failed, once the reason has been read).
     ///
     /// - Parameter afterTheReason: Whether the book failed with a reason the
     ///   listener is being told, which the sentence must follow.
     func releaseSleepTimerHeld(forBook bookID: UUID, afterTheReason: Bool = false) {
         let delay = afterTheReason ? SleepTimerHandOverWording.afterTheReason : 0
-        if sleepTimerService.releaseHeld(forBook: bookID, announcingAfter: delay) {
+        if sleepTimers.releaseHeld(forBook: bookID, announcingAfter: delay) {
             DiagnosticLog.trace(.playback, "next book: no reader took the sleep timer; stopped it")
         }
     }

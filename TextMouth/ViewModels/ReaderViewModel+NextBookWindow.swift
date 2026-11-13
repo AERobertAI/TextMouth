@@ -140,23 +140,24 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "next book: the sleep timer ended listening before the book was asked for; not starting it")
             autoplayRequests.discard(for: nextBookID)
             readingListRequests.discard(for: nextBookID)
-            sleepTimerService.dropHold(forBook: nextBookID)
-            _ = sleepTimerService.consumeExpiredWhileHeld(forBook: nextBookID)
+            sleepTimers.dropHold(forBook: nextBookID)
+            _ = sleepTimers.consumeExpiredWhileHeld(forBook: nextBookID)
             return
         }
         moveCarriesSleepTimer = false
         moveExpiryMark = nil
         // A running timer goes on with the book, wherever it shows: held for it
-        // since the move was announced. Held here only when nothing is held, for
-        // a caller that announced nothing: never in place of a hold made for
-        // another book by a later move.
+        // since the move was announced. Held here only when this window's timer
+        // holds nothing, for a caller that announced nothing: never in place of
+        // a hold made for another book by a later move.
         if !sleepTimerService.isHolding {
             holdSleepTimer(forBook: nextBookID)
         }
         // Asked for now, with the other requests, before the notification or
-        // the switch: a reader open for the book takes the timer before it
-        // plays, and one the ask opens takes it as its load ends.
-        sleepTimerService.markAsked(forBook: nextBookID)
+        // the switch: a reader open for the book, in any window, takes the
+        // timer before it plays, and one the ask opens takes it as its load
+        // ends.
+        sleepTimers.markAsked(forBook: nextBookID)
         // The move has asked: its hold is no longer a pending move's, but the
         // asked move's, which a later move from this reader still cancels until
         // the book's reader has claimed the request to play it (X1).

@@ -3302,12 +3302,14 @@ extension ReaderViewModel {
 
     // MARK: - Sleep Timer
 
-    /// Start a sleep timer owned by this reader. Replaces any timer that
-    /// might be running for another reader. The provided duration is
+    /// Start a sleep timer owned by this reader, in this reader's window.
+    /// Replaces the window's timer, whoever owned it, and a timer on its way
+    /// to this book from another window (`sleepTimerComingHere`); another
+    /// window's own timer is left as it is. The provided duration is
     /// captured along with this reader's pause/fade callbacks so the
-    /// shared service knows what to do when the timer fires.
+    /// window's timer knows what to do when it fires.
     /// Calling this with a timer already running just replaces it
-    /// (the singleton's start() implicitly stops any previous timer).
+    /// (the service's start() implicitly stops any previous timer).
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
     /// resumed or started, as Play does (`playUnlessUnderWay()`), so the
     /// armed timer has audio to count against; while Where Am I? speaks,
@@ -3319,6 +3321,9 @@ extension ReaderViewModel {
     /// Play begins later, as at a book's cover, the one Play begins in
     /// (`headingAfterPlaybackStart`).
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
+        // The listener has set this window's timer: one coming here from
+        // another window would replace it as this book loads.
+        stopSleepTimerComingHere(because: "replaced by a timer started where it was going")
         sleepTimerNextHeading = duration == .endOfHeading ? headingAfterPlaybackStart : nil
         // Capture one value for both timer scheduling and direct-speech fade
         // planning. A settings edit while the timer runs must not make the
@@ -3435,11 +3440,13 @@ extension ReaderViewModel {
         )
     }
 
-    /// Cancel the sleep timer if one is running. Anyone may cancel —
-    /// no owner check, since "Cancel" should always work even if the
-    /// user is in a different window from the one that started it.
+    /// Cancel this window's sleep timer if one is running, and one on its
+    /// way to this book from another window. No owner check, since "Cancel"
+    /// should always work, even on a timer the reader before this one in the
+    /// window set; another window's own timer is left as it is.
     func cancelSleepTimer() {
         sleepTimerService.stop()
+        stopSleepTimerComingHere(because: "cancelled where it was going")
         // Playback no longer has to stop at this chapter's end for a timer,
         // so the next chapter's file may follow on again (TODO PERF09), and
         // audio fading toward that end returns to full volume (TODO P01).
@@ -3451,12 +3458,14 @@ extension ReaderViewModel {
     /// latest fade-out settings. Used by the "Reset Timer" button in
     /// the sleep timer sheet.
     func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
-        guard let duration = sleepTimerService.duration else { return }
-        // A timer held for the next book restarts where it is, whichever
-        // reader the restart reaches: its owner and hold are kept, and no
-        // reader is resumed, as a restart here would resume this one, which
-        // has moved on (`SleepTimerService.restartHeld()`).
+        // A timer held for the next book restarts where it is, whether this
+        // reader's window holds it, this reader having moved on, or it is on
+        // its way to this book from another window: its owner and hold are
+        // kept, and no reader is resumed, as a restart here would resume the
+        // reader that moved on (`SleepTimerService.restartHeld()`).
         if sleepTimerService.restartHeld() { return }
+        if sleepTimerComingHere?.restartHeld() == true { return }
+        guard let duration = sleepTimerService.duration else { return }
         // Rebuild every callback rather than asking the service to retain the
         // old closures. The direct-speech callback captures the effective fade
         // duration, so retaining it after a settings change would arm the new
@@ -3475,11 +3484,13 @@ extension ReaderViewModel {
     /// this install, so we have nothing to repeat.
     func restartOrStartLastSleepTimer() {
         let bookToken = String(book.id.uuidString.prefix(8))
-        if sleepTimerService.isActive {
+        // This window's timer, or one on its way to this book from another
+        // window, which a restart reaches as it reached the one timer there was.
+        if let running = sleepTimerService.isActive ? sleepTimerService : sleepTimerComingHere {
             // Existing timer running — same as Reset Timer.
             SleepTimerService.log(
                 .event,
-                "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(sleepTimerService.remainingSeconds)"
+                "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(running.remainingSeconds)"
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer reset.")

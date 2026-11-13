@@ -1,0 +1,649 @@
+import AppKit
+import AVFoundation
+import Combine
+import XCTest
+@testable import TextMouth
+
+/// Each reader window has a sleep timer of its own (November 13, 2026). The
+/// user: "I noticed that the sleep timer still appeared when going from book
+/// to book but playing had it stuck... I want each sleep timer to be
+/// refactored to be per book view window not global". And on November 1: "the
+/// sleeping timer in particular I would like to move still running to the new
+/// book without a new window opening".
+///
+/// A window here is a stand-in (`TestReaderWindow`): the timer the scene's
+/// window content keeps (`ReaderWindowContent`), given to every reader it
+/// shows, and a switch to another book in place, which it records; the test
+/// then makes the next book's reader in the same window, as SwiftUI does.
+/// Nothing is heard: audiobooks are silent tracks, and a text book's one
+/// chapter is longer than speech ever renders, so its speech goes to a
+/// recorder in place of the synthesizer. Countdowns are moved by hand, and
+/// every wait has a limit.
+@MainActor
+final class WindowSleepTimerTests: XCTestCase {
+    /// The registry the test's windows' timers join, so the app's is never
+    /// touched.
+    private var registry: SleepTimerRegistry!
+    /// Where the test's timers keep the duration last used.
+    private var preferences: UserDefaults!
+    /// The media session the test's readers join.
+    private var coordinator: NowPlayingService!
+    /// The world the test's books and readers live in.
+    private var world: IntegrationWorld!
+    /// Every utterance a text book's speech handed over in place of the
+    /// synthesizer.
+    private var utterances: [AVSpeechUtterance] = []
+    /// Subscriptions a test keeps until it ends.
+    private var subscriptions = Set<AnyCancellable>()
+
+    override func setUp() async throws {
+        try await super.setUp()
+        registry = SleepTimerRegistry()
+        preferences = makeSandboxedPreferences("window-sleep-timer")
+        coordinator = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        world = try makeIntegrationWorld("Window Sleep Timer")
+        world.settings.sleepFadeOutDuration = 0
+        world.settings.punctuationPauseLevel = 0
+        world.settings.endOfBookBehavior = .continueNext
+        world.library.library.folders = [BookFolder(name: world.folder.path)]
+        // Registered after the world's, so it runs first: no timer of the
+        // test's runs on while the world's readers close.
+        addTeardownBlock { [registry] in registry?._stopEveryTimerForTesting() }
+    }
+
+    override func tearDown() async throws {
+        subscriptions = []
+        utterances = []
+        try await super.tearDown()
+    }
+
+    // MARK: - The User's Case
+
+    /// The user's case, from their timer log of November 13: a reader holding
+    /// a paused timer, 2:40 left, and another book opened beside it, from the
+    /// Library, in a window of its own, which the listener plays and pauses.
+    /// The other window shows no timer, its Play and Pause leave the first
+    /// window's timer as it was, and a timer it sets is its own, which the
+    /// first window keeps beside it. For every pair of text and audiobook,
+    /// the user's guess, a text book then an audiobook, first.
+    ///
+    /// On main one timer served the app and showed in every window: the
+    /// second reader showed the first's timer, stuck, since its own playback
+    /// did not own it, and the timer it set replaced the first's.
+    func testABookOpenedBesideAPausedTimerShowsNoTimerAndRunsItsOwn() throws {
+        let pairs: [(Kind, Kind)] = [(.text, .audio), (.audio, .text), (.text, .text), (.audio, .audio)]
+        for (index, (first, second)) in pairs.enumerated() {
+            let cell = "\(first.rawValue) then \(second.rawValue)"
+            let a = openReader(for: try makeBook(first, titled: "Opened \(index) A"), in: makeWindow())
+            a.startSleepTimer(duration: .minutes(15))
+            a.sleepTimerService.remainingSeconds = 160
+            a.pause(playingPauseSound: false)
+            let shownInA = a.sleepTimerService.spokenLabel
+            XCTAssertEqual(shownInA, "Sleep timer: 2:40 remaining", cell)
+
+            let b = openReader(for: try makeBook(second, titled: "Opened \(index) B"), in: makeWindow())
+
+            XCTAssertFalse(b.sleepTimerService.isActive, "\(cell): the other window shows the first window's timer")
+            XCTAssertEqual(b.sleepTimerService.spokenLabel, "", "\(cell): the other window's status reads a timer")
+            b.play()
+            XCTAssertTrue(eventually { b.isPlaybackUnderWay }, "\(cell): the other book never started")
+            a.sleepTimerService._advanceCountdownForTesting()
+            b.pause(playingPauseSound: false)
+            XCTAssertEqual(a.sleepTimerService.remainingSeconds, 160, "\(cell): the other book's playback ran the first's timer")
+            XCTAssertEqual(a.sleepTimerService.ownerID, a.readerID, "\(cell)")
+
+            b.startSleepTimer(duration: .minutes(5))
+
+            XCTAssertEqual(b.sleepTimerService.ownerID, b.readerID, "\(cell)")
+            XCTAssertEqual(b.sleepTimerService.duration, .minutes(5), "\(cell)")
+            XCTAssertTrue(a.sleepTimerService.isActive, "\(cell): the other window's timer replaced the first's")
+            XCTAssertEqual(a.sleepTimerService.spokenLabel, shownInA, "\(cell): the first window's timer changed")
+            b.stop()
+        }
+    }
+
+    // MARK: - Two Windows, Two Timers
+
+    /// Two windows each run a timer of their own: each counts only while its
+    /// own book plays, pauses with its own playback (one reader plays at a
+    /// time, so playing one pauses the other and halts its count), and runs
+    /// out only for its own book, which it pauses, saying so once. Each
+    /// window's reader shows, and VoiceOver reads, only its own.
+    func testTwoWindowsEachCountPauseAndRunOutTheirOwnTimer() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.audio, titled: "Pair A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Pair B"), in: windowB)
+        a.startSleepTimer(duration: .minutes(10))
+        a.pause(playingPauseSound: false)
+        b.startSleepTimer(duration: .minutes(20))
+        b.pause(playingPauseSound: false)
+        XCTAssertTrue(a.sleepTimerService === windowA.sleepTimer)
+        XCTAssertTrue(b.sleepTimerService === windowB.sleepTimer)
+        XCTAssertFalse(windowA.sleepTimer === windowB.sleepTimer, "The two windows share a timer")
+        XCTAssertEqual(a.sleepTimerService.spokenLabel, "Sleep timer: 10:00 remaining")
+        XCTAssertEqual(b.sleepTimerService.spokenLabel, "Sleep timer: 20:00 remaining")
+
+        a.play()
+        XCTAssertTrue(eventually { a.audioPlaybackService.isPlaying }, "A never played")
+        tick(windowA, 3)
+        tick(windowB, 3)
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3, "A's timer did not count while A played")
+        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1200, "B's timer counted while only A played")
+
+        b.play()
+        XCTAssertTrue(eventually { b.audioPlaybackService.isPlaying }, "B never played")
+        XCTAssertTrue(a.isCurrentlyPaused, "Playing B did not pause A")
+        tick(windowA, 3)
+        tick(windowB, 3)
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3, "A's timer counted while A was paused")
+        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1200 - 3, "B's timer did not count while B played")
+
+        let bRunsOut = recordingAnnouncements {
+            windowB.sleepTimer.remainingSeconds = 1
+            tick(windowB, 1)
+        }
+        XCTAssertEqual(bRunsOut.announcements.map(\.message), [ReaderViewModel.sleepTimerExpiredAnnouncement])
+        XCTAssertTrue(b.isCurrentlyPaused, "B's timer ran out without pausing B")
+        XCTAssertFalse(windowB.sleepTimer.isActive)
+        XCTAssertTrue(windowA.sleepTimer.isActive, "B's timer ran out A's")
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3)
+
+        a.play()
+        XCTAssertTrue(eventually { a.audioPlaybackService.isPlaying }, "A never played again")
+        let aRunsOut = recordingAnnouncements {
+            windowA.sleepTimer.remainingSeconds = 1
+            tick(windowA, 1)
+        }
+        XCTAssertEqual(aRunsOut.announcements.map(\.message), [ReaderViewModel.sleepTimerExpiredAnnouncement])
+        XCTAssertTrue(a.isCurrentlyPaused, "A's timer ran out without pausing A")
+        XCTAssertFalse(b.isPlaybackUnderWay, "A's timer started B")
+    }
+
+    /// Closing a window stops its own timer and nothing else: the other
+    /// window's timer runs on, still its own.
+    func testClosingAWindowStopsItsOwnTimerOnly() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.text, titled: "Close A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Close B"), in: windowB)
+        a.startSleepTimer(duration: .minutes(10))
+        b.startSleepTimer(duration: .endOfHeading)
+
+        a.close()
+
+        XCTAssertFalse(windowA.sleepTimer.isActive, "Closing the window left its timer running")
+        XCTAssertTrue(windowB.sleepTimer.isActive, "Closing one window stopped the other's timer")
+        XCTAssertEqual(windowB.sleepTimer.ownerID, b.readerID)
+        XCTAssertEqual(windowB.sleepTimer.duration, .endOfHeading)
+    }
+
+    // MARK: - In Place to the Next Book
+
+    /// A text book's window goes on to an audiobook in place, and its timer
+    /// goes on with it, for each kind of timer.
+    func testTheTimerGoesOnInPlaceFromATextBookToAnAudiobook() throws {
+        try checkTheTimerGoesOnInPlace(from: .text, to: .audio)
+    }
+
+    /// An audiobook's window goes on to a text book in place, and its timer
+    /// goes on with it, for each kind of timer.
+    func testTheTimerGoesOnInPlaceFromAnAudiobookToATextBook() throws {
+        try checkTheTimerGoesOnInPlace(from: .audio, to: .text)
+    }
+
+    /// A text book's window goes on to another text book in place, and its
+    /// timer goes on with it, for each kind of timer.
+    func testTheTimerGoesOnInPlaceFromATextBookToATextBook() throws {
+        try checkTheTimerGoesOnInPlace(from: .text, to: .text)
+    }
+
+    /// An audiobook's window goes on to another audiobook in place, and its
+    /// timer goes on with it, for each kind of timer.
+    func testTheTimerGoesOnInPlaceFromAnAudiobookToAnAudiobook() throws {
+        try checkTheTimerGoesOnInPlace(from: .audio, to: .audio)
+    }
+
+    /// A timer a window has as it goes on to another book in place.
+    enum InPlaceTimer: String, CaseIterable {
+        /// Minutes, counting while the book played: the move's pause halts
+        /// the count, and the next book's start resumes it.
+        case minutesRunning = "minutes, running"
+        /// Minutes, halted while the book was paused: the move only opens
+        /// the next book, and the count waits for its Play.
+        case minutesPaused = "minutes, paused"
+        /// The end of the heading: it waits for the end of the heading the
+        /// next book's playback reads in.
+        case endOfHeading = "End of heading"
+        /// The end of the book: it stops where the next book ends, as a
+        /// timer for the end of a book that a command moves from goes on.
+        case endOfBook = "End of book"
+
+        /// What the timer waits for.
+        var duration: SleepTimerDuration {
+            switch self {
+            case .minutesRunning, .minutesPaused: return .minutes(30)
+            case .endOfHeading: return .endOfHeading
+            case .endOfBook: return .endOfBook
+            }
+        }
+
+        /// Whether the book was playing as the move began, so the move plays
+        /// the next one.
+        var plays: Bool { self != .minutesPaused }
+    }
+
+    /// Moves a window from a book of the kind `from` to a book of the kind
+    /// `to` below it in their folder, with Next in Folder, under each
+    /// in-place timer, and checks each: the window switches in place, the
+    /// old reader's close leaves the timer running, and the next book's
+    /// reader, made in the same window, takes the window's own timer, as it
+    /// was: minutes keep their time and count once the book plays, End of
+    /// heading waits for the end of the heading in the new book, and End of
+    /// book for the new book's end.
+    private func checkTheTimerGoesOnInPlace(from: Kind, to: Kind, file: StaticString = #filePath, line: UInt = #line) throws {
+        for (index, timer) in InPlaceTimer.allCases.enumerated() {
+            let cell = "\(from.rawValue) to \(to.rawValue), \(timer.rawValue)"
+            let first = try makeBook(from, titled: "In Place \(index) A")
+            let second = try makeBook(to, titled: "In Place \(index) B")
+            let window = makeWindow()
+            let old = openReader(for: first, in: window, file: file, line: line)
+            old.startSleepTimer(duration: timer.duration)
+            if case .minutes = timer.duration {
+                window.sleepTimer.remainingSeconds = 1000
+            }
+            if timer.plays {
+                // Counts as playing, without a sound: a Where Am I?
+                // announcement that will play the book again.
+                old.isWhereAmIResumePending = true
+            } else {
+                old.pause(playingPauseSound: false)
+            }
+
+            old.goThroughFolder(.down)
+            XCTAssertTrue(
+                eventually { window.switchedTo == [second.id] },
+                "\(cell): the window never switched in place", file: file, line: line
+            )
+            // The switch takes the old view away, which closes its reader.
+            old.close()
+            XCTAssertTrue(window.sleepTimer.isActive, "\(cell): the old reader's close stopped the timer", file: file, line: line)
+            let next = openReader(for: second, in: window, file: file, line: line)
+
+            XCTAssertTrue(next.sleepTimerService === window.sleepTimer, "\(cell)", file: file, line: line)
+            XCTAssertEqual(window.sleepTimer.ownerID, next.readerID, "\(cell): the next book did not take the timer", file: file, line: line)
+            XCTAssertEqual(window.sleepTimer.duration, timer.duration, "\(cell)", file: file, line: line)
+            XCTAssertFalse(window.sleepTimer.isHolding, "\(cell): the hold outlived the take", file: file, line: line)
+            if timer.plays {
+                XCTAssertTrue(
+                    eventually { next.isPlaybackUnderWay },
+                    "\(cell): the next book did not start", file: file, line: line
+                )
+            }
+            switch timer {
+            case .minutesRunning:
+                let left = window.sleepTimer.remainingSeconds
+                XCTAssertTrue(left <= 1000 && left > 1000 - 60, "\(cell): \(left) left, from 1000", file: file, line: line)
+                tick(window, 1)
+                XCTAssertEqual(window.sleepTimer.remainingSeconds, left - 1, "\(cell): the timer does not count", file: file, line: line)
+            case .minutesPaused:
+                XCTAssertFalse(next.isPlaybackUnderWay, "\(cell): a book only opened played", file: file, line: line)
+                XCTAssertEqual(window.sleepTimer.remainingSeconds, 1000, "\(cell)", file: file, line: line)
+                tick(window, 1)
+                XCTAssertEqual(window.sleepTimer.remainingSeconds, 1000, "\(cell): it counted before Play", file: file, line: line)
+                next.play()
+                tick(window, 1)
+                XCTAssertEqual(window.sleepTimer.remainingSeconds, 999, "\(cell): Play did not resume it", file: file, line: line)
+            case .endOfHeading:
+                XCTAssertTrue(window.sleepTimer.waitsForHeadingEnd(ownedBy: next.readerID), "\(cell)", file: file, line: line)
+                let waited = try XCTUnwrap(next.sleepTimerNextHeading, "\(cell): no heading is waited for", file: file, line: line)
+                let expected = try XCTUnwrap(secondHeading(of: next), "\(cell): the book has one heading", file: file, line: line)
+                XCTAssertEqual(
+                    [waited.chapterIndex, waited.characterOffset], [expected.chapterIndex, expected.characterOffset],
+                    "\(cell): the timer waits for another heading than the one after the new book's start", file: file, line: line
+                )
+            case .endOfBook:
+                XCTAssertTrue(
+                    window.sleepTimer.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: true, ownedBy: next.readerID),
+                    "\(cell): the timer does not stop the new book at its end", file: file, line: line
+                )
+                XCTAssertTrue(next.sleepTimerEndsListeningHere, "\(cell)", file: file, line: line)
+            }
+            next.stop()
+        }
+    }
+
+    /// The second heading of `reader`'s book in book order: the end of the
+    /// first, where the heading playback starts in ends.
+    private func secondHeading(of reader: ReaderViewModel) -> Heading? {
+        let ordered = reader.headings.sorted {
+            ($0.chapterIndex, $0.characterOffset) < ($1.chapterIndex, $1.characterOffset)
+        }
+        return ordered.count > 1 ? ordered[1] : nil
+    }
+
+    // MARK: - The Next Book in Another Window
+
+    /// With A New Window, the timer goes with listening to the new window:
+    /// held in the old window, still the old reader's, until the next book's
+    /// reader has loaded, when the new window's timer takes it, with the time
+    /// it had left, and counts on as the book plays; the old window then
+    /// shows no timer, and its reader's close changes nothing.
+    func testTheTimerGoesToTheNewWindowAsItsBookLoads() throws {
+        world.settings.nextBookWindow = .newWindow
+        let first = try makeBook(.audio, titled: "New Window A")
+        let second = try makeBook(.text, titled: "New Window B")
+        let oldWindow = makeWindow()
+        let old = openReader(for: first, in: oldWindow)
+        old.startSleepTimer(duration: .minutes(30))
+        oldWindow.sleepTimer.remainingSeconds = 1000
+        old.isWhereAmIResumePending = true
+        let continued = record(.continueToNextBook)
+
+        old.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !continued().isEmpty }, "The next book's window was never asked for")
+        XCTAssertTrue(oldWindow.switchedTo.isEmpty, "The old window switched")
+        XCTAssertTrue(oldWindow.sleepTimer.isHeld(forBook: second.id), "The timer was not held for the next book")
+        XCTAssertEqual(oldWindow.sleepTimer.ownerID, old.readerID, "Exactly one owner until the next book takes it")
+
+        let newWindow = makeWindow()
+        let next = openReader(for: second, in: newWindow)
+
+        XCTAssertEqual(newWindow.sleepTimer.ownerID, next.readerID, "The new window's reader did not take the timer")
+        XCTAssertEqual(newWindow.sleepTimer.duration, .minutes(30))
+        let left = newWindow.sleepTimer.remainingSeconds
+        XCTAssertTrue(left <= 1000 && left > 1000 - 60, "\(left) left in the new window, from 1000")
+        XCTAssertFalse(oldWindow.sleepTimer.isActive, "The old window still shows the timer")
+        XCTAssertEqual(oldWindow.sleepTimer.spokenLabel, "")
+        XCTAssertNil(registry.timer(heldForBook: second.id), "The hold outlived the take")
+        XCTAssertTrue(eventually { next.isPlaybackUnderWay }, "The next book never started")
+        tick(newWindow, 1)
+        XCTAssertEqual(newWindow.sleepTimer.remainingSeconds, left - 1, "The timer does not count in the new window")
+
+        old.close()
+        XCTAssertTrue(newWindow.sleepTimer.isActive, "The old reader's close stopped the timer in the new window")
+    }
+
+    /// The next book open already in a window of its own is brought forward,
+    /// and that window's timer takes the running one at the ask, replacing a
+    /// timer of its own: one timer goes on, with listening.
+    func testTheBooksOpenWindowBroughtForwardTakesTheTimerAtTheAsk() throws {
+        let first = try makeBook(.audio, titled: "Forward A")
+        let second = try makeBook(.audio, titled: "Forward B")
+        let otherWindow = makeWindow()
+        let other = openReader(for: second, in: otherWindow)
+        other.startSleepTimer(duration: .minutes(5))
+        other.pause(playingPauseSound: false)
+        let oldWindow = makeWindow()
+        let old = openReader(for: first, in: oldWindow)
+        old.startSleepTimer(duration: .minutes(30))
+        oldWindow.sleepTimer.remainingSeconds = 1000
+        old.isWhereAmIResumePending = true
+
+        old.goThroughFolder(.down)
+        XCTAssertTrue(
+            eventually { otherWindow.sleepTimer.duration == .minutes(30) },
+            "The book's open window never took the timer"
+        )
+
+        XCTAssertEqual(otherWindow.sleepTimer.ownerID, other.readerID)
+        XCTAssertLessThanOrEqual(otherWindow.sleepTimer.remainingSeconds, 1000)
+        XCTAssertFalse(oldWindow.sleepTimer.isActive, "The old window still shows the timer")
+        XCTAssertTrue(oldWindow.switchedTo.isEmpty, "The old window switched to a book open elsewhere")
+    }
+
+    // MARK: - A Timer on Its Way Here
+
+    /// A timer started in the window of a book a timer is on its way to, from
+    /// another window, replaces it, as a new timer replaces the one there is:
+    /// the window's own runs, and the one coming stops, so the book takes
+    /// nothing as it loads. Cancelling there ends the one coming too.
+    func testATimerStartedOrCancelledWhereOneIsComingStopsTheOneComing() throws {
+        for cancels in [false, true] {
+            let label = cancels ? "cancelled" : "started"
+            let (source, next, newWindow) = try timerOnItsWayToALoadingBook(label)
+
+            if cancels {
+                next.cancelSleepTimer()
+            } else {
+                next.startSleepTimer(duration: .minutes(5))
+            }
+
+            XCTAssertFalse(source.isActive, "\(label): the timer on its way here runs on")
+            XCTAssertEqual(newWindow.sleepTimer.isActive, !cancels, label)
+            heldLoad?.activate()
+            waitForReaderToLoad(next)
+            XCTAssertEqual(
+                newWindow.sleepTimer.duration, cancels ? nil : .minutes(5),
+                "\(label): the book took the timer that was on its way"
+            )
+        }
+    }
+
+    /// Restart Sleep Timer reaching the window of a book a timer is on its
+    /// way to restarts that timer where it is, as it reached the one timer
+    /// there was: the hold and its owner kept, its minutes from the full
+    /// duration, and the book takes it so as it loads.
+    func testRestartWhereATimerIsComingRestartsTheOneComing() throws {
+        let (source, next, newWindow) = try timerOnItsWayToALoadingBook("Restart")
+
+        let recorder = recordingAnnouncements { next.restartOrStartLastSleepTimer() }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Timer reset."])
+        XCTAssertEqual(source.remainingSeconds, 30 * 60, "The timer on its way was not restarted")
+        XCTAssertFalse(newWindow.sleepTimer.isActive, "The restart started a timer of the window's own")
+        heldLoad?.activate()
+        waitForReaderToLoad(next)
+        XCTAssertEqual(newWindow.sleepTimer.ownerID, next.readerID)
+        XCTAssertGreaterThan(newWindow.sleepTimer.remainingSeconds, 30 * 60 - 60, "The book took a timer not restarted")
+    }
+
+    /// The queue holding the load of the reader `timerOnItsWayToALoadingBook`
+    /// made last: a test lets the load go with `activate()`, which a second
+    /// activation leaves alone.
+    private var heldLoad: DispatchQueue?
+
+    /// A timer of 30 minutes, 1000 seconds left, on its way from one window
+    /// to the next book's new window, whose reader is still loading: held for
+    /// the book and asked for, as A New Window leaves it.
+    ///
+    /// - Returns: The old window's timer, the next book's reader, and its
+    ///   window.
+    private func timerOnItsWayToALoadingBook(_ label: String) throws -> (SleepTimerService, ReaderViewModel, TestReaderWindow) {
+        let first = try makeBook(.audio, titled: "\(label) Coming A")
+        let second = try makeBook(.audio, titled: "\(label) Coming B")
+        let oldWindow = makeWindow()
+        let old = openReader(for: first, in: oldWindow)
+        old.startSleepTimer(duration: .minutes(30))
+        oldWindow.sleepTimer.remainingSeconds = 1000
+        XCTAssertTrue(oldWindow.sleepTimer.hold(forBook: second.id, from: old.readerID, isBookOpen: old.bookIsOpenCheck))
+        oldWindow.sleepTimer.markAsked(forBook: second.id)
+        // Inactive until activated, which a second activation leaves alone,
+        // so the load is let go however the test ends.
+        let held = DispatchQueue(label: "window-timer-held-load-\(label)", attributes: .initiallyInactive)
+        heldLoad = held
+        addTeardownBlock { held.activate() }
+        let newWindow = makeWindow()
+        let next = world.openReader(
+            for: second,
+            renderScheduler: HeldRenderQueue(),
+            nowPlaying: coordinator,
+            loadQueue: held,
+            sleepTimer: newWindow.sleepTimer
+        )
+        XCTAssertTrue(next.sleepTimerComingHere === oldWindow.sleepTimer, "\(label): no timer is on its way")
+        return (oldWindow.sleepTimer, next, newWindow)
+    }
+
+    // MARK: - Commands
+
+    /// Restart Sleep Timer's key acts in the window it was pressed in, on
+    /// that window's timer: a window with no timer starts one of the
+    /// duration last used, and the other window's timer is left as it was.
+    func testRestartSleepTimersKeyActsInTheWindowItWasPressedIn() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.audio, titled: "Key A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Key B"), in: windowB)
+        let hostA = NSWindow()
+        let hostB = NSWindow()
+        a.attach(to: hostA)
+        b.attach(to: hostB)
+        a.startSleepTimer(duration: .minutes(30))
+        windowA.sleepTimer.remainingSeconds = 1000
+        a.pause(playingPauseSound: false)
+
+        let inB = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil, userInfo: ["sourceWindow": hostB])
+        }
+
+        XCTAssertEqual(inB.announcements.map(\.message), ["Timer restarted: 30 minutes."])
+        XCTAssertEqual(windowB.sleepTimer.ownerID, b.readerID, "The key pressed in B's window did not start B's timer")
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 1000, "The key pressed in B's window restarted A's timer")
+
+        let inA = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil, userInfo: ["sourceWindow": hostA])
+        }
+
+        XCTAssertEqual(inA.announcements.map(\.message), ["Timer reset."])
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 30 * 60, "The key pressed in A's window did not restart A's timer")
+        XCTAssertEqual(windowB.sleepTimer.ownerID, b.readerID)
+        withExtendedLifetime((hostA, hostB)) {}
+    }
+
+    /// A menu command, which carries no window, is the key window's, and a
+    /// sheet's command its window's: Show Sleep Timer opens the sheet of that
+    /// window's reader, which shows that window's timer.
+    func testAMenuCommandIsTheKeyWindowsAndItsSheetShowsThatWindowsTimer() throws {
+        let hostA = NSWindow()
+        let hostB = NSWindow()
+        XCTAssertTrue(WindowCommandRouting.shouldAccept(sourceWindow: nil, hostWindow: hostB, keyWindow: hostB))
+        XCTAssertFalse(WindowCommandRouting.shouldAccept(sourceWindow: nil, hostWindow: hostA, keyWindow: hostB))
+
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.audio, titled: "Menu A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Menu B"), in: windowB)
+        a.startSleepTimer(duration: .minutes(10))
+        b.startSleepTimer(duration: .endOfBook)
+
+        XCTAssertTrue(SleepTimerView.sheet(for: a, onClose: {}).sleepTimerService === windowA.sleepTimer)
+        XCTAssertTrue(SleepTimerView.sheet(for: b, onClose: {}).sleepTimerService === windowB.sleepTimer)
+        XCTAssertEqual(windowA.sleepTimer.spokenLabel, "Sleep timer: 10:00 remaining")
+        XCTAssertEqual(windowB.sleepTimer.spokenLabel, "Sleep timer: stops at the end of the book")
+    }
+
+    // MARK: - Helpers
+
+    /// The two kinds of book a window shows.
+    enum Kind: String, CaseIterable {
+        case text
+        case audio
+    }
+
+    /// A window of the test's own, whose timer joins the test's registry.
+    private func makeWindow() -> TestReaderWindow {
+        TestReaderWindow(registry: registry, preferences: preferences)
+    }
+
+    /// A reader for `book` in `window`, as the window's content makes one:
+    /// with the window's timer, the window's switch, and its window on
+    /// screen. Its speech goes to the recorder, and its look-ahead renders
+    /// are held. The world closes it when the test ends.
+    ///
+    /// - Parameter loaded: Whether to wait for its book to load.
+    private func openReader(
+        for book: Book,
+        in window: TestReaderWindow,
+        loaded: Bool = true,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> ReaderViewModel {
+        let reader = world.openReader(
+            for: book,
+            renderScheduler: HeldRenderQueue(),
+            nowPlaying: coordinator,
+            sleepTimer: window.sleepTimer
+        )
+        reader.speechService._directUtteranceRecorderForTesting = { [weak self] in self?.utterances.append($0) }
+        reader.nextBookWindowSwitcher = { [weak window] bookID in window?.switchTo(bookID) }
+        reader.windowStandingOverride = .onScreen
+        if loaded {
+            waitForReaderToLoad(reader, file: file, line: line)
+            XCTAssertNil(reader.errorMessage, "\(book.title) did not open", file: file, line: line)
+        }
+        return reader
+    }
+
+    /// A book of `kind` titled `title`, in the world's folder: an audiobook
+    /// of two silent tracks, each a heading, or a Markdown book of one
+    /// chapter longer than speech renders, with two headings, the title at
+    /// its start and Tides after it.
+    private func makeBook(_ kind: Kind, titled title: String) throws -> Book {
+        switch kind {
+        case .audio:
+            return try world.makeSilentAudioBook(title: title, trackDurations: [30, 30])
+        case .text:
+            let source = try makeSandboxDirectory("Window Timer Text").appendingPathComponent("\(title).md")
+            try Data(Self.ledger(titled: title).utf8).write(to: source)
+            return try world.importBook(from: source)
+        }
+    }
+
+    /// The Markdown of a text book titled `title`: a heading of its title,
+    /// moorings, then a heading Tides, and tides, one chapter longer than
+    /// speech ever renders, so its speech is direct and goes to the recorder.
+    static func ledger(titled title: String) -> String {
+        var text = "# \(title)\n\n"
+        for entry in 1...1_400 {
+            text += "Mooring \(entry) of the harbour ledger is checked. "
+        }
+        text += "\n\n# Tides\n\n"
+        for entry in 1...1_200 {
+            text += "Tide \(entry) of the harbour ledger is noted. "
+        }
+        return text + "\n"
+    }
+
+    /// Counts `window`'s timer down by `seconds`, as its countdown would,
+    /// without waiting; a countdown halted by a pause does not move.
+    private func tick(_ window: TestReaderWindow, _ seconds: Int) {
+        for _ in 0..<seconds {
+            window.sleepTimer._advanceCountdownForTesting()
+        }
+    }
+
+    /// Records every notification named `name` posted in the world.
+    ///
+    /// - Returns: A function reading the notifications posted so far.
+    private func record(_ name: Notification.Name) -> () -> [Notification] {
+        var posted: [Notification] = []
+        world.notifications.publisher(for: name)
+            .sink { posted.append($0) }
+            .store(in: &subscriptions)
+        return { posted }
+    }
+}
+
+/// A reader window, as the scene's window content makes one, without a window
+/// on screen: the window's sleep timer, which every reader it shows is given
+/// (`ReaderWindowContent`), and its switch to another book in place, which it
+/// records, the test then making that book's reader in it.
+@MainActor
+final class TestReaderWindow {
+    /// The window's sleep timer.
+    let sleepTimer: SleepTimerService
+    /// The books the window was switched to in place, in order.
+    private(set) var switchedTo: [UUID] = []
+
+    /// A window whose timer joins `registry` and keeps the duration last
+    /// used in `preferences`.
+    init(registry: SleepTimerRegistry, preferences: UserDefaults) {
+        sleepTimer = SleepTimerService(userDefaults: preferences, registry: registry)
+    }
+
+    /// Notes that the window was asked to show `bookID` in place.
+    func switchTo(_ bookID: UUID) {
+        switchedTo.append(bookID)
+    }
+}

@@ -489,23 +489,13 @@ struct ReaderPanelSheets: ViewModifier {
             }
     }
 
-    /// The sleep timer, whose start plays the book unless it is playing
-    /// already, and whose Close, or its closing by itself when Settings
-    /// say so, closes the sheet.
+    /// The sleep timer of this reader's window, whose start plays the book
+    /// unless it is playing already, and whose Close, or its closing by
+    /// itself when Settings say so, closes the sheet.
     private var sleepTimerSheet: some View {
-        SleepTimerView(
-            viewModel: viewModel,
-            sleepTimerService: viewModel.sleepTimerService,
-            onStartPlayback: {
-                if !viewModel.isCurrentlyPlaying || viewModel.isCurrentlyPaused {
-                    viewModel.togglePlayPause()
-                }
-            },
-            onClose: {
-                panels.sleepTimer = false
-            },
-            autoClose: viewModel.settingsViewModel.sleepTimerAutoClose
-        )
+        SleepTimerView.sheet(for: viewModel) {
+            panels.sleepTimer = false
+        }
     }
 
     /// Search in the loaded book: a text book's text, or a transcribed

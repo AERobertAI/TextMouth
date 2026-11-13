@@ -233,7 +233,7 @@ final class PhoneSession: ObservableObject {
             "phone session: asked to open a book no longer in the library: \(bookID.uuidString.prefix(8))"
         )
         autoplayRequests.discard(for: bookID)
-        SleepTimerService.shared.releaseHeld(forBook: bookID)
+        SleepTimerRegistry.shared.releaseHeld(forBook: bookID)
     }
 
     // MARK: - Opening

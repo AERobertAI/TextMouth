@@ -153,6 +153,7 @@
 		0E1A29F92E28EF1B3E53B2B3 /* TextutilDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47A3A805FE596CCC8861E67 /* TextutilDocumentReader.swift */; };
 		0E33EE22A6748742C1962908 /* PhoneSheetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AF98EAB780321CB9D2EF21 /* PhoneSheetButton.swift */; };
 		0E379D2E07C0A961F4C25565 /* RemovalWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725183EF3DA7A14663C47417 /* RemovalWording.swift */; };
+		0EAC5CAADE1D4D96351D8953 /* WindowSleepTimerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */; };
 		0EAC87B055D3645C1D6A7206 /* ReadingTextCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33D9589C839961150DA506BF /* ReadingTextCacheTests.swift */; };
 		0ED49F931CF52BDF717AB827 /* PlaceClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2257309869F015497FA2341 /* PlaceClock.swift */; };
 		0EF9C00780CA29E8BBEFA53B /* SleepTimerHandOverWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 168DE24CE2925DE1D87D5D52 /* SleepTimerHandOverWording.swift */; };
@@ -4200,6 +4201,7 @@
 		F21240DBDB9081FF3B899D53 /* EPUBMetadataSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBMetadataSave.swift; sourceTree = "<group>"; };
 		F2287B331AF48028437C93E9 /* NextBookWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextBookWindow.swift; sourceTree = "<group>"; };
 		F22A2D8D42A5F6AC10001ACD /* TranscriptCleanupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupRules.swift; sourceTree = "<group>"; };
+		F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSleepTimerTests.swift; sourceTree = "<group>"; };
 		F2580130FEEDAA657E518D59 /* BrailleHelperProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleHelperProtocolTests.swift; sourceTree = "<group>"; };
 		F25DB42330A6A9F723CED84F /* PhoneAudioWordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAudioWordingTests.swift; sourceTree = "<group>"; };
 		F26395ADCD8B217C5D612A70 /* PlaceClockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceClockTests.swift; sourceTree = "<group>"; };
@@ -6243,6 +6245,7 @@
 				1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */,
 				B0557EA7BE31086021AE6596 /* WindowFocusPolicyTests.swift */,
 				CB19D8C0D50DF1A16B10F3CB /* WindowScopeShortcutTests.swift */,
+				F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */,
 				DB75E9674BA50E5983754569 /* WindowsMatrixTests.swift */,
 				60A753C33CB56BFE06A48F63 /* WordDocumentComparisonTests.swift */,
 				C7A6201412770CD67DA7B8EA /* WordDocumentHostileTests.swift */,
@@ -7692,6 +7695,7 @@
 				589CB6E5B84964FDB3CD0F0C /* WhereAmIPolicyTests.swift in Sources */,
 				C405EB54DBD289ABB124D4AD /* WindowFocusPolicyTests.swift in Sources */,
 				28A8D7812D05D171DBD83F50 /* WindowScopeShortcutTests.swift in Sources */,
+				0EAC5CAADE1D4D96351D8953 /* WindowSleepTimerTests.swift in Sources */,
 				9F30CDE24C418B579ADB9D42 /* WindowsMatrixTests.swift in Sources */,
 				BED855B2A28F66CD2360D6C0 /* WordDocumentComparisonTests.swift in Sources */,
 				D4272BAE375549CA12A8C2E9 /* WordDocumentHostileTests.swift in Sources */,

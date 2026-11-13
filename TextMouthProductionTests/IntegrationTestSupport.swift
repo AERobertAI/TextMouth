@@ -113,12 +113,17 @@ final class IntegrationWorld {
     ///     does.
     ///   - cloud: The cloud services the reader gets its book ready with,
     ///     whose storage a test can observe; nil uses the app's.
+    ///   - sleepTimer: The sleep timer of the reader's window, which a test
+    ///     gives the readers it puts in one window, as a window gives each
+    ///     book it shows (`ReaderWindowContent`); nil gives the reader the
+    ///     default (`ReaderViewModel.init(sleepTimer:)`).
     func openReader(
         for book: Book,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         nowPlaying: NowPlayingService? = nil,
         loadQueue: DispatchQueue? = nil,
-        cloud: ReaderCloudServices? = nil
+        cloud: ReaderCloudServices? = nil,
+        sleepTimer: SleepTimerService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -130,7 +135,8 @@ final class IntegrationWorld {
             renderScheduler: renderScheduler,
             cloud: cloud,
             nowPlaying: nowPlaying,
-            loadQueue: loadQueue
+            loadQueue: loadQueue,
+            sleepTimer: sleepTimer
         )
         readers.append(reader)
         return reader

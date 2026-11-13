@@ -56,6 +56,26 @@ struct SleepTimerView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// The sheet of `reader`'s window (November 13, 2026: each reader window
+    /// has a timer of its own): it sets, shows, resets, and cancels that
+    /// window's timer, its start plays the book unless it is playing already,
+    /// and its Close, or its closing by itself when Settings say so, calls
+    /// `onClose`. The one way a reader's sheet is made, so every window's
+    /// sheet shows its own timer.
+    static func sheet(for reader: ReaderViewModel, onClose: @escaping () -> Void) -> SleepTimerView {
+        SleepTimerView(
+            viewModel: reader,
+            sleepTimerService: reader.sleepTimerService,
+            onStartPlayback: {
+                if !reader.isCurrentlyPlaying || reader.isCurrentlyPaused {
+                    reader.togglePlayPause()
+                }
+            },
+            onClose: onClose,
+            autoClose: reader.settingsViewModel.sleepTimerAutoClose
+        )
+    }
+
     @State private var customMinutes: Int = 30
     /// Keep the VoiceOver request alive only for initial presentation. Setting
     /// or cancelling a timer changes the sheet hierarchy; leaving the request

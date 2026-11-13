@@ -54,25 +54,18 @@ struct TextMouthApp: App {
         // Book reader windows — opened programmatically via openWindow(id:value:)
         // Restoration disabled so old reader windows don't reopen on launch.
         WindowGroup("Book Reader", id: BookReaderWindowView.windowID, for: UUID.self) { $bookID in
-            if let bookID = bookID {
-                BookReaderWindowView(
-                    bookID: bookID,
-                    libraryViewModel: libraryViewModel,
-                    settingsViewModel: settingsViewModel,
-                    // Listening goes on to another book in this window
-                    // (0.2.5): the window's book changes, and `.id` below
-                    // makes a new view, with a new reader, of it.
-                    showBook: { nextBookID in $bookID.wrappedValue = nextBookID }
-                )
-                .environmentObject(libraryViewModel)
-                .environmentObject(settingsViewModel)
-                .environmentObject(shortcutManager)
-                .environmentObject(soundEffectService)
-                // Without an identity of its own for each book, SwiftUI
-                // would keep the old view and its reader, and the window
-                // would go on showing the old book.
-                .id(bookID)
-            }
+            // Each window keeps its own sleep timer above the book it shows,
+            // so the timer stays with the window when listening goes on to
+            // another book in it (0.2.5, November 13, 2026).
+            ReaderWindowContent(
+                bookID: $bookID,
+                libraryViewModel: libraryViewModel,
+                settingsViewModel: settingsViewModel
+            )
+            .environmentObject(libraryViewModel)
+            .environmentObject(settingsViewModel)
+            .environmentObject(shortcutManager)
+            .environmentObject(soundEffectService)
         }
         // Without this, SwiftUI adds File > New > New Book Reader Window,
         // which opens a reader with no book: an empty window whose Playback
