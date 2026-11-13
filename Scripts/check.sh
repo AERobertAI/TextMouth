@@ -114,11 +114,13 @@ readonly RELEASE_BUILD_LOG="build/xcodebuild-Release.log"
 # install` copies to /Applications.
 readonly RELEASE_APP="build/TextMouth.app"
 # The largest the Release app may be, in megabytes of a million bytes. Its
-# developer wants it no larger than 50 MB, with 25 MB or less the aim; it
-# was 33 MB before the size work of October 2026 and 11 MB after it. The
-# gate fails above this limit, so the app cannot quietly grow past it. This
-# is the limit's only definition: Scripts/check-selftest.sh reads it here.
-readonly APP_SIZE_LIMIT_MB=50
+# developer wants it under 20 MB, and 15 MB if that costs nothing they use. It
+# was 33 MB before the size work of October 2026, 11 MB after it, and 23.55 MB
+# on November 13, 2026, before -Osize and the missing export trie brought it to
+# 18.98 MB. The gate fails above this limit, so the app cannot quietly grow
+# past it. This is the limit's only definition: Scripts/check-selftest.sh
+# reads it here.
+readonly APP_SIZE_LIMIT_MB=20
 # A line in which the Swift compiler reports a warning (see the header).
 readonly SWIFT_WARNING_PATTERN='^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning: '
 # How many warnings a step that fails on them names.
