@@ -133,16 +133,23 @@ final class LibraryTypeSelectBehaviorTests: XCTestCase {
 
     // MARK: - When Typed Letters Add Up
 
-    /// Typed letters add up for a little over a second and start afresh
-    /// after that: T then R is Treasure Island while the R comes 1.0 seconds
-    /// after, Robinson Crusoe when it comes 1.6 seconds after (AppKit's time
-    /// is between 1.2 and 1.3 on the runner). Each try is a fresh list,
-    /// drawn after a wait that ends any search AppKit keeps for all its tables.
-    func testTypedLettersAddUpAtOneSecondAndStartAfreshAtOnePointSix() throws {
+    /// Typed letters add up while they come quickly and start afresh after a
+    /// pause: T then R is Treasure Island while the R comes 0.2 seconds
+    /// after, Robinson Crusoe when it comes after the pause. How long AppKit
+    /// waits differs from Mac to Mac: between 1.2 and 1.3 seconds on GitHub's
+    /// runner, but under 1.0 on the development Mac on November 13, 2026
+    /// (letters 1.0 seconds apart started afresh there), so it seems to follow
+    /// the Mac's Delay Until Repeat. The test therefore types the letters 0.2
+    /// seconds apart, which any setting adds up, and pauses for the longer of
+    /// 2.5 seconds and four times this Mac's key repeat delay, which no
+    /// setting does. Each try is a fresh list, drawn after a wait that ends any
+    /// search AppKit keeps for all its tables.
+    func testTypedLettersAddUpQuicklyAndStartAfreshAfterAPause() throws {
         try requireTheFirstChoice()
         let titles = ["Apple Pie", "Treasure Island", "Robinson Crusoe"]
         var findings: [String] = []
-        for (gap, expected) in [(1.0, "Treasure Island"), (1.6, "Robinson Crusoe")] {
+        let pause = max(2.5, 4 * NSEvent.keyRepeatDelay)
+        for (gap, expected) in [(0.2, "Treasure Island"), (pause, "Robinson Crusoe")] {
             let hosted = try host(titles: titles, settleSeconds: Self.searchEnds)
             defer { takeDown(hosted.window) }
             try type("t", into: hosted)
