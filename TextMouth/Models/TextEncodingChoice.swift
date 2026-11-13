@@ -222,4 +222,12 @@ extension Book {
     var offersBrailleFileCodeChoice: Bool {
         format == .braille && !isFeedItem && BrailleBookReader.kind(of: bookFileURL) != .pef
     }
+
+    /// Whether Book Information offers this book the choice of the braille
+    /// code its text is read in (`brailleTable`, FMT21): any braille book,
+    /// whatever its file (a PEF's cells are translated to print by a table
+    /// too), but never a feed's item.
+    var offersBrailleTableChoice: Bool {
+        format == .braille && !isFeedItem
+    }
 }

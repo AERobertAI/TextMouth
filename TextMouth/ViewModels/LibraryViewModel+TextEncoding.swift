@@ -15,14 +15,19 @@ enum TextRereadChoice: Hashable, Sendable {
     /// A BRF or BRL braille book's file read with the braille file
     /// characters of this code.
     case brailleFileCode(BrailleFileCode)
+    /// A braille book's file read with this braille table, the braille code
+    /// its cells are translated to print by (`Book.brailleTable`, FMT21).
+    case brailleTable(BrailleTable)
 
     /// Whether Book Information offers `book` a choice of this kind: its
-    /// Text Encoding pop-up (`Book.offersTextEncodingChoice`), or its braille
-    /// file characters (`Book.offersBrailleFileCodeChoice`).
+    /// Text Encoding pop-up (`Book.offersTextEncodingChoice`), its braille
+    /// file characters (`Book.offersBrailleFileCodeChoice`), or its braille
+    /// code (`Book.offersBrailleTableChoice`).
     func isOffered(to book: Book) -> Bool {
         switch self {
         case .textEncoding: return book.offersTextEncodingChoice
         case .brailleFileCode: return book.offersBrailleFileCodeChoice
+        case .brailleTable: return book.offersBrailleTableChoice
         }
     }
 
@@ -32,6 +37,7 @@ enum TextRereadChoice: Hashable, Sendable {
         switch self {
         case .textEncoding: return LibraryViewModel.textEncodingChangedLogTag
         case .brailleFileCode: return LibraryViewModel.brailleFileCodeChangedLogTag
+        case .brailleTable: return LibraryViewModel.brailleTableChangedLogTag
         }
     }
 }
@@ -324,6 +330,17 @@ extension LibraryViewModel {
                 ))
             }
             updated.brailleFileCode = code.id
+        case .brailleTable(let table):
+            // The table is set as an import sets it: its stored value, and
+            // the liblouis version of this Mac's tables for one of them
+            // (`BrailleTableCatalog.versionToRecord(forTable:)`), so the
+            // reading checks that the Mac's tables are the ones it was made
+            // with. Nothing is checked beforehand: any braille translates to
+            // print in any table, and a table that cannot be used (one a
+            // macOS update removed) fails the reading below, before
+            // anything is written.
+            updated.brailleTable = table.id
+            updated.brailleTableVersion = BrailleTableCatalog.versionToRecord(forTable: table.id)
         }
         // 2. Text TextMouth did not write, kept beside the new text, the
         // copies already there noted first.
@@ -346,6 +363,7 @@ extension LibraryViewModel {
             // encoding and who decided it, or the braille file characters.
             let decidedEncoding: TextEncodingRecord?
             let decidedCode: String?
+            let decidedTable: LibraryPersistenceService.BrailleTableDecision?
             switch choice {
             case .textEncoding:
                 // Automatic records its guess, if it made one, and that the
@@ -355,9 +373,17 @@ extension LibraryViewModel {
                 updated.textEncodingRecord = record
                 decidedEncoding = record
                 decidedCode = nil
+                decidedTable = nil
             case .brailleFileCode(let code):
                 decidedEncoding = nil
                 decidedCode = code.id
+                decidedTable = nil
+            case .brailleTable(let table):
+                // The table and the version it was read under, as the
+                // reading above recorded them on the book.
+                decidedEncoding = nil
+                decidedCode = nil
+                decidedTable = .init(table: table.id, version: updated.brailleTableVersion)
             }
             // A file that went to the cloud meanwhile may have been read in
             // part, so nothing is committed from it.
@@ -369,7 +395,8 @@ extension LibraryViewModel {
                 movedPlaces: generated.movedPlaces,
                 pageReaderVersion: .some(generated.pageReaderVersion),
                 textEncoding: decidedEncoding,
-                brailleFileCode: decidedCode
+                brailleFileCode: decidedCode,
+                brailleTable: decidedTable
             ) else { throw CommitDropped() }
             // Which readers have the book open is asked now, at the commit,
             // as the batch asks it (`updateTextCache`): a reader opened while
@@ -399,6 +426,8 @@ extension LibraryViewModel {
                 }
             case .brailleFileCode(let code):
                 reading = code.name
+            case .brailleTable(let table):
+                reading = BrailleTableCatalog.description(ofTableID: table.id)
             }
             return .readAgain(update, reading: reading, keptCopy: lastKept)
         } catch {
@@ -489,6 +518,8 @@ extension LibraryViewModel {
             return update.summary?.textEncodingRecord.map { textEncodingLogLine(title: title, record: $0, keptCopy: keptCopy) }
         case .brailleFileCode(let code):
             return brailleFileCodeLogLine(title: title, code: code, keptCopy: keptCopy)
+        case .brailleTable(let table):
+            return brailleTableLogLine(title: title, table: table, keptCopy: keptCopy)
         }
     }
 
@@ -524,6 +555,18 @@ extension LibraryViewModel {
     /// The tag that begins the log line of a braille book read again with
     /// other braille file characters.
     nonisolated static let brailleFileCodeChangedLogTag = "BRAILLE_FILE_CODE_CHANGED"
+
+    /// The debug log's line for a braille book read again with another
+    /// braille table (its braille code): the title, the stored value of the
+    /// table it records, and where text TextMouth did not write was kept, as
+    /// `BRAILLE_TABLE_CHANGED: Ledger: read again with en-ueb-g1.ctb`.
+    nonisolated static func brailleTableLogLine(title: String, table: BrailleTable, keptCopy: URL?) -> String {
+        "\(brailleTableChangedLogTag): \(title): read again with \(table.id)" + keptCopyClause(keptCopy)
+    }
+
+    /// The tag that begins the log line of a braille book read again with
+    /// another braille table.
+    nonisolated static let brailleTableChangedLogTag = "BRAILLE_TABLE_CHANGED"
 
     /// What a re-read's log line ends with: where text TextMouth did not
     /// write was kept, by the copy's name, as "; its earlier text was kept as
