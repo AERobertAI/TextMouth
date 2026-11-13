@@ -393,6 +393,9 @@ final class LogContentPolicyTests: XCTestCase {
         "DUPLICATE_KEEP_FAILED",
         // A package left unadopted because its record names a book the library lists in another package.
         "ORPHAN_ID_LISTED",
+        // Search Library's background preparation (November 13, 2026): how a pass ended, with its counts
+        // and seconds.
+        "LIBRARY_SEARCH_PREPARATION",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
