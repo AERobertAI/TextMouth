@@ -471,7 +471,7 @@ final class WindowsMatrixTests: XCTestCase {
     /// timer is still in effect and still A's, and VoiceOver hears nothing.
     /// Each cell also checks B's own outcome.
     func testQuietOperationsLeaveTheBookPlayingElsewhereAlone() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for (index, row) in Row.all.enumerated() {
             let stage = try makeStage(for: row, index: index)
             defer { stage.close() }
@@ -657,7 +657,7 @@ final class WindowsMatrixTests: XCTestCase {
     /// In every case A is not stopped or moved by the timer's changes alone;
     /// only the restart's play pauses it.
     func testATimerCancelledStartedRunOutAndRestartedInAnotherBooksWindow() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         for (index, row) in Row.all.enumerated() {
             let stage = try makeStage(for: row, index: 100 + index)
@@ -720,7 +720,7 @@ final class WindowsMatrixTests: XCTestCase {
     /// playing, is paused where it was; a paused A stays paused. Nothing
     /// ends A's timer or hands it to B, and VoiceOver hears nothing.
     func testStartingAnotherBookPausesTheBookPlayingAndKeepsItsTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for (index, row) in Row.all.enumerated() where !Self.isCoveredByStartingB(row) {
             let stage = try makeStage(for: row, index: 200 + index)
             defer { stage.close() }

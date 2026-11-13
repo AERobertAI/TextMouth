@@ -122,7 +122,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// resumed it at full volume with no timer left to stop it.
     func testASleepTimerRunningOutDuringWhereAmILeavesTheBookPaused() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             let system = MediaSystem()
             let world = try makeIntegrationWorld("Where Am I Timer \(kind)")
@@ -511,7 +511,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// stop it (REV11).
     func testASleepTimerRunningOutAsWhereAmIEndsLeavesTheBookPaused() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             let system = MediaSystem()
             let world = try makeIntegrationWorld("Where Am I Ends Timer \(kind)")
@@ -953,7 +953,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// leftovers).
     func testASleepTimerSetDuringWhereAmIPlaysTheBookAsItEnds() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             for pausedBefore in [false, true] {
                 let context = "\(kind), \(pausedBefore ? "paused before" : "playing")"
@@ -989,7 +989,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// at full volume, and the system is told it plays again.
     func testPlayAfterTheSleepTimerFadesOutResumesAtFullVolume() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Sleep Timer")
         world.settings.sleepFadeOutDuration = 2
@@ -1015,7 +1015,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// speaks from there at full volume.
     func testPreviousTrackAfterTheSleepTimerMovesBackAndPlayStartsThere() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Timer Skip")
         world.settings.sleepFadeOutDuration = 2
@@ -1061,7 +1061,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// checked, at its usual pace, whether playback left the heading.
     func testTrackCommandsSkipWithinTheHeadingOfAnEndOfHeadingTimer() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Heading Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
@@ -1640,7 +1640,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// fade began, at full volume, while the book in front stays silent.
     func testABookWhoseSleepTimerRunsOutBehindAnotherWindowIsShownPausedAndPlayResumesIt() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Timer Behind")
         world.settings.sleepFadeOutDuration = 2
@@ -1807,7 +1807,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// while nothing plays; Play resumes it.
     func testARefusedTextHaltsTheSleepTimersCountdownUntilPlay() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Refusal Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
@@ -1836,7 +1836,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// stop left the countdown running on, or running out, over silence.
     func testReleasingMediaControlsHaltsTheSleepTimersCountdownUntilPlay() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Release Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
@@ -2269,7 +2269,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// Book starts the next book.
     func testAfterAnEndOfBookTimerStopsTheBookARewindReplaysItsEndThenItContinues() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Finished Timer Continue")
         world.settings.skipBackwardUnit = .seconds15

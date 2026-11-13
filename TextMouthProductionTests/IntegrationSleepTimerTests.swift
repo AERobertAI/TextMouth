@@ -46,7 +46,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// volume, and nothing is announced.
     func testExpiringTimerPausesItsOwnBookOnceWhileAnotherBooksWindowCloses() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Integration Sleep Timer")
         world.settings.sleepFadeOutDuration = 1
         let owner = try world.makeSilentAudioBook(title: "Night Reading", trackDurations: [30])
@@ -107,7 +107,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// the next chapter played on.
     func testEndOfHeadingTimerStopsAnAudiobookWhereItsChapterEnds() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Heading End Audio")
         world.settings.sleepFadeOutDuration = 0
         let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [0.6, 5])
@@ -158,7 +158,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// waits, saved, at the beginning of the next chapter. Before the repair
     /// the next chapter was spoken at once.
     func testEndOfHeadingTimerStopsSpeechWhereTheChapterEndsTheHeadingWithoutAFade() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         for fadeSeconds: TimeInterval in [0, 5] {
             try withSpeechReader(
@@ -196,7 +196,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// hears once that the book finished and why nothing follows, and the
     /// timer has ended.
     func testEndOfHeadingTimerInTheLastChapterEndsListeningWithTheBook() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let outcomes: [(behavior: EndOfBookBehavior, announcement: String, chapterAfter: Int)] = [
             (.stop, "Finished: Quay Notes. Sleep timer expired.", 2),
@@ -239,7 +239,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// chapter.
     func testEndOfHeadingTimerFadesAnAudiobookOutOverTheLastSecondsOfItsChapter() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Chapter Fade")
         let fadeSeconds: TimeInterval = 1
         world.settings.sleepFadeOutDuration = fadeSeconds
@@ -274,7 +274,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// Cancelling an End of heading timer while it fades an audiobook out
     /// puts the volume back to full at once, and the next chapter plays on.
     func testCancellingTheTimerDuringItsFadeRestoresTheVolumeAndPlaysOn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Chapter Fade Cancel")
         world.settings.sleepFadeOutDuration = 2
         let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2.5, 5])
@@ -303,7 +303,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// chapter's end, where the heading ends.
     func testPausingDuringTheFadeKeepsTheTimerAndPlayingAgainStopsAtTheEnd() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Chapter Fade Pause")
         world.settings.sleepFadeOutDuration = 2
         let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2.5, 5])
@@ -342,7 +342,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// and that the timer stopped it, and the timer has ended.
     func testEndOfBookTimerPlaysAnAudiobookToItsEndAndStartsNothingAfter() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let outcomes: [(behavior: EndOfBookBehavior, announcement: String)] = [
             (.continueNext, "Finished: Ferry Timetable. Next book not started because of the sleep timer."),
             (.stop, "Finished: Ferry Timetable. Sleep timer expired."),
@@ -391,7 +391,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// again nor continues to the next book. The listener hears once that
     /// the book finished and why nothing follows.
     func testEndOfBookTimerSpeaksATextBookToItsEndAndStartsNothingAfter() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let outcomes: [(behavior: EndOfBookBehavior, announcement: String, chapterAfter: Int)] = [
             (.stop, "Finished: Quay Notes. Sleep timer expired.", 2),
@@ -442,7 +442,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// crossing a heading told the timer nothing, so it never stopped a book
     /// playing on its own.
     func testEndOfHeadingTimerStopsSpeechWhereTheHeadingEndsWithinAChapter() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let harbour = harbourChapter()
         let quays = Chapter(title: "Quays", text: "Quays\n\nThe quays are noted here.", headings: [Heading(level: 1, text: "Quays")])
@@ -486,7 +486,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// that the timer ended, after it rather than over it. Before the repair
     /// a jump to the next heading only armed the timer, and a second ended it.
     func testAJumpWithinTheHeadingKeepsTheTimerAndAJumpOutEndsItOnce() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let harbour = harbourChapter()
         try withSpeechReader("Sleep Timer Heading Jumps", chapters: [harbour.chapter]) { speech in
@@ -540,7 +540,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// once, and the cursor waits there, saved.
     func testAJumpOutOfTheHeadingStopsAnAudiobookWhereTheJumpWent() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Heading Jump Audio")
         world.settings.sleepFadeOutDuration = 0
         let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [5, 5])
@@ -586,7 +586,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// nothing said, and stops where that chapter's heading begins, once,
     /// the cursor waiting there, saved.
     func testEndOfHeadingTimerGoesOnIntoAChapterWithTextBeforeItsFirstHeading() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let opening = Chapter(
             title: "Bollard",
@@ -641,7 +641,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// heading stops speech where the level-2 heading after it begins, once,
     /// and the cursor waits there, at the offset the parser gave the heading.
     func testEndOfHeadingTimerStopsAMarkdownBookWhereTheNextHeadingOfAnyLevelBegins() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let markdown = """
         # Moorings
@@ -692,7 +692,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// chapter. The listener hears the heading's end, not the book's.
     func testEndOfHeadingTimerStopsAnM4BAtItsNextChapterMarker() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Heading M4B")
         world.settings.sleepFadeOutDuration = 0
         let book = try makeChapteredAudioBook(
@@ -737,7 +737,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// when the next chapter has no heading of its own, so the heading goes
     /// on through it.
     func testEndOfHeadingTimerStopsSpeechWhereTheChapterEndsOnlyWhenTheHeadingDoes() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let opening = Chapter(
             title: "Bollard",
@@ -786,7 +786,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// ends, and the book does not start again, as one set for the end of
     /// the book would not let it.
     func testEndOfHeadingTimerInTheLastHeadingStopsWhereTheBookEnds() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let harbour = harbourChapter()
         try withSpeechReader("Sleep Timer Heading Book End", endOfBook: .loop, chapters: [harbour.chapter]) { speech in
@@ -815,7 +815,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// stops it where the book ends, as one set for the end of the book
     /// does, and the listener hears once that the book finished and why.
     func testEndOfHeadingTimerInABookWithNoHeadingsStopsWhereTheBookEnds() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         try withSpeechReader("Sleep Timer Heading No Headings") { speech in
             let reader = speech.reader
@@ -844,7 +844,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// the end of the heading the cursor is in, rather than for the end of
     /// the book.
     func testAHeadingTimerSetWhileTheBookLoadsWaitsForItsHeadingOnceLoaded() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         let harbour = harbourChapter()
         try withSpeechReader("Sleep Timer Heading While Loading", chapters: [harbour.chapter]) { speech in
@@ -997,7 +997,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// the book at once, in silence. The timer now waits for the heading
     /// after the one Play starts in.
     func testEndOfHeadingTimerSetAtAnImageOnlyCoverWaitsForTheHeadingPlayStartsIn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let epub = try TextPipelineFixtures.writeEPUB(Self.coverEPUBEntries(), named: "cover.epub", for: self)
         let content = try EPUBParser.parse(url: epub)
         XCTAssertEqual(content.chapters.count, 2, "The fixture's chapters: \(content.chapters.map(\.text))")
@@ -1019,7 +1019,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// book's last, so the timer waits for the book's end, as it does for any
     /// last heading (no heading is kept).
     func testEndOfHeadingTimerSetAtACoverBeforeTheLastHeadingWaitsForTheBooksEnd() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let only = chapter(titled: "Only", text: "Only\n\nThe only chapter is noted here.", headings: ["Only"])
         try withSpeechReader("Sleep Timer Heading Cover Last", chapters: [Chapter(title: "Cover", text: ""), only]) { speech in
             let reader = speech.reader
@@ -1035,7 +1035,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// the next chapter, and not for that chapter's first heading, which Play
     /// begins at.
     func testEndOfHeadingTimerSetAfterAChaptersLastWordsWaitsForTheHeadingPlayStartsIn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let opening = chapter(titled: "Moorings", text: "Moorings\n\nThe moorings are noted here.\n\n\n", headings: ["Moorings"])
         let next = chapter(
             titled: "Tides",
@@ -1056,7 +1056,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// the first words that remain, under the heading after the skipped one,
     /// so the timer waits for the heading after that.
     func testEndOfHeadingTimerSetBeforeASkippedSectionWaitsForTheHeadingPlayStartsIn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let text = "Copyright\n\nAll rights are reserved.\n\nChapter One\n\nIt began.\n\nChapter Two\n\nIt went on."
         let book = chapter(titled: "Book", text: text, headings: ["Copyright", "Chapter One", "Chapter Two"])
         try withSpeechReader("Sleep Timer Heading Skipped Start", chapters: [book]) { speech in
@@ -1074,7 +1074,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// to the next chapter, so the timer waits for the heading after that
     /// chapter's first.
     func testEndOfHeadingTimerSetInASkippedSectionAtAChaptersEndWaitsForTheHeadingPlayStartsIn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let story = chapter(
             titled: "Story",
             text: "Story\n\nThe story is noted here.\n\nAppendix\n\nThe notes are noted here.",
@@ -1102,7 +1102,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// them, and the timer waits for the heading after the first one that
     /// says anything.
     func testEndOfHeadingTimerSetBeforeSeveralEmptyChaptersWaitsForTheHeadingPlayStartsIn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cover = chapter(titled: "Cover", text: "", headings: [])
         let blank = Chapter(title: "Blank", text: "\n \n", headings: [Heading(level: 1, text: "Blank")])
         let body = chapter(
@@ -1122,7 +1122,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// at the heading, which is then the heading playing, so the timer waits
     /// for the heading after it, not for the one Play is about to say.
     func testEndOfHeadingTimerSetBeforeWhiteSpaceAndAHeadingWaitsForTheHeadingAfterIt() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let book = chapter(
             titled: "Davit",
             text: "\n\nDavit\n\nThe davit is noted here.\n\nEnd\n\nThe end is noted here.",
@@ -1141,7 +1141,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// over, an edited text, and a book loaded all refresh it, here with the
     /// cursor at a cover.
     func testRefreshingTheTimersHeadingAtACoverFollowsThePlaceWherePlayReads() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cover = chapter(titled: "Cover", text: "", headings: ["Cover"])
         let body = chapter(
             titled: "Intro",
@@ -1170,7 +1170,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// chapter, where that heading ends. (Taken from where Play would start,
     /// it would skip that heading and stop a heading late.)
     func testEndOfHeadingTimerSetWhilePlayingInAChaptersLastBlankLinesWaitsForTheHeadingAfterTheCursor() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let opening = chapter(titled: "Moorings", text: "Moorings\n\nThe moorings are noted here.\n\n\n", headings: ["Moorings"])
         let next = chapter(
             titled: "Tides",
@@ -1269,7 +1269,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// wrong window.
     func testTheTimerBelongsToTheReaderThatSetItNotToItsBook() throws {
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Two Readers")
         world.settings.sleepFadeOutDuration = 0
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [0.5, 2.5, 5])
@@ -1321,7 +1321,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     /// left resets that reader's own. Until then the gesture went to the
     /// reader that set the last timer, whatever was being heard.
     func testRestartFromAMediaGestureGoesToTheReaderThatOwnsNowPlaying() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Restart Route")
         let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [30])
         let firstWindow = SleepTimerService()
@@ -1532,7 +1532,7 @@ final class SleepTimerSheetTests: XCTestCase {
     func testStopAtButtonsAreLabelledAndSetTheirTimers() throws {
         try skipUnlessSwiftUIExposesItsOwnElements()
         let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Sleep Timer Sheet")
         world.settings.sleepFadeOutDuration = 0
         let book = try world.makeSilentAudioBook(

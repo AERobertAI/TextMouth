@@ -26,7 +26,7 @@ extension EndBehaviorMatrixTests {
     /// each cell of the multi-file audio column that no other test pins. The
     /// last track is long, so a loop plays on for long after the end.
     func testMultiFileAudioEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         // A loop starts the first track again, which must outlast the moments
         // the test spends after the end, or the cursor moves on.
         let firstTrackSeconds: TimeInterval = 5

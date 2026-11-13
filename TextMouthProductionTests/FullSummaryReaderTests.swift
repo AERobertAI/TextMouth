@@ -127,7 +127,7 @@ final class FullSummaryReaderTests: XCTestCase {
     /// paused, so its Play/Pause button says Play. Play/Pause then resumes
     /// the book, its session, and the countdown.
     func testPlayPauseDuringAnAnnouncementSettlesThePause() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let book = try openPlayingAudiobook("Full Summary Play Pause")
         let reader = book.reader
         reader.startSleepTimer(duration: .minutes(10))
@@ -154,7 +154,7 @@ final class FullSummaryReaderTests: XCTestCase {
     /// A cancel nobody asked for, as when the speech engine refuses the
     /// announcement, settles the pause it leaves the same way.
     func testACancelNobodyAskedForSettlesThePauseToo() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let book = try openPlayingAudiobook("Full Summary Cancelled")
         let reader = book.reader
         reader.startSleepTimer(duration: .minutes(10))
@@ -173,7 +173,7 @@ final class FullSummaryReaderTests: XCTestCase {
     /// leaves the session open, the countdown counting, and the audiobook
     /// shown playing, as before: only a pause left standing is settled.
     func testAnAnnouncementThatResumesTheBookLeavesItPlaying() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let book = try openPlayingAudiobook("Full Summary Resumed")
         let reader = book.reader
         reader.startSleepTimer(duration: .minutes(10))

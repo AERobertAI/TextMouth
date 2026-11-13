@@ -143,11 +143,11 @@ final class SleepTimerRegistry {
 
     // MARK: Test Support
 
-    /// Stops every timer there is, so none a test made runs on into the next
-    /// test, and the registry keeps none alive. Production code must not
-    /// call this.
+    /// Stops every timer that runs or is held, so none a test made runs on
+    /// into the next test, and the registry keeps none alive. Production code
+    /// must not call this.
     func _stopEveryTimerForTesting() {
-        for timer in timers {
+        for timer in timers where timer.isActive || timer.isHolding {
             timer.stop(reason: "test ended")
         }
         retainedWhileHeld = [:]

@@ -646,7 +646,7 @@ final class PhoneSessionTests: XCTestCase {
 
     /// A running sleep timer goes on with the next book.
     func testASleepTimerGoesOnWithTheNextBook() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("PhoneNextTimer")
         let session = makeSession(in: folder.world)
         let first = try XCTUnwrap(session.open(folder.first))

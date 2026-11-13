@@ -388,7 +388,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// when the book has downloaded and loaded it neither plays nor takes the
     /// timer (the last move wins until its book has started).
     func testALaterMoveBeforeACloudTargetHasDownloadedCancelsItsStart() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cloud = try makeCloudReaders("Cloud Last Move")
         let world = cloud.world
         // In folder order: A Volume, the old reader's B Volume, the cloud C Volume.
@@ -869,7 +869,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// The sleep timer running out while a chapter's files download pauses
     /// the reader for good: the download's end plays nothing.
     func testSleepTimerRunningOutDuringAChaptersDownloadLeavesTheReaderPaused() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cloud = try makeCloudReaders("Cloud Chapter Sleep Timer", clone: Self.failingClone)
         // No fade, so the timer pauses the reader as it runs out.
         cloud.world.settings.sleepFadeOutDuration = 0

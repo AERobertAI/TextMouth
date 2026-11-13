@@ -240,7 +240,7 @@ final class PlaybackFuzzTests: XCTestCase {
     /// repeat it).
     private func fuzz(_ kind: BookKind) throws {
         // Before the world, so the world's readers close first.
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Playback Fuzz \(kind.rawValue)")
         // Resuming goes on from the cursor, so a check can compare them.
         world.settings.rewindOnResumeUnit = .none

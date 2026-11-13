@@ -1043,7 +1043,7 @@ final class ReadingListReaderTests: XCTestCase {
     /// Another reader's timer does not stop the list. A timer counting minutes
     /// goes on with the next book instead (0.2.5).
     func testTheSleepTimerKeepsItsRulesForABookReadFromTheList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListSleepTimer")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)
@@ -1097,7 +1097,7 @@ final class ReadingListReaderTests: XCTestCase {
     /// reading list (0.2.5): the next book starts, "Starting: <title>", and the
     /// reader of that book owns the timer, still running.
     func testAMinutesTimerGoesOnWithTheNextBookInTheReadingList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListTimerGoesOn")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)
@@ -1518,7 +1518,7 @@ final class ReadingListReaderTests: XCTestCase {
     /// timer is asked for by the book's reader, still this reader's until that
     /// reader takes it.
     func testTheSleepTimerGoesOnWithNextInReadingList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListNextSleepTimer")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)

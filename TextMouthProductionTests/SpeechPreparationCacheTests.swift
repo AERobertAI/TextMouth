@@ -436,7 +436,7 @@ final class SpeechPreparationCacheTests: XCTestCase {
     /// The preparation is one the test finishes, so speech starts only when
     /// the test hands its result over.
     func testAnEndOfHeadingTimerSetWhilePlayWaitsForALongChapterStopsWhereTheNextHeadingBegins() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let timer = SleepTimerService.shared
         try withReader(chapters: Self.coverBeforeALongChapter(seed: 67)) { reader, _ in
             let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
@@ -485,7 +485,7 @@ final class SpeechPreparationCacheTests: XCTestCase {
     /// long chapter that is not kept alone, and start no preparation. The
     /// cursor's heading stands in until Play starts.
     func testChoosingTheTimersHeadingNeverPreparesALongChapterOnTheMainActor() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cases: [(name: String, beingPrepared: Bool)] = [
             ("a chapter being prepared in the background", true),
             ("a chapter nobody has begun preparing", false),
