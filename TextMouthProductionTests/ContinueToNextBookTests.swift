@@ -956,8 +956,8 @@ final class ContinueToNextBookTests: XCTestCase {
     /// closed when the test ends.
     ///
     /// The reader is in a window of its own, as a book opened from the
-    /// Library is, so it has a sleep timer of its own (`sleepTimerService`):
-    /// a reader made with none would share the shared timer.
+    /// Library is, so it has a sleep timer of its own (`sleepTimerService`),
+    /// which no other reader's window shares.
     ///
     /// - Parameters:
     ///   - requests: The request store, when not the world's own.
