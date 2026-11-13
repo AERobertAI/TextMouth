@@ -140,9 +140,14 @@ final class SleepTimerService: ObservableObject {
     /// so the deadline acts only when no reader is open for the book. Cleared
     /// with the hold; a hold made with no check has no reader to wait for.
     private var heldBookIsOpen: ((UUID) -> Bool)?
-    /// The book a held timer ran out for before its reader took it: that
-    /// reader must not start the book (`consumeExpiredWhileHeld(forBook:)`).
-    private(set) var expiredWhileHeldBookID: UUID?
+    /// The book this timer ran out for while it was held, before its reader
+    /// took it: that reader must not start the book
+    /// (`consumeExpiredWhileHeld(forBook:)`). The mark is the registry's, kept
+    /// by book, so it outlives this timer when its window has closed and the
+    /// registry has let the timer go.
+    var expiredWhileHeldBookID: UUID? {
+        registry.expiredWhileHeldBook(bySerial: serial)
+    }
     /// The book the held timer has been asked for: the move's announcement
     /// holds the timer, and the ask, half a second later, lets the reader take
     /// it (`markAsked(forBook:)`). Until then a timer that runs out ends
@@ -155,6 +160,10 @@ final class SleepTimerService: ObservableObject {
     /// (`SleepTimerRegistry.asksMade`), keeps this timer alive while it is
     /// held for a book, and keeps one timer held for each book.
     let registry: SleepTimerRegistry
+
+    /// This timer's number in its registry, which names it in the run-out
+    /// marks the registry keeps (`SleepTimerRegistry.noteExpiredWhileHeld`).
+    private let serial: Int
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
@@ -215,6 +224,7 @@ final class SleepTimerService: ObservableObject {
     init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences, registry: SleepTimerRegistry? = nil) {
         self.userDefaults = userDefaults
         self.registry = registry ?? .shared
+        self.serial = self.registry.nextSerial()
         self.registry.register(self)
     }
 
@@ -351,7 +361,7 @@ final class SleepTimerService: ObservableObject {
         self.isActive = true
         self.pendingFadeCompletion = false
         self.lastExpiredOwnerID = nil
-        self.expiredWhileHeldBookID = nil
+        registry.forgetExpiredMarks(ofSerial: serial)
 
         switch duration {
         case .minutes(let minutes):
@@ -589,7 +599,7 @@ final class SleepTimerService: ObservableObject {
         heldFromOwnerID = owner
         heldBookIsOpen = isBookOpen
         askedBookID = nil
-        expiredWhileHeldBookID = nil
+        registry.forgetExpiredMarks(ofSerial: serial)
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
         registry.noteHold(of: self, forBook: bookID)
         armHoldDeadline(forBook: bookID, generation: generation, after: deadline)
@@ -627,15 +637,31 @@ final class SleepTimerService: ObservableObject {
         heldForBookID == bookID && askedBookID == bookID
     }
 
-    /// Ends the hold without stopping the timer: the registry no longer keeps
-    /// the timer alive for it.
+    /// Ends the hold without stopping the timer. The registry goes on keeping
+    /// the timer alive while it fades out (`updateRetention()`): the fade's
+    /// expiry must still be said, though the window the timer came from has
+    /// closed and the reader that took the hold dropped it.
     private func clearHold() {
         holdGeneration += 1
         heldForBookID = nil
         heldFromOwnerID = nil
         heldBookIsOpen = nil
         askedBookID = nil
-        registry.noteHoldEnded(of: self)
+        updateRetention()
+    }
+
+    /// Sets whether the registry keeps this timer alive, which a window that
+    /// has let it go cannot. A timer held for a book is kept, and so is one
+    /// that fades out after its hold ended, until the fade is over (it runs
+    /// out, or `stop()` ends it): so the held timer's run-out is marked, and
+    /// its expiry said, whatever became of its window. Otherwise it is the
+    /// window's own again, and the registry lets it go.
+    private func updateRetention() {
+        if heldForBookID != nil {
+            registry.setRetained(self, true)
+        } else if !isFadingOut {
+            registry.setRetained(self, false)
+        }
     }
 
     /// Restarts the held timer, as Restart Sleep Timer asks, whichever reader
@@ -772,7 +798,7 @@ final class SleepTimerService: ObservableObject {
         isActive = true
         // As a timer started here does: what ran out here before is over.
         lastExpiredOwnerID = nil
-        expiredWhileHeldBookID = nil
+        registry.forgetExpiredMarks(ofSerial: serial)
         timerLog(
             .event,
             "TRANSFERRED from=\(Self.ownerToken(previous)) to=\(Self.ownerToken(newOwnerID)) window=another"
@@ -851,8 +877,11 @@ final class SleepTimerService: ObservableObject {
         // The stop counted the hold: any timer started or held later counts it again.
         let stoppedAt = holdGeneration
         if delay > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.announceNoBook(ifNothingHeldSince: stoppedAt)
+            // Captured strongly, for the delay only: the stop let the registry
+            // go of this timer, and a timer whose window has closed would be
+            // freed before it said what it owes (V7).
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                self.announceNoBook(ifNothingHeldSince: stoppedAt)
             }
         } else {
             announceNoBook(ifNothingHeldSince: stoppedAt)
@@ -871,9 +900,7 @@ final class SleepTimerService: ObservableObject {
     /// Whether the timer ran out while held for the book `bookID`, so that
     /// its reader must not start the book; forgotten once asked.
     func consumeExpiredWhileHeld(forBook bookID: UUID) -> Bool {
-        guard expiredWhileHeldBookID == bookID else { return false }
-        expiredWhileHeldBookID = nil
-        return true
+        registry.consumeExpiredWhileHeld(forBook: bookID)
     }
 
     /// Returns true once after a fade reaches silence and the timer is
@@ -1099,7 +1126,7 @@ final class SleepTimerService: ObservableObject {
         expiryCount += 1
         lastExpiryNumber = expiryCount
         if let held = heldForBookID {
-            expiredWhileHeldBookID = held
+            registry.noteExpiredWhileHeld(forBook: held, bySerial: serial)
         }
         clearHold()
     }
@@ -1257,7 +1284,7 @@ final class SleepTimerService: ObservableObject {
     func _resetForTesting() {
         stop(reason: "test-reset")
         lastExpiredOwnerID = nil
-        expiredWhileHeldBookID = nil
+        registry.forgetExpiredMarks(ofSerial: serial)
         registry.forgetLastStarted(savedIn: userDefaults)
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }

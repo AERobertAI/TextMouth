@@ -20,9 +20,12 @@ import Foundation
 ///
 /// Each timer registers itself as it is made, weakly, so a timer goes when its
 /// window does. A timer held for a book is retained besides, until its hold
-/// ends (`noteHold(of:forBook:)`, `noteHoldEnded(of:)`): a hold made just
-/// before its window closed must outlive the window, as the one shared timer
-/// always outlived every window.
+/// ends and any fade it is in is over (`noteHold(of:forBook:)`,
+/// `setRetained(_:_:)`): a hold made just before its window closed must outlive
+/// the window, as the one shared timer always outlived every window. So must
+/// the mark that a held timer ran out for a book (`noteExpiredWhileHeld`),
+/// which the registry keeps by book, because the timer that made it may be
+/// gone by the time the book's reader asks.
 @MainActor
 final class SleepTimerRegistry {
     /// The app's registry, which every timer joins unless a test gives it one
@@ -43,8 +46,27 @@ final class SleepTimerRegistry {
     /// registration sweeps them out.
     private var registered: [WeakTimer] = []
 
-    /// The timers held for a book, kept alive until their holds end.
+    /// The timers held for a book, or fading out after being held, kept alive
+    /// until their holds end and their fades are over.
     private var retainedWhileHeld: [ObjectIdentifier: SleepTimerService] = [:]
+
+    /// The serial the next timer registered gets (`nextSerial()`).
+    private var lastSerial = 0
+
+    /// The books a held timer ran out for before their readers took it, each
+    /// with the serial of the timer that ran out (`noteExpiredWhileHeld`). Kept
+    /// here, by book, so the mark outlives the timer: a reader loading in a
+    /// new window must still find that listening has ended, when the window
+    /// the timer came from has closed and the timer is gone.
+    private var expiredWhileHeld: [UUID: Int] = [:]
+
+    /// A number for a timer being made that no other timer of this registry
+    /// has, which names it in the marks it leaves (`expiredWhileHeld`) without
+    /// keeping it alive, and is never reused as a memory address would be.
+    func nextSerial() -> Int {
+        lastSerial += 1
+        return lastSerial
+    }
 
     /// Joins `timer` to the registry, as it is made.
     func register(_ timer: SleepTimerService) {
@@ -67,21 +89,47 @@ final class SleepTimerRegistry {
     /// closed or moved on.
     func noteHold(of timer: SleepTimerService, forBook bookID: UUID) {
         retainedWhileHeld[ObjectIdentifier(timer)] = timer
-        // Listed first: each stop below ends its hold through `noteHoldEnded`.
+        // Listed first: each stop below lets its timer go.
         let others = timers.filter { $0 !== timer && $0.isHeld(forBook: bookID) }
         for other in others {
             other.stop(reason: "another window's timer went on to the same book")
         }
     }
 
-    /// Notes that `timer`'s hold has ended: it is no longer kept alive for it.
-    func noteHoldEnded(of timer: SleepTimerService) {
-        retainedWhileHeld[ObjectIdentifier(timer)] = nil
+    /// Keeps `timer` alive (`retained` true) or lets it go. A timer is kept
+    /// while it is held for a book and while a fade it was in when its hold
+    /// ended runs on, so that the fade's expiry is said by the owner it was
+    /// armed with (`SleepTimerService.updateRetention()` says when).
+    func setRetained(_ timer: SleepTimerService, _ retained: Bool) {
+        retainedWhileHeld[ObjectIdentifier(timer)] = retained ? timer : nil
     }
 
-    /// Whether the registry keeps `timer` alive for a hold.
-    func isRetainingForAHold(_ timer: SleepTimerService) -> Bool {
+    /// Whether the registry keeps `timer` alive.
+    func isRetaining(_ timer: SleepTimerService) -> Bool {
         retainedWhileHeld[ObjectIdentifier(timer)] != nil
+    }
+
+    // MARK: The Run-Out Mark
+
+    /// Notes that the timer `serial` ran out while held for the book
+    /// `bookID`, before the book's reader took it: that reader must not start
+    /// the book (`consumeExpiredWhileHeld(forBook:)`). A timer marks one book
+    /// at a time.
+    func noteExpiredWhileHeld(forBook bookID: UUID, bySerial serial: Int) {
+        forgetExpiredMarks(ofSerial: serial)
+        expiredWhileHeld[bookID] = serial
+    }
+
+    /// The book the timer `serial` ran out for while it was held, if its
+    /// reader has not asked yet.
+    func expiredWhileHeldBook(bySerial serial: Int) -> UUID? {
+        expiredWhileHeld.first { $0.value == serial }?.key
+    }
+
+    /// Forgets the mark the timer `serial` left: a timer that starts or is
+    /// taken into has not run out, and a later hold is a new one.
+    func forgetExpiredMarks(ofSerial serial: Int) {
+        expiredWhileHeld = expiredWhileHeld.filter { $0.value != serial }
     }
 
     // MARK: Finding the Timer Held for a Book
@@ -111,11 +159,11 @@ final class SleepTimerRegistry {
 
     /// Whether a timer ran out while held for the book `bookID`, so that its
     /// reader must not start the book; forgotten once asked
-    /// (`SleepTimerService.consumeExpiredWhileHeld(forBook:)`). Every timer
-    /// is asked, since a timer that ran out is no longer held.
+    /// (`SleepTimerService.consumeExpiredWhileHeld(forBook:)`). The mark is
+    /// the registry's own, so it is found even when the timer that made it
+    /// has gone with its window.
     func consumeExpiredWhileHeld(forBook bookID: UUID) -> Bool {
-        // Every timer forgets the mark, though only one can hold it.
-        timers.reduce(false) { found, timer in timer.consumeExpiredWhileHeld(forBook: bookID) || found }
+        expiredWhileHeld.removeValue(forKey: bookID) != nil
     }
 
     /// Stops the timer held for the book `bookID`, which will not open, and
@@ -190,6 +238,7 @@ final class SleepTimerRegistry {
             timer.stop(reason: "test ended")
         }
         retainedWhileHeld = [:]
+        expiredWhileHeld = [:]
         lastStarted = nil
     }
 }
