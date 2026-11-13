@@ -558,4 +558,83 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         XCTAssertNil(model.importDecisions.answering)
         XCTAssertTrue(model.booksBeingReadAgain.isEmpty)
     }
+
+    /// Holds the preparation at its wait, runs `disturbance` on the library
+    /// there, lets the work end, and returns the answer's outcome, with the
+    /// new copy as its import wrote it, to compare with. The two disturbances
+    /// the re-check after the wait must meet: a data-directory move that
+    /// begins, and a reader that opens the book.
+    private func answerDisturbed(
+        _ title: String, by disturbance: (LibraryViewModel, Book) -> Void
+    ) async throws -> (outcome: OperationOutcome, model: LibraryViewModel, existing: Book, copy: Book,
+                       questionID: ImportDecision.ID, asImported: [Data]) {
+        let (model, existing, copy, questionID) = try await askedWhetherToReplace(title)
+        let asImported = try textIndexAndRecord(in: copy.tmbDirectory)
+        let reached = OSAllocatedUnfairLock(initialState: false)
+        let gate = DispatchSemaphore(value: 0)
+        let answer = Task { @MainActor in
+            await model.answerImportDecisionOffMain(
+                questionID, with: .replaceExisting, prepare: heldPreparer(reached: reached, gate: gate)
+            )
+        }
+        try await waitUntilReached(reached)
+        disturbance(model, existing)
+        gate.signal()
+        let outcome = await answer.value
+        return (outcome, model, existing, copy, questionID, asImported)
+    }
+
+    /// A data-directory move that begins while the copy is made ready would
+    /// copy the library with the old copy's package half replaced: when the
+    /// work ends, the answer is refused in the move's words, the new copy is
+    /// put back as its import wrote it, the library's copy stays, and the
+    /// question stays asking.
+    func testAMoveThatBeginsMeanwhileRefusesTheAnswerAndPutsEverythingBack() async throws {
+        let result = try await answerDisturbed("Cartulary Moving") { model, _ in
+            model.dataDirectoryMove = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Spare Disk/TextMouth"))
+        }
+        result.model.dataDirectoryMove = nil
+
+        XCTAssertEqual(result.outcome, .failure(DataDirectoryMoveWording.importAnswerRefusal))
+        XCTAssertEqual(try textIndexAndRecord(in: result.copy.tmbDirectory), result.asImported, "the new copy was not put back")
+        XCTAssertEqual(result.model.bookByID(result.existing.id), result.existing, "the library's copy was replaced")
+        XCTAssertEqual(result.model.importDecisions.current?.id, result.questionID, "the question went")
+        XCTAssertNil(result.model.importDecisions.answering)
+        XCTAssertTrue(result.model.booksBeingReadAgain.isEmpty)
+    }
+
+    /// A reader that opens the library's copy while the copy is made ready
+    /// would show a book whose package then moves under it: when the work
+    /// ends, the answer is refused in the words of a book in use, the new
+    /// copy is put back as its import wrote it, the library's copy stays, and
+    /// the question stays asking.
+    func testAReaderOpenedMeanwhileRefusesTheAnswerAndPutsEverythingBack() async throws {
+        let result = try await answerDisturbed("Cartulary Opened") { model, existing in
+            model.openBookIDs.insert(existing.id)
+        }
+        result.model.openBookIDs.remove(result.existing.id)
+
+        let refusal = DuplicateReplacement.Refusal.inUse(.openInReader, title: result.existing.title)
+        XCTAssertEqual(result.outcome, .failure(refusal.sentence))
+        XCTAssertEqual(try textIndexAndRecord(in: result.copy.tmbDirectory), result.asImported, "the new copy was not put back")
+        XCTAssertEqual(result.model.bookByID(result.existing.id), result.existing, "the library's copy was replaced")
+        XCTAssertEqual(result.model.importDecisions.current?.id, result.questionID, "the question went")
+        XCTAssertNil(result.model.importDecisions.answering)
+        XCTAssertTrue(result.model.booksBeingReadAgain.isEmpty)
+    }
+
+    /// Both sheets that show the question, the Mac's through its presenter
+    /// and the iPhone's through its copier, give the answer through the form
+    /// that carries it out off the main actor, never the synchronous one,
+    /// which would freeze every window and VoiceOver's focus for as long as a
+    /// long braille book takes to be read again. The form's behavior is held
+    /// by the tests above; this holds the sheets to calling it.
+    func testBothSheetsAnswerOffTheMainActor() throws {
+        for path in ["Views/Library/ImportDecisionPresenter.swift", "Platform/iOS/Services/PhoneImportCopier.swift"] {
+            let source = try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)
+            XCTAssertTrue(source.contains(".answerImportDecisionOffMain("), "\(path) does not answer off the main actor")
+            XCTAssertFalse(source.contains(".answerImportDecision("), "\(path) answers on the main actor")
+            XCTAssertFalse(source.contains(".answerCurrentImportDecision("), "\(path) answers on the main actor")
+        }
+    }
 }
