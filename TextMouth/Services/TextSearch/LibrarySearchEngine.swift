@@ -303,47 +303,24 @@ fileprivate struct BookReader: Sendable {
     /// chapters into `buffer`; nil when the search was cancelled before the
     /// book could be prepared, so nothing about it counts.
     func search(_ book: LibrarySearchBook, order: Int, buffer: inout [UInt8], isCancelled: () -> Bool) -> BookRead? {
-        // Nothing of a book in the cloud is read: not even its search text,
-        // whose key could not be checked against a content.md not here.
-        if let package = book.packageURL, fileAccess.isInCloud(package) {
+        let key: LibrarySearchTextKey
+        switch store.lookUp(book, fileAccess: fileAccess) {
+        case .inCloud:
             return BookRead(state: .inCloud)
-        }
-        if fileAccess.isInCloud(book.contentURL) {
-            return BookRead(state: .inCloud)
-        }
-        guard let identity = ContentFileIdentity(of: book.contentURL) else {
+        case .withoutText:
             return BookRead(state: .withoutText)
-        }
-        let key = LibrarySearchTextKey(content: identity, bookTitle: book.title)
-        var scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
-
-        if let file = store.open(bookID: book.id, key: key) {
-            defer { file.close() }
-            var isDamaged = false
-            for index in file.chapters.indices {
-                guard !isCancelled() else { break }
-                // A file shorter than its header says is damaged: it goes,
-                // and the book is prepared again below.
-                guard file.readChapter(index, into: &buffer) else {
-                    isDamaged = true
-                    break
-                }
-                let count = file.chapters[index].byteCount
-                let goOn = buffer.withUnsafeBufferPointer { all in
-                    scan.searchChapter(index, bytes: UnsafeBufferPointer(rebasing: all[0..<count]), text: nil, isCancelled: isCancelled)
-                }
-                guard goOn else { break }
-                scan.endChapter(utf16Length: file.chapters[index].utf16Length)
+        case .stored(let file, let storedKey):
+            if let read = searchStored(file, of: book, order: order, buffer: &buffer, isCancelled: isCancelled) {
+                return read
             }
-            if !isDamaged {
-                return BookRead(state: .searched(prepared: false), result: scan.result(for: book, order: order, chapters: file.chapters))
-            }
-            store.remove(bookID: book.id)
-            scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
+            // The file was damaged and is gone: the book is prepared again.
+            key = storedKey
+        case .unprepared(let unpreparedKey):
+            key = unpreparedKey
         }
 
         let text: LibrarySearchTextBook
-        switch prepare(book, key: key, isCancelled: isCancelled) {
+        switch store.prepare(book, key: key, fileAccess: fileAccess, gate: gate, isCancelled: isCancelled) {
         case .prepared(let prepared):
             text = prepared
         case .inCloud:
@@ -353,6 +330,7 @@ fileprivate struct BookReader: Sendable {
         case .cancelled:
             return nil
         }
+        var scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
         for (index, chapterText) in text.texts.enumerated() {
             guard !isCancelled() else { break }
             var chapter = chapterText
@@ -365,26 +343,108 @@ fileprivate struct BookReader: Sendable {
         return BookRead(state: .searched(prepared: true), result: scan.result(for: book, order: order, chapters: text.chapters))
     }
 
-    /// What preparing a book's text gave.
-    enum Prepared {
-        /// The book's search text, parsed from its content.md.
-        case prepared(LibrarySearchTextBook)
-        /// Its content.md turned out to be in the cloud.
-        case inCloud
-        /// Its content.md cannot be read or is not UTF-8.
-        case unreadable
-        /// The search was cancelled before the book was parsed.
-        case cancelled
+    /// Searches `book` in `file`, its search text as the store holds it,
+    /// reading each chapter into `buffer`, and closes the file; nil when a
+    /// chapter could not be read whole, as when the file was cut short after
+    /// it opened, in which case the file is removed for the caller to
+    /// prepare the book again.
+    private func searchStored(
+        _ file: LibrarySearchTextFile,
+        of book: LibrarySearchBook,
+        order: Int,
+        buffer: inout [UInt8],
+        isCancelled: () -> Bool
+    ) -> BookRead? {
+        defer { file.close() }
+        var scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
+        for index in file.chapters.indices {
+            guard !isCancelled() else { break }
+            guard file.readChapter(index, into: &buffer) else {
+                store.remove(bookID: book.id)
+                return nil
+            }
+            let count = file.chapters[index].byteCount
+            let goOn = buffer.withUnsafeBufferPointer { all in
+                scan.searchChapter(index, bytes: UnsafeBufferPointer(rebasing: all[0..<count]), text: nil, isCancelled: isCancelled)
+            }
+            guard goOn else { break }
+            scan.endChapter(utf16Length: file.chapters[index].utf16Length)
+        }
+        return BookRead(state: .searched(prepared: false), result: scan.result(for: book, order: order, chapters: file.chapters))
+    }
+}
+
+// MARK: - One Book's Search Text
+
+/// Where a book's search text stands, found before any of the book's text
+/// is read: what a search and the background preparation
+/// (`LibrarySearchPreparer`) each ask first of every book.
+enum LibrarySearchTextLookup {
+    /// The book's package or content.md is only in the cloud, so nothing of
+    /// it is read: not even its search text, whose key could not be checked
+    /// against a content.md that is not here.
+    case inCloud
+    /// The book has no content.md: an audiobook not transcribed, or a book
+    /// whose text was never extracted.
+    case withoutText
+    /// The store holds the book's text as its content.md is now (`key`): the
+    /// book's file, open for reading, which the caller closes.
+    case stored(LibrarySearchTextFile, key: LibrarySearchTextKey)
+    /// The store holds no text for the book as its content.md is now
+    /// (`key`), so the book must be prepared.
+    case unprepared(key: LibrarySearchTextKey)
+}
+
+/// What preparing a book's search text gave.
+enum LibrarySearchPreparing {
+    /// The book's search text, parsed from its content.md.
+    case prepared(LibrarySearchTextBook)
+    /// Its content.md turned out to be in the cloud.
+    case inCloud
+    /// Its content.md cannot be read or is not UTF-8.
+    case unreadable
+    /// The work was cancelled before the book was parsed.
+    case cancelled
+}
+
+extension LibrarySearchTextStore {
+    /// Where `book`'s search text stands (`LibrarySearchTextLookup`), its
+    /// files reached through `fileAccess`, so nothing in the cloud is read:
+    /// what it costs is a look at the book's package and content.md, a stat
+    /// of content.md for its identity, and the header of the book's file,
+    /// when there is one.
+    func lookUp(_ book: LibrarySearchBook, fileAccess: MaintenanceFileAccess) -> LibrarySearchTextLookup {
+        if let package = book.packageURL, fileAccess.isInCloud(package) {
+            return .inCloud
+        }
+        if fileAccess.isInCloud(book.contentURL) {
+            return .inCloud
+        }
+        guard let identity = ContentFileIdentity(of: book.contentURL) else {
+            return .withoutText
+        }
+        let key = LibrarySearchTextKey(content: identity, bookTitle: book.title)
+        if let file = open(bookID: book.id, key: key) {
+            return .stored(file, key: key)
+        }
+        return .unprepared(key: key)
     }
 
     /// The search text of `book`, parsed from its content.md, whose identity
-    /// was `key` when the search looked, and kept in the store under that
-    /// key, unless content.md changed while it was read. Waits its turn at
-    /// the gate, so few books are parsed at once. A search cancelled while
-    /// it waits, as it is let in, or while the book is read parses nothing
-    /// (the review of November 13, finding 3): only a parse already under
-    /// way, which cannot be stopped, runs to its end and is kept.
-    private func prepare(_ book: LibrarySearchBook, key: LibrarySearchTextKey, isCancelled: () -> Bool) -> Prepared {
+    /// was `key` when it was looked up, and kept here under that key, unless
+    /// content.md changed while it was read or the disk has no room for it
+    /// (`store(_:for:key:)`). Waits its turn at `gate`, so few books are
+    /// parsed at once. Work cancelled while it waits, as it is let in, or
+    /// while the book is read parses nothing (the review of November 13,
+    /// finding 3): only a parse already under way, which cannot be stopped,
+    /// runs to its end and is kept.
+    func prepare(
+        _ book: LibrarySearchBook,
+        key: LibrarySearchTextKey,
+        fileAccess: MaintenanceFileAccess,
+        gate: LibrarySearchPreparingGate,
+        isCancelled: () -> Bool
+    ) -> LibrarySearchPreparing {
         let size = Int(clamping: key.content.byteCount)
         guard gate.enter(size, isCancelled: isCancelled) else { return .cancelled }
         defer { gate.leave(size) }
@@ -401,10 +461,10 @@ fileprivate struct BookReader: Sendable {
             markdown, bookTitle: book.title, bookAuthor: book.author
         ).chapters
         let text = LibrarySearchTextBook(parsed: chapters)
-        // A content.md that changed while it was read is searched as read,
-        // and not kept: the next search reads it again.
+        // A content.md that changed while it was read is used as read, and
+        // not kept: the next look finds it changed and reads it again.
         if ContentFileIdentity(of: book.contentURL) == key.content {
-            try? store.store(text, for: book.id, key: key)
+            try? store(text, for: book.id, key: key)
         }
         return .prepared(text)
     }
