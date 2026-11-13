@@ -615,6 +615,12 @@ final class KeyboardShortcutManager: ObservableObject {
         if let trial {
             return trial.take(stroke, at: event.timestamp, isRepeat: event.isARepeat)
         }
+        // A Space while the Library list types a title that goes on with one
+        // ("the h", the Leading articles setting) is the list's, as letters
+        // are there; at any other time it is Play or Pause.
+        if stroke == KeyBinding(key: "space"), TitleTypingSpaceClaim.shared.takesSpace(in: keyWindow, at: event.timestamp) {
+            return false
+        }
         return dispatcher.handle(ShortcutPressDispatcher.Press(
             stroke: stroke,
             time: event.timestamp,

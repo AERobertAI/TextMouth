@@ -546,6 +546,23 @@ struct LibraryView: View {
                 editSelection = []
                 selectedBookIDs = []
             }
+            // Letter navigation that passes over leading articles, in the
+            // Leading articles setting's second and third choices; in the
+            // first, the list's own type select, as always.
+            .modifier(LibraryTitleTyping(
+                articles: articles,
+                rows: {
+                    typedRows(
+                        folders: showsFolders ? subfolders : [],
+                        books: listsItems ? books : [],
+                        allBooks: allBooks,
+                        feedID: feedID,
+                        articles: articles
+                    )
+                },
+                selection: $selectedBookIDs,
+                window: hostWindow
+            ))
         }
         .toolbar {
             ToolbarItemGroup {
@@ -1373,6 +1390,48 @@ struct LibraryView: View {
                     .accessibilityAddTraits(.isHeader)
             }
         }
+    }
+
+    /// The list's rows, in its order, as letter navigation reaches them
+    /// (`LibraryTitleTyping`): the Folders section's folders by their names
+    /// as written; the Feeds section's feeds, in the order it shows them;
+    /// and the books, as a feed's folder lists them where the list shows
+    /// one (its items' books, then its other books). Rows the list's
+    /// selection cannot hold, a feed's items not downloaded, are left out.
+    /// - Parameters:
+    ///   - folders: The folders the Folders section shows, or none.
+    ///   - books: The books the list shows, as the search narrows them, or none.
+    ///   - allBooks: Every book at the location, in the order shown.
+    ///   - feedID: The feed whose folder the list shows, if it shows one.
+    ///   - articles: How titles are sorted and shown.
+    private func typedRows(
+        folders: [BookFolder],
+        books: [Book],
+        allBooks: [Book],
+        feedID: UUID?,
+        articles: LeadingArticles
+    ) -> [TypedRow<UUID>] {
+        var rows = folders.map { TypedRow(id: $0.id, name: $0.name) }
+        rows += LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles)
+            .map { TypedRow(id: $0.id, title: $0.title, language: nil) }
+        var listedBooks = books
+        if let feedID, !books.isEmpty {
+            let listing = FeedFolderListing.make(
+                feedID: feedID,
+                center: feedFolders.center,
+                shownBooks: books,
+                folderBooks: allBooks,
+                search: searchText,
+                wordsPerMinute: settingsViewModel.wordsPerMinute,
+                articles: articles
+            )
+            listedBooks = listing.entries.compactMap { entry in
+                if case .book(let book, _) = entry { return book }
+                return nil
+            } + listing.otherBooks
+        }
+        rows += listedBooks.map { TypedRow(id: $0.id, title: $0.title, language: $0.epubLanguage) }
+        return rows
     }
 
     /// The Folders section's rows and the Folders rotor's entries here, of
