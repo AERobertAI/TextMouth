@@ -163,7 +163,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### A file with no text to read
 
-- A plain text, Markdown, HTML, web archive, SSML, rich text, Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
+- A plain text, Markdown, HTML, web archive, SSML, rich text, Word (.docx, and its templates and macro documents), Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
 - That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
 - A Markdown file that is only a heading still imports.
 - An .xml file of no bytes or only white space is refused the same way, but at the step "Checking its format", as in "Could not import “empty.xml”. Checking its format failed: This file has no text to read."
@@ -173,6 +173,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”. Copying it into the library failed: There isn’t enough free space on the disk."
 - The words never name the hidden package the import was building.
+- A folder of tracks or a playlist is checked before the first track is copied: TextMouth adds up the tracks' sizes and refuses the import unless the disk would keep its reserve of 1 GB free (the one the archives use) once they were copied, with the same sentence and nothing written. A track on the same APFS disk as the library counts as nothing, since the copy shares its bytes with the original, so a big folder on the library's own disk is not refused for room its copy will not take.
 
 ### Documents TextMouth's own readers can't read
 
@@ -218,6 +219,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### Documents protected by a password
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password. Save a copy without the password, then import that copy."
+- A PDF locked by a password is refused with "This PDF needs a password to open.", before any page is read, so it is not mistaken for a scan that text recognition could not read. A PDF that only restricts copying or printing is not locked and imports as usual.
 
 ### A Word document's title and author
 
@@ -346,7 +348,11 @@ Part of [TextMouth's documentation](../../README.md).
 
 - An import that adds its book but has something to tell ends with an alert titled "Book Imported", where a failure's alert is titled "Error": the entries a playlist skipped, the original of an .rtfd that was kept, or chapters or pages that were left out.
 - The book is in the library, but it is not opened, so the alert is not left behind a reader window.
-- A ZIP batch's alert that sums up its failed and incomplete books is still titled "Error".
+- A ZIP batch's alert that sums up its failed and incomplete books is titled by what the batch did, never "Error", since the books that came in are in the library:
+  - "Nothing Imported" when the batch found no book, whether files failed or it was cancelled early.
+  - "Already in Library" when it found books but the library already held every one.
+  - "Some Files Not Imported" when books came in but a file failed or the batch was cancelled.
+  - "Book Imported", for one book, or "Books Imported", for several, when every book came in and only some lack chapters or pages.
 
 ## A book that is already in the library
 
