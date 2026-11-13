@@ -86,10 +86,11 @@ final class LibraryTitleTypingTests: XCTestCase {
         // another into a double press.
         let start = ProcessInfo.processInfo.systemUptime
         let space = KeyBinding(key: "space")
+        // The list has the keyboard unless a press names another responder.
         let list = NSTableView()
-        func pressSpace(at offset: TimeInterval, in keyWindow: NSWindow, on responder: NSResponder = list) throws -> Bool {
+        func pressSpace(at offset: TimeInterval, in keyWindow: NSWindow, on responder: NSResponder? = nil) throws -> Bool {
             let event = try ShortcutKeyPresses.keyPress(of: space, at: start + offset)
-            return manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: responder)
+            return manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: responder ?? list)
         }
 
         XCTAssertTrue(try pressSpace(at: 0, in: window), "a Space no list claimed was not Play or Pause")
