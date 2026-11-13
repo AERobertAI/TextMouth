@@ -144,6 +144,21 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.defaultBindings.values.flatMap { $0 }.filter { $0 == optionCommandF }.count, 1)
     }
 
+    /// The running app's Edit menu offers Search Library… in a Find submenu
+    /// with Option-Command-F. Skipped when this run's menu bar has no Edit
+    /// menu.
+    func testTheEditMenuOffersSearchLibraryInFind() throws {
+        guard let edit = Self.menu(titled: "Edit") else {
+            throw XCTSkip("This run's menu bar has no Edit menu")
+        }
+        let found = try XCTUnwrap(Self.itemsAndParents(of: edit).first { $0.item.title == ShortcutAction.searchLibrary.title })
+
+        XCTAssertEqual(found.parentTitle, "Find")
+        XCTAssertEqual(Self.keyEquivalent(of: found.item).key, "f")
+        XCTAssertEqual(Self.keyEquivalent(of: found.item).modifiers, [.option, .command])
+        XCTAssertTrue(found.item.isEnabled)
+    }
+
     // MARK: - Shift-Command-T in Its Two Kinds of Window (FR12's Branch E)
 
     /// New from Text works in Library windows and Show Sleep Timer in reader
@@ -828,6 +843,16 @@ final class MenuKeyShortcutTests: XCTestCase {
         guard let menu = NSApp.mainMenu?.items.first(where: { $0.title == title })?.submenu else { return nil }
         menu.delegate?.menuNeedsUpdate?(menu)
         return menu
+    }
+
+    /// Every item of `menu` and of its submenus, each with the title of the
+    /// item whose submenu holds it (`parentTitle`, `menu`'s own title at the
+    /// top), every menu brought up to date first.
+    private static func itemsAndParents(of menu: NSMenu, parentTitle: String? = nil) -> [(item: NSMenuItem, parentTitle: String)] {
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu.items.flatMap { item -> [(item: NSMenuItem, parentTitle: String)] in
+            [(item, parentTitle ?? menu.title)] + (item.submenu.map { itemsAndParents(of: $0, parentTitle: item.title) } ?? [])
+        }
     }
 
     /// The item titled `title` in `menu`, brought up to date first.
