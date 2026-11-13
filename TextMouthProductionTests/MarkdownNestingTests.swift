@@ -32,10 +32,10 @@ final class MarkdownNestingTests: XCTestCase {
     /// Runs `body` with the walk's limit on trees lifted, so that only the count of
     /// containers (the first layer) can refuse a text: a refusal seen inside `body` is
     /// the count's, not the walk's answering first for a tree that was parsed anyway.
-    private func whereOnlyTheCountRefuses(_ body: () -> Void) {
+    private func whereOnlyTheCountRefuses(_ body: () throws -> Void) rethrows {
         var limits = MarkupGuard.Limits.standard
         limits.deepestTree = .max
-        MarkupGuard.$limits.withValue(limits) { body() }
+        try MarkupGuard.$limits.withValue(limits) { try body() }
     }
 
     // MARK: - The count
@@ -97,9 +97,9 @@ final class MarkdownNestingTests: XCTestCase {
 
     /// Thousands of nested quotes are refused with the sentence HTML's refusal gives, and do not
     /// crash. The walk's limit is lifted, so only the count of quotes before the parse can refuse.
-    func testThousandsOfNestedQuotesAreRefused() {
+    func testThousandsOfNestedQuotesAreRefused() throws {
         let markdown = String(repeating: ">", count: 5_000) + " words"
-        whereOnlyTheCountRefuses {
+        try whereOnlyTheCountRefuses {
             XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
                 XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
                 XCTAssertTrue(($0 as? MarkupRefusal)?.errorDescription?.contains("128") == true)
@@ -108,8 +108,8 @@ final class MarkdownNestingTests: XCTestCase {
     }
 
     /// So are thousands of nested lists, by marker and by indentation, by the count alone.
-    func testThousandsOfNestedListsAreRefused() {
-        whereOnlyTheCountRefuses {
+    func testThousandsOfNestedListsAreRefused() throws {
+        try whereOnlyTheCountRefuses {
             for markdown in [String(repeating: "- ", count: 5_000) + "words", nestedList(2_000)] {
                 XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
                     XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
