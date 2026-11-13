@@ -38,7 +38,7 @@ enum MarkdownDocParser {
         // The limits in force are task-local, which a thread of its own does not
         // inherit, so they are read here and handed on.
         let limits = MarkupGuard.limits
-        guard MarkdownNesting.deepest(in: markdown, stopAbove: limits.deepestNesting) <= limits.deepestNesting else {
+        guard !MarkdownNesting.isDeeper(markdown, than: limits.deepestNesting) else {
             throw MarkupRefusal.nestedTooDeeply(limit: limits.deepestNesting)
         }
         return try MarkupGuard.onLargeStack {
@@ -346,7 +346,7 @@ private struct PlainTextExtractor: MarkupWalker {
             // any block is, so a paragraph, a list, or emphasis reads in place.
             // The rest is a text of its own, so it is counted like one before it is parsed.
             let restText = String(rest)
-            guard MarkdownNesting.deepest(in: restText, stopAbove: limits.deepestNesting) <= limits.deepestNesting else {
+            guard !MarkdownNesting.isDeeper(restText, than: limits.deepestNesting) else {
                 exceededDepth = true
                 return
             }

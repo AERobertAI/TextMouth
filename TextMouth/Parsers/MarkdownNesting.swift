@@ -44,6 +44,11 @@ enum MarkdownNesting {
         return text.withUTF8 { deepest(in: $0, stopAbove: limit) }
     }
 
+    /// Whether `markdown` nests its containers more than `limit` levels deep.
+    static func isDeeper(_ markdown: String, than limit: Int) -> Bool {
+        deepest(in: markdown, stopAbove: limit) > limit
+    }
+
     // MARK: The pass
 
     /// Bytes the pass tells apart.
