@@ -547,6 +547,57 @@ final class DAISYPageTests: XCTestCase {
         XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["5", "2", "3"])
     }
 
+    /// A DTBook whose `level1` holds `body`, as a file of the package built by `twoFilePackage`.
+    private static func dtbookFile(_ body: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <dtbook xmlns="http://www.daisy.org/z3986/2005/dtbook/" version="2005-3">
+        <head><meta name="dc:Title" content="T"/></head>
+        <book><bodymatter><level1>\(body)</level1></bodymatter></book></dtbook>
+        """
+    }
+
+    /// A DAISY 3 package whose spine names two DTBook files, `one.xml` and `two.xml`.
+    private func twoFilePackage(one: String, two: String) throws -> URL {
+        let opf = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://openebook.org/namespaces/oeb-package/1.0/">
+        <metadata><dc-metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <dc:Title>Two Files</dc:Title><dc:Creator>Odile Marchetti</dc:Creator>
+        </dc-metadata></metadata>
+        <manifest>
+        <item id="one" href="one.xml" media-type="application/x-dtbook+xml"/>
+        <item id="two" href="two.xml" media-type="application/x-dtbook+xml"/>
+        </manifest>
+        <spine><itemref idref="one"/><itemref idref="two"/></spine>
+        </package>
+        """
+        return try DAISYPackageFixtures.writeFolder(
+            ["book.opf": opf, "one.xml": Self.dtbookFile(one), "two.xml": Self.dtbookFile(two)],
+            named: "TwoFiles", in: try makeSandboxDirectory("DAISYPagesTwoFiles"))
+    }
+
+    /// A page with no words is labelled by its place in the whole book, not
+    /// in its file: two files with an empty page number each give 1, 2, then
+    /// 3, 4, where each file began again at 1 before.
+    func testEmptyPageNumbersCountThroughTheFilesOfABook() throws {
+        let package = try twoFilePackage(
+            one: "<p>a</p><pagenum> </pagenum><p>b</p><pagenum/>",
+            two: "<p>c</p><pagenum></pagenum><p>d</p><pagenum> </pagenum>")
+        let markdown = try DAISYParser.extractMarkdown(from: package)
+        XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["1", "2", "3", "4"])
+    }
+
+    /// A page that has words keeps its own label, and still counts toward the
+    /// ordinal of the next empty one, in its file and the files after it.
+    func testNumberedPagesCountTowardTheNextFilesOrdinals() throws {
+        let package = try twoFilePackage(
+            one: "<p>a</p><pagenum>iv</pagenum><p>b</p><pagenum>5</pagenum>",
+            two: "<p>c</p><pagenum> </pagenum><p>d</p>")
+        let markdown = try DAISYParser.extractMarkdown(from: package)
+        XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["iv", "5", "3"])
+    }
+
     /// With pages off the converter writes "[Page N]" on a line of its own,
     /// as it did, even for markup inside the number.
     func testPageNumberWithoutPagesIsTheOldLine() throws {

@@ -542,8 +542,9 @@ enum DAISYParser {
                 at: xmlPath,
                 in: provider,
                 includesPages: includesPages,
+                pagesBefore: 0,
                 reportIncompleteContent: reportIncompleteContent
-            )
+            ).markdown
         }
 
         // Parse OPF to find the DTBook XML file
@@ -586,22 +587,28 @@ enum DAISYParser {
         }
 
         // Convert each content file and concatenate in reading order
+        // The pages of the files before each, so that the ordinal a page with no
+        // words is labelled by counts through the whole book, not each file.
         var allMarkdown: [String] = []
+        var pagesBefore = 0
         for path in dtbookPaths {
-            let markdown = try convertDTBook(
+            let conversion = try convertDTBook(
                 at: path,
                 in: provider,
                 includesPages: includesPages,
+                pagesBefore: pagesBefore,
                 reportIncompleteContent: reportIncompleteContent
             )
-            if !markdown.isEmpty {
-                allMarkdown.append(markdown)
+            pagesBefore = conversion.pagesRead
+            if !conversion.markdown.isEmpty {
+                allMarkdown.append(conversion.markdown)
             }
         }
         return allMarkdown.joined(separator: "\n\n")
     }
 
-    /// Convert one DTBook content file to Markdown. Text read before any
+    /// Convert one DTBook content file to Markdown, its pages numbered after
+    /// the `pagesBefore` of the files before it. Text read before any
     /// damage is kept, and the damage goes to `reportIncompleteContent`
     /// instead of into the book's text.
     /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
@@ -610,13 +617,16 @@ enum DAISYParser {
         at path: String,
         in provider: DAISYFileProvider,
         includesPages: Bool,
+        pagesBefore: Int,
         reportIncompleteContent: (DAISYParserError) -> Void
-    ) throws -> String {
-        let conversion = try DTBookToMarkdownConverter(path: path, in: provider, includesPages: includesPages).convert()
+    ) throws -> DTBookConversion {
+        let conversion = try DTBookToMarkdownConverter(
+            path: path, in: provider, includesPages: includesPages, pagesBefore: pagesBefore
+        ).convert()
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
         }
-        return conversion.markdown
+        return conversion
     }
 
     /// Find a DTBook XML file by scanning for files with a <dtbook> root
