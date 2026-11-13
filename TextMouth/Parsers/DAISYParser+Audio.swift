@@ -120,20 +120,39 @@ class DAISYAudioSMILParser: DAISYSAXParser {
         _ = openElements.popLast()
     }
 
+    /// The metrics of a SMIL timecount (a number and the unit it counts in) and
+    /// the seconds each is, longest first so that "ms" and "min" are not read
+    /// as an "s" or an "m" after a number.
+    private nonisolated static let timecountMetrics: [(suffix: String, seconds: Double)] = [
+        ("ms", 0.001), ("min", 60), ("h", 3600), ("s", 1),
+    ]
+
     /// Parse a DAISY time string to seconds.
-    /// Supports both formats:
+    /// Supports these formats:
     ///   DAISY 2.02: "npt=SS.SSSs" (e.g. "npt=38.228s")
     ///   DAISY 3:    "H:MM:SS.mmm" (e.g. "0:02:43.650")
+    ///   SMIL timecounts, a number and a metric: "500ms", "38.228s", "2min",
+    ///   "1h"; a number alone is in seconds.
     /// Kept as a pure internal operation so timing syntax can be regression
     /// tested without constructing XML that obscures which value was parsed.
     nonisolated static func parseTime(_ timeStr: String) -> Double {
         var cleaned = timeStr.trimmingCharacters(in: .whitespaces)
 
-        // Strip DAISY 2.02 "npt=" prefix and trailing "s"
+        // Strip DAISY 2.02 "npt=" prefix
         if cleaned.lowercased().hasPrefix("npt=") {
             cleaned = String(cleaned.dropFirst(4))
         }
-        if cleaned.lowercased().hasSuffix("s") {
+
+        // A SMIL timecount: a number counted in hours, minutes, seconds, or
+        // milliseconds. Anything else that ends in one of those letters, such
+        // as a clock value with a trailing "s", is read as a clock below.
+        let lowered = cleaned.lowercased()
+        for (suffix, seconds) in timecountMetrics where lowered.hasSuffix(suffix) {
+            let count = String(cleaned.dropLast(suffix.count)).trimmingCharacters(in: .whitespaces)
+            if let value = Double(count) { return value * seconds }
+            break
+        }
+        if lowered.hasSuffix("s") {
             cleaned = String(cleaned.dropLast())
         }
 
