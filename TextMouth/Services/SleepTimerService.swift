@@ -122,7 +122,9 @@ final class SleepTimerService: ObservableObject {
     nonisolated static let heldTimerDeadline: TimeInterval = 20 * 60
 
     /// The book the running timer is held for: listening goes on to it, and
-    /// the reader that opens it takes the timer (`adoptHeld(forBook:as:...)`).
+    /// the reader that opens it takes the timer
+    /// (`take(heldForBook:from:as:...)`, which an in-place switch does as
+    /// `adoptHeld(forBook:as:...)`).
     /// From the moment the move is announced until then, the timer stays its
     /// previous owner's, the one owner it has, and nothing ages the hold but
     /// `heldTimerDeadline`: not the 30 seconds a request to a reader lives, so
@@ -407,8 +409,11 @@ final class SleepTimerService: ObservableObject {
         )
     }
 
-    /// Stop the timer, clearing all state and callbacks. Anyone may
-    /// call this — tapping "Cancel Timer" in any window cancels.
+    /// Stop the timer, clearing all state and callbacks. Anyone may call this
+    /// on a timer: no owner check. Each window has a timer of its own, so
+    /// "Cancel Timer" in a window stops that window's timer, and the one on
+    /// its way to its book from another window
+    /// (`ReaderViewModel.cancelSleepTimer()`), and never another window's.
     func stop(reason: String = "requested") {
         let previousDurationLabel = duration?.displayName ?? "none"
         let previousSummary = "wasActive=\(isActive) wasDuration=\(previousDurationLabel) "
@@ -539,7 +544,7 @@ final class SleepTimerService: ObservableObject {
 
     /// Holds the timer `owner` owns for the book `bookID`, which listening
     /// goes on to, from the moment the move is announced until a reader of
-    /// that book takes it (`adoptHeld(forBook:as:onExpire:onFadeStep:onFadeCancelled:)`).
+    /// that book takes it (`take(heldForBook:from:as:onExpire:onFadeStep:onFadeCancelled:)`).
     /// Its owner stays `owner`, and `owner`'s close leaves it running
     /// (`isHeld(from:)`). A deadline stops it, as a last resort, if no reader
     /// ever takes it (`heldTimerDeadline`). A new hold replaces an earlier one.
