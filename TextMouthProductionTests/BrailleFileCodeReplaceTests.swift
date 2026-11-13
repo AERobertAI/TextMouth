@@ -31,6 +31,10 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// Another table, contracted UEB, which the listener may choose for the
     /// book in Book Information (FMT21).
     private static let otherTable = "en-ueb-g2.ctb"
+    /// A contracted (grade 2) BRF sample, which the uncontracted table reads
+    /// as other words than the contracted one (the grade 1 sample reads the
+    /// same in both).
+    private static let contractedSample = "brf/grade2-short.brf"
     /// The id of a code no TextMouth knows yet, as a later TextMouth might
     /// record one.
     private static let unknownCode = "ascii-braillo-no-047-01"
@@ -77,9 +81,11 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// The North American sample read as North American Braille ASCII, with
     /// pages, as a generation writes content.md: its UTF-8, which the sample
     /// written in any code reads as when it is read in that code.
-    private func northAmericanReading(table: String = BrailleFileCodeReplaceTests.table) throws -> Data {
+    private func northAmericanReading(
+        of sample: String = BrailleFileCodeReplaceTests.sample, table: String = BrailleFileCodeReplaceTests.table
+    ) throws -> Data {
         Data(try BrailleBookReader.markdown(
-            of: copyOfFormatSample(Self.sample), table: table, fileCode: "ascii-na", includesPages: true
+            of: copyOfFormatSample(sample), table: table, fileCode: "ascii-na", includesPages: true
         ).utf8)
     }
 
@@ -156,14 +162,14 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// code, for the characters were not in question.
     func testReplaceExistingKeepsTheBrailleCodeChosenInBookInformation() async throws {
         keepDeletionsOutOfTheTrash()
-        let file = try copyOfFormatSample(Self.sample)
+        let file = try copyOfFormatSample(Self.contractedSample)
         let existing = try imported(file, settingCode: .northAmerican, title: "Concordance")
         let model = makeModel(with: [existing])
         let contracted = try XCTUnwrap(BrailleTableCatalog.table(withID: Self.otherTable))
         let corrected = await model.readTextAgain(bookID: existing.id, choosing: .brailleTable(contracted))
         XCTAssertTrue(corrected.succeeded, "the book was not read again: \(corrected)")
         let copy = try imported(file, settingCode: .northAmerican, title: "Second Concordance")
-        let expected = try northAmericanReading(table: Self.otherTable)
+        let expected = try northAmericanReading(of: Self.contractedSample, table: Self.otherTable)
         XCTAssertEqual(copy.md5Hash, existing.md5Hash, "the same file must have the same content hash, or this proves nothing")
         XCTAssertEqual(copy.brailleTable, Self.table)
         XCTAssertNotEqual(try contentMD(in: copy.tmbDirectory), expected, "the setting's table must read the copy otherwise, or this proves nothing")
@@ -189,7 +195,7 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// the debug log says each.
     func testReplaceExistingKeepsBothCodesChosenInBookInformation() async throws {
         keepDeletionsOutOfTheTrash()
-        let file = try copyOfBrailleSample(Self.sample, writtenIn: .eurobraille)
+        let file = try copyOfBrailleSample(Self.contractedSample, writtenIn: .eurobraille)
         let existing = try imported(file, settingCode: .northAmerican, title: "Lexicon")
         let model = makeModel(with: [existing])
         let contracted = try XCTUnwrap(BrailleTableCatalog.table(withID: Self.otherTable))
@@ -197,7 +203,7 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         let secondRead = await model.readTextAgain(bookID: existing.id, choosing: .brailleTable(contracted))
         XCTAssertTrue(firstRead.succeeded && secondRead.succeeded, "the book was not read again: \(firstRead) \(secondRead)")
         let copy = try imported(file, settingCode: .northAmerican, title: "Second Lexicon")
-        let expected = try northAmericanReading(table: Self.otherTable)
+        let expected = try northAmericanReading(of: Self.contractedSample, table: Self.otherTable)
         XCTAssertNotEqual(try contentMD(in: copy.tmbDirectory), expected, "the setting must misread the copy, or this proves nothing")
 
         XCTAssertFalse(model.addBookCheckingDuplicate(copy), "the copy was not asked about as a duplicate")
@@ -631,13 +637,21 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// that carries it out off the main actor, never the synchronous one,
     /// which would freeze every window and VoiceOver's focus for as long as a
     /// long braille book takes to be read again. The form's behavior is held
-    /// by the tests above; this holds the sheets to calling it.
+    /// by the tests above; this holds the sheets to calling it. The one
+    /// synchronous answer the iPhone's copier gives is the automatic one, to
+    /// a question the phone never shows (`PhoneImportQuestion.automaticAnswer`).
     func testBothSheetsAnswerOffTheMainActor() throws {
         for path in ["Views/Library/ImportDecisionPresenter.swift", "Platform/iOS/Services/PhoneImportCopier.swift"] {
             let source = try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)
             XCTAssertTrue(source.contains(".answerImportDecisionOffMain("), "\(path) does not answer off the main actor")
-            XCTAssertFalse(source.contains(".answerImportDecision("), "\(path) answers on the main actor")
             XCTAssertFalse(source.contains(".answerCurrentImportDecision("), "\(path) answers on the main actor")
+            // Every synchronous answer follows the automatic answer's lookup.
+            var rest = source[...]
+            while let hit = rest.range(of: ".answerImportDecision(") {
+                let head = source[..<hit.lowerBound].suffix(250)
+                XCTAssertTrue(head.contains("PhoneImportQuestion.automaticAnswer(for:"), "\(path) answers on the main actor")
+                rest = rest[hit.upperBound...]
+            }
         }
     }
 }
