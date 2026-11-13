@@ -158,8 +158,9 @@ struct LibraryTitleTyping: ViewModifier {
 
     /// How long after one typed key the next still adds to the search, in
     /// seconds: AppKit's type select's own time on GitHub's runner, where
-    /// letters 1.2 seconds apart added up and 1.6 seconds apart did not.
-    static let interval: TimeInterval = 1.5
+    /// letters 1.2 seconds apart added up and 1.3 seconds apart did not
+    /// (trains 1113-0322 and 1113-0427).
+    static let interval: TimeInterval = 1.25
 
     /// Whether `characters`, pressed with `modifiers`, are typing: one or
     /// more letters, numbers, punctuation marks, symbols, or spaces, with
