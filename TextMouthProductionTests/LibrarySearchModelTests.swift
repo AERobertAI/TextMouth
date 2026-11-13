@@ -56,6 +56,7 @@ private func makeResult(
 private func makeTally(
     given: Int,
     searched: Int = 0,
+    prepared: Int = 0,
     withMatches: Int = 0,
     matches: Int = 0,
     pastTheLimit: Int = 0,
@@ -65,6 +66,7 @@ private func makeTally(
     var tally = LibrarySearchTally()
     tally.booksGiven = given
     tally.booksSearched = searched
+    tally.booksPrepared = prepared
     tally.booksWithMatches = withMatches
     tally.matches = matches
     tally.booksPastTheLimit = pastTheLimit
@@ -722,6 +724,46 @@ final class LibrarySearchModelTests: XCTestCase {
 
         XCTAssertEqual(model.status, .finished("No matches"), "Actual: \(model.status)")
         XCTAssertEqual(announcements.messages, ["No matches"], "Exactly one announcement; actual: \(announcements.messages)")
+    }
+
+    /// A search that has had to prepare a book on its way says so while it
+    /// runs, "Preparing 2 of 3 books…", where one that read every book from
+    /// the store says "Searched"; and, as before, only its end is announced
+    /// (the review of November 13: the books a search prepared were counted
+    /// but never said).
+    func testTheStatusSaysWhenASearchPreparesBooksAndOnlyItsEndIsAnnounced() async throws {
+        let announcements = AnnouncementLog()
+        let list = BookList((0..<3).map { makeBook($0) })
+        let afterFirstBook = DispatchSemaphore(value: 0)
+        let afterSecondBook = DispatchSemaphore(value: 0)
+        defer {
+            afterFirstBook.signal()
+            afterSecondBook.signal()
+        }
+
+        let model = makeModel(list, announcements) { _, _, _, _, _, report in
+            report(nil, makeTally(given: 3, searched: 1))
+            waitForGate(afterFirstBook)
+            report(nil, makeTally(given: 3, searched: 2, prepared: 1))
+            waitForGate(afterSecondBook)
+            return .finished(makeTally(given: 3, searched: 3, prepared: 2))
+        }
+
+        model.query = "needle"
+        let search = try XCTUnwrap(model.searchTask)
+        let searched = await eventually { model.status.text == "Searched 1 of 3 books…" }
+        XCTAssertTrue(searched, "A book read from the store; status: \(model.status.text)")
+
+        afterFirstBook.signal()
+        let preparing = await eventually { model.status.text == "Preparing 2 of 3 books…" }
+        XCTAssertTrue(preparing, "A book prepared on the way; status: \(model.status.text)")
+        XCTAssertEqual(announcements.messages, [], "The status while books are prepared is not announced")
+
+        afterSecondBook.signal()
+        await search.value
+
+        XCTAssertEqual(model.status, .finished("No matches"), "Actual: \(model.status)")
+        XCTAssertEqual(announcements.messages, ["No matches"], "Only the end is announced; actual: \(announcements.messages)")
     }
 
     /// A library with no book to search says so, announces it once, and

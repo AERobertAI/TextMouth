@@ -59,6 +59,15 @@ enum LibrarySearchWording {
         "Searched \(done.formatted()) of \(countedBooks(total))…"
     }
 
+    /// Said while a search runs that has had to prepare a book on its way,
+    /// parsing its text because this Mac's search texts did not hold it (the
+    /// first search after an installation or after macOS emptied the Caches
+    /// folder, before the background preparation reached the book), so the
+    /// listener knows why it takes longer: "Preparing 120 of 737 books…".
+    static func preparing(_ done: Int, of total: Int) -> String {
+        "Preparing \(done.formatted()) of \(countedBooks(total))…"
+    }
+
     /// The opening of a stopped search's status, before what it had found:
     /// "Stopped after 120 of 750 books:".
     static func stopped(searched: Int, of total: Int) -> String {

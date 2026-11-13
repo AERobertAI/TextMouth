@@ -148,14 +148,21 @@ final class LibrarySearchModel: ObservableObject {
         case noBooks
 
         /// The status line's text, which VoiceOver also announces when a
-        /// search ends.
+        /// search ends. While a search runs it counts the books done, and
+        /// says "Preparing" rather than "Searched" once the search has had to
+        /// prepare a book, which is what makes such a search slower; that
+        /// text, like every one before the end, is read in place and never
+        /// announced.
         var text: String {
             switch self {
             case .idle:
                 return LibrarySearchWording.idle
             case .searching(let tally):
-                return tally.booksDone == 0
-                    ? LibrarySearchWording.searching(books: tally.booksGiven)
+                if tally.booksDone == 0 {
+                    return LibrarySearchWording.searching(books: tally.booksGiven)
+                }
+                return tally.booksPrepared > 0
+                    ? LibrarySearchWording.preparing(tally.booksDone, of: tally.booksGiven)
                     : LibrarySearchWording.searched(tally.booksDone, of: tally.booksGiven)
             case .finished(let text):
                 return text
