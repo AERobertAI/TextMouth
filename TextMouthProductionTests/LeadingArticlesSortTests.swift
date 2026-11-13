@@ -179,6 +179,30 @@ final class LeadingArticlesSortTests: XCTestCase {
         XCTAssertEqual(listed(), ["Gulliver's Travels", "The Hobbit", "Ivanhoe", "A Tale of Two Cities", "Die Verwandlung"])
     }
 
+    /// The Reading List keeps the order the user arranged in every choice,
+    /// since it is never sorted, while its rows show titles as every other
+    /// list's do: inverted in the third choice.
+    func testTheReadingListKeepsItsOrderInEveryChoice() {
+        let store = TextMouthRuntime.current.preferences
+        preservePreferences([LeadingArticles.preference.key], in: store)
+        let books = ["The Hobbit", "Ivanhoe", "A Tale of Two Cities"].map { Self.book($0) }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books, folders: [])
+        model.library.readingList = ReadingList(bookIDs: [books[2].id, books[0].id, books[1].id])
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        let arranged = ["A Tale of Two Cities", "The Hobbit", "Ivanhoe"]
+
+        for choice in LeadingArticles.allCases {
+            LeadingArticles.preference.write(choice, to: store)
+            XCTAssertEqual(model.displayedBooks(at: readingList, matching: "").map(\.title), arranged, "\(choice)")
+        }
+        LeadingArticles.preference.write(.ignoredWhenTypingAndSorting, to: store)
+        let shown = model.displayedBooks(at: readingList, matching: "").map { book in
+            model.rowTitle(of: book, articles: model.leadingArticles) ?? book.title
+        }
+        XCTAssertEqual(shown, ["Tale of Two Cities, A", "Hobbit, The", "Ivanhoe"])
+    }
+
     // MARK: - Fixtures
 
     /// A book titled `title`, with the given fields, at a path that exists
