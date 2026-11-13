@@ -265,7 +265,7 @@ extension LibraryViewModel {
             guard answer == .replaceExisting, case .duplicate(let duplicate) = decision.kind else {
                 return carryOut(answer, to: decision)
             }
-            return await replaceExistingOffMain(duplicate, of: decision, prepare: prepare)
+            return await replaceExistingOffMain(with: duplicate, of: decision, prepare: prepare)
         }
     }
 
