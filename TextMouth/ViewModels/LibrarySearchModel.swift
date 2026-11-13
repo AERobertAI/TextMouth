@@ -92,6 +92,10 @@ struct LibrarySearchSection: Identifiable, Equatable, Sendable {
 /// results stay while the window is closed and are there when it opens again.
 @MainActor
 final class LibrarySearchModel: ObservableObject {
+    /// Opens a match's book at the match, found by a query searched with
+    /// options: `openInReader` in the app; tests record what they are asked.
+    typealias Opener = @MainActor (_ row: LibrarySearchMatchRow, _ query: String, _ options: TextSearchOptions) -> Void
+
     /// Runs one search of `books`: the engine in the app, a fake in tests.
     /// Called on a search thread; returns once the search has ended.
     typealias Runner = @Sendable (
@@ -193,6 +197,13 @@ final class LibrarySearchModel: ObservableObject {
     /// What the status line says.
     @Published private(set) var status: Status = .idle
 
+    /// The query `groups` were found with, and its options: the latest
+    /// search's once its first results reach the list. A match opens with
+    /// them, whatever the field holds by then.
+    private(set) var foundQuery = ""
+    /// The options `groups` were found with.
+    private(set) var foundOptions = TextSearchOptions()
+
     /// Counts restarts. Each search remembers the generation it began in and
     /// publishes only while that is still current, so a stale search can
     /// never replace a newer one's results, even one that finished despite
@@ -209,6 +220,8 @@ final class LibrarySearchModel: ObservableObject {
     private let books: @MainActor () -> [LibrarySearchBook]
     /// Runs a search.
     private let runner: Runner
+    /// Opens a match's book at the match.
+    private let opener: Opener
     /// Speaks a finished search's status through VoiceOver.
     private let announce: @MainActor (String) -> Void
     /// How long typing must pause.
@@ -222,14 +235,17 @@ final class LibrarySearchModel: ObservableObject {
     ///   - runner: Runs a search; the engine by default.
     ///   - debounceInterval: How long typing must pause before a search.
     ///   - announce: Speaks a finished search's status.
+    ///   - opener: Opens a match's book at the match.
     init(
         books: @escaping @MainActor () -> [LibrarySearchBook],
         runner: @escaping Runner = LibrarySearchModel.engineRunner(store: .shared),
+        opener: @escaping Opener = LibrarySearchModel.openInReader,
         debounceInterval: Duration = LibrarySearchModel.debounceInterval,
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.books = books
         self.runner = runner
+        self.opener = opener
         self.debounceInterval = debounceInterval
         self.announce = announce
     }
@@ -324,9 +340,10 @@ final class LibrarySearchModel: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(for: Self.publishInterval)
                 guard !Task.isCancelled else { return }
-                self?.publish(inbox.take(), generation: generation)
+                self?.publish(inbox.take(), generation: generation, foundWith: found)
             }
         }
+        let found = (query, options)
         let outcome = await withTaskCancellationHandler {
             await withCheckedContinuation { (continuation: CheckedContinuation<LibrarySearchOutcome, Never>) in
                 queue.async {
@@ -340,7 +357,7 @@ final class LibrarySearchModel: ObservableObject {
             flag.cancel()
         }
         publisher.cancel()
-        finish(outcome, last: inbox.take(), generation: generation)
+        finish(outcome, last: inbox.take(), generation: generation, foundWith: found)
     }
 
     /// What a search has found since the last batch: its new books' results
@@ -353,12 +370,14 @@ final class LibrarySearchModel: ObservableObject {
     }
 
     /// Shows `batch`, the newest results of the search of `generation`,
-    /// when it is still current: the first batch replaces the older
-    /// search's results, and each adds its books in their order.
-    private func publish(_ batch: Batch, generation: Int) {
+    /// found with `foundWith`'s query and options, when it is still current:
+    /// the first batch replaces the older search's results, and each adds
+    /// its books in their order.
+    private func publish(_ batch: Batch, generation: Int, foundWith found: (String, TextSearchOptions)) {
         guard generation == self.generation else { return }
         if batch.isFirst {
             groups = []
+            (foundQuery, foundOptions) = found
         }
         if !batch.results.isEmpty {
             groups = Self.merged(groups, adding: batch.results.map(LibrarySearchGroup.init))
@@ -370,14 +389,20 @@ final class LibrarySearchModel: ObservableObject {
 
     /// Shows the outcome of the search of `generation`, with `last`, what it
     /// found after the last batch, and says it once, when still current.
-    private func finish(_ outcome: LibrarySearchOutcome, last: Batch, generation: Int) {
+    private func finish(
+        _ outcome: LibrarySearchOutcome,
+        last: Batch,
+        generation: Int,
+        foundWith found: (String, TextSearchOptions)
+    ) {
         guard generation == self.generation else { return }
         searchTask = nil
         switch outcome {
         case .finished(let tally):
             // The last batch, which replaces an older search's rows when it
             // is the first; a search that found nothing leaves none.
-            publish(last, generation: generation)
+            publish(last, generation: generation, foundWith: found)
+            (foundQuery, foundOptions) = found
             if tally.booksWithMatches == 0 { groups = [] }
             status = .finished(Self.finishedText(tally: tally, sections: sections))
         case .invalidPattern(let reason):
@@ -445,6 +470,28 @@ final class LibrarySearchModel: ObservableObject {
         }
     }
 
+    // MARK: Opening a Match
+
+    /// Opens the book of `row` at its match, as found by the search that
+    /// listed it; when the book has left the library since, says so instead.
+    func open(_ row: LibrarySearchMatchRow) {
+        guard books().contains(where: { $0.id == row.book.id }) else {
+            announce(LibrarySearchWording.bookGone(title: row.book.title))
+            return
+        }
+        opener(row, foundQuery, foundOptions)
+    }
+
+    /// Opens `row`'s book at its match, as opening a book from the Library
+    /// does: asks the book's reader to move to the match
+    /// (`LibrarySearchJumpRequests`), then opens the book's reader window, or
+    /// brings it forward when it is open, through the window router
+    /// (`.openBookWindow`), which refuses while the library moves.
+    static func openInReader(_ row: LibrarySearchMatchRow, query: String, options: TextSearchOptions) {
+        LibrarySearchJumpRequests.shared.request(bookID: row.book.id, match: row.match, query: query, options: options)
+        NotificationCenter.default.post(name: .openBookWindow, object: row.book.id)
+    }
+
     // MARK: Show All
 
     /// Lists up to Search in Book's limit of the matches in the book
@@ -453,8 +500,8 @@ final class LibrarySearchModel: ObservableObject {
     func showAllMatches(in bookID: UUID) {
         guard let group = groups.first(where: { $0.id == bookID }) else { return }
         let generation = generation
-        let query = query
-        let options = options
+        let query = foundQuery
+        let options = foundOptions
         let runner = runner
         let queue = queue
         showAllTask?.cancel()
@@ -509,6 +556,15 @@ final class LibrarySearchModel: ObservableObject {
         let books = library.libraryBooks.filter { !$0.tmbDirectoryName.isEmpty }
         return LibraryBookSorter.sorted(books, by: .title, ascending: true).map(LibrarySearchBook.init)
     }
+}
+
+// MARK: - The Command
+
+extension Notification.Name {
+    /// Posted by Edit > Find > Search Library… and its key, in any window:
+    /// the Search Library window opens, or comes forward
+    /// (`LibrarySearchWindowController`).
+    static let searchLibrary = Notification.Name("searchLibrary")
 }
 
 // MARK: - Between the Search and the Main Actor
