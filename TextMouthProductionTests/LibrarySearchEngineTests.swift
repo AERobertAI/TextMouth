@@ -441,7 +441,12 @@ final class LibrarySearchEngineTests: XCTestCase {
     /// loose limit per megabyte of text, so a change that slows the search
     /// many times over fails here rather than on the user's library. The
     /// limit is the hosted Debug build's, far above the Release app's (the
-    /// research document has the user's library's numbers).
+    /// research document has the user's library's numbers): on the
+    /// development Mac (an M3) the Debug build measured 0.41 to 0.44 seconds a
+    /// megabyte on November 13, 2026, in a full suite and alone, so a limit of
+    /// 1 second leaves room for a busy Mac while a search made several times
+    /// slower still fails. (The first limit, 0.25, passed only on GitHub's
+    /// runner, whose `TestMachine.timeScale` widens it.)
     func testAPlainSearchKeepsToItsTimePerMegabyte() throws {
         let paragraph = String(repeating: "The garden window looked over the river at night, and \u{2019}twas quiet. ", count: 40)
         let book = (0..<20).map { "<!-- chapter: Part \($0) -->\n\(paragraph)\n\n\(paragraph)" }.joined(separator: "\n\n")
@@ -458,7 +463,7 @@ final class LibrarySearchEngineTests: XCTestCase {
         }
         let perMegabyte = best / megabytes
         print(String(format: "PERFORMANCE: library search of %.1f MB: %.3f s, %.4f s a megabyte", megabytes, best, perMegabyte))
-        XCTAssertLessThan(perMegabyte, TestMachine.allowed(0.25), "a plain search took \(best) s for \(megabytes) MB")
+        XCTAssertLessThan(perMegabyte, TestMachine.allowed(1.0), "a plain search took \(best) s for \(megabytes) MB")
     }
 
     // MARK: Helpers
