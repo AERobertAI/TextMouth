@@ -46,22 +46,24 @@ struct LibraryTitleTyping: ViewModifier {
     @State private var reaches = 0
 
     func body(content: Content) -> some View {
-        content
-            .onKeyPress(phases: [.down, .repeat]) { press in
-                take(press)
-            }
-            // A newer reach cancels a look still waiting for the last one.
-            .task(id: reaches) {
-                guard reaches > 0 else { return }
-                await scrollSelectedRowIntoView()
-            }
+        ScrollViewReader { proxy in
+            content
+                .onKeyPress(phases: [.down, .repeat]) { press in
+                    take(press, scrollingWith: proxy)
+                }
+                // A newer reach cancels a look still waiting for the last one.
+                .task(id: reaches) {
+                    guard reaches > 0 else { return }
+                    await scrollSelectedRowIntoView()
+                }
+        }
     }
 
     /// Acts on `press` as letter navigation: returns `.ignored` for a key
     /// the list's own handling keeps, and `.handled` for one typed here. A
     /// key that is not typing, such as an arrow, ends the search, so the
     /// next letter starts afresh.
-    private func take(_ press: KeyPress) -> KeyPress.Result {
+    private func take(_ press: KeyPress, scrollingWith proxy: ScrollViewProxy) -> KeyPress.Result {
         guard articles.typesWithoutArticles else { return .ignored }
         guard Self.isTyping(press.characters, modifiers: press.modifiers) else {
             search = TitleTypingSearch()
@@ -84,6 +86,10 @@ struct LibraryTitleTyping: ViewModifier {
         search.add(press.characters, at: now, interval: interval)
         if let row = TitleTyping.firstRow(reachedBy: search.typed, in: listed, showingInverted: inverted) {
             selection = [row]
+            // SwiftUI's scroll also takes the selection to the table: on
+            // GitHub's runner a row far down that the list had never drawn
+            // stayed unselected in the table without it.
+            proxy.scrollTo(row)
             reaches += 1
         }
         // A Space typed next joins the letters only while a title goes on
@@ -96,16 +102,17 @@ struct LibraryTitleTyping: ViewModifier {
         return .handled
     }
 
-    /// Scrolls the row typing reached into view, as AppKit's own type
-    /// select does, once the list has drawn it selected: through the Mac's
-    /// table, which scrolls by the heights its rows are drawn at. SwiftUI's
-    /// `scrollTo` fell short of a row far down the Library list (row 62
-    /// selected with rows 47 to 54 in view, on GitHub's runner). The table
-    /// is looked at again a moment after each scroll, up to `scrollLooks`
-    /// times, in case rows drawn only once scrolled to moved the row on.
-    /// Only the Mac's list has letter navigation (on the iPhone,
-    /// `LibraryViewModel.leadingArticles` is always the first choice), so
-    /// elsewhere there is nothing to scroll.
+    /// Finishes scrolling the row typing reached into view, once the list
+    /// has drawn it selected: through the Mac's table, by the heights its
+    /// rows are drawn at. SwiftUI's `scrollTo`, and AppKit's own type select
+    /// too, fall short of a row far down the Library list (on GitHub's
+    /// runner, row 62 selected with rows 47 to 54 in view, and row 61 with
+    /// rows 46 to 53), as if the rows not yet drawn were shorter than they
+    /// are. So the table is looked at a moment after the scroll, and again
+    /// after each scroll it makes, up to `scrollLooks` times, until the
+    /// selected row shows whole. Only the Mac's list has letter navigation
+    /// (on the iPhone, `LibraryViewModel.leadingArticles` is always the
+    /// first choice), so elsewhere there is nothing to scroll.
     private func scrollSelectedRowIntoView() async {
         #if os(macOS)
         for _ in 0..<Self.scrollLooks {
@@ -128,11 +135,13 @@ struct LibraryTitleTyping: ViewModifier {
     #if os(macOS)
     /// Whether `table`'s selected row shows whole: if it does not, scrolls
     /// it into view and returns false, so the caller looks again once the
-    /// rows scrolled to are drawn. With no row selected there is nothing to
-    /// show, which counts as shown.
+    /// rows scrolled to are drawn. With no row selected yet, as before
+    /// SwiftUI has taken the selection to the table, it returns false too,
+    /// so the caller looks again.
     static func showsSelectedRow(of table: NSTableView) -> Bool {
         let row = table.selectedRow
-        guard row >= 0, !rowShowsWhole(row, in: table) else { return true }
+        guard row >= 0 else { return false }
+        guard !rowShowsWhole(row, in: table) else { return true }
         table.scrollRowToVisible(row)
         return false
     }

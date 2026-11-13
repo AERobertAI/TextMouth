@@ -330,7 +330,10 @@ final class LibraryTitleTypingTests: XCTestCase {
         // Without letter navigation, AppKit would take V too, after T, and
         // "tv" reaches nothing, so no further key is typed.
         guard table.selectedRow == table.numberOfRows - 1 else {
-            return XCTFail("T selected row \(table.selectedRow), not Theodora, the last row; letter navigation did not take the key (The Zebra, the row before, is AppKit's)")
+            return XCTFail(
+                "after T the table's selected row is \(table.selectedRow), not Theodora, the last row: The Zebra, the row "
+                    + "before, is AppKit's own type select, and none means the list's selection never reached the table"
+            )
         }
         selectedRowShows(after: "T")
 
