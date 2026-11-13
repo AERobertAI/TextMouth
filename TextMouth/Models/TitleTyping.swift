@@ -18,13 +18,32 @@ extension FilingTitle {
     /// reaches only titles that file under those letters, such as "Theory of
     /// Everything", since more letters may follow.
     func isReached(by typed: String, showingInverted: Bool) -> Bool {
+        begins(with: typed, showingInverted: showingInverted, articleAloneCounts: false)
+    }
+
+    /// Whether this title goes on with `typed`, whatever may be typed after
+    /// it: the title from where it files, the title as written from its
+    /// article, or, where the list shows titles inverted
+    /// (`showingInverted`), the title as its row shows it, begins with it.
+    /// Unlike `isReached(by:showingInverted:)`, the article and its space
+    /// alone count ("the " goes on into "The Hobbit"), since a Space typed
+    /// there is to be followed by more.
+    func goesOn(with typed: String, showingInverted: Bool) -> Bool {
+        begins(with: typed, showingInverted: showingInverted, articleAloneCounts: true)
+    }
+
+    /// Whether one of this title's forms begins with `typed`: its filing
+    /// text; the title as written from its article, where the letters go
+    /// past the article and its space unless `articleAloneCounts`; or, when
+    /// `showingInverted`, the inverted title.
+    private func begins(with typed: String, showingInverted: Bool, articleAloneCounts: Bool) -> Bool {
         guard !typed.isEmpty else { return false }
         if Self.text(rest, beginsWith: typed) {
             return true
         }
         guard let article else { return false }
         let nonfiling = String(article) + (isElided ? "" : " ")
-        if typed.count > nonfiling.count, Self.text(nonfiling + rest, beginsWith: typed) {
+        if articleAloneCounts || typed.count > nonfiling.count, Self.text(nonfiling + rest, beginsWith: typed) {
             return true
         }
         return showingInverted && Self.text(inverted, beginsWith: typed)
@@ -72,10 +91,10 @@ struct TypedRow<ID: Hashable>: Equatable {
 /// select gathers them: a key typed within `interval` of the one before adds
 /// to the search, and one typed later starts a new search.
 ///
-/// A Space is a letter of the search only while the search is a leading
-/// article, or an article and more, so "the h" can be typed, and a Space
-/// typed at any other time keeps its own meaning, Play or Pause in a Library
-/// window (`spaceContinuesTitle(articles:)`).
+/// A Space is a letter of the search only while a title in the list goes
+/// on with it (`TitleTyping.spaceGoesOn(after:in:showingInverted:)`), so "the
+/// h" and "lord of" can be typed, and a Space typed at any other time keeps
+/// its own meaning, Play or Pause in a Library window.
 struct TitleTypingSearch: Equatable, Sendable {
     /// The letters typed so far: "" before any.
     private(set) var typed = ""
@@ -102,22 +121,6 @@ struct TitleTypingSearch: Equatable, Sendable {
         lastTypedAt = time
         return isNew
     }
-
-    /// Whether a Space typed now continues the search: the letters typed so
-    /// far are one of `articles` (lowercased, with the plain apostrophe),
-    /// such as "the", or begin with one of them and a space, as "the lord"
-    /// does, so the title is being typed as it is written. An elided
-    /// article ("l'") joins the next word, so no Space follows it. Nothing
-    /// else takes a Space, which plays and pauses in a Library window.
-    func spaceContinuesTitle(articles: Set<String>) -> Bool {
-        let search = FilingTitle.plainApostrophes(typed).lowercased()
-        let words = articles.filter { !$0.hasSuffix("'") }
-        if words.contains(search) {
-            return true
-        }
-        guard let space = search.firstIndex(of: " ") else { return false }
-        return words.contains(String(search[..<space]))
-    }
 }
 
 // MARK: - The Row Typing Goes To
@@ -135,16 +138,14 @@ enum TitleTyping {
         rows.first { $0.title.isReached(by: typed, showingInverted: showingInverted) }?.id
     }
 
-    /// The articles of every row of `rows`, lowercased, with the plain
-    /// apostrophe: English's, and those of each book's language, which a
-    /// Space may follow in a search (`TitleTypingSearch`).
-    static func articles(ofLanguages languages: some Sequence<String?>) -> Set<String> {
-        var articles = Set(ArticleLanguage.english.articles)
-        var seen = Set<ArticleLanguage>()
-        for language in languages {
-            guard let known = ArticleLanguage(metadataLanguage: language), seen.insert(known).inserted else { continue }
-            articles.formUnion(known.articles)
-        }
-        return articles
+    /// Whether a Space typed after `typed` joins the search: some row of
+    /// `rows` goes on with the letters and a space
+    /// (`FilingTitle.goesOn(with:showingInverted:)`), as "The Hobbit" goes
+    /// on with "the " and "Lord of the Rings" with "lord ". At any other
+    /// time a Space keeps its own meaning.
+    static func spaceGoesOn<ID: Hashable>(after typed: String, in rows: [TypedRow<ID>], showingInverted: Bool) -> Bool {
+        guard !typed.isEmpty else { return false }
+        let withSpace = typed + " "
+        return rows.contains { $0.title.goesOn(with: withSpace, showingInverted: showingInverted) }
     }
 }

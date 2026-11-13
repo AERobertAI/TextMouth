@@ -146,38 +146,44 @@ final class TitleTypingTests: XCTestCase {
         XCTAssertEqual(search.lastTypedAt, 12.75)
     }
 
-    /// A Space continues the search only while it is an article, or an
-    /// article and more, of the articles given: "the", "a", "the lord"; never
-    /// an elided article, another word, or nothing typed.
-    func testASpaceContinuesOnlyATitleTypedWithItsArticle() {
-        let english = TitleTyping.articles(ofLanguages: [nil])
-        func search(_ typed: String) -> TitleTypingSearch {
-            var search = TitleTypingSearch()
-            search.add(typed, at: 0, interval: 1)
-            return search
+    /// A Space joins the letters typed only while some title goes on with
+    /// them and a space: after an article ("the", "a"), within a title as
+    /// filed ("lord", "the lord"), within the inverted title where the list
+    /// shows it ("hobbit,"); never after letters no title goes on with, nor
+    /// after nothing, nor after an elided article, which joins the next word.
+    func testASpaceJoinsTheLettersOnlyWhereATitleGoesOnWithOne() {
+        let titles = [
+            TypedRow(id: "hobbit", title: "The Hobbit", language: nil),
+            TypedRow(id: "tale", title: "A Tale of Two Cities", language: nil),
+            TypedRow(id: "lord", title: "Lord of the Rings", language: nil),
+            TypedRow(id: "étranger", title: "L'Étranger", language: "fr"),
+            TypedRow(id: "archive", name: "The Archive"),
+        ]
+        func joins(_ typed: String, showingInverted: Bool = false) -> Bool {
+            TitleTyping.spaceGoesOn(after: typed, in: titles, showingInverted: showingInverted)
         }
-        XCTAssertTrue(search("the").spaceContinuesTitle(articles: english))
-        XCTAssertTrue(search("THE").spaceContinuesTitle(articles: english))
-        XCTAssertTrue(search("a").spaceContinuesTitle(articles: english))
-        XCTAssertTrue(search("an").spaceContinuesTitle(articles: english))
-        XCTAssertTrue(search("the lord").spaceContinuesTitle(articles: english))
-        XCTAssertFalse(search("theory").spaceContinuesTitle(articles: english))
-        XCTAssertFalse(search("lord").spaceContinuesTitle(articles: english))
-        XCTAssertFalse(search("lord of").spaceContinuesTitle(articles: english))
-        XCTAssertFalse(TitleTypingSearch().spaceContinuesTitle(articles: english))
-        XCTAssertFalse(search("le").spaceContinuesTitle(articles: english), "le is not English")
-        let french = TitleTyping.articles(ofLanguages: [nil, "fr"])
-        XCTAssertTrue(search("le").spaceContinuesTitle(articles: french))
-        XCTAssertFalse(search("l'").spaceContinuesTitle(articles: french), "an elided article joins the next word")
+        // "tale" goes on into A Tale of Two Cities as it files.
+        let joining = ["the", "THE", "a", "lord", "Lord of", "lord of the", "a tale", "tale"]
+        XCTAssertEqual(joining.filter { !joins($0) }, [], "a Space did not join these")
+        // "the hobbit" is a whole title, which goes on with no space.
+        let notJoining = ["", "theory", "hobbit", "hob", "the hobbit", "l'", "l'étranger", "an", "x"]
+        XCTAssertEqual(notJoining.filter { joins($0) }, [], "a Space joined these")
+        XCTAssertTrue(joins("hobbit,", showingInverted: true))
+        XCTAssertFalse(joins("hobbit,", showingInverted: false))
     }
 
-    /// The articles a Space may follow: English's, and those of each
-    /// language the rows' books name, each language once.
-    func testTheArticlesOfTheRowsLanguages() {
-        XCTAssertEqual(TitleTyping.articles(ofLanguages: []), ["the", "a", "an"])
-        XCTAssertEqual(TitleTyping.articles(ofLanguages: [nil, "xx", "en"]), ["the", "a", "an"])
-        let mixed = TitleTyping.articles(ofLanguages: ["fr", "de-DE", "fr-CA"])
-        XCTAssertTrue(["the", "le", "l'", "die", "eines"].allSatisfy(mixed.contains), "\(mixed.sorted())")
-        XCTAssertFalse(mixed.contains("el"), "Spanish was named by no book")
+    /// A title goes on with its article and the space after it, though
+    /// those alone reach it no more than any other title.
+    func testATitleGoesOnWithItsArticleAlone() {
+        let hobbit = FilingTitle("The Hobbit", language: nil)
+        XCTAssertTrue(hobbit.goesOn(with: "the ", showingInverted: false))
+        XCTAssertFalse(hobbit.isReached(by: "the ", showingInverted: false))
+        XCTAssertTrue(hobbit.goesOn(with: "the h", showingInverted: false))
+        XCTAssertTrue(hobbit.isReached(by: "the h", showingInverted: false))
+        XCTAssertTrue(hobbit.goesOn(with: "hob", showingInverted: false))
+        XCTAssertFalse(hobbit.goesOn(with: "", showingInverted: true))
+        XCTAssertFalse(hobbit.goesOn(with: "hobbit, ", showingInverted: false))
+        XCTAssertTrue(hobbit.goesOn(with: "hobbit, ", showingInverted: true))
+        XCTAssertFalse(FilingTitle("Hobbit", language: nil).goesOn(with: "the ", showingInverted: true))
     }
 }
