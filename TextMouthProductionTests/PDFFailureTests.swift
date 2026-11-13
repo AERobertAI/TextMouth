@@ -66,7 +66,10 @@ final class PDFFailureTests: XCTestCase {
     /// text nor a drawing: it is refused as needing a password, before OCR
     /// is asked for anything, not as a failure of OCR.
     func testAPasswordProtectedPDFSaysItNeedsAPassword() throws {
-        let url = try makeLockedPDF(holding: "Close the sluice before the spring tide.")
+        let url = try makeProtectedPDF(holding: "Close the sluice before the spring tide.", options: [
+            PDFDocumentWriteOption.userPasswordOption: "lock-keeper",
+            PDFDocumentWriteOption.ownerPasswordOption: "lock-keeper-owner",
+        ])
         let document = try XCTUnwrap(PDFDocument(url: url))
         XCTAssertTrue(document.isLocked, "the fixture must be locked")
         let recognizer = ScriptedTextRecognizer.findingNothing()
@@ -78,6 +81,22 @@ final class PDFFailureTests: XCTestCase {
             XCTAssertEqual(error.localizedDescription, "This PDF needs a password to open.")
         }
         XCTAssertTrue(recognizer.requests.isEmpty, "a locked PDF must be refused before OCR is asked to read a page")
+    }
+
+    /// A PDF that has an owner password only (it restricts what a reader may
+    /// do, such as copying, but opens without a password) is not locked: it
+    /// imports and reads as usual, with OCR never asked for a page.
+    func testAPDFWithOnlyAnOwnerPasswordImports() throws {
+        let text = "Close the sluice before the spring tide."
+        let url = try makeProtectedPDF(holding: text, options: [PDFDocumentWriteOption.ownerPasswordOption: "lock-keeper-owner"])
+        let document = try XCTUnwrap(PDFDocument(url: url))
+        XCTAssertFalse(document.isLocked, "an owner password alone must not lock the PDF")
+        let recognizer = ScriptedTextRecognizer.findingNothing()
+
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+
+        XCTAssertTrue(extraction.markdown.contains(text), extraction.markdown)
+        XCTAssertTrue(recognizer.requests.isEmpty, "the embedded text must be read without OCR")
     }
 
     // MARK: - Outline Depth
@@ -142,24 +161,20 @@ final class PDFFailureTests: XCTestCase {
     }
 
     /// A one-page PDF whose page holds `text` as embedded text, written by
-    /// PDFKit in a sandbox folder of its own with a password needed to open
-    /// it (`PDFDocumentWriteOption.userPasswordOption`). The page is drawn
-    /// with `PDFFixtures`, and the unlocked copy is checked to read `text`,
-    /// so only the lock keeps the parser from it.
-    private func makeLockedPDF(holding text: String) throws -> URL {
+    /// PDFKit in a sandbox folder of its own with the passwords `options`
+    /// name (`PDFDocumentWriteOption.userPasswordOption` is the one needed
+    /// to open it, `.ownerPasswordOption` the one that lifts its
+    /// restrictions). The page is drawn with `PDFFixtures`, and the
+    /// unprotected copy is checked to read `text`, so only the protection
+    /// can keep the parser from it.
+    private func makeProtectedPDF(holding text: String, options: [PDFDocumentWriteOption: Any]) throws -> URL {
         let unlocked = try PDFFixtures.makePDF(for: self) { context, _ in
             PDFFixtures.drawText(text, size: 14, at: CGPoint(x: 72, y: 700), in: context)
         }
         let document = try XCTUnwrap(PDFDocument(url: unlocked))
         XCTAssertEqual(document.page(at: 0)?.string?.trimmingCharacters(in: .whitespacesAndNewlines), text)
         let url = try makeSandboxDirectory("PDFFailure").appendingPathComponent("Sluice Notes.pdf")
-        XCTAssertTrue(
-            document.write(to: url, withOptions: [
-                PDFDocumentWriteOption.userPasswordOption: "lock-keeper",
-                PDFDocumentWriteOption.ownerPasswordOption: "lock-keeper-owner"
-            ]),
-            "PDFKit could not write the locked PDF"
-        )
+        XCTAssertTrue(document.write(to: url, withOptions: options), "PDFKit could not write the protected PDF")
         return url
     }
 }
