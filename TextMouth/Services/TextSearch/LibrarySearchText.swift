@@ -472,9 +472,13 @@ final class LibrarySearchTextFile {
 
     /// Reads exactly `count` bytes at `offset` of `descriptor` into the start
     /// of `buffer`, retrying a read that was interrupted or came back short;
-    /// false when the file ends first or a read fails.
+    /// false when the file ends first or a read fails. Reading nothing, as
+    /// for an empty chapter, succeeds at once, whatever the buffer: an empty
+    /// buffer may have no address at all.
     private static func readFully(_ descriptor: Int32, into buffer: UnsafeMutableRawBufferPointer, count: Int, at offset: Int64) -> Bool {
-        guard descriptor >= 0, count <= buffer.count, let base = buffer.baseAddress else { return false }
+        guard descriptor >= 0 else { return false }
+        guard count > 0 else { return true }
+        guard count <= buffer.count, let base = buffer.baseAddress else { return false }
         var done = 0
         while done < count {
             let got = pread(descriptor, base + done, count - done, off_t(offset + Int64(done)))
