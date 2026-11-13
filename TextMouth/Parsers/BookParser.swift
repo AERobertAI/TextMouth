@@ -110,9 +110,13 @@ extension WebArchiveReader.MainPage {
     /// archive has no page reader (`PageReaderVersions`, V07), so no book of
     /// it is read again for pages, and its text gains none by this way in
     /// either (the review of October 24).
-    func markdown() throws -> String {
+    ///
+    /// - Parameter includesPages: Whether an HTML page's page-break elements
+    ///   become page markers, as `HTMLToMarkdownConverter.convert` does; false
+    ///   reads the page as it was read before pages (PG09).
+    func markdown(includesPages: Bool = true) throws -> String {
         isHTML
-            ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true)
+            ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true, includesPages: includesPages)
             : PlainTextParser.markdown(text: text, includesPages: false)
     }
 }

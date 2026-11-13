@@ -139,19 +139,11 @@ enum FeedTextConverter {
         }.joined(separator: "\n")
     }
 
-    /// `text` with the characters HTML gives meaning to escaped.
+    /// `text` with the characters HTML gives meaning to escaped, by the shared
+    /// writer (`XMLEscaping.markup(_:)`): it walks scalars, as a parser reads,
+    /// so an "&" or "<" with a combining accent after it is escaped too, and
+    /// leaves out what XML forbids (a form feed or vertical tab becomes a space).
     static func escaped(_ text: String) -> String {
-        var result = ""
-        result.reserveCapacity(text.count)
-        for character in text {
-            switch character {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            default: result.append(character)
-            }
-        }
-        return result
+        XMLEscaping.markup(text)
     }
 }

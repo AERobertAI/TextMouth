@@ -65,8 +65,20 @@ enum PageReaderVersions {
             return "1.0.3"
         case .html:
             return "1.0.4"
-        case .pdf, .daisy:
+        case .pdf:
             return "1.0.0"
+        case .daisy:
+            // DAISY started at "1.0.0" with PDF. At "1.0.1" a DAISY 3 book
+            // of several DTBook files numbers a page that holds no words by
+            // its place in the whole book (1, 2, then 3, 4), where each file
+            // began again at 1. The same bump fixes the order those files are
+            // read in (the spine's, else the order its SMIL files point at
+            // them, else the manifest's, where a dictionary's changed from
+            // launch to launch). Every stamped DAISY book is read again once;
+            // only a book of several DTBook files with a wordless page after
+            // an earlier page, or one whose files were read out of order,
+            // makes another text. The rest read byte for byte as before.
+            return "1.0.1"
         case .docx:
             // The DOCX reader follows the policy every document reader of
             // TextMouth follows: hidden text (w:vanish) is not read, a

@@ -71,22 +71,6 @@ enum SSMLReader {
         return "<html><body>\(body)</body></html>"
     }
 
-    /// `text` with the characters HTML gives meaning to written as
-    /// character references, so words such as "a < b" stay words.
-    private static func escaped(_ text: String) -> String {
-        var result = ""
-        for character in text {
-            switch character {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            default: result.append(character)
-            }
-        }
-        return result
-    }
-
     // MARK: HTML Builder
 
     /// The SAX parser that turns SSML elements into paragraphs of HTML.
@@ -169,7 +153,7 @@ enum SSMLReader {
                 // when there is no alias to speak.
                 let alias = (attributeDict["alias"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 if !alias.isEmpty {
-                    current += SSMLReader.escaped(alias)
+                    current += XMLEscaping.markup(alias)
                     skipDepth = 1
                 }
             case "desc", "meta", "metadata", "lexicon":
@@ -223,7 +207,7 @@ enum SSMLReader {
         /// dropped element.
         private func write(_ text: String) {
             guard skipDepth == 0 else { return }
-            current += SSMLReader.escaped(text)
+            current += XMLEscaping.markup(text)
         }
 
         // MARK: Paragraphs

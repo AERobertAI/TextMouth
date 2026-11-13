@@ -27,6 +27,15 @@ enum XMLEscaping {
         escape(text, replacing: attributeReplacements)
     }
 
+    /// `text` made safe for markup that is read by an HTML or an XML parser,
+    /// in element content or in a double-quoted attribute, where a tab or a
+    /// line break may stay as it is: what `text(_:)` does, and `"` as
+    /// `&quot;`. Not for an attribute whose line breaks must read back
+    /// (`attribute(_:)`, which writes them as character references).
+    static func markup(_ text: String) -> String {
+        escape(text, replacing: markupReplacements)
+    }
+
     /// `text` with only what XML 1.0 forbids dealt with, as `text(_:)` deals
     /// with it, and nothing escaped: for a writer that tidies a name before it
     /// escapes it.
@@ -53,6 +62,12 @@ enum XMLEscaping {
         "<": "&lt;",
         ">": "&gt;",
     ]
+
+    /// What `markup(_:)` writes in place of the characters it escapes: those
+    /// of `text(_:)` and the quote.
+    private static let markupReplacements: [Unicode.Scalar: String] = textReplacements.merging([
+        "\"": "&quot;",
+    ]) { _, new in new }
 
     /// What `attribute(_:)` writes in place of the characters it escapes:
     /// those of `text(_:)` and the quote and the three white-space scalars.

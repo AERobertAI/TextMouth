@@ -101,7 +101,11 @@ final class FeedUIOPMLTests: XCTestCase {
                 + "xmlUrl=\"https://atlas.example/feed.xml?a=1&amp;b=2\" htmlUrl=\"https://atlas.example/\"/>"
         ), text)
         XCTAssertEqual(FeedOPML.rfc822(date), "Sat, 03 Oct 2026 04:00:00 GMT")
-        XCTAssertEqual(FeedOPML.escaped("a\tb\nc'"), "a&#9;b&#10;c&apos;")
+        // Tabs and line breaks are written as character references, which an attribute keeps;
+        // the shared writer (XMLEscaping) leaves an apostrophe, which a double-quoted attribute may hold.
+        feed.title = "a\tb\nc'"
+        let written = String(decoding: FeedOPML.document(listing: [feed], title: "t", date: date), as: UTF8.self)
+        XCTAssertTrue(written.contains("text=\"a&#9;b&#10;c'\""), written)
     }
 
     /// A list TextMouth exports reads back as the same subscriptions.
@@ -138,7 +142,11 @@ final class FeedUIOPMLTests: XCTestCase {
 
             XCTAssertEqual(try FeedOPML.subscriptions(in: data).map(\.title), [title], String(decoding: data, as: UTF8.self))
         }
-        XCTAssertEqual(FeedOPML.escaped("a\r\nb"), "a&#13;&#10;b")
+        // A form feed or another character XML forbids is left out, so the document still reads.
+        feed.title = "Locks\u{0C}and\u{01}Weirs\r\nof"
+        let written = String(decoding: FeedOPML.document(listing: [feed], title: "t", date: Date()), as: UTF8.self)
+        XCTAssertTrue(written.contains("text=\"Locks andWeirs&#13;&#10;of\""), written)
+        XCTAssertEqual(try FeedOPML.subscriptions(in: Data(written.utf8)).map(\.title), ["Locks andWeirs\r\nof"])
     }
 
     // MARK: - Importing

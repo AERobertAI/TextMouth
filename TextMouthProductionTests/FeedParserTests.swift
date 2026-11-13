@@ -591,6 +591,20 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(FeedTextConverter.plainLine("Tips <3 & tricks"), "Tips <3 & tricks")
     }
 
+    /// Text is escaped for HTML by the shared XML writer (`XMLEscaping`): the
+    /// four markup characters as entities, a markup character with a combining
+    /// accent after it escaped too (it is one Character in Swift, one scalar
+    /// of markup to a parser), and what XML forbids left out, but for a form
+    /// feed or a vertical tab, which keep two words apart as a space.
+    func testEscapingTextForHTMLIsTheSharedWriters() {
+        XCTAssertEqual(FeedTextConverter.escaped("Q&A <b> \"x\""), "Q&amp;A &lt;b&gt; &quot;x&quot;")
+        XCTAssertEqual(FeedTextConverter.escaped("tab\tline\nbreak"), "tab\tline\nbreak")
+        XCTAssertEqual(FeedTextConverter.escaped("Fish &\u{301} <\u{301} chips"), "Fish &amp;\u{301} &lt;\u{301} chips")
+        XCTAssertEqual(FeedTextConverter.escaped("one\u{0C}two\u{0B}three\u{01}four"), "one two threefour")
+        // Plain text becomes paragraphs of escaped lines.
+        XCTAssertEqual(FeedTextConverter.htmlFromPlainText("a < b\nc & d"), "<p>a &lt; b<br>c &amp; d</p>")
+    }
+
     /// A text the feed does not type is HTML when it holds a tag of an HTML
     /// element, a comment, or a character reference; a "<" in plain text,
     /// before a number, a space, an address, or a word HTML has no element

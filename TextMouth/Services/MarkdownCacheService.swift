@@ -275,7 +275,9 @@ enum MarkdownCacheService {
         } else {
             // Preserve the cache reader's empty-document and chapter-marker
             // behavior as well as its title fallback for non-EPUB formats.
-            let markdownContent = parseMultiChapterMarkdown(
+            // A text that nests too deeply to read is refused here, with its
+            // sentence, before anything is written: no content.md is left behind.
+            let markdownContent = try parseMultiChapterMarkdownRefusing(
                 extracted.markdown, bookTitle: bookTitle, bookAuthor: bookAuthor
             )
             parsed = DocumentContent(
@@ -673,10 +675,10 @@ enum MarkdownCacheService {
             markdown = try HTMLToMarkdownConverter.convert(
                 decoded.text, stripDuplicateNavigation: true, includesPages: includesPages)
         case .webarchive:
-            markdown = try WebArchiveReader.mainPage(of: url).markdown()
+            markdown = try WebArchiveReader.mainPage(of: url).markdown(includesPages: includesPages)
         case .ssml:
             // Read as text, never as SSML for the speech engine (see BookParser).
-            markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url))
+            markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url), includesPages: includesPages)
         case .markdown:
             // Already Markdown — use the decoded text as-is
             let decoded = try TextFileDecoder.readDecodedText(at: url, format: format, policy: encodingPolicy)
@@ -753,55 +755,133 @@ enum MarkdownCacheService {
     /// Parse a cached Markdown file that may contain chapter markers into DocumentContent.
     /// Each chapter section is parsed through the Markdown parser for heading detection
     /// and plain text extraction.
+    ///
+    /// A chapter whose Markdown nests past the limit (`MarkupRefusal`) is never
+    /// dropped and never read for a shorter text: it keeps its raw Markdown as its
+    /// text, as the reader shows a file it cannot parse, and the refusal is
+    /// logged once (`logKeptRaw`). So Edit Text, a rebuild, the pages' re-read,
+    /// and the exports, which all commit for the text this returns, never commit
+    /// for fewer words than the book holds. An import does not come here for its
+    /// verdict: it refuses the file with the sentence
+    /// (`parseMultiChapterMarkdownRefusing`).
     static func parseMultiChapterMarkdown(
         _ markdown: String,
         bookTitle: String,
         bookAuthor: String,
         contentIndex: BookContentIndex? = nil
     ) -> DocumentContent {
+        let parsed = parseChapters(
+            markdown, bookTitle: bookTitle, bookAuthor: bookAuthor, contentIndex: contentIndex
+        )
+        logKeptRaw(parsed)
+        return parsed.content
+    }
+
+    /// `parseMultiChapterMarkdown` for a text that is about to be written to
+    /// content.md: a chapter that nests too deeply to be read is not kept raw
+    /// but refused, with the sentence the reader is shown, so the write that
+    /// follows never happens and no content.md is left behind.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` for the first such chapter.
+    static func parseMultiChapterMarkdownRefusing(
+        _ markdown: String,
+        bookTitle: String,
+        bookAuthor: String,
+        contentIndex: BookContentIndex? = nil
+    ) throws -> DocumentContent {
+        let parsed = parseChapters(
+            markdown, bookTitle: bookTitle, bookAuthor: bookAuthor, contentIndex: contentIndex
+        )
+        if let refusal = parsed.firstRefusal { throw refusal }
+        return parsed.content
+    }
+
+    /// What parsing a cached Markdown file gave: the content (a refused
+    /// chapter kept as written) and what was refused.
+    private struct ParsedChapters {
+        /// The document, with every chapter in it.
+        var content: DocumentContent
+        /// How many of the chapters were refused and kept as written.
+        var refusedCount = 0
+        /// The first refusal, which an import throws.
+        var firstRefusal: Error?
+    }
+
+    /// The shared work of both parsers above: split `markdown` at its chapter
+    /// markers (or take it whole), parse each chapter, and keep a refused
+    /// chapter's raw text in its place, counting the refusal.
+    private static func parseChapters(
+        _ markdown: String,
+        bookTitle: String,
+        bookAuthor: String,
+        contentIndex: BookContentIndex?
+    ) -> ParsedChapters {
         let sections = splitChapters(markdown)
+        var refusedCount = 0
+        var firstRefusal: Error?
+
+        /// The chapter `text` parses to, or its raw text when it is refused.
+        func chapter(of text: String, titled title: String) -> Chapter {
+            do {
+                return try MarkdownDocParser.parseChapter(markdown: text, title: title, includeNavigationHeadings: true)
+            } catch {
+                // The parser refuses only what nests too deeply, but whatever it
+                // threw, a chapter is never dropped: it stays as written.
+                refusedCount += 1
+                firstRefusal = firstRefusal ?? error
+                return Chapter(title: title, text: text, headings: [])
+            }
+        }
 
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
-            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle, includeNavigationHeadings: true))
-                ?? Chapter(title: bookTitle, text: markdown, headings: [])
-            return DocumentContent(
-                title: documentTitle(of: [chapter], bookTitle: bookTitle),
+            let single = chapter(of: markdown, titled: bookTitle)
+            let content = DocumentContent(
+                title: documentTitle(of: [single], bookTitle: bookTitle),
                 author: bookAuthor,
-                chapters: [chapter],
+                chapters: [single],
                 contentIndex: contentIndex
             )
+            return ParsedChapters(content: content, refusedCount: refusedCount, firstRefusal: firstRefusal)
         }
 
         var chapters: [Chapter] = []
         for section in sections {
-            let parsedChapter = try? MarkdownDocParser.parseChapter(
-                markdown: section.content,
-                title: section.title,
-                includeNavigationHeadings: true
-            )
-            if var ch = parsedChapter {
-                // Use the chapter marker title, falling back to what the parser found
-                if !section.title.isEmpty {
-                    ch.title = section.title
-                }
-
-                // If this chapter has a title but the Markdown parser found no
-                // headings, inject a synthetic level-1 heading at offset 0.
-                // This ensures every titled chapter appears in the heading list.
-                if ch.headings.isEmpty && !ch.title.isEmpty {
-                    ch.headings = [Heading(level: 1, text: ch.title, characterOffset: 0)]
-                }
-
-                chapters.append(ch)
+            var ch = chapter(of: section.content, titled: section.title)
+            // Use the chapter marker title, falling back to what the parser found
+            if !section.title.isEmpty {
+                ch.title = section.title
             }
+
+            // If this chapter has a title but the Markdown parser found no
+            // headings, inject a synthetic level-1 heading at offset 0.
+            // This ensures every titled chapter appears in the heading list.
+            if ch.headings.isEmpty && !ch.title.isEmpty {
+                ch.headings = [Heading(level: 1, text: ch.title, characterOffset: 0)]
+            }
+
+            chapters.append(ch)
         }
 
-        return DocumentContent(
+        let content = DocumentContent(
             title: documentTitle(of: chapters, bookTitle: bookTitle),
             author: bookAuthor,
             chapters: chapters,
             contentIndex: contentIndex
+        )
+        return ParsedChapters(content: content, refusedCount: refusedCount, firstRefusal: firstRefusal)
+    }
+
+    /// The tag of the line that says a parse kept chapters as written.
+    static let keptRawLogTag = "MARKDOWN_NESTING_KEPT_RAW"
+
+    /// Record, once for the whole parse, that chapters nested too deeply to be
+    /// read were kept as written. The line holds counts only, never the book's
+    /// title or words (the log's policy).
+    private static func logKeptRaw(_ parsed: ParsedChapters) {
+        guard parsed.refusedCount > 0 else { return }
+        DiagnosticLog.event(
+            .storage,
+            "\(keptRawLogTag): \(parsed.refusedCount) of \(parsed.content.chapters.count) chapters nest too deeply to read and are kept as written"
         )
     }
 

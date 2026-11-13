@@ -612,6 +612,9 @@ final class OnDiskContractTests: XCTestCase {
                 let raised = [
                     "epub": "1.0.3", "html": "1.0.4", "txt": "1.0.1", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.3.0",
                     "docx": "1.3.0", "odt": "1.1.0", "wordml": "1.3.0",
+                    // DAISY is at 1.0.1: a page with no words is labelled by its place in the
+                    // whole book, not in its DTBook file.
+                    "daisy": "1.0.1",
                 ]
                 // Kindle books (.mobi and .azw3) are at 1.1.0: soft hyphens left out of MOBI 6 books, and the KF8 chapter rule.
                 return (name, raised[name] ?? (name == "mobi" ? "1.1.0" : "1.0.0"))

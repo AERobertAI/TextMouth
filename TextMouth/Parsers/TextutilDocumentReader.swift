@@ -85,7 +85,8 @@ enum TextutilDocumentReader {
             // own title and author in its head.
             let named = metadata(in: try MarkupGuard.parse(headOf(source.html)))
             return Extraction(
-                markdown: try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true),
+                markdown: try HTMLToMarkdownConverter.convert(
+                    source.html, stripDuplicateNavigation: true, includesPages: includesPages),
                 named: named
             )
         }
