@@ -9,8 +9,8 @@ import XCTest
 /// the summary that brings a lagging row to the record's table; the debug
 /// log's line; and every refusal, after which nothing has changed.
 ///
-/// The samples are uncontracted (grade 1) UEB files, which a contracted
-/// (grade 2) table reads as other words. Every import binds the table it
+/// The sample is a contracted (grade 2) UEB file, which the uncontracted
+/// (grade 1) table reads as other words. Every import binds the table it
 /// names, never the user's settings, and every book is a package in the
 /// hosted test root's library, whose index is put back after each test
 /// (`CloudMaintenanceTestCase`).
@@ -19,11 +19,12 @@ final class BrailleCodeRereadTests: CloudMaintenanceTestCase {
 
     // MARK: - Fixtures
 
-    /// The grade 1 BRF sample, a North American Braille ASCII file.
-    private static let sample = "brf/pride-and-prejudice-ch1-grade1.brf"
-    /// The table the sample is written in: uncontracted UEB.
+    /// The grade 2 BRF sample, a North American Braille ASCII file.
+    private static let sample = "brf/grade2-short.brf"
+    /// The uncontracted table the sample is imported with here, wrongly.
     private static let grade1 = "en-ueb-g1.ctb"
-    /// The contracted table the sample is read again with.
+    /// The table the sample is written in: contracted UEB, with which it is
+    /// read again.
     private static let grade2 = "en-ueb-g2.ctb"
 
     /// The bundled table with the stored value `id`.
@@ -79,36 +80,36 @@ final class BrailleCodeRereadTests: CloudMaintenanceTestCase {
 
     // MARK: - Reading Again
 
-    /// A grade 1 file imported with the contracted table reads as other
-    /// words; read again with the uncontracted table it is the grade 1
-    /// reading: its content.md is that reading, its row and record hold the
-    /// table, VoiceOver hears the code's name, and the debug log says it in
-    /// the table's line, never in an encoding's or a file code's.
+    /// A contracted file imported with the uncontracted table reads as other
+    /// words; read again with the contracted table it is the right reading:
+    /// its content.md is that reading, its row and record hold the table,
+    /// VoiceOver hears the code's name, and the debug log says it in the
+    /// table's line, never in an encoding's or a file code's.
     func testAnotherTableReadsTheBookAgainAndRecordsIt() async throws {
-        let book = try importedSample(title: "Ledger", tableID: Self.grade2)
-        let expected = try reading(of: book, tableID: Self.grade1)
-        XCTAssertEqual(book.brailleTable, Self.grade2)
+        let book = try importedSample(title: "Ledger", tableID: Self.grade1)
+        let expected = try reading(of: book, tableID: Self.grade2)
+        XCTAssertEqual(book.brailleTable, Self.grade1)
         XCTAssertNotEqual(
             try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)), expected,
-            "the contracted table must read the file otherwise, or this proves nothing"
+            "the uncontracted table must read the file otherwise, or this proves nothing"
         )
         let model = makeModel(with: [book])
 
-        let (outcome, announced) = await readAgain(book, with: try table(Self.grade1), in: model)
+        let (outcome, announced) = await readAgain(book, with: try table(Self.grade2), in: model)
 
-        let said = "“\(book.title)” is now read as Unified English Braille, uncontracted (Grade 1)."
+        let said = "“\(book.title)” is now read as Unified English Braille, contracted (Grade 2)."
         XCTAssertEqual(outcome, .success(said))
         XCTAssertEqual(announced, [said])
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)), expected)
         let row = try XCTUnwrap(model.bookByID(book.id))
-        XCTAssertEqual(row.brailleTable, Self.grade1)
+        XCTAssertEqual(row.brailleTable, Self.grade2)
         XCTAssertNil(row.brailleTableVersion, "a bundled table records no liblouis version")
-        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.brailleTable, Self.grade1)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.brailleTable, Self.grade2)
         XCTAssertEqual(
             row.textCacheFingerprint?.cache.digest, FingerprintHasher.md5.digestOfData(expected),
             "the row's analysis is not the new text's"
         )
-        XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(book.title): read again with \(Self.grade1)"), 1)
+        XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(book.title): read again with \(Self.grade2)"), 1)
         XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(book.title)"), 0, "a table re-read was logged as a file code's")
         XCTAssertEqual(logLineCount("TEXT_ENCODING_CHANGED: \(book.title)"), 0, "a table re-read was logged as an encoding's")
     }

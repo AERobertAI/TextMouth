@@ -15,8 +15,8 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
 
     // MARK: - Fixtures
 
-    /// The grade 1 BRF sample, a North American Braille ASCII file.
-    private static let sample = "brf/pride-and-prejudice-ch1-grade1.brf"
+    /// The grade 2 BRF sample, a North American Braille ASCII file.
+    private static let sample = "brf/grade2-short.brf"
     /// The table the sample is written in: uncontracted UEB.
     private static let grade1 = "en-ueb-g1.ctb"
     /// Contracted UEB, the table a book that stores none is read with.
@@ -50,13 +50,13 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         return book
     }
 
-    /// The grade 1 sample imported with the contracted table as the Braille
+    /// The grade 2 sample imported with the uncontracted table as the Braille
     /// setting's, never the user's settings, so it is read as other words
-    /// until the listener reads it again with the uncontracted one. Titled
+    /// until the listener reads it again with the contracted one. Titled
     /// `title`, with a suffix of its own, in its row and its record.
     private func importedSample(title: String) throws -> Book {
         let copy = try copyOfFormatSample(Self.sample)
-        var book = try BraillePreferences.$tableForImports.withValue(Self.grade2) {
+        var book = try BraillePreferences.$tableForImports.withValue(Self.grade1) {
             try BraillePreferences.$fileCodeForImports.withValue("ascii-na") {
                 try importedForTest(copy).book
             }
@@ -174,7 +174,7 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         sessions.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
         defer { sessions.end(book.id) }
 
-        await model.choose(.table(Self.grade1))
+        await model.choose(.table(Self.grade2))
 
         let pending = try XCTUnwrap(model.pending)
         XCTAssertEqual(pending.keepsText, true)
@@ -222,34 +222,34 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
 
     // MARK: - Reading Again
 
-    /// Read Again reads a book imported with the contracted table again with
-    /// the uncontracted one: the pop-up then shows it, the row and the record
-    /// hold it, and VoiceOver hears the code's name. The pop-up is not
+    /// Read Again reads a book imported with the uncontracted table again
+    /// with the contracted one: the pop-up then shows it, the row and the
+    /// record hold it, and VoiceOver hears the code's name. The pop-up is not
     /// working afterwards, and takes another choice.
     func testReadAgainReadsTheBookAgainAndThePopUpShowsTheTable() async throws {
         let book = try importedSample(title: "Ledger")
-        XCTAssertEqual(book.brailleTable, Self.grade2, "the book must be read with the other table, or this proves nothing")
+        XCTAssertEqual(book.brailleTable, Self.grade1, "the book must be read with the other table, or this proves nothing")
         let library = makeModel(with: [book])
         let model = BrailleCodeChoiceModel(book: book, library: library)
         await model.load()
-        XCTAssertEqual(model.selection, .table(Self.grade2))
-        let uncontracted = try table(Self.grade1)
+        XCTAssertEqual(model.selection, .table(Self.grade1))
+        let contracted = try table(Self.grade2)
 
-        await model.choose(.table(Self.grade1))
+        await model.choose(.table(Self.grade2))
         XCTAssertNotNil(model.pending)
         let announced = await announcements {
-            await model.confirm(uncontracted)
+            await model.confirm(contracted)
         }
 
         XCTAssertNil(model.pending)
         XCTAssertNil(model.failureMessage)
         XCTAssertFalse(model.isWorking)
         XCTAssertTrue(model.isEnabled)
-        XCTAssertEqual(model.selection, .table(Self.grade1))
-        XCTAssertEqual(model.name(of: model.selection), Self.grade1Name)
-        XCTAssertEqual(library.bookByID(book.id)?.brailleTable, Self.grade1)
-        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.brailleTable, Self.grade1)
-        XCTAssertEqual(announced, ["“\(book.title)” is now read as \(Self.grade1Name)."])
+        XCTAssertEqual(model.selection, .table(Self.grade2))
+        XCTAssertEqual(model.name(of: model.selection), Self.grade2Name)
+        XCTAssertEqual(library.bookByID(book.id)?.brailleTable, Self.grade2)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.brailleTable, Self.grade2)
+        XCTAssertEqual(announced, ["“\(book.title)” is now read as \(Self.grade2Name)."])
     }
 
     /// A reading that fails after the confirmation, here with a table that is
@@ -272,8 +272,8 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         XCTAssertTrue(failure.hasPrefix("TextMouth couldn't read “\(book.title)” again, so it left the book as it was"), failure)
         XCTAssertEqual(announced, [failure])
         XCTAssertFalse(model.isWorking)
-        XCTAssertEqual(model.selection, .table(Self.grade2))
-        XCTAssertEqual(library.bookByID(book.id)?.brailleTable, Self.grade2)
+        XCTAssertEqual(model.selection, .table(Self.grade1))
+        XCTAssertEqual(library.bookByID(book.id)?.brailleTable, Self.grade1)
     }
 
     // MARK: - Words

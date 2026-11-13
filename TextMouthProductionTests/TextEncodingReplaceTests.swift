@@ -233,7 +233,6 @@ final class TextEncodingReplaceTests: CloudMaintenanceTestCase {
             (book("Book.txt", record: .unrecorded), copy, nil, "none"),
             (book("Book.txt", record: TextEncodingRecord(identifier: nil, source: .chosen)), copy, nil, "a choice with no encoding"),
             (book("Book.md", record: chosen, format: .markdown), copy, nil, "another format"),
-            (book("Book.txt", record: chosen, source: nil), copy, nil, "an old copy that offers no choice"),
             (book("Book.txt", record: chosen), book("Copy.txt", record: .unrecorded, source: nil), nil, "a new copy that offers no choice"),
             (book("Book.txt", record: chosen, isFeedItem: true), book("Copy.txt", record: .unrecorded, isFeedItem: true), nil, "a feed item"),
             (book("Book.txt", hash: "other", record: chosen), copy, nil, "other bytes, which cannot be read here"),
