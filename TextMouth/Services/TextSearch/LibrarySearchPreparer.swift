@@ -206,6 +206,11 @@ final class LibrarySearchPreparer: Sendable {
         state.withLock { $0.isActive }
     }
 
+    /// Whether a search pauses the preparer now.
+    var isPaused: Bool {
+        state.withLock { $0.pauses > 0 }
+    }
+
     /// The priority the next books are prepared at.
     var priority: Priority {
         state.withLock { $0.priority }
@@ -409,8 +414,11 @@ final class LibrarySearchPreparation {
 
     /// The data directory started or stopped moving: a move stops the pass,
     /// whose books are about to be elsewhere, and once it is over a pass
-    /// starts afresh, with the books where they are now.
+    /// starts afresh, with the books where they are now. A value that
+    /// changes nothing, as the library's publisher sends its current one on
+    /// subscription, does nothing.
     private func libraryMoving(_ isMoving: Bool) {
+        guard isMoving != isLibraryMoving else { return }
         isLibraryMoving = isMoving
         if isMoving {
             preparer.stop()

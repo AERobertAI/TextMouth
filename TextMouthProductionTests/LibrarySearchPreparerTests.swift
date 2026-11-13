@@ -273,6 +273,27 @@ final class LibrarySearchPreparerTests: XCTestCase {
         XCTAssertEqual(reads.count(of: stopped.contentURL), 2, "the stopped book is read again, once")
     }
 
+    /// The engine's runner, which the Search Library window's searches and
+    /// Show All run through, pauses the background preparation while it
+    /// searches and lets it go once the search ends, so a search has the
+    /// processor to itself.
+    func testTheEngineRunnerPausesThePreparationWhileItSearches() throws {
+        let library = try makePreparerLibrary(3)
+        let preparer = makePreparer(library, reports: PassReports())
+        let runner = LibrarySearchModel.engineRunner(store: library.store, preparer: preparer)
+        let pausedAtEachBook = OSAllocatedUnfairLock<[Bool]>(initialState: [])
+        XCTAssertFalse(preparer.isPaused, "a new preparer is paused")
+
+        let outcome = runner("fox", TextSearchOptions(), library.books, .library, { false }) { _, _ in
+            pausedAtEachBook.withLock { $0.append(preparer.isPaused) }
+        }
+
+        guard case .finished(let tally) = outcome else { return XCTFail("the search gave \(outcome)") }
+        XCTAssertEqual(tally.matches, 3, "\(tally)")
+        XCTAssertEqual(pausedAtEachBook.withLock { $0 }, [true, true, true], "the preparation was not paused during the search")
+        XCTAssertFalse(preparer.isPaused, "the preparation was left paused after the search")
+    }
+
     // MARK: When Not to Prepare
 
     /// No pass starts in Low Power Mode, and Low Power Mode coming on ends
@@ -494,6 +515,42 @@ final class LibrarySearchPreparationTests: XCTestCase {
         XCTAssertFalse(preparer.isRunning, "a pass started while the library moved")
 
         moves.send(false)
+        XCTAssertFalse(coordinator.isLibraryMoving)
+        XCTAssertTrue(preparer.isRunning, "no pass started once the move was over")
+    }
+
+    /// Once its startup maintenance has ended, the library hands the
+    /// preparation its searchable books, those with a package, as they are
+    /// at each pass, and its data directory's moves
+    /// (`LibraryViewModel.startupMaintenanceDidEnd(preparation:)`, which the
+    /// app's startup calls after its last pass): a move stops the pass and
+    /// its end starts one afresh. The preparer is held paused, so the books,
+    /// made up, are never read.
+    func testTheLibraryHandsItsBooksAndItsMovesToThePreparation() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [
+            Book(title: "Kept Apart", author: "A", format: .txt, filePath: "a.txt", md5Hash: "hash-a", tmbDirectoryName: "a.tmb"),
+            Book(title: "Bare Bones", author: "B", format: .txt, filePath: "b.txt", md5Hash: "hash-b", tmbDirectoryName: ""),
+            Book(title: "Another", author: "C", format: .txt, filePath: "c.txt", md5Hash: "hash-c", tmbDirectoryName: "c.tmb"),
+        ])
+        let store = LibrarySearchTextStore(folder: try makeSandboxDirectory("LibrarySearchPreparationHook"))
+        let preparer = LibrarySearchPreparer(store: store, isLowPowerMode: { false }, onPassEnded: { _ in })
+        let coordinator = makeCoordinator(preparer)
+        preparer.pause()
+        // Nothing more is begun once the test ends.
+        defer { preparer.stop() }
+
+        library.startupMaintenanceDidEnd(preparation: coordinator)
+
+        XCTAssertTrue(preparer.isRunning, "no pass began once the library's maintenance ended")
+        XCTAssertEqual(preparer.progress.booksGiven, 2, "the books of the library that have a package")
+        XCTAssertFalse(coordinator.isLibraryMoving, "the library's publisher's first value started a move")
+
+        library.dataDirectoryMove = DataDirectoryMoveProgress(destination: try makeSandboxDirectory("LibrarySearchPreparationMove"))
+        XCTAssertTrue(coordinator.isLibraryMoving, "the library's move did not reach the preparation")
+        XCTAssertFalse(preparer.isRunning, "the move left the pass under way")
+
+        library.dataDirectoryMove = nil
         XCTAssertFalse(coordinator.isLibraryMoving)
         XCTAssertTrue(preparer.isRunning, "no pass started once the move was over")
     }

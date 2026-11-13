@@ -81,6 +81,10 @@ final class LibrarySearchWindowController: NSObject, NSWindowDelegate {
         self.window = window
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
+        // A search is likely soon: the background preparation of the
+        // library's texts is raised while the window is open, and starts
+        // over when none is under way, to prepare what changed since.
+        LibrarySearchPreparation.shared.searchWindowOpened()
         // The menu bar shows this window's menus: none of Library's or a
         // reader's.
         NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
@@ -117,6 +121,8 @@ final class LibrarySearchWindowController: NSObject, NSWindowDelegate {
         }
         window?.delegate = nil
         window = nil
+        // The preparation goes back to the background.
+        LibrarySearchPreparation.shared.searchWindowClosed()
         NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
     }
 }

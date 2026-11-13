@@ -293,10 +293,18 @@ final class LibrarySearchModel: ObservableObject {
         showAllTask?.cancel()
     }
 
-    /// The engine as a runner, reading and keeping search texts in `store`.
-    nonisolated static func engineRunner(store: LibrarySearchTextStore) -> Runner {
+    /// The engine as a runner, reading and keeping search texts in `store`,
+    /// with `preparer`, the background preparation, paused while it runs:
+    /// a search the listener waits for has the processor to itself, and
+    /// prepares what it needs at full speed (the app's preparer by default).
+    nonisolated static func engineRunner(
+        store: LibrarySearchTextStore,
+        preparer: LibrarySearchPreparer? = .shared
+    ) -> Runner {
         { query, options, books, limits, isCancelled, report in
-            LibrarySearchEngine.search(
+            preparer?.pause()
+            defer { preparer?.resume() }
+            return LibrarySearchEngine.search(
                 query: query, options: options, in: books, store: store,
                 limits: limits, isCancelled: isCancelled, report: report
             )

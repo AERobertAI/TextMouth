@@ -414,8 +414,10 @@ final class LibraryViewModel: ObservableObject {
     /// recordings' original takes whose time is up and of the audio
     /// editor's caches a crash left, the observers, and the background
     /// maintenance, after which the finished books are put at their ends
-    /// once (`moveFinishedBooksToTheirEndsOnce`, TODO P07). It runs once: at
-    /// launch, or on the Try Again that first finds the library.
+    /// once (`moveFinishedBooksToTheirEndsOnce`, TODO P07) and Search
+    /// Library's texts are prepared in the background
+    /// (`startupMaintenanceDidEnd()`). It runs once: at launch, or on the Try
+    /// Again that first finds the library.
     func startLibrary() {
         guard !hasStartedLibrary else { return }
         hasStartedLibrary = true
@@ -446,9 +448,12 @@ final class LibraryViewModel: ObservableObject {
         // Speak Download Progress, from any window (FR10's feed half).
         observeDownloadProgressRequests()
         // Once the rows are measured, the books Books Finished counts at
-        // 100 percent are put at their ends, once (TODO P07).
+        // 100 percent are put at their ends, once (TODO P07), and then
+        // Search Library's texts are prepared in the background.
         updateContentCachesAndStatistics { [weak self] in
-            self?.moveFinishedBooksToTheirEndsOnce()
+            self?.moveFinishedBooksToTheirEndsOnce { [weak self] in
+                self?.startupMaintenanceDidEnd()
+            }
         }
         // The podcast and article feeds start in the background (FR03).
         startFeeds()
@@ -457,6 +462,22 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, the other small files it opens with that are
         // only in the cloud come down now, without holding anything back.
         fetchLaunchFilesInBackground()
+    }
+
+    /// What follows the startup maintenance, once every pass that rebuilds
+    /// books' texts has ended: Search Library's texts are prepared in the
+    /// background from now on (`LibrarySearchPreparation`), from the
+    /// library's searchable books as they are at each pass, a data-directory
+    /// move holding the preparation back while it lasts. `preparation` is
+    /// the app's unless a test gives its own; the app's prepares nothing in
+    /// a process hosting tests.
+    func startupMaintenanceDidEnd(preparation: LibrarySearchPreparation = .shared) {
+        preparation.libraryIsReady(
+            books: { [weak self] in
+                self.map { LibrarySearchModel.searchableBooks(in: $0.library) } ?? []
+            },
+            moves: $dataDirectoryMove.map { $0 != nil }.eraseToAnyPublisher()
+        )
     }
 
     // MARK: - Book Update Helpers
