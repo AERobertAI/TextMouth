@@ -89,6 +89,8 @@ extension ConfigService.AppConfig {
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true
         config.libraryViews = customizedLibraryViews
+        // Leading articles passed over when typing, unlike the default.
+        config.leadingArticles = LeadingArticles.ignoredWhenTyping.rawValue
         config.brailleTable = "en-us-g1.ctb"
         // The braille file characters (braillecodes), unlike the default,
         // North American Braille ASCII.

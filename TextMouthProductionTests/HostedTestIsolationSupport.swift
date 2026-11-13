@@ -87,7 +87,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "logLocation",
         "transcriptionLocale",
         "offerTranscriptionAfterImport",
-        "brailleTable"
+        "brailleTable",
+        "leadingArticles"
     ]
 
     /// Each key's digest, or "absent" when the user has no value for it.

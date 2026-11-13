@@ -1223,6 +1223,8 @@ final class ConfigSyncTests: XCTestCase {
             // Library: the Library window's views, as the views store keeps
             // them, a JSON array in data.
             LibraryViewDefinitionList.fileKey: try JSONEncoder().encode(ConfigService.AppConfig.customizedLibraryViews),
+            // And what a title's leading article does in its lists.
+            SettingsPolicy.leadingArticles.key: LeadingArticles.ignoredWhenTypingAndSorting.rawValue,
             // Braille: the table braille files are read and written with, and
             // the braille file characters an import reads a BRF or BRL file
             // with (braillecodes).
