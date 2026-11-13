@@ -740,7 +740,7 @@ final class ReadingListViewTests: XCTestCase {
 
     // MARK: - The Options Bar
 
-    /// The options bar's words: the picker's label and hint, and the
+    /// The options bar's words: the picker's label and hint, and each
     /// checkbox's label and hint, which each control speaks for itself.
     func testTheOptionsBarsWordsArePinned() {
         XCTAssertEqual(ReadingListWording.continuationLabel, "When a book ends")
@@ -753,25 +753,113 @@ final class ReadingListViewTests: XCTestCase {
             ReadingListWording.skipFinishedHint,
             "When a book opened from the reading list ends, pass over the books already finished"
         )
+        XCTAssertEqual(ReadingListWording.removeFinishedLabel, "Remove books when finished")
+        XCTAssertEqual(
+            ReadingListWording.removeFinishedHint,
+            "When a book is finished, take it off the reading list. "
+                + "Books finished before you turn this on stay on it. Books stay in the library."
+        )
+        XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
+        XCTAssertEqual(
+            ReadingListWording.keepBooksHint,
+            "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
+                + "This choice is this Mac's alone. Clearing it removes no download."
+        )
+        // Four controls, each told apart by its own label.
+        XCTAssertEqual(
+            Set([
+                ReadingListWording.continuationLabel, ReadingListWording.skipFinishedLabel,
+                ReadingListWording.removeFinishedLabel, ReadingListWording.keepBooksLabel,
+            ]).count,
+            4
+        )
+    }
+
+    /// The bar's row wraps rather than truncates: when the controls do not
+    /// fit the width, the one that does not starts a second line, in the
+    /// order they were declared, which is the order VoiceOver visits them;
+    /// wide enough, they stay on one line; and a control wider than the
+    /// window keeps its place, alone on its line, however narrow it gets.
+    func testTheOptionsBarWrapsOntoASecondLineInsteadOfTruncating() {
+        // The pop-up, then the three checkboxes of a cloud library.
+        let sizes = [CGSize(width: 140, height: 24), CGSize(width: 160, height: 20),
+                     CGSize(width: 190, height: 20), CGSize(width: 230, height: 20)]
+        func arrange(_ width: CGFloat) -> (origins: [CGPoint], size: CGSize) {
+            WrappingRow.arrange(sizes, width: width, spacing: 16, lineSpacing: 4)
+        }
+
+        let wide = arrange(2_000)
+        XCTAssertEqual(wide.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 538, y: 0)])
+        XCTAssertEqual(wide.size, CGSize(width: 768, height: 24))
+
+        // At the window's minimum width the last control starts a second line.
+        let minimum = arrange(600)
+        XCTAssertEqual(minimum.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 0, y: 28)])
+        XCTAssertEqual(minimum.size, CGSize(width: 522, height: 48))
+
+        // Narrower than any control, each has a line of its own, in order.
+        let narrow = arrange(100)
+        XCTAssertEqual(narrow.origins.map(\.x), [0, 0, 0, 0])
+        XCTAssertEqual(narrow.origins.map(\.y), [0, 28, 52, 76])
+        XCTAssertEqual(WrappingRow.arrange([], width: 100, spacing: 16, lineSpacing: 4).size, .zero)
+    }
+
+    /// Hosted, the choice to keep the list's books on this Mac is a third
+    /// checkbox, shown only while the library is in the cloud, and checked as
+    /// the choice stands; outside the cloud the bar holds the two checkboxes
+    /// it always held. Read from the AppKit buttons, in layout order, as
+    /// `testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints` reads
+    /// them.
+    @MainActor
+    func testTheKeepChoiceIsShownOnlyInACloudLibrary() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        for (inCloud, keeps) in [(false, true), (true, true), (true, false)] {
+            let bar = ReadingListOptionsBar(
+                continuation: .playBookBelow,
+                skipsFinished: true,
+                removesFinished: false,
+                keepsBooks: keeps,
+                showsKeepChoice: inCloud,
+                chooseContinuation: { _ in },
+                chooseSkipsFinished: { _ in },
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
+            )
+            withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
+                let checkboxes = Self.checkboxes(in: hostingView, test: self)
+                XCTAssertEqual(checkboxes.count, inCloud ? 3 : 2, "in the cloud: \(inCloud)")
+                if inCloud {
+                    XCTAssertEqual(checkboxes.last?.state, keeps ? .on : .off)
+                }
+            }
+        }
     }
 
     /// Hosted, the picker is a pop-up button VoiceOver reads by its label,
     /// "When a book ends", with the option chosen as its value and its
-    /// hint, for each option; and the checkbox is checked while finished
-    /// books are skipped. SwiftUI exposes the pop-up button to
-    /// accessibility in a hosted window, but not the checkbox, whose state
-    /// is read here from the AppKit button behind it; its label and hint
-    /// are pinned by `testTheOptionsBarsWordsArePinned`.
+    /// hint, for each option; and each checkbox is checked while its option
+    /// is on. SwiftUI exposes the pop-up button to accessibility in a hosted
+    /// window, but not the checkboxes, whose states are read here from the
+    /// AppKit buttons behind them, in the order the bar lays them out
+    /// (Skip finished books, then Remove books when finished); their labels
+    /// and hints are pinned by `testTheOptionsBarsWordsArePinned`.
     @MainActor
     func testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
-        let choices: [(ReadingList.Continuation, Bool)] = [(.playBookBelow, true), (.playBookAbove, false), (.stop, true)]
-        for (continuation, skipsFinished) in choices {
+        let choices: [(ReadingList.Continuation, Bool, Bool)] = [
+            (.playBookBelow, true, false), (.playBookAbove, false, true), (.stop, true, true), (.stop, false, false),
+        ]
+        for (continuation, skipsFinished, removesFinished) in choices {
             let bar = ReadingListOptionsBar(
                 continuation: continuation,
                 skipsFinished: skipsFinished,
+                removesFinished: removesFinished,
+                keepsBooks: true,
+                showsKeepChoice: false,
                 chooseContinuation: { _ in },
-                chooseSkipsFinished: { _ in }
+                chooseSkipsFinished: { _ in },
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
             )
             try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
                 let picker = try XCTUnwrap(Self.picker(in: accessibleControls(in: hostingView)), "\(continuation)")
@@ -779,8 +867,10 @@ final class ReadingListViewTests: XCTestCase {
                 XCTAssertEqual(picker.element.accessibilityValue() as? String, continuation.title)
                 XCTAssertEqual(picker.hint, ReadingListWording.continuationHint)
 
-                let checkbox = try XCTUnwrap(Self.checkbox(in: hostingView, test: self), "\(continuation)")
-                XCTAssertEqual(checkbox.state, skipsFinished ? .on : .off, "\(continuation)")
+                let checkboxes = Self.checkboxes(in: hostingView, test: self)
+                XCTAssertEqual(checkboxes.count, 2, "\(continuation)")
+                XCTAssertEqual(checkboxes.first?.state, skipsFinished ? .on : .off, "skip finished, \(continuation)")
+                XCTAssertEqual(checkboxes.last?.state, removesFinished ? .on : .off, "remove finished, \(continuation)")
             }
         }
     }
@@ -810,12 +900,12 @@ final class ReadingListViewTests: XCTestCase {
         controls.first { $0.role == .popUpButton && $0.label == ReadingListWording.continuationLabel }
     }
 
-    /// The AppKit button behind the options bar's checkbox in `view`, whose
-    /// state is the checkbox's: the bar's one button that is not the pop-up
-    /// button.
+    /// The AppKit buttons behind the options bar's checkboxes in `view`,
+    /// whose states are the checkboxes', in the order the bar lays them out:
+    /// the bar's buttons that are not the pop-up button.
     @MainActor
-    private static func checkbox(in view: NSView, test: XCTestCase) -> NSButton? {
-        test.descendants(of: view, as: NSButton.self).first { !($0 is NSPopUpButton) }
+    private static func checkboxes(in view: NSView, test: XCTestCase) -> [NSButton] {
+        test.descendants(of: view, as: NSButton.self).filter { !($0 is NSPopUpButton) }
     }
 
     // MARK: - Fixtures

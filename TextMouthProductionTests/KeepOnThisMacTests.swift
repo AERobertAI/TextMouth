@@ -76,6 +76,31 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, damaged, "the preserved copy changed")
     }
 
+    /// A damaged choice file reads the choice as on, so the reading list's
+    /// books stay kept, and the log line says that, not that no book is kept,
+    /// which is what a damaged file of kept books does.
+    func testADamagedChoiceFileSaysWhatReallyHappens() throws {
+        let folder = try makeSandboxDirectory("KeepChoiceDamaged")
+        let file = folder.appendingPathComponent("Keep Reading List Books.json")
+        try Data("{\"keepsReadingL".utf8).write(to: file)
+
+        let kept = KeptBooks(file: nil, settingFile: file)
+        kept.setReadingListBooks([UUID()])
+
+        XCTAssertTrue(kept.keepsReadingListBooks, "an unreadable choice file did not read as on")
+        XCTAssertTrue(kept.keepsAnyBook, "the reading list's books are not kept")
+        let lines = debugLogLines(containing: "could not read Keep Reading List Books.json")
+        XCTAssertTrue(
+            lines.contains {
+                $0.contains(
+                    "the choice reads as on, so the reading list's books stay kept on this Mac until it is cleared again"
+                )
+            },
+            "\(lines)"
+        )
+        XCTAssertFalse(lines.contains { $0.contains("no book is kept on this Mac") }, "\(lines)")
+    }
+
     /// Keeping and stopping report the books they changed, and change
     /// nothing, writing nothing, for books already as asked.
     func testKeepingAndStoppingReportWhatChanged() throws {
@@ -646,6 +671,630 @@ final class KeepOnThisMacTests: XCTestCase {
             BookCloudError.keptOnThisMac.explanation(in: .dropbox),
             "The book is kept on this Mac, so its download can't be removed. Choose Stop Keeping on This Mac first."
         )
+    }
+
+    // MARK: - The Reading List's Books
+
+    /// The reading list's books are kept while this Mac keeps them, apart
+    /// from the books the listener kept: `contains` answers for the
+    /// listener's own choice alone, `isKept` for either reason. A book that
+    /// leaves the list stops being kept for it, a book the listener kept
+    /// themselves stays kept, and clearing the choice keeps no list book.
+    func testTheListsBooksAreKeptApartFromTheListenersOwn() {
+        let (listed, both, own) = (UUID(), UUID(), UUID())
+        let kept = KeptBooks(file: nil)
+        kept.keep([both, own])
+        kept.setReadingListBooks([listed, both])
+
+        XCTAssertTrue(kept.keepsReadingListBooks, "on until cleared")
+        XCTAssertEqual(kept.bookIDs, [both, own], "the list's books joined the listener's own choices")
+        XCTAssertTrue(kept.isKept(listed))
+        XCTAssertFalse(kept.contains(listed))
+        XCTAssertTrue(kept.isKeptOnlyForReadingList(listed))
+        XCTAssertTrue(kept.isKept(both))
+        XCTAssertFalse(kept.isKeptOnlyForReadingList(both), "the listener's own choice keeps it too")
+        XCTAssertTrue(kept.isKept(own))
+        XCTAssertFalse(kept.isKept(UUID()))
+        XCTAssertEqual(kept.count(of: [cloudTestBook(), cloudTestBook("Emma")]), 0)
+
+        // A book that leaves the list stops being kept for it; the
+        // listener's own keeps stay.
+        kept.setReadingListBooks([both])
+        XCTAssertFalse(kept.isKept(listed))
+        XCTAssertTrue(kept.isKept(both))
+        XCTAssertTrue(kept.isKept(own))
+
+        // Clearing the choice keeps no list book, and keeps the others.
+        kept.setReadingListBooks([listed, both])
+        kept.setKeepsReadingListBooks(false)
+        XCTAssertFalse(kept.isKept(listed))
+        XCTAssertTrue(kept.isKept(both))
+        XCTAssertTrue(kept.keepsAnyBook)
+    }
+
+    /// Stopping a keep leaves a book on the list kept for the list, and
+    /// counting the kept books counts both reasons once each.
+    func testStoppingAKeepLeavesAListBookKeptForTheList() {
+        let (first, second) = (cloudTestBook(), cloudTestBook("Emma"))
+        let kept = KeptBooks(file: nil)
+        kept.keep([first.id])
+        kept.setReadingListBooks([first.id, second.id])
+
+        XCTAssertEqual(kept.count(of: [first, second, cloudTestBook("Dracula")]), 2)
+        kept.stopKeeping([first.id])
+
+        XCTAssertFalse(kept.contains(first.id))
+        XCTAssertTrue(kept.isKept(first.id))
+        XCTAssertTrue(kept.isKeptOnlyForReadingList(first.id))
+        XCTAssertEqual(kept.count(of: [first, second]), 2)
+    }
+
+    /// The list's books never reach the file of kept books, which holds only
+    /// what the listener chose; the choice to keep them is saved apart,
+    /// beside it in this Mac's own folder, and read back by a new set. A
+    /// choice never made reads as on, and so does an unreadable file, which
+    /// is preserved beside itself.
+    func testOnlyTheChoiceIsSavedNeverTheListsBooks() throws {
+        let folder = try makeSandboxDirectory("KeptListChoice")
+        let file = folder.appendingPathComponent("Kept Books.json")
+        let settingFile = folder.appendingPathComponent("Keep Reading List Books.json")
+        let (listed, chosen) = (UUID(), UUID())
+
+        let kept = KeptBooks(file: file, settingFile: settingFile)
+        kept.setReadingListBooks([listed])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the list's books were saved")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: settingFile.path), "a choice never made was saved")
+        kept.keep([chosen])
+        kept.setReadingListBooks([listed, chosen])
+        XCTAssertEqual(KeptBooks(file: file, settingFile: settingFile).bookIDs, [chosen])
+        XCTAssertEqual(KeptBooks(file: file, settingFile: settingFile).readingListBookIDs, [])
+
+        kept.setKeepsReadingListBooks(false)
+        XCTAssertFalse(KeptBooks(file: file, settingFile: settingFile).keepsReadingListBooks)
+        kept.setKeepsReadingListBooks(true)
+        XCTAssertTrue(KeptBooks(file: file, settingFile: settingFile).keepsReadingListBooks)
+
+        try Data("not json".utf8).write(to: settingFile)
+        XCTAssertTrue(KeptBooks(file: file, settingFile: settingFile).keepsReadingListBooks)
+        XCTAssertEqual(KeptBooks(file: file, settingFile: settingFile).bookIDs, [chosen], "the kept books went with it")
+    }
+
+    /// The choice is saved in this Mac's own folder, beside the kept books,
+    /// never in the library or the reading list, which every Mac reads.
+    func testTheChoiceLivesBesideTheKeptBooksInThisMacsFolder() throws {
+        XCTAssertEqual(MachineLocalPaths.keepReadingListBooks.lastPathComponent, "Keep Reading List Books.json")
+        XCTAssertEqual(
+            MachineLocalPaths.keepReadingListBooks.deletingLastPathComponent(),
+            MachineLocalPaths.keptBooks.deletingLastPathComponent()
+        )
+        // The reading list, which the library saves for every Mac, carries
+        // nothing of it.
+        let saved = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: JSONEncoder().encode(ReadingList())) as? [String: Any]
+        )
+        XCTAssertEqual(Set(saved.keys), ["bookIDs", "continuation", "skipsFinished", "removesFinished"])
+    }
+
+    /// A list book that the sync service evicted downloads again after a
+    /// refresh, as a kept book does; with the choice cleared, or in a library
+    /// outside the cloud, nothing downloads. Nobody asked just then, so
+    /// VoiceOver hears one notice of it, at medium priority, the first time
+    /// and never again for the same book.
+    func testAnEvictedListBookDownloadsAgainAfterARefresh() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.setReadingListBooks([book.id])
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+        await waitUntil(fixture.states, records: .downloaded, for: book.id)
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
+
+        // Evicted again, it downloads again and says nothing more.
+        fixture.fake.setState(.inCloud, of: book.id)
+        fixture.states.record(.inCloud, for: book.id)
+        let saidAgain = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id, book.id])
+        XCTAssertEqual(saidAgain, [])
+    }
+
+    /// The notice's words, word for word: the books that start, in the
+    /// listener's own words or the quiet ones, and the books that found no
+    /// room.
+    func testTheReadingListDownloadNoticeIsWordedInOnePlace() {
+        let notice = LibraryCloudWording.readingListDownloadsStarted(titles:short:quietly:)
+        XCTAssertEqual(notice(["Moby-Dick"], 0, false), "Downloading Moby-Dick")
+        XCTAssertEqual(notice(["Moby-Dick"], 0, true), "Downloading Moby-Dick")
+        XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, false), "Downloading 2 books")
+        XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, true), "Downloading 2 reading list books")
+        XCTAssertEqual(
+            notice(["Moby-Dick", "Emma"], 3, true),
+            "Downloading 2 reading list books. There isn't enough free space for 3 more books"
+        )
+        XCTAssertEqual(
+            notice(["Moby-Dick"], 1, true),
+            "Downloading Moby-Dick. There isn't enough free space for 1 more book"
+        )
+        XCTAssertEqual(notice([], 1, true), "There isn't enough free space to download 1 reading list book")
+        XCTAssertEqual(notice([], 4, false), "There isn't enough free space to download 4 reading list books")
+    }
+
+    /// Only the list books that fit in the free space, less the reserve an
+    /// import leaves, start downloading; the notice says how many download
+    /// and that space ran short, once, at medium priority. A refresh that
+    /// finds the rest still short says nothing more, and they download,
+    /// quietly, once space is free.
+    func testOnlyTheListBooksThatFitStartDownloading() async {
+        let books = [cloudTestBook("One"), cloudTestBook("Two"), cloudTestBook("Three")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        for book in books {
+            fixture.fake.setBytesToDownload(400_000_000, of: book.id)
+        }
+        // Room for two of the three, with the reserve left over.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 900_000_000
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[1].id)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[1].id], "a book that did not fit downloaded")
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(
+                message: "Downloading 2 reading list books. There isn't enough free space for 1 more book",
+                priority: .medium
+            )]
+        )
+
+        // Still short: the two downloads took 800 MB of the 900 free, as they
+        // would on a real volume, so the third book still doesn't fit; the
+        // refresh tries it again and says nothing.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 100_000_000
+        let saidAgain = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+        XCTAssertEqual(saidAgain, [])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[1].id])
+
+        // Space is free again: the third book downloads, with no notice.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 5_000_000_000
+        let saidLast = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[2].id)
+        }
+        XCTAssertEqual(fixture.fake.downloadsStarted, books.map(\.id))
+        XCTAssertEqual(saidLast, [])
+    }
+
+    /// With less free than the reserve, no list book starts, whatever its
+    /// size, and the notice says so.
+    func testNoListBookStartsBelowTheReserve() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve - 1
+        fixture.kept.setReadingListBooks([book.id])
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(
+                message: "There isn't enough free space to download 1 reading list book",
+                priority: .medium
+            )]
+        )
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud, "the book showed a download that never started")
+    }
+
+    /// Clearing the choice keeps no list book downloaded, and a library
+    /// outside the cloud downloads nothing for the list.
+    func testNoListBookDownloadsWhenTheChoiceIsClearOrTheLibraryIsLocal() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.setReadingListBooks([book.id])
+        fixture.kept.setKeepsReadingListBooks(false)
+        XCTAssertNil(fixture.commands.downloadEvictedKeptBooks(in: fixture.model))
+
+        fixture.kept.setKeepsReadingListBooks(true)
+        fixture.fake.setLibraryLocation(.otherVolume(name: "Archive Disk"))
+        let refresher = makeRefresher(for: fixture)
+        await refresher.waitForRefreshes()
+
+        XCTAssertNil(fixture.commands.downloadEvictedKeptBooks(in: fixture.model))
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+    }
+
+    /// A list book whose download failed waits the kept books' five minutes
+    /// before a refresh tries it again, then downloads it.
+    func testAFailedListBookWaitsBeforeTheNextTry() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.setReadingListBooks([book.id])
+        fixture.fake.scriptDownload(of: book.id, steps: [], failingWith: .offline)
+        let failure = BookCloudError.offline.explanation(in: .iCloudDrive)
+
+        let refresher = makeRefresher(for: fixture)
+        await refresher.waitForRefreshes()
+        await waitUntil(fixture.states, records: .downloadFailed(failure), for: book.id)
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+
+        fixture.clock.advance(by: LibraryCloudCommands.keptBookRetryDelay - 1)
+        refresher.requestRefresh()
+        await refresher.waitForRefreshes()
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "tried again within the wait")
+
+        fixture.clock.advance(by: 1)
+        refresher.requestRefresh()
+        await refresher.waitForRefreshes()
+        await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id, book.id])
+    }
+
+    /// Remove Download refuses a list book with a sentence of its own, word
+    /// for word, that says it is on the reading list and how to let it go;
+    /// a book the listener kept says the older words, whether or not it is
+    /// on the list too.
+    func testRemoveDownloadRefusesAListBookInItsOwnWords() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.setReadingListBooks([book.id])
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(
+            refusal?.message,
+            "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed. "
+                + "Take it off the reading list, or clear Keep these books on this Mac in the Reading List's options first."
+        )
+        XCTAssertEqual(said, [], "the alert alone says it")
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+
+        // Kept by the listener too, it names both reasons at once, so the
+        // advice never leads to a second refusal.
+        fixture.kept.keep([book.id])
+        let again = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(
+            again?.message,
+            "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, "
+                + "so its download can't be removed. Choose Stop Keeping on This Mac first. "
+                + "Then take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+
+        // Following it: after Stop Keeping, the list's refusal is the one the
+        // first refusal ended on.
+        fixture.commands.stopKeeping([book], from: nil)
+        let last = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(last?.message, BookCloudError.keptForReadingList.explanation(in: .iCloudDrive))
+        XCTAssertTrue(
+            again?.message.hasSuffix(
+                "take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+            ) == true
+        )
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+    }
+
+    /// With the choice cleared, Remove Download takes a list book's download
+    /// away; the list keeps nothing.
+    func testRemoveDownloadWorksOnAListBookOnceTheChoiceIsClear() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.setReadingListBooks([book.id])
+        fixture.kept.setKeepsReadingListBooks(false)
+
+        let refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+
+        XCTAssertNil(refusal)
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [book.id])
+    }
+
+    /// Stop Keeping on This Mac is offered only for a book the listener's
+    /// own choice keeps; a book kept only for the list offers Keep on This
+    /// Mac, which would make the keep their own, and nothing to stop.
+    func testStopKeepingIsNotOfferedForAListBook() {
+        let book = cloudTestBook()
+        let states = BookCloudStates()
+        states.setLibraryLocation(.cloud(.iCloudDrive))
+        states.record(.downloaded, for: book.id)
+        let kept = KeptBooks(file: nil)
+        kept.setReadingListBooks([book.id])
+
+        func kinds() -> [LibraryCloudCommand.Kind] {
+            LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: kept.bookIDs).map(\.kind)
+        }
+        XCTAssertTrue(kinds().contains(.keepOnThisMac))
+        XCTAssertFalse(kinds().contains(.stopKeepingOnThisMac))
+
+        kept.keep([book.id])
+        XCTAssertTrue(kinds().contains(.stopKeepingOnThisMac))
+    }
+
+    /// Stop Keeping in the Library menu, on a book only the reading list
+    /// keeps, stops nothing and says so in words that agree with the book's
+    /// row ("Kept on this Mac"): it is kept for the reading list, and how to
+    /// let it go; never that it isn't kept.
+    func testTheMenuStopsNothingForAListBook() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.setReadingListBooks([book.id])
+
+        let said = await announcements {
+            fixture.commands.setKeptFromMenu(false, for: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(
+            said,
+            [
+                "Moby-Dick is kept on this Mac for the reading list. "
+                    + "To let it go, take it off the reading list, or clear Keep these books on this Mac in the Reading List's options.",
+            ]
+        )
+        XCTAssertTrue(fixture.kept.isKept(book.id))
+    }
+
+    /// The same refusal for a selection, word for word: all kept for the
+    /// list, some, and the plain words for a library outside the list's
+    /// keep.
+    func testTheMenusRefusalNamesTheReadingListsKeepForASelection() {
+        let refusal = { (titles: [String], onlyList: Int) in
+            LibraryCloudWording.keepMenuRefusal(
+                keeping: false,
+                selected: titles,
+                inCloudLibrary: true,
+                keptOnlyForReadingList: onlyList
+            )
+        }
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula"], 2),
+            "The 2 selected books are kept on this Mac for the reading list. "
+                + "To let them go, take them off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula", "Ulysses"], 2),
+            "None of the 3 selected books is kept on this Mac by your choice, and 2 are kept for the reading list. "
+                + "To let them go, take them off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula"], 1),
+            "None of the 2 selected books is kept on this Mac by your choice, and 1 is kept for the reading list. "
+                + "To let it go, take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(refusal(["Emma"], 0), "Emma isn't kept on this Mac.")
+    }
+
+    /// Stop Keeping on a book kept for both reasons stops the listener's own
+    /// keep and says the reading list still keeps it, since the book stays
+    /// kept; a selection says how many.
+    func testStopKeepingSaysWhenTheReadingListStillKeepsTheBook() async {
+        let book = cloudTestBook()
+        let plain = cloudTestBook("Emma")
+        let fixture = CommandFixture(books: [book, plain], states: [book.id: .downloaded, plain.id: .downloaded])
+        fixture.kept.keep([book.id, plain.id])
+        fixture.kept.setReadingListBooks([book.id])
+
+        let alone = await announcements { fixture.commands.stopKeeping([book], from: nil) }
+        XCTAssertEqual(alone, ["Stopped keeping Moby-Dick on this Mac. The reading list still keeps it downloaded"])
+        XCTAssertTrue(fixture.kept.isKept(book.id), "the list stopped keeping the book")
+        XCTAssertFalse(fixture.kept.contains(book.id))
+
+        fixture.kept.keep([book.id])
+        let both = await announcements { fixture.commands.stopKeeping([book, plain], from: nil) }
+        XCTAssertEqual(both, ["Stopped keeping 2 books on this Mac. The reading list still keeps 1 of them downloaded"])
+
+        // The words themselves.
+        XCTAssertEqual(
+            LibraryCloudWording.stoppedKeeping(titles: ["Emma", "Dracula"], stillKept: 2),
+            "Stopped keeping 2 books on this Mac. The reading list still keeps them downloaded"
+        )
+        XCTAssertEqual(LibraryCloudWording.stoppedKeeping(titles: ["Emma"]), "Stopped keeping Emma on this Mac")
+    }
+
+    /// A list book's row says "Kept on this Mac", as any kept book's does,
+    /// and the summary counts it, in a cloud library only; Book Information
+    /// adds the reason when the list alone keeps the book.
+    func testAListBooksRowAndInformationSayItIsKept() {
+        let book = cloudTestBook()
+        let kept = KeptBooks(file: nil)
+        kept.setReadingListBooks([book.id])
+        let states = BookCloudStates()
+
+        states.setLibraryLocation(.local)
+        XCTAssertFalse(states.listsAsKept(book.id, in: kept))
+        XCTAssertEqual(states.countKept([book], in: kept), 0)
+        states.setLibraryLocation(.cloud(.googleDrive))
+        XCTAssertTrue(states.listsAsKept(book.id, in: kept))
+        XCTAssertEqual(states.countKept([book], in: kept), 1)
+        XCTAssertTrue(states.listsAsKeptOnlyForReadingList(book.id, in: kept))
+        XCTAssertEqual(KeptOnThisMacNote.text, "Kept on this Mac")
+        XCTAssertEqual(KeptOnThisMacNote.forReadingListText, "Kept on this Mac for the reading list")
+
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        func spoken() -> [String] {
+            let facts = BookInfoFacts(
+                book,
+                library: library,
+                wordsPerMinute: 200,
+                cloudStates: states,
+                keptBooks: kept,
+                measuresFileSize: false
+            )
+            return LibraryInfoWording.fullParts(of: facts, now: Date(), calendar: Calendar.current, locale: Locale.current)
+        }
+        XCTAssertTrue(spoken().contains("Kept on this Mac for the reading list"))
+        XCTAssertFalse(spoken().contains("Kept on this Mac"))
+
+        // The listener's own keep says the plain words.
+        kept.keep([book.id])
+        XCTAssertTrue(spoken().contains("Kept on this Mac"))
+        XCTAssertFalse(spoken().contains("Kept on this Mac for the reading list"))
+    }
+
+    /// The library model hands the list's books to the kept books one turn
+    /// after the list changes, and downloads those only in the cloud,
+    /// quietly: a book that reached the list through a sync downloads here.
+    func testTheLibraryKeepsTheBooksThatReachTheList() async {
+        let book = cloudTestBook()
+        let other = cloudTestBook("Emma")
+        let fixture = CommandFixture(books: [book, other], states: [book.id: .inCloud, other.id: .inCloud])
+        fixture.model.cloudCommands = fixture.commands
+        fixture.model.observeReadingListKeeping()
+        await drainMainQueue()
+        XCTAssertEqual(fixture.kept.readingListBookIDs, [])
+
+        let said = await announcementsWithPriority {
+            fixture.model.library.readingList = ReadingList(bookIDs: [book.id])
+            await drainMainQueue()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
+
+        XCTAssertEqual(fixture.kept.readingListBookIDs, [book.id])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "a book not on the list downloaded")
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)],
+            "a sync's books download with one notice, at medium priority"
+        )
+
+        // A book taken off the list is no longer kept for it, and nothing
+        // is removed.
+        fixture.model.library.readingList = ReadingList()
+        await drainMainQueue()
+        XCTAssertEqual(fixture.kept.readingListBookIDs, [])
+        XCTAssertFalse(fixture.kept.isKept(book.id))
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+    }
+
+    /// A book the listener adds to the list in a cloud library downloads at
+    /// once, and only once when the library's observation follows. VoiceOver
+    /// hears the add's own words at high priority, then one notice of the
+    /// download at medium priority, which waits for them rather than cutting
+    /// them off (as the import's follow-up does), then the download's end as
+    /// Download Now's.
+    func testABookTheListenerAddsDownloadsUnderOneNoticeAfterTheAdd() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.model.cloudCommands = fixture.commands
+        fixture.model.observeReadingListKeeping()
+        await drainMainQueue()
+
+        let said = await announcementsWithPriority {
+            fixture.model.addToReadingList([book], announcingFrom: nil)
+            await drainMainQueue()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+            await drainMainQueue()
+        }
+
+        XCTAssertEqual(
+            Array(said.prefix(2)),
+            [
+                VoiceOverAnnouncement(
+                    message: ReadingListWording.addedAnnouncement(added: [book.title], alreadyIn: 0),
+                    priority: .high
+                ),
+                VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium),
+            ]
+        )
+        XCTAssertEqual(said.filter { $0.message.hasPrefix("Downloading") }.count, 1, "\(said)")
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "downloaded twice")
+    }
+
+    /// Adding books to the list checks the room as the refresh does: those
+    /// that fit download, and the notice says that space ran short.
+    func testAddingToTheListDownloadsOnlyWhatFits() async {
+        let books = [cloudTestBook("One"), cloudTestBook("Two")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.model.cloudCommands = fixture.commands
+        for book in books {
+            fixture.fake.setBytesToDownload(600_000_000, of: book.id)
+        }
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 700_000_000
+
+        let said = await announcementsWithPriority {
+            fixture.model.addToReadingList(books, announcingFrom: nil)
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[0].id)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id])
+        XCTAssertTrue(
+            said.contains(VoiceOverAnnouncement(
+                message: "Downloading One. There isn't enough free space for 1 more book",
+                priority: .medium
+            )),
+            "\(said)"
+        )
+    }
+
+    /// With the choice cleared, or outside the cloud, adding a book to the
+    /// list downloads nothing.
+    func testAddingToTheListDownloadsNothingWhenTheChoiceIsClearOrTheLibraryIsLocal() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.model.cloudCommands = fixture.commands
+        fixture.kept.setKeepsReadingListBooks(false)
+        XCTAssertNil(fixture.commands.downloadBooksAddedToReadingList([book], in: fixture.model, from: nil))
+
+        fixture.kept.setKeepsReadingListBooks(true)
+        fixture.states.setLibraryLocation(.local)
+        XCTAssertNil(fixture.commands.downloadBooksAddedToReadingList([book], in: fixture.model, from: nil))
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+    }
+
+    /// Turning the choice on keeps the list's books and downloads those only
+    /// in the cloud; turning it off removes nothing.
+    func testTurningTheChoiceOnDownloadsTheListsBooks() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.model.cloudCommands = fixture.commands
+        fixture.model.library.readingList = ReadingList(bookIDs: [book.id])
+        fixture.kept.setReadingListBooks([book.id])
+        fixture.kept.setKeepsReadingListBooks(false)
+
+        // Checking the box says what it starts, at medium priority, after
+        // VoiceOver's own "checked".
+        let said = await announcementsWithPriority {
+            fixture.model.setKeepsReadingListBooks(true)
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+        XCTAssertTrue(fixture.kept.keepsReadingListBooks)
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
+
+        fixture.model.setKeepsReadingListBooks(false)
+        XCTAssertFalse(fixture.kept.keepsReadingListBooks)
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
     }
 
     // MARK: - Helpers

@@ -50,6 +50,38 @@ enum ReadingListWording {
     /// The checkbox's hint: when it applies, and what it does.
     static let skipFinishedHint = "When a book opened from the reading list ends, pass over the books already finished"
 
+    /// The label of the options bar's checkbox for taking books off the list
+    /// as they are finished.
+    static let removeFinishedLabel = "Remove books when finished"
+
+    /// The checkbox's hint: when it applies, and what it does. It says that
+    /// only books finished from then on leave the list, so no one expects
+    /// the books already finished to go at once.
+    static let removeFinishedHint = "When a book is finished, take it off the reading list. "
+        + "Books finished before you turn this on stay on it. Books stay in the library."
+
+    /// The label of the options bar's checkbox for keeping the list's books
+    /// downloaded on this Mac, shown only while the library is in the cloud.
+    static let keepBooksLabel = "Keep these books on this Mac"
+
+    /// The checkbox's hint: what it does, and that the choice is this Mac's
+    /// own. Nothing is removed from this Mac by clearing it.
+    static let keepBooksHint = "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
+        + "This choice is this Mac's alone. Clearing it removes no download."
+
+    /// What lets a book go that this Mac keeps for the reading list: take it
+    /// off the list, or clear the options bar's keep choice, which keeps all
+    /// the list's books. "Take it off the reading list, or clear Keep these
+    /// books on this Mac in the Reading List's options" begins a sentence;
+    /// "take it off ..." follows one.
+    /// - Parameters:
+    ///   - plural: Whether it is about several books ("them").
+    ///   - capitalized: Whether the sentence begins with this advice.
+    static func letGoOfBooksAdvice(plural: Bool, capitalized: Bool) -> String {
+        let take = capitalized ? "Take" : "take"
+        return "\(take) \(plural ? "them" : "it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options"
+    }
+
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the

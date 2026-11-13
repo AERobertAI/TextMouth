@@ -282,6 +282,13 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// Remove Download refused: the book is kept on this Mac (Keep on This
     /// Mac, `KeptBooks`).
     case keptOnThisMac
+    /// Remove Download refused: the book is on the reading list, which this
+    /// Mac keeps downloaded in a cloud library (`KeptBooks`), and the
+    /// listener did not keep the book themselves.
+    case keptForReadingList
+    /// Remove Download refused: the listener keeps the book themselves, and
+    /// it is on the reading list too, so both must be let go.
+    case keptOnThisMacAndForReadingList
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
@@ -311,6 +318,13 @@ enum BookCloudError: Error, Equatable, Sendable {
         case .keptOnThisMac:
             return "The book is kept on this Mac, so its download can't be removed. "
                 + "Choose Stop Keeping on This Mac first."
+        case .keptForReadingList:
+            return "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed. "
+                + "\(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: true)) first."
+        case .keptOnThisMacAndForReadingList:
+            return "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, "
+                + "so its download can't be removed. Choose Stop Keeping on This Mac first. "
+                + "Then \(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: false))."
         case .removalFailed(let message):
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
@@ -345,9 +359,20 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// book waits to upload, and `.removalFailed` when the sync service
     /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
+    /// The bytes of `package` not on this Mac yet, as its files report their
+    /// sizes, read without downloading anything: what a download of it needs
+    /// room for. Nil when they cannot be told, such as a package that syncs
+    /// as one item and is only in the cloud, whose files are not listed, or
+    /// a file that reports no size.
+    func bytesToDownload(of package: BookPackage) -> Int64?
 }
 
 extension BookCloudStorage {
+    /// Storage that cannot tell a package's size says so.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        nil
+    }
+
     /// `state(of:)`, for storage that works out nothing from the location:
     /// the local placeholder below, and the test doubles.
     func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {
@@ -634,6 +659,14 @@ enum MachineLocalPaths {
     /// never reads, so it is kept here rather than in the data directory.
     static var keptBooks: URL {
         root.appendingPathComponent("Kept Books.json", isDirectory: false)
+    }
+
+    /// Whether this Mac keeps the reading list's books downloaded in a cloud
+    /// library (`KeptBooks.keepsReadingListBooks`): a choice of this Mac's
+    /// own, beside `keptBooks`, since another Mac sharing the library
+    /// decides for itself.
+    static var keepReadingListBooks: URL {
+        root.appendingPathComponent("Keep Reading List Books.json", isDirectory: false)
     }
 
     /// The hidden staging folders data-directory moves have begun and not yet

@@ -345,6 +345,29 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(steps.map(\.percent), [50, 100])
     }
 
+    /// A book needs room for the files not on this Mac yet, as they report
+    /// their sizes, read without downloading anything: the files already here
+    /// take none; a file still to come that reports no size makes the need
+    /// unknown (nil), which the reading list's downloads read as no bytes,
+    /// checked against the reserve alone; a book wholly here needs nothing.
+    func testABookNeedsTheBytesOfItsFilesNotYetHere() throws {
+        let book = try makePackage(["audio.m4b", "content.md", "cover.jpg"])
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.notDownloaded, bytes: 40), of: book["content.md"])
+        items.setStatus(managed(.downloaded, bytes: 5), of: book["cover.jpg"])
+        let storage = makeStorage()
+
+        XCTAssertEqual(storage.bytesToDownload(of: book.package), 940)
+        XCTAssertEqual(items.downloadRequests, [], "reading the need downloaded something")
+
+        items.setStatus(managed(.notDownloaded, bytes: 0), of: book["content.md"])
+        XCTAssertNil(storage.bytesToDownload(of: book.package), "a file without a size gave a figure")
+
+        items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.downloaded, bytes: 40), of: book["content.md"])
+        XCTAssertEqual(storage.bytesToDownload(of: book.package), 0)
+    }
+
     /// Offline, a book with files only in the cloud fails at once: nothing
     /// is asked for and nothing waits.
     func testAnOfflineMacFailsAtOnce() async throws {

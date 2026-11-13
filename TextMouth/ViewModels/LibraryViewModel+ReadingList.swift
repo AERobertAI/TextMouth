@@ -76,6 +76,9 @@ extension LibraryViewModel {
                 alreadyIn: chosen.filter { listedBefore.contains($0.id) }.count
             )
         VoiceOverAnnouncer.announce(message, from: window)
+        // In a cloud library the books added are kept on this Mac, and those
+        // only in the cloud download at once, as Download Now's do.
+        cloudCommands.downloadBooksAddedToReadingList(added, in: self, from: window)
         return message
     }
 
@@ -187,6 +190,156 @@ extension LibraryViewModel {
         editReadingList { list, _ in
             list.skipsFinished = skipsFinished
         }
+    }
+
+    /// Makes a book leave the reading list as soon as it is finished, or
+    /// not, and saves the choice; the choice already made saves nothing.
+    /// Turning it on takes off none of the books already finished: it acts
+    /// on books finished from then on (`removeFinishedBookFromReadingList`).
+    func setReadingListRemovesFinished(_ removesFinished: Bool) {
+        editReadingList { list, _ in
+            list.removesFinished = removesFinished
+        }
+    }
+
+    // MARK: - Keeping the Books on This Mac
+    //
+    // In a cloud library this Mac keeps the reading list's books downloaded
+    // (`KeptBooks`, the user, November 13, 2026), while the Reading List's
+    // "Keep these books on this Mac" is on, which it is until cleared. The
+    // set of books kept for the list is derived from the list each time the
+    // list changes, never stored.
+
+    /// Starts handing the reading list's books to `cloudCommands.kept` each
+    /// time the list changes, one turn of the main queue after the change,
+    /// then downloads the kept books only in the cloud, quietly
+    /// (`LibraryCloudCommands.downloadEvictedKeptBooks(in:)`): a book that
+    /// reached the list through a sync from another Mac downloads here. A
+    /// book the listener just added has been downloading since the turn
+    /// before, announced (`downloadBooksAddedToReadingList`), and is not
+    /// started twice. The library starts it once, with its other observers.
+    func observeReadingListKeeping() {
+        $library
+            .map { Set($0.readingList.bookIDs) }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] listed in
+                guard let self else { return }
+                cloudCommands.kept.setReadingListBooks(listed)
+                cloudCommands.downloadEvictedKeptBooks(in: self)
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Makes this Mac keep the reading list's books downloaded in a cloud
+    /// library, or not, and saves the choice in this Mac's own folder. Turning
+    /// it on downloads the list's books that are only in the cloud, those
+    /// that fit in the free space, and says once how many it is downloading
+    /// and whether some found no room
+    /// (`LibraryCloudCommands.downloadEvictedKeptBooks(in:)`); turning it off
+    /// removes nothing from this Mac.
+    func setKeepsReadingListBooks(_ keeps: Bool) {
+        cloudCommands.kept.setKeepsReadingListBooks(keeps)
+        if keeps {
+            // Turned on again, the choice tells what it starts as it did the
+            // first time.
+            cloudCommands.forgetReadingListDownloadNotices()
+            cloudCommands.downloadEvictedKeptBooks(in: self)
+        }
+    }
+
+    // MARK: - Removing Finished Books
+    //
+    // The reading list's "Remove books when finished" (the user, November
+    // 13, 2026). A book's end is told by `.bookDidFinish`
+    // (`ReadingStatsService.markBookFinished`), whether the book was opened
+    // from the list or not, and the list hears of it here.
+    //
+    // Two things decide when the book leaves the list:
+    //
+    // 1. The reader asks the list at once, in the same turn of the main
+    //    queue as the telling, which book follows
+    //    (`readingListContinuation(after:)`), and the list answers only for
+    //    a book it still holds. So the removal never happens within the
+    //    telling, but one turn of the main queue after it.
+    // 2. A reader that reads its book from the list and rests on it at its
+    //    end holds it (`holdFinishedBookOnReadingList(_:)`): the book is
+    //    still the list's for that reader, whose Rewind after the end, Play
+    //    at the end, and Next in Reading List all ask the list, and the
+    //    list overrides the book's own end rule (the user, October 7, 2026).
+    //    The book leaves when its readers have moved on to another book or
+    //    closed (`releaseFinishedBookFromReadingList(_:)`). A book with no
+    //    such reader, finished elsewhere (a feed item marked played, or a
+    //    book read from the library), leaves at once.
+
+    /// Starts hearing of finished books from `source`, whose end the
+    /// reading list then acts on (`removeFinishedBookFromReadingList`).
+    /// The library starts it once, with its other observers.
+    ///
+    /// The turn of the main queue the removal waits for is
+    /// `receive(on: DispatchQueue.main)`: Combine always schedules it
+    /// asynchronously, even when the notification is posted on the main
+    /// queue, as this one is.
+    func observeFinishedBooks(of source: ReadingStatsService = .shared) {
+        NotificationCenter.default.publisher(for: .bookDidFinish, object: source)
+            .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] bookID in self?.bookFinished(bookID) }
+            .store(in: &cancellables)
+    }
+
+    /// Acts on the end of the book `bookID`: when the list says to drop
+    /// finished books and holds it, the book leaves the list now, or, while
+    /// a reader rests on it from the list, when that reader leaves it
+    /// (`releaseFinishedBookFromReadingList(_:)`).
+    private func bookFinished(_ bookID: UUID) {
+        guard readingList.removesFinished, readingList.contains(bookID) else { return }
+        if readingListHoldCounts[bookID, default: 0] > 0 {
+            finishedBooksAwaitingRelease.insert(bookID)
+        } else {
+            removeFinishedBookFromReadingList(bookID)
+        }
+    }
+
+    /// A reader that reads the book `bookID` from the reading list rests on
+    /// it at its end: until the reader releases the book, the book is not
+    /// dropped from the list for being finished. Every hold is released
+    /// once (`releaseFinishedBookFromReadingList(_:)`). Made before the
+    /// reader tells the book's end, so the telling finds it.
+    func holdFinishedBookOnReadingList(_ bookID: UUID) {
+        readingListHoldCounts[bookID, default: 0] += 1
+    }
+
+    /// Lets go of a hold made by `holdFinishedBookOnReadingList(_:)`: its
+    /// reader moved on to another book or closed. When no reader holds the
+    /// book any more and it was finished while the list dropped finished
+    /// books, it leaves the list now (`removeFinishedBookFromReadingList`,
+    /// which asks the option again, so one cleared meanwhile keeps it).
+    func releaseFinishedBookFromReadingList(_ bookID: UUID) {
+        let remaining = readingListHoldCounts[bookID, default: 0] - 1
+        guard remaining <= 0 else {
+            readingListHoldCounts[bookID] = remaining
+            return
+        }
+        readingListHoldCounts[bookID] = nil
+        if finishedBooksAwaitingRelease.remove(bookID) != nil {
+            removeFinishedBookFromReadingList(bookID)
+        }
+    }
+
+    /// Takes the book `bookID`, just finished, off the reading list when the
+    /// list says to (`ReadingList.removesFinished`) and holds it, through
+    /// the removal Remove from Reading List makes
+    /// (`removeFromReadingList(_:)`), so it is saved as that is. Silent:
+    /// the end of the book says what it says, and a Reading List showing
+    /// changes by itself. A book not on the list, and any book while the
+    /// option is off, are left alone.
+    ///
+    /// - Returns: Whether the book was taken off the list.
+    @discardableResult
+    func removeFinishedBookFromReadingList(_ bookID: UUID) -> Bool {
+        guard readingList.removesFinished, readingList.contains(bookID) else { return false }
+        return !removeFromReadingList([bookID]).isEmpty
     }
 
     // MARK: - The Questions a Reader Asks

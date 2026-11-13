@@ -147,6 +147,11 @@ final class LibraryViewModel: ObservableObject {
     /// may be saved short of it (P07); a book counted once stays counted,
     /// even when read again. Tests give their own.
     var finishedBookIDs: @MainActor () -> Set<UUID> = { ReadingStatsService.shared.stats.finishedBookIDs }
+    /// The cloud commands that keep the reading list's books on this Mac in
+    /// a cloud library (`observeReadingListKeeping()`,
+    /// `setKeepsReadingListBooks(_:)`); tests give their own, over their
+    /// own kept books and cloud states.
+    var cloudCommands: LibraryCloudCommands = .shared
     /// Where readers are between checkpoints (TODO PERF11), which the rows
     /// and the summary bar show: `updateLiveReadingPosition` reports there
     /// instead of changing the library, so a playing reader no longer
@@ -380,6 +385,16 @@ final class LibraryViewModel: ObservableObject {
     /// (`feedItemRows(of:)`, `feedBook(withID:)`).
     let feedItemRowLookup = FeedItemRowLookup()
 
+    /// How many readers rest on each book they read from the reading list
+    /// and have finished: a book so held does not leave the list when it is
+    /// finished, but when its readers have moved on or closed
+    /// (`holdFinishedBookOnReadingList(_:)`). Not published: no view shows it.
+    var readingListHoldCounts: [UUID: Int] = [:]
+    /// Finished books the reading list is to drop (`ReadingList.removesFinished`)
+    /// that a reader holds, which leave the list when the last hold is
+    /// released (`releaseFinishedBookFromReadingList(_:)`).
+    var finishedBooksAwaitingRelease: Set<UUID> = []
+
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
     /// Shared config service used across extension files. Reached when
@@ -440,6 +455,10 @@ final class LibraryViewModel: ObservableObject {
         // Clear what the audio editor left in this Mac's caches when
         // TextMouth last ended with editors open, off the main thread.
         removeStaleAudioEditCachesInBackground()
+        // A book finished leaves the reading list when it says to.
+        observeFinishedBooks()
+        // The reading list's books are kept on this Mac in a cloud library.
+        observeReadingListKeeping()
         // The import overlay follows the import queue (FR10).
         observeImportActivity()
         // Speak Import Progress, from any window (FR10).

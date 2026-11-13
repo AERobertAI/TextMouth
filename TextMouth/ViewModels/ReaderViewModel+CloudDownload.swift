@@ -934,6 +934,10 @@ extension ReaderViewModel {
             return "the book is open"
         case .keptOnThisMac:
             return "the book is kept on this Mac"
+        case .keptForReadingList:
+            return "the book is kept on this Mac for the reading list"
+        case .keptOnThisMacAndForReadingList:
+            return "the book is kept on this Mac and for the reading list"
         case .packageMissing:
             return "the package is not on this Mac"
         }

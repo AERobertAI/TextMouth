@@ -86,28 +86,120 @@ enum LibraryCloudWording {
         return "\(keeping). Downloading \(which) now"
     }
 
+    // MARK: - The Reading List's Books
+
+    /// What VoiceOver hears, once, when this Mac starts downloading the
+    /// reading list's books in a cloud library, or finds no room for some
+    /// (the user, November 13, 2026: this Mac keeps them downloaded). It is
+    /// said at medium priority, so it waits for what the listener's own
+    /// command just said rather than cutting it off.
+    ///
+    /// "Downloading Moby-Dick" for one book, "Downloading 7 books" for
+    /// several; with `quietly`, the books came without a command of the
+    /// listener's (a first refresh after an update, the choice turned on, a
+    /// sync from another Mac), so the sentence names the list:
+    /// "Downloading 7 reading list books". Then, for the `short` books that
+    /// do not fit in the space free: "There isn't enough free space for 3
+    /// more books", or, when none starts, "There isn't enough free space to
+    /// download 3 reading list books".
+    /// - Parameters:
+    ///   - titles: The titles of the books starting to download.
+    ///   - short: How many more books were left out for want of space.
+    ///   - quietly: Whether no command of the listener's started them.
+    static func readingListDownloadsStarted(titles: [String], short: Int, quietly: Bool) -> String {
+        var sentences: [String] = []
+        if titles.count == 1, let title = titles.first {
+            sentences.append("Downloading \(title)")
+        } else if !titles.isEmpty {
+            let books = quietly ? "\(titles.count) reading list books" : CountWording.books(titles.count)
+            sentences.append("Downloading \(books)")
+        }
+        if short > 0 {
+            if titles.isEmpty {
+                let books = CountWording.phrase(short, singular: "reading list book", plural: "reading list books")
+                sentences.append("There isn't enough free space to download \(books)")
+            } else {
+                sentences.append("There isn't enough free space for \(short) more \(short == 1 ? "book" : "books")")
+            }
+        }
+        return sentences.joined(separator: ". ")
+    }
+
     /// What Stop Keeping on This Mac announces: "Stopped keeping Moby-Dick
     /// on this Mac" for one book, "Stopped keeping 3 books on this Mac" for
-    /// several.
-    static func stoppedKeeping(titles: [String]) -> String {
-        "Stopped keeping \(subject(titles)) on this Mac"
+    /// several; and, when the reading list keeps books among them
+    /// (`stillKept`, a count), that it does: "The reading list still keeps
+    /// it downloaded", "... them downloaded", or "... 2 of them downloaded".
+    /// The listener's choice is let go, but the list's keep is not theirs to
+    /// stop here.
+    static func stoppedKeeping(titles: [String], stillKept: Int = 0) -> String {
+        let stopped = "Stopped keeping \(subject(titles)) on this Mac"
+        guard stillKept > 0 else { return stopped }
+        let which: String
+        if titles.count == 1 {
+            which = "it"
+        } else if stillKept >= titles.count {
+            which = "them"
+        } else {
+            which = "\(stillKept) of them"
+        }
+        return "\(stopped). The reading list still keeps \(which) downloaded"
     }
 
     /// Why Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen
     /// in the Library menu for the books selected, `titles`, changed nothing:
     /// the library isn't in the cloud, no book is selected, or every one is
     /// already as asked.
-    static func keepMenuRefusal(keeping: Bool, selected titles: [String], inCloudLibrary: Bool) -> String {
+    ///
+    /// Stop Keeping names the books the reading list alone keeps
+    /// (`keptOnlyForReadingList`, a count among those selected): they are
+    /// kept, though not by the listener's choice, so it says so and how to
+    /// let them go, never that they aren't kept.
+    static func keepMenuRefusal(
+        keeping: Bool,
+        selected titles: [String],
+        inCloudLibrary: Bool,
+        keptOnlyForReadingList: Int = 0
+    ) -> String {
         guard inCloudLibrary else {
             return "The library isn't in a cloud folder, so its books are always on this Mac."
         }
         guard !titles.isEmpty else { return noBooksSelected }
+        if !keeping, keptOnlyForReadingList > 0 {
+            return stopKeepingRefusalForReadingListBooks(
+                selected: titles,
+                keptOnlyForReadingList: keptOnlyForReadingList
+            )
+        }
         if titles.count == 1, let title = titles.first {
             return keeping ? "\(title) is already kept on this Mac." : "\(title) isn't kept on this Mac."
         }
         return keeping
             ? "The \(titles.count) selected books are already kept on this Mac."
             : "None of the \(titles.count) selected books is kept on this Mac."
+    }
+
+    /// Why Stop Keeping on This Mac changed nothing when the reading list
+    /// keeps the selected books, `keptOnlyForReadingList` of them: they are
+    /// kept for the reading list, and the way to let them go. A selection
+    /// with others not kept at all says that none is kept by the listener's
+    /// choice.
+    private static func stopKeepingRefusalForReadingListBooks(
+        selected titles: [String],
+        keptOnlyForReadingList: Int
+    ) -> String {
+        let all = keptOnlyForReadingList >= titles.count
+        let plural = all ? titles.count > 1 : keptOnlyForReadingList > 1
+        let advice = ReadingListWording.letGoOfBooksAdvice(plural: plural, capitalized: false)
+        if titles.count == 1, let title = titles.first {
+            return "\(title) is kept on this Mac for the reading list. To let it go, \(advice)."
+        }
+        if all {
+            return "The \(titles.count) selected books are kept on this Mac for the reading list. To let them go, \(advice)."
+        }
+        let verb = keptOnlyForReadingList == 1 ? "is" : "are"
+        return "None of the \(titles.count) selected books is kept on this Mac by your choice, "
+            + "and \(keptOnlyForReadingList) \(verb) kept for the reading list. To let \(plural ? "them" : "it") go, \(advice)."
     }
 
     /// What Download Now announces once every book it started has ended:
