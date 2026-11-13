@@ -255,8 +255,14 @@ extension LibraryViewModel {
     /// from the app's preferences store, where the settings model writes it,
     /// each time it is asked, so every list, Move Book Up and Move Book
     /// Down, a drag, and Continue to Next Book follow a change at once.
+    /// The iPhone has no row for the setting and its rows show titles as
+    /// written, so its lists keep titles as written whatever is stored.
     var leadingArticles: LeadingArticles {
-        LeadingArticles.preference.read(from: TextMouthRuntime.current.preferences)
+        #if os(iOS)
+        return .partOfTitle
+        #else
+        return LeadingArticles.preference.read(from: TextMouthRuntime.current.preferences)
+        #endif
     }
 
     /// The title `book`'s row shows in place of its own under `articles`,
