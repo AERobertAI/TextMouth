@@ -30,11 +30,11 @@
 # code, but they are not in the tested binary.
 #
 # How long: one Release build of the app, its packages, and the tests, then
-# the tests, about 10 to 15 minutes on the development Mac; it needs about 3 GB
-# of disk in the build folder. It plays no sound. Run it under the heavy lock
+# the tests, 14 minutes on the development Mac on November 13, 2026 (129
+# tests in 14 seconds of that); the build folder takes 1.5 GB. It plays no sound. Run it under the heavy lock
 # when other agents work (python3 -I Scripts/agents/run_locked.py <name>
 # Scripts/test/release-goldens.sh), and unregister the app it builds afterwards
-# with `Scripts/test/run-area.py --clean` (naming the same --derived-data).
+# with lsregister -u on <derived data>/Build/Products/Release/TextMouth.app.
 #
 # Usage: Scripts/test/release-goldens.sh [-h|--help] [run-area.py options]
 #   Any option goes to Scripts/test/run-area.py (--dry-run, --derived-data DIR,

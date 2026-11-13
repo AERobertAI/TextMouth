@@ -118,7 +118,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (10 to 15 minutes; pass options through GOLDEN_ARGS)"
+	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (about 15 minutes; pass options through GOLDEN_ARGS)"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, and the Scripts/test tools in seconds, without building"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
