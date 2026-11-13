@@ -49,6 +49,16 @@ struct ContentAnalysisSummary: Sendable {
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`). Nil when the
     /// record names none, or names another book.
     let brailleFileCode: String?
+    /// The braille table the book's package record keeps for its braille
+    /// text (`Book.brailleTable`, FMT21), by its stored value, with the
+    /// liblouis version of this Mac's tables it was read under
+    /// (`brailleTableVersion`), which a row that lags behind a re-read of
+    /// the book with another braille code takes back: the record's whenever
+    /// it names one, as the braille file code is. Nil when the record names
+    /// none, or names another book.
+    let brailleTable: String?
+    /// The version that goes with `brailleTable` (`Book.brailleTableVersion`).
+    let brailleTableVersion: String?
 
     /// The record's encoding and who decided it, as one.
     var textEncodingRecord: TextEncodingRecord {
@@ -68,6 +78,8 @@ struct ContentAnalysisSummary: Sendable {
         textEncoding = committed.textEncoding
         textEncodingSource = committed.textEncodingSource
         brailleFileCode = committed.brailleFileCode
+        brailleTable = committed.brailleTable
+        brailleTableVersion = committed.brailleTableVersion
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -100,6 +112,9 @@ struct ContentAnalysisSummary: Sendable {
         textEncoding = takesEncoding ? record.textEncoding : nil
         textEncodingSource = takesEncoding ? record.textEncodingSource : nil
         brailleFileCode = isOwnRecord && recovered.format == .braille ? record.brailleFileCode : nil
+        let takesTable = isOwnRecord && recovered.format == .braille
+        brailleTable = takesTable ? record.brailleTable : nil
+        brailleTableVersion = takesTable ? record.brailleTableVersion : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -183,6 +198,13 @@ struct ContentAnalysisSummary: Sendable {
         }
         book.textEncodingRecord = .standing(row: book.textEncodingRecord, recorded: textEncodingRecord)
         book.brailleFileCode = BrailleFileCodeRecord.standing(row: book.brailleFileCode, recorded: brailleFileCode)
+        // The braille table, with its version, is the record's whenever the
+        // record names one: only a re-read of the book with another braille
+        // code (or an import) decides it, and it writes the record first.
+        if let brailleTable {
+            book.brailleTable = brailleTable
+            book.brailleTableVersion = brailleTableVersion
+        }
     }
 }
 

@@ -939,8 +939,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// library changes that row while the reader has the book open (TODO
     /// P10): where the book's files are, its editable metadata, what content
     /// analysis measured, the encoding its text file is read in, with who
-    /// decided it (encodingchoice), and the braille file characters its BRF
-    /// or BRL file is read in (braillecodes), so the reader's Book
+    /// decided it (encodingchoice), the braille file characters its BRF
+    /// or BRL file is read in (braillecodes), and the braille table its
+    /// braille is translated to print by, with the version of this Mac's
+    /// tables it was read under (FMT21), so the reader's Book
     /// Information shows a new choice and any reading of the file the
     /// reader makes uses it.
     ///
@@ -956,6 +958,8 @@ struct Book: Identifiable, Codable, Hashable {
         var analysis: ContentAnalysisFields
         var textEncoding: TextEncodingRecord
         var brailleFileCode: String?
+        var brailleTable: String?
+        var brailleTableVersion: String?
     }
 
     /// This book's library fields. Setting them changes exactly those
@@ -967,7 +971,9 @@ struct Book: Identifiable, Codable, Hashable {
                 metadata: editableMetadata,
                 analysis: contentAnalysisFields,
                 textEncoding: textEncodingRecord,
-                brailleFileCode: brailleFileCode
+                brailleFileCode: brailleFileCode,
+                brailleTable: brailleTable,
+                brailleTableVersion: brailleTableVersion
             )
         }
         set {
@@ -976,6 +982,8 @@ struct Book: Identifiable, Codable, Hashable {
             contentAnalysisFields = newValue.analysis
             textEncodingRecord = newValue.textEncoding
             brailleFileCode = newValue.brailleFileCode
+            brailleTable = newValue.brailleTable
+            brailleTableVersion = newValue.brailleTableVersion
         }
     }
 
@@ -1281,8 +1289,14 @@ struct Book: Identifiable, Codable, Hashable {
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
         // The braille table: the row's, or else the stored record's (FMT21).
-        info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
-        info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
+        // Its version is the row's, or else the stored record's only when
+        // that describes the same table: a book read again from one of this
+        // Mac's tables to a bundled one has no version, and keeps none of
+        // the Mac table's.
+        let storedTable = stored?.info.metadata.brailleTable
+        info.metadata.brailleTable = brailleTable ?? storedTable
+        info.metadata.brailleTableVersion = brailleTableVersion
+            ?? (info.metadata.brailleTable == storedTable ? stored?.info.metadata.brailleTableVersion : nil)
         // The braille file code (braillecodes): this write's own when it
         // decides anew, and otherwise the one that stands between the row
         // and the stored record, the record's whenever it names one.

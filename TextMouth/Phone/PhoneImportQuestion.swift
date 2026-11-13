@@ -60,6 +60,10 @@ struct PhoneImportQuestion: Equatable, Identifiable {
     /// archive's name without its extension; nil when the question has no
     /// field.
     let suggestedFolderName: String?
+    /// For a duplicate, the new copy's title, which the sheet names while
+    /// Replace Existing works (`DuplicateCopyWording.replacing(bookTitle:)`);
+    /// nil for any other question.
+    let duplicateTitle: String?
 
     /// The sheet for `decision`, whose words are `wording`; nil for a
     /// question the phone answers itself (`automaticAnswer(for:)`).
@@ -68,7 +72,8 @@ struct PhoneImportQuestion: Equatable, Identifiable {
         title = wording.title
         message = wording.message
         switch decision.kind {
-        case .duplicate:
+        case .duplicate(let duplicate):
+            duplicateTitle = duplicate.book.title
             // "Keep Both", "Replace Existing", "Cancel": the Mac's row, top
             // to bottom, the choice that removes nothing first.
             choices = [
@@ -83,6 +88,7 @@ struct PhoneImportQuestion: Equatable, Identifiable {
                 Choice(words: .declineFolder, action: .cancel),
             ]
             suggestedFolderName = batch.suggestedFolderName
+            duplicateTitle = nil
         case .originalFile, .transcriptionOffer:
             return nil
         }

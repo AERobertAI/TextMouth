@@ -64,7 +64,8 @@ struct ImportDecisionPresenter: ViewModifier {
                     ),
                     takesFocus: Self.userIsIn(window),
                     onAnswer: { answer in
-                        libraryViewModel.answerImportDecision(decision.id, with: answer)
+                        // Off the main actor where the answer takes long.
+                        await libraryViewModel.answerImportDecisionOffMain(decision.id, with: answer)
                     }
                 )
                 // Each question is a sheet's content of its own: its folder

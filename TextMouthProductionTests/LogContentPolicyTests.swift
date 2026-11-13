@@ -271,8 +271,9 @@ final class LogContentPolicyTests: XCTestCase {
         // listener chose in Book Information, or automatically (encodingchoice).
         "TEXT_ENCODING_GUESS", "TEXT_ENCODING_CHANGED",
         // A braille book read again with the braille file characters the listener chose in Book
-        // Information (braillecodes).
-        "BRAILLE_FILE_CODE_CHANGED",
+        // Information (braillecodes), and with the braille table (its braille code) the listener chose
+        // there.
+        "BRAILLE_FILE_CODE_CHANGED", "BRAILLE_TABLE_CHANGED",
         // The data directory: a move and what it waits for (TODO S04); a library found again, lost,
         // or back, a switch to another library, the library's identity and session lease, and the
         // files read once it is back (FR02).

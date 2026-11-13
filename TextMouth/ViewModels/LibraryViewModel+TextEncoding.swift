@@ -15,14 +15,25 @@ enum TextRereadChoice: Hashable, Sendable {
     /// A BRF or BRL braille book's file read with the braille file
     /// characters of this code.
     case brailleFileCode(BrailleFileCode)
+    /// A braille book's file read with this braille table, the braille code
+    /// its cells are translated to print by (`Book.brailleTable`, FMT21).
+    case brailleTable(BrailleTable)
+    /// A braille book's file read with these braille file characters and
+    /// this braille table together, one re-read for both: what Replace
+    /// Existing carries to a copy of the same file when the listener chose
+    /// both for the old copy in Book Information.
+    case brailleFileCodeAndTable(BrailleFileCode, BrailleTable)
 
     /// Whether Book Information offers `book` a choice of this kind: its
-    /// Text Encoding pop-up (`Book.offersTextEncodingChoice`), or its braille
-    /// file characters (`Book.offersBrailleFileCodeChoice`).
+    /// Text Encoding pop-up (`Book.offersTextEncodingChoice`), its braille
+    /// file characters (`Book.offersBrailleFileCodeChoice`), or its braille
+    /// code (`Book.offersBrailleTableChoice`).
     func isOffered(to book: Book) -> Bool {
         switch self {
         case .textEncoding: return book.offersTextEncodingChoice
         case .brailleFileCode: return book.offersBrailleFileCodeChoice
+        case .brailleTable: return book.offersBrailleTableChoice
+        case .brailleFileCodeAndTable: return book.offersBrailleFileCodeChoice && book.offersBrailleTableChoice
         }
     }
 
@@ -31,7 +42,47 @@ enum TextRereadChoice: Hashable, Sendable {
     var logTag: String {
         switch self {
         case .textEncoding: return LibraryViewModel.textEncodingChangedLogTag
-        case .brailleFileCode: return LibraryViewModel.brailleFileCodeChangedLogTag
+        case .brailleFileCode, .brailleFileCodeAndTable: return LibraryViewModel.brailleFileCodeChangedLogTag
+        case .brailleTable: return LibraryViewModel.brailleTableChangedLogTag
+        }
+    }
+}
+
+/// The work a book is marked as being read again for
+/// (`TextRereads.begin(_:for:)`), so the sentence that says why something
+/// waits names the work under way.
+enum TextRereadWork: Equatable, Sendable {
+    /// A text book read again in another encoding (Book Information's Text
+    /// Encoding pop-up).
+    case encoding
+    /// A BRF or BRL braille book read again with other braille file
+    /// characters (the Braille File Characters pop-up).
+    case brailleFileCode
+    /// A braille book read again with another braille code (the Braille
+    /// Code pop-up).
+    case brailleCode
+    /// A new copy taking the place of the book (Replace Existing), made
+    /// ready off the main actor, which may read it again in the old copy's
+    /// reading.
+    case replacement
+
+    /// The work a re-read of `choice` is.
+    init(_ choice: TextRereadChoice) {
+        switch choice {
+        case .textEncoding: self = .encoding
+        case .brailleFileCode: self = .brailleFileCode
+        case .brailleTable, .brailleFileCodeAndTable: self = .brailleCode
+        }
+    }
+
+    /// Why what would rewrite the text of the book titled `bookTitle` waits
+    /// while this work is under way, in full.
+    func refusal(bookTitle: String) -> String {
+        switch self {
+        case .encoding: return TextEncodingWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .brailleFileCode: return BrailleFileCodeWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .brailleCode: return BrailleCodeWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .replacement: return DuplicateCopyWording.replacingRefusal(bookTitle: bookTitle)
         }
     }
 }
@@ -112,13 +163,13 @@ extension LibraryViewModel {
         let busy = library.books.first { book in
             booksBeingReadAgain.contains(book.id) && (bookID == nil || book.id == bookID)
         }
-        // A braille book is only ever read again for its braille file
-        // characters, and any other book for its encoding, so its format
-        // says which re-read is under way.
+        // The work that marked the book names itself (a replacement, a
+        // braille code's re-read, ...). A book marked without one (the set
+        // assigned directly) is worded by its format: a braille book's by its
+        // braille file characters, any other book's by its encoding.
         return busy.map { book in
-            book.format == .braille
-                ? BrailleFileCodeWording.readingAgainRefusal(bookTitle: book.title)
-                : TextEncodingWording.readingAgainRefusal(bookTitle: book.title)
+            let work = textRereads.works[book.id] ?? (book.format == .braille ? .brailleFileCode : .encoding)
+            return work.refusal(bookTitle: book.title)
         }
     }
 
@@ -185,8 +236,8 @@ extension LibraryViewModel {
         }
         // The book is busy until its row has the new reading: whatever would
         // rewrite its text meanwhile waits (`readingAgainRefusal(of:)`).
-        booksBeingReadAgain.insert(bookID)
-        defer { booksBeingReadAgain.remove(bookID) }
+        textRereads.begin(bookID, for: TextRereadWork(choice))
+        defer { textRereads.end(bookID) }
         // Edit Text's session pauses, an editor made only for a session
         // there is, as Replace Existing makes one.
         let editor = textEditSessions.isEditing(bookID) ? bookTextEditor() : nil
@@ -211,15 +262,10 @@ extension LibraryViewModel {
             return .failure(reason)
         case let .readAgain(update, reading, keptCopy):
             applyTextCacheUpdate(update, atOnce: true)
-            // The debug log's line says what the record now decides, in the
+            // The debug log's lines say what the record now decides, in the
             // choice's own words.
-            switch choice {
-            case .textEncoding:
-                if let record = update.summary?.textEncodingRecord {
-                    DiagnosticLog.event(.storage, Self.textEncodingLogLine(title: book.title, record: record, keptCopy: keptCopy))
-                }
-            case .brailleFileCode(let code):
-                DiagnosticLog.event(.storage, Self.brailleFileCodeLogLine(title: book.title, code: code, keptCopy: keptCopy))
+            for line in Self.rereadLogLines(title: book.title, choice: choice, update: update, keptCopy: keptCopy) {
+                DiagnosticLog.event(.storage, line)
             }
             let announcement = TextEncodingWording.readAgainAnnouncement(
                 bookTitle: book.title, readingDescription: reading, keptCopy: keptCopy, stoppedEditing: wasEditing
@@ -315,20 +361,14 @@ extension LibraryViewModel {
             }
             updated.textEncodingRecord = chosen ?? .unrecorded
         case .brailleFileCode(let code):
-            // The file's pages read with the code chosen, whose refusal is
-            // the reader's own sentence; any other error passes on, as the
-            // encoding's does. The code is set by its id, North American
-            // Braille ASCII's included, never nil, so the record's decision
-            // stands over a row that lags behind it
-            // (`BrailleFileCodeRecord.standing(row:recorded:)`).
-            do {
-                try BrailleBookReader.requireReadable(book.bookFileURL, as: code)
-            } catch let error as BrailleFileError {
-                return .refused(BrailleFileCodeWording.notReadableRefusal(
-                    bookTitle: book.title, codeName: code.name, reason: error.localizedDescription
-                ))
-            }
-            updated.brailleFileCode = code.id
+            if let refusal = try settingBrailleFileCode(code, on: &updated, of: book) { return refusal }
+        case .brailleTable(let table):
+            settingBrailleTable(table, on: &updated)
+        case .brailleFileCodeAndTable(let code, let table):
+            // One re-read for both: the file checked in the code chosen, then
+            // both set on the book to be read again.
+            if let refusal = try settingBrailleFileCode(code, on: &updated, of: book) { return refusal }
+            settingBrailleTable(table, on: &updated)
         }
         // 2. Text TextMouth did not write, kept beside the new text, the
         // copies already there noted first.
@@ -351,6 +391,7 @@ extension LibraryViewModel {
             // encoding and who decided it, or the braille file characters.
             let decidedEncoding: TextEncodingRecord?
             let decidedCode: String?
+            let decidedTable: LibraryPersistenceService.BrailleTableDecision?
             switch choice {
             case .textEncoding:
                 // Automatic records its guess, if it made one, and that the
@@ -360,9 +401,22 @@ extension LibraryViewModel {
                 updated.textEncodingRecord = record
                 decidedEncoding = record
                 decidedCode = nil
+                decidedTable = nil
             case .brailleFileCode(let code):
                 decidedEncoding = nil
                 decidedCode = code.id
+                decidedTable = nil
+            case .brailleTable(let table):
+                // The table and the version it was read under, as the
+                // reading above recorded them on the book.
+                decidedEncoding = nil
+                decidedCode = nil
+                decidedTable = .init(table: table.id, version: updated.brailleTableVersion)
+            case .brailleFileCodeAndTable(let code, let table):
+                // Both, in the one write.
+                decidedEncoding = nil
+                decidedCode = code.id
+                decidedTable = .init(table: table.id, version: updated.brailleTableVersion)
             }
             // A file that went to the cloud meanwhile may have been read in
             // part, so nothing is committed from it.
@@ -374,7 +428,8 @@ extension LibraryViewModel {
                 movedPlaces: generated.movedPlaces,
                 pageReaderVersion: .some(generated.pageReaderVersion),
                 textEncoding: decidedEncoding,
-                brailleFileCode: decidedCode
+                brailleFileCode: decidedCode,
+                brailleTable: decidedTable
             ) else { throw CommitDropped() }
             // Which readers have the book open is asked now, at the commit,
             // as the batch asks it (`updateTextCache`): a reader opened while
@@ -404,6 +459,10 @@ extension LibraryViewModel {
                 }
             case .brailleFileCode(let code):
                 reading = code.name
+            case .brailleTable(let table):
+                reading = BrailleTableCatalog.description(ofTableID: table.id)
+            case .brailleFileCodeAndTable(let code, let table):
+                reading = "\(code.name), \(BrailleTableCatalog.description(ofTableID: table.id))"
             }
             return .readAgain(update, reading: reading, keptCopy: lastKept)
         } catch {
@@ -419,6 +478,40 @@ extension LibraryViewModel {
             )
             throw error
         }
+    }
+
+    /// Sets the braille file characters `code` on `updated`, the book to be
+    /// read again, after checking that the file's pages read with them: the
+    /// refusal is the reader's own sentence, and any other error passes on,
+    /// as the encoding's does. The code is set by its id, North American
+    /// Braille ASCII's included, never nil, so the record's decision stands
+    /// over a row that lags behind it (`BrailleFileCodeRecord.standing(row:recorded:)`).
+    /// - Returns: the refusal when the file is not braille in `code`, else nil.
+    private nonisolated static func settingBrailleFileCode(
+        _ code: BrailleFileCode, on updated: inout Book, of book: Book
+    ) throws -> TextReread? {
+        do {
+            try BrailleBookReader.requireReadable(book.bookFileURL, as: code)
+        } catch let error as BrailleFileError {
+            return .refused(BrailleFileCodeWording.notReadableRefusal(
+                bookTitle: book.title, codeName: code.name, reason: error.localizedDescription
+            ))
+        }
+        updated.brailleFileCode = code.id
+        return nil
+    }
+
+    /// Sets the braille table `table` on `updated`, the book to be read
+    /// again, as an import sets it: its stored value, and the liblouis
+    /// version of this Mac's tables for one of them
+    /// (`BrailleTableCatalog.versionToRecord(forTable:)`), so the reading
+    /// checks that the Mac's tables are the ones it was made with. Nothing
+    /// is checked beforehand: any braille translates to print in any table,
+    /// and a table that cannot be used (one a macOS update removed) fails the
+    /// reading, before anything is written.
+    private nonisolated static func settingBrailleTable(_ table: BrailleTable, on updated: inout Book) {
+        updated.brailleTable = table.id
+        updated.brailleTableVersion = BrailleTableCatalog.versionToRecord(forTable: table.id)
     }
 
     /// The record a choice of `option` gives `book`: the first identifier of
@@ -478,6 +571,34 @@ extension LibraryViewModel {
         return DuplicateReplacement.holdsUnwrittenText(bytes, of: book, hasher: access.hasher) ? bytes : nil
     }
 
+    /// The debug log's lines for the book titled `title` read again as
+    /// `choice` says, which `update` committed and which kept `keptCopy` of
+    /// text TextMouth did not write: a text book's
+    /// (`textEncodingLogLine(title:record:keptCopy:)`, none when the commit
+    /// recorded no encoding), or a braille book's, one for its braille file
+    /// characters (`brailleFileCodeLogLine(title:code:keptCopy:)`) and one
+    /// for its table (`brailleTableLogLine(title:table:keptCopy:)`), both
+    /// when both were chosen, the kept copy named in the first. One place
+    /// for the re-read of Book Information and the one Replace Existing
+    /// makes of the new copy (`DuplicateReplacement`).
+    nonisolated static func rereadLogLines(
+        title: String, choice: TextRereadChoice, update: TextCacheUpdate, keptCopy: URL?
+    ) -> [String] {
+        switch choice {
+        case .textEncoding:
+            return update.summary.map { [textEncodingLogLine(title: title, record: $0.textEncodingRecord, keptCopy: keptCopy)] } ?? []
+        case .brailleFileCode(let code):
+            return [brailleFileCodeLogLine(title: title, code: code, keptCopy: keptCopy)]
+        case .brailleTable(let table):
+            return [brailleTableLogLine(title: title, table: table, keptCopy: keptCopy)]
+        case .brailleFileCodeAndTable(let code, let table):
+            return [
+                brailleFileCodeLogLine(title: title, code: code, keptCopy: keptCopy),
+                brailleTableLogLine(title: title, table: table, keptCopy: nil),
+            ]
+        }
+    }
+
     /// The debug log's line for a book read again in another encoding: the
     /// title, the encoding it records and who decided it, and where text
     /// TextMouth did not write was kept, as
@@ -511,6 +632,18 @@ extension LibraryViewModel {
     /// other braille file characters.
     nonisolated static let brailleFileCodeChangedLogTag = "BRAILLE_FILE_CODE_CHANGED"
 
+    /// The debug log's line for a braille book read again with another
+    /// braille table (its braille code): the title, the stored value of the
+    /// table it records, and where text TextMouth did not write was kept, as
+    /// `BRAILLE_TABLE_CHANGED: Ledger: read again with en-ueb-g1.ctb`.
+    nonisolated static func brailleTableLogLine(title: String, table: BrailleTable, keptCopy: URL?) -> String {
+        "\(brailleTableChangedLogTag): \(title): read again with \(table.id)" + keptCopyClause(keptCopy)
+    }
+
+    /// The tag that begins the log line of a braille book read again with
+    /// another braille table.
+    nonisolated static let brailleTableChangedLogTag = "BRAILLE_TABLE_CHANGED"
+
     /// What a re-read's log line ends with: where text TextMouth did not
     /// write was kept, by the copy's name, as "; its earlier text was kept as
     /// content.md.edited-20261024T120000Z", or nothing when none was.
@@ -529,9 +662,10 @@ private struct CommitDropped: Error {}
 
 // MARK: - Re-reads Under Way
 
-/// The books whose text is being read again, in another encoding or with
-/// other braille file characters, app-wide: from the listener's confirmation
-/// until the library row has the new reading
+/// The books whose text is being read again, in another encoding, with
+/// other braille file characters, or with another braille code, or whose
+/// copy is being replaced by a new one, app-wide: from the listener's
+/// confirmation until the library row has the new reading
 /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`, which marks
 /// them through `LibraryViewModel.booksBeingReadAgain`). What would rewrite
 /// such a book's text waits for its re-read
@@ -553,8 +687,29 @@ final class TextRereads {
     var bookIDs: Set<UUID> = [] {
         didSet {
             begun &+= bookIDs.subtracting(oldValue).count
+            // The work of a book that is no longer being read again is forgotten.
+            if works.keys.contains(where: { !bookIDs.contains($0) }) {
+                works = works.filter { bookIDs.contains($0.key) }
+            }
             resumeWaitersWhoMayGoOn()
         }
+    }
+
+    /// What each book in `bookIDs` is being read again for, when the work
+    /// that marked it said (`begin(_:for:)`): the busy sentence names it
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`). A book marked without
+    /// (`bookIDs` set directly) has none, and is worded by its format.
+    private(set) var works: [UUID: TextRereadWork] = [:]
+
+    /// Marks the book `bookID` as being read again for `work`.
+    func begin(_ bookID: UUID, for work: TextRereadWork) {
+        works[bookID] = work
+        bookIDs.insert(bookID)
+    }
+
+    /// Marks the book `bookID` as no longer being read again.
+    func end(_ bookID: UUID) {
+        bookIDs.remove(bookID)
     }
 
     /// How many re-reads have begun, so a reader of a book's text can tell

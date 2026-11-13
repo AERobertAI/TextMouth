@@ -654,11 +654,19 @@ enum LibraryPersistenceService {
     /// between the latest state and the record
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`).
     ///
-    /// The book returned holds what the record now holds of both decisions,
-    /// the encoding and the braille file code, even when the latest state it
-    /// was merged into (a waiting snapshot, a lagging row) held others, so
-    /// the row that takes it catches up (the review of October 30, finding
-    /// 2).
+    /// `brailleTable` is the braille table the content.md was translated to
+    /// print with, and the liblouis version of this Mac's tables when it is
+    /// one of them, which a re-read of a braille book with another braille
+    /// code passes (`Book.brailleTable`, FMT21), so the record never holds
+    /// the new text beside the old table. Like the other two it is a
+    /// decision, which replaces the table the latest state holds; nil keeps
+    /// it.
+    ///
+    /// The book returned holds what the record now holds of the three
+    /// decisions, the encoding, the braille file code, and the braille table,
+    /// even when the latest state it was merged into (a waiting snapshot, a
+    /// lagging row) held others, so the row that takes it catches up (the
+    /// review of October 30, finding 2).
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
@@ -685,7 +693,8 @@ enum LibraryPersistenceService {
         editedText: EditedText? = nil,
         pageReaderVersion: String?? = nil,
         textEncoding: TextEncodingRecord? = nil,
-        brailleFileCode: String? = nil
+        brailleFileCode: String? = nil,
+        brailleTable: BrailleTableDecision? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -717,6 +726,13 @@ enum LibraryPersistenceService {
             // The braille file characters the new text was read in.
             if let brailleFileCode {
                 merged.brailleFileCode = brailleFileCode
+            }
+            // The braille table the new text was translated with, which the
+            // record takes from the row it is written from
+            // (`Book.bookInfo(replacing:...)`), with its version.
+            if let brailleTable {
+                merged.brailleTable = brailleTable.table
+                merged.brailleTableVersion = brailleTable.version
             }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
@@ -890,17 +906,30 @@ enum LibraryPersistenceService {
     }
 
     /// `book` with the decisions the record just written holds, its text
-    /// encoding and who decided it, and its braille file code, which a
-    /// merge into a lagging row or a waiting snapshot may not hold: the
-    /// record keeps the one that stands (`Book.bookInfo(replacing:...)`),
-    /// and a book returned to the library must say what was written, so
-    /// a rebuild's summary brings the row up to date (the review of
-    /// October 30, finding 2).
+    /// encoding and who decided it, its braille file code, and its braille
+    /// table with the version it was read under, which a merge into a lagging
+    /// row or a waiting snapshot may not hold: the record keeps the one that
+    /// stands (`Book.bookInfo(replacing:...)`), and a book returned to the
+    /// library must say what was written, so a rebuild's summary brings the
+    /// row up to date (the review of October 30, finding 2).
     private static func takingDecisions(of written: BookMetadata, into book: Book) -> Book {
         var book = book
         book.textEncodingRecord = written.textEncodingRecord
         book.brailleFileCode = written.brailleFileCode
+        book.brailleTable = written.brailleTable
+        book.brailleTableVersion = written.brailleTableVersion
         return book
+    }
+
+    /// The braille table a re-read of a braille book with another braille
+    /// code decides (`saveContentAnalysis`): the table's stored value, and
+    /// the liblouis version of this Mac's tables when it is one of them, nil
+    /// for a bundled table (`BrailleTableCatalog.versionToRecord(forTable:)`).
+    struct BrailleTableDecision: Equatable, Sendable {
+        /// The table's stored value (`Book.brailleTable`).
+        let table: String
+        /// The version the book is read under (`Book.brailleTableVersion`).
+        let version: String?
     }
 
     /// What changed about the content of `analyzed` by the time its analysis

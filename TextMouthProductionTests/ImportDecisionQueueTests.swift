@@ -86,6 +86,28 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(batch.folderPath, "Charts")
     }
 
+    /// One answer is carried out off the main actor at a time: the queue
+    /// marks the question being answered, refuses to mark a second until the
+    /// first ends, and settles and withdraws nothing by marking.
+    func testOneAnswerAtATimeIsCarriedOutOffTheMainActor() {
+        var queue = ImportDecisionQueue()
+        let first = Self.zipQuestion("First")
+        let second = Self.zipQuestion("Second")
+        queue.enqueue(first)
+        queue.enqueue(second)
+        XCTAssertNil(queue.answering)
+
+        XCTAssertTrue(queue.beginAnswering(first.id))
+        XCTAssertEqual(queue.answering, first.id)
+        XCTAssertFalse(queue.beginAnswering(second.id), "a second answer does not begin while the first is carried out")
+        XCTAssertEqual(queue.answering, first.id)
+
+        queue.endAnswering()
+        XCTAssertNil(queue.answering)
+        XCTAssertTrue(queue.beginAnswering(second.id))
+        XCTAssertEqual(queue.waiting.map(\.id), [first.id, second.id], "answering settles and withdraws nothing")
+    }
+
     /// Withdrawing takes the chosen questions, the one being asked included,
     /// keeps the rest in order, and does not count the withdrawn as settled;
     /// once the queue is empty the count starts again.

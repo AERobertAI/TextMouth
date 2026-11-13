@@ -46,16 +46,26 @@ enum TextEncodingCatalog {
 
     /// The catalog. When two encodings read a file alike, the guesser names
     /// the one that comes first here (KOI8-R before KOI8-U, Windows-1250
-    /// before ISO 8859-2, Mac Roman before Mac Cyrillic).
+    /// before ISO 8859-2 before Mac Central European, Mac Roman before Mac
+    /// Cyrillic). An entry's identifier is Core Foundation's canonical IANA
+    /// name for its encoding.
     static let entries: [Entry] = [
         // Western European. Windows-1252 is the default reading, here to be
         // named; ISO Latin 1 is read as it is, so it has no entry of its own.
         row("windows-1252", "Windows-1252 (Western European)"),
         row("macintosh", "Mac Roman (Western European)", tried: true),
         row("iso-8859-15", "ISO 8859-15 (Western European)", tried: true),
+        // The DOS code pages of the United States and Western Europe, which
+        // older text files from DOS and the Windows console still hold. Each
+        // is taken only when Foundation's guess names it (not always tried),
+        // and each is named apart, so the pop-up in Book Information offers
+        // both.
+        row("cp437", "CP437 (US DOS)"),
+        row("cp850", "CP850 (Western European DOS)"),
         // Central European.
         row("windows-1250", "Windows-1250 (Central European)", tried: true),
         row("iso-8859-2", "ISO 8859-2 (Central European)", tried: true),
+        row("x-mac-centraleurroman", "Mac Central European"),
         // Cyrillic.
         row("windows-1251", "Windows-1251 (Cyrillic)", tried: true),
         row("koi8-r", "KOI8-R (Russian)", tried: true),

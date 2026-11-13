@@ -25,9 +25,15 @@ struct LibraryBookInfoSheet: View {
     /// The Braille File Characters pop-up of a BRF or BRL braille book
     /// (braillecodes): the code its file is read with, and the re-read with
     /// another. Made for every book the sheet shows, cheaply, and shown only
-    /// for one that offers the choice. A book offers one pop-up at most, the
-    /// encoding's or this.
+    /// for one that offers the choice. A book offers the encoding's pop-up or
+    /// this one and the Braille Code pop-up, never the encoding's and one of
+    /// the braille pop-ups.
     @StateObject private var fileCode: BrailleFileCodeChoiceModel
+    /// The Braille Code pop-up of a braille book (FMT21): the table its text
+    /// is translated to print by, and the re-read with another. Made for
+    /// every book the sheet shows, cheaply (the tables are listed when the
+    /// sheet loads), and shown only for one that offers the choice.
+    @StateObject private var brailleCode: BrailleCodeChoiceModel
     @Environment(\.dismiss) private var dismiss
 
     init(book: Book, libraryViewModel: LibraryViewModel) {
@@ -38,18 +44,29 @@ struct LibraryBookInfoSheet: View {
         self._opened = State(initialValue: Self.values(title: book.title, author: book.author))
         self._encoding = StateObject(wrappedValue: TextEncodingChoiceModel(book: book, library: libraryViewModel))
         self._fileCode = StateObject(wrappedValue: BrailleFileCodeChoiceModel(book: book, library: libraryViewModel))
+        self._brailleCode = StateObject(wrappedValue: BrailleCodeChoiceModel(book: book, library: libraryViewModel))
     }
 
     /// Whether the book offers a re-read pop-up: the Text Encoding pop-up,
-    /// or the Braille File Characters pop-up.
+    /// the Braille File Characters pop-up, or the Braille Code pop-up.
     private var offersRereadChoice: Bool {
-        book.offersTextEncodingChoice || book.offersBrailleFileCodeChoice
+        book.offersTextEncodingChoice || book.offersBrailleFileCodeChoice || book.offersBrailleTableChoice
     }
 
-    /// Whether the book is being read again from either pop-up, which shows
+    /// The message the sheet's one line for a refusal shows: that of the
+    /// re-read pop-up used last, if it left one (`RereadFailureOrder`).
+    private var rereadFailureMessage: String? {
+        RereadFailureOrder.latest(among: [
+            (encoding.failureMessage, encoding.failureStamp),
+            (fileCode.failureMessage, fileCode.failureStamp),
+            (brailleCode.failureMessage, brailleCode.failureStamp),
+        ])
+    }
+
+    /// Whether the book is being read again from any pop-up, which shows
     /// the work indicator and keeps the sheet open until it ends.
     private var isReadingAgain: Bool {
-        encoding.isWorking || fileCode.isWorking
+        encoding.isWorking || fileCode.isWorking || brailleCode.isWorking
     }
 
     var body: some View {
@@ -69,10 +86,15 @@ struct LibraryBookInfoSheet: View {
                 LabeledContent("Format") {
                     Text(book.format.displayName)
                 }
-                // A braille book names its code (FMT21), which VoiceOver
-                // reads as "Braille Code, Unified English Braille,
-                // contracted (Grade 2)".
-                if let row = book.bookInfoBrailleCodeRow {
+                // A braille book names its code (FMT21) and offers others:
+                // VoiceOver reads "Unified English Braille, contracted
+                // (Grade 2), Braille Code, pop-up button". A braille book
+                // that offers no choice (a feed's item) keeps the plain row,
+                // which VoiceOver reads as "Braille Code, Unified English
+                // Braille, contracted (Grade 2)".
+                if book.offersBrailleTableChoice {
+                    BookRereadPopUp(model: brailleCode, label: BrailleCodeWording.bookInfoLabel, hint: BrailleCodeWording.popUpHint)
+                } else if let row = book.bookInfoBrailleCodeRow {
                     LabeledContent(row.label) {
                         Text(row.value)
                     }
@@ -107,10 +129,12 @@ struct LibraryBookInfoSheet: View {
             }
 
             // Why the last choice of an encoding, or of braille file
-            // characters, changed nothing, and the re-read under way
-            // (encodingchoice, braillecodes). A book shows one pop-up at
-            // most, so only that pop-up's model has a message to show.
-            OperationFailureNotice(message: encoding.failureMessage ?? fileCode.failureMessage)
+            // characters, or of a braille code, changed nothing, and the
+            // re-read under way (encodingchoice, braillecodes). Only the
+            // pop-up that was used last has a message to show, its own: a
+            // new choice or re-read in either braille pop-up clears the
+            // other's older one.
+            OperationFailureNotice(message: rereadFailureMessage)
             if isReadingAgain {
                 SheetWorkIndicator(label: TextEncodingWording.workingLabel)
             }
@@ -155,12 +179,16 @@ struct LibraryBookInfoSheet: View {
             // What the file is read in, worked out off the main actor, so the
             // sheet never waits on a large file; and the braille file
             // characters the book's record keeps, which stand over a row
-            // that lags behind a re-read. A book offers one at most.
+            // that lags behind a re-read; and the braille tables this Mac
+            // offers, whose headers take a moment to read.
             if book.offersTextEncodingChoice {
                 await encoding.load()
             }
             if book.offersBrailleFileCodeChoice {
                 await fileCode.load()
+            }
+            if book.offersBrailleTableChoice {
+                await brailleCode.load()
             }
         }
     }

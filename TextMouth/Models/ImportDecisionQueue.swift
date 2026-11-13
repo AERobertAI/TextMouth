@@ -18,6 +18,11 @@ struct ImportDecisionQueue {
     private(set) var waiting: [ImportDecision] = []
     /// How many questions were settled since the queue was last empty.
     private(set) var settledCount = 0
+    /// The question whose answer is being carried out off the main actor
+    /// (Replace Existing of a long braille book), nil while none is. No other
+    /// answer acts meanwhile, so one question is never answered twice, nor
+    /// settled by an answer that began for another.
+    private(set) var answering: ImportDecision.ID?
 
     /// The question being asked, or nil when none is waiting.
     var current: ImportDecision? { waiting.first }
@@ -36,6 +41,22 @@ struct ImportDecisionQueue {
     /// Queues `decision` behind every question waiting.
     mutating func enqueue(_ decision: ImportDecision) {
         waiting.append(decision)
+    }
+
+    /// Marks the question `id` as being answered off the main actor.
+    ///
+    /// - Returns: Whether it was marked; false when an answer is already
+    ///   being carried out, which stands.
+    @discardableResult
+    mutating func beginAnswering(_ id: ImportDecision.ID) -> Bool {
+        guard answering == nil else { return false }
+        answering = id
+        return true
+    }
+
+    /// Ends the answer being carried out off the main actor, whatever came of it.
+    mutating func endAnswering() {
+        answering = nil
     }
 
     /// Settles the question being asked and, when its answer raised

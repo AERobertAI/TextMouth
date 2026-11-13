@@ -8,24 +8,48 @@ import SwiftUI
 /// It can't be swiped away: only an answer settles it, and its Cancel is the
 /// question's own (`interactiveDismissDisabled`). What it shows is decided by
 /// `PhoneImportQuestion`; this view only lays it out and passes the answer.
+///
+/// An answer can take a while (Replace Existing reads a long braille book
+/// again, off the main actor): the choices are dimmed until it is done, so
+/// none is given twice, and a spinner beside "Replacing ..." shows that the
+/// sheet is working.
 struct PhoneImportQuestionSheet: View {
     /// What the sheet shows.
     let question: PhoneImportQuestion
-    /// Answers the question, and says what happened.
-    let onAnswer: (ImportDecisionAnswer) -> OperationOutcome
+    /// Answers the question, off the main actor where that takes long, and
+    /// says what happened.
+    let onAnswer: @MainActor (ImportDecisionAnswer) async -> OperationOutcome
 
     /// The folder name field's text, at first the archive's name.
     @State private var folderName: String
     /// Why the last answer failed, shown above the choices.
     @State private var failureMessage: String?
+    /// Whether an answer is being carried out: the choices are dimmed until
+    /// it is done.
+    @State private var isAnswering = false
+    /// What the sheet says while the answer is Replace Existing, the one
+    /// answer that takes a while; nil for any other.
+    @State private var workLabel: String?
     /// Whether VoiceOver's focus is on the question's text, where it lands.
     @AccessibilityFocusState private var isMessageFocused: Bool
 
     /// The sheet for `question`, answered through `onAnswer`.
-    init(question: PhoneImportQuestion, onAnswer: @escaping (ImportDecisionAnswer) -> OperationOutcome) {
+    init(question: PhoneImportQuestion, onAnswer: @escaping @MainActor (ImportDecisionAnswer) async -> OperationOutcome) {
         self.question = question
         self.onAnswer = onAnswer
         _folderName = State(initialValue: question.suggestedFolderName ?? "")
+    }
+
+    /// Gives `answer` to the question: the choices are dimmed and the last
+    /// failure cleared while it is carried out, then the failure it ends in,
+    /// if any, is shown and spoken (`OperationFailureNotice.run`).
+    private func give(_ answer: ImportDecisionAnswer) {
+        guard !isAnswering else { return }
+        workLabel = answer == .replaceExisting
+            ? question.duplicateTitle.map { DuplicateCopyWording.replacing(bookTitle: $0) }
+            : nil
+        let onAnswer = onAnswer
+        OperationFailureNotice.run({ await onAnswer(answer) }, isWorking: $isAnswering, failureMessage: $failureMessage)
     }
 
     var body: some View {
@@ -44,11 +68,14 @@ struct PhoneImportQuestionSheet: View {
                 }
                 Section {
                     OperationFailureNotice(message: failureMessage)
+                    if isAnswering, let workLabel {
+                        SheetWorkIndicator(label: workLabel)
+                    }
                     ForEach(question.choices) { choice in
                         Button(choice.words.title) {
-                            failureMessage = OperationFailureNotice.message(after: onAnswer(choice.answer(folderName: folderName)))
+                            give(choice.answer(folderName: folderName))
                         }
-                        .disabled(!question.isEnabled(choice, folderName: folderName))
+                        .disabled(isAnswering || !question.isEnabled(choice, folderName: folderName))
                         .accessibilityLabel(choice.words.title)
                         .accessibilityHint(choice.words.hint)
                     }

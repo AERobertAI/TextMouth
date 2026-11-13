@@ -227,21 +227,91 @@ extension LibraryViewModel {
     ///   question waits for one once the move ends.
     @discardableResult
     func answerImportDecision(_ id: ImportDecision.ID, with answer: ImportDecisionAnswer) -> OperationOutcome {
+        switch decisionToAnswer(id, with: answer) {
+        case .settled(let outcome):
+            return outcome
+        case .answer(let decision):
+            return carryOut(answer, to: decision)
+        }
+    }
+
+    /// Answers the question `id` with `answer` as `answerImportDecision(_:with:)`
+    /// does, but off the main actor for the one answer that can take long:
+    /// Replace Existing of a duplicate, which first reads a long braille book
+    /// again in the braille file characters of the copy it replaces
+    /// (`DuplicateReplacement.prepare`), seconds of translation that would
+    /// freeze every window and VoiceOver's focus if the main actor did them.
+    /// The question stays while the work runs, marked as being answered
+    /// (`ImportDecisionQueue.answering`), so no other answer acts on it, and
+    /// the book is marked as being read again (`booksBeingReadAgain`), so
+    /// what would rewrite its text waits and a quit waits for the work. Every
+    /// other answer is carried out at once, as the synchronous form does.
+    ///
+    /// The sheets that show the question call this form, and wait for its
+    /// outcome with their buttons dimmed.
+    ///
+    /// - Parameter prepare: Makes the new copy ready to take the old copy's
+    ///   place (`replacementPreparer`); a test passes its own to see where
+    ///   the work runs.
+    func answerImportDecisionOffMain(
+        _ id: ImportDecision.ID,
+        with answer: ImportDecisionAnswer,
+        prepare: @escaping ReplacementPreparer = LibraryViewModel.replacementPreparer
+    ) async -> OperationOutcome {
+        switch decisionToAnswer(id, with: answer) {
+        case .settled(let outcome):
+            return outcome
+        case .answer(let decision):
+            guard answer == .replaceExisting, case .duplicate(let duplicate) = decision.kind else {
+                return carryOut(answer, to: decision)
+            }
+            return await replaceExistingOffMain(with: duplicate, of: decision, prepare: prepare)
+        }
+    }
+
+    /// What an answer comes to before it acts.
+    private enum AnswerGate {
+        /// The answer acts on nothing, and this is its outcome: the question
+        /// is no longer being asked, the library moves, or another answer is
+        /// being carried out.
+        case settled(OperationOutcome)
+        /// The answer acts on this question, the one being asked.
+        case answer(ImportDecision)
+    }
+
+    /// The question `id` an answer `answer` acts on, or the outcome of an
+    /// answer that acts on none.
+    ///
+    /// - An answer to a question that is not being asked, or that does not
+    ///   take it, does nothing and succeeds, so it can never land on the
+    ///   next question.
+    /// - No answer acts while the library moves. A window shows one sheet
+    ///   at a time, so a Library window already asking this question when
+    ///   the move began keeps asking it instead of showing the move, and
+    ///   its answer would change the library as it is copied: Replace
+    ///   Existing, for one, would delete the library's copy from the old
+    ///   data directory after the copy took it, leaving a stray package in
+    ///   the new one. The question stays, to be answered once the move ends.
+    /// - No answer acts while another is being carried out off the main
+    ///   actor (`answerImportDecisionOffMain(_:with:prepare:)`): the
+    ///   question stays, saying so.
+    private func decisionToAnswer(_ id: ImportDecision.ID, with answer: ImportDecisionAnswer) -> AnswerGate {
         guard let decision = importDecisions.current,
               decision.id == id,
               answer.fits(decision.kind) else {
-            return .success(nil)
+            return .settled(.success(nil))
         }
-        // No answer acts while the library moves. A window shows one sheet
-        // at a time, so a Library window already asking this question when
-        // the move began keeps asking it instead of showing the move, and
-        // its answer would change the library as it is copied: Replace
-        // Existing, for one, would delete the library's copy from the old
-        // data directory after the copy took it, leaving a stray package in
-        // the new one. The question stays, to be answered once the move ends.
         guard dataDirectoryMove == nil else {
-            return .failure(DataDirectoryMoveWording.importAnswerRefusal)
+            return .settled(.failure(DataDirectoryMoveWording.importAnswerRefusal))
         }
+        guard importDecisions.answering == nil else {
+            return .settled(.failure(DuplicateCopyWording.answerUnderWay))
+        }
+        return .answer(decision)
+    }
+
+    /// Carries out `answer` to `decision`, the question being asked, at once.
+    private func carryOut(_ answer: ImportDecisionAnswer, to decision: ImportDecision) -> OperationOutcome {
         switch decision.kind {
         case .duplicate(let duplicate):
             return settle(duplicate, of: decision, with: answer)
@@ -417,25 +487,154 @@ extension LibraryViewModel {
         with duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision
     ) -> OperationOutcome {
+        switch startReplacing(with: duplicate, of: decision) {
+        case .settled(let outcome):
+            return outcome
+        case .prepare(let existing):
+            let copy = duplicate.book
+            let prepared = Result { try Self.replacementPreparer(existing, copy) }
+            return finishReplacing(existing, prepared: prepared, with: duplicate, of: decision)
+        }
+    }
+
+    /// Answers Replace Existing as `replaceExisting(with:of:)` does, but with
+    /// the new copy made ready off the main actor
+    /// (`answerImportDecisionOffMain(_:with:prepare:)`). Everything that
+    /// reads or changes the library's rows stays on the main actor, before
+    /// and after the wait; the wait is only the work on the new copy's
+    /// package and the old copy's files, which touches neither.
+    ///
+    /// While it waits the question is marked as being answered, and the
+    /// library's copy as being read again, so what would rewrite its text,
+    /// a reader opening it, and a quit all wait for it. When it ends,
+    /// nothing may have changed under it: the question must still be the one
+    /// being asked, the library must not be moving, the library's copy must
+    /// be the row the work was made from, and the copy must still be free
+    /// to replace (`replacementRefusal(of:)`). If any of that fails, the new
+    /// copy is put back as its import published it, and the question stays,
+    /// saying why.
+    private func replaceExistingOffMain(
+        with duplicate: ImportDecision.DuplicateBook,
+        of decision: ImportDecision,
+        prepare: @escaping ReplacementPreparer
+    ) async -> OperationOutcome {
+        if let refusal = refusalToKeep(duplicate) {
+            return refusal
+        }
+        switch startReplacing(with: duplicate, of: decision) {
+        case .settled(let outcome):
+            return outcome
+        case .prepare(let existing):
+            importDecisions.beginAnswering(decision.id)
+            textRereads.begin(existing.id, for: .replacement)
+            let copy = duplicate.book
+            let prepared = await OffMainWork.run { Result { try prepare(existing, copy) } }
+            textRereads.end(existing.id)
+            importDecisions.endAnswering()
+            // Back on the main actor, with the library as it is now.
+            guard importDecisions.current?.id == decision.id else {
+                // The question was withdrawn meanwhile (its batch was
+                // cancelled): there is nothing to answer any more.
+                putBack(prepared)
+                return .success(nil)
+            }
+            if dataDirectoryMove != nil {
+                putBack(prepared)
+                return .failure(DataDirectoryMoveWording.importAnswerRefusal)
+            }
+            guard bookByID(existing.id) == existing else {
+                putBack(prepared)
+                return .failure(DuplicateCopyWording.changedWhileReplacing(bookTitle: existing.title))
+            }
+            if let refusal = replacementRefusal(of: existing) {
+                putBack(prepared)
+                return .failure(refusal.sentence)
+            }
+            return finishReplacing(existing, prepared: prepared, with: duplicate, of: decision)
+        }
+    }
+
+    // MARK: Making the New Copy Ready
+
+    /// Makes the new copy `copy` ready to take the place of `existing`, the
+    /// library's copy, and returns what the library needs to commit it or
+    /// undo it (`DuplicateReplacement.prepare(replacing:with:access:now:)`).
+    /// A test passes its own to `answerImportDecisionOffMain(_:with:prepare:)`
+    /// to see where the work runs.
+    typealias ReplacementPreparer = @Sendable (_ existing: Book, _ copy: Book) throws -> DuplicateReplacement.Preparation
+
+    /// The preparation the library does: one piece of storage work from the
+    /// first read to the move into the old copy's folder, so a folder edit or
+    /// a data-directory move that begins meanwhile waits for it to end
+    /// (`StorageBoundary.perform`; on the main actor it holds nothing, as
+    /// the work never ran on a background queue there).
+    nonisolated static let replacementPreparer: ReplacementPreparer = { existing, copy in
+        try StorageBoundary.shared.perform(.textExtraction) { _ in
+            try DuplicateReplacement.prepare(replacing: existing, with: copy)
+        }
+    }
+
+    /// Where Replace Existing stands once the question is looked at.
+    private enum ReplacementStart {
+        /// There is nothing to prepare, and this is the answer's outcome:
+        /// the copy joined the library as Keep Both adds it, or the
+        /// replacement is refused.
+        case settled(OperationOutcome)
+        /// The new copy is to be made ready to take the place of this book,
+        /// the library's copy as it is now.
+        case prepare(existing: Book)
+    }
+
+    /// The first part of Replace Existing, on the main actor: finds the
+    /// library's copy that matches the new one now, which an earlier answer
+    /// may have changed since the question arose; adds the new copy as Keep
+    /// Both does once no copy matches; and refuses while the copy is in use
+    /// (`replacementRefusal(of:)`). Analyses of the old copy waiting in the
+    /// buffer reach its row now, while the row is the old copy's. One still
+    /// on its way (on the main queue, or running) can arrive after the
+    /// replacement: it names the old package, which the new row's is not, so
+    /// it never lands there (`applyAnalysisSummaries`).
+    private func startReplacing(
+        with duplicate: ImportDecision.DuplicateBook,
+        of decision: ImportDecision
+    ) -> ReplacementStart {
         guard let match = duplicateMatch(for: duplicate.book) else {
-            return keep(duplicate, of: decision)
+            return .settled(keep(duplicate, of: decision))
         }
         if let refusal = replacementRefusal(of: match) {
-            return .failure(refusal.sentence)
+            return .settled(.failure(refusal.sentence))
         }
-        // Analyses of the old copy waiting in the buffer reach its row now,
-        // while the row is the old copy's. One still on its way (on the main
-        // queue, or running) can arrive after the replacement: it names the
-        // old package, which the new row's is not, so it never lands there
-        // (`applyAnalysisSummaries`).
         analysisSummaries.flush()
-        let existing = bookByID(match.id) ?? match
+        return .prepare(existing: bookByID(match.id) ?? match)
+    }
+
+    /// Puts the new copy back as its import published it when its
+    /// preparation `prepared` succeeded and the replacement does not go
+    /// ahead; a preparation that failed has undone itself.
+    private func putBack(_ prepared: Result<DuplicateReplacement.Preparation, Error>) {
+        if case .success(let preparation) = prepared {
+            preparation.undo()
+        }
+    }
+
+    /// The last part of Replace Existing, on the main actor: commits the new
+    /// copy `prepared` in the place of `existing`, removes the old copy's
+    /// package, and tells the listener what was kept; or says why the new
+    /// copy could not be made ready or committed, leaving the question and
+    /// both copies as they were.
+    private func finishReplacing(
+        _ existing: Book,
+        prepared: Result<DuplicateReplacement.Preparation, Error>,
+        with duplicate: ImportDecision.DuplicateBook,
+        of decision: ImportDecision
+    ) -> OperationOutcome {
         let preparation: DuplicateReplacement.Preparation
-        do {
-            preparation = try DuplicateReplacement.prepare(replacing: existing, with: duplicate.book)
-        } catch let refusal as DuplicateReplacement.Refusal {
+        switch prepared {
+        case .success(let made):
+            preparation = made
+        case .failure(let refusal as DuplicateReplacement.Refusal):
             return .failure(refusal.sentence)
-        } catch {
+        case .failure(let error):
             return .failure(Self.replaceFailureContext, error)
         }
         do {
