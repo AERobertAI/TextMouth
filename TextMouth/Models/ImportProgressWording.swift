@@ -250,21 +250,36 @@ enum ImportProgressWording {
     /// error, and the title says some files are not.
     static let someFilesNotImportedTitle = "Some Files Not Imported"
 
+    /// The title of the library's alert as a ZIP batch that added several
+    /// books ends with something to tell about some of them (chapters or
+    /// pages left out): the plural of `bookImportedTitle`, since its message
+    /// opens "Imported 3 books, but ...".
+    static let booksImportedTitle = "Books Imported"
+
+    /// The title of the library's alert as a ZIP batch that found books but
+    /// added none ends with something to tell: the library already held
+    /// every one of them, so "Nothing Imported" would be no truer than
+    /// "Book Imported".
+    static let alreadyInLibraryTitle = "Already in Library"
+
     /// The title of the library's alert as a ZIP batch ends with something
     /// to tell (`ZipImportResult.failureSummary`), so it is never the
-    /// fallback "Error" of an alert with no title:
-    /// - no book came into the library (`addedBooks` is 0): "Nothing
+    /// fallback "Error" of an alert with no title, and agrees with the
+    /// message under it:
+    /// - the batch found no book (`result.books` is empty): "Nothing
     ///   Imported", whether files failed or the batch was cancelled early;
+    /// - it found books but the library took none, having them already:
+    ///   "Already in Library";
     /// - books came in, but a file failed or the batch was cancelled:
     ///   "Some Files Not Imported";
     /// - books came in, all of them, and only some lack chapters or pages:
-    ///   "Book Imported", as for a single book imported with something to
-    ///   tell (`bookImportedTitle`).
+    ///   "Book Imported" for one, "Books Imported" for several, as for a
+    ///   single book imported with something to tell (`bookImportedTitle`).
     /// `addedBooks` counts the books the library took from the batch.
     static func zipAlertTitle(for result: ZipImportResult, addedBooks: Int) -> String {
-        guard addedBooks > 0 else { return nothingImportedTitle }
+        guard addedBooks > 0 else { return result.books.isEmpty ? nothingImportedTitle : alreadyInLibraryTitle }
         if !result.failures.isEmpty || result.cancellation != nil { return someFilesNotImportedTitle }
-        return bookImportedTitle
+        return addedBooks > 1 ? booksImportedTitle : bookImportedTitle
     }
 
     /// How many kinds of file the alert of a batch that found no book names
