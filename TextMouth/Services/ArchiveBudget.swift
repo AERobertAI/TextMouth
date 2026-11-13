@@ -47,6 +47,13 @@ struct ArchiveLimits: Sendable {
     /// The free bytes on the volume holding a location, or nil when the
     /// system cannot tell; tests supply their own figure.
     var freeSpace: @Sendable (URL) -> Int64?
+    /// Whether copying the file at the first location to the second costs
+    /// almost no space, because the volume clones the file (APFS shares its
+    /// blocks until one side is changed). Imports that copy files whole
+    /// (`FileImportService.requireRoom(forCopying:onVolumeOf:)`) count such
+    /// a file as empty. A copy that is not known to be a clone counts in
+    /// full, so tests that need a full copy supply `false`.
+    var copyIsClone: @Sendable (URL, URL) -> Bool = { _, _ in false }
 
     /// The documented limits every import uses.
     static let standard = ArchiveLimits(
@@ -55,7 +62,8 @@ struct ArchiveLimits: Sendable {
         maximumEntries: 10_000,
         maximumNestingDepth: 1,
         freeSpaceReserve: 1_000_000_000,
-        freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) }
+        freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) },
+        copyIsClone: { ArchiveLimits.volumeClonesCopy(from: $0, to: $1) }
     )
 
     /// The limits imports use: `standard`, unless a test binds smaller ones
@@ -82,6 +90,19 @@ struct ArchiveLimits: Sendable {
             return important
         }
         return values.volumeAvailableCapacity.map(Int64.init)
+    }
+
+    /// Whether `FileManager.copyItem` of the file at `source` into the
+    /// folder at `destination` clones it: both are on one volume, and that
+    /// volume supports cloning (APFS does; HFS+ and exFAT copy every byte).
+    /// False when either volume cannot be told, or when the file is still in
+    /// the cloud (a copy downloads it in full), so a doubtful copy counts
+    /// in full.
+    static func volumeClonesCopy(from source: URL, to destination: URL) -> Bool {
+        guard !DatalessFiles.isDataless(source),
+              ImportScratchSpace.areOnSameVolume(source, destination) else { return false }
+        let values = try? destination.resourceValues(forKeys: [.volumeSupportsFileCloningKey])
+        return values?.volumeSupportsFileCloning == true
     }
 }
 

@@ -467,12 +467,79 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: destination.path).contains("one.wav"))
     }
 
+    /// A track the copy will clone (`ArchiveLimits.copyIsClone`: it comes
+    /// from the same APFS volume as the package) costs almost no space, so
+    /// the free-space check counts it as empty: a folder bigger than the
+    /// free space is not refused when it is cloned, is refused when it is
+    /// copied whole (another volume), and is refused for the tracks that
+    /// are copied whole when only some are cloned.
+    func testATrackTheCopyClonesIsNotCountedAgainstTheFreeSpace() throws {
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let cloned = directory.appendingPathComponent("cloned.wav")
+        let copied = directory.appendingPathComponent("copied.wav")
+        try AudioTestFixtures.writeSilence(to: cloned, duration: 1)
+        try AudioTestFixtures.writeSilence(to: copied, duration: 1)
+        let size = Int64(try XCTUnwrap(copied.resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        let tracks = [(path: "cloned.wav", source: cloned), (path: "copied.wav", source: copied)]
+        // Each attempt copies into a folder of its own, so none meets another's.
+        var attempt = 0
+        func destination() -> URL {
+            attempt += 1
+            return directory.appendingPathComponent("Copies \(attempt)", isDirectory: true)
+        }
+
+        // Room for one track and no more.
+        var limits = Self.limits(reserve: 0, freeSpace: size)
+        limits.copyIsClone = { source, _ in source == cloned }
+        XCTAssertNoThrow(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "one track cloned, one copied: the copied one fits")
+
+        limits.copyIsClone = { _, _ in true }
+        limits.freeSpace = { _ in 0 }
+        XCTAssertNoThrow(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "both cloned: a disk with nothing free still takes them")
+
+        // Another volume: the same tracks are copied whole.
+        limits.copyIsClone = { _, _ in false }
+        limits.freeSpace = { _ in size }
+        XCTAssertThrowsError(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "both copied whole: two tracks do not fit in room for one") { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace)
+        }
+    }
+
+    /// The rule the import really uses (`ArchiveLimits.standard.copyIsClone`):
+    /// a file and a folder on one volume are a clone exactly when that
+    /// volume supports cloning, and a file that is not there is judged by
+    /// its folder. Another volume cannot be had on every machine this runs
+    /// on, so that half of the rule is the injected test above.
+    func testTheStandardRuleCallsACopyOnTheSameCloningVolumeAClone() throws {
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("track.wav")
+        let destination = directory.appendingPathComponent("Copies", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: source, duration: 1)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let supportsCloning = try destination.resourceValues(forKeys: [.volumeSupportsFileCloningKey]).volumeSupportsFileCloning == true
+
+        XCTAssertEqual(ArchiveLimits.standard.copyIsClone(source, destination), supportsCloning)
+        try XCTSkipUnless(supportsCloning, "the temporary folder's volume does not clone files")
+        XCTAssertTrue(ArchiveLimits.standard.copyIsClone(source, destination))
+    }
+
     /// Limits that change nothing but the disk: the standard ones, with
-    /// `reserve` bytes to keep and `freeSpace` bytes free on every disk.
+    /// `reserve` bytes to keep and `freeSpace` bytes free on every disk, and
+    /// every copy a full one (not a clone), whatever volume the test
+    /// machine's folders are on.
     static func limits(reserve: Int64, freeSpace: Int64) -> ArchiveLimits {
         var limits = ArchiveLimits.standard
         limits.freeSpaceReserve = reserve
         limits.freeSpace = { _ in freeSpace }
+        limits.copyIsClone = { _, _ in false }
         return limits
     }
 
