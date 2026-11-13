@@ -148,6 +148,14 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let paths = archive.map(\.path)
         XCTAssertEqual(paths.filter { $0.lowercased() == "oebps/content.opf" }, ["oebps/content.opf"],
                        "the package document keeps its own spelling and is not duplicated; the members are \(paths)")
+        // Every member is still there, once, and `mimetype` is still first,
+        // as the EPUB container format requires of the book's first entry.
+        XCTAssertEqual(
+            paths.sorted(),
+            ["META-INF/container.xml", "mimetype", "oebps/chapter.xhtml", "oebps/content.opf"],
+            "the members are \(paths)"
+        )
+        XCTAssertEqual(paths.first, "mimetype", "the members are \(paths)")
     }
 
     /// A save records the fields it changed as edited by hand, on the row
