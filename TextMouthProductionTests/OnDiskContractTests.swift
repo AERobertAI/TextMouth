@@ -425,6 +425,59 @@ final class OnDiskContractTests: XCTestCase {
         XCTAssertEqual(Self.propertyNames(of: marker), expected, Self.unset("a marker field"))
     }
 
+    /// The keys of the reading list as library.json saves it, with every
+    /// option set. Every Mac reads the list; an older TextMouth names only the
+    /// keys it knows and drops `removesFinished` at its next save of
+    /// library.json (a playing book saves within five minutes), which turns
+    /// the option off for every Mac sharing the library.
+    func testTheReadingListHoldsExactlyTheseKeys() throws {
+        let list = ReadingList(bookIDs: [UUID()], continuation: .stop, skipsFinished: false, removesFinished: true)
+        let saved = try Self.object(from: JSONEncoder().encode(list))
+        let expected: Set<String> = [
+            "bookIDs", "continuation", "skipsFinished",
+            // The option to remove a book as it is finished (November 13, 2026). Read leniently, absent reads as
+            // off; an older TextMouth ignores it and drops it at its next save.
+            "removesFinished",
+        ]
+        XCTAssertEqual(
+            Set(saved.keys),
+            expected,
+            Self.because(
+                "a reading list key",
+                "the option is lost for every Mac that shares the library, and a key added is dropped by an older TextMouth at its next write"
+            )
+        )
+        XCTAssertEqual(Self.propertyNames(of: list), expected, Self.unset("a reading list option"))
+    }
+
+    /// The choice to keep the reading list's books on this Mac (November 13,
+    /// 2026): this Mac's own file, "Keep Reading List Books.json" beside
+    /// Kept Books.json, holding one key. It is never in library.json, which
+    /// every Mac reads, so another Mac decides for itself, and a file without
+    /// it reads as on.
+    @MainActor
+    func testTheKeepChoiceFileIsNamedAndShapedAsBefore() throws {
+        XCTAssertEqual(
+            MachineLocalPaths.keepReadingListBooks.lastPathComponent,
+            "Keep Reading List Books.json",
+            Self.because("the keep choice's file", "an older TextMouth no longer finds it, and the choice reads as on")
+        )
+        XCTAssertEqual(
+            MachineLocalPaths.keepReadingListBooks.deletingLastPathComponent(),
+            MachineLocalPaths.keptBooks.deletingLastPathComponent(),
+            Self.because("the keep choice's folder", "it stops being beside Kept Books.json, this Mac's own")
+        )
+        let file = try makeSandboxDirectory("Keep Choice Keys").appendingPathComponent("Keep Reading List Books.json")
+        KeptBooks(file: nil, settingFile: file).setKeepsReadingListBooks(false)
+        let written = try Self.object(from: Data(contentsOf: file))
+        XCTAssertEqual(
+            Set(written.keys),
+            ["keepsReadingListBooks"],
+            Self.because("the keep choice's key", "the choice is lost and reads as on")
+        )
+        XCTAssertEqual(written["keepsReadingListBooks"] as? Bool, false)
+    }
+
     // MARK: - File and Folder Names
 
     /// The names of the files and folders in the data directory and in
