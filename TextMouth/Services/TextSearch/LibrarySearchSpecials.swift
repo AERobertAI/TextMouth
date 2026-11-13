@@ -65,6 +65,42 @@ enum LibrarySearchSpecials {
         ignoringCase ? Self.ignoringCase : matchingCase
     }
 
+    // MARK: Characters With a Numeric Value
+
+    /// Whether the scalar `value`, beyond ASCII, has a numeric value: a
+    /// digit's compatibility form (², ①, ２, 𝟐), a Roman numeral, a fraction,
+    /// a numeral of another script. Foundation counts some of them as their
+    /// digits, and which ones moves with macOS: the circled sans-serif zeros
+    /// (U+1F10B, U+1F10C) match "0" on macOS 26.7 and not on 26.3. So any
+    /// such character is special, standing for the digits and the
+    /// punctuation numbered forms hold (`numericStandsFor`), whether or not
+    /// the tables above list it.
+    static func hasNumericValue(_ value: UInt32) -> Bool {
+        guard value >= 0x80, let scalar = Unicode.Scalar(value) else { return false }
+        return scalar.properties.numericType != nil
+    }
+
+    /// What a character with a numeric value can stand for: the ten digits,
+    /// and the parentheses, full stop, and comma of the parenthesized,
+    /// stopped, and comma numbers (⑴, ⒈, 🄁).
+    static let numericStandsFor: Set<UInt8> = Set("0123456789().,".utf8)
+
+    /// The ASCII characters the scalar `value` can stand for in a search that
+    /// ignores case or matches it, small letters for capitals when case is
+    /// ignored: what Foundation finds in it, for a character of the tables,
+    /// with the digits and their punctuation too for one with a numeric
+    /// value; nil for a character that is not special.
+    static func standsFor(_ value: UInt32, ignoringCase: Bool) -> Set<UInt8>? {
+        let table = ignoringCase ? standsForIgnoringCase : standsForMatchingCase
+        let numeric = hasNumericValue(value) ? numericStandsFor : nil
+        switch (table[value], numeric) {
+        case let (listed?, numeric?): return listed.union(numeric)
+        case let (listed?, nil): return listed
+        case let (nil, numeric?): return numeric
+        case (nil, nil): return nil
+        }
+    }
+
     // MARK: What Each Stands For
 
     /// For each special character ignoring case, the ASCII characters (small

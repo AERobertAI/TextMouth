@@ -45,9 +45,13 @@ struct LibrarySearchPrefilter: Sendable {
     /// character's UTF-8, and zero for every other byte.
     private let byteFlags: [UInt8]
     /// The special characters a candidate line may hold instead of the
-    /// anchor: those, for this search's handling of case, that can stand for
-    /// one of the anchor's characters.
+    /// anchor: those of the tables, for this search's handling of case, that
+    /// can stand for one of the anchor's characters.
     private let specials: Set<UInt32>
+    /// Whether the anchor holds a digit or the punctuation of numbered forms,
+    /// so that any character with a numeric value may stand for part of it
+    /// (`LibrarySearchSpecials.hasNumericValue`).
+    private let numericFormsMatter: Bool
 
     /// The flag of the anchor's key byte.
     private static let keyFlag: UInt8 = 1
@@ -66,10 +70,11 @@ struct LibrarySearchPrefilter: Sendable {
         // anchor's characters: a circled digit for a query with no digit
         // makes no line a candidate.
         let anchorCharacters = Set(anchor)
-        let standsFor = options.matchCase ? LibrarySearchSpecials.standsForMatchingCase : LibrarySearchSpecials.standsForIgnoringCase
-        specials = LibrarySearchSpecials.characters(ignoringCase: !options.matchCase).filter { value in
-            !(standsFor[value] ?? Set(0...0x7F)).isDisjoint(with: anchorCharacters)
+        let ignoring = !options.matchCase
+        specials = LibrarySearchSpecials.characters(ignoringCase: ignoring).filter { value in
+            !(LibrarySearchSpecials.standsFor(value, ignoringCase: ignoring) ?? Set(0...0x7F)).isDisjoint(with: anchorCharacters)
         }
+        numericFormsMatter = !LibrarySearchSpecials.numericStandsFor.isDisjoint(with: anchorCharacters)
         keyIndex = Self.rarestIndex(in: anchor)
 
         var flags = [UInt8](repeating: 0, count: 256)
@@ -79,9 +84,16 @@ struct LibrarySearchPrefilter: Sendable {
             flags[Int(upper)] |= Self.keyFlag
         }
         // Each special character's first UTF-8 byte; every one is non-ASCII.
+        // Characters with a numeric value are found in every script, so
+        // when they matter every byte that begins a character is looked at.
         for value in specials {
             if let scalar = Unicode.Scalar(value), let lead = String(scalar).utf8.first, lead >= 0x80 {
                 flags[Int(lead)] |= Self.specialFlag
+            }
+        }
+        if numericFormsMatter {
+            for lead in 0xC2...0xF4 {
+                flags[lead] |= Self.specialFlag
             }
         }
         byteFlags = flags
@@ -201,10 +213,12 @@ struct LibrarySearchPrefilter: Sendable {
     }
 
     /// Whether the UTF-8 sequence that begins at `index` of `bytes` encodes a
-    /// special character.
+    /// special character that can stand for part of the anchor: one of the
+    /// tables', or, for an anchor holding a digit or the numbered forms'
+    /// punctuation, any character with a numeric value.
     private func isSpecial(in bytes: UnsafeBufferPointer<UInt8>, at index: Int) -> Bool {
         guard let scalar = Self.scalar(in: bytes, at: index) else { return false }
-        return specials.contains(scalar)
+        return specials.contains(scalar) || (numericFormsMatter && LibrarySearchSpecials.hasNumericValue(scalar))
     }
 
     /// The scalar whose UTF-8 sequence begins at `index` of `bytes`, or nil

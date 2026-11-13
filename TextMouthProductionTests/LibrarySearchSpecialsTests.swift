@@ -1,36 +1,47 @@
 import XCTest
 @testable import TextMouth
 
-/// The characters Search Library's prefilter stops at (`LibrarySearchSpecials`)
-/// are every non-ASCII character Foundation's search can match against ASCII
-/// alone: a scalar missing from them would let the prefilter pass over a line
-/// that holds a match, and the library search would find less than Search in
-/// Book. The sweep asks Foundation itself, on the macOS running the suite, so
-/// a macOS that matches more fails here rather than missing matches.
+/// The characters Search Library's prefilter stops at (`LibrarySearchSpecials`):
+/// every non-ASCII character Foundation's search can match against ASCII
+/// alone must be special, and stand for every ASCII character of each query
+/// Foundation finds in it, or the prefilter could pass over a chapter that
+/// holds a match, and the library search find less than Search in Book. The
+/// sweep asks Foundation itself, on the macOS running the suite, so a macOS
+/// that matches more fails here rather than missing matches.
 final class LibrarySearchSpecialsTests: XCTestCase {
 
-    /// Every assigned scalar beyond ASCII that Foundation's search, ignoring
-    /// case or matching it, finds an ASCII query in (`asciiQueries(for:)`),
-    /// or passes over between two ASCII letters, is a special character for
-    /// that search.
-    func testEveryCharacterFoundationMatchesAgainstASCIIIsSpecial() {
-        var missingIgnoringCase: [String] = []
-        var missingMatchingCase: [String] = []
+    /// For every assigned scalar beyond ASCII and each way of handling case,
+    /// every ASCII query Foundation finds in the scalar alone is made of
+    /// characters the scalar stands for (`LibrarySearchSpecials.standsFor`),
+    /// and no scalar is passed over between two ASCII letters.
+    func testEveryCharacterFoundationMatchesAgainstASCIIStandsForWhatMatched() {
+        var unsound: [String] = []
         var swept = 0
         for value in UInt32(0x80)...UInt32(0x10FFFF) {
             guard let scalar = Unicode.Scalar(value), Self.isAssigned(scalar) else { continue }
             swept += 1
-            let (ignoringCase, matchingCase) = Self.foundationMatchesASCII(against: scalar)
-            if ignoringCase, !LibrarySearchSpecials.ignoringCase.contains(value) {
-                missingIgnoringCase.append(String(format: "U+%04X", value))
-            }
-            if matchingCase, !LibrarySearchSpecials.matchingCase.contains(value) {
-                missingMatchingCase.append(String(format: "U+%04X", value))
+            for ignoringCase in [true, false] {
+                let options: NSString.CompareOptions = ignoringCase ? [.caseInsensitive] : []
+                let name = String(format: "U+%04X %@", value, ignoringCase ? "ignoring case" : "matching case")
+                if Self.found("ab", in: "a" + String(scalar) + "b", options) {
+                    unsound.append("\(name) is passed over between two letters")
+                }
+                let matching = Self.queries(for: scalar).filter { Self.found($0, in: String(scalar), options) }
+                guard !matching.isEmpty else { continue }
+                guard let stands = LibrarySearchSpecials.standsFor(value, ignoringCase: ignoringCase) else {
+                    unsound.append("\(name) matches \(matching) and is not special")
+                    continue
+                }
+                for query in matching {
+                    let bytes = Set(query.utf8.map { ignoringCase && (0x41...0x5A).contains($0) ? $0 | 0x20 : $0 })
+                    if !bytes.isSubset(of: stands) {
+                        unsound.append("\(name) matches \(query.debugDescription), beyond what it stands for")
+                    }
+                }
             }
         }
         XCTAssertGreaterThan(swept, 100_000, "the sweep covered too few scalars")
-        XCTAssertEqual(missingIgnoringCase, [], "matched against ASCII ignoring case, and not special")
-        XCTAssertEqual(missingMatchingCase, [], "matched against ASCII matching case, and not special")
+        XCTAssertEqual(unsound, [], "\(unsound.count) scalars Foundation matches against ASCII that the prefilter would pass over")
     }
 
     /// The special characters with case kept are among those with case
@@ -44,35 +55,40 @@ final class LibrarySearchSpecialsTests: XCTestCase {
 
     /// What a special character stands for is what Foundation finds in it:
     /// ß and the long s stand for "s", the Kelvin sign for "k", the fi
-    /// ligature for "f" and "i", the circled one for "1", the Greek question
-    /// mark for ";"; with case kept, the Kelvin sign for "K" alone. Every
-    /// special character stands for ASCII Foundation finds in it on this
-    /// macOS, so none needs the fallback of standing for every character.
+    /// ligature for "f" and "i", the Greek question mark for ";"; with case
+    /// kept, the Kelvin sign for "K" alone. A character with a numeric value,
+    /// in the tables or not (the circled one, an Arabic-Indic two), stands for
+    /// the digits and the numbered forms' punctuation too. A letter that is
+    /// in neither stands for nothing.
     func testEachSpecialCharacterStandsForTheASCIIFoundationFindsInIt() {
-        let ignoring = LibrarySearchSpecials.standsForIgnoringCase
-        let matching = LibrarySearchSpecials.standsForMatchingCase
         let expectations: [(UInt32, Set<Character>)] = [
-            (0x00DF, ["s"]), (0x017F, ["s"]), (0x212A, ["k"]), (0xFB01, ["f", "i"]), (0x2460, ["1"]), (0x037E, [";"]),
+            (0x00DF, ["s"]), (0x017F, ["s"]), (0x212A, ["k"]), (0xFB01, ["f", "i"]), (0x037E, [";"]),
         ]
         for (value, characters) in expectations {
             let bytes = Set(characters.compactMap { $0.asciiValue })
-            XCTAssertEqual(ignoring[value], bytes, String(format: "U+%04X ignoring case", value))
+            XCTAssertEqual(LibrarySearchSpecials.standsFor(value, ignoringCase: true), bytes, String(format: "U+%04X", value))
         }
-        XCTAssertEqual(matching[0x212A], Set([UInt8(ascii: "K")]), "the Kelvin sign with case kept")
+        XCTAssertEqual(LibrarySearchSpecials.standsFor(0x212A, ignoringCase: false), Set([UInt8(ascii: "K")]))
+        let numeric = LibrarySearchSpecials.numericStandsFor
+        XCTAssertEqual(LibrarySearchSpecials.standsFor(0x2460, ignoringCase: true)?.isSuperset(of: numeric), true, "the circled one")
+        XCTAssertEqual(LibrarySearchSpecials.standsFor(0x0662, ignoringCase: true), numeric, "an Arabic-Indic two")
+        XCTAssertNil(LibrarySearchSpecials.standsFor(0x00E9, ignoringCase: true), "é stands for nothing")
         let everything = Set<UInt8>(0...0x7F)
         for value in LibrarySearchSpecials.ignoringCase {
-            XCTAssertNotEqual(ignoring[value] ?? everything, everything, String(format: "U+%04X ignoring case: no ASCII found in it", value))
+            XCTAssertNotEqual(LibrarySearchSpecials.standsForIgnoringCase[value] ?? everything, everything,
+                              String(format: "U+%04X ignoring case: no ASCII found in it", value))
         }
         for value in LibrarySearchSpecials.matchingCase {
-            XCTAssertNotEqual(matching[value] ?? everything, everything, String(format: "U+%04X matching case: no ASCII found in it", value))
+            XCTAssertNotEqual(LibrarySearchSpecials.standsForMatchingCase[value] ?? everything, everything,
+                              String(format: "U+%04X matching case: no ASCII found in it", value))
         }
     }
 
     // MARK: The Sweep's Rules
 
     /// Whether `scalar` is assigned and not for private use: the scalars
-    /// with case mappings or decompositions, the only ones Foundation's
-    /// search could take for ASCII.
+    /// with case mappings, decompositions, or numeric values, the only ones
+    /// Foundation's search could take for ASCII.
     private static func isAssigned(_ scalar: Unicode.Scalar) -> Bool {
         switch scalar.properties.generalCategory {
         case .unassigned, .privateUse, .surrogate: return false
@@ -80,24 +96,18 @@ final class LibrarySearchSpecialsTests: XCTestCase {
         }
     }
 
-    /// Whether Foundation's search, ignoring case and matching it, finds an
-    /// ASCII query in the text that is `scalar` alone, or passes over it
-    /// between "a" and "b". The queries are `LibrarySearchSpecials.asciiQueries`,
-    /// asked of a scalar whose mappings hold ASCII and of every scalar in the
-    /// blocks where look-alikes of ASCII live; any other scalar is asked only
-    /// whether it is passed over.
-    private static func foundationMatchesASCII(against scalar: Unicode.Scalar) -> (ignoringCase: Bool, matchingCase: Bool) {
-        let text = String(scalar)
-        let between = "a" + text + "b"
-        var ignoringCase = found("ab", in: between, [.caseInsensitive])
-        var matchingCase = found("ab", in: between, [])
+    /// The ASCII queries asked of `scalar`: every printable character and
+    /// every piece of its mappings' ASCII (`LibrarySearchSpecials.asciiQueries`)
+    /// for a scalar whose mappings hold ASCII or that lives where look-alikes
+    /// of ASCII live; the digits and the numbered forms' punctuation for one
+    /// with a numeric value, wherever it lives; none for any other.
+    private static func queries(for scalar: Unicode.Scalar) -> [String] {
         let pieces = LibrarySearchSpecials.asciiPieces(for: scalar)
-        let queries = pieces.isEmpty && !isNearASCII(scalar) ? [] : LibrarySearchSpecials.printableASCII + pieces
-        for query in queries where !(ignoringCase && matchingCase) {
-            if !ignoringCase, found(query, in: text, [.caseInsensitive]) { ignoringCase = true }
-            if !matchingCase, found(query, in: text, []) { matchingCase = true }
+        var queries = pieces.isEmpty && !isNearASCII(scalar) ? [] : LibrarySearchSpecials.printableASCII + pieces
+        if LibrarySearchSpecials.hasNumericValue(scalar.value), queries.isEmpty {
+            queries = "0123456789().,".map { String($0) }
         }
-        return (ignoringCase, matchingCase)
+        return queries
     }
 
     /// Whether `scalar` is in a block where look-alikes of ASCII letters,
