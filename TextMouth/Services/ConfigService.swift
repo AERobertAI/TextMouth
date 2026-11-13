@@ -430,6 +430,13 @@ final class ConfigService: ObservableObject {
         /// kept as it is and never offered, and a value out of range is
         /// repaired. Nil, or an empty array, leaves the views as they are.
         var libraryViews: [JSONValue]?
+        /// What a title's leading article does in the Library's lists
+        /// (`LeadingArticles`, November 13, 2026): "partOfTitle", as
+        /// written; "ignoredWhenTyping", passed over when typing a title's
+        /// first letters; or "ignoredWhenTypingAndSorting", passed over when
+        /// sorting too, the rows showing "Hobbit, The". Empty keeps the
+        /// current choice, as does a name that is none of these.
+        var leadingArticles: String = ""
         /// The braille table TextMouth reads and writes braille with
         /// (`BraillePreferences`), by its stored value: a bundled table's
         /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
@@ -582,6 +589,7 @@ final class ConfigService: ObservableObject {
             libraryViews = fields.optionalValue(.libraryViews) { (entries: [JSONValue]) in
                 entries.isEmpty ? nil : entries
             }
+            leadingArticles = fields.rawChoice(.leadingArticles, rule: SettingsPolicy.leadingArticles)
             // Without reading this Mac's tables (review R3): decoding runs on
             // the main thread at every launch.
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
@@ -678,6 +686,9 @@ final class ConfigService: ObservableObject {
                 // Library (October 30, 2026): the Library window's views,
                 // which the views store keeps (`LibraryViewDefinitionStore`).
                 mirrored += sameNames([LibraryViewDefinitionList.fileKey])
+                // And what a title's leading article does in its lists, which
+                // the Library windows read (`LeadingArticles`, November 13, 2026).
+                mirrored += sameNames([SettingsPolicy.leadingArticles.key])
                 // Braille (FMT21): the table braille files are read and written with.
                 // And the braille file characters a BRF or BRL file is imported in (braillecodes).
                 mirrored += sameNames(["brailleTable", "brailleFileCode"])

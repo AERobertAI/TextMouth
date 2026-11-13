@@ -15,9 +15,13 @@ import Foundation
 ///   their order in the library, and their folders; and which books the
 ///   reading list holds, in its order (FR09).
 /// - **Sort keys**: a field a sort, the Recent category, or a search reads:
-///   the title, the author, the dates added and last opened, the manual
-///   order, and the book's file (its path and content hash, which the size a
-///   File Size sort measures follows).
+///   the title, the author, the metadata language (whose articles a title
+///   may be sorted without, `LeadingArticles`), the dates added and last
+///   opened, the manual order, and the book's file (its path and content
+///   hash, which the size a File Size sort measures follows).
+///
+/// A list is also keyed by the Leading articles setting it was sorted
+/// under, so changing the setting derives each list again.
 ///
 /// Such a change bumps the list revision, which drops every list. Any other
 /// change, such as a reading position, a word count, or a voice setting,
@@ -61,17 +65,23 @@ final class LibraryListCache {
         /// the library, changes it, so the list is derived again although no
         /// book changed.
         let feedID: UUID?
+        /// How titles are read (the Leading articles setting), which a sort,
+        /// a tie broken by title, and a search all follow, so a list derived
+        /// before the setting changed is derived again.
+        let articles: LeadingArticles
 
         /// The list at `location`, in `sort`'s order, narrowed by `search`
         /// (already lowercased; "" for none), holding the items of the feed
         /// `feedID` when the folder shown is that feed's, its filter reading
-        /// `context` (`LibraryViewModel.filterContext(for:)`).
+        /// `context` (`LibraryViewModel.filterContext(for:)`), its titles
+        /// read as `articles` says.
         init(
             location: LibraryLocation,
             sort: LibrarySortState,
             search: String,
             feedID: UUID? = nil,
-            context: LibraryViewFilterContext? = nil
+            context: LibraryViewFilterContext? = nil,
+            articles: LeadingArticles = .partOfTitle
         ) {
             let showsFolders = location.view.kind == .folders
             view = location.view.id
@@ -82,6 +92,7 @@ final class LibraryListCache {
             isAscending = sort.isAscending
             self.search = search
             self.feedID = showsFolders ? feedID : nil
+            self.articles = articles
         }
     }
 
@@ -133,6 +144,88 @@ final class LibraryListCache {
     private var folderTreeCounts: [String: Int]?
     /// The sizes File Size sorts measured, by book ID.
     private var measuredSizes: [UUID: MeasuredSize] = [:]
+    /// Each title inverted as a row shows it while sorting passes over
+    /// leading articles ("Hobbit, The"), by the title and the metadata
+    /// language it was read in, so a list drawn again works none out anew.
+    private var invertedTitles: [InvertedTitleKey: String] = [:]
+    /// How many titles were inverted. Tests read it.
+    private(set) var titleInversionCount = 0
+    /// At most this many inverted titles are kept; past it the record starts
+    /// over, so renamed books cannot make it grow without bound.
+    static let invertedTitleLimit = 8_192
+
+    /// What an inverted title depends on: the title and the metadata
+    /// language whose articles count beside English's.
+    private struct InvertedTitleKey: Hashable {
+        let title: String
+        let language: String?
+    }
+
+    /// The books of the list last typed into as letter navigation reaches
+    /// them: their IDs in order, the list revision they were made under,
+    /// and their rows with every title folded (`TypedRow`).
+    private struct TypedRowsMemo {
+        let listRevision: Int
+        let ids: [UUID]
+        let rows: [TypedRow<UUID>]
+    }
+
+    /// The memo of the last list typed into; nil before any, or after the
+    /// library dropped it.
+    private var typedRowsMemo: TypedRowsMemo?
+    /// How many books' rows were made (their titles read for articles and
+    /// folded). Tests read it to see that a key reuses rows made before.
+    private(set) var typedRowBuildCount = 0
+
+    // MARK: - Titles as Letter Navigation Reaches Them
+
+    /// The rows of `books`, the books a list shows in its order, as letter
+    /// navigation compares typed letters with them (`TitleTyping`), each
+    /// title folded once and kept for as long as the list is: a key pressed
+    /// in a Library of thousands of titles then reads these rows and folds
+    /// nothing of theirs.
+    ///
+    /// The rows are kept for the last list asked for, while the list
+    /// revision and the books' IDs and order are as they were. A book's
+    /// title and metadata language change the list revision
+    /// (`hasSameListFields`), so a renamed book is made anew, and a change
+    /// that leaves the list alone (a reading position, a word count) keeps
+    /// the rows. The rows follow no setting, so changing the Leading
+    /// articles setting does not make them again.
+    func typedRows(of books: [Book]) -> [TypedRow<UUID>] {
+        if let memo = typedRowsMemo,
+           memo.listRevision == listRevision,
+           memo.ids.count == books.count,
+           zip(memo.ids, books).allSatisfy({ $0 == $1.id }) {
+            return memo.rows
+        }
+        let rows = books.map { TypedRow(id: $0.id, title: $0.title, language: $0.epubLanguage) }
+        typedRowBuildCount += rows.count
+        typedRowsMemo = TypedRowsMemo(listRevision: listRevision, ids: books.map(\.id), rows: rows)
+        return rows
+    }
+
+    // MARK: - Titles as Rows Show Them
+
+    /// The title `book`'s row shows in place of its own under `articles`
+    /// (`LeadingArticles.rowTitle(of:)`): nil while titles are shown as
+    /// written, and otherwise the title inverted, worked out once for each
+    /// title and language and kept, as a Library window draws its rows and
+    /// its Books rotor again once a second while a book plays.
+    func rowTitle(of book: Book, articles: LeadingArticles) -> String? {
+        guard articles.sortsWithoutArticles else { return nil }
+        let key = InvertedTitleKey(title: book.title, language: book.epubLanguage)
+        if let known = invertedTitles[key] {
+            return known
+        }
+        let inverted = articles.shownTitle(book.title, language: book.epubLanguage)
+        titleInversionCount += 1
+        if invertedTitles.count >= Self.invertedTitleLimit {
+            invertedTitles.removeAll(keepingCapacity: true)
+        }
+        invertedTitles[key] = inverted
+        return inverted
+    }
 
     // MARK: - Following the Library
 
@@ -145,6 +238,7 @@ final class LibraryListCache {
             return
         }
         listRevision &+= 1
+        typedRowsMemo = nil
         entries.removeAll(keepingCapacity: true)
         indexByID = nil
         folderTreeCounts = nil
@@ -299,8 +393,9 @@ private extension Book {
     /// listed by their feed, FR11), its format (which a view's format
     /// condition tests, and which tells an episode from an article), the
     /// fields sorts and Recently Opened order by, the title and author a
-    /// search matches, and the file path and content hash a measured size
-    /// follows.
+    /// search matches, the metadata language whose articles a title sorts
+    /// and is searched without (`LeadingArticles`), and the file path and
+    /// content hash a measured size follows.
     func hasSameListFields(as other: Book) -> Bool {
         id == other.id
             && folderPath == other.folderPath
@@ -308,6 +403,7 @@ private extension Book {
             && format == other.format
             && title == other.title
             && author == other.author
+            && epubLanguage == other.epubLanguage
             && dateAdded == other.dateAdded
             && lastOpened == other.lastOpened
             && manualSortOrder == other.manualSortOrder

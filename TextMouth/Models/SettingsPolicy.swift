@@ -521,6 +521,13 @@ enum SettingsPolicy {
     /// Logs folder.
     static let logLocation = EnumSettingRule(key: "logLocation", defaultValue: LogLocation.dataDirectory)
 
+    // MARK: Library
+
+    /// What a title's leading article does in the Library's lists (Library
+    /// settings, Leading Articles pop-up): part of the title until the user
+    /// picks another, so nothing changes until then (November 13, 2026).
+    static let leadingArticles = EnumSettingRule(key: "leadingArticles", defaultValue: LeadingArticles.partOfTitle)
+
     // MARK: Keyed by enum cases
 
     /// The sound each playback event plays (Sounds settings pickers): one of

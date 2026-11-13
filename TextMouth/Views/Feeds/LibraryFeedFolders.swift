@@ -121,6 +121,15 @@ struct FolderRotorEntry: Equatable, Identifiable {
     let id: UUID
 }
 
+/// One entry of a Library window's Books rotor: the title its row shows,
+/// which VoiceOver says, and the book's ID, which is its row's.
+struct BookRotorEntry: Equatable, Identifiable {
+    /// What the rotor says: the book's title as its row shows it.
+    let label: String
+    /// The book's ID, the ID of its row.
+    let id: UUID
+}
+
 /// The Folders section's rows and the Folders rotor's entries at one
 /// location of a Library window (FR03).
 struct LibraryFolderRows: Equatable {
@@ -148,8 +157,16 @@ extension LibraryFeedFolders {
     /// so the Folders rotor reaches every feed it reached before. A feed's
     /// folder the Feeds section does not list keeps its row, which counts
     /// the feed's items; a plain folder keeps its row whatever it holds, a
-    /// feed's folder deeper down included.
-    func folderRows(_ subfolders: [BookFolder], at location: LibraryLocation, bookCount: (BookFolder) -> Int) -> LibraryFolderRows {
+    /// feed's folder deeper down included. A feed's entry names the feed as
+    /// its row shows it under `articles`, the Leading articles setting
+    /// ("Digital Antiquarian, The" while sorting passes over articles);
+    /// folders' names stay as written.
+    func folderRows(
+        _ subfolders: [BookFolder],
+        at location: LibraryLocation,
+        articles: LeadingArticles = .partOfTitle,
+        bookCount: (BookFolder) -> Int
+    ) -> LibraryFolderRows {
         guard location.category == .folders else { return LibraryFolderRows() }
         let listedFeedIDs = Set(LibraryFeedsSectionRows.feeds(at: location, center: center).map(\.id))
         var rows = LibraryFolderRows()
@@ -158,9 +175,10 @@ extension LibraryFeedFolders {
             let feedCounts = heldFeedID.map { center.counts(of: $0) }
             if let heldFeedID, let feedCounts, listedFeedIDs.contains(heldFeedID),
                let feed = center.store.record(of: heldFeedID)?.feed {
-                // The Feeds section's row stands for the folder.
+                // The Feeds section's row stands for the folder, and the
+                // entry names the feed as that row shows it.
                 rows.rotorEntries.append(FolderRotorEntry(
-                    label: FeedWording.folderAnnouncement(name: feed.title, counts: feedCounts),
+                    label: FeedWording.folderAnnouncement(name: articles.shownTitle(feed.title, language: nil), counts: feedCounts),
                     id: heldFeedID
                 ))
                 continue

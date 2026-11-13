@@ -257,6 +257,7 @@ final class OnDiskContractTests: XCTestCase {
             "feedRefreshIntervalHours", "feedItems", "feedNewestCount", "feedDeleteDownloadsDaysAfterPlayed",
             "feedRefreshAlert", "feedNotifications", "logLocation", "transcriptionLocale",
             "offerTranscriptionAfterImport", "brailleTable", "brailleFileCode",
+            "leadingArticles",
         ]
         XCTAssertEqual(
             Set(object.keys),

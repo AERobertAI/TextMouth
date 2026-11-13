@@ -75,25 +75,33 @@ enum ManualBookOrder {
         "Several books are selected, and a move shifts one book at a time. Select just one book, then try again."
 
     /// The books in `folderPath`, in the folder's manual order exactly as
-    /// the list shows it: by manual position, then title, then book ID
-    /// (`LibraryBookSorter`). Moving a book up or down, dragging, and
-    /// Continue to Next Book all follow this one order.
-    static func orderedBooks(in library: Library, folderPath: String) -> [Book] {
+    /// the list shows it: by manual position, then title, read as
+    /// `articles` says, then book ID (`LibraryBookSorter`). Moving a book up
+    /// or down, dragging, and Continue to Next Book all follow this one
+    /// order.
+    static func orderedBooks(in library: Library, folderPath: String, articles: LeadingArticles = .partOfTitle) -> [Book] {
         LibraryBookSorter.sorted(
             library.booksInFolder(folderPath),
             by: .manual,
-            ascending: true
+            ascending: true,
+            articles: articles
         )
     }
 
+    /// Moves the book `bookID` one place up (-1) or down (+1) in the manual
+    /// order of `folderPath`, as the list shows it with titles read as
+    /// `articles` says, and numbers the folder's books in the new order.
+    /// Returns what VoiceOver says of the move, or nil when the book can't
+    /// move that way.
     @discardableResult
     static func move(
         library: inout Library,
         bookID: UUID,
         direction: Int,
-        folderPath: String
+        folderPath: String,
+        articles: LeadingArticles = .partOfTitle
     ) -> MoveResult? {
-        var books = orderedBooks(in: library, folderPath: folderPath)
+        var books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return nil }
         let newIndex = currentIndex + direction
         guard books.indices.contains(newIndex) else { return nil }
@@ -112,17 +120,18 @@ enum ManualBookOrder {
 
     /// Moves the books at `source` to `destination` in the folder's manual
     /// order, as a drag in the list does. The offsets are positions in
-    /// `orderedBooks(in:folderPath:)`, which is the order the list shows
-    /// while it shows the folder in manual order. Returns false, changing
-    /// nothing, when an offset is outside the folder.
+    /// `orderedBooks(in:folderPath:articles:)`, which is the order the list
+    /// shows while it shows the folder in manual order. Returns false,
+    /// changing nothing, when an offset is outside the folder.
     @discardableResult
     static func reorder(
         library: inout Library,
         folderPath: String,
         from source: IndexSet,
-        to destination: Int
+        to destination: Int,
+        articles: LeadingArticles = .partOfTitle
     ) -> Bool {
-        var books = orderedBooks(in: library, folderPath: folderPath)
+        var books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard !source.isEmpty,
               source.allSatisfy({ books.indices.contains($0) }),
               (0...books.count).contains(destination) else { return false }
@@ -145,13 +154,17 @@ enum ManualBookOrder {
         }
     }
 
+    /// Whether the book `bookID` can move one place up (-1) or down (+1) in
+    /// the manual order of `folderPath`, as the list shows it with titles
+    /// read as `articles` says.
     static func canMove(
         in library: Library,
         bookID: UUID,
         direction: Int,
-        folderPath: String
+        folderPath: String,
+        articles: LeadingArticles = .partOfTitle
     ) -> Bool {
-        let books = orderedBooks(in: library, folderPath: folderPath)
+        let books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return false }
         return books.indices.contains(currentIndex + direction)
     }
@@ -208,7 +221,7 @@ extension LibraryViewModel {
         if let feedID = book.feedLink?.feedID {
             return feedItemBooksBeyond(book, of: feedID, going: direction)
         }
-        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath)
+        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath, articles: leadingArticles)
         let beyond = ListNeighbors.beyond(book.id, going: direction, in: folderBooks.map(\.id)) ?? []
         // Each book is found by its ID in the order already in hand.
         let booksByID = Dictionary(folderBooks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -236,6 +249,44 @@ extension LibraryViewModel {
     }
 
     // MARK: - Sorting a Location
+
+    /// What a title's leading article does in this library's lists: the
+    /// Library tab's Leading articles setting (`LeadingArticles`), read
+    /// from the app's preferences store, where the settings model writes it,
+    /// each time it is asked, so every list, Move Book Up and Move Book
+    /// Down, a drag, and Continue to Next Book follow a change at once.
+    /// The iPhone has no row for the setting and its rows show titles as
+    /// written, so its lists keep titles as written whatever is stored.
+    var leadingArticles: LeadingArticles {
+        #if os(iOS)
+        return .partOfTitle
+        #else
+        return LeadingArticles.preference.read(from: TextMouthRuntime.current.preferences)
+        #endif
+    }
+
+    /// The title `book`'s row shows in place of its own under `articles`,
+    /// nil while titles are shown as written: worked out once for each title
+    /// and kept (`LibraryListCache.rowTitle(of:articles:)`), since a Library
+    /// window draws its rows and its Books rotor again as a book plays.
+    func rowTitle(of book: Book, articles: LeadingArticles) -> String? {
+        listCache.rowTitle(of: book, articles: articles)
+    }
+
+    /// The Books rotor's entries for `books`, a list's books in its order:
+    /// each book's title as its row shows it, "Hobbit, The" while sorting
+    /// passes over articles (`rowTitle(of:articles:)`), and otherwise the
+    /// title as written. The window's rotor and its tests both read them.
+    func booksRotorEntries(of books: [Book], articles: LeadingArticles) -> [BookRotorEntry] {
+        books.map { BookRotorEntry(label: rowTitle(of: $0, articles: articles) ?? $0.title, id: $0.id) }
+    }
+
+    /// The rows of `books`, a list's books in its order, as letter
+    /// navigation reaches them, their titles folded once and kept until the
+    /// list changes (`LibraryListCache.typedRows(of:)`).
+    func typedRows(of books: [Book]) -> [TypedRow<UUID>] {
+        listCache.typedRows(of: books)
+    }
 
     /// The sort `location` shows, restored from the setting saved for it.
     /// Showing a sort never saves it (TODO A06).
@@ -289,7 +340,7 @@ extension LibraryViewModel {
     /// manual order as the list shows it. Saves the new order at once.
     func reorderBooksInFolder(folderPath: String, from source: IndexSet, to destination: Int) {
         let before = manualPositions(in: folderPath)
-        if ManualBookOrder.reorder(library: &library, folderPath: folderPath, from: source, to: destination) {
+        if ManualBookOrder.reorder(library: &library, folderPath: folderPath, from: source, to: destination, articles: leadingArticles) {
             saveManualOrder(in: folderPath, changedFrom: before)
         }
     }
@@ -307,7 +358,8 @@ extension LibraryViewModel {
             library: &library,
             bookID: bookID,
             direction: direction,
-            folderPath: folderPath
+            folderPath: folderPath,
+            articles: leadingArticles
         )
         if result != nil {
             saveManualOrder(in: folderPath, changedFrom: before)
@@ -321,7 +373,8 @@ extension LibraryViewModel {
             in: library,
             bookID: bookID,
             direction: direction,
-            folderPath: folderPath
+            folderPath: folderPath,
+            articles: leadingArticles
         )
     }
 

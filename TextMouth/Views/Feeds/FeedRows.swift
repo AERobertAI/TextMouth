@@ -19,6 +19,8 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
     @ObservedObject var center: FeedCenter
     /// Where the list is.
     let location: LibraryLocation
+    /// How the rows sort and show titles (the Leading articles setting).
+    var articles: LeadingArticles = .partOfTitle
     /// Opens a feed's folder, or, when it is gone, says so.
     let open: (FeedRowContent) -> Void
     /// Runs a feed's command.
@@ -32,7 +34,7 @@ struct LibraryFeedsSection<FolderMenu: View>: View {
 
     var body: some View {
         let _ = ViewBodyCounter.record("LibraryFeedsSection")
-        let rows = LibraryFeedsSectionRows.rows(at: location, center: center)
+        let rows = LibraryFeedsSectionRows.rows(at: location, center: center, articles: articles)
         if !rows.isEmpty {
             Section {
                 ForEach(rows) { row in
@@ -84,7 +86,7 @@ struct FeedRow: View, Equatable {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(content.title)
+                    Text(content.rowTitle)
                         .font(.headline)
                     FeedBadge(text: FeedWording.feedNote, color: .secondary)
                     if !content.counts.isSubscribed {
@@ -183,6 +185,9 @@ struct FeedFolderSections<BookRowView: View>: View {
     /// article's time left after the place kept for it (FR11), as a book
     /// row does.
     let wordsPerMinute: Double
+    /// How the item rows show titles (the Leading articles setting), as the
+    /// book rows beside them do.
+    var articles: LeadingArticles = .partOfTitle
     /// A book's row, as the library draws every book, with the commands of
     /// the item it came from, if any.
     let bookRow: (Book, [FeedItemAction]) -> BookRowView
@@ -197,7 +202,8 @@ struct FeedFolderSections<BookRowView: View>: View {
             shownBooks: shownBooks,
             folderBooks: folderBooks,
             search: search,
-            wordsPerMinute: wordsPerMinute
+            wordsPerMinute: wordsPerMinute,
+            articles: articles
         )
         Section {
             ForEach(listing.entries) { entry in
@@ -267,7 +273,7 @@ struct FeedItemRow: View, Equatable {
         let _ = ViewBodyCounter.record("FeedItemRow")
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text(content.title)
+                Text(content.rowTitle)
                     .font(.headline)
                 if content.isPlayed {
                     FeedBadge(text: FeedWording.playedNote(isArticle: content.isArticle), color: .secondary)

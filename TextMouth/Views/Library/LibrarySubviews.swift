@@ -389,6 +389,11 @@ struct FolderRow: View {
 
 struct BookRow: View {
     let book: Book
+    /// The title the row shows and speaks in place of the book's own, as
+    /// the Leading articles setting has the Library show titles while
+    /// sorting passes over articles ("Hobbit, The"); nil, the default,
+    /// shows the book's title as written. The book keeps its title.
+    var shownTitle: String? = nil
     var isOpenInWindow: Bool = false
     var wpm: Double = 200
     var isEditMode: Bool = false
@@ -455,6 +460,11 @@ struct BookRow: View {
         livePosition.applied(to: book)
     }
 
+    /// The title the row shows and speaks: `shownTitle`, or the book's own.
+    private var title: String {
+        shownTitle ?? book.title
+    }
+
     var body: some View {
         let _ = ViewBodyCounter.record("BookRow")
         HStack(spacing: 8) {
@@ -468,7 +478,7 @@ struct BookRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(book.title)
+                    Text(title)
                         .font(.headline)
 
                     if book.isUnopened {
@@ -585,13 +595,15 @@ struct BookRow: View {
         return names.flatMap { $0 }
     }
 
-    /// Spoken label for the whole row, replacing its combined children.
+    /// Spoken label for the whole row, replacing its combined children: it
+    /// begins with the title as the row shows it, so VoiceOver and a braille
+    /// display read what the row shows.
     var rowAccessibilityLabel: String {
         var parts: [String] = []
         if isEditMode && isEditSelected {
             parts.append("Selected")
         }
-        parts.append(book.title)
+        parts.append(title)
         parts.append("by \(book.author)")
         // Right after the title and author, so a book in the reading list
         // says so in the same place on every row (FR09).
@@ -794,6 +806,10 @@ struct LibraryBookRowActions {
 struct LibraryBookListRow: View, Equatable {
     /// The row's book.
     let book: Book
+    /// The title the row shows and speaks in place of the book's own while
+    /// the Leading articles setting has titles shown with their articles
+    /// after them ("Hobbit, The"); nil shows the title as written.
+    var shownTitle: String? = nil
     /// Whether a reader window has the book open.
     let isOpenInWindow: Bool
     /// The speed the time left is figured at.
@@ -850,6 +866,7 @@ struct LibraryBookListRow: View, Equatable {
     /// Whether two rows show the same thing: every input but `actions`.
     nonisolated static func == (lhs: LibraryBookListRow, rhs: LibraryBookListRow) -> Bool {
         lhs.book == rhs.book
+            && lhs.shownTitle == rhs.shownTitle
             && lhs.isOpenInWindow == rhs.isOpenInWindow
             && lhs.wpm == rhs.wpm
             && lhs.isEditMode == rhs.isEditMode
@@ -873,6 +890,7 @@ struct LibraryBookListRow: View, Equatable {
         let _ = ViewBodyCounter.record("LibraryBookListRow")
         BookRow(
             book: book,
+            shownTitle: shownTitle,
             isOpenInWindow: isOpenInWindow,
             wpm: wpm,
             isEditMode: isEditMode,

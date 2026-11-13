@@ -889,15 +889,20 @@ final class SettingsViewModel: ObservableObject {
             // The Library window's views share the Export button's array: one
             // more sum here takes the type checker past its time limit.
             + [BookExportPreferences.showInReaderToolbar.key, LibraryViewDefinitionStore.preference.key]
+        // What a title's leading article does in the Library's lists
+        // (November 13, 2026), typed apart to keep the sum below quick.
+        let library: [String] = [LeadingArticles.preference.key]
         return earlier + [BraillePreferences.table.key]
             + [BraillePreferences.fileCode.key]
+            + library
     }
 
     /// The keys of the preferences other services keep that this model
     /// shows (the log location, the reader toolbar's Export button, the
-    /// feed settings, the transcription settings, the braille table, and the
-    /// braille file characters), whose changes it announces wherever they
-    /// are made, such as in config.json, so the controls showing them follow.
+    /// feed settings, the transcription settings, the braille table, the
+    /// braille file characters, and the Library's leading articles), whose
+    /// changes it announces wherever they are made, such as in config.json,
+    /// so the controls showing them, and the Library windows, follow.
     private static let shownServicePreferenceKeys = Set([
         LogLocation.preference.key,
         BookExportPreferences.showInReaderToolbar.key,
@@ -905,6 +910,7 @@ final class SettingsViewModel: ObservableObject {
         TranscriptionPreferences.offerAfterImport.key,
         BraillePreferences.table.key,
         BraillePreferences.fileCode.key,
+        LeadingArticles.preference.key,
     ] + FeedSettings.preferenceKeys)
 
     /// The language transcription uses (FR05), in Playback settings'
@@ -996,6 +1002,21 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    /// What a title's leading article does in the Library's lists (the
+    /// Library tab's Leading articles pop-up, November 13, 2026). The
+    /// Library windows read it from the store (`LeadingArticles.preference`)
+    /// as they draw; config.json follows it through the observer below,
+    /// which also announces a change made anywhere else, such as in
+    /// config.json, so the pop-up and every open Library window follow it.
+    var leadingArticles: LeadingArticles {
+        get { LeadingArticles.preference.read(from: preferences) }
+        set {
+            guard newValue != leadingArticles else { return }
+            objectWillChange.send()
+            LeadingArticles.preference.write(newValue, to: preferences)
+        }
+    }
+
     /// The feed reader's settings (FR03), which the feed engine reads from
     /// the store (`FeedSettings`), for the Preferences section to show and
     /// change. A change is saved to the store at once, setting by setting,
@@ -1070,6 +1091,8 @@ final class SettingsViewModel: ObservableObject {
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
         // The Library window's views, every one, as the views store keeps them.
         config.libraryViews = LibraryViewDefinitionStore.preference.read(from: preferences).fileEntries
+        // What a title's leading article does in the Library's lists.
+        config.leadingArticles = LeadingArticles.preference.read(from: preferences).rawValue
         #if os(iOS)
         // The iPhone bundles no tables, so the Mac's default is not one it
         // accepts: config.json would keep it, and decoding would repair it to
@@ -1168,6 +1191,9 @@ final class SettingsViewModel: ObservableObject {
             },
             into: LibraryViewDefinitionStore.preference
         )
+        // An empty or unsupported leading-articles choice leaves the
+        // current one alone.
+        adopt(SettingsPolicy.leadingArticles.requestedValue(fromConfig: config.leadingArticles), into: LeadingArticles.preference)
         // An empty or unknown table name leaves the current table alone; a
         // Mac table's value is taken without reading this Mac's tables
         // (review R3), and refused by name when it is used if the Mac lacks it.

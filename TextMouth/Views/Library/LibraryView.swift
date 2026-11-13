@@ -347,6 +347,10 @@ struct LibraryView: View {
         // the model again.
         let allBooks = displayedBooks
         let books = filteredBooks
+        // How titles are sorted, shown, and found by typing (the Leading
+        // articles setting), read once for the rows, the rotor, and the
+        // Feeds section.
+        let articles = libraryViewModel.leadingArticles
         // Which views shown when applicable list something, asked once for
         // the body, and shared by the View pop-up and Go to View (review of
         // October 31, 2026, finding 4).
@@ -481,7 +485,13 @@ struct LibraryView: View {
                 // row also offers its feed's folder's commands, as the
                 // folder's row, left out where the feed's row stands for
                 // it, did.
-                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction) { row in
+                LibraryFeedsSection(
+                    center: feedFolders.center,
+                    location: location,
+                    articles: articles,
+                    open: openFeed,
+                    perform: performFeedAction
+                ) { row in
                     if let folder = folder(ofFeedRow: row) {
                         Divider()
                         folderMenu(folder)
@@ -502,8 +512,10 @@ struct LibraryView: View {
             }
             .searchable(text: $searchText, prompt: "Search books")
             .accessibilityRotor("Books") {
-                ForEach(books) { book in
-                    AccessibilityRotorEntry(book.title, id: book.id)
+                // Each title as its row shows it ("Hobbit, The" while sorting
+                // passes over articles), in the list's order.
+                ForEach(libraryViewModel.booksRotorEntries(of: books, articles: articles)) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
             .accessibilityRotor("Folders") {
@@ -534,6 +546,23 @@ struct LibraryView: View {
                 editSelection = []
                 selectedBookIDs = []
             }
+            // Letter navigation that passes over leading articles, in the
+            // Leading articles setting's second and third choices; in the
+            // first, the list's own type select, as always.
+            .modifier(LibraryTitleTyping(
+                articles: articles,
+                rows: {
+                    typedRows(
+                        folders: showsFolders ? subfolders : [],
+                        books: listsItems ? books : [],
+                        allBooks: allBooks,
+                        feedID: feedID,
+                        articles: articles
+                    )
+                },
+                selection: $selectedBookIDs,
+                window: hostWindow
+            ))
         }
         .toolbar {
             ToolbarItemGroup {
@@ -1148,6 +1177,8 @@ struct LibraryView: View {
         let selectionReadingListCommands: [ReadingListCommand]
         /// What the rows' commands do.
         let actions: LibraryBookRowActions
+        /// How the rows show titles (the Leading articles setting).
+        let articles: LeadingArticles
     }
 
     /// The context the rows of `books` share, for a list whose location
@@ -1181,7 +1212,8 @@ struct LibraryView: View {
                 isSelection: selection.count > 1,
                 inList: readingListIDs
             ),
-            actions: rowActions
+            actions: rowActions,
+            articles: libraryViewModel.leadingArticles
         )
     }
 
@@ -1197,6 +1229,8 @@ struct LibraryView: View {
         let isSelectionRow = targets.count > 1
         return LibraryBookListRow(
             book: book,
+            // "Hobbit, The" while sorting passes over articles.
+            shownTitle: libraryViewModel.rowTitle(of: book, articles: context.articles),
             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
             wpm: settingsViewModel.wordsPerMinute,
             isEditMode: isEditMode,
@@ -1333,6 +1367,7 @@ struct LibraryView: View {
                 folderBooks: allBooks,
                 search: searchText,
                 wordsPerMinute: settingsViewModel.wordsPerMinute,
+                articles: context.articles,
                 bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
                 perform: performFeedItemAction
             )
@@ -1357,11 +1392,57 @@ struct LibraryView: View {
         }
     }
 
+    /// The list's rows, in its order, as letter navigation reaches them
+    /// (`LibraryTitleTyping`): the Folders section's folders by their names
+    /// as written; the Feeds section's feeds, in the order it shows them;
+    /// and the books, as a feed's folder lists them where the list shows
+    /// one (its items' books, then its other books). Rows the list's
+    /// selection cannot hold, a feed's items not downloaded, are left out.
+    /// - Parameters:
+    ///   - folders: The folders the Folders section shows, or none.
+    ///   - books: The books the list shows, as the search narrows them, or none.
+    ///   - allBooks: Every book at the location, in the order shown.
+    ///   - feedID: The feed whose folder the list shows, if it shows one.
+    ///   - articles: How titles are sorted and shown.
+    private func typedRows(
+        folders: [BookFolder],
+        books: [Book],
+        allBooks: [Book],
+        feedID: UUID?,
+        articles: LeadingArticles
+    ) -> [TypedRow<UUID>] {
+        // The folders and feeds are few and made at each key; the books,
+        // which may be thousands, are the rows kept with their titles folded.
+        var rows = folders.map { TypedRow(id: $0.id, name: $0.name) }
+        rows += LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles)
+            .map { TypedRow(id: $0.id, title: $0.title, language: nil) }
+        var listedBooks = books
+        if let feedID, !books.isEmpty {
+            let listing = FeedFolderListing.make(
+                feedID: feedID,
+                center: feedFolders.center,
+                shownBooks: books,
+                folderBooks: allBooks,
+                search: searchText,
+                wordsPerMinute: settingsViewModel.wordsPerMinute,
+                articles: articles
+            )
+            listedBooks = listing.entries.compactMap { entry in
+                if case .book(let book, _) = entry { return book }
+                return nil
+            } + listing.otherBooks
+        }
+        rows += libraryViewModel.typedRows(of: listedBooks)
+        return rows
+    }
+
     /// The Folders section's rows and the Folders rotor's entries here, of
     /// `folders`, the folders directly inside this location
     /// (`LibraryFeedFolders.folderRows(_:at:bookCount:)`, FR03).
     private func shownFolderRows(of folders: [BookFolder]) -> LibraryFolderRows {
-        feedFolders.folderRows(folders, at: location) { libraryViewModel.bookCount(inFolderTree: $0.fullPath) }
+        feedFolders.folderRows(folders, at: location, articles: libraryViewModel.leadingArticles) {
+            libraryViewModel.bookCount(inFolderTree: $0.fullPath)
+        }
     }
 
     /// The library folder of the feed a Feeds row shows, or nil when it is
@@ -1690,7 +1771,8 @@ struct LibraryView: View {
             selectedBookIDs,
             editSelection: editSelection,
             folders: shownFolderRows(of: libraryViewModel.subfoldersOf(currentFolderPath)).shown,
-            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center),
+            // In the order the Feeds section shows them.
+            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: libraryViewModel.leadingArticles),
             books: filteredBooks
         )
     }

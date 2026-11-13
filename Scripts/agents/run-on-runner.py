@@ -19,6 +19,8 @@ A request may carry "limit_minutes" to shorten that limit (it cannot lengthen it
 fails, and a busy machine does not skip them), and "no_warnings": true, which fails the run when the build's log
 shows a Swift warning (xcodebuild reports a file's warnings only when it compiles that file, so this means
 something only for a build from nothing, "cold": true). Both are what the reproducibility gate (check.yml) asks.
+A request sent by hand may carry "type_select_probe": true, which lets LibraryTypeSelectProbeTests run (it skips
+otherwise, since it costs about 72 seconds and its findings are settled).
 
 It exits 0 when the tests passed and 1 when they did not. Every wait has a
 limit: the whole run (--limit-minutes), and a test host that writes nothing
@@ -102,7 +104,8 @@ def time_scale_problem(request):
 def runner_environment(request):
     """The environment the test command runs in: this process's own, plus TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE (the
     runner's time scale), and, for a request that asks for strict performance baselines,
-    TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1. xcodebuild hands each to the test host without its TEST_RUNNER_ prefix
+    TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1, or, for one that asks for the type-select probe,
+    TEST_RUNNER_TEXTMOUTH_TYPE_SELECT_PROBE=1. xcodebuild hands each to the test host without its TEST_RUNNER_ prefix
     (as `make test PERFORMANCE_STRICT=1` does for the gate on the Mac)."""
     environment = dict(os.environ)
     # main() refuses a request whose scale is no good before it gets here; the default stands in if one gets through.
@@ -110,6 +113,8 @@ def runner_environment(request):
     environment["TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE"] = str(scale)
     if request.get("strict_performance"):
         environment["TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT"] = "1"
+    if request.get("type_select_probe"):
+        environment["TEST_RUNNER_TEXTMOUTH_TYPE_SELECT_PROBE"] = "1"
     return environment
 
 
