@@ -24,7 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - File menu, Open Book… (Command-O) imports the files you choose.
 - Opening a supported file from Finder imports it and opens it.
-- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
+- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, MPEG-4, M4V, and QuickTime video files (.mp4, .m4v, and .mov, whose sound alone it plays), the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
 - It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
 - A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it.
 - A photo is refused with the sentence for a PEF that cannot be read (below).
