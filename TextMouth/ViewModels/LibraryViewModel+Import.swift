@@ -776,7 +776,12 @@ extension LibraryViewModel {
         // alert and its questions (FR10).
         importProgress.end(.batch(result))
         if let failureSummary = result.failureSummary {
-            presentImportMessage(failureSummary)
+            // Never the bare "Error": the books that came in are in the
+            // library, so the title says what the batch left out.
+            presentImportMessage(
+                failureSummary,
+                title: ImportProgressWording.zipAlertTitle(for: result, addedBooks: acceptedBooks.count)
+            )
         } else if result.foundNoNewBook {
             presentImportMessage(
                 ImportProgressWording.nothingImported(from: originalURL.lastPathComponent, result: result),

@@ -244,6 +244,29 @@ enum ImportProgressWording {
     /// book ends: nothing failed, so it is no error.
     static let nothingImportedTitle = "Nothing Imported"
 
+    /// The title of the library's alert as a ZIP batch that added at least
+    /// one book ends having left something out: a file failed or the reader
+    /// cancelled it. The books that came in are in the library, so it is no
+    /// error, and the title says some files are not.
+    static let someFilesNotImportedTitle = "Some Files Not Imported"
+
+    /// The title of the library's alert as a ZIP batch ends with something
+    /// to tell (`ZipImportResult.failureSummary`), so it is never the
+    /// fallback "Error" of an alert with no title:
+    /// - no book came into the library (`addedBooks` is 0): "Nothing
+    ///   Imported", whether files failed or the batch was cancelled early;
+    /// - books came in, but a file failed or the batch was cancelled:
+    ///   "Some Files Not Imported";
+    /// - books came in, all of them, and only some lack chapters or pages:
+    ///   "Book Imported", as for a single book imported with something to
+    ///   tell (`bookImportedTitle`).
+    /// `addedBooks` counts the books the library took from the batch.
+    static func zipAlertTitle(for result: ZipImportResult, addedBooks: Int) -> String {
+        guard addedBooks > 0 else { return nothingImportedTitle }
+        if !result.failures.isEmpty || result.cancellation != nil { return someFilesNotImportedTitle }
+        return bookImportedTitle
+    }
+
     /// How many kinds of file the alert of a batch that found no book names
     /// before counting the rest together as other files.
     static let namedFileKinds = 3

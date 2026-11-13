@@ -45,6 +45,30 @@ final class ZIPImportTests: XCTestCase {
         XCTAssertEqual(viewModel.importDecisions.current?.duplicate?.existing.id, existing.id)
     }
 
+    /// A partial batch is not titled "Error": one that added books but had
+    /// a file fail, or was cancelled, says some files were not imported; one
+    /// that added nothing says nothing was imported; one whose books only
+    /// lack chapters keeps the title of a book imported with something to tell.
+    func testAPartialBatchAlertIsNotTitledError() {
+        let book = Book(title: "Accepted", format: .txt, filePath: "/tmp/accepted", md5Hash: "hash")
+        let failed = [ZipImportFailure(fileName: "failed.epub", message: "unreadable")]
+        let cancelled = ZipImportCancellation.afterBooks(completed: 1, total: 3)
+
+        let titles = [
+            ImportProgressWording.zipAlertTitle(for: ZipImportResult(books: [book], failures: failed), addedBooks: 1),
+            ImportProgressWording.zipAlertTitle(
+                for: ZipImportResult(books: [book], failures: [], cancellation: cancelled), addedBooks: 1
+            ),
+            ImportProgressWording.zipAlertTitle(for: ZipImportResult(books: [], failures: failed), addedBooks: 0),
+            ImportProgressWording.zipAlertTitle(
+                for: ZipImportResult(books: [book], failures: [], incompleteBooks: failed), addedBooks: 1
+            ),
+        ]
+
+        XCTAssertEqual(titles, ["Some Files Not Imported", "Some Files Not Imported", "Nothing Imported", "Book Imported"])
+        XCTAssertFalse(titles.contains("Error"))
+    }
+
     /// Use a disposable file and restore the config preference after each
     /// scenario; no test deletes or overwrites a developer-owned archive.
     @MainActor
@@ -87,8 +111,19 @@ final class ZIPImportTests: XCTestCase {
         // that imported nothing, and lost nothing, says so under its own
         // title.
         XCTAssertEqual(viewModel.showError, hasFailure || hasIncompleteBook || !hasBook)
-        let importedNothing = !hasBook && !hasFailure
-        XCTAssertEqual(viewModel.errorTitle, importedNothing ? ImportProgressWording.nothingImportedTitle : nil)
+        // The alert is never the untitled "Error": it is titled by what
+        // the batch brought in and what it left out.
+        let expectedTitle: String?
+        if !hasBook {
+            expectedTitle = "Nothing Imported"
+        } else if hasFailure {
+            expectedTitle = "Some Files Not Imported"
+        } else if hasIncompleteBook {
+            expectedTitle = "Book Imported"
+        } else {
+            expectedTitle = nil
+        }
+        XCTAssertEqual(viewModel.errorTitle, expectedTitle)
     }
 
     func testSupportedFileLoopReturnsBooksAndPerFileFailures() throws {
