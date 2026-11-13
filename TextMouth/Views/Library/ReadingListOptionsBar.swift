@@ -1,24 +1,28 @@
 import SwiftUI
 
 /// The options bar at the top of the Reading List (FR09): what a book
-/// opened from the reading list does when it ends, and whether continuing
-/// passes over finished books.
+/// opened from the reading list does when it ends, whether continuing
+/// passes over finished books, and whether a finished book leaves the list.
 ///
-/// Both are AppKit controls the keyboard and VoiceOver reach as they reach
+/// All are AppKit controls the keyboard and VoiceOver reach as they reach
 /// any other, side by side with no group around them, so VoiceOver moves to
 /// each directly: a pop-up button, which speaks its label, the option
-/// chosen, and its hint, and a checkbox, which speaks its label, whether it
-/// is checked, and its hint. Each choice is saved with the list at once, by
-/// the closures the window gives.
+/// chosen, and its hint, and two checkboxes, each of which speaks its
+/// label, whether it is checked, and its hint. Each choice is saved with
+/// the list at once, by the closures the window gives.
 struct ReadingListOptionsBar: View {
     /// What a book opened from the list does when it ends.
     let continuation: ReadingList.Continuation
     /// Whether continuing passes over finished books.
     let skipsFinished: Bool
+    /// Whether a book leaves the list as soon as it is finished.
+    let removesFinished: Bool
     /// Saves a new choice of what a book does when it ends.
     let chooseContinuation: (ReadingList.Continuation) -> Void
     /// Saves skipping finished books on or off.
     let chooseSkipsFinished: (Bool) -> Void
+    /// Saves removing finished books on or off.
+    let chooseRemovesFinished: (Bool) -> Void
 
     var body: some View {
         HStack(spacing: 16) {
@@ -46,6 +50,15 @@ struct ReadingListOptionsBar: View {
             .help(ReadingListWording.skipFinishedHint)
             .accessibilityLabel(ReadingListWording.skipFinishedLabel)
             .accessibilityHint(ReadingListWording.skipFinishedHint)
+
+            Toggle(ReadingListWording.removeFinishedLabel, isOn: Binding(
+                get: { removesFinished },
+                set: { chooseRemovesFinished($0) }
+            ))
+            .checkboxToggleStyle()
+            .help(ReadingListWording.removeFinishedHint)
+            .accessibilityLabel(ReadingListWording.removeFinishedLabel)
+            .accessibilityHint(ReadingListWording.removeFinishedHint)
 
             Spacer()
         }

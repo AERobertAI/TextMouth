@@ -439,6 +439,8 @@ final class LibraryViewModel: ObservableObject {
         // Clear what the audio editor left in this Mac's caches when
         // TextMouth last ended with editors open, off the main thread.
         removeStaleAudioEditCachesInBackground()
+        // A book finished leaves the reading list when it says to.
+        observeFinishedBooks()
         // The import overlay follows the import queue (FR10).
         observeImportActivity()
         // Speak Import Progress, from any window (FR10).

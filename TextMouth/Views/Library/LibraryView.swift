@@ -1020,8 +1020,10 @@ struct LibraryView: View {
             ReadingListOptionsBar(
                 continuation: list.continuation,
                 skipsFinished: list.skipsFinished,
+                removesFinished: list.removesFinished,
                 chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
-                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) }
+                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) },
+                chooseRemovesFinished: { libraryViewModel.setReadingListRemovesFinished($0) }
             )
         }
     }

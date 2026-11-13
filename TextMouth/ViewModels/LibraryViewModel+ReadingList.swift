@@ -189,6 +189,65 @@ extension LibraryViewModel {
         }
     }
 
+    /// Makes a book leave the reading list as soon as it is finished, or
+    /// not, and saves the choice; the choice already made saves nothing.
+    /// Turning it on takes off none of the books already finished: it acts
+    /// on books finished from then on (`removeFinishedBookFromReadingList`).
+    func setReadingListRemovesFinished(_ removesFinished: Bool) {
+        editReadingList { list, _ in
+            list.removesFinished = removesFinished
+        }
+    }
+
+    // MARK: - Removing Finished Books
+    //
+    // The reading list's "Remove books when finished" (the user, November
+    // 13, 2026). A book's end is told by `.bookDidFinish`
+    // (`ReadingStatsService.markBookFinished`), whether the book was opened
+    // from the list or not, and the list hears of it here.
+    //
+    // The order matters. A reader of a book opened from the list, whose book
+    // ends, tells the end, then asks the list at once, in the same turn of
+    // the main queue, which book follows (`readingListContinuation(after:)`),
+    // and the list answers only for a book it still holds. So the book is
+    // taken off the list one turn of the main queue after it is told, never
+    // within the telling: by then the reader has its answer, and goes on to
+    // the book that followed the finished one (or preceded it, going up),
+    // passing over finished books as the list's other option says. The
+    // reader reads its book as any book from then on, since the book has
+    // left the list (`ReaderViewModel.followReadingList(in:)`).
+
+    /// Starts hearing of finished books from `source`, whose end the
+    /// reading list then acts on (`removeFinishedBookFromReadingList`).
+    /// The library starts it once, with its other observers.
+    ///
+    /// The turn of the main queue the removal waits for is
+    /// `receive(on: DispatchQueue.main)`: Combine always schedules it
+    /// asynchronously, even when the notification is posted on the main
+    /// queue, as this one is.
+    func observeFinishedBooks(of source: ReadingStatsService = .shared) {
+        NotificationCenter.default.publisher(for: .bookDidFinish, object: source)
+            .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] bookID in self?.removeFinishedBookFromReadingList(bookID) }
+            .store(in: &cancellables)
+    }
+
+    /// Takes the book `bookID`, just finished, off the reading list when the
+    /// list says to (`ReadingList.removesFinished`) and holds it, through
+    /// the removal Remove from Reading List makes
+    /// (`removeFromReadingList(_:)`), so it is saved as that is. Silent:
+    /// the end of the book says what it says, and a Reading List showing
+    /// changes by itself. A book not on the list, and any book while the
+    /// option is off, are left alone.
+    ///
+    /// - Returns: Whether the book was taken off the list.
+    @discardableResult
+    func removeFinishedBookFromReadingList(_ bookID: UUID) -> Bool {
+        guard readingList.removesFinished, readingList.contains(bookID) else { return false }
+        return !removeFromReadingList([bookID]).isEmpty
+    }
+
     // MARK: - The Questions a Reader Asks
     //
     // A reader opened from the Reading List reads its book from the list

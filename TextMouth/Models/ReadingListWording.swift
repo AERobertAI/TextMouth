@@ -50,6 +50,16 @@ enum ReadingListWording {
     /// The checkbox's hint: when it applies, and what it does.
     static let skipFinishedHint = "When a book opened from the reading list ends, pass over the books already finished"
 
+    /// The label of the options bar's checkbox for taking books off the list
+    /// as they are finished.
+    static let removeFinishedLabel = "Remove books when finished"
+
+    /// The checkbox's hint: when it applies, and what it does. It says that
+    /// only books finished from then on leave the list, so no one expects
+    /// the books already finished to go at once.
+    static let removeFinishedHint = "When a book is finished, take it off the reading list. "
+        + "Books finished before you turn this on stay on it. Books stay in the library."
+
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the

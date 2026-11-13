@@ -94,14 +94,27 @@ struct ReadingList: Codable, Equatable, Sendable {
     var continuation: Continuation
     /// Whether continuing passes over the books already finished.
     var skipsFinished: Bool
+    /// Whether a book on the list leaves it as soon as it is finished
+    /// (the user, November 13, 2026: "there really should be an option in
+    /// the reading list screen to remove books as you finish them from the
+    /// list"). Off by default, and for a list saved before the option
+    /// existed; it acts on books finished from the moment it is turned on,
+    /// and takes off none already finished.
+    var removesFinished: Bool
 
     /// A list of `bookIDs`, in that order and each kept once, with the
-    /// given options: by default empty, continuing to the book below and
-    /// skipping finished books.
-    init(bookIDs: [UUID] = [], continuation: Continuation = .playBookBelow, skipsFinished: Bool = true) {
+    /// given options: by default empty, continuing to the book below,
+    /// skipping finished books, and keeping them on the list.
+    init(
+        bookIDs: [UUID] = [],
+        continuation: Continuation = .playBookBelow,
+        skipsFinished: Bool = true,
+        removesFinished: Bool = false
+    ) {
         self.bookIDs = Self.firstOccurrences(of: bookIDs)
         self.continuation = continuation
         self.skipsFinished = skipsFinished
+        self.removesFinished = removesFinished
     }
 
     // MARK: Membership
@@ -205,9 +218,12 @@ struct ReadingList: Codable, Equatable, Sendable {
 
     // MARK: Coding
 
-    /// The keys of the list in library.json.
+    /// The keys of the list in library.json. A TextMouth older than
+    /// `removesFinished` reads a list with that key all the same: it names
+    /// only the keys it knows and ignores the rest, and so loses the option
+    /// (reads as off) should it save the list.
     private enum CodingKeys: String, CodingKey {
-        case bookIDs, continuation, skipsFinished
+        case bookIDs, continuation, skipsFinished, removesFinished
     }
 
     /// Reads a saved list, leniently, so the list can never make the whole
@@ -234,6 +250,8 @@ struct ReadingList: Codable, Equatable, Sendable {
         bookIDs = Self.firstOccurrences(of: ids)
         continuation = (try? container.decodeIfPresent(Continuation.self, forKey: .continuation)) ?? .playBookBelow
         skipsFinished = (try? container.decodeIfPresent(Bool.self, forKey: .skipsFinished)) ?? true
+        // A list saved before the option existed has no key, and reads as off.
+        removesFinished = (try? container.decodeIfPresent(Bool.self, forKey: .removesFinished)) ?? false
     }
 
     /// An entry of the saved list that is read only to step over it.
