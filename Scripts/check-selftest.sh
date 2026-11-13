@@ -923,6 +923,24 @@ makefile_cases() {
   expect_report "-configuration Debug"
   refute_report "SWIFT_OPTIMIZATION_LEVEL"
   end_case
+
+  # The once-per-release run of the golden tests against a Release build must
+  # build what ships (Release, -Osize) with testability on and the settings
+  # that would hide the app's symbols from the test bundle switched back.
+  begin_case "release-goldens.sh builds a testable Release app and names the golden classes"
+  output=$("$ROOT/Scripts/test/release-goldens.sh" --dry-run --no-slot 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Release"
+  expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  expect_report "ENABLE_TESTABILITY=YES"
+  expect_report "LD_EXPORT_SYMBOLS=YES"
+  expect_report "DEAD_CODE_STRIPPING=NO"
+  expect_report "DEPLOYMENT_POSTPROCESSING=NO"
+  expect_report "-only-testing:TextMouthProductionTests/TextPipelineGoldenTests"
+  expect_report "-only-testing:TextMouthProductionTests/DocumentGoldenTests"
+  expect_report "-only-testing:TextMouthProductionTests/MarkupGuardTests"
+  end_case
 }
 
 # A UUID of the form dwarfdump prints, made from a number, so each planted

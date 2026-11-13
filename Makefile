@@ -100,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -118,6 +118,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
+	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (10 to 15 minutes; pass options through GOLDEN_ARGS)"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, and the Scripts/test tools in seconds, without building"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
@@ -267,6 +268,13 @@ test:
 ## make check CHECK_ARGS=--dry-run
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
+
+## Run the golden tests that pin every reader's output against a Release build
+## made with testability on (Scripts/test/release-goldens.sh), once per release
+## and after a change to the Release build settings. Pass options through
+## GOLDEN_ARGS, for example: make release-goldens GOLDEN_ARGS=--dry-run
+release-goldens:
+	@Scripts/test/release-goldens.sh $(GOLDEN_ARGS)
 
 ## Test the gate script, the performance baselines' recording script, the
 ## storage drill script, the version script and the tools in Scripts/test (the
