@@ -673,6 +673,43 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertFalse(requests.hasRequest(for: other.id), "the book's own reader left the request")
     }
 
+    // MARK: - An Open Refused
+
+    /// An open the Library refuses, while the library moves or is
+    /// unavailable, drops the request to move to a match waiting for its
+    /// book, so opening the book another way within the request's lifetime
+    /// never jumps to an old match (the review of November 13, finding 9);
+    /// another book's request stays, and an action that opens no book drops
+    /// nothing.
+    func testARefusedOpenDropsTheMatchRequestWaitingForItsBook() {
+        let requests = LibrarySearchJumpRequests()
+        let refused = UUID()
+        let other = UUID()
+        let found = BookSearchResult(
+            chapterIndex: 1, characterOffset: 4, matchedText: "word", contextSnippet: "a word here", globalOffset: 40
+        )
+        for bookID in [refused, other] {
+            requests.request(bookID: bookID, match: found, query: "word", options: TextSearchOptions())
+        }
+
+        ReaderOpenRefusal.dropRequests(
+            for: .openBookWindow(refused),
+            autoplay: ReaderAutoplayRequests(),
+            readingList: ReadingListOpenRequests(),
+            librarySearch: requests
+        )
+        XCTAssertFalse(requests.hasRequest(for: refused), "the refused book's match request was kept")
+        XCTAssertTrue(requests.hasRequest(for: other), "another book's match request was dropped")
+
+        ReaderOpenRefusal.dropRequests(
+            for: .goToLibrary,
+            autoplay: ReaderAutoplayRequests(),
+            readingList: ReadingListOpenRequests(),
+            librarySearch: requests
+        )
+        XCTAssertTrue(requests.hasRequest(for: other), "an action that opens no book dropped a match request")
+    }
+
     // MARK: - Books Without Their Text
 
     /// An audiobook with no transcript has no text to find the match in:
