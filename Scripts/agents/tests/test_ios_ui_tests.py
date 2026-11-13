@@ -252,6 +252,43 @@ class CountingTheTestsTests(TreeCase):
                              f"({counts}): a test is in a form the counter misses")
 
 
+# The Mac's test folders: the classes in them are the ones a request's "classes" keeps for run-area.py.
+MAC_TEST_FOLDERS = ("TextMouthTests", "TextMouthProductionTests")
+# A class that inherits something (`final class A: XCTestCase`, `@MainActor class B: Base`), whatever stands before `class`.
+# The search runs line by line and stops at a comment, so it cannot backtrack across the file.
+INHERITING_CLASS = re.compile(r"^[ \t]*[^\n/]*?\bclass\s+([A-Za-z0-9_]+)\s*:", re.M)
+
+
+def mac_class_names(root):
+    """Every class that inherits something in the Mac's test folders of `root`, as a set of names."""
+    names = set()
+    for folder in MAC_TEST_FOLDERS:
+        for path in ui.swift_files(Path(root) / folder):
+            names.update(INHERITING_CLASS.findall(path.read_text(encoding="utf-8", errors="replace")))
+    return names
+
+
+class TheNamesStayApartTests(TreeCase):
+    """`split_classes` moves any name an iPhone folder holds out of a request's Mac classes, so a Mac test class with an
+    iPhone class's name would quietly stop running when asked for."""
+
+    def test_no_iphone_test_class_shares_a_mac_test_class_name(self):
+        iphone = set(ui.all_classes(ROOT))
+        self.assertTrue(iphone, "no iPhone test class found: the search itself is broken")
+        self.assertGreater(len(mac_class_names(ROOT)), 100, "the Mac's test classes were not found")
+        self.assertEqual(sorted(iphone & mac_class_names(ROOT)), [],
+                         "an iPhone test class shares its name with a Mac test class: rename the iPhone one")
+
+    def test_the_check_sees_a_shared_name(self):
+        """The break: a scratch tree whose Mac folder holds a class named like an iPhone one."""
+        root = self.tree(A="final class PhoneValueRowTests: TextMouthUITestCase {\n    func testA() {}\n}\n")
+        (root / "TextMouthProductionTests").mkdir()
+        (root / "TextMouthProductionTests" / "Mac.swift").write_text(
+            "@MainActor final class PhoneValueRowTests: XCTestCase {\n    func testB() {}\n}\n"
+            "final class OtherTests: XCTestCase {}\n")
+        self.assertEqual(sorted(set(ui.all_classes(root)) & mac_class_names(root)), ["PhoneValueRowTests"])
+
+
 class TheCountsInASummaryTests(unittest.TestCase):
     """The Executed line travels with each bundle's count to the places that show one line."""
 
