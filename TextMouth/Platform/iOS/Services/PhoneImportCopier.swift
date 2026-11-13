@@ -334,10 +334,12 @@ final class PhoneImportCopier: ObservableObject {
         }
     }
 
-    /// Answers the question the sheet shows with `answer`.
+    /// Answers the question the sheet shows with `answer`, off the main actor
+    /// where the answer takes long (Replace Existing of a braille book that
+    /// is read again).
     /// - Returns: The library's outcome, whose failure the sheet shows.
-    func answer(_ question: PhoneImportQuestion, with answer: ImportDecisionAnswer) -> OperationOutcome {
-        library.answerImportDecision(question.decisionID, with: answer)
+    func answer(_ question: PhoneImportQuestion, with answer: ImportDecisionAnswer) async -> OperationOutcome {
+        await library.answerImportDecisionOffMain(question.decisionID, with: answer)
     }
 
     // MARK: - Under Way, Held, and Swept

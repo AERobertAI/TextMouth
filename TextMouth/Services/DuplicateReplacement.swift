@@ -432,8 +432,10 @@ enum DuplicateReplacement {
     // MARK: Preparing the New Copy's Package
 
     /// The new copy's package, made ready to take the old copy's place, and
-    /// what the library needs to finish the replacement or undo it.
-    struct Preparation {
+    /// what the library needs to finish the replacement or undo it. Made off
+    /// the main actor and handed back to it
+    /// (`LibraryViewModel.answerImportDecisionOffMain(_:with:prepare:)`).
+    struct Preparation: Sendable {
         /// The library row the new copy becomes (`carriedBook`), at its
         /// package's new place.
         let book: Book

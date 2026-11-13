@@ -15,6 +15,12 @@ import SwiftUI
 /// (`ImportDecisionPresenter.userIsIn(_:)`). Return and Escape choose the
 /// marked choices; deleting a file is never on a key. An answer that fails
 /// leaves the question showing, with the reason.
+///
+/// An answer can take a while (Replace Existing reads a long braille book
+/// again, off the main actor): while it runs the choices are dimmed, so it
+/// cannot be given twice, a spinner beside the words "Replacing ..." shows
+/// that the sheet is working, and VoiceOver is told once if it is still
+/// working after a moment (`announcementDelay`).
 struct ImportDecisionSheet: View {
     /// The question asked.
     let decision: ImportDecision
@@ -23,8 +29,9 @@ struct ImportDecisionSheet: View {
     /// How long VoiceOver waits before moving to the first control
     /// (`voiceOverFocusDelay(position:)`).
     let voiceOverDelay: TimeInterval
-    /// Answers the question and says what happened.
-    let onAnswer: (ImportDecisionAnswer) -> OperationOutcome
+    /// Answers the question, off the main actor where that takes long, and
+    /// says what happened.
+    let onAnswer: @MainActor (ImportDecisionAnswer) async -> OperationOutcome
     /// Asks VoiceOver to speak the question. The app announces through
     /// `VoiceOverAnnouncer`; tests record instead.
     let announce: @MainActor (String) -> Void
@@ -35,6 +42,13 @@ struct ImportDecisionSheet: View {
     @State private var takesFocus: Bool
     /// Why the last answer failed, until the folder name changes.
     @State private var failureMessage: String?
+    /// Whether an answer is being carried out: the choices are dimmed until
+    /// it is done.
+    @State private var isAnswering = false
+    /// What the sheet says it is doing while the answer to a duplicate's
+    /// question is Replace Existing, the one answer that takes a while; nil
+    /// for any other, which is done at once.
+    @State private var workLabel: String?
     /// The name of a ZIP archive's new folder, at first the archive's name.
     @State private var folderName: String
     /// Whether the first control has keyboard focus.
@@ -47,7 +61,7 @@ struct ImportDecisionSheet: View {
         wording: ImportDecisionWording,
         voiceOverDelay: TimeInterval,
         takesFocus: Bool = true,
-        onAnswer: @escaping (ImportDecisionAnswer) -> OperationOutcome,
+        onAnswer: @escaping @MainActor (ImportDecisionAnswer) async -> OperationOutcome,
         announce: @escaping @MainActor (String) -> Void = { VoiceOverAnnouncer.announce($0) }
     ) {
         self.decision = decision
@@ -71,6 +85,12 @@ struct ImportDecisionSheet: View {
             Text(wording.message)
                 .fixedSize(horizontal: false, vertical: true)
             choices
+                // The choices are dimmed while an answer is carried out, so
+                // none is given twice.
+                .disabled(isAnswering)
+            if isAnswering, let workLabel {
+                SheetWorkIndicator(label: workLabel)
+            }
         }
         .padding(20)
         .frame(width: 460)
@@ -133,11 +153,37 @@ struct ImportDecisionSheet: View {
         answer: ImportDecisionAnswer
     ) -> some View {
         Button(words.title, role: role) {
-            failureMessage = OperationFailureNotice.message(after: onAnswer(answer))
+            give(answer)
         }
         .keyboardShortcut(shortcut)
         .accessibilityLabel(words.title)
         .accessibilityHint(words.hint)
+    }
+
+    /// Gives `answer` to the question: the choices are dimmed and the last
+    /// failure cleared while it is carried out, then the failure it ends in,
+    /// if any, is shown and spoken (`OperationFailureNotice.run`). An answer
+    /// that takes a while, Replace Existing, says it is working, and tells
+    /// VoiceOver once if it is still working after `announcementDelay`.
+    private func give(_ answer: ImportDecisionAnswer) {
+        guard !isAnswering else { return }
+        workLabel = answer == .replaceExisting ? replacingWords : nil
+        let onAnswer = onAnswer
+        OperationFailureNotice.run({ await onAnswer(answer) }, isWorking: $isAnswering, failureMessage: $failureMessage)
+        guard let words = workLabel else { return }
+        let announce = announce
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.announcementDelay))
+            if isAnswering {
+                announce(words)
+            }
+        }
+    }
+
+    /// What the sheet says while Replace Existing works, naming the book.
+    private var replacingWords: String? {
+        guard case .duplicate(let duplicate) = decision.kind else { return nil }
+        return DuplicateCopyWording.replacing(bookTitle: duplicate.book.title)
     }
 
     /// Gives the first control keyboard focus, then announces the question
@@ -167,6 +213,10 @@ struct ImportDecisionSheet: View {
     /// How long after VoiceOver's move the question is announced: time for
     /// VoiceOver to land on the control and say its name.
     static let announcementLag: TimeInterval = 0.8
+
+    /// How long an answer may take before VoiceOver is told that the sheet is
+    /// working: an answer done sooner is heard only as its result.
+    static let announcementDelay: TimeInterval = 1.0
 }
 
 // MARK: - Choice Words

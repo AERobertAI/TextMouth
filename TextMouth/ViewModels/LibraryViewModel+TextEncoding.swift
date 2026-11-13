@@ -515,7 +515,7 @@ extension LibraryViewModel {
     ) -> String? {
         switch choice {
         case .textEncoding:
-            return update.summary?.textEncodingRecord.map { textEncodingLogLine(title: title, record: $0, keptCopy: keptCopy) }
+            return update.summary.map { textEncodingLogLine(title: title, record: $0.textEncodingRecord, keptCopy: keptCopy) }
         case .brailleFileCode(let code):
             return brailleFileCodeLogLine(title: title, code: code, keptCopy: keptCopy)
         case .brailleTable(let table):

@@ -469,6 +469,29 @@ enum DuplicateCopyWording {
             + "Choose Cancel to discard the copy, then import the file again."
     }
 
+    /// What an answer says, keeping its question, while the answer to a
+    /// question is being carried out off the main actor (Replace Existing of
+    /// a book that takes a while to read again): no other answer acts
+    /// meanwhile.
+    static let answerUnderWay = "TextMouth is still carrying out your last answer. Wait until it finishes."
+
+    /// What VoiceOver hears as Replace Existing begins for the book titled
+    /// `bookTitle`, which can take a moment (a long braille book is read
+    /// again in the braille file characters it was read in): the sheet's
+    /// buttons are dimmed until the answer is done.
+    static func replacing(bookTitle: String) -> String {
+        "Replacing “\(bookTitle)”. This can take a moment."
+    }
+
+    /// What Replace Existing says, keeping the question, when the library's
+    /// copy of the book titled `bookTitle` changed while the new copy was
+    /// being made ready to take its place: what the replacement carried over
+    /// would be out of date. Both copies are left as they are.
+    static func changedWhileReplacing(bookTitle: String) -> String {
+        "“\(bookTitle)” changed while it was being replaced, so TextMouth left both copies as they are. "
+            + "Choose Replace Existing again."
+    }
+
     /// The title of the alert that tells of copies the launch moved to the
     /// Trash.
     static let unansweredTrashedTitle = "Duplicate Copies Moved to the Trash"

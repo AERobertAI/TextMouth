@@ -29,7 +29,7 @@ struct PhoneImportPresentations: ViewModifier {
             }
             .sheet(item: questionBinding) { question in
                 PhoneImportQuestionSheet(question: question) { answer in
-                    copier.answer(question, with: answer)
+                    await copier.answer(question, with: answer)
                 }
             }
             .onAppear {

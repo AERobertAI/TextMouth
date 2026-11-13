@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -271,5 +272,184 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
             )
         }
         XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported)
+    }
+
+    // MARK: - Off the Main Actor
+
+    /// The words of an answer carried out off the main actor, exactly.
+    func testTheWordsOfAnAnswerCarriedOutOffTheMainActor() {
+        XCTAssertEqual(
+            DuplicateCopyWording.answerUnderWay,
+            "TextMouth is still carrying out your last answer. Wait until it finishes."
+        )
+        XCTAssertEqual(
+            DuplicateCopyWording.replacing(bookTitle: "Gazetteer"), "Replacing “Gazetteer”. This can take a moment."
+        )
+        XCTAssertEqual(
+            DuplicateCopyWording.changedWhileReplacing(bookTitle: "Gazetteer"),
+            "“Gazetteer” changed while it was being replaced, so TextMouth left both copies as they are. "
+                + "Choose Replace Existing again."
+        )
+    }
+
+    /// A library whose Eurobraille book was read again as Eurobraille in
+    /// Book Information, asked whether the same file, imported with the
+    /// Braille setting's North American Braille ASCII, replaces it: so that
+    /// answering Replace Existing must read the copy again, the long work
+    /// the sheets do off the main actor.
+    private func askedWhetherToReplace(
+        _ title: String
+    ) async throws -> (model: LibraryViewModel, existing: Book, copy: Book, questionID: ImportDecision.ID) {
+        keepDeletionsOutOfTheTrash()
+        let file = try copyOfBrailleSample(Self.sample, writtenIn: .eurobraille)
+        let original = try imported(file, settingCode: .northAmerican, title: title)
+        let model = makeModel(with: [original])
+        // Its own list of re-reads under way, so no other test's shows here.
+        model.textRereads = TextRereads()
+        let corrected = await model.readTextAgain(bookID: original.id, choosing: .brailleFileCode(.eurobraille))
+        XCTAssertTrue(corrected.succeeded, "the book was not read again: \(corrected)")
+        let copy = try imported(file, settingCode: .northAmerican, title: "Second \(title)")
+        XCTAssertFalse(model.addBookCheckingDuplicate(copy), "the copy was not asked about as a duplicate")
+        return (model, try XCTUnwrap(model.bookByID(original.id)), copy, try XCTUnwrap(model.importDecisions.current?.id))
+    }
+
+    /// A preparation that does the library's own, then waits at `gate` until
+    /// the test lets it go (or twenty seconds pass, so no test waits for
+    /// ever), having said it reached the wait through `reached`: the long
+    /// work of a replacement, held where the test can look at the library.
+    private func heldPreparer(
+        reached: OSAllocatedUnfairLock<Bool>, gate: DispatchSemaphore
+    ) -> LibraryViewModel.ReplacementPreparer {
+        { existing, copy in
+            let preparation = try LibraryViewModel.replacementPreparer(existing, copy)
+            reached.withLock { $0 = true }
+            _ = gate.wait(timeout: .now() + 20)
+            return preparation
+        }
+    }
+
+    /// Waits, at most ten seconds, until `reached` is set.
+    private func waitUntilReached(_ reached: OSAllocatedUnfairLock<Bool>) async throws {
+        for _ in 0..<1_000 where !reached.withLock({ $0 }) {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(reached.withLock { $0 }, "the preparation never began")
+    }
+
+    /// Replace Existing, answered the way the sheets answer it, reads the
+    /// copy again off the main thread, and ends as the synchronous answer
+    /// does: the copy takes the book's place in Eurobraille, nothing is left
+    /// marked as under way, and the question is settled.
+    func testReplaceExistingReadsTheCopyAgainOffTheMainThread() async throws {
+        let (model, existing, copy, questionID) = try await askedWhetherToReplace("Cartulary")
+        let ranOnMain = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+
+        let outcome = await model.answerImportDecisionOffMain(questionID, with: .replaceExisting) { existing, copy in
+            ranOnMain.withLock { $0 = Thread.isMainThread }
+            return try LibraryViewModel.replacementPreparer(existing, copy)
+        }
+
+        XCTAssertEqual(ranOnMain.withLock { $0 }, false, "the copy was made ready on the main thread")
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(model.bookByID(existing.id))
+        XCTAssertEqual(row.tmbDirectoryName, copy.tmbDirectoryName, "the copy did not take the book's place")
+        XCTAssertEqual(row.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(in: row.tmbDirectory), "ascii-eurobraille")
+        XCTAssertEqual(try contentMD(in: row.tmbDirectory), try northAmericanReading())
+        XCTAssertNil(model.importDecisions.current, "the question was not settled")
+        XCTAssertNil(model.importDecisions.answering)
+        XCTAssertTrue(model.booksBeingReadAgain.isEmpty, "the book stayed marked as read again")
+    }
+
+    /// While the copy is made ready the question is marked as being
+    /// answered, the book is marked as being read again, and no other answer
+    /// acts, whichever way it is given: the question stays, saying so, and
+    /// the library is as it was. When the work ends, the answer goes on.
+    func testWhileTheCopyIsMadeReadyNoOtherAnswerActs() async throws {
+        let (model, existing, copy, questionID) = try await askedWhetherToReplace("Chartulary")
+        let reached = OSAllocatedUnfairLock(initialState: false)
+        let gate = DispatchSemaphore(value: 0)
+        let answer = Task { @MainActor in
+            await model.answerImportDecisionOffMain(
+                questionID, with: .replaceExisting, prepare: heldPreparer(reached: reached, gate: gate)
+            )
+        }
+        try await waitUntilReached(reached)
+
+        XCTAssertEqual(model.importDecisions.answering, questionID)
+        XCTAssertTrue(model.booksBeingReadAgain.contains(existing.id))
+        XCTAssertNotNil(model.readingAgainRefusal(of: existing.id), "what would rewrite the book's text does not wait")
+        let busy = OperationOutcome.failure(DuplicateCopyWording.answerUnderWay)
+        XCTAssertEqual(model.answerImportDecision(questionID, with: .keepBoth), busy)
+        XCTAssertEqual(model.answerImportDecision(questionID, with: .cancel), busy)
+        let secondSheet = await model.answerImportDecisionOffMain(questionID, with: .replaceExisting)
+        XCTAssertEqual(secondSheet, busy)
+        XCTAssertEqual(model.bookByID(existing.id), existing, "an answer changed the library meanwhile")
+        XCTAssertEqual(model.importDecisions.current?.id, questionID)
+
+        gate.signal()
+        let outcome = await answer.value
+
+        XCTAssertEqual(outcome, .success(nil))
+        XCTAssertEqual(model.bookByID(existing.id)?.tmbDirectoryName, copy.tmbDirectoryName)
+        XCTAssertNil(model.importDecisions.answering)
+        XCTAssertTrue(model.booksBeingReadAgain.isEmpty)
+    }
+
+    /// If the library's copy changes while the new copy is made ready, what
+    /// was carried over is out of date: the new copy is put back as its
+    /// import wrote it, both copies stay, the question stays asking, and the
+    /// sentence says to choose Replace Existing again.
+    func testACopyThatChangesMeanwhileIsNotReplacedFromOutOfDateWork() async throws {
+        let (model, existing, copy, questionID) = try await askedWhetherToReplace("Cartulary Revised")
+        let asImported = try textIndexAndRecord(in: copy.tmbDirectory)
+        let reached = OSAllocatedUnfairLock(initialState: false)
+        let gate = DispatchSemaphore(value: 0)
+        let answer = Task { @MainActor in
+            await model.answerImportDecisionOffMain(
+                questionID, with: .replaceExisting, prepare: heldPreparer(reached: reached, gate: gate)
+            )
+        }
+        try await waitUntilReached(reached)
+        var edited = existing
+        edited.title = "Edited by hand \(UUID().uuidString.prefix(8))"
+        model.library.books = model.library.books.map { $0.id == existing.id ? edited : $0 }
+
+        gate.signal()
+        let outcome = await answer.value
+
+        XCTAssertEqual(outcome, .failure(DuplicateCopyWording.changedWhileReplacing(bookTitle: existing.title)))
+        XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported, "the new copy was not put back")
+        XCTAssertEqual(model.bookByID(existing.id), edited, "the library's copy was replaced")
+        XCTAssertEqual(model.importDecisions.current?.id, questionID, "the question went")
+        XCTAssertNil(model.importDecisions.answering)
+        XCTAssertTrue(model.booksBeingReadAgain.isEmpty)
+    }
+
+    /// A question withdrawn while its answer is carried out (its batch was
+    /// cancelled) is not answered when the work ends: the new copy is put
+    /// back as its import wrote it, the library's copy stays, and the answer
+    /// neither fails nor settles another question.
+    func testAQuestionWithdrawnMeanwhileIsNotAnswered() async throws {
+        let (model, existing, copy, questionID) = try await askedWhetherToReplace("Cartulary Withdrawn")
+        let asImported = try textIndexAndRecord(in: copy.tmbDirectory)
+        let reached = OSAllocatedUnfairLock(initialState: false)
+        let gate = DispatchSemaphore(value: 0)
+        let answer = Task { @MainActor in
+            await model.answerImportDecisionOffMain(
+                questionID, with: .replaceExisting, prepare: heldPreparer(reached: reached, gate: gate)
+            )
+        }
+        try await waitUntilReached(reached)
+        _ = model.importDecisions.withdrawAll { $0.id == questionID }
+
+        gate.signal()
+        let outcome = await answer.value
+
+        XCTAssertEqual(outcome, .success(nil))
+        XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported, "the new copy was not put back")
+        XCTAssertEqual(model.bookByID(existing.id), existing)
+        XCTAssertNil(model.importDecisions.answering)
+        XCTAssertTrue(model.booksBeingReadAgain.isEmpty)
     }
 }
