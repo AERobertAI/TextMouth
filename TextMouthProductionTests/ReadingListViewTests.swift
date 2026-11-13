@@ -796,7 +796,7 @@ final class ReadingListViewTests: XCTestCase {
                 chooseRemovesFinished: { _ in },
                 chooseKeepsBooks: { _ in }
             )
-            try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
+            withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
                 let checkboxes = Self.checkboxes(in: hostingView, test: self)
                 XCTAssertEqual(checkboxes.count, inCloud ? 3 : 2, "in the cloud: \(inCloud)")
                 if inCloud {
