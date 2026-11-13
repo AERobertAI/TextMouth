@@ -128,6 +128,7 @@
 		0BE6285AC2682BEE027B6175 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624989C7A338DDBC458ABF6A /* TranscriptionEngine.swift */; };
 		0C1F938631F4C2F6C5153CAF /* LogTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7737CBC22E37E0A50EFE0839 /* LogTestSupport.swift */; };
 		0C2C645E7B80CF12D98FE2F3 /* WordDocumentStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B014AB09DFB0D7C38835698 /* WordDocumentStyles.swift */; };
+		0C8CA4E002B8D846CFC4B5DD /* MarkdownNesting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A00B7CE2D59A9F749B904B /* MarkdownNesting.swift */; };
 		0C95A44233CD00C0C5A478E3 /* RTFGroupState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD23812C8CFDE51F2798A63 /* RTFGroupState.swift */; };
 		0CC6EFB85DAAFF35CCFB0725 /* BookmarkPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */; };
 		0CDCBDB74B135DD17F7024E8 /* ReaderPhoneHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D5D1BBC56B69185B1F78B5 /* ReaderPhoneHooks.swift */; };
@@ -680,6 +681,7 @@
 		48CBD340FBBCF1A9A0AD8F2E /* LibraryViewModel+Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86E1045319CFF018D2DCD98 /* LibraryViewModel+Views.swift */; };
 		48D38A5F9BC365D9D938290E /* BookRereadFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A188016664F254730E2F5889 /* BookRereadFlowTests.swift */; };
 		49151C296A4D07F858648283 /* PhoneAudioErrorCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DC5D80D26C790CD68B862F /* PhoneAudioErrorCodeTests.swift */; };
+		499879005B40C5314C5533F1 /* MarkdownNestingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838003FFA2F984C25B18F442 /* MarkdownNestingTests.swift */; };
 		49C94FE35C07B21493B2F446 /* libObjCExceptionCatcher_iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F77D23A4E6EA7FF64513B3A /* libObjCExceptionCatcher_iOS.a */; };
 		49D22CE6E29D98855200CC81 /* PhoneMoveFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B733CAF65C8D9534BDE0FCF /* PhoneMoveFeedback.swift */; };
 		49D285EF4C7558862691E166 /* ImportProgressWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811D93E1D2B5DEE6D5EAD49C /* ImportProgressWording.swift */; };
@@ -1399,6 +1401,7 @@
 		95D9688C2714ADFCCB1025B3 /* AudioEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B6BE460B0315038C537A63 /* AudioEdit.swift */; };
 		95E61199EDB3F958A9CBF9CD /* AudioEditorWaveformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3183560BA08EE8B3CB14A3 /* AudioEditorWaveformTests.swift */; };
 		95E69744D442BD8D6C122E5E /* TMBNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2C598C575141839E3C3C2A /* TMBNameTests.swift */; };
+		960065E81CBED944E38F8062 /* MarkdownNesting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A00B7CE2D59A9F749B904B /* MarkdownNesting.swift */; };
 		9654F75B389A1A7C5E28137B /* RTFListTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A162AAE036E941D0EBBF64 /* RTFListTable.swift */; };
 		965F7210E5DB9540D7620108 /* AudioInputPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1BD2F8BFC19E87C56868F94 /* AudioInputPermission.swift */; };
 		965FAA10D9B7726358B6F182 /* LibraryBookUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1172AED5226D2AD3F61771 /* LibraryBookUpdates.swift */; };
@@ -3371,6 +3374,7 @@
 		8353A9046D06AF4368A0D20D /* TextAnchorRealReadings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextAnchorRealReadings.swift; sourceTree = "<group>"; };
 		835A6980384D8B0E2B787442 /* LibraryViewGoToTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewGoToTests.swift; sourceTree = "<group>"; };
 		836E17F65DF12FECC4795CBB /* PhoneReaderControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneReaderControls.swift; sourceTree = "<group>"; };
+		838003FFA2F984C25B18F442 /* MarkdownNestingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownNestingTests.swift; sourceTree = "<group>"; };
 		83884A1036937FED6FBA0A5E /* AudioEditorShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorShortcutTests.swift; sourceTree = "<group>"; };
 		840154AE5B7C86A2ADE4300A /* HeadingNavigatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadingNavigatorView.swift; sourceTree = "<group>"; };
 		8430AF5756AF0C5FC6D4428D /* TimedTextReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedTextReader.swift; sourceTree = "<group>"; };
@@ -3635,6 +3639,7 @@
 		A97F7016F47A2B10BFBFCF5E /* PhoneListFocus+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PhoneListFocus+iOS.swift"; sourceTree = "<group>"; };
 		A985391BC67E6497E264978C /* BraillePageAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BraillePageAnalyzerTests.swift; sourceTree = "<group>"; };
 		A98ADEC5E42093933E3148B7 /* KF8ReviewFixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KF8ReviewFixTests.swift; sourceTree = "<group>"; };
+		A9A00B7CE2D59A9F749B904B /* MarkdownNesting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownNesting.swift; sourceTree = "<group>"; };
 		A9AC4A4C6521235CD8777752 /* PhonePassagePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhonePassagePolicy.swift; sourceTree = "<group>"; };
 		A9CD237F330B64C86A072FF4 /* HeadingVocabularyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadingVocabularyTests.swift; sourceTree = "<group>"; };
 		A9CEFE74E08D0483A4C34446 /* LibraryBookUpdatesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookUpdatesTests.swift; sourceTree = "<group>"; };
@@ -5183,6 +5188,7 @@
 				B3370B79E9AB9358A78248BC /* MarkdownLiteral.swift */,
 				46EFC7116BC1349506CD0B71 /* MarkdownMarker.swift */,
 				3E021331351CDA68D4CE0D34 /* MarkdownMarkerWriter.swift */,
+				A9A00B7CE2D59A9F749B904B /* MarkdownNesting.swift */,
 				B39FC7077639EA9EB594D4EF /* MarkdownPageMarker.swift */,
 				229E08EEAD61FF8FA4CADE06 /* MarkdownParser.swift */,
 				86AB63DCF0173C1CD110E98C /* MarkupGuard.swift */,
@@ -5737,6 +5743,7 @@
 				B4F32AB3DA0F671C6BC0A243 /* ManualOrderRearrangingTests.swift */,
 				F0F09F5D5D151FE86840D792 /* MarkdownEmphasisTests.swift */,
 				EA57971FD93B4B8AE00F8DC3 /* MarkdownExportWriterTests.swift */,
+				838003FFA2F984C25B18F442 /* MarkdownNestingTests.swift */,
 				8724572AB77FA1D592E609BE /* MarkdownPageMarkerTests.swift */,
 				96C3CE7A47FA15F716CC1AAB /* MarkdownTableReadingTests.swift */,
 				DE828500AAF872513D7C6FEC /* MarkupFuzzGenerator.swift */,
@@ -7165,6 +7172,7 @@
 				6231DDA46A3CB9AFF7CCDEFC /* ManualOrderTests.swift in Sources */,
 				415F8643B000860781BE8442 /* MarkdownEmphasisTests.swift in Sources */,
 				5E744AE6A006B6FDCD2B25A2 /* MarkdownExportWriterTests.swift in Sources */,
+				499879005B40C5314C5533F1 /* MarkdownNestingTests.swift in Sources */,
 				572C6E07A41407F4465CBAE7 /* MarkdownPageMarkerTests.swift in Sources */,
 				641C7DA4F39D0DF30DDBAC26 /* MarkdownTableReadingTests.swift in Sources */,
 				0B6C4884C3B4ACE3399FE660 /* MarkupFuzzGenerator.swift in Sources */,
@@ -7953,6 +7961,7 @@
 				0FA873FC247766EA469EF283 /* MarkdownLiteral.swift in Sources */,
 				FC5570E6A4AF1A8B3841397D /* MarkdownMarker.swift in Sources */,
 				1ACF7840A1D90FF4EE477D7A /* MarkdownMarkerWriter.swift in Sources */,
+				0C8CA4E002B8D846CFC4B5DD /* MarkdownNesting.swift in Sources */,
 				E18ABED3E6FB48153E1787BA /* MarkdownPageMarker.swift in Sources */,
 				D9475A00DCC939D9CFA4D78E /* MarkdownParser.swift in Sources */,
 				4C324172349A587EB0884402 /* MarkupGuard.swift in Sources */,
@@ -8751,6 +8760,7 @@
 				DFA9DCB3689D275F116E6E3F /* MarkdownLiteral.swift in Sources */,
 				679674432CC2F6C0315787AF /* MarkdownMarker.swift in Sources */,
 				07482122235A8050EA43CC80 /* MarkdownMarkerWriter.swift in Sources */,
+				960065E81CBED944E38F8062 /* MarkdownNesting.swift in Sources */,
 				CA7B3A0541A17866280013E9 /* MarkdownPageMarker.swift in Sources */,
 				E96353770C44C160F249B08C /* MarkdownParser.swift in Sources */,
 				DA49CE8A4BD316EAB681CCFB /* MarkupGuard.swift in Sources */,

@@ -16,21 +16,53 @@ enum MarkdownDocParser {
     /// Multi-chapter cache loading uses this to avoid calculating book metrics
     /// once per chapter and then again for the assembled document.
     ///
+    /// Markdown reaches the parser from untrusted files (a `.md`, a `.txt`,
+    /// and the Markdown every other reader writes), and every part of reading
+    /// it calls itself once per level of nesting, so it is held to the limits
+    /// of `MarkupGuard` in two layers, as HTML is: the text's block quotes and
+    /// lists are counted before anything is built (`MarkdownNesting`) and
+    /// refused past `deepestNesting`; and the parse, the walk, and the release
+    /// of the tree all run on `MarkupGuard.onLargeStack`, the walk stopping at
+    /// the limit on the tree (`MarkupGuard.Limits.deepestParsedTree`).
+    ///
     /// - Parameter includeNavigationHeadings: Whether the generated markers of
     ///   content.md are read: heading annotations, which add navigation
     ///   headings, and page markers (PG01), which add pages. Everywhere else
     ///   they are ordinary comments, unseen.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` when the Markdown nests past the limit.
     static func parseChapter(
         markdown: String,
         title: String = "Untitled",
         includeNavigationHeadings: Bool = false
     ) throws -> Chapter {
+        // The limits in force are task-local, which a thread of its own does not
+        // inherit, so they are read here and handed on.
+        let limits = MarkupGuard.limits
+        guard MarkdownNesting.deepest(in: markdown, stopAbove: limits.deepestNesting) <= limits.deepestNesting else {
+            throw MarkupRefusal.nestedTooDeeply(limit: limits.deepestNesting)
+        }
+        return try MarkupGuard.onLargeStack {
+            try readChapter(markdown: markdown, title: title, includeNavigationHeadings: includeNavigationHeadings, limits: limits)
+        }
+    }
+
+    /// `parseChapter`'s parse and walk, which its caller runs on the big stack
+    /// after the nesting has been counted.
+    /// - Throws: `MarkupRefusal.nestedTooDeeply` when the parsed tree is deeper than the limit on trees.
+    private static func readChapter(
+        markdown: String,
+        title: String,
+        includeNavigationHeadings: Bool,
+        limits: MarkupGuard.Limits
+    ) throws -> Chapter {
         let document = Document(parsing: markdown)
 
         // Capture headings while emitting their text. Searching for their
         // labels afterwards can bind a heading to an earlier body paragraph.
-        var textExtractor = PlainTextExtractor(includeNavigationHeadings: includeNavigationHeadings)
+        var textExtractor = PlainTextExtractor(includeNavigationHeadings: includeNavigationHeadings, limits: limits)
         textExtractor.visit(document)
+        // A tree deeper than the limit was not walked past it: the text read is partial, so refuse it.
+        if textExtractor.exceededDepth { throw MarkupRefusal.nestedTooDeeply(limit: limits.deepestNesting) }
         let plainText = textExtractor.result.trimmingCharacters(in: .whitespacesAndNewlines)
         let firstContent = textExtractor.result.rangeOfCharacter(from: .whitespacesAndNewlines.inverted)?.lowerBound
             ?? textExtractor.result.endIndex
@@ -101,10 +133,46 @@ private struct PlainTextExtractor: MarkupWalker {
     /// nothing), which bounds the re-parsing to one level.
     private var isReadingRestOfMarkerLine = false
 
+    /// The limits the walk keeps to.
+    private let limits: MarkupGuard.Limits
+    /// How many levels of the tree the walk is inside.
+    private var depth = 0
+    /// Whether the walk met a level deeper than the limit on trees (or a
+    /// marker line's rest nested past the limit on nesting) and did not read it.
+    private(set) var exceededDepth = false
+
     /// Only generated cache/EPUB Markdown opts into navigation annotations
     /// and page markers (PG01).
-    init(includeNavigationHeadings: Bool) {
+    init(includeNavigationHeadings: Bool, limits: MarkupGuard.Limits) {
         self.includeNavigationHeadings = includeNavigationHeadings
+        self.limits = limits
+    }
+
+    /// The deepest tree the walk reads, the document at level 1. A list takes
+    /// two levels (the list and its item), so the limit on the count of
+    /// containers (`deepestNesting`) allows twice as many levels of tree, and a
+    /// few more for the paragraph, its emphasis, and its text. A test that sets
+    /// `Limits.deepestTree` lifts the count and sees the walk refuse.
+    private var deepestTree: Int {
+        limits.deepestTree ?? (2 * min(limits.deepestNesting, Int.max / 4) + Self.levelsBeyondContainers)
+    }
+
+    /// The levels a tree has beyond its containers: the document, a paragraph or
+    /// heading, and some emphasis and a link around the text.
+    private static let levelsBeyondContainers = 16
+
+    /// Visits `markup` unless the walk is already at the deepest level it reads,
+    /// so no level of a tree deeper than the limit is entered; the stop is
+    /// recorded in `exceededDepth`. Every level the walk enters comes through
+    /// here, since `descendInto` visits each child.
+    mutating func visit(_ markup: Markup) {
+        guard depth < deepestTree else {
+            exceededDepth = true
+            return
+        }
+        depth += 1
+        defer { depth -= 1 }
+        markup.accept(&self)
     }
 
     /// Append text to the reading. A table cell's first words are kept apart
@@ -276,8 +344,14 @@ private struct PlainTextExtractor: MarkupWalker {
             }
             // The rest is ordinary Markdown on its own: visit each block as
             // any block is, so a paragraph, a list, or emphasis reads in place.
+            // The rest is a text of its own, so it is counted like one before it is parsed.
+            let restText = String(rest)
+            guard MarkdownNesting.deepest(in: restText, stopAbove: limits.deepestNesting) <= limits.deepestNesting else {
+                exceededDepth = true
+                return
+            }
             isReadingRestOfMarkerLine = true
-            descendInto(Document(parsing: String(rest)))
+            descendInto(Document(parsing: restText))
             isReadingRestOfMarkerLine = false
         } else if includeNavigationHeadings, let marker = MarkdownMarker.decode(html.rawHTML) {
             record(marker)
