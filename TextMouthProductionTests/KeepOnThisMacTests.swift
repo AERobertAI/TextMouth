@@ -76,6 +76,31 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, damaged, "the preserved copy changed")
     }
 
+    /// A damaged choice file reads the choice as on, so the reading list's
+    /// books stay kept, and the log line says that, not that no book is kept,
+    /// which is what a damaged file of kept books does.
+    func testADamagedChoiceFileSaysWhatReallyHappens() throws {
+        let folder = try makeSandboxDirectory("KeepChoiceDamaged")
+        let file = folder.appendingPathComponent("Keep Reading List Books.json")
+        try Data("{\"keepsReadingL".utf8).write(to: file)
+
+        let kept = KeptBooks(file: nil, settingFile: file)
+        kept.setReadingListBooks([UUID()])
+
+        XCTAssertTrue(kept.keepsReadingListBooks, "an unreadable choice file did not read as on")
+        XCTAssertTrue(kept.keepsAnyBook, "the reading list's books are not kept")
+        let lines = debugLogLines(containing: "could not read Keep Reading List Books.json")
+        XCTAssertTrue(
+            lines.contains {
+                $0.contains(
+                    "the choice reads as on, so the reading list's books stay kept on this Mac until it is cleared again"
+                )
+            },
+            "\(lines)"
+        )
+        XCTAssertFalse(lines.contains { $0.contains("no book is kept on this Mac") }, "\(lines)")
+    }
+
     /// Keeping and stopping report the books they changed, and change
     /// nothing, writing nothing, for books already as asked.
     func testKeepingAndStoppingReportWhatChanged() throws {

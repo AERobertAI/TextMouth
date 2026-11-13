@@ -77,9 +77,20 @@ final class KeptBooks: ObservableObject {
     init(file: URL?, settingFile: URL? = nil) {
         self.file = file
         self.settingFile = settingFile
-        bookIDs = file.flatMap { Self.loadContents(KeptBooksFile.self, from: $0) }.map { Set($0.books) } ?? []
-        keepsReadingListBooks = settingFile
-            .flatMap { Self.loadContents(ReadingListKeepFile.self, from: $0) }?.keepsReadingListBooks ?? true
+        bookIDs = file.flatMap {
+            Self.loadContents(
+                KeptBooksFile.self,
+                from: $0,
+                standIn: "no book is kept on this Mac until one is kept again"
+            )
+        }.map { Set($0.books) } ?? []
+        keepsReadingListBooks = settingFile.flatMap {
+            Self.loadContents(
+                ReadingListKeepFile.self,
+                from: $0,
+                standIn: "the choice reads as on, so the reading list's books stay kept on this Mac until it is cleared again"
+            )
+        }?.keepsReadingListBooks ?? true
     }
 
     /// Whether the listener keeps the book `bookID` on this Mac, by their
@@ -210,7 +221,13 @@ final class KeptBooks: ObservableObject {
     /// A file that can't be read or decoded gives nil too: it is preserved
     /// beside itself first (`SavedFile`), and one KEEP_ON_MAC line says so.
     /// The file is on this Mac's own disk, so it is never only in the cloud.
-    private static func loadContents<Contents: Decodable>(_ type: Contents.Type, from file: URL) -> Contents? {
+    /// - Parameter standIn: What stands in for the file now, as the log line
+    ///   says it: each file's own, since the two stand in differently.
+    private static func loadContents<Contents: Decodable>(
+        _ type: Contents.Type,
+        from file: URL,
+        standIn: String
+    ) -> Contents? {
         let unusable: (bytes: Data?, reason: String)
         switch SavedFile.read(file, using: SavedFile.readWithoutDownloading) {
         case .missing, .inCloud:
@@ -230,7 +247,7 @@ final class KeptBooks: ObservableObject {
             because: unusable.reason,
             logging: "KEEP_ON_MAC",
             in: .storage,
-            standIn: "no book is kept on this Mac until one is kept again"
+            standIn: standIn
         )
         return nil
     }
