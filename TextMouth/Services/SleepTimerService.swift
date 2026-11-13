@@ -62,13 +62,24 @@ final class SleepTimerService: ObservableObject {
     /// without an owner — the latter only in tests).
     private(set) var ownerID: UUID?
 
-    /// Most recently used duration. Persisted (in `start()`) and
-    /// preserved across `stop()` so the "Restart Sleep Timer"
-    /// shortcut and the media-gesture detector can re-arm a fresh
-    /// timer with the same duration the user last picked, even after
-    /// the previous timer has fully expired. Persisted to
-    /// UserDefaults so it also survives app restarts.
-    private(set) var lastUsedDuration: SleepTimerDuration?
+    /// Most recently used duration, in any window: one preference for the
+    /// app (`sleepTimer.lastUsedDuration`), saved by `start()` and read from
+    /// the preferences each time it is asked, so the "Restart Sleep Timer"
+    /// shortcut and the media-gesture detector re-arm a fresh timer with the
+    /// duration the user last picked, wherever they picked it, even after
+    /// that timer has fully expired, and after the app restarts.
+    var lastUsedDuration: SleepTimerDuration? {
+        guard let data = userDefaults.data(forKey: Self.lastUsedDurationKey) else { return nil }
+        // Encoded as JSON for forward-compatibility — adding new
+        // SleepTimerDuration cases later won't break decoding old
+        // saved values, since unknown cases just fail to decode and
+        // we treat that as "no last duration".
+        guard let decoded = try? JSONDecoder().decode(PersistedDuration.self, from: data) else {
+            timerLog(.event, "RESTORE_LAST_DURATION result=decode-failed bytes=\(data.count)")
+            return nil
+        }
+        return decoded.toModel()
+    }
 
     /// Owner ID of the most recently started timer, preserved across
     /// `stop()`. Used to route the .restartSleepTimer notification
@@ -133,9 +144,12 @@ final class SleepTimerService: ObservableObject {
     /// listening before the book starts, which only the old reader, still its
     /// owner, can tell.
     private(set) var askedBookID: UUID?
-    /// Tells, with the book's ID, each time the held timer is asked for, so a
-    /// reader already open for it takes the timer before it plays.
-    let asksMade = PassthroughSubject<UUID, Never>()
+
+    /// The registry of every window's timer, which this timer joins as it is
+    /// made: it tells each ask to the readers of every window
+    /// (`SleepTimerRegistry.asksMade`), keeps this timer alive while it is
+    /// held for a book, and keeps one timer held for each book.
+    let registry: SleepTimerRegistry
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
@@ -184,11 +198,19 @@ final class SleepTimerService: ObservableObject {
     private var endPhoneExpiryHold: (@MainActor () -> Void)?
     #endif
 
-    /// Production uses the shared instance. The internal initializer remains
-    /// injectable so hosted tests can use disposable preferences storage.
-    init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences) {
+    /// A timer, which joins `registry` as it is made. The preferences keep the
+    /// duration last used; hosted tests give disposable ones.
+    ///
+    /// - Parameters:
+    ///   - userDefaults: Where the duration last used is kept: this process's
+    ///     preferences, unless a test gives its own.
+    ///   - registry: The registry of every timer: the app's, read here rather
+    ///     than as a default argument, inside this main-actor initializer,
+    ///     unless a test gives one of its own.
+    init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences, registry: SleepTimerRegistry? = nil) {
         self.userDefaults = userDefaults
-        loadLastUsedDuration()
+        self.registry = registry ?? .shared
+        self.registry.register(self)
     }
 
     /// Record a line in the timer's own log (`DiagnosticLog.File.sleepTimer`).
@@ -221,31 +243,11 @@ final class SleepTimerService: ObservableObject {
 
     // MARK: - Last-Used-Duration Persistence
 
-    /// Read the persisted last-used duration on init so a "Restart
-    /// Sleep Timer" gesture works even on the first launch after the
-    /// app was relaunched mid-timer.
-    private func loadLastUsedDuration() {
-        guard let data = userDefaults.data(forKey: Self.lastUsedDurationKey) else {
-            timerLog(.event, "RESTORE_LAST_DURATION result=missing")
-            return
-        }
-        // Encoded as JSON for forward-compatibility — adding new
-        // SleepTimerDuration cases later won't break decoding old
-        // saved values, since unknown cases just fail to decode and
-        // we treat that as "no last duration".
-        if let decoded = try? JSONDecoder().decode(PersistedDuration.self, from: data) {
-            lastUsedDuration = decoded.toModel()
-            let restoredLabel = lastUsedDuration?.displayName ?? "invalid"
-            timerLog(.event, "RESTORE_LAST_DURATION result=decoded value=\(restoredLabel)")
-        } else {
-            timerLog(.event, "RESTORE_LAST_DURATION result=decode-failed bytes=\(data.count)")
-        }
-    }
-
-    /// Persist a duration as the most recently used. Called from
-    /// `start()` whenever a fresh timer is configured. Failures to
-    /// encode are swallowed — the in-memory value is still set, the
-    /// persistence is only a convenience.
+    /// Persist a duration as the most recently used, for every window.
+    /// Called from `start()` whenever a fresh timer is configured. Failures
+    /// to encode are swallowed: the timer runs all the same, and Restart
+    /// Sleep Timer repeats the duration saved before, the saving being only
+    /// a convenience.
     private func persistLastUsedDuration(_ duration: SleepTimerDuration) {
         let model = PersistedDuration(from: duration)
         if let data = try? JSONEncoder().encode(model) {
@@ -328,9 +330,8 @@ final class SleepTimerService: ObservableObject {
         fadeOutDuration: TimeInterval = 0
     ) {
         // stop() clears callbacks and ownerID, so set them AFTER stop().
-        // Capture lastUsedDuration BEFORE stop() so even though stop()
-        // doesn't clear it (by design), we don't accidentally race a
-        // partial state. Record it here, persist for later launches.
+        // The duration is saved as the one last used, for every window and
+        // for later launches; stop() leaves it as it is.
         stop(reason: "replaced-before-start")
         self.ownerID = ownerID
         // Track the most recent owner separately from `ownerID` so it
@@ -346,7 +347,6 @@ final class SleepTimerService: ObservableObject {
         self.onFadeCancelled = onFadeCancelled
         self.fadeOutDuration = fadeOutDuration
         self.duration = duration
-        self.lastUsedDuration = duration
         persistLastUsedDuration(duration)
         self.isActive = true
         self.pendingFadeCompletion = false
@@ -574,6 +574,10 @@ final class SleepTimerService: ObservableObject {
         return true
     }
 
+    /// Holds this timer for the book `bookID` from `owner`, whichever call
+    /// asked (`hold`, `passOnHold`), with a last-resort deadline. The registry
+    /// keeps the timer alive meanwhile, and stops any other window's timer
+    /// held for the same book, so one timer goes on to each book.
     private func setHold(
         forBook bookID: UUID,
         from owner: UUID,
@@ -588,6 +592,7 @@ final class SleepTimerService: ObservableObject {
         askedBookID = nil
         expiredWhileHeldBookID = nil
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
+        registry.noteHold(of: self, forBook: bookID)
         armHoldDeadline(forBook: bookID, generation: generation, after: deadline)
     }
 
@@ -609,13 +614,13 @@ final class SleepTimerService: ObservableObject {
     }
 
     /// Says that the book `bookID`, which the timer is held for, has been
-    /// asked for, so its reader may take the timer: a reader open already
-    /// takes it now (`asksMade`), one the ask opens takes it once it has
-    /// loaded.
+    /// asked for, so its reader may take the timer: a reader open already, in
+    /// any window, takes it now (`SleepTimerRegistry.asksMade`), one the ask
+    /// opens takes it once it has loaded.
     func markAsked(forBook bookID: UUID) {
         guard heldForBookID == bookID else { return }
         askedBookID = bookID
-        asksMade.send(bookID)
+        registry.asksMade.send(bookID)
     }
 
     /// Whether the book `bookID` has been asked for while the timer is held for it.
@@ -623,13 +628,15 @@ final class SleepTimerService: ObservableObject {
         heldForBookID == bookID && askedBookID == bookID
     }
 
-    /// Ends the hold without stopping the timer.
+    /// Ends the hold without stopping the timer: the registry no longer keeps
+    /// the timer alive for it.
     private func clearHold() {
         holdGeneration += 1
         heldForBookID = nil
         heldFromOwnerID = nil
         heldBookIsOpen = nil
         askedBookID = nil
+        registry.noteHoldEnded(of: self)
     }
 
     /// Restarts the held timer, as Restart Sleep Timer asks, whichever reader
@@ -707,6 +714,87 @@ final class SleepTimerService: ObservableObject {
         return transferOwnership(
             from: previous, to: newOwnerID, onExpire: onExpire, onFadeStep: onFadeStep, onFadeCancelled: onFadeCancelled
         )
+    }
+
+    /// Takes the timer held for the book `bookID`, once it has been asked for,
+    /// into this timer, the window's of the reader `newOwnerID` that opened
+    /// the book (November 13, 2026: each reader window has a timer of its
+    /// own). `source` is the timer held for the book: this one, after the
+    /// window switched to the book in place, or another window's, when the
+    /// book opened in a new window or in its own window brought forward.
+    ///
+    /// From this timer itself, the owner and the callbacks change and nothing
+    /// else (`adoptHeld`). From another window's, this timer takes its running
+    /// state in place of any timer of its own: the duration, the time left,
+    /// the fade-out time, and its countdown, counting, or halted by the
+    /// previous owner's pause until the new owner plays
+    /// (`resumeCountdown(by:)`). The countdown is neither reset nor
+    /// restarted. The other timer stops without a word, its hold ended, so its
+    /// window no longer shows it. A timer fading out is never taken: it is
+    /// putting the listener to sleep (`isCarriable(by:)`).
+    ///
+    /// - Returns: Whether the timer changed hands.
+    @discardableResult
+    func take(
+        heldForBook bookID: UUID,
+        from source: SleepTimerService,
+        as newOwnerID: UUID,
+        onExpire: @escaping () -> Void,
+        onFadeStep: ((Float) -> Void)? = nil,
+        onFadeCancelled: (() -> Void)? = nil
+    ) -> Bool {
+        guard source !== self else {
+            return adoptHeld(
+                forBook: bookID, as: newOwnerID, onExpire: onExpire, onFadeStep: onFadeStep, onFadeCancelled: onFadeCancelled
+            )
+        }
+        guard source.isAsked(forBook: bookID), let previous = source.heldFromOwnerID,
+              source.isCarriable(by: previous), let carriedDuration = source.duration else {
+            timerLog(.event, "TAKE_IGNORED for=\(Self.ownerToken(bookID)) to=\(Self.ownerToken(newOwnerID))")
+            return false
+        }
+        // Read before the source stops, which clears it all.
+        let secondsLeft = source.secondsLeftNow
+        let fadeSeconds = source.fadeOutDuration
+        let wasCounting = source.timer != nil
+        let wasHalted = source.isCountdownPausedByPlayback
+        source.stop(reason: "taken into another window")
+        // This window's own timer, if it had one, gives way to the timer
+        // listening goes on with; stopped first, as a new timer stops it.
+        stop(reason: "replaced by a timer carried from another window")
+        ownerID = newOwnerID
+        lastOwnerID = newOwnerID
+        onTimerExpired = onExpire
+        self.onFadeStep = onFadeStep
+        self.onFadeCancelled = onFadeCancelled
+        fadeOutDuration = fadeSeconds
+        duration = carriedDuration
+        remainingSeconds = secondsLeft
+        isCountdownPausedByPlayback = wasHalted
+        isActive = true
+        // As a timer started here does: what ran out here before is over.
+        lastExpiredOwnerID = nil
+        expiredWhileHeldBookID = nil
+        timerLog(
+            .event,
+            "TRANSFERRED from=\(Self.ownerToken(previous)) to=\(Self.ownerToken(newOwnerID)) window=another"
+        )
+        if wasCounting {
+            startCountdown()
+        }
+        return true
+    }
+
+    /// The seconds left on the countdown now: what it shows, or, on the
+    /// iPhone while it counts, what its deadline says, which a tick has not
+    /// shown yet.
+    private var secondsLeftNow: Int {
+        #if os(iOS)
+        if let phoneDeadline, timer != nil {
+            return phoneDeadline.tick(at: ContinuousClock.now, after: remainingSeconds).secondsLeft
+        }
+        #endif
+        return remainingSeconds
     }
 
     /// Ends the hold for the book `bookID` without stopping the timer: the
@@ -975,9 +1063,14 @@ final class SleepTimerService: ObservableObject {
         phoneDeadline = PhoneSleepDeadline(secondsLeft: remainingSeconds, from: ContinuousClock.now)
         #endif
         let gen = generation
-        // Ensure timer runs on main thread for @Published safety
-        let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
+        // Ensure timer runs on main thread for @Published safety. A window's
+        // timer can go with its window (November 13, 2026), and its countdown
+        // then ends itself rather than tick for nothing.
+        let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] tick in
+            guard let self = self else {
+                tick.invalidate()
+                return
+            }
             DispatchQueue.main.async {
                 guard self.generation == gen else { return }
                 self.advanceCountdown()
@@ -1175,7 +1268,6 @@ final class SleepTimerService: ObservableObject {
     /// later test isn't surprised by leaked state from earlier ones.
     func _resetForTesting() {
         stop(reason: "test-reset")
-        lastUsedDuration = nil
         lastOwnerID = nil
         lastExpiredOwnerID = nil
         expiredWhileHeldBookID = nil
