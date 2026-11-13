@@ -54,6 +54,17 @@ struct LibrarySearchWindowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
+            // While a search runs: how far it has got, and a way to stop it.
+            if case .searching(let tally) = model.status, tally.booksGiven > 0 {
+                HStack {
+                    ProgressView(value: Double(tally.booksDone), total: Double(tally.booksGiven))
+                        .accessibilityLabel(LibrarySearchWording.progressLabel)
+                    Button(LibrarySearchWording.stopButton) { model.stopSearch() }
+                        .keyboardShortcut(".", modifiers: .command)
+                        .accessibilityHint(LibrarySearchWording.stopHint)
+                }
+            }
+
             HStack(spacing: 16) {
                 Toggle(BookSearchWording.matchCaseLabel, isOn: $model.matchCase)
                     .checkboxToggleStyle()

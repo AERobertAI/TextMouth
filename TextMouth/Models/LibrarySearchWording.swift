@@ -59,6 +59,21 @@ enum LibrarySearchWording {
         "Searched \(done.formatted()) of \(countedBooks(total))…"
     }
 
+    /// The opening of a stopped search's status, before what it had found:
+    /// "Stopped after 120 of 750 books:".
+    static func stopped(searched: Int, of total: Int) -> String {
+        "Stopped after \(searched.formatted()) of \(countedBooks(total)):"
+    }
+
+    /// The Stop button's title, shown while a search runs.
+    static let stopButton = "Stop"
+
+    /// The Stop button's hint.
+    static let stopHint = "Stops the search, keeping the matches found so far"
+
+    /// The label of the progress bar shown while a search runs.
+    static let progressLabel = "Search progress"
+
     /// Said when the library holds no book with a text to search.
     static let noBooks = "No book in the library has text to search."
 

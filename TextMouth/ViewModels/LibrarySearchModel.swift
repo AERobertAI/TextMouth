@@ -213,6 +213,10 @@ final class LibrarySearchModel: ObservableObject {
     /// The pending or running search, if any. Tests await it.
     private(set) var searchTask: Task<Void, Never>?
 
+    /// What the running search has found and not yet published, and the
+    /// query and options it runs with, kept so Stop can show it.
+    private var running: (inbox: LibrarySearchInbox, found: (String, TextSearchOptions))?
+
     /// The running Show All search, if any. Tests await it.
     private(set) var showAllTask: Task<Void, Never>?
 
@@ -274,7 +278,21 @@ final class LibrarySearchModel: ObservableObject {
         searchTask = nil
         showAllTask?.cancel()
         showAllTask = nil
+        running = nil
         generation += 1
+    }
+
+    /// Stops the search under way at once, as its Stop button does, keeping
+    /// what it has found so far, and says how far it got; does nothing while
+    /// no search runs, as while typing pauses.
+    func stopSearch() {
+        guard case .searching(let tally) = status, let running else { return }
+        let batch = running.inbox.take()
+        publish(batch, generation: generation, foundWith: running.found)
+        let reached = batch.tally ?? tally
+        cancelSearch()
+        status = .finished(Self.stoppedText(tally: reached, sections: sections))
+        announce(status.text)
     }
 
     /// Searches again for the current query and options, as an edit does:
@@ -335,6 +353,7 @@ final class LibrarySearchModel: ObservableObject {
         let flag = LibrarySearchCancellation()
         let runner = runner
         let queue = queue
+        running = (inbox, (query, options))
         // Publishes while the search runs, until it ends.
         let publisher = Task { [weak self] in
             while !Task.isCancelled {
@@ -397,6 +416,7 @@ final class LibrarySearchModel: ObservableObject {
     ) {
         guard generation == self.generation else { return }
         searchTask = nil
+        running = nil
         switch outcome {
         case .finished(let tally):
             // The last batch, which replaces an older search's rows when it
@@ -446,6 +466,12 @@ final class LibrarySearchModel: ObservableObject {
             notes.append(LibrarySearchWording.unreadable(tally.booksUnreadable))
         }
         return LibrarySearchWording.finished(found: found, notes: notes)
+    }
+
+    /// A stopped search's status: how far it got, then what it had found.
+    static func stoppedText(tally: LibrarySearchTally, sections: [LibrarySearchSection]) -> String {
+        LibrarySearchWording.stopped(searched: tally.booksDone, of: tally.booksGiven)
+            + " " + finishedText(tally: tally, sections: sections)
     }
 
     // MARK: The List
