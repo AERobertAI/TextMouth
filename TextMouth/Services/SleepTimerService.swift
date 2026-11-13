@@ -362,6 +362,7 @@ final class SleepTimerService: ObservableObject {
         self.pendingFadeCompletion = false
         self.lastExpiredOwnerID = nil
         registry.forgetExpiredMarks(ofSerial: serial)
+        registry.noteTimerChange()
 
         switch duration {
         case .minutes(let minutes):
@@ -493,6 +494,7 @@ final class SleepTimerService: ObservableObject {
         onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
         self.onFadeCancelled = onFadeCancelled
+        registry.noteTimerChange()
         timerLog(
             .event,
             "TRANSFERRED from=\(Self.ownerToken(previousOwnerID)) to=\(Self.ownerToken(newOwnerID))"
@@ -600,6 +602,7 @@ final class SleepTimerService: ObservableObject {
         heldBookIsOpen = isBookOpen
         askedBookID = nil
         registry.forgetExpiredMarks(ofSerial: serial)
+        registry.noteTimerChange()
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
         registry.noteHold(of: self, forBook: bookID)
         armHoldDeadline(forBook: bookID, generation: generation, after: deadline)
@@ -799,6 +802,7 @@ final class SleepTimerService: ObservableObject {
         // As a timer started here does: what ran out here before is over.
         lastExpiredOwnerID = nil
         registry.forgetExpiredMarks(ofSerial: serial)
+        registry.noteTimerChange()
         timerLog(
             .event,
             "TRANSFERRED from=\(Self.ownerToken(previous)) to=\(Self.ownerToken(newOwnerID)) window=another"
@@ -874,26 +878,30 @@ final class SleepTimerService: ObservableObject {
         guard heldForBookID == bookID else { return false }
         stop(reason: reason)
         guard let delay else { return true }
-        // The stop counted the hold: any timer started or held later counts it again.
-        let stoppedAt = holdGeneration
+        // Every start, hold, and take in any window counts from here, so any
+        // timer started or held later, here or in another window, is seen.
+        let stoppedAt = registry.timerChanges
         if delay > 0 {
             // Captured strongly, for the delay only: the stop let the registry
             // go of this timer, and a timer whose window has closed would be
             // freed before it said what it owes (V7).
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.announceNoBook(ifNothingHeldSince: stoppedAt)
+                self.announceNoBook(ifNoTimerChangedSince: stoppedAt)
             }
         } else {
-            announceNoBook(ifNothingHeldSince: stoppedAt)
+            announceNoBook(ifNoTimerChangedSince: stoppedAt)
         }
         return true
     }
 
     /// Says that the timer was cancelled because the next book could not be
-    /// opened, unless a timer has been started or held since the stop made as
-    /// `holdGeneration` was `stoppedAt` (W4).
-    private func announceNoBook(ifNothingHeldSince stoppedAt: Int) {
-        guard holdGeneration == stoppedAt, !isActive else { return }
+    /// opened, unless a timer has been started, held, or taken in any window
+    /// since the stop made as the registry's `timerChanges` was `stoppedAt`
+    /// (W4): a timer started in another window meanwhile, such as a Restart
+    /// in the window whose book just failed, is running, and the sentence
+    /// would be false.
+    private func announceNoBook(ifNoTimerChangedSince stoppedAt: Int) {
+        guard registry.timerChanges == stoppedAt else { return }
         VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
     }
 

@@ -191,6 +191,20 @@ final class SleepTimerRegistry {
         timer(heldForBook: bookID)?.cancelHeld(forBook: bookID)
     }
 
+    // MARK: Changes of Any Timer
+
+    /// How many times a timer of this registry has started, been held, or
+    /// taken a timer, in any window. A sentence owed after a stop (`W4`: the
+    /// next book could not be opened) is said only if this has not changed
+    /// since, so a timer a listener started in another window meanwhile is
+    /// not contradicted.
+    private(set) var timerChanges = 0
+
+    /// Counts one start, hold, or take (`timerChanges`).
+    func noteTimerChange() {
+        timerChanges += 1
+    }
+
     // MARK: The Duration Last Started
 
     /// The duration a timer of this registry last started with, and the

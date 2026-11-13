@@ -1427,6 +1427,34 @@ final class SleepTimerRegistryTests: XCTestCase {
         XCTAssertNil(weakTimer, "The delayed sentence kept the timer after it was said")
     }
 
+    /// The sentence that the next book could not be opened is not said over a
+    /// timer the listener started in another window while it waited: the
+    /// timer is running there, and the sentence would be false (W4; finding 2
+    /// of the review).
+    func testTheCouldNotBeOpenedSentenceIsNotSaidOverATimerStartedInAnotherWindow() {
+        let said = expectation(description: "the sentence was said")
+        said.isInverted = true
+        var announcements: [VoiceOverAnnouncement] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in
+            announcements.append(announcement)
+            said.fulfill()
+        }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let held = makeTimerAskedForTheNextBook(.minutes(30))
+        XCTAssertTrue(registry.releaseHeld(forBook: nextBook, announcingAfter: 0.1))
+        XCTAssertFalse(held.isActive)
+
+        // During the delay a Restart in another window starts a timer there.
+        let otherWindow = makeWindowTimer()
+        otherWindow.start(duration: .minutes(15), ownerID: taker, onExpire: {})
+
+        wait(for: [said], timeout: 0.4)
+
+        XCTAssertTrue(announcements.isEmpty, "The sentence was said over a running timer: \(announcements)")
+        XCTAssertTrue(otherWindow.isActive)
+    }
+
     /// Released through the registry, the timer held for a book stops and the
     /// listener is told; cancelled, it stops without a word; and the mark
     /// that a timer ran out for a book is forgotten whichever timer keeps it.
