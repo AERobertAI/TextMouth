@@ -749,6 +749,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - readingListRequests: Where this book is asked to be read from
     ///     the reading list (FR09). Nil uses the shared store; tests pass
     ///     their own.
+    ///   - libraryJumpRequests: Where the Search Library window asks this
+    ///     reader to move to a match. Nil uses the shared store; tests pass
+    ///     their own.
     ///   - notificationCenter: Where the reader listens for commands and for
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
@@ -764,9 +767,6 @@ final class ReaderViewModel: ObservableObject {
     ///   - loadQueue: The queue each load reads the book's files on. Nil uses
     ///     a global queue; tests pass a queue of their own that holds the
     ///     reads until they let them begin.
-    ///   - libraryJumpRequests: Where the Search Library window asks this
-    ///     reader to move to a match. Nil uses the shared store; tests pass
-    ///     their own.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -774,13 +774,13 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
+        libraryJumpRequests: LibrarySearchJumpRequests? = nil,
         windowSwitchRequests: WindowSwitchRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
         nowPlaying: NowPlayingService? = nil,
-        loadQueue: DispatchQueue? = nil,
-        libraryJumpRequests: LibrarySearchJumpRequests? = nil
+        loadQueue: DispatchQueue? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -876,6 +876,19 @@ final class ReaderViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// Listens for the Search Library window asking this reader to move to a
+    /// match while it is open already, as the book's window comes forward
+    /// for it, and claims the request at once (`claimLibrarySearchJump()`);
+    /// one made before this reader existed is claimed as its load ends.
+    /// Requests for other books are left for their own readers.
+    private func observeLibrarySearchJumps() {
+        let bookID = book.id
+        libraryJumpRequests.requestsMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimLibrarySearchJump() }
+            .store(in: &cancellables)
+    }
+
     /// Read this book from the reading list when asked to (FR09). A request
     /// made before this reader existed, as a Library window opened the book
     /// from the Reading List or a book continued to it through the list, is
@@ -897,19 +910,6 @@ final class ReaderViewModel: ObservableObject {
             .sink { [weak self] library in self?.followReadingList(in: library) }
             .store(in: &cancellables)
         claimReadingListRequest()
-    }
-
-    /// Listens for the Search Library window asking this reader to move to a
-    /// match while it is open already, as the book's window comes forward
-    /// for it, and claims the request at once (`claimLibrarySearchJump()`);
-    /// one made before this reader existed is claimed as its load ends.
-    /// Requests for other books are left for their own readers.
-    private func observeLibrarySearchJumps() {
-        let bookID = book.id
-        libraryJumpRequests.requestsMade
-            .filter { $0 == bookID }
-            .sink { [weak self] _ in self?.claimLibrarySearchJump() }
-            .store(in: &cancellables)
     }
 
     /// Listens for the sleep timer being asked for this book while this reader

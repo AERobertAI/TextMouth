@@ -87,8 +87,8 @@ final class LibrarySearchJumpTests: XCTestCase {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: world.autoplayRequests,
             readingListRequests: ReadingListOpenRequests(),
-            notificationCenter: world.notifications,
-            libraryJumpRequests: requests
+            libraryJumpRequests: requests,
+            notificationCenter: world.notifications
         )
         addTeardownBlock { reader.close() }
         return reader
