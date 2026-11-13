@@ -31,6 +31,24 @@ final class LeadingArticlesDisplayTests: XCTestCase {
         XCTAssertEqual(LeadingArticles.ignoredWhenTypingAndSorting.rowTitle(of: Self.book("Die Hard", language: "en")), "Die Hard")
     }
 
+    /// The list cache inverts each title once, for its title and language,
+    /// and gives it again at once when the rows are drawn again; titles shown
+    /// as written are inverted never.
+    func testTheListCacheInvertsEachTitleOnce() {
+        let cache = LibraryListCache()
+        let hobbit = Self.book("The Hobbit")
+        XCTAssertNil(cache.rowTitle(of: hobbit, articles: .partOfTitle))
+        XCTAssertNil(cache.rowTitle(of: hobbit, articles: .ignoredWhenTyping))
+        XCTAssertEqual(cache.titleInversionCount, 0)
+        XCTAssertEqual(cache.rowTitle(of: hobbit, articles: .ignoredWhenTypingAndSorting), "Hobbit, The")
+        XCTAssertEqual(cache.rowTitle(of: hobbit, articles: .ignoredWhenTypingAndSorting), "Hobbit, The")
+        XCTAssertEqual(cache.titleInversionCount, 1, "a title was inverted again")
+        // The same title in another language is inverted in that language's articles.
+        XCTAssertEqual(cache.rowTitle(of: Self.book("Die Verwandlung", language: "de"), articles: .ignoredWhenTypingAndSorting), "Verwandlung, Die")
+        XCTAssertEqual(cache.rowTitle(of: Self.book("Die Verwandlung", language: "en"), articles: .ignoredWhenTypingAndSorting), "Die Verwandlung")
+        XCTAssertEqual(cache.titleInversionCount, 3)
+    }
+
     // MARK: - The Feeds Section
 
     /// The Feeds section's rows sort by title without its article and show

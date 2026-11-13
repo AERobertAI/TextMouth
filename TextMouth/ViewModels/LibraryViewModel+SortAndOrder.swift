@@ -259,6 +259,14 @@ extension LibraryViewModel {
         LeadingArticles.preference.read(from: TextMouthRuntime.current.preferences)
     }
 
+    /// The title `book`'s row shows in place of its own under `articles`,
+    /// nil while titles are shown as written: worked out once for each title
+    /// and kept (`LibraryListCache.rowTitle(of:articles:)`), since a Library
+    /// window draws its rows and its Books rotor again as a book plays.
+    func rowTitle(of book: Book, articles: LeadingArticles) -> String? {
+        listCache.rowTitle(of: book, articles: articles)
+    }
+
     /// The sort `location` shows, restored from the setting saved for it.
     /// Showing a sort never saves it (TODO A06).
     func sortState(at location: LibraryLocation) -> LibrarySortState {

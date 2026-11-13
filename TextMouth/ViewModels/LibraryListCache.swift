@@ -144,6 +144,44 @@ final class LibraryListCache {
     private var folderTreeCounts: [String: Int]?
     /// The sizes File Size sorts measured, by book ID.
     private var measuredSizes: [UUID: MeasuredSize] = [:]
+    /// Each title inverted as a row shows it while sorting passes over
+    /// leading articles ("Hobbit, The"), by the title and the metadata
+    /// language it was read in, so a list drawn again works none out anew.
+    private var invertedTitles: [InvertedTitleKey: String] = [:]
+    /// How many titles were inverted. Tests read it.
+    private(set) var titleInversionCount = 0
+    /// At most this many inverted titles are kept; past it the record starts
+    /// over, so renamed books cannot make it grow without bound.
+    static let invertedTitleLimit = 8_192
+
+    /// What an inverted title depends on: the title and the metadata
+    /// language whose articles count beside English's.
+    private struct InvertedTitleKey: Hashable {
+        let title: String
+        let language: String?
+    }
+
+    // MARK: - Titles as Rows Show Them
+
+    /// The title `book`'s row shows in place of its own under `articles`
+    /// (`LeadingArticles.rowTitle(of:)`): nil while titles are shown as
+    /// written, and otherwise the title inverted, worked out once for each
+    /// title and language and kept, as a Library window draws its rows and
+    /// its Books rotor again once a second while a book plays.
+    func rowTitle(of book: Book, articles: LeadingArticles) -> String? {
+        guard articles.sortsWithoutArticles else { return nil }
+        let key = InvertedTitleKey(title: book.title, language: book.epubLanguage)
+        if let known = invertedTitles[key] {
+            return known
+        }
+        let inverted = articles.shownTitle(book.title, language: book.epubLanguage)
+        titleInversionCount += 1
+        if invertedTitles.count >= Self.invertedTitleLimit {
+            invertedTitles.removeAll(keepingCapacity: true)
+        }
+        invertedTitles[key] = inverted
+        return inverted
+    }
 
     // MARK: - Following the Library
 
