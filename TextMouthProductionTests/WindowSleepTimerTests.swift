@@ -51,9 +51,19 @@ final class WindowSleepTimerTests: XCTestCase {
         addTeardownBlock { [registry] in registry?._stopEveryTimerForTesting() }
     }
 
+    /// Lets go of everything the test made. XCTest keeps every test case
+    /// until the whole run ends, so a world left here would keep its readers,
+    /// settings, and preference store alive to the host's exit, where the
+    /// system then fails to read each removed store and says so in the log,
+    /// after the last suite's verdict (GitHub run 43406442692).
     override func tearDown() async throws {
         subscriptions = []
         utterances = []
+        heldLoad = nil
+        world = nil
+        coordinator = nil
+        preferences = nil
+        registry = nil
         try await super.tearDown()
     }
 
