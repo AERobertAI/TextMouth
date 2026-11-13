@@ -353,7 +353,9 @@ final class LibrarySearchModel: ObservableObject {
         let flag = LibrarySearchCancellation()
         let runner = runner
         let queue = queue
-        running = (inbox, (query, options))
+        // The query and options the results are found with.
+        let found = (query, options)
+        running = (inbox, found)
         // Publishes while the search runs, until it ends.
         let publisher = Task { [weak self] in
             while !Task.isCancelled {
@@ -362,7 +364,6 @@ final class LibrarySearchModel: ObservableObject {
                 self?.publish(inbox.take(), generation: generation, foundWith: found)
             }
         }
-        let found = (query, options)
         let outcome = await withTaskCancellationHandler {
             await withCheckedContinuation { (continuation: CheckedContinuation<LibrarySearchOutcome, Never>) in
                 queue.async {
