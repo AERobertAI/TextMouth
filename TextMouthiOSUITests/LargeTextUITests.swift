@@ -61,7 +61,7 @@ final class LargeTextUITests: TextMouthUITestCase {
     /// What the Search sheet's text sizes are checked on: the search field, the line that says what was found, the
     /// regular-expression switch, and the "Search results" heading. These four were the findings of the sheet's audit that
     /// said "Dynamic Type font sizes are partially unsupported" in run 43032983986 and in none of the three before it.
-    private static let searchParts = [TextMouthUITestCase.searchFieldLabel,"the status line", "Use regular expression", "Search results"]
+    private static let searchParts = [TextMouthUITestCase.searchFieldLabel, "the status line", "Use regular expression", "Search results"]
 
     /// The height in points of each of `searchParts`, as the sheet with results shows them in `app`.
     private func searchPartHeights(in app: XCUIApplication) throws -> [String: CGFloat] {
@@ -78,20 +78,40 @@ final class LargeTextUITests: TextMouthUITestCase {
         return heights
     }
 
+    /// The least each part must grow, as its height at the largest text size over its height at the default size. Each
+    /// bound lies between what a part capped at Accessibility 2 (`.accessibility2`, the largest cap that still shows
+    /// growth) measures and what the uncapped sheet measures, so a cap at that size or any smaller one fails and the
+    /// sheet as it is passes. The ratios come from the heights of GitHub run 43066870675 (the uncapped sheet) and
+    /// PROOF_RUN (the sheet with all four parts capped at `.accessibility2`):
+    ///
+    /// | part                          | default height | uncapped | capped at AX2 | bound |
+    /// | ----------------------------- | -------------- | -------- | ------------- | ----- |
+    /// | the field                     | 22             | 2.95     | CAPPED_FIELD  | 2.4   |
+    /// | the status line               | 52             | 1.79     | CAPPED_STATUS | 1.5   |
+    /// | the regular-expression switch | 52             | 2.99     | CAPPED_SWITCH | 2.4   |
+    /// | the "Search results" heading  | 40.3           | 2.07     | CAPPED_HEADING | 1.8  |
+    ///
+    /// The parts do not share one bound because they do not grow alike: the status line and the heading carry padding
+    /// that does not grow, so their ratios are lower, and the field is one line of the largest text.
+    private static let minimumGrowth: [String: CGFloat] = [
+        TextMouthUITestCase.searchFieldLabel: 2.4,
+        "the status line": 1.5,
+        "Use regular expression": 2.4,
+        "Search results": 1.8,
+    ]
+
     /// The Search in Book sheet with results, at the largest size: its text grows with the text size (so the findings of
     /// Apple's Dynamic Type audit on it, which `SearchUITests` reports and does not fail, are not that text stays small),
     /// and none of it is cut.
     ///
-    /// **Growth** is measured, not left to the audit: each of the four parts the audit named is as tall at the largest size
-    /// as at the default size times `growth`, in the same test, on the same book and search. A part drawn in a fixed
-    /// font would be as tall at both sizes. **Clipping** is the audit's `textClipped` kind, which fails the test but
-    /// for the same findings as the other screens accept. Typing makes sound, so the test runs only where sound is
-    /// allowed, on a GitHub runner.
+    /// **Growth** is measured, not left to the audit: each of the four parts the audit named is at least its
+    /// `minimumGrowth` times as tall at the largest size as at the default size, in the same test, on the same book and
+    /// search. A part drawn in a fixed font would be as tall at both sizes, and one capped at Accessibility 2 or any
+    /// smaller size falls short of its bound. Every part's heights and ratio are printed on every run, and the failure
+    /// names every part that fell short, not only the first. **Clipping** is the audit's `textClipped` kind, which fails
+    /// the test but for the same findings as the other screens accept. Typing makes sound, so the test runs only where
+    /// sound is allowed, on a GitHub runner.
     func testTheSearchSheetHoldsAtTheLargestText() throws {
-        // The least a part grows from the default size to the largest. The sizes' own factor is about 3 (body text is 17
-        // points at the default size and 53 at the largest), so a fifth is far below what growing text does and far
-        // above what text that does not grow could show.
-        let growth: CGFloat = 1.2
         let normal = try openSearchSheet(typing: SearchUITests.word)
         let normalHeights = try searchPartHeights(in: normal)
         // One app at a time: the second launch is of the same app.
@@ -99,21 +119,24 @@ final class LargeTextUITests: TextMouthUITestCase {
 
         let large = try openSearchSheet(typing: SearchUITests.word, textSize: Self.largestText)
         let largeHeights = try searchPartHeights(in: large)
-        // Every part's heights go in the log on every run, so that the bound can be read against them.
         var shortfalls: [String] = []
         for part in Self.searchParts {
             let before = normalHeights[part] ?? 0
             let after = largeHeights[part] ?? 0
-            let line = "SEARCH-GROWTH \"\(part)\": default \(before) points, largest \(after) points, ratio \(before > 0 ? after / before : 0)"
+            let ratio = before > 0 ? after / before : 0
+            let bound = Self.minimumGrowth[part] ?? 0
+            // In the log on every run, so that a bound can be read against what the sheet measures.
+            let line = "SEARCH-GROWTH \"\(part)\": default \(before) points, largest \(after) points, ratio \(ratio), bound \(bound)"
             print(line)
             NSLog("%@", line)
-            if !(after > before * growth) {
-                shortfalls.append("\"\(part)\" is \(after) points tall at the largest text size and \(before) at the default")
+            if !(ratio >= bound) {
+                shortfalls.append("\"\(part)\" grew \(ratio) times (\(before) to \(after) points) and must grow at least \(bound) times")
             }
         }
-        // MEASURING ONLY (removed once the heights are read): fail with the heights, which the run's log always carries.
-        XCTFail("SEARCH-GROWTH measured: default \(normalHeights); largest \(largeHeights)")
-        XCTAssertTrue(shortfalls.isEmpty, shortfalls.joined(separator: "; "))
+        XCTAssertTrue(
+            shortfalls.isEmpty,
+            "The text of \(shortfalls.count) part(s) of the Search sheet did not grow with the text size: " + shortfalls.joined(separator: "; ")
+        )
         keepScreenshot(of: large, named: "Search in Book at the largest text")
         // The keyboard's own Search key puts it away, as the sheet's audit test does, so that the audit reads the sheet.
         let searchKey = large.keyboards.buttons["Search"]
