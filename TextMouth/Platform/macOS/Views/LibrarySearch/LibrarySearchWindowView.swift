@@ -54,17 +54,6 @@ struct LibrarySearchWindowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // While a search runs: how far it has got, and a way to stop it.
-            if case .searching(let tally) = model.status, tally.booksGiven > 0 {
-                HStack {
-                    ProgressView(value: Double(tally.booksDone), total: Double(tally.booksGiven))
-                        .accessibilityLabel(LibrarySearchWording.progressLabel)
-                    Button(LibrarySearchWording.stopButton) { model.stopSearch() }
-                        .keyboardShortcut(".", modifiers: .command)
-                        .accessibilityHint(LibrarySearchWording.stopHint)
-                }
-            }
-
             HStack(spacing: 16) {
                 Toggle(BookSearchWording.matchCaseLabel, isOn: $model.matchCase)
                     .checkboxToggleStyle()
@@ -75,9 +64,22 @@ struct LibrarySearchWindowView: View {
                     .accessibilityLabel(LibrarySearchWording.regexLabel)
                     .accessibilityHint(LibrarySearchWording.regexHint)
                 Spacer()
+                // Escape, as Search in Book's Back to Book has it.
                 Button(LibrarySearchWording.closeButton, action: close)
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(.escape, modifiers: [])
                     .accessibilityHint(LibrarySearchWording.closeHint)
+            }
+
+            // While a search runs: how far it has got, and a way to stop it,
+            // below the checkboxes, so nothing above moves when it shows.
+            if case .searching(let tally) = model.status, tally.booksGiven > 0 {
+                HStack {
+                    ProgressView(value: Double(tally.booksDone), total: Double(tally.booksGiven))
+                        .accessibilityLabel(LibrarySearchWording.progressLabel)
+                    Button(LibrarySearchWording.stopButton) { model.stopSearch() }
+                        .keyboardShortcut(".", modifiers: .command)
+                        .accessibilityHint(LibrarySearchWording.stopHint)
+                }
             }
 
             Divider()
