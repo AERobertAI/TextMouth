@@ -1,5 +1,18 @@
 import SwiftUI
 
+/// Holds a reader window's sleep timer for the window's content, without
+/// observing it: it publishes nothing. A `@StateObject` timer would subscribe
+/// `ReaderWindowContent` to every change of the timer, and so run its body, and
+/// `BookReaderWindowView.init` below it (a linear look-up of the book among
+/// the library's), once a second in every window with a counting timer. The
+/// sleep timer's sheet observes the timer itself, and the reader's status
+/// shows it as the reader publishes, as it did before each window had one.
+@MainActor
+final class WindowSleepTimerHolder: ObservableObject {
+    /// The window's sleep timer.
+    let timer = SleepTimerService()
+}
+
 /// A reader window's content, above the book it shows (November 13, 2026):
 /// the window's own sleep timer lives here, made once for the window, and
 /// each book the window shows is a `BookReaderWindowView` below it, with an
@@ -16,16 +29,19 @@ struct ReaderWindowContent: View {
     let libraryViewModel: LibraryViewModel
     let settingsViewModel: SettingsViewModel
     /// The window's sleep timer, made once for the window and kept for as
-    /// long as SwiftUI keeps the window.
-    @StateObject private var sleepTimer = SleepTimerService()
+    /// long as SwiftUI keeps the window, in a holder that publishes nothing
+    /// (`WindowSleepTimerHolder`), so a tick of the timer does not run this
+    /// body.
+    @StateObject private var sleepTimerHolder = WindowSleepTimerHolder()
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderWindowContent")
         if let shownBookID = bookID {
             BookReaderWindowView(
                 bookID: shownBookID,
                 libraryViewModel: libraryViewModel,
                 settingsViewModel: settingsViewModel,
-                sleepTimer: sleepTimer,
+                sleepTimer: sleepTimerHolder.timer,
                 // Listening goes on to another book in this window (0.2.5):
                 // the window's book changes, and `.id` below makes a new view,
                 // with a new reader, of it.

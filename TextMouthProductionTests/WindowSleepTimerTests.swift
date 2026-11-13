@@ -632,6 +632,43 @@ final class WindowSleepTimerTests: XCTestCase {
         XCTAssertEqual(closed, [], "A window's sleep timer sheet closed another's")
     }
 
+    // MARK: - What a Tick Draws
+
+    /// A tick of the window's sleep timer does not run the body of the
+    /// window's content, and so not `BookReaderWindowView.init` below it
+    /// (finding 5 of the review): the content keeps its timer in a holder
+    /// that publishes nothing, since the sheet observes the timer itself.
+    /// Before, the window's `@StateObject` timer drew the content once a
+    /// second in every window with a counting timer.
+    func testATickOfTheWindowsTimerDoesNotDrawTheWindowContent() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("window-content-tick")
+        )
+        // The content makes its timer in the app's registry; the new timer
+        // is the one that was not there before.
+        let before = Set(SleepTimerRegistry.shared.timers.map(ObjectIdentifier.init))
+        let hosted = hostOffscreen(
+            ReaderWindowContent(bookID: .constant(nil), libraryViewModel: library, settingsViewModel: settings)
+        )
+        defer { takeDown(hosted.window) }
+        settle(hosted.hostingView, seconds: 0.3)
+        let timer = try XCTUnwrap(
+            SleepTimerRegistry.shared.timers.first { !before.contains(ObjectIdentifier($0)) },
+            "The window content made no timer"
+        )
+        XCTAssertGreaterThan(ViewBodyCounter.count(of: "ReaderWindowContent"), 0, "The window content never drew")
+
+        // Each change is what a tick of a counting timer publishes.
+        let runs = bodyRuns(of: ["ReaderWindowContent"], in: hosted.hostingView, publishing: 5, warmUps: 2) { _ in
+            timer.remainingSeconds += 1
+        }
+
+        XCTAssertEqual(runs["ReaderWindowContent"], 0, "A tick of the timer drew the window's content")
+    }
+
     // MARK: - Commands Nobody Names a Window For
 
     /// The restart gesture names the reader that owns Now Playing, and that
