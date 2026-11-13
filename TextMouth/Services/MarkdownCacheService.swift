@@ -673,10 +673,10 @@ enum MarkdownCacheService {
             markdown = try HTMLToMarkdownConverter.convert(
                 decoded.text, stripDuplicateNavigation: true, includesPages: includesPages)
         case .webarchive:
-            markdown = try WebArchiveReader.mainPage(of: url).markdown()
+            markdown = try WebArchiveReader.mainPage(of: url).markdown(includesPages: includesPages)
         case .ssml:
             // Read as text, never as SSML for the speech engine (see BookParser).
-            markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url))
+            markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url), includesPages: includesPages)
         case .markdown:
             // Already Markdown — use the decoded text as-is
             let decoded = try TextFileDecoder.readDecodedText(at: url, format: format, policy: encodingPolicy)

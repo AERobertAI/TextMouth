@@ -392,6 +392,20 @@ final class TextutilImportTests: XCTestCase {
         try assertRefused(blank, saying: "Could not import “blank.doc”. Reading its text failed: This file has no text to read.")
     }
 
+    /// A web page named .doc honors `includesPages` as an .html file does: its
+    /// page-break element is a page marker when pages are included, and the
+    /// page as it was read before pages (no marker, the element's text read)
+    /// when they are not, which the launch re-read's compare depends on.
+    func testAWebPageNamedDocHonorsIncludesPages() throws {
+        let page = "<html><head><title>Harbour</title></head><body><p>One <span role=\"doc-pagebreak\" aria-label=\"12\">12</span>two</p></body></html>"
+        let url = try file(named: "page.doc", holding: Data(page.utf8))
+        let with = try TextutilDocumentReader.extract(from: url, bookFormat: .doc, includesPages: true).markdown
+        XCTAssertTrue(with.contains("<!-- page: 12 -->"), with)
+        let without = try TextutilDocumentReader.extract(from: url, bookFormat: .doc, includesPages: false).markdown
+        XCTAssertFalse(without.contains("<!--"), without)
+        XCTAssertTrue(without.contains("One 12two"), without)
+    }
+
     /// A Word 2003 XML document named .doc is read as WordML, whatever its
     /// name says: it imports as the same text the .xml copy does, and the
     /// book is a .doc.
