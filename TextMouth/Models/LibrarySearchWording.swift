@@ -47,9 +47,10 @@ enum LibrarySearchWording {
     static let idle = "Type text to find in every book of the library."
 
     /// Said while a search runs, before any book is done: "Searching 750
-    /// books…".
+    /// books…", or "Searching…" while typing pauses, before the books are
+    /// counted.
     static func searching(books: Int) -> String {
-        "Searching \(countedBooks(books))…"
+        books == 0 ? "Searching…" : "Searching \(countedBooks(books))…"
     }
 
     /// Said while a search runs, once some books are done: "Searched 120 of
