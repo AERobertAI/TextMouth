@@ -124,20 +124,27 @@ final class WindowSleepTimerTests: XCTestCase {
         XCTAssertEqual(a.sleepTimerService.spokenLabel, "Sleep timer: 10:00 remaining")
         XCTAssertEqual(b.sleepTimerService.spokenLabel, "Sleep timer: 20:00 remaining")
 
+        // A counting countdown also ticks on its own clock while a wait spins
+        // the run loop, so each check counts from a reading taken just before
+        // the hand's ticks, with no wait between them.
         a.play()
         XCTAssertTrue(eventually { a.audioPlaybackService.isPlaying }, "A never played")
+        var aBefore = windowA.sleepTimer.remainingSeconds
         tick(windowA, 3)
         tick(windowB, 3)
-        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3, "A's timer did not count while A played")
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, aBefore - 3, "A's timer did not count while A played")
         XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1200, "B's timer counted while only A played")
 
         b.play()
         XCTAssertTrue(eventually { b.audioPlaybackService.isPlaying }, "B never played")
         XCTAssertTrue(a.isCurrentlyPaused, "Playing B did not pause A")
+        aBefore = windowA.sleepTimer.remainingSeconds
+        let bBefore = windowB.sleepTimer.remainingSeconds
         tick(windowA, 3)
         tick(windowB, 3)
-        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3, "A's timer counted while A was paused")
-        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1200 - 3, "B's timer did not count while B played")
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, aBefore, "A's timer counted while A was paused")
+        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, bBefore - 3, "B's timer did not count while B played")
+        let aPaused = windowA.sleepTimer.remainingSeconds
 
         let bRunsOut = recordingAnnouncements {
             windowB.sleepTimer.remainingSeconds = 1
@@ -147,7 +154,7 @@ final class WindowSleepTimerTests: XCTestCase {
         XCTAssertTrue(b.isCurrentlyPaused, "B's timer ran out without pausing B")
         XCTAssertFalse(windowB.sleepTimer.isActive)
         XCTAssertTrue(windowA.sleepTimer.isActive, "B's timer ran out A's")
-        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 600 - 3)
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, aPaused, "B's timer running out moved A's")
 
         a.play()
         XCTAssertTrue(eventually { a.audioPlaybackService.isPlaying }, "A never played again")
@@ -351,12 +358,14 @@ final class WindowSleepTimerTests: XCTestCase {
 
         XCTAssertEqual(newWindow.sleepTimer.ownerID, next.readerID, "The new window's reader did not take the timer")
         XCTAssertEqual(newWindow.sleepTimer.duration, .minutes(30))
-        let left = newWindow.sleepTimer.remainingSeconds
-        XCTAssertTrue(left <= 1000 && left > 1000 - 60, "\(left) left in the new window, from 1000")
         XCTAssertFalse(oldWindow.sleepTimer.isActive, "The old window still shows the timer")
         XCTAssertEqual(oldWindow.sleepTimer.spokenLabel, "")
         XCTAssertNil(registry.timer(heldForBook: second.id), "The hold outlived the take")
         XCTAssertTrue(eventually { next.isPlaybackUnderWay }, "The next book never started")
+        // Read after the wait, which the counting countdown ticks through on
+        // its own clock, and just before the hand's tick.
+        let left = newWindow.sleepTimer.remainingSeconds
+        XCTAssertTrue(left <= 1000 && left > 1000 - 60, "\(left) left in the new window, from 1000")
         tick(newWindow, 1)
         XCTAssertEqual(newWindow.sleepTimer.remainingSeconds, left - 1, "The timer does not count in the new window")
 
