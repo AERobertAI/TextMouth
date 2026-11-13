@@ -313,13 +313,14 @@ final class LibraryTitleTypingTests: XCTestCase {
         let visibleBefore = table.rows(in: table.visibleRect)
         XCTAssertLessThan(visibleBefore.location + visibleBefore.length, table.numberOfRows, "the whole list fit the window, so nothing could scroll")
 
-        /// Checks that the selected row shows whole, naming the rows that
-        /// show when it does not.
+        /// Checks that the selected row shows, among the rows AppKit names
+        /// as showing, and shows whole, naming the rows that show when it
+        /// does not.
         func selectedRowShows(after typed: String) {
             let selected = table.selectedRow
             let visible = table.rows(in: table.visibleRect)
             XCTAssertTrue(
-                selected >= 0 && table.visibleRect.contains(table.rect(ofRow: selected)),
+                selected >= 0 && NSLocationInRange(selected, visible) && LibraryTitleTyping.rowShowsWhole(selected, in: table),
                 "after \(typed), row \(selected) was selected but rows \(visible.location)..<\(visible.location + visible.length) show"
             )
         }

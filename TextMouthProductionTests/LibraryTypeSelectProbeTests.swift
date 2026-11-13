@@ -249,7 +249,7 @@ final class LibraryTypeSelectProbeTests: XCTestCase {
         settle(hosted.hostingView, seconds: 0.5)
         let selected = table.selectedRow
         let visible = table.rows(in: table.visibleRect)
-        let whole = selected >= 0 && table.visibleRect.contains(table.rect(ofRow: selected))
+        let whole = selected >= 0 && LibraryTitleTyping.rowShowsWhole(selected, in: table)
         report(
             "Long Library list, first choice: typed t: row \(selected) of \(table.numberOfRows) selected; "
                 + "rows \(visible.location)..<\(visible.location + visible.length) show; the row shows whole: \(whole)"

@@ -121,7 +121,8 @@ struct LibraryTitleTyping: ViewModifier {
 
     /// How many times the table is looked at after a row is reached.
     static let scrollLooks = 4
-    /// How long the list is given to draw before each look: two frames.
+    /// How long the list is given to draw before each look: about two
+    /// frames.
     static let scrollLookDelay = Duration.milliseconds(30)
 
     #if os(macOS)
@@ -131,9 +132,18 @@ struct LibraryTitleTyping: ViewModifier {
     /// show, which counts as shown.
     static func showsSelectedRow(of table: NSTableView) -> Bool {
         let row = table.selectedRow
-        guard row >= 0, !table.visibleRect.contains(table.rect(ofRow: row)) else { return true }
+        guard row >= 0, !rowShowsWhole(row, in: table) else { return true }
         table.scrollRowToVisible(row)
         return false
+    }
+
+    /// Whether all of `row`'s height is within what `table` shows: from
+    /// top to bottom only, since a list scrolls up and down, so a row whose
+    /// width the table draws past its edge still shows.
+    static func rowShowsWhole(_ row: Int, in table: NSTableView) -> Bool {
+        let drawn = table.rect(ofRow: row)
+        let shown = table.visibleRect
+        return drawn.minY >= shown.minY && drawn.maxY <= shown.maxY
     }
     #endif
 
