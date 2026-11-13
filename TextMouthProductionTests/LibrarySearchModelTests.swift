@@ -118,6 +118,8 @@ private final class RunLog: Sendable {
     private struct State: Sendable {
         var calls: [Call] = []
         var cancellations: [Bool] = []
+        var events: [String] = []
+        var gates: [Bool] = []
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -138,9 +140,22 @@ private final class RunLog: Sendable {
         state.withLock { $0.cancellations.append(wasCancelled) }
     }
 
+    /// Notes `event`, so a test can check the order things happened in.
+    func note(_ event: String) {
+        state.withLock { $0.events.append(event) }
+    }
+
+    /// Notes whether a fake search's gate was signalled, rather than given
+    /// up on at its timeout.
+    func recordGate(_ wasSignalled: Bool) {
+        state.withLock { $0.gates.append(wasSignalled) }
+    }
+
     var calls: [Call] { state.withLock { $0.calls } }
     var queries: [String] { calls.map(\.query) }
     var cancellations: [Bool] { state.withLock { $0.cancellations } }
+    var events: [String] { state.withLock { $0.events } }
+    var gates: [Bool] { state.withLock { $0.gates } }
 }
 
 /// Waits, on a fake runner's search thread, until `condition` holds or
@@ -155,9 +170,11 @@ private func waitOnSearchThread(timeout: TimeInterval = 10, _ condition: @Sendab
 }
 
 /// Waits, on a fake runner's search thread, for the test to signal `gate`,
-/// for at most `timeout` seconds, so no search thread is ever left blocked.
-private func waitForGate(_ gate: DispatchSemaphore, timeout: TimeInterval = 10) {
-    _ = gate.wait(timeout: .now() + timeout)
+/// for at most `timeout` seconds, so no search thread is ever left blocked;
+/// true when it was signalled, false when the wait timed out.
+@discardableResult
+private func waitForGate(_ gate: DispatchSemaphore, timeout: TimeInterval = 10) -> Bool {
+    gate.wait(timeout: .now() + timeout) == .success
 }
 
 /// Records what a model announces through VoiceOver.
@@ -313,9 +330,15 @@ final class LibrarySearchModelTests: XCTestCase {
 
     // MARK: Cancellation
 
-    /// A newer query cancels the older search, whose results, reported after
-    /// the newer query and even after the newer search finished, never reach
-    /// the list; the newer search's results replace the older's.
+    /// A newer query cancels the older search at once: told to stop, it
+    /// ends, reporting one more book after the newer query, and that late
+    /// book never reaches the list; the newer search, which runs once the
+    /// older has returned (searches run one at a time), replaces its
+    /// results. The older search is let go as soon as the newer query is
+    /// typed, so nothing waits out a timeout: until November 13 the test
+    /// signalled it only after awaiting the newer search, which therefore
+    /// began only when the older's gate timed out, 10 seconds on (the
+    /// review's finding 3).
     func testNewQueryCancelsTheOldSearchWhoseLateResultsNeverPublish() async throws {
         let log = RunLog()
         let announcements = AnnouncementLog()
@@ -332,16 +355,19 @@ final class LibrarySearchModelTests: XCTestCase {
 
         let model = makeModel(list, announcements) { query, options, books, limits, isCancelled, report in
             log.record(query: query, options: options, books: books, limits: limits)
+            log.note("\(query) started")
             guard query == "old" else {
                 return playOut([newResult], given: books.count, report: report)
             }
             // The old search reports a first book, which reaches the list, then
             // waits to be told to stop, as a runaway pattern would, and ends
-            // late, reporting one more book after the new search has ended.
+            // late, reporting one more book after the new query was typed.
             report(oldResult, makeTally(given: 2, searched: 1, withMatches: 1, matches: 2))
             log.recordCancellation(waitOnSearchThread(isCancelled))
-            waitForGate(releaseOld)
+            log.note("old told to stop")
+            log.recordGate(waitForGate(releaseOld))
             report(lateOldResult, makeTally(given: 2, searched: 2, withMatches: 2, matches: 6))
+            log.note("old reported late")
             return .finished(makeTally(given: 2, searched: 2, withMatches: 2, matches: 6))
         }
 
@@ -351,14 +377,16 @@ final class LibrarySearchModelTests: XCTestCase {
         let oldSearch = try XCTUnwrap(model.searchTask)
 
         model.query = "new"
-        await model.searchTask?.value
-        XCTAssertEqual(model.groups.map(\.order), [1], "The new search's results should replace the old ones")
-        XCTAssertEqual(model.groups.first?.matches.map(\.matchedText), ["new", "new", "new"])
-
-        // Let the old search end after the new one has been published.
+        // The old search may end as soon as it has been told to stop.
         releaseOld.signal()
+        await model.searchTask?.value
         await oldSearch.value
 
+        XCTAssertEqual(log.gates, [true], "The old search must be let go, not waited out to its gate's timeout")
+        XCTAssertEqual(
+            log.events, ["old started", "old told to stop", "old reported late", "new started"],
+            "The old search should stop on the new query, end, and only then the new one begin"
+        )
         XCTAssertEqual(log.queries, ["old", "new"])
         XCTAssertEqual(log.cancellations, [true], "The old search should have been told to stop")
         XCTAssertEqual(model.groups.map(\.order), [1], "The old search's late book must not join the list")

@@ -278,6 +278,100 @@ final class LibrarySearchEngineTests: XCTestCase {
         }
     }
 
+    /// A cancel heard just before a book is prepared stops it before its
+    /// content.md is read, and one heard while it is read stops it before
+    /// the parse: the book is neither parsed nor kept, and the search ends
+    /// cancelled, where until November 13 a cancelled search still parsed
+    /// the book it had taken (the review's finding 3). The cancel comes from
+    /// the file access itself, at the very moment each check guards.
+    func testACancelStopsAPreparationBeforeTheReadAndBeforeTheParse() throws {
+        for moment in ["before the read", "during the read"] {
+            let library = try makeLibrary([("First", "the fox"), ("Second", "the fox")])
+            let first = try library.book(0)
+            let second = try library.book(1)
+            let secondContent = second.contentURL.standardizedFileURL.path
+            let cancelled = OSAllocatedUnfairLock(initialState: false)
+            let readsOfSecond = OSAllocatedUnfairLock(initialState: 0)
+            let access = MaintenanceFileAccess(
+                isDataless: { url in
+                    // The second book's content.md is looked at for the
+                    // cloud just before the book is prepared.
+                    if moment == "before the read", url.standardizedFileURL.path == secondContent {
+                        cancelled.withLock { $0 = true }
+                    }
+                    return false
+                },
+                refusesRead: { url in
+                    if url.standardizedFileURL.path == secondContent {
+                        readsOfSecond.withLock { $0 += 1 }
+                        if moment == "during the read" { cancelled.withLock { $0 = true } }
+                    }
+                    return false
+                }
+            )
+
+            let outcome = LibrarySearchEngine.search(
+                query: "fox", options: TextSearchOptions(), in: library.books, store: library.store,
+                fileAccess: access, limits: everything, workerCount: 1,
+                isCancelled: { cancelled.withLock { $0 } },
+                report: { _, _ in }
+            )
+
+            XCTAssertEqual(outcome, .cancelled, moment)
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: library.store.url(for: first.id).path),
+                "\(moment): the first book, searched before the cancel, was not kept"
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: library.store.url(for: second.id).path),
+                "\(moment): the second book was parsed and kept after the cancel"
+            )
+            XCTAssertEqual(
+                readsOfSecond.withLock { $0 }, moment == "before the read" ? 0 : 1,
+                "\(moment): reads of the second book's content.md"
+            )
+        }
+    }
+
+    /// A wait at the preparing gate ends as soon as its search is cancelled,
+    /// letting nothing in, where until November 13 it waited for the parse
+    /// ahead of it to end (the review's finding 3); uncancelled, a wait goes
+    /// on until the book ahead leaves, and is then let in.
+    func testAWaitAtThePreparingGateEndsOnACancel() {
+        let gate = LibrarySearchPreparingGate(budget: 10)
+        XCTAssertTrue(gate.enter(10, isCancelled: { false }), "an empty gate lets a book in")
+
+        let cancelled = OSAllocatedUnfairLock(initialState: false)
+        let admitted = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        let cancelledWaitEnded = expectation(description: "the cancelled wait ended")
+        DispatchQueue.global().async {
+            let entered = gate.enter(5, isCancelled: { cancelled.withLock { $0 } })
+            admitted.withLock { $0 = entered }
+            cancelledWaitEnded.fulfill()
+        }
+        // The waiter waits while the first book is in.
+        Thread.sleep(forTimeInterval: 0.1)
+        XCTAssertNil(admitted.withLock { $0 }, "a second book was let in beside a gate already full")
+        cancelled.withLock { $0 = true }
+        wait(for: [cancelledWaitEnded], timeout: 2)
+        XCTAssertEqual(admitted.withLock { $0 }, false, "a cancelled wait was let in")
+
+        // Uncancelled, the next book is let in once the first leaves.
+        let letIn = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        let uncancelledWaitEnded = expectation(description: "the uncancelled wait ended")
+        DispatchQueue.global().async {
+            let entered = gate.enter(5, isCancelled: { false })
+            letIn.withLock { $0 = entered }
+            if entered { gate.leave(5) }
+            uncancelledWaitEnded.fulfill()
+        }
+        Thread.sleep(forTimeInterval: 0.1)
+        XCTAssertNil(letIn.withLock { $0 }, "the next book was let in before the first left")
+        gate.leave(10)
+        wait(for: [uncancelledWaitEnded], timeout: 5)
+        XCTAssertEqual(letIn.withLock { $0 }, true, "the next book was not let in once the first left")
+    }
+
     // MARK: The Store
 
     /// A book's text changed since the last search (as Edit Text changes it)

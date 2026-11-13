@@ -165,7 +165,8 @@ enum LibrarySearchOutcome: Equatable, Sendable {
 ///   cloud (`MaintenanceFileAccess.read`), and a book whose package or
 ///   content.md is in the cloud is counted, not read.
 /// - **Stops at once.** `isCancelled` is asked before each book and each
-///   chapter, and inside each lookup.
+///   chapter, inside each lookup, while a book waits its turn to be
+///   prepared, and before its content.md is parsed.
 enum LibrarySearchEngine {
     /// The most content.md bytes being parsed at once while books are
     /// prepared: 32 MB, one larger book alone. Parsing takes 5 to 22 times
@@ -217,7 +218,7 @@ enum LibrarySearchEngine {
 
         let next = OSAllocatedUnfairLock(initialState: 0)
         let tally = OSAllocatedUnfairLock(initialState: LibrarySearchTally(booksGiven: books.count))
-        let gate = PreparingGate(budget: preparingBudget)
+        let gate = LibrarySearchPreparingGate(budget: preparingBudget)
         let reader = BookReader(matcher: matcher, prefilter: prefilter, limits: limits, store: store, fileAccess: fileAccess, gate: gate)
 
         DispatchQueue.concurrentPerform(iterations: workers) { _ in
@@ -230,9 +231,9 @@ enum LibrarySearchEngine {
                 }
                 guard index < books.count else { return }
                 let book = books[index]
-                let read = reader.search(book, order: index, buffer: &buffer, isCancelled: isCancelled)
                 // A book cut off by a cancel reports nothing.
-                guard !isCancelled() else { return }
+                guard let read = reader.search(book, order: index, buffer: &buffer, isCancelled: isCancelled),
+                      !isCancelled() else { return }
                 let snapshot = tally.withLock { counts -> LibrarySearchTally in
                     counts.add(read)
                     return counts
@@ -296,11 +297,12 @@ fileprivate struct BookReader: Sendable {
     let limits: LibrarySearchLimits
     let store: LibrarySearchTextStore
     let fileAccess: MaintenanceFileAccess
-    let gate: PreparingGate
+    let gate: LibrarySearchPreparingGate
 
     /// Searches `book`, the `order`th the search was given, reading its
-    /// chapters into `buffer`.
-    func search(_ book: LibrarySearchBook, order: Int, buffer: inout [UInt8], isCancelled: () -> Bool) -> BookRead {
+    /// chapters into `buffer`; nil when the search was cancelled before the
+    /// book could be prepared, so nothing about it counts.
+    func search(_ book: LibrarySearchBook, order: Int, buffer: inout [UInt8], isCancelled: () -> Bool) -> BookRead? {
         // Nothing of a book in the cloud is read: not even its search text,
         // whose key could not be checked against a content.md not here.
         if let package = book.packageURL, fileAccess.isInCloud(package) {
@@ -340,11 +342,17 @@ fileprivate struct BookReader: Sendable {
             scan = BookScan(matcher: matcher, prefilter: prefilter, limits: limits)
         }
 
-        guard let prepared = prepare(book, key: key) else {
+        let text: LibrarySearchTextBook
+        switch prepare(book, key: key, isCancelled: isCancelled) {
+        case .prepared(let prepared):
+            text = prepared
+        case .inCloud:
+            return BookRead(state: .inCloud)
+        case .unreadable:
             return BookRead(state: .unreadable)
+        case .cancelled:
+            return nil
         }
-        if case .inCloud = prepared { return BookRead(state: .inCloud) }
-        guard case .prepared(let text) = prepared else { return BookRead(state: .unreadable) }
         for (index, chapterText) in text.texts.enumerated() {
             guard !isCancelled() else { break }
             var chapter = chapterText
@@ -363,24 +371,32 @@ fileprivate struct BookReader: Sendable {
         case prepared(LibrarySearchTextBook)
         /// Its content.md turned out to be in the cloud.
         case inCloud
+        /// Its content.md cannot be read or is not UTF-8.
+        case unreadable
+        /// The search was cancelled before the book was parsed.
+        case cancelled
     }
 
     /// The search text of `book`, parsed from its content.md, whose identity
     /// was `key` when the search looked, and kept in the store under that
-    /// key, unless content.md changed while it was read; nil when content.md
-    /// cannot be read or is not UTF-8. Waits its turn at the gate, so few
-    /// books are parsed at once.
-    private func prepare(_ book: LibrarySearchBook, key: LibrarySearchTextKey) -> Prepared? {
+    /// key, unless content.md changed while it was read. Waits its turn at
+    /// the gate, so few books are parsed at once. A search cancelled while
+    /// it waits, as it is let in, or while the book is read parses nothing
+    /// (the review of November 13, finding 3): only a parse already under
+    /// way, which cannot be stopped, runs to its end and is kept.
+    private func prepare(_ book: LibrarySearchBook, key: LibrarySearchTextKey, isCancelled: () -> Bool) -> Prepared {
         let size = Int(clamping: key.content.byteCount)
-        gate.enter(size)
+        guard gate.enter(size, isCancelled: isCancelled) else { return .cancelled }
         defer { gate.leave(size) }
+        guard !isCancelled() else { return .cancelled }
         let bytes: Data
         do {
             bytes = try fileAccess.read(book.contentURL) { try Data(contentsOf: book.contentURL) }
         } catch {
-            return DatalessFiles.isDownloadRefusal(error) ? .inCloud : nil
+            return DatalessFiles.isDownloadRefusal(error) ? .inCloud : .unreadable
         }
-        guard let markdown = try? MarkdownCacheService.cacheText(from: bytes, at: book.contentURL) else { return nil }
+        guard !isCancelled() else { return .cancelled }
+        guard let markdown = try? MarkdownCacheService.cacheText(from: bytes, at: book.contentURL) else { return .unreadable }
         let chapters = MarkdownCacheService.parseMultiChapterMarkdown(
             markdown, bookTitle: book.title, bookAuthor: book.author
         ).chapters
@@ -509,7 +525,7 @@ fileprivate struct BookScan {
 /// Lets books be prepared only while the content.md being parsed adds up to
 /// at most a budget, so preparing many books at once never takes more
 /// memory than a few. A book larger than the budget is let in alone.
-fileprivate final class PreparingGate: Sendable {
+final class LibrarySearchPreparingGate: Sendable {
     /// The bytes being parsed now, under the lock with its condition.
     private let state = OSAllocatedUnfairLock(initialState: 0)
     /// Signalled whenever a book leaves.
@@ -517,24 +533,34 @@ fileprivate final class PreparingGate: Sendable {
     /// The most bytes let in at once.
     private let budget: Int
 
+    /// How often a wait at the gate asks whether its search was cancelled,
+    /// in seconds: often enough that a cancel is heard at once, and rarely
+    /// enough to cost nothing.
+    static let cancelPollInterval: TimeInterval = 0.02
+
     /// A gate letting in `budget` bytes at once.
     init(budget: Int) {
         self.budget = budget
     }
 
     /// Waits until `size` bytes fit, or nothing is being parsed, and counts
-    /// them in.
-    func enter(_ size: Int) {
+    /// them in, returning true; or, as soon as `isCancelled` says the search
+    /// was cancelled, gives up, counting nothing, and returns false. It asks
+    /// before each look and every `cancelPollInterval` while it waits, so a
+    /// cancelled search never waits for another's parse to end (the review
+    /// of November 13, finding 3).
+    func enter(_ size: Int, isCancelled: () -> Bool) -> Bool {
         condition.lock()
         defer { condition.unlock() }
         while true {
+            if isCancelled() { return false }
             let admitted = state.withLock { used -> Bool in
                 guard used == 0 || used + size <= budget else { return false }
                 used += size
                 return true
             }
-            if admitted { return }
-            condition.wait()
+            if admitted { return true }
+            _ = condition.wait(until: Date(timeIntervalSinceNow: Self.cancelPollInterval))
         }
     }
 
