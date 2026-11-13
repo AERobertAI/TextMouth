@@ -860,7 +860,10 @@ final class KeepOnThisMacTests: XCTestCase {
             )]
         )
 
-        // Still short: the refresh tries the third again and says nothing.
+        // Still short: the two downloads took 800 MB of the 900 free, as they
+        // would on a real volume, so the third book still doesn't fit; the
+        // refresh tries it again and says nothing.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 100_000_000
         let saidAgain = await announcements {
             refresher.requestRefresh()
             await refresher.waitForRefreshes()
