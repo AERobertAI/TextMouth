@@ -17,9 +17,11 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
 
     /// The grade 2 BRF sample, a North American Braille ASCII file.
     private static let sample = "brf/grade2-short.brf"
-    /// The table the sample is written in: uncontracted UEB.
+    /// Uncontracted UEB, the table the sample is imported with here, wrongly:
+    /// the sample is a contracted file, which the next table reads rightly.
     private static let grade1 = "en-ueb-g1.ctb"
-    /// Contracted UEB, the table a book that stores none is read with.
+    /// Contracted UEB, the table the sample is written in and the table a
+    /// book that stores none is read with.
     private static let grade2 = "en-ueb-g2.ctb"
     /// A Mac table no Mac has, as one a macOS update removed.
     private static let goneTable = "mac:no-such-table-for-this-test.ctb"
