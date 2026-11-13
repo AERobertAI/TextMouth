@@ -152,6 +152,16 @@ final class PhoneSession: ObservableObject {
         self.autoplayRequests = requests
         self.preferences = preferences
         self.config = config ?? .shared
+        // The phone shows one reader at a time, and its readers share one
+        // sleep timer (November 13, 2026: each Mac window has its own): the
+        // iPhone's, which its life cycle checks as the app comes back, and
+        // one of the session's own where there is no iPhone, as in the Mac's
+        // tests.
+        #if os(iOS)
+        let phoneTimer = SleepTimerService.shared
+        #else
+        let phoneTimer = SleepTimerService()
+        #endif
         self.makeReader = makeReader ?? { book in
             BookReaderWindowView.makeReader(
                 book: book,
@@ -162,7 +172,8 @@ final class PhoneSession: ObservableObject {
                 showBook: nil,
                 requestedBookID: book.id,
                 autoplayRequests: requests,
-                notificationCenter: notificationCenter
+                notificationCenter: notificationCenter,
+                sleepTimer: phoneTimer
             )
         }
 

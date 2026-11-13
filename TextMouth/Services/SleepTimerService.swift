@@ -6,33 +6,39 @@ import AppKit
 import UIKit
 #endif
 
-/// Manages the sleep timer. There is exactly ONE timer at a time across
-/// the whole app (any number of book windows may exist) — accessed via
-/// `SleepTimerService.shared`.
+/// One sleep timer: each reader window has its own (November 13, 2026, the
+/// user: "I want each sleep timer to be refactored to be per book view
+/// window not global"), kept by the window's content above each book it
+/// shows (`ReaderWindowContent`), so it stays with the window when
+/// listening goes on to another book in place. The iPhone, which shows one
+/// reader at a time, has one, `SleepTimerService.shared`, which its readers
+/// share. Every timer joins the registry of every window's timer
+/// (`SleepTimerRegistry`), which finds a timer on its way to a book from
+/// another window.
 ///
-/// ## Why a singleton
-/// The user expectation is "one sleep timer running at once". Per-window
-/// instances allowed Book A's timer to run alongside Book B's, with each
-/// window's UI showing only its own state. Sharing a single source of
-/// truth means starting a timer from any window automatically replaces
-/// any previous timer, and every open sleep-timer sheet reflects the
-/// same live state.
+/// Until November 13 the app had one timer for every window: a book opened
+/// beside another that held a paused timer showed that timer, which its own
+/// playback could neither run nor stop, and a timer set in one window
+/// replaced another's.
 ///
 /// ## Owner-scoped pause/resume
 /// The minutes-based countdown is paused alongside playback so a timer
 /// set before a long break doesn't expire silently in the background and
-/// pause the user mid-sentence after they resume. With a single shared
-/// timer but multiple book windows, the pause/resume calls must only
-/// take effect when issued by the *owning* reader — Book B pausing should
-/// not halt Book A's running timer. Each playback action passes its
-/// `ownerID`, the reader's own ID (`ReaderViewModel.readerID`), so two
-/// windows of the same book are told apart too; mismatching IDs are
-/// silently ignored.
+/// pause the user mid-sentence after they resume. A window's timer is
+/// driven by one reader at a time, its owner: the reader of the book the
+/// window shows, or, while the window goes on to another book, the reader
+/// before it until the next one takes the timer. Each playback action
+/// passes its `ownerID`, the reader's own ID (`ReaderViewModel.readerID`),
+/// and a mismatching ID is silently ignored, so the closing reader of a
+/// window that switched books never touches the timer its successor took.
 @MainActor
 final class SleepTimerService: ObservableObject {
-    /// The single shared instance. All book windows and views read and
-    /// write timer state here so only one timer is ever active.
+    #if os(iOS)
+    /// The iPhone's one timer: the phone shows one reader at a time, and
+    /// every reader its session makes shares it. The Mac has none: each of
+    /// its reader windows has a timer of its own.
     static let shared = SleepTimerService()
+    #endif
 
     @Published var isActive = false
     @Published var remainingSeconds: Int = 0

@@ -787,7 +787,8 @@ final class ReaderViewModel: ObservableObject {
     ///   - sleepTimer: The sleep timer of the reader's window, which a window
     ///     gives each reader it shows (`ReaderWindowContent`), so that a
     ///     window going on to another book in place keeps its timer. Nil
-    ///     uses the shared timer.
+    ///     gives the reader a timer of its own on the Mac, as a window of its
+    ///     own would have, and the iPhone's one timer on the iPhone.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -807,7 +808,11 @@ final class ReaderViewModel: ObservableObject {
         self.book = book
         self.libraryViewModel = libraryViewModel
         self.settingsViewModel = settingsViewModel
+        #if os(iOS)
         self.sleepTimerService = sleepTimer ?? .shared
+        #else
+        self.sleepTimerService = sleepTimer ?? SleepTimerService()
+        #endif
         // Resolved here rather than as default arguments, so the shared
         // main-actor services are read inside this main-actor initializer.
         self.substitutionService = substitutionService ?? .shared
