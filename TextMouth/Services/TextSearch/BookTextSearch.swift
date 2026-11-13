@@ -214,41 +214,10 @@ enum BookTextSearch {
     /// Characters of context on each side, marking with "..." any text cut
     /// off before or after: what a result's row shows and speaks.
     static func contextSnippet(in text: String, around matchRange: Range<String.Index>) -> String {
-        // A whole text has nothing beyond its ends, so a snippet always fits.
-        contextSnippet(in: text[...], around: matchRange, textGoesOnBefore: false, textGoesOnAfter: false) ?? ""
-    }
-
-    /// The snippet `contextSnippet(in:around:)` makes from a whole text,
-    /// made from `window`, a stretch of that text holding the match, or nil
-    /// when the window is too short to tell it.
-    ///
-    /// The window must begin and end where the whole text's Characters do,
-    /// as it does at the start of a line or of the text and after a line
-    /// feed (Unicode's grapheme rules always break after a line feed, and
-    /// none looks back across one). `textGoesOnBefore` and `textGoesOnAfter`
-    /// say whether the whole text holds more beyond each end of the window.
-    /// The snippet is the whole text's whenever the window holds
-    /// `contextLength` Characters on each side of the match where the text
-    /// goes on; nil otherwise, so the caller widens the window and asks again.
-    static func contextSnippet(
-        in window: Substring,
-        around matchRange: Range<String.Index>,
-        textGoesOnBefore: Bool,
-        textGoesOnAfter: Bool
-    ) -> String? {
-        let before = window.index(matchRange.lowerBound, offsetBy: -contextLength, limitedBy: window.startIndex)
-        let after = window.index(matchRange.upperBound, offsetBy: contextLength, limitedBy: window.endIndex)
-        // Fewer Characters than the context takes, on a side where the text
-        // goes on beyond the window: the whole text's snippet reaches further.
-        if (before == nil && textGoesOnBefore) || (after == nil && textGoesOnAfter) {
-            return nil
-        }
-        let beforeStart = before ?? window.startIndex
-        let afterEnd = after ?? window.endIndex
-        // Text is cut off before the snippet when the snippet starts later
-        // than the window, or at the window's start with more text before it.
-        let prefix = beforeStart > window.startIndex || (textGoesOnBefore && beforeStart == window.startIndex) ? "..." : ""
-        let suffix = afterEnd < window.endIndex || (textGoesOnAfter && afterEnd == window.endIndex) ? "..." : ""
-        return prefix + String(window[beforeStart..<afterEnd]) + suffix
+        let beforeStart = text.index(matchRange.lowerBound, offsetBy: -contextLength, limitedBy: text.startIndex) ?? text.startIndex
+        let afterEnd = text.index(matchRange.upperBound, offsetBy: contextLength, limitedBy: text.endIndex) ?? text.endIndex
+        let prefix = beforeStart > text.startIndex ? "..." : ""
+        let suffix = afterEnd < text.endIndex ? "..." : ""
+        return prefix + String(text[beforeStart..<afterEnd]) + suffix
     }
 }

@@ -1,20 +1,17 @@
 import Foundation
 
-// MARK: - The Lines That May Hold a Match
+// MARK: - The Chapters That May Hold a Match
 
 /// What a literal search looks for among a chapter's UTF-8 bytes before
 /// Foundation's search decides (LIBRARY-SEARCH-RESEARCH-2026-11-13.md,
-/// section 3): the lines that may hold a match. A chapter with none is passed
-/// over without being decoded; any other is searched whole by
-/// `BookTextSearch.Matcher`, with Search in Book's own calls, so the prefilter
-/// changes how fast a search is and never what it finds. (No line is searched
-/// on its own: Foundation does not answer a short range as it answers the
-/// same text inside a longer one.)
+/// section 3): whether the chapter may hold a match at all. A chapter that
+/// cannot is passed over without being decoded; any other is searched whole
+/// by `BookTextSearch.Matcher`, with Search in Book's own calls, so the
+/// prefilter changes how fast a search is and never what it finds. (No part
+/// of a chapter is searched on its own: Foundation does not answer a short
+/// range as it answers the same text inside a longer one.)
 ///
-/// It is sound because of three facts, each pinned by a test:
-/// - A literal query that holds no line feed or carriage return matches no
-///   line feed, so every match lies within one line, and a chapter with no
-///   line a match can lie in can be passed over.
+/// It is sound because of two facts, each pinned by a test:
 /// - The query's anchor, a run of its ASCII characters none of which stands
 ///   beside a non-ASCII one, is matched by Foundation's search either by the
 ///   same bytes, letters in either case when case is ignored, or by text
@@ -29,10 +26,12 @@ import Foundation
 ///   text that holds neither's bytes: e and a combining acute for é, ʼ and n
 ///   for ŉ, 1, the fraction slash, and 4 for ¼.
 ///
-/// So a line is a candidate when it holds the anchor's bytes, or a special
-/// character that can stand for one of them. A query with no ASCII to anchor
-/// on, a regular expression, and a query holding a line feed or carriage
-/// return have no prefilter: their chapters are searched whole.
+/// So a chapter may hold a match only when it holds the anchor's bytes, or a
+/// special character that can stand for one of them. A query with no ASCII
+/// to anchor on and a regular expression have no prefilter, and neither has
+/// a query holding a line feed or carriage return, whose matching the sweep
+/// of every scalar (printable ASCII queries) never took in: their chapters
+/// are searched whole.
 struct LibrarySearchPrefilter: Sendable {
     /// The bytes to find: the query's longest usable run of ASCII
     /// characters, its letters in lower case when case is ignored.
@@ -163,28 +162,19 @@ struct LibrarySearchPrefilter: Sendable {
         (0x61...0x7A).contains(byte) ? byte & ~0x20 : nil
     }
 
-    // MARK: Finding Candidate Lines
+    // MARK: Looking Over a Chapter
 
-    /// Calls `visit` with the byte range of each line of `bytes`, a chapter's
-    /// UTF-8 text, that may hold a match, in order and without its line
-    /// feed, until `visit` returns false. A line is a candidate when it holds
-    /// the anchor's bytes (letters in either case when case is ignored) or a
-    /// special character; every other line holds no match.
-    func forEachCandidateLine(in bytes: UnsafeBufferPointer<UInt8>, _ visit: (Range<Int>) -> Bool) {
-        let count = bytes.count
-        var index = 0
-        while index < count {
-            guard let hit = nextHit(in: bytes, from: index) else { return }
-            let lineStart = Self.lineStart(in: bytes, before: hit)
-            let lineEnd = Self.lineEnd(in: bytes, after: hit)
-            guard visit(lineStart..<lineEnd) else { return }
-            index = lineEnd + 1
-        }
+    /// Whether `bytes`, a chapter's UTF-8 text, may hold a match: whether it
+    /// holds the anchor's bytes (letters in either case when case is
+    /// ignored) or a special character that can stand for one of the
+    /// anchor's characters. A chapter that holds neither holds no match.
+    func mayHoldAMatch(in bytes: UnsafeBufferPointer<UInt8>) -> Bool {
+        nextHit(in: bytes, from: 0) != nil
     }
 
-    /// The position of the next byte at or after `start` that makes its line
-    /// a candidate: the key byte of an occurrence of the anchor, or the first
-    /// byte of a special character. Nil when there is none.
+    /// The position of the next byte at or after `start` that may begin a
+    /// match's part: the key byte of an occurrence of the anchor, or the
+    /// first byte of a special character. Nil when there is none.
     private func nextHit(in bytes: UnsafeBufferPointer<UInt8>, from start: Int) -> Int? {
         let count = bytes.count
         var index = start
@@ -242,45 +232,5 @@ struct LibrarySearchPrefilter: Sendable {
             value = value << 6 | UInt32(continuation & 0x3F)
         }
         return value
-    }
-
-    /// Where the line holding position `index` of `bytes` begins: just
-    /// after the line feed before it, or at the start. (macOS's C library has
-    /// no `memrchr`; a line is short, and is looked back over once.)
-    private static func lineStart(in bytes: UnsafeBufferPointer<UInt8>, before index: Int) -> Int {
-        var position = index
-        while position > 0, bytes[position - 1] != 0x0A {
-            position -= 1
-        }
-        return position
-    }
-
-    /// Where the line holding position `index` of `bytes` ends: at the line
-    /// feed after it, or at the end.
-    private static func lineEnd(in bytes: UnsafeBufferPointer<UInt8>, after index: Int) -> Int {
-        let count = bytes.count
-        guard index < count, let base = bytes.baseAddress,
-              let found = memchr(base + index, 0x0A, count - index) else { return count }
-        return base.distance(to: found.assumingMemoryBound(to: UInt8.self))
-    }
-}
-
-// MARK: - Counting UTF-16
-
-/// The UTF-16 length of UTF-8 text, from its bytes: one unit for each byte
-/// that begins a scalar, and a second for each scalar of four bytes, which
-/// UTF-16 writes as a surrogate pair. For valid UTF-8, as every search text
-/// is, the length `String.utf16.count` gives.
-enum UTF8Counting {
-    /// The UTF-16 length of the UTF-8 bytes `bytes`.
-    static func utf16Length(of bytes: UnsafeBufferPointer<UInt8>) -> Int {
-        var units = 0
-        for byte in bytes {
-            // Not a continuation byte: it begins a scalar.
-            units &+= byte & 0xC0 != 0x80 ? 1 : 0
-            // A lead byte of four: a second unit.
-            units &+= byte >= 0xF0 ? 1 : 0
-        }
-        return units
     }
 }

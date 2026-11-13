@@ -41,11 +41,11 @@ final class LibrarySearchPrefilterTests: XCTestCase {
         XCTAssertNotNil(LibrarySearchPrefilter(query: "window", options: TextSearchOptions()))
     }
 
-    // MARK: Candidate Lines
+    // MARK: Chapters That May Hold a Match
 
-    /// The lines handed on are those holding the anchor's bytes, in either
-    /// case when case is ignored, or a special character, and no others, in
-    /// order and without their line feeds.
+    /// Of these lines, each looked over as a chapter of its own, those that
+    /// may hold a match are the ones holding the anchor's bytes, in either
+    /// case when case is ignored, or a special character, and no others.
     func testTheLinesHandedOnHoldTheAnchorOrASpecialCharacter() throws {
         let lines = [
             "no match here",
@@ -80,41 +80,35 @@ final class LibrarySearchPrefilterTests: XCTestCase {
         XCTAssertEqual(candidateLines(window, in: text), ["the window"], "no digit form stands for a letter of window")
     }
 
-    /// A line feed at either end of the text, a line of only the anchor, and
-    /// lines ending in CR LF are found as lines, the carriage return kept.
-    func testLinesAtTheEdgesAndWithCarriageReturnsAreWhole() throws {
+    /// A whole chapter may hold a match when the anchor stands anywhere in
+    /// it, at either end, beside a line feed or CR LF; it cannot when it is
+    /// empty, or when a line feed splits the anchor.
+    func testAChapterMayHoldAMatchWhereverTheAnchorStands() throws {
         let prefilter = try XCTUnwrap(LibrarySearchPrefilter(query: "fox", options: TextSearchOptions()))
-        XCTAssertEqual(candidateLines(prefilter, in: "\nfox\n"), ["fox"])
-        XCTAssertEqual(candidateLines(prefilter, in: "fox"), ["fox"])
-        XCTAssertEqual(candidateLines(prefilter, in: "a fox\r\nno\r\nFOX\r\n"), ["a fox\r", "FOX\r"])
-        XCTAssertEqual(candidateLines(prefilter, in: ""), [])
-    }
-
-    // MARK: Counting UTF-16
-
-    /// The UTF-16 length counted from UTF-8 bytes is Swift's, for text of
-    /// one, two, three, and four bytes a scalar.
-    func testTheUTF16LengthFromBytesIsSwifts() {
-        let samples = ["", "plain", "café", "ß ẞ", "日本語", "😀👍🏽👩‍💻", "e\u{301}\u{302}", "\u{10FFFF}a\u{80}"]
-        for sample in samples + [samples.joined(separator: "\n")] {
-            var text = sample
-            let counted = text.withUTF8 { UTF8Counting.utf16Length(of: $0) }
-            XCTAssertEqual(counted, sample.utf16.count, sample.debugDescription)
+        for text in ["\nfox\n", "fox", "a fox\r\nno\r\nFOX\r\n", "no\nno\nthe last line, a fox"] {
+            XCTAssertTrue(mayHoldAMatch(prefilter, text), text.debugDescription)
+        }
+        for text in ["", "fo\nx", "no such word here: f o x"] {
+            XCTAssertFalse(mayHoldAMatch(prefilter, text), text.debugDescription)
         }
     }
 
     // MARK: Helpers
 
-    /// The lines of `text` that `prefilter` hands on.
-    private func candidateLines(_ prefilter: LibrarySearchPrefilter, in text: String) -> [String] {
+    /// Whether `prefilter` says the chapter whose text is `text` may hold a
+    /// match.
+    private func mayHoldAMatch(_ prefilter: LibrarySearchPrefilter, _ text: String) -> Bool {
         var text = text
-        return text.withUTF8 { bytes in
-            var lines: [String] = []
-            prefilter.forEachCandidateLine(in: bytes) { range in
-                lines.append(String(decoding: UnsafeBufferPointer(rebasing: bytes[range]), as: UTF8.self))
-                return true
-            }
-            return lines
-        }
+        return text.withUTF8 { prefilter.mayHoldAMatch(in: $0) }
+    }
+
+    /// The lines of `text`, each looked over as a chapter of its own, that
+    /// `prefilter` says may hold a match, in order and without their line
+    /// feeds (split at the line feed's byte, so a CR LF's carriage return
+    /// stays with its line).
+    private func candidateLines(_ prefilter: LibrarySearchPrefilter, in text: String) -> [String] {
+        text.utf8.split(separator: 0x0A, omittingEmptySubsequences: false)
+            .map { String(decoding: $0, as: UTF8.self) }
+            .filter { mayHoldAMatch(prefilter, $0) }
     }
 }

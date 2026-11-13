@@ -150,8 +150,7 @@ enum LibrarySearchOutcome: Equatable, Sendable {
 ///   (`BookTextSearch.contextSnippet`), and where it is by the same rule
 ///   (`BookSearchView.locationTitles`). For a literal query, a chapter's
 ///   bytes are first looked over (`LibrarySearchPrefilter`), which passes
-///   over a chapter none of whose lines can hold a match and changes nothing
-///   found.
+///   over a chapter that can hold no match and changes nothing found.
 /// - **Spread over the Mac's cores.** Books are searched in parallel on
 ///   Dispatch's threads, never in Swift's concurrency pool, which has one
 ///   thread a core and must stay free for the rest of the app: a plain
@@ -506,15 +505,10 @@ fileprivate struct BookScan {
         // Copied, so the closure below, which counts each match into this
         // scan, never overlaps a read of the scan's own properties.
         let matcher = matcher
-        // A chapter none of whose lines may hold a match is passed over
-        // without being decoded; any other is searched whole.
-        if let prefilter {
-            var mayHoldAMatch = false
-            prefilter.forEachCandidateLine(in: bytes) { _ in
-                mayHoldAMatch = true
-                return false
-            }
-            guard mayHoldAMatch else { return !isCancelled() }
+        // A chapter that cannot hold a match is passed over without being
+        // decoded; any other is searched whole.
+        if let prefilter, !prefilter.mayHoldAMatch(in: bytes) {
+            return !isCancelled()
         }
         // The whole chapter, exactly as Search in Book searches it: the same
         // text, the same calls from its start, so the same matches.
