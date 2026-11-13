@@ -775,6 +775,35 @@ final class ReadingListViewTests: XCTestCase {
         )
     }
 
+    /// The bar's row wraps rather than truncates: when the controls do not
+    /// fit the width, the one that does not starts a second line, in the
+    /// order they were declared, which is the order VoiceOver visits them;
+    /// wide enough, they stay on one line; and a control wider than the
+    /// window keeps its place, alone on its line, however narrow it gets.
+    func testTheOptionsBarWrapsOntoASecondLineInsteadOfTruncating() {
+        // The pop-up, then the three checkboxes of a cloud library.
+        let sizes = [CGSize(width: 140, height: 24), CGSize(width: 160, height: 20),
+                     CGSize(width: 190, height: 20), CGSize(width: 230, height: 20)]
+        func arrange(_ width: CGFloat) -> (origins: [CGPoint], size: CGSize) {
+            WrappingRow.arrange(sizes, width: width, spacing: 16, lineSpacing: 4)
+        }
+
+        let wide = arrange(2_000)
+        XCTAssertEqual(wide.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 538, y: 0)])
+        XCTAssertEqual(wide.size, CGSize(width: 768, height: 24))
+
+        // At the window's minimum width the last control starts a second line.
+        let minimum = arrange(600)
+        XCTAssertEqual(minimum.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 0, y: 28)])
+        XCTAssertEqual(minimum.size, CGSize(width: 522, height: 48))
+
+        // Narrower than any control, each has a line of its own, in order.
+        let narrow = arrange(100)
+        XCTAssertEqual(narrow.origins.map(\.x), [0, 0, 0, 0])
+        XCTAssertEqual(narrow.origins.map(\.y), [0, 28, 52, 76])
+        XCTAssertEqual(WrappingRow.arrange([], width: 100, spacing: 16, lineSpacing: 4).size, .zero)
+    }
+
     /// Hosted, the choice to keep the list's books on this Mac is a third
     /// checkbox, shown only while the library is in the cloud, and checked as
     /// the choice stands; outside the cloud the bar holds the two checkboxes
