@@ -355,17 +355,19 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
             XCTAssertEqual(control.element.accessibilityValue() as? String, "North American Braille ASCII")
             XCTAssertEqual(control.hint, "Choose other characters to read the book's file again with them.")
             XCTAssertFalse(controls.contains { $0.label == TextEncodingWording.bookInfoLabel })
+            // The file characters' pop-up and the braille code's, never the
+            // encoding's.
             let popUps = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(popUps.count, 1, "the sheet shows one pop-up")
-            let popUp = try XCTUnwrap(popUps.first)
-            XCTAssertEqual(popUp.itemTitles, Self.codeNames)
+            XCTAssertEqual(popUps.count, 2, "the sheet shows the file characters' pop-up and the braille code's")
+            let popUp = try XCTUnwrap(popUps.first { $0.itemTitles == Self.codeNames })
             XCTAssertEqual(popUp.titleOfSelectedItem, "North American Braille ASCII")
         }
     }
 
     /// A PEF book's sheet, whose rows are always Unicode braille patterns,
-    /// has no Braille File Characters pop-up, nor any; a text book's has its
-    /// Text Encoding pop-up alone.
+    /// has no Braille File Characters pop-up, only the Braille Code pop-up
+    /// every braille book has; a text book's has its Text Encoding pop-up
+    /// alone.
     func testOnlyABRFOrBRLBooksSheetHasThePopUp() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let pef = try makeBrailleBook("Atlas", code: nil, fileExtension: "pef")
@@ -376,7 +378,9 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
             accessibleControls(in: $0).contains { $0.role == .textField }
         }) { hosting in
             XCTAssertFalse(accessibleControls(in: hosting).contains { $0.label == BrailleFileCodeWording.bookInfoLabel })
-            XCTAssertTrue(descendants(of: hosting, as: NSPopUpButton.self).isEmpty)
+            XCTAssertEqual(
+                descendants(of: hosting, as: NSPopUpButton.self).count, 1, "the Braille Code pop-up alone, not the file characters'"
+            )
         }
 
         let text = Book(

@@ -110,8 +110,47 @@ extension Book {
 /// The words around a braille book's code (FMT21), kept together so a test
 /// pins them.
 enum BrailleCodeWording {
-    /// The label of Book Information's row that names a braille book's code.
+    /// The label of Book Information's row that names a braille book's code,
+    /// and of its pop-up, which reads the book again with another.
     static let bookInfoLabel = "Braille Code"
+
+    // MARK: The Pop-up
+
+    /// The pop-up's hint, which VoiceOver says after its label and value.
+    static let popUpHint = "Choose another braille code to read the book's file again with it."
+
+    // MARK: The Confirmation
+
+    /// The title of the alert that asks before the book titled `bookTitle`
+    /// is read again with the braille code named `codeName`, in the
+    /// encoding's sentence (`TextEncodingWording.confirmTitle(bookTitle:readingName:)`):
+    /// "Read “Ledger” again as Unified English Braille, uncontracted (Grade
+    /// 1)?"
+    static func confirmTitle(bookTitle: String, codeName: String) -> String {
+        TextEncodingWording.confirmTitle(bookTitle: bookTitle, readingName: codeName)
+    }
+
+    /// What the alert says first: the braille is translated to print again
+    /// with the code chosen, and nothing can tell whether it is the right
+    /// one, since every braille text translates in every table, so a wrong
+    /// one reads with no error.
+    static let translatedAgainNote = "The braille is translated to print again with this code. "
+        + "Nothing checks that it is the right choice. If words read wrongly, choose another."
+
+    /// The alert's message before a braille book is read again with another
+    /// braille code: that the braille is translated again, that the text is
+    /// replaced, and what happens to the places (the same sentences as the
+    /// braille file characters' alert, without its example); then, as every
+    /// re-read alert ends, that an edit of the text is kept, when content.md
+    /// holds one (`keepsText`), and that Edit Text stops, for a book being
+    /// edited (`stopsEditing`)
+    /// (`TextEncodingWording.confirmMessage(_:keepsText:stopsEditing:)`).
+    static func confirmMessage(keepsText: Bool, stopsEditing: Bool) -> String {
+        TextEncodingWording.confirmMessage(
+            [translatedAgainNote, TextEncodingWording.replacedNote, BrailleFileCodeWording.placesNote],
+            keepsText: keepsText, stopsEditing: stopsEditing
+        )
+    }
 }
 
 /// The words around the braille file characters a BRF or BRL braille book's
