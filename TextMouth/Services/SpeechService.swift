@@ -608,12 +608,15 @@ protocol SpeechWatchdogTimer: AnyObject {
 /// common modes, so that it ticks while a menu is open too.
 final class RunLoopWatchdogTimer: SpeechWatchdogTimer {
     /// The timer ticking.
-    private let timer: Timer
+    let timer: Timer
 
     /// Starts calling `tick` every `interval` seconds on the main run loop.
     /// Made on the main thread, as the speech service makes it.
     init(interval: TimeInterval, tick: @escaping @Sendable () -> Void) {
         let timer = Timer(timeInterval: interval, repeats: true) { _ in tick() }
+        // A watchdog's recovery may come a tenth of its interval later;
+        // that lets macOS coalesce its wake-up with other work.
+        TimerCoalescing.loosen(timer)
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }

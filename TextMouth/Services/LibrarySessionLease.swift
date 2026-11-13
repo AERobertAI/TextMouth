@@ -124,7 +124,7 @@ final class LibrarySessionLease {
     /// Whether another Mac was warned about this session.
     private(set) var hasWarned = false
     /// Refreshes the lease every `refreshInterval` while the library is open.
-    private var timer: Timer?
+    private(set) var timer: Timer?
     /// The refresh under way, if any; nil once it is done. Refreshes never
     /// overlap.
     private var refreshUnderWay: Task<Void, Never>?
@@ -193,6 +193,8 @@ final class LibrarySessionLease {
         timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshOnSchedule() }
         }
+        // A lease is minutes from going stale: let macOS coalesce the tick.
+        if let timer { TimerCoalescing.loosen(timer) }
     }
 
     /// Stops refreshing, as when the library is lost: the file stays, since
