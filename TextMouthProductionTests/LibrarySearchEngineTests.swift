@@ -48,6 +48,11 @@ private let syntheticBooks: [(title: String, markdown: String)] = [
 
     The \u{212A}elvin sign beside k and K; the long \u{17F} in Chri\u{17F}tmas; \u{1F44D}\u{1F3FD} and \u{1F469}\u{200D}\u{1F4BB}.
     """),
+    ("Digits", """
+    Chapter 2 begins.\u{B9} A footnote\u{B2} and \u{2462}, \u{BD} cup or 1\u{2044}2 cup, \u{FF12} wide, \u{2488} stopped.
+
+    The Greek question mark\u{37E} and a plain one; \u{1D7DA} in bold, \u{2185} late.
+    """),
     ("Line Endings", "Windows lines\r\nend with CR LF\r\nand the fox\r\nruns at the end fox"),
     ("Single Chapter", "fox at the very start, a fox in the middle, and a last fox"),
     ("No Matches", "Nothing to find here but plain words."),
@@ -60,6 +65,7 @@ private let literalQueries = [
     "café", "cafe", "CAFÉ", "é", "\u{301}", "naïve", "straße", "STRASSE", "ss", "ß", "ﬁne", "fine", "ff",
     "İstanbul", "istanbul", "ı", "I", "σοφός", "Σ", "ς", "k", "K", "\u{212A}", "s", "christmas", "👍", "👩",
     "end fox", "fox\r", "lines", "Annotated", "7",
+    "1", "2", "3", "6", "Chapter 2", "1.", ";", "\u{BD}", "1\u{2044}2", "\u{FF12}", "\u{2462}",
 ]
 
 /// Regular expressions, among them one across a line feed and an invalid one.
@@ -122,15 +128,17 @@ final class LibrarySearchEngineTests: XCTestCase {
     }
 
     /// Random chapters of letters, case pairs, accents written both ways,
-    /// ligatures, the special characters, and line breaks, searched for
-    /// pieces of themselves with their case changed: the prefiltered search
-    /// of lines finds exactly what Search in Book finds in whole chapters.
+    /// ligatures, digits and their compatibility forms, the special
+    /// characters, and line breaks, searched for pieces of themselves with
+    /// their case changed: the prefiltered search of lines finds exactly what
+    /// Search in Book finds in whole chapters.
     func testThePrefilteredSearchAgreesWithSearchInBookOnRandomText() throws {
         var generator = SeededGenerator(seed: 20_261_113)
         let alphabet: [String] = [
             "a", "b", "e", "f", "i", "k", "s", "t", "A", "E", "I", "K", "S", " ", " ", " ", ",", "\n", "\n", "\r\n",
             "é", "e\u{301}", "É", "ß", "ẞ", "ss", "ﬁ", "ﬀ", "fi", "İ", "ı", "i\u{307}", "\u{212A}", "ſ", "σ", "ς", "Σ",
-            "\u{301}", "\u{308}", "ẗ", "ǰ", "ŉ", "’", "—", "😀", "👍🏽", "\u{AD}", "\u{200B}",
+            "\u{301}", "\u{308}", "ẗ", "ǰ", "ŉ", "\u{2BC}", "n", "’", "—", "😀", "👍🏽", "\u{AD}", "\u{200B}",
+            "1", "2", "\u{B2}", "\u{2460}", "\u{2461}", "\u{BC}", "\u{2044}", "\u{FF12}", ";", "\u{37E}",
         ]
         var books: [(title: String, markdown: String)] = []
         for index in 0..<24 {

@@ -9,26 +9,29 @@ final class LibrarySearchPrefilterTests: XCTestCase {
 
     // MARK: The Anchor
 
-    /// The anchor is the query's longest run of ASCII, in lower case when
-    /// case is ignored, leaving out a character the query follows with a
-    /// combining mark; none for a query with no ASCII, one holding a line
-    /// feed or carriage return, or a regular expression.
+    /// The anchor is the query's longest run of ASCII none of whose
+    /// characters stands beside a non-ASCII one, in lower case when case is
+    /// ignored; none for a query with no such run, one holding a line feed
+    /// or carriage return, or a regular expression.
     func testTheAnchorIsTheLongestUsableRunOfASCII() {
         let cases: [(query: String, ignoringCase: Bool, anchor: String?)] = [
             ("window", true, "window"),
             ("Window", true, "window"),
             ("Window", false, "Window"),
-            ("Café au lait", true, " au lait"),
+            ("Café au lait", true, "au lait"),
             ("cafe\u{301}", true, "caf"),
-            ("na\u{EF}ve", true, "na"),
-            ("STRAẞE", true, "stra"),
+            ("na\u{EF}ve", true, "n"),
+            ("STRAẞE", true, "str"),
+            ("İstanbul", true, "tanbul"),
+            ("\u{2BC}n", true, nil),
+            ("1\u{2044}4", true, nil),
             ("λόγος", true, nil),
             ("日本", true, nil),
             ("a\nb", true, nil),
             ("a\rb", true, nil),
-            ("=\u{338}x", true, "x"),
-            ("e\u{301}\u{302}abc", true, "abc"),
-            ("1️⃣ go", true, " go"),
+            ("=\u{338}x", true, nil),
+            ("e\u{301}\u{302}abc", true, "bc"),
+            ("1️⃣ go", true, "go"),
         ]
         for (query, ignoringCase, anchor) in cases {
             let found = LibrarySearchPrefilter.anchor(of: query, ignoringCase: ignoringCase).map { String(decoding: $0, as: UTF8.self) }
@@ -64,6 +67,17 @@ final class LibrarySearchPrefilterTests: XCTestCase {
         let kelvin = try XCTUnwrap(LibrarySearchPrefilter(query: "K", options: TextSearchOptions(matchCase: true, isRegularExpression: false)))
         XCTAssertEqual(candidateLines(kelvin, in: "no\n\u{212A}elvin\nKelvin"), ["\u{212A}elvin", "Kelvin"],
                        "the Kelvin sign is canonically K, matched with case kept")
+    }
+
+    /// A special character makes its line a candidate only for an anchor it
+    /// can stand for: a superscript two for "Chapter 2", never for "window".
+    func testASpecialCharacterCountsOnlyForAnAnchorItStandsFor() throws {
+        let text = "footnote\u{B2} here\nthe window\nChapter 2\nlist \u{2461} item"
+        let chapter = try XCTUnwrap(LibrarySearchPrefilter(query: "Chapter 2", options: TextSearchOptions()))
+        XCTAssertEqual(candidateLines(chapter, in: text), ["footnote\u{B2} here", "Chapter 2", "list \u{2461} item"],
+                       "the superscript two and the circled two may stand for the anchor's 2")
+        let window = try XCTUnwrap(LibrarySearchPrefilter(query: "window", options: TextSearchOptions()))
+        XCTAssertEqual(candidateLines(window, in: text), ["the window"], "no digit form stands for a letter of window")
     }
 
     /// A line feed at either end of the text, a line of only the anchor, and

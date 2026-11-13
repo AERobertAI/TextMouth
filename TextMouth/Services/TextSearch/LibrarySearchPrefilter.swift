@@ -13,21 +13,24 @@ import Foundation
 /// - A literal query that holds no line feed or carriage return matches no
 ///   line feed, so every match lies within one line, and a line no match can
 ///   start in can be passed over.
-/// - The query's anchor, a run of its ASCII characters, is matched by
-///   Foundation's search either by the same bytes, letters in either case
-///   when case is ignored, or by text that holds one of the few non-ASCII
-///   characters Foundation can match against ASCII (`LibrarySearchSpecials`:
-///   the Kelvin sign, the long s, ß, the Latin ligatures, ...). No ASCII byte
-///   is ever part of a longer UTF-8 sequence, so the anchor's bytes are found
-///   only where those characters are.
-/// - An ASCII character the query follows with a combining mark is left out
-///   of the anchor: a precomposed letter in the text (é) matches it with its
-///   mark (e and U+0301), and holds none of its bytes.
+/// - The query's anchor, a run of its ASCII characters none of which stands
+///   beside a non-ASCII one, is matched by Foundation's search either by the
+///   same bytes, letters in either case when case is ignored, or by text
+///   that holds one of the few non-ASCII characters Foundation can match
+///   against ASCII alone (`LibrarySearchSpecials`: the Kelvin sign, the long
+///   s, ß, the Latin ligatures, a digit's compatibility forms, ...) standing
+///   for one of the anchor's characters. No ASCII byte is ever part of a
+///   longer UTF-8 sequence, so the anchor's bytes are found only where those
+///   characters are.
+/// - An ASCII character beside a non-ASCII one in the query is left out of
+///   the anchor, since the two may stand together for one character of the
+///   text that holds neither's bytes: e and a combining acute for é, ʼ and n
+///   for ŉ, 1, the fraction slash, and 4 for ¼.
 ///
-/// So a line is a candidate when it holds the anchor's bytes, or any special
-/// character. A query with no ASCII to anchor on, a regular expression, and a
-/// query holding a line feed or carriage return have no prefilter: their
-/// chapters are searched whole.
+/// So a line is a candidate when it holds the anchor's bytes, or a special
+/// character that can stand for one of them. A query with no ASCII to anchor
+/// on, a regular expression, and a query holding a line feed or carriage
+/// return have no prefilter: their chapters are searched whole.
 struct LibrarySearchPrefilter: Sendable {
     /// The bytes to find: the query's longest usable run of ASCII
     /// characters, its letters in lower case when case is ignored.
@@ -42,7 +45,8 @@ struct LibrarySearchPrefilter: Sendable {
     /// character's UTF-8, and zero for every other byte.
     private let byteFlags: [UInt8]
     /// The special characters a candidate line may hold instead of the
-    /// anchor, for this search's handling of case.
+    /// anchor: those, for this search's handling of case, that can stand for
+    /// one of the anchor's characters.
     private let specials: Set<UInt32>
 
     /// The flag of the anchor's key byte.
@@ -58,7 +62,14 @@ struct LibrarySearchPrefilter: Sendable {
               let anchor = Self.anchor(of: query, ignoringCase: !options.matchCase) else { return nil }
         self.anchor = anchor
         ignoresCase = !options.matchCase
-        specials = options.matchCase ? LibrarySearchSpecials.matchingCase : LibrarySearchSpecials.ignoringCase
+        // A special character matters only where it can stand for one of the
+        // anchor's characters: a circled digit for a query with no digit
+        // makes no line a candidate.
+        let anchorCharacters = Set(anchor)
+        let standsFor = options.matchCase ? LibrarySearchSpecials.standsForMatchingCase : LibrarySearchSpecials.standsForIgnoringCase
+        specials = LibrarySearchSpecials.characters(ignoringCase: !options.matchCase).filter { value in
+            !(standsFor[value] ?? Set(0...0x7F)).isDisjoint(with: anchorCharacters)
+        }
         keyIndex = Self.rarestIndex(in: anchor)
 
         var flags = [UInt8](repeating: 0, count: 256)
@@ -78,19 +89,21 @@ struct LibrarySearchPrefilter: Sendable {
 
     // MARK: Choosing the Anchor
 
-    /// The anchor of `query`: its longest run of ASCII characters, leaving
-    /// out one the query follows with a combining mark, its letters in lower
-    /// case when case is ignored; the first of the longest when several are
-    /// as long. Nil when the query holds a line feed or carriage return, or
-    /// no ASCII character to anchor on.
+    /// The anchor of `query`: its longest run of ASCII characters none of
+    /// which stands beside a non-ASCII character, its letters in lower case
+    /// when case is ignored; the first of the longest when several are as
+    /// long. Nil when the query holds a line feed or carriage return, or no
+    /// ASCII character to anchor on.
     static func anchor(of query: String, ignoringCase: Bool) -> [UInt8]? {
         let scalars = Array(query.unicodeScalars)
         guard !scalars.contains(where: { $0 == "\n" || $0 == "\r" }) else { return nil }
         var best: [UInt8] = []
         var run: [UInt8] = []
         for (index, scalar) in scalars.enumerated() {
-            let next = index + 1 < scalars.count ? scalars[index + 1] : nil
-            if scalar.isASCII, !(next.map(attachesToTheCharacterBefore) ?? false) {
+            let before = index > 0 ? scalars[index - 1] : nil
+            let after = index + 1 < scalars.count ? scalars[index + 1] : nil
+            let besideNonASCII = !(before?.isASCII ?? true) || !(after?.isASCII ?? true)
+            if scalar.isASCII, !besideNonASCII {
                 let byte = UInt8(scalar.value)
                 run.append(ignoringCase ? lowerCase(byte) : byte)
             } else {
@@ -100,19 +113,6 @@ struct LibrarySearchPrefilter: Sendable {
         }
         if run.count > best.count { best = run }
         return best.isEmpty ? nil : best
-    }
-
-    /// Whether `scalar` attaches to the character before it, so that the two
-    /// may be written as one precomposed character (a combining mark, whose
-    /// canonical combining class is not zero) or make one Character with it
-    /// (a grapheme extender or the zero-width joiner).
-    private static func attachesToTheCharacterBefore(_ scalar: Unicode.Scalar) -> Bool {
-        let properties = scalar.properties
-        return properties.canonicalCombiningClass != .notReordered
-            || properties.isGraphemeExtend
-            || scalar.value == 0x200D
-            || properties.generalCategory == .spacingMark
-            || properties.generalCategory == .enclosingMark
     }
 
     /// The index of the byte of `anchor` least frequent in English prose.
