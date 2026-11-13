@@ -115,11 +115,12 @@ enum LibraryCloudWording {
             sentences.append("Downloading \(books)")
         }
         if short > 0 {
-            sentences.append(
-                titles.isEmpty
-                    ? "There isn't enough free space to download \(CountWording.phrase(short, singular: "reading list book", plural: "reading list books"))"
-                    : "There isn't enough free space for \(short) more \(short == 1 ? "book" : "books")"
-            )
+            if titles.isEmpty {
+                let books = CountWording.phrase(short, singular: "reading list book", plural: "reading list books")
+                sentences.append("There isn't enough free space to download \(books)")
+            } else {
+                sentences.append("There isn't enough free space for \(short) more \(short == 1 ? "book" : "books")")
+            }
         }
         return sentences.joined(separator: ". ")
     }
