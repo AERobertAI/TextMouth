@@ -247,6 +247,16 @@ final class MenuVisibilityManager {
             return nil
         }
 
+        // --- The Search Library window ---
+        // An AppKit window TextMouth makes itself and names exactly
+        // (LibrarySearchWindowController.windowIdentifier). It is neither a
+        // Library nor a reader window, and must not fall to the Library
+        // fallback below, which would show the Library's menus over a window
+        // that cannot use them.
+        if identifier == LibrarySearchWindowController.windowIdentifier {
+            return nil
+        }
+
         // --- The audio editor ---
         // AppKit windows TextMouth makes itself, one for each book being
         // edited, all named exactly (AudioEditorWindowController

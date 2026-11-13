@@ -53,7 +53,18 @@ final class FrontWindowKind: ObservableObject {
 
     /// The kind of `window`, as the shortcut manager tells kinds of window
     /// apart, or nil for no window.
+    ///
+    /// The Search Library window is `.other`, as Settings is, though the
+    /// manager matches no shortcut in it (`windowKind(ofKeyWindow:)` gives
+    /// nil there, as it does for a sheet over an audio editor): a menu
+    /// command working in one kind of window must not show its key or act
+    /// there, while nil would read as no window in front, which admits every
+    /// command.
     static func kind(of window: NSWindow?) -> ShortcutWindowKind? {
-        window.flatMap(KeyboardShortcutManager.windowKind(ofKeyWindow:))
+        guard let window else { return nil }
+        if KeyboardShortcutManager.isLibrarySearchWindow(window) {
+            return .other
+        }
+        return KeyboardShortcutManager.windowKind(ofKeyWindow: window)
     }
 }

@@ -683,13 +683,30 @@ final class KeyboardShortcutManager: ObservableObject {
     /// which counts as a Library window (REV11): a reader's shortcuts did not
     /// work there, the Library's did, and over an audio editor they matched
     /// where none should.
+    ///
+    /// The Search Library window is neither: no shortcut matches in it, nor
+    /// in a sheet over it (nil, as over an audio editor), so its list and
+    /// field take every key, Return opening a match and Space and the
+    /// letters going to VoiceOver and the list rather than playing a book.
+    /// Menu key equivalents still act there, as menus handle them.
     static func windowKind(ofKeyWindow keyWindow: NSWindow?) -> ShortcutWindowKind? {
         guard let keyWindow else { return .other }
         let underneath = WindowCommandRouting.rootWindow(for: keyWindow)
+        if isLibrarySearchWindow(underneath) {
+            return nil
+        }
         return pressKind(
             window: windowKind(of: keyWindow),
             sheetParent: underneath === keyWindow ? nil : windowKind(of: underneath)
         )
+    }
+
+    /// Whether `window`, or the window under its sheets, is the Search
+    /// Library window, named by its identifier
+    /// (`LibrarySearchWindowController.windowIdentifier`) as the Record
+    /// window and the audio editors are.
+    static func isLibrarySearchWindow(_ window: NSWindow) -> Bool {
+        WindowCommandRouting.rootWindow(for: window).identifier?.rawValue == LibrarySearchWindowController.windowIdentifier
     }
 
     /// The kind of window `window` is, apart from any sheet it is: an audio
