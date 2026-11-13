@@ -106,7 +106,10 @@ struct LibrarySearchTextBook: Sendable {
 /// header's length, as little-endian 32-bit numbers), a JSON header (who
 /// wrote it, its key, and each chapter's title, UTF-8 length, and headings),
 /// then every chapter's text as UTF-8, one after another. It is written to a
-/// partial file and renamed into place, so a search never finds half a file.
+/// partial file, synchronized to the disk, and renamed into place, so a
+/// search never finds half a file; and a file is used only when the lengths
+/// its header gives add up to its size, so a damaged one is made again,
+/// never read past its end.
 struct LibrarySearchTextStore: Sendable {
     /// The app's store, in this Mac's Caches folder.
     static var shared: LibrarySearchTextStore {
@@ -160,16 +163,18 @@ struct LibrarySearchTextStore: Sendable {
     /// The search text kept for the book `bookID` under exactly `key`, opened
     /// for reading, or nil when there is none that can be used. A file
     /// stored for another key, another layout, or another producer, or one
-    /// that is damaged, is removed, so the caller stores the book afresh.
+    /// that is damaged, its header unreadable or its lengths not adding up
+    /// to its size (`LibrarySearchTextFile.setChapters(_:)`), is removed, so
+    /// the caller stores the book afresh.
     func open(bookID: UUID, key: LibrarySearchTextKey) -> LibrarySearchTextFile? {
         let url = url(for: bookID)
         guard let file = LibrarySearchTextFile(url: url) else { return nil }
-        guard let header = file.readHeader(), header.producer == producer, header.key == key else {
+        guard let header = file.readHeader(), header.producer == producer, header.key == key,
+              file.setChapters(header.chapters.map(\.chapter)) else {
             file.close()
             try? FileManager.default.removeItem(at: url)
             return nil
         }
-        file.setChapters(header.chapters.map(\.chapter))
         return file
     }
 
@@ -199,6 +204,10 @@ struct LibrarySearchTextStore: Sendable {
                 for text in book.texts {
                     try handle.write(contentsOf: Data(text.utf8))
                 }
+                // On the disk before the rename puts it in place, so a power
+                // loss cannot leave a whole header over texts never written
+                // (the review of November 13, finding 7).
+                try handle.synchronize()
                 try handle.close()
             } catch {
                 try? handle.close()
@@ -420,13 +429,15 @@ final class LibrarySearchTextFile {
     }
 
     /// The file's header, read from its start, or nil when the file does not
-    /// begin as a search text file of this layout does.
+    /// begin as a search text file of this layout does, or claims a header
+    /// longer than the file.
     fileprivate func readHeader() -> LibrarySearchTextStore.Header? {
         guard let prefix = read(count: 12, at: 0), prefix.count == 12,
               prefix.prefix(4) == Data("TMLS".utf8),
               Self.number(at: 4, in: prefix) == LibrarySearchTextStore.formatVersion else { return nil }
         let headerLength = Self.number(at: 8, in: prefix)
-        guard headerLength <= 64 * 1_048_576,
+        // A damaged length is never read, however large: the file must hold it.
+        guard headerLength <= 64 * 1_048_576, let size = fileSize(), 12 + Int64(headerLength) <= size,
               let headerData = read(count: Int(headerLength), at: 12), headerData.count == Int(headerLength),
               let header = try? JSONDecoder().decode(LibrarySearchTextStore.Header.self, from: headerData) else {
             return nil
@@ -436,21 +447,50 @@ final class LibrarySearchTextFile {
     }
 
     /// Takes `chapters`, the chapters the checked header describes, and
-    /// works out where each one's text begins.
-    fileprivate func setChapters(_ chapters: [LibrarySearchTextChapter]) {
-        self.chapters = chapters
-        var offset = textStart
-        chapterOffsets = chapters.map { chapter in
-            defer { offset += Int64(chapter.byteCount) }
-            return offset
+    /// works out where each one's text begins, when every length they give
+    /// is one the file can hold: no length below zero, no UTF-16 length above
+    /// its UTF-8 length (each UTF-16 unit takes at least one byte of UTF-8),
+    /// every heading within its own chapter, and the prefix, the header, and
+    /// the texts adding up to the file's size exactly. Otherwise it takes
+    /// nothing and returns false: such a file is damaged, cut short by a full
+    /// disk or a crash, or holding a length a later read would trap on or
+    /// allocate without bound for (the review of November 13, finding 7).
+    fileprivate func setChapters(_ chapters: [LibrarySearchTextChapter]) -> Bool {
+        guard let size = fileSize() else { return false }
+        var end = textStart
+        var offsets: [Int64] = []
+        offsets.reserveCapacity(chapters.count)
+        for (index, chapter) in chapters.enumerated() {
+            guard chapter.byteCount >= 0, chapter.utf16Length >= 0, chapter.utf16Length <= chapter.byteCount,
+                  chapter.headings.allSatisfy({
+                      $0.chapterIndex == index && $0.characterOffset >= 0 && $0.characterOffset <= chapter.utf16Length
+                  }) else { return false }
+            offsets.append(end)
+            let (next, overflowed) = end.addingReportingOverflow(Int64(chapter.byteCount))
+            guard !overflowed, next <= size else { return false }
+            end = next
         }
+        guard end == size else { return false }
+        self.chapters = chapters
+        chapterOffsets = offsets
+        return true
+    }
+
+    /// The size of the open file in bytes, or nil when it is closed or the
+    /// system cannot tell.
+    private func fileSize() -> Int64? {
+        guard descriptor >= 0 else { return nil }
+        var status = stat()
+        guard fstat(descriptor, &status) == 0 else { return nil }
+        return Int64(status.st_size)
     }
 
     /// The UTF-8 text of chapter `index`, read into `buffer`, which grows to
-    /// hold it and is reused from chapter to chapter; false when the file is
-    /// shorter than its header says.
+    /// hold it and is reused from chapter to chapter; false when the file
+    /// holds less than its header says, as it can once cut short after it
+    /// was opened.
     func readChapter(_ index: Int, into buffer: inout [UInt8]) -> Bool {
-        guard chapterOffsets.indices.contains(index) else { return false }
+        guard chapterOffsets.indices.contains(index), chapters[index].byteCount >= 0 else { return false }
         let offset = chapterOffsets[index]
         let count = chapters[index].byteCount
         if buffer.count < count {

@@ -307,20 +307,45 @@ final class LibrarySearchTextStoreTests: XCTestCase {
         }
     }
 
-    /// A file whose header is true but which is shorter than the header
-    /// says opens, and reads false for the chapters it cannot give whole.
-    func testReadChapterIsFalseForAFileShorterThanItsHeaderSays() throws {
+    /// A file whose header is intact but whose texts are shorter or longer
+    /// than the header says is not used, and is removed: its lengths must add
+    /// up to its size when it is opened (the review of November 13, finding
+    /// 7), so a file cut short by a full disk or a crash is made again
+    /// rather than searched as far as it goes.
+    func testAFileShorterOrLongerThanItsHeaderSaysIsNotUsed() throws {
+        let key = Self.key()
+        let changes: [(name: String, change: (Data) -> Data)] = [
+            ("cut five bytes short", { Data($0.dropLast(5)) }),
+            ("five bytes too long", { $0 + Data("extra".utf8) }),
+        ]
+        for (name, change) in changes {
+            let store = try makeStore()
+            let bookID = UUID()
+            try store.store(LibrarySearchTextBook(parsed: Self.shortChapters), for: bookID, key: key)
+            let url = store.url(for: bookID)
+            try change(try Data(contentsOf: url)).write(to: url)
+
+            XCTAssertNil(store.open(bookID: bookID, key: key), "\(name): the file opened")
+            XCTAssertFalse(exists(url), "\(name): the file should be removed")
+        }
+    }
+
+    /// A file cut short after it was opened, as another process could cut
+    /// it, reads false for the chapters it can no longer give whole, so the
+    /// search makes the book again; the chapters before stay readable.
+    func testAChapterCutShortAfterTheFileOpenedReadsFalse() throws {
         let store = try makeStore()
         let bookID = UUID()
         let key = Self.key()
         try store.store(LibrarySearchTextBook(parsed: Self.shortChapters), for: bookID, key: key)
         let url = store.url(for: bookID)
-        let whole = try Data(contentsOf: url)
-        // The last chapter, "Gamma delta.", loses its final five bytes.
-        try Data(whole.dropLast(5)).write(to: url)
-
-        let file = try XCTUnwrap(store.open(bookID: bookID, key: key), "The header is intact, so the file opens")
+        let file = try XCTUnwrap(store.open(bookID: bookID, key: key), "the whole file should open")
         defer { file.close() }
+        // The last chapter, "Gamma delta.", loses its final five bytes.
+        let size = try XCTUnwrap(try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int)
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(size - 5))
+        try handle.close()
         var buffer: [UInt8] = []
 
         XCTAssertTrue(file.readChapter(0, into: &buffer), "The first chapter is whole")
@@ -328,6 +353,89 @@ final class LibrarySearchTextStoreTests: XCTestCase {
         XCTAssertFalse(file.readChapter(1, into: &buffer), "The last chapter is cut short")
         XCTAssertFalse(file.readChapter(2, into: &buffer), "There is no third chapter")
         XCTAssertFalse(file.readChapter(-1, into: &buffer), "There is no chapter before the first")
+    }
+
+    /// A file whose header decodes but gives a length no file can hold is
+    /// not used, and is removed, never read: a negative UTF-8 or UTF-16
+    /// length (a negative byte count trapped in the search until November
+    /// 13, the review's finding 7), a UTF-16 length above the UTF-8 one, a
+    /// count so large that adding it overflows, counts adding up to more than
+    /// the file, and a heading of another chapter or past its chapter's end.
+    /// The same rewrite with nothing changed opens, so it is the change each
+    /// time that the store refuses.
+    func testAHeaderWithLengthsNoFileCanHoldIsNotUsedAndIsRemoved() throws {
+        let key = Self.key()
+        let book = LibrarySearchTextBook(parsed: parsedChapters())
+        let headed = try XCTUnwrap(book.chapters.firstIndex { !$0.headings.isEmpty }, "the fixture has no heading")
+        let damages: [(name: String, damage: (inout [[String: Any]]) -> Void)] = [
+            ("a negative byte count", { $0[0]["byteCount"] = -1 }),
+            ("a negative UTF-16 length", { $0[0]["utf16Length"] = -1 }),
+            ("a UTF-16 length above the byte count", { $0[0]["utf16Length"] = (($0[0]["byteCount"] as? Int) ?? 0) + 1 }),
+            ("a byte count that overflows", { $0[0]["byteCount"] = Int.max }),
+            ("byte counts adding up past the file", { $0[0]["byteCount"] = (($0[0]["byteCount"] as? Int) ?? 0) + 1 }),
+            ("a heading of another chapter", { chapters in
+                Self.changeFirstHeading(of: &chapters[headed]) { $0["chapterIndex"] = headed + 1 }
+            }),
+            ("a heading past its chapter's end", { chapters in
+                let length = (chapters[headed]["utf16Length"] as? Int) ?? 0
+                Self.changeFirstHeading(of: &chapters[headed]) { $0["characterOffset"] = length + 1 }
+            }),
+            ("a heading before its chapter's start", { chapters in
+                Self.changeFirstHeading(of: &chapters[headed]) { $0["characterOffset"] = -1 }
+            }),
+        ]
+
+        // The rewrite itself keeps a file whole.
+        let control = try makeStore()
+        let controlID = UUID()
+        try control.store(book, for: controlID, key: key)
+        try rewriteChapters(of: control.url(for: controlID)) { _ in }
+        let opened = control.open(bookID: controlID, key: key)
+        XCTAssertNotNil(opened, "a file whose header was rewritten unchanged should open")
+        opened?.close()
+
+        for (name, damage) in damages {
+            let store = try makeStore()
+            let bookID = UUID()
+            try store.store(book, for: bookID, key: key)
+            let url = store.url(for: bookID)
+            try rewriteChapters(of: url, damage)
+
+            let file = store.open(bookID: bookID, key: key)
+
+            XCTAssertNil(file, "\(name): the file opened")
+            file?.close()
+            XCTAssertFalse(exists(url), "\(name): the file should be removed")
+        }
+    }
+
+    /// Rewrites the chapters of the header of the store file at `url` as
+    /// `change` makes them, keeping the texts after the header, and the
+    /// prefix's header length true to the new header.
+    private func rewriteChapters(of url: URL, _ change: (inout [[String: Any]]) -> Void) throws {
+        let file = try Data(contentsOf: url)
+        let length = headerLength(in: file)
+        var header = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: file.subdata(in: 12..<(12 + length))) as? [String: Any],
+            "the header is not a JSON object"
+        )
+        var chapters = try XCTUnwrap(header["chapters"] as? [[String: Any]], "the header has no chapters")
+        change(&chapters)
+        header["chapters"] = chapters
+        let newHeader = try JSONSerialization.data(withJSONObject: header)
+        var rewritten = Data(file.prefix(8))
+        withUnsafeBytes(of: UInt32(newHeader.count).littleEndian) { rewritten.append(contentsOf: $0) }
+        rewritten.append(newHeader)
+        rewritten.append(file.dropFirst(12 + length))
+        try rewritten.write(to: url)
+    }
+
+    /// Changes the first heading of `chapter`, a chapter of a header as JSON,
+    /// as `change` says.
+    private static func changeFirstHeading(of chapter: inout [String: Any], _ change: (inout [String: Any]) -> Void) {
+        guard var headings = chapter["headings"] as? [[String: Any]], !headings.isEmpty else { return }
+        change(&headings[0])
+        chapter["headings"] = headings
     }
 
     /// A file closed reads nothing.
