@@ -226,8 +226,8 @@ final class LibrarySearchJumpTests: XCTestCase {
     // MARK: - A Match That Moved
 
     /// When the text no longer has the match where the search found it, the
-    /// reader goes to the match nearest the old place, and says the text
-    /// changed: here the request names a place in the second chapter that
+    /// reader searches the book and goes to the match nearest the old
+    /// place, and says the text changed: here the request names a place in the second chapter that
     /// holds no "lanyard", from near the fourth chapter's, so the fourth's
     /// is the nearest.
     func testAMatchThatMovedIsFoundAgainNearTheOldPlace() throws {
@@ -255,35 +255,65 @@ final class LibrarySearchJumpTests: XCTestCase {
 
         requests.add(stale)
 
+        // The whole book is searched off the main actor for the new place,
+        // so the move comes a moment after the request: not at once.
+        XCTAssertEqual(reader.currentChapterIndex, 0, "the cursor moved before the search for the new place ended")
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { reader.lastAnnouncement != nil },
+            "the reader never moved to the nearest match"
+        )
         XCTAssertEqual(reader.currentChapterIndex, later.chapterIndex, "chapter of the nearest match")
         XCTAssertEqual(reader.currentCharacterOffset, later.characterOffset, "offset of the nearest match")
         XCTAssertEqual(reader.lastAnnouncement, LibrarySearchWording.movedToMatchFoundAgain, "what VoiceOver was told")
         XCTAssertTrue(reader.hasSavedPosition, "the move saved no place for Go Back")
     }
 
-    /// The choice of the match: the one at the place when the text there is
-    /// still the match, the nearest when not, the earlier of two as near,
-    /// and none when the book holds no match.
-    func testTheChoiceOfAMatch() {
-        func result(chapter: Int, offset: Int, global: Int, text: String = "word") -> BookSearchResult {
+    /// A later request supersedes the search for an earlier one: a request
+    /// whose place still holds its match, made while the search for another
+    /// request's new place runs, is the one the reader ends at.
+    func testALaterRequestSupersedesAnEarlierSearch() throws {
+        let world = try makeIntegrationWorld("Library Jump Superseded")
+        let book = try makeRiverBook("River Superseded", in: world)
+        let requests = LibrarySearchJumpRequests()
+        let reader = makeReader(for: book, in: world, requests: requests)
+        waitForReaderToLoad(reader)
+        let winch = try match("winch", in: reader)
+        let bollard = try match("bollard", in: reader)
+        XCTAssertNotEqual(winch.chapterIndex, bollard.chapterIndex, "the fixture's matches share a chapter")
+        // A request for a place that holds nothing, which needs a search...
+        requests.add(LibrarySearchJumpRequest(
+            bookID: book.id,
+            createdAt: requests.currentDate,
+            query: "winch",
+            options: TextSearchOptions(),
+            chapterIndex: 0,
+            characterOffset: 2,
+            globalOffset: 0,
+            matchedText: "winch"
+        ))
+        // ...then one whose place holds its match, moved to at once.
+        requests.request(bookID: book.id, match: bollard, query: "bollard", options: TextSearchOptions())
+        XCTAssertEqual(reader.currentChapterIndex, bollard.chapterIndex, "chapter after the later request")
+
+        // Give the earlier search time to end: it must not move the cursor.
+        _ = waitUntil(timeout: 1) { reader.currentChapterIndex != bollard.chapterIndex }
+
+        XCTAssertEqual(reader.currentChapterIndex, bollard.chapterIndex, "chapter after the earlier search ended")
+        XCTAssertEqual(reader.currentCharacterOffset, bollard.characterOffset, "offset after the earlier search ended")
+    }
+
+    /// The choice of the nearest match: the nearest by offset from the
+    /// book's start, the earlier of two as near, and none when the book
+    /// holds no match; the match found again says so.
+    func testTheNearestMatchIsChosen() {
+        func result(chapter: Int, offset: Int, global: Int) -> BookSearchResult {
             BookSearchResult(
                 chapterIndex: chapter,
                 characterOffset: offset,
-                matchedText: text,
-                contextSnippet: text,
-                globalOffset: global
-            )
-        }
-        func request(chapter: Int, offset: Int, global: Int, text: String = "word") -> LibrarySearchJumpRequest {
-            LibrarySearchJumpRequest(
-                bookID: UUID(),
-                createdAt: Date(),
-                query: "word",
-                options: TextSearchOptions(),
-                chapterIndex: chapter,
-                characterOffset: offset,
+                matchedText: "word",
+                contextSnippet: "word",
                 globalOffset: global,
-                matchedText: text
+                locationTitle: "Chapter \(chapter + 1)"
             )
         }
         let matches = [
@@ -292,26 +322,97 @@ final class LibrarySearchJumpTests: XCTestCase {
             result(chapter: 2, offset: 5, global: 205),
         ]
 
-        // At its place: exact, not found again.
-        let exact = LibrarySearchJumpPlace.choose(for: request(chapter: 1, offset: 5, global: 105), among: matches)
-        XCTAssertEqual(exact?.match, matches[1], "match at its own place")
-        XCTAssertEqual(exact?.isFoundAgain, false, "found again at its own place")
-
-        // Nearest by the offset from the book's start.
-        let nearest = LibrarySearchJumpPlace.choose(for: request(chapter: 1, offset: 6, global: 190), among: matches)
-        XCTAssertEqual(nearest?.match, matches[2], "nearest match to offset 190")
+        let nearest = LibrarySearchJumpPlace.nearest(to: request(chapter: 1, offset: 6, global: 190), among: matches)
+        XCTAssertEqual(nearest?.chapterIndex, 2, "chapter of the nearest match to offset 190")
+        XCTAssertEqual(nearest?.characterOffset, 5, "offset of the nearest match to offset 190")
+        XCTAssertEqual(nearest?.locationTitle, "Chapter 3", "title of the nearest match to offset 190")
         XCTAssertEqual(nearest?.isFoundAgain, true, "nearest match not told as found again")
 
-        // The same place with other text there is a changed text too.
-        let changed = LibrarySearchJumpPlace.choose(for: request(chapter: 1, offset: 5, global: 105, text: "WORD"), among: matches)
-        XCTAssertEqual(changed?.isFoundAgain, true, "other text at the place was taken as the match")
-        XCTAssertEqual(changed?.match, matches[1], "nearest match with other text at the place")
-
         // A tie goes to the earlier match.
-        let tie = LibrarySearchJumpPlace.choose(for: request(chapter: 9, offset: 0, global: 155), among: matches)
-        XCTAssertEqual(tie?.match, matches[1], "tie between offsets 105 and 205")
+        let tie = LibrarySearchJumpPlace.nearest(to: request(chapter: 9, offset: 0, global: 155), among: matches)
+        XCTAssertEqual(tie?.chapterIndex, 1, "chapter of the match for a tie between offsets 105 and 205")
 
-        XCTAssertNil(LibrarySearchJumpPlace.choose(for: request(chapter: 0, offset: 0, global: 0), among: []), "a match in no matches")
+        XCTAssertNil(LibrarySearchJumpPlace.nearest(to: request(chapter: 0, offset: 0, global: 0), among: []), "a match among no matches")
+    }
+
+    /// A request for the tests that need only its place and text.
+    private func request(
+        chapter: Int,
+        offset: Int,
+        global: Int = 0,
+        query: String = "word",
+        text: String = "word",
+        options: TextSearchOptions = TextSearchOptions()
+    ) -> LibrarySearchJumpRequest {
+        LibrarySearchJumpRequest(
+            bookID: UUID(),
+            createdAt: Date(),
+            query: query,
+            options: options,
+            chapterIndex: chapter,
+            characterOffset: offset,
+            globalOffset: global,
+            matchedText: text
+        )
+    }
+
+    /// The place check: the match is still at its place when the chapter's
+    /// text there is the text that matched, and not when the text moved, was
+    /// edited, differs in case under Match Case, or the chapter or offset is
+    /// outside the text. A regular expression is checked over its whole
+    /// chapter, since what it matches depends on the text around it.
+    func testThePlaceCheck() {
+        let chapters = ["The word is here. A second word.", "Nothing at all.", "Wörd wörd 🙂 word"]
+        func holds(_ request: LibrarySearchJumpRequest, _ texts: [String]? = nil) -> Bool {
+            LibrarySearchJumpPlace.holds(for: request, in: texts ?? chapters)
+        }
+
+        XCTAssertTrue(holds(request(chapter: 0, offset: 4)), "match at its place")
+        XCTAssertTrue(holds(request(chapter: 0, offset: 27)), "second match at its place")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 5)), "match one character on")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 3)), "match one character back")
+        XCTAssertFalse(holds(request(chapter: 1, offset: 4)), "match in a chapter without it")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 4, text: "WORD")), "other text than matched")
+
+        // Offsets are UTF-16 units: the emoji counts two.
+        XCTAssertTrue(holds(request(chapter: 2, offset: 13)), "match after an emoji")
+
+        // Match Case: "Word" is not "word".
+        let matchCase = TextSearchOptions(matchCase: true, isRegularExpression: false)
+        XCTAssertFalse(
+            holds(request(chapter: 0, offset: 4, query: "Word", text: "Word", options: matchCase)),
+            "Word under Match Case at a lowercase word"
+        )
+        XCTAssertTrue(holds(request(chapter: 0, offset: 4, query: "WORD", text: "word")), "WORD ignoring case")
+
+        // Out of range, and an empty query or an empty match, are all "no".
+        XCTAssertFalse(holds(request(chapter: 3, offset: 0)), "chapter past the end")
+        XCTAssertFalse(holds(request(chapter: -1, offset: 0)), "negative chapter")
+        XCTAssertFalse(holds(request(chapter: 0, offset: -4)), "negative offset")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 500)), "offset past the chapter")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 30)), "match running past the chapter's end")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 4, query: "", text: "word")), "empty query")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 4, text: "")), "empty matched text")
+        XCTAssertFalse(holds(request(chapter: 0, offset: 4), []), "no chapters")
+
+        // A regular expression runs over the chapter's whole text.
+        let pattern = TextSearchOptions(matchCase: false, isRegularExpression: true)
+        XCTAssertTrue(
+            holds(request(chapter: 0, offset: 0, query: "^The", text: "The", options: pattern)),
+            "anchored pattern at the chapter's start"
+        )
+        XCTAssertFalse(
+            holds(request(chapter: 0, offset: 27, query: "^word", text: "word", options: pattern)),
+            "anchored pattern at a place it does not match"
+        )
+        XCTAssertFalse(
+            holds(request(chapter: 0, offset: 4, query: "wo(rd", text: "word", options: pattern)),
+            "invalid pattern"
+        )
+        XCTAssertTrue(
+            holds(request(chapter: 0, offset: 4, query: "(?<=The )word", text: "word", options: pattern)),
+            "look-behind pattern"
+        )
     }
 
     // MARK: - A Match That Is Gone
@@ -339,6 +440,12 @@ final class LibrarySearchJumpTests: XCTestCase {
             matchedText: "zeppelin"
         ))
 
+        // The book is searched in the background before the match is told
+        // gone.
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { reader.lastAnnouncement == LibrarySearchWording.matchGone },
+            "the reader never said the match is gone: \(reader.lastAnnouncement ?? "nothing")"
+        )
         XCTAssertEqual(reader.currentChapterIndex, beforeChapter, "chapter of the cursor")
         XCTAssertEqual(reader.currentCharacterOffset, beforeOffset, "offset of the cursor")
         XCTAssertFalse(reader.hasSavedPosition, "a place was saved for a move that did not happen")
@@ -361,8 +468,11 @@ final class LibrarySearchJumpTests: XCTestCase {
 
         // With Match Case, "QUAY" is not in the text.
         requests.request(bookID: book.id, match: target, query: "QUAY", options: matchingCase)
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { reader.lastAnnouncement == LibrarySearchWording.matchGone },
+            "the reader never said the match is gone with Match Case: \(reader.lastAnnouncement ?? "nothing")"
+        )
         XCTAssertEqual(reader.currentChapterIndex, 0, "chapter of the cursor after a Match Case request")
-        XCTAssertEqual(reader.lastAnnouncement, LibrarySearchWording.matchGone, "what VoiceOver was told with Match Case")
 
         // Without it, the same words are found where they were.
         requests.request(bookID: book.id, match: target, query: "QUAY", options: TextSearchOptions())
@@ -508,12 +618,13 @@ final class LibrarySearchJumpTests: XCTestCase {
 
     // MARK: - The Cost of Finding the Place
 
-    /// The reader finds the place by searching its whole book on the main
-    /// actor, once. A synthetic book of two megabytes, a match in about
-    /// every thousand characters, takes well under a second to search for a
-    /// request's place; the limit here is generous so a busy machine does
-    /// not fail the test, and the measured time is in the failure message
-    /// and the test's log.
+    /// The reader checks the place itself on the main actor, which reads a
+    /// few characters, and searches the whole book only off the main actor,
+    /// when the text changed. Over a synthetic book of two megabytes, a match
+    /// in about every ten sentences, the place check takes a fraction of a
+    /// millisecond and the whole-book search well under a second; the
+    /// limits are generous so a busy machine does not fail the test, and the
+    /// measured times are in the failure messages and the test's log.
     func testSearchingOneLargeBookForThePlaceIsFast() throws {
         // 20 chapters of about 105 KB each: a sentence of ~100 characters
         // repeated, with the word "lanyard" in every tenth.
@@ -533,6 +644,17 @@ final class LibrarySearchJumpTests: XCTestCase {
             bookTitle: "Synthetic"
         )
 
+        // The place check: the last match of the last chapter, which a
+        // search from the start would reach last.
+        let lastChapter = chapters.count - 1
+        let lastOffset = (chapters[lastChapter] as NSString).range(of: "lanyard", options: .backwards).location
+        let atPlace = request(chapter: lastChapter, offset: lastOffset, query: "lanyard", text: "lanyard")
+        let placeStarted = Date()
+        let held = LibrarySearchJumpPlace.holds(for: atPlace, in: chapters)
+        let placeElapsed = Date().timeIntervalSince(placeStarted)
+        XCTAssertTrue(held, "the last match was not found at its place")
+        XCTAssertLessThan(placeElapsed, 0.5, "checking the place took \(placeElapsed) seconds")
+
         let started = Date()
         let outcome = try BookSearchEngine.search(
             query: "lanyard",
@@ -548,7 +670,7 @@ final class LibrarySearchJumpTests: XCTestCase {
         }
         XCTAssertEqual(results.count, 20 * 150, "number of matches")
         XCTAssertFalse(isTruncated, "the search stopped at its limit")
-        print("LibrarySearchJumpTests: searched \(totalCharacters) characters for \(results.count) matches in \(elapsed) seconds")
+        print("LibrarySearchJumpTests: checked the place in \(placeElapsed) seconds; searched \(totalCharacters) characters for \(results.count) matches in \(elapsed) seconds")
         XCTAssertLessThan(elapsed, 5, "searching \(totalCharacters) characters took \(elapsed) seconds")
     }
 }

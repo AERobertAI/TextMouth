@@ -273,6 +273,11 @@ final class ReaderViewModel: ObservableObject {
     /// it found in this book (`claimLibrarySearchJump()`): the shared
     /// store, unless the reader was created with its own.
     let libraryJumpRequests: LibrarySearchJumpRequests
+    /// How many requests to move to a library search's match this reader
+    /// has claimed: a search for a match's new place that runs in the
+    /// background moves the cursor only if no later request was claimed
+    /// meanwhile (`claimLibrarySearchJump()`).
+    var libraryJumpGeneration = 0
     /// Where a reader that switched its window to this book asks this reader
     /// to see to the window's focus once it has found it (0.2.5): the shared
     /// store, unless the reader was created with its own.
