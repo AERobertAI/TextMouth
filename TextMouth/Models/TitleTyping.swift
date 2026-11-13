@@ -38,7 +38,7 @@ extension FilingTitle {
     /// `showingInverted`, the inverted title.
     private func begins(with typed: String, showingInverted: Bool, articleAloneCounts: Bool) -> Bool {
         guard !typed.isEmpty else { return false }
-        if Self.text(rest, beginsWith: typed) {
+        if Self.text(filing, beginsWith: typed) {
             return true
         }
         guard let article else { return false }

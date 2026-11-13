@@ -139,9 +139,17 @@ struct FilingTitle: Equatable, Sendable {
         }
     }
 
-    /// The text a sort reads: the title from where it files.
+    /// The text a sort reads: the title from where it files (`filing`).
     var key: String {
-        String(rest)
+        String(filing)
+    }
+
+    /// The title from where it files: `rest`, past any opening punctuation
+    /// that follows the article, which MARC counts as nonfiling with it, so
+    /// `The "Best" Of` files under B. A title with no article files whole,
+    /// as written.
+    var filing: Substring {
+        article == nil ? rest : rest.drop { Self.isOpeningPunctuation($0) }
     }
 
     /// Whether the article joins the next word, as "L'" does.
@@ -174,25 +182,32 @@ struct FilingTitle: Equatable, Sendable {
     }
 
     /// Where the main title ends in `rest`: at the mark that closes the
-    /// opening punctuation, when `rest` holds one at the end of a word;
-    /// otherwise at a colon, a semicolon, or a spaced dash or bracket, which
-    /// begins a subtitle or a note; otherwise at the end.
+    /// opening punctuation, when `rest` holds one at the end of a word
+    /// before any subtitle (`"Raven, The" and Other Poems`); otherwise where
+    /// a subtitle or a note begins (`subtitleStart`), so `"The Raven: A
+    /// Poem"` shows `"Raven, The: A Poem"`.
     private var mainTitleEnd: Substring.Index {
-        if let opener = opening.last {
-            let closers = Self.closingMarks(of: opener)
-            var index = rest.startIndex
-            while index < rest.endIndex {
-                if closers.contains(rest[index]) {
-                    // A closing mark ends a word, so the apostrophe inside
-                    // "Hobbit's" is not one.
-                    let after = rest.index(after: index)
-                    if after == rest.endIndex || !(rest[after].isLetter || rest[after].isNumber) {
-                        return index
-                    }
+        let subtitle = subtitleStart
+        guard let opener = opening.last else { return subtitle }
+        let closers = Self.closingMarks(of: opener)
+        var index = rest.startIndex
+        while index < subtitle {
+            if closers.contains(rest[index]) {
+                // A closing mark ends a word, so the apostrophe inside
+                // "Hobbit's" is not one.
+                let after = rest.index(after: index)
+                if after == rest.endIndex || !(rest[after].isLetter || rest[after].isNumber) {
+                    return index
                 }
-                index = rest.index(after: index)
             }
+            index = rest.index(after: index)
         }
+        return subtitle
+    }
+
+    /// Where a subtitle or a note begins in `rest`: at a colon, a
+    /// semicolon, or a spaced dash or bracket; otherwise at the end.
+    private var subtitleStart: Substring.Index {
         var index = rest.startIndex
         while index < rest.endIndex {
             let character = rest[index]
@@ -303,9 +318,10 @@ struct FilingTitle: Equatable, Sendable {
 
     /// Whether `character` opens a title before its article: an opening
     /// bracket or an initial quotation mark (Unicode's Ps and Pi), a
-    /// straight quotation mark or apostrophe, or Spanish ¡ and ¿.
+    /// straight quotation mark or apostrophe, Spanish ¡ and ¿, or » and ›,
+    /// which German and Danish open quotations with.
     static func isOpeningPunctuation(_ character: Character) -> Bool {
-        if "\"'¡¿".contains(character) {
+        if "\"'¡¿»›".contains(character) {
             return true
         }
         guard character.unicodeScalars.count == 1, let scalar = character.unicodeScalars.first else { return false }
@@ -316,7 +332,8 @@ struct FilingTitle: Equatable, Sendable {
     }
 
     /// The marks that close `opener`: ")" for "(", "”" for "“", the same
-    /// mark for a straight one, and both closing quotes for German „ and ‚.
+    /// mark for a straight one, both closing quotes for German „ and ‚, and
+    /// « for », as German and Danish quote.
     private static func closingMarks(of opener: Character) -> Set<Character> {
         switch opener {
         case "(": return [")"]
@@ -326,6 +343,8 @@ struct FilingTitle: Equatable, Sendable {
         case "‘": return ["’"]
         case "«": return ["»"]
         case "‹": return ["›"]
+        case "»": return ["«"]
+        case "›": return ["‹"]
         case "„": return ["“", "”"]
         case "‚": return ["‘", "’"]
         case "¡": return ["!"]

@@ -107,6 +107,15 @@ final class LeadingArticlesTests: XCTestCase {
             Filed("[The Part of Pennsylvania]", key: "Part of Pennsylvania]", inverted: "[Part of Pennsylvania, The]"),
             Filed("(“The Raven”)", key: "Raven”)", inverted: "(“Raven, The”)"),
             Filed("«The Raven»", key: "Raven»", inverted: "«Raven, The»"),
+            // German and Danish open a quotation with ».
+            Filed("»Der Prozess«", "de", key: "Prozess«", inverted: "»Prozess, Der«"),
+            // A subtitle inside the marks: the article goes before it.
+            Filed("\"The Raven: A Poem\"", key: "Raven: A Poem\"", inverted: "\"Raven, The: A Poem\""),
+            Filed("(The Hobbit) [Illustrated]", key: "Hobbit) [Illustrated]", inverted: "(Hobbit, The) [Illustrated]"),
+            // Opening punctuation after the article files with it, as MARC
+            // counts it; the row keeps the marks where they are.
+            Filed("The \"Best\" Of", key: "Best\" Of", inverted: "\"Best\" Of, The"),
+            Filed("A 'Little' Life", key: "Little' Life", inverted: "'Little' Life, A"),
             // An apostrophe inside a word closes nothing.
             Filed("'The Hobbit's Journey'", key: "Hobbit's Journey'", inverted: "'Hobbit's Journey, The'"),
             // Never closed: the article goes after the main title.
