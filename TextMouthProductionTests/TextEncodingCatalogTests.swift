@@ -11,7 +11,8 @@ final class TextEncodingCatalogTests: XCTestCase {
     /// book, so none may be renamed or dropped without a reason: this list
     /// is what an older library holds.
     private let expectedIdentifiers = [
-        "windows-1252", "macintosh", "iso-8859-15", "windows-1250", "iso-8859-2", "windows-1251", "koi8-r", "koi8-u",
+        "windows-1252", "macintosh", "iso-8859-15", "cp437", "cp850", "windows-1250", "iso-8859-2",
+        "x-mac-centraleurroman", "windows-1251", "koi8-r", "koi8-u",
         "cp866", "iso-8859-5", "x-mac-cyrillic", "windows-1253", "iso-8859-7", "windows-1254", "iso-8859-9",
         "windows-1255", "iso-8859-8", "windows-1256", "iso-8859-6", "windows-1257", "iso-8859-13", "cp874", "cp932",
         "shift_jis", "euc-jp", "iso-2022-jp", "gb18030", "gbk", "cp936", "gb2312", "big5", "cp950", "euc-kr", "cp949",
@@ -75,8 +76,11 @@ final class TextEncodingCatalogTests: XCTestCase {
         let names: [(identifier: String, name: String)] = [
             ("windows-1252", "Windows-1252 (Western European)"),
             ("macintosh", "Mac Roman (Western European)"),
+            ("cp437", "CP437 (US DOS)"),
+            ("cp850", "CP850 (Western European DOS)"),
             ("windows-1250", "Windows-1250 (Central European)"),
             ("iso-8859-2", "ISO 8859-2 (Central European)"),
+            ("x-mac-centraleurroman", "Mac Central European"),
             ("windows-1251", "Windows-1251 (Cyrillic)"),
             ("koi8-r", "KOI8-R (Russian)"),
             ("cp866", "CP866 (Russian DOS)"),
@@ -92,6 +96,26 @@ final class TextEncodingCatalogTests: XCTestCase {
             XCTAssertEqual(TextEncodingCatalog.name(forIdentifier: identifier), name, identifier)
         }
         XCTAssertEqual(TextEncodingCatalog.name(forIdentifier: "x-klingon"), "x-klingon")
+    }
+
+    /// The DOS code pages and Mac Central European are in the catalog, so a
+    /// Foundation guess of them is no longer dropped: found by their
+    /// encodings, named apart so the Text Encoding pop-up offers each, and
+    /// taken only on Foundation's word.
+    func testTheDOSCodePagesAndMacCentralEuropeanAreCataloguedAndOnlyHinted() throws {
+        for (identifier, name) in [
+            ("cp437", "CP437 (US DOS)"), ("cp850", "CP850 (Western European DOS)"),
+            ("x-mac-centraleurroman", "Mac Central European"),
+        ] {
+            let entry = try XCTUnwrap(TextEncodingCatalog.entry(forIdentifier: identifier), identifier)
+            XCTAssertEqual(entry.name, name)
+            XCTAssertFalse(entry.isAlwaysTried, "\(identifier) is tried only when Foundation names it")
+            XCTAssertEqual(TextEncodingCatalog.entry(for: entry.encoding), entry, "found by its encoding, as a Foundation guess is")
+            XCTAssertTrue(
+                TextEncodingChoices.options.contains(.encoding(identifier)),
+                "\(identifier) is offered by the Text Encoding pop-up"
+            )
+        }
     }
 
     /// The only 7-bit encoding is ISO-2022-JP, which is valid UTF-8 and so is
