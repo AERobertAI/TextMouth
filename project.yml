@@ -208,7 +208,10 @@ targets:
           # against (the braille helper is run, not loaded), so the linker
           # writes none. Release only: in Debug the test bundle loads
           # against the app (BUNDLE_LOADER) and needs its exports.
-          OTHER_LDFLAGS: -Wl,-no_exported_symbols
+          # (LD_EXPORT_SYMBOLS is Xcode's own setting for the linker's
+          # -no_exported_symbols: Xcode warns when OTHER_LDFLAGS holds it.
+          # Scripts/test/release-goldens.sh sets it back to YES.)
+          LD_EXPORT_SYMBOLS: NO
     dependencies:
       - package: ZIPFoundation
       - package: SwiftSoup
