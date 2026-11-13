@@ -8,7 +8,8 @@ import SwiftUI
 /// Default…, the editor in a sheet (`LibraryViewEditorSheet`). A row's
 /// VoiceOver actions and the list's context menu offer the same commands
 /// (`LibraryViewsSettingsCommand`), and every change goes through the views
-/// store, which config.json follows.
+/// store, which config.json follows. Under them, the Titles section's Leading
+/// articles pop-up (`LeadingArticlesSettingsSection`, November 13, 2026).
 ///
 /// Like the Text tab, it does not scroll as a whole: its list fills the room
 /// its other controls leave (`SettingsTab.scrollsAsAWhole`).
@@ -47,6 +48,12 @@ struct LibraryViewsSettingsView: View {
             Divider()
             controls
                 .padding()
+            Divider()
+            // What a title's leading article does in the Library's lists
+            // (November 13, 2026), kept short so the list keeps its room.
+            LeadingArticlesSettingsSection()
+                .padding(.horizontal)
+                .padding(.vertical, 10)
         }
         .onAppear {
             if selection == nil {

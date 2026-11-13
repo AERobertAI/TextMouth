@@ -86,6 +86,47 @@ final class LeadingArticlesSettingsTests: XCTestCase {
         XCTAssertEqual(viewModel.leadingArticles, .partOfTitle)
     }
 
+    // MARK: - The Library Tab's Pop-Up
+
+    /// The Titles section draws one pop-up offering the three choices by
+    /// their names, the one in force chosen; choosing another in it changes
+    /// the setting in the store; and the words under it say what the choice
+    /// in force does, then which languages count.
+    func testThePopUpOffersTheThreeChoicesAndChoosingOneChangesTheSetting() throws {
+        let store = try isolatedDefaults()
+        let settings = makeViewModel(store)
+        settings.leadingArticles = .ignoredWhenTyping
+        let section = LeadingArticlesSettingsSection()
+            .environmentObject(settings)
+            .frame(width: 600, height: 200)
+        try withHostedView(section, size: NSSize(width: 600, height: 200), until: {
+            !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty
+        }) { hosting in
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            XCTAssertEqual(popUps.count, 1, "the section drew \(popUps.count) pop-ups")
+            let popUp = try XCTUnwrap(popUps.first)
+            XCTAssertEqual(popUp.itemTitles, LeadingArticles.allCases.map(LeadingArticleWording.name))
+            XCTAssertEqual(popUp.titleOfSelectedItem, LeadingArticleWording.name(.ignoredWhenTyping))
+
+            // Choosing a menu item runs the action SwiftUI gave the item;
+            // the pop-up's own target and action are the second way.
+            let attempts: [() -> Void] = [
+                { popUp.menu?.performActionForItem(at: 2) },
+                { popUp.selectItem(at: 2); _ = popUp.target?.perform(popUp.action, with: popUp) },
+            ]
+            var chose = false
+            for attempt in attempts where !chose {
+                attempt()
+                chose = waitUntil(timeout: 1) { LeadingArticles.preference.read(from: store) == .ignoredWhenTypingAndSorting }
+            }
+            XCTAssertTrue(chose, "choosing the third choice left \(LeadingArticles.preference.read(from: store))")
+        }
+        XCTAssertEqual(
+            LeadingArticlesSettingsSection.caption(for: .ignoredWhenTypingAndSorting),
+            LeadingArticleWording.description(.ignoredWhenTypingAndSorting) + " " + LeadingArticleWording.languagesNote
+        )
+    }
+
     // MARK: - Helpers
 
     /// A settings model bound to `store` that starts no services and posts
