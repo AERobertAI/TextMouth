@@ -51,7 +51,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Finder and size
 - Finder offers TextMouth in the Open With menu for .mp4, .m4v, and .mov files, and never as the default app. TextMouth plays their sound.
-- TextMouth's app is about 4 MB smaller, 19.4 MB where it was 23.5 MB, because it is compiled for size (with Search Library and the rest of this version in it). HTML in an EPUB is read about 4 milliseconds slower for each megabyte at import, and nothing else you can notice changed.
+- TextMouth's app is about 4 MB smaller, 19.5 MB where it was 23.5 MB, because it is compiled for size (with Search Library, Leading articles, and the rest of this version in it). HTML in an EPUB is read about 4 milliseconds slower for each megabyte at import, and nothing else you can notice changed.
 
 ### Not changed
 - How any book other than a DAISY book reads, sounds, or is laid out.
