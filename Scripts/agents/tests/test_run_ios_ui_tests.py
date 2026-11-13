@@ -547,23 +547,53 @@ class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
     """The unit tests run in the same simulator as the interface tests, with no sound variable of their own: they must
     not play, speak, or record anything (the iPhone tests may make sound only where TEXTMOUTH_UI_SOUND allows it)."""
 
-    # What would make sound or use a microphone: the audio frameworks and the app's own players and recorder.
-    SOUNDS = re.compile(r"AVFoundation|AVAudio|AVSpeech|AVPlayer|AVQueuePlayer|AudioToolbox|AudioUnit|CoreAudio|MediaPlayer|"
-                        r"SpeechEngine|AudioEngine|startRecording|\.play\(\)|\.speak\(")
+    # What would make sound or use a microphone, in three groups:
+    # - the audio frameworks and the speech recognizer (`import Speech` uses the microphone's permission);
+    # - the app's own ways in, which `@testable import TextMouth` exposes: its players, its recorder, and its audio session;
+    # - calls that start sound: `togglePlay()`, `playOrResume()`, `playSelection()`, `playAudioChapter()`,
+    #   `startPunchIn()` and `.play(at:)` (any arguments), and any call beginning with play, resume, speak, or record.
+    # None of the 19 unit tests of November 11, 2026 names any of them. A false red is the safe side.
+    SOUNDS = re.compile(
+        r"AVFoundation|AVAudio|AVSpeech|AVPlayer|AVQueuePlayer|AudioToolbox|AudioUnit|CoreAudio|MediaPlayer|import Speech|"
+        r"SpeechEngine|AudioEngine|PhoneAudioSession|PhoneAppModel|ReaderViewModel|"
+        r"togglePlay|playOrResume|playSelection|playAudioChapter|startPunchIn|startRecording|"
+        r"\.(?:play|speak)\(|\b(?:play|resume|speak|record)\w*\("
+    )
+
+    def sound_in(self, folder):
+        """The Swift files under `folder` (subfolders included) whose code names something in SOUNDS, as {file name: first
+        match}. Comments say "plays" in prose, so only code counts."""
+        found = {}
+        for path in uitests.ios_ui_tests.swift_files(folder):
+            code = "\n".join(line for line in path.read_text().splitlines() if not line.strip().startswith("//"))
+            match = self.SOUNDS.search(code)
+            if match:
+                found[path.name] = match.group(0)
+        return found
 
     def test_no_unit_test_names_an_audio_framework_a_player_or_a_recorder(self):
-        files = sorted((ROOT / "TextMouthiOSTests").glob("*.swift"))
-        self.assertTrue(files, "the unit tests are not where the test looks")
-        for path in files:
-            # Comments say "plays" in prose; only code counts.
-            code = "\n".join(line for line in path.read_text().splitlines() if not line.strip().startswith("//"))
-            self.assertIsNone(self.SOUNDS.search(code), f"{path.name} names something that makes sound")
+        folder = ROOT / "TextMouthiOSTests"
+        self.assertTrue(uitests.ios_ui_tests.swift_files(folder), "the unit tests are not where the test looks")
+        self.assertEqual(self.sound_in(folder), {}, "a unit test names something that makes sound")
 
     def test_the_check_catches_what_it_is_for(self):
         for source in ("import AVFoundation", "let p = AVAudioPlayer()", "reader.play()", "synth.speak(utterance)",
-                       "recorder.startRecording()"):
+                       "recorder.startRecording()", "model.togglePlay()", "model.playOrResume()", "model.playSelection()",
+                       "model.playAudioChapter(3)", "model.startPunchIn()", "let s = PhoneAudioSession()",
+                       "import Speech", "node.play(at: nil)", "player.play(at: time + 1)", "let m = ReaderViewModel()"):
             self.assertIsNotNone(self.SOUNDS.search(source), source)
         self.assertIsNone(self.SOUNDS.search("XCTAssertEqual(button.accessibilityLabel, \"Play\")"))
+
+    def test_a_unit_test_that_calls_togglePlay_fails_the_check_even_in_a_subfolder(self):
+        """The break: a scratch copy of the unit folder with one file that starts playback."""
+        with tempfile.TemporaryDirectory() as scratch:
+            folder = Path(scratch) / "TextMouthiOSTests"
+            (folder / "Deeper").mkdir(parents=True)
+            (folder / "Clean.swift").write_text("final class CleanTests: XCTestCase {\n    func testA() {}\n}\n")
+            self.assertEqual(self.sound_in(folder), {})
+            (folder / "Deeper" / "Loud.swift").write_text(
+                "final class LoudTests: XCTestCase {\n    func testA() { model.togglePlay() }\n}\n")
+            self.assertEqual(self.sound_in(folder), {"Loud.swift": "togglePlay"})
 
 
 class SettingUpTheSimulatorTests(unittest.TestCase):
