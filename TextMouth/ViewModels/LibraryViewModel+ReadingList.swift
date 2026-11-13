@@ -249,16 +249,22 @@ extension LibraryViewModel {
     // (`ReadingStatsService.markBookFinished`), whether the book was opened
     // from the list or not, and the list hears of it here.
     //
-    // The order matters. A reader of a book opened from the list, whose book
-    // ends, tells the end, then asks the list at once, in the same turn of
-    // the main queue, which book follows (`readingListContinuation(after:)`),
-    // and the list answers only for a book it still holds. So the book is
-    // taken off the list one turn of the main queue after it is told, never
-    // within the telling: by then the reader has its answer, and goes on to
-    // the book that followed the finished one (or preceded it, going up),
-    // passing over finished books as the list's other option says. The
-    // reader reads its book as any book from then on, since the book has
-    // left the list (`ReaderViewModel.followReadingList(in:)`).
+    // Two things decide when the book leaves the list:
+    //
+    // 1. The reader asks the list at once, in the same turn of the main
+    //    queue as the telling, which book follows
+    //    (`readingListContinuation(after:)`), and the list answers only for
+    //    a book it still holds. So the removal never happens within the
+    //    telling, but one turn of the main queue after it.
+    // 2. A reader that reads its book from the list and rests on it at its
+    //    end holds it (`holdFinishedBookOnReadingList(_:)`): the book is
+    //    still the list's for that reader, whose Rewind after the end, Play
+    //    at the end, and Next in Reading List all ask the list, and the
+    //    list overrides the book's own end rule (the user, October 7, 2026).
+    //    The book leaves when its readers have moved on to another book or
+    //    closed (`releaseFinishedBookFromReadingList(_:)`). A book with no
+    //    such reader, finished elsewhere (a feed item marked played, or a
+    //    book read from the library), leaves at once.
 
     /// Starts hearing of finished books from `source`, whose end the
     /// reading list then acts on (`removeFinishedBookFromReadingList`).
@@ -272,8 +278,47 @@ extension LibraryViewModel {
         NotificationCenter.default.publisher(for: .bookDidFinish, object: source)
             .compactMap { $0.userInfo?[ReadingStatsService.finishedBookIDKey] as? UUID }
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] bookID in self?.removeFinishedBookFromReadingList(bookID) }
+            .sink { [weak self] bookID in self?.bookFinished(bookID) }
             .store(in: &cancellables)
+    }
+
+    /// Acts on the end of the book `bookID`: when the list says to drop
+    /// finished books and holds it, the book leaves the list now, or, while
+    /// a reader rests on it from the list, when that reader leaves it
+    /// (`releaseFinishedBookFromReadingList(_:)`).
+    private func bookFinished(_ bookID: UUID) {
+        guard readingList.removesFinished, readingList.contains(bookID) else { return }
+        if readingListHoldCounts[bookID, default: 0] > 0 {
+            finishedBooksAwaitingRelease.insert(bookID)
+        } else {
+            removeFinishedBookFromReadingList(bookID)
+        }
+    }
+
+    /// A reader that reads the book `bookID` from the reading list rests on
+    /// it at its end: until the reader releases the book, the book is not
+    /// dropped from the list for being finished. Every hold is released
+    /// once (`releaseFinishedBookFromReadingList(_:)`). Made before the
+    /// reader tells the book's end, so the telling finds it.
+    func holdFinishedBookOnReadingList(_ bookID: UUID) {
+        readingListHoldCounts[bookID, default: 0] += 1
+    }
+
+    /// Lets go of a hold made by `holdFinishedBookOnReadingList(_:)`: its
+    /// reader moved on to another book or closed. When no reader holds the
+    /// book any more and it was finished while the list dropped finished
+    /// books, it leaves the list now (`removeFinishedBookFromReadingList`,
+    /// which asks the option again, so one cleared meanwhile keeps it).
+    func releaseFinishedBookFromReadingList(_ bookID: UUID) {
+        let remaining = readingListHoldCounts[bookID, default: 0] - 1
+        guard remaining <= 0 else {
+            readingListHoldCounts[bookID] = remaining
+            return
+        }
+        readingListHoldCounts[bookID] = nil
+        if finishedBooksAwaitingRelease.remove(bookID) != nil {
+            removeFinishedBookFromReadingList(bookID)
+        }
     }
 
     /// Takes the book `bookID`, just finished, off the reading list when the

@@ -384,6 +384,16 @@ final class LibraryViewModel: ObservableObject {
     /// (`feedItemRows(of:)`, `feedBook(withID:)`).
     let feedItemRowLookup = FeedItemRowLookup()
 
+    /// How many readers rest on each book they read from the reading list
+    /// and have finished: a book so held does not leave the list when it is
+    /// finished, but when its readers have moved on or closed
+    /// (`holdFinishedBookOnReadingList(_:)`). Not published: no view shows it.
+    var readingListHoldCounts: [UUID: Int] = [:]
+    /// Finished books the reading list is to drop (`ReadingList.removesFinished`)
+    /// that a reader holds, which leave the list when the last hold is
+    /// released (`releaseFinishedBookFromReadingList(_:)`).
+    var finishedBooksAwaitingRelease: Set<UUID> = []
+
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
     /// Shared config service used across extension files. Reached when

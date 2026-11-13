@@ -590,8 +590,8 @@ final class ReadingListReaderTests: XCTestCase {
         let recorder = recordingAnnouncements {
             reader.handleEndOfBook()
             XCTAssertTrue(world.library.readingList.contains(second.id), "removed within the end, before the list was asked what follows")
-            XCTAssertTrue(eventually { !world.library.readingList.contains(second.id) }, "never removed")
             XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            XCTAssertTrue(eventually { !world.library.readingList.contains(second.id) }, "never removed once the reader moved on")
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
         }
 
@@ -642,12 +642,150 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
     }
 
+    /// A finished book stays the list's while its reader rests on it, so a
+    /// rewind's replay of the end obeys the list, not the book's own end
+    /// rule (the user, October 7, 2026): with the list set to Stop, a book
+    /// that loops on its own stops again, and stays on the list.
+    func testAReplayedEndObeysTheListWhileTheFinishedBookStaysOnIt() throws {
+        let world = try makeIntegrationWorld("ReadingListRemovesThenReplays")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world, endOfBook: .loop)
+        list([first, second], in: world, continuation: .stop, removesFinished: true)
+        let reader = makeReaderFromList(for: second, in: world, requests: requests)
+        world.library.observeFinishedBooks()
+        reader.handleEndOfBook()
+        spinMainRunLoop(for: 0.3)
+        XCTAssertTrue(world.library.readingList.contains(second.id), "removed while its reader rests on it")
+        XCTAssertTrue(reader.isOpenedFromReadingList, "the reader forgot the list at its book's end")
+
+        // A rewind after the end plays it again, and the end replays.
+        let recorder = recordingAnnouncements {
+            reader.replaysFinishedEnd = true
+            reader.handleEndOfBook()
+            spinMainRunLoop(for: 0.3)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            [EndOfBookWording.finished(second.title, notes: [ReadingListReaderWording.stopNote])],
+            "the replayed end did not obey the list's Stop"
+        )
+        XCTAssertTrue(world.library.readingList.contains(second.id))
+        XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [second.id.uuidString], "a replay counted anew")
+    }
+
+    /// Play at the end of a finished book, which the list stopped, still goes
+    /// on to the list's next book once the list says to: the reader still
+    /// reads the book from the list, and the book leaves the list when it
+    /// has handed over.
+    func testPlayAtTheEndStillGoesOnThroughTheListAndThenTheBookLeaves() throws {
+        let world = try makeIntegrationWorld("ReadingListRemovesThenPlays")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world, continuation: .stop, removesFinished: true)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        world.library.observeFinishedBooks()
+        let asked = record(.continueToNextBook, in: world)
+        reader.handleEndOfBook()
+        spinMainRunLoop(for: 0.3)
+        XCTAssertTrue(world.library.readingList.contains(first.id), "removed while its reader rests on it")
+
+        list([first, second], in: world, continuation: .playBookBelow, removesFinished: true)
+        let recorder = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Play at the end never asked for the book below")
+            XCTAssertTrue(eventually { !world.library.readingList.contains(first.id) }, "never removed once the reader moved on")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id])
+        XCTAssertEqual(world.library.readingList.bookIDs, [second.id])
+    }
+
+    /// Next in Reading List after a Stop at the end of a finished book still
+    /// works, since the book is still the list's, and the book leaves the list
+    /// once the reader has moved to the next book.
+    func testNextInReadingListAfterTheEndStillWorksThenTheBookLeaves() throws {
+        let world = try makeIntegrationWorld("ReadingListRemovesThenNext")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world, continuation: .stop, removesFinished: true)
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        world.library.observeFinishedBooks()
+        let opened = record(.openBookWindow, in: world)
+        reader.handleEndOfBook()
+        spinMainRunLoop(for: 0.3)
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughReadingList(.down)
+            XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+            XCTAssertTrue(eventually { !world.library.readingList.contains(first.id) }, "never removed once the reader moved on")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertFalse(
+            recorder.announcements.map(\.message).contains(ReadingListReaderWording.notReadFromReadingList),
+            "Next said the book was not read from the list"
+        )
+        XCTAssertEqual(opened().map { $0.object as? UUID }, [second.id])
+        XCTAssertEqual(world.library.readingList.bookIDs, [second.id])
+    }
+
+    /// A reader gone before the end is told, or no reader at all (a book
+    /// finished elsewhere, as a feed item marked played), leaves nothing
+    /// holding the book: it leaves the list at once, one turn after the end.
+    func testAFinishedBookWithNoReaderRestingOnItLeavesAtOnce() throws {
+        let world = try makeIntegrationWorld("ReadingListRemovesWithNoReader")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world, continuation: .stop, removesFinished: true)
+        world.library.observeFinishedBooks()
+
+        // No reader: the book is finished where the library hears of it alone.
+        ReadingStatsService.shared.markBookFinished(bookID: first.id, title: first.title)
+        XCTAssertTrue(eventually { !world.library.readingList.contains(first.id) }, "never removed with no reader")
+
+        // A reader that read the book from the list and closed before its end
+        // was told (a hold made and released) holds nothing.
+        let reader = makeReaderFromList(for: second, in: world, requests: requests)
+        reader.holdFinishedBookOnReadingList()
+        reader.close()
+        ReadingStatsService.shared.markBookFinished(bookID: second.id, title: second.title)
+        XCTAssertTrue(eventually { !world.library.readingList.contains(second.id) }, "never removed after its reader closed")
+        XCTAssertTrue(world.library.finishedBooksAwaitingRelease.isEmpty)
+        XCTAssertTrue(world.library.readingListHoldCounts.isEmpty)
+    }
+
+    /// A book held by two readers (two windows of one book) leaves the list
+    /// only when the last of them lets go.
+    func testAFinishedBookHeldTwiceLeavesWhenTheLastHoldIsReleased() throws {
+        let world = try makeIntegrationWorld("ReadingListRemovesHeldTwice")
+        let first = try makeAudioBook("First Crossing", in: world)
+        list([first], in: world, removesFinished: true)
+        world.library.observeFinishedBooks()
+        world.library.holdFinishedBookOnReadingList(first.id)
+        world.library.holdFinishedBookOnReadingList(first.id)
+        ReadingStatsService.shared.markBookFinished(bookID: first.id, title: first.title)
+        spinMainRunLoop(for: 0.3)
+
+        world.library.releaseFinishedBookFromReadingList(first.id)
+        XCTAssertTrue(world.library.readingList.contains(first.id), "left with a hold remaining")
+        world.library.releaseFinishedBookFromReadingList(first.id)
+        XCTAssertFalse(world.library.readingList.contains(first.id), "stayed after the last hold was released")
+    }
+
     /// Three books on a list with the option on, the second read from the
     /// list under `continuation`: the end counts the book finished and says
     /// "Starting: <title>" of `next`, or why nothing follows when it is nil;
     /// the second book is still on the list when the end returns, so the
-    /// list could be asked what follows it, and is off the list once the
-    /// main queue has turned; and the others keep their order.
+    /// list could be asked what follows it, and leaves it once its reader has
+    /// moved on to the next book, or closed when nothing followed; and the
+    /// others keep their order.
     private func checkTheEndOfASecondBookRemovesItAndContinues(
         _ continuation: ReadingList.Continuation,
         toward next: String?,
@@ -671,11 +809,23 @@ final class ReadingListReaderTests: XCTestCase {
                 world.library.readingList.contains(second.id),
                 "removed within the end, before the list was asked what follows", file: file, line: line
             )
-            XCTAssertTrue(eventually { !world.library.readingList.contains(second.id) }, "never removed", file: file, line: line)
             if nextBook != nil {
                 XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book", file: file, line: line)
+                // The book leaves once its reader has moved on to the next.
+                XCTAssertTrue(
+                    eventually { !world.library.readingList.contains(second.id) },
+                    "never removed once the reader moved on", file: file, line: line
+                )
             }
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        if nextBook == nil {
+            // Nothing followed: the reader rests on its book, still the
+            // list's, until it closes.
+            XCTAssertTrue(world.library.readingList.contains(second.id), "removed while its reader rested on it", file: file, line: line)
+            XCTAssertTrue(reader.isOpenedFromReadingList, file: file, line: line)
+            reader.close()
+            XCTAssertTrue(eventually { !world.library.readingList.contains(second.id) }, "never removed once the reader closed", file: file, line: line)
         }
 
         XCTAssertEqual(world.library.readingList.bookIDs, [first.id, third.id], file: file, line: line)

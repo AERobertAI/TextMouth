@@ -96,6 +96,9 @@ extension ReaderViewModel {
         sleepTimerStoppedHere: Bool,
         replayingAFinishedEnd: Bool
     ) {
+        // The book stays the list's while this reader rests on it, even when
+        // the list drops finished books: held before the end is told.
+        holdFinishedBookOnReadingList()
         finishAtTheEnd(replayingAFinishedEnd: replayingAFinishedEnd)
         followReadingListPastThisBook(
             sleepTimerEndsListening: sleepTimerEndsListening,
@@ -148,6 +151,8 @@ extension ReaderViewModel {
     func continueThroughReadingList(to nextBookID: UUID) {
         readingListRequests.request(for: nextBookID)
         continueToNextBook(nextBookID, under: readingListMoveWindowChoice)
+        // This reader has moved on from its finished book.
+        releaseFinishedBookOnReadingList()
     }
 
     /// Why nothing follows this book at its end in the reading list, as the
@@ -226,5 +231,33 @@ extension ReaderViewModel {
         showNextBook(bookID, under: readingListMoveWindowChoice) {
             notificationCenter.post(name: .openBookWindow, object: bookID)
         }
+        // This reader has moved on from its finished book.
+        releaseFinishedBookOnReadingList()
+    }
+
+    // MARK: - Resting on a Finished Book
+
+    /// Tells the library that this reader rests on its book, finished, read
+    /// from the reading list, so the book is not dropped from the list for
+    /// being finished (`ReadingList.removesFinished`) while the reader still
+    /// asks the list about it: a rewind's replayed end, Play at the end, and
+    /// Next in Reading List all do (the user's rule of October 7, 2026 that
+    /// the list overrides the book's own end rule). Once for the reader,
+    /// however many ends it rests at; released when it moves on to another
+    /// book (`continueThroughReadingList(to:)`, `openFromReadingList(_:)`)
+    /// or closes (`close()`).
+    func holdFinishedBookOnReadingList() {
+        guard !holdsFinishedBookOnReadingList else { return }
+        holdsFinishedBookOnReadingList = true
+        libraryViewModel.holdFinishedBookOnReadingList(book.id)
+    }
+
+    /// Lets go of what `holdFinishedBookOnReadingList()` holds, if this
+    /// reader holds it: a finished book the list is to drop leaves the list
+    /// then, if no other reader of it holds it.
+    func releaseFinishedBookOnReadingList() {
+        guard holdsFinishedBookOnReadingList else { return }
+        holdsFinishedBookOnReadingList = false
+        libraryViewModel.releaseFinishedBookFromReadingList(book.id)
     }
 }

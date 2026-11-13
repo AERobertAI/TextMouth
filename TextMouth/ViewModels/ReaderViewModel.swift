@@ -310,6 +310,12 @@ final class ReaderViewModel: ObservableObject {
     /// does not, as for a book opened any other way, even one in the list.
     /// Set only by ReaderViewModel+ReadingList.
     @Published var readingListPlace: ReadingListPlace?
+    /// Whether this reader has told the library that it rests on its finished
+    /// book, read from the reading list, so a finished book the list is to
+    /// drop stays on it until this reader moves on or closes
+    /// (`holdFinishedBookOnReadingList()`). Set only by
+    /// ReaderViewModel+ReadingList.
+    var holdsFinishedBookOnReadingList = false
     /// The center this reader listens on for commands and for Continue to
     /// Next Book, and posts its own Continue to Next Book to: the default
     /// center, unless the reader was created with its own, as tests do to
@@ -2301,6 +2307,9 @@ final class ReaderViewModel: ObservableObject {
         removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
+        // A finished book the reading list is to drop, which this reader held
+        // on the list, leaves it now.
+        releaseFinishedBookOnReadingList()
         // A timer held for this reader's book, which it never took because its
         // window closed while the book loaded, is stopped without a word, as
         // closing the window a timer belongs to stops it: nothing will play it.
