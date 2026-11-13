@@ -1,6 +1,104 @@
 import Foundation
+import os
+
+// MARK: - Folding Text for Comparison
+
+/// How text typed and titles are folded before they are compared: letter
+/// case, accents, and character width never matter, and every apostrophe
+/// typists use reads as the plain one, as in AppKit's own letter navigation.
+///
+/// A title is folded once, when its row is made (`TypedForms`), and the
+/// letters typed once per key, so comparing them is a `hasPrefix` and no
+/// per-row work: folding a title costs far more than comparing it, and a
+/// Library of thousands of titles is scanned at every key.
+enum TitleFolding {
+    /// How many texts have been folded, which tests read to see that a key
+    /// folds the letters typed and no title. A lock rather than an unchecked
+    /// variable, since any thread may fold.
+    private static let folds = OSAllocatedUnfairLock(initialState: 0)
+
+    /// How many texts `fold(_:)` has folded so far.
+    static var foldCount: Int {
+        folds.withLock { $0 }
+    }
+
+    /// `text` folded for comparison.
+    static func fold(_ text: String) -> String {
+        folds.withLock { $0 += 1 }
+        return FilingTitle.plainApostrophes(text).folding(
+            options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+            locale: nil
+        )
+    }
+}
+
+/// The letters typed into a list, folded once for a whole scan of its rows.
+struct TypedQuery: Equatable, Sendable {
+    /// The letters as typed.
+    let typed: String
+    /// The letters folded (`TitleFolding`).
+    let folded: String
+
+    /// The query for `typed`: folds it, once.
+    init(_ typed: String) {
+        self.typed = typed
+        folded = TitleFolding.fold(typed)
+    }
+
+    /// Whether nothing was typed.
+    var isEmpty: Bool {
+        typed.isEmpty
+    }
+}
 
 // MARK: - What Typing Reaches
+
+/// The forms of one title that typing is compared with, each folded once
+/// (`TitleFolding`): where a title is reached from, and where it goes on from.
+struct TypedForms: Equatable, Sendable {
+    /// The title from where it files, folded.
+    let filing: String
+    /// The title as written from its article (the article, its space unless
+    /// it is elided, and the rest), folded; nil for a title with no article.
+    let fromArticle: String?
+    /// How many characters the article and its space take as typed, which
+    /// letters must outnumber to go past the article; 0 with no article.
+    let nonfilingCount: Int
+    /// The title as an index shows it ("hobbit, the"), folded; nil for a
+    /// title with no article, which shows as written.
+    let inverted: String?
+
+    /// The forms of `title`, folding each once.
+    init(_ title: FilingTitle) {
+        filing = TitleFolding.fold(String(title.filing))
+        if let article = title.article {
+            let nonfiling = String(article) + (title.isElided ? "" : " ")
+            fromArticle = TitleFolding.fold(nonfiling + title.rest)
+            nonfilingCount = nonfiling.count
+            inverted = TitleFolding.fold(title.inverted)
+        } else {
+            fromArticle = nil
+            nonfilingCount = 0
+            inverted = nil
+        }
+    }
+
+    /// Whether one of the title's forms begins with `query`: its filing
+    /// text; the title as written from its article, where the letters go
+    /// past the article and its space unless `articleAloneCounts`; or, when
+    /// `showingInverted`, the inverted title.
+    func begins(with query: TypedQuery, showingInverted: Bool, articleAloneCounts: Bool) -> Bool {
+        guard !query.isEmpty else { return false }
+        if filing.hasPrefix(query.folded) {
+            return true
+        }
+        guard let fromArticle else { return false }
+        if articleAloneCounts || query.typed.count > nonfilingCount, fromArticle.hasPrefix(query.folded) {
+            return true
+        }
+        return showingInverted && inverted?.hasPrefix(query.folded) == true
+    }
+}
 
 extension FilingTitle {
     /// Whether `typed`, the letters typed into a list whose letter
@@ -17,8 +115,11 @@ extension FilingTitle {
     /// as in AppKit's own letter navigation. The article typed alone ("the")
     /// reaches only titles that file under those letters, such as "Theory of
     /// Everything", since more letters may follow.
+    ///
+    /// Folds this title and the letters afresh: a list of many titles
+    /// compares its rows' own forms (`TypedForms`) instead.
     func isReached(by typed: String, showingInverted: Bool) -> Bool {
-        begins(with: typed, showingInverted: showingInverted, articleAloneCounts: false)
+        TypedForms(self).begins(with: TypedQuery(typed), showingInverted: showingInverted, articleAloneCounts: false)
     }
 
     /// Whether this title goes on with `typed`, whatever may be typed after
@@ -29,59 +130,34 @@ extension FilingTitle {
     /// alone count ("the " goes on into "The Hobbit"), since a Space typed
     /// there is to be followed by more.
     func goesOn(with typed: String, showingInverted: Bool) -> Bool {
-        begins(with: typed, showingInverted: showingInverted, articleAloneCounts: true)
-    }
-
-    /// Whether one of this title's forms begins with `typed`: its filing
-    /// text; the title as written from its article, where the letters go
-    /// past the article and its space unless `articleAloneCounts`; or, when
-    /// `showingInverted`, the inverted title.
-    private func begins(with typed: String, showingInverted: Bool, articleAloneCounts: Bool) -> Bool {
-        guard !typed.isEmpty else { return false }
-        if Self.text(filing, beginsWith: typed) {
-            return true
-        }
-        guard let article else { return false }
-        let nonfiling = String(article) + (isElided ? "" : " ")
-        if articleAloneCounts || typed.count > nonfiling.count, Self.text(nonfiling + rest, beginsWith: typed) {
-            return true
-        }
-        return showingInverted && Self.text(inverted, beginsWith: typed)
-    }
-
-    /// Whether `text` begins with `typed`, ignoring letter case, accents,
-    /// character widths, and which apostrophe each was written with.
-    static func text<Text: StringProtocol>(_ text: Text, beginsWith typed: String) -> Bool {
-        plainApostrophes(text).range(
-            of: plainApostrophes(typed),
-            options: [.anchored, .caseInsensitive, .diacriticInsensitive, .widthInsensitive]
-        ) != nil
+        TypedForms(self).begins(with: TypedQuery(typed), showingInverted: showingInverted, articleAloneCounts: true)
     }
 }
 
 // MARK: - One Row as Typing Reaches It
 
 /// One row of a list, as letter navigation reaches it: the row's identity,
-/// which the list selects, and its title as a library files it. A folder's
-/// name is filed as written, with no article (`FilingTitle(_:articles:)`
-/// with none), since the user types folder names themselves.
+/// which the list selects, and its title's forms, folded once when the row
+/// is made. A folder's name is filed as written, with no article
+/// (`FilingTitle(_:articles:)` with none), since the user types folder names
+/// themselves.
 struct TypedRow<ID: Hashable>: Equatable {
     /// The row's identity in the list's selection.
     let id: ID
-    /// The row's title, read for its leading article.
-    let title: FilingTitle
+    /// The row's title as typing compares it.
+    let forms: TypedForms
 
     /// A row whose title, a book's or a feed's, is read in the articles of
     /// English and of `language`, the book's metadata language.
     init(id: ID, title: String, language: String?) {
         self.id = id
-        self.title = FilingTitle(title, language: language)
+        forms = TypedForms(FilingTitle(title, language: language))
     }
 
     /// A row whose name has no article to pass over: a folder's.
     init(id: ID, name: String) {
         self.id = id
-        title = FilingTitle(name, articles: [])
+        forms = TypedForms(FilingTitle(name, articles: []))
     }
 }
 
@@ -107,6 +183,15 @@ struct TitleTypingSearch: Equatable, Sendable {
     func isUnderWay(at time: TimeInterval, interval: TimeInterval) -> Bool {
         guard let lastTypedAt, !typed.isEmpty else { return false }
         return time - lastTypedAt <= interval
+    }
+
+    /// Adds `characters`, typed at `time`, to the search under way whatever
+    /// the time: for a Space the list's claim accepted (`TitleTypingSpaceClaim`),
+    /// which was decided after the last letter and so needs no second look
+    /// at the clock.
+    mutating func extend(with characters: String, at time: TimeInterval) {
+        typed += characters
+        lastTypedAt = time
     }
 
     /// Adds `characters`, typed at `time`: to the search under way, or, when
@@ -151,10 +236,13 @@ enum TitleTyping {
         showingInverted: Bool
     ) -> ID? {
         guard !rows.isEmpty else { return nil }
+        // The letters are folded once for the whole scan; each row's forms
+        // were folded when the row was made.
+        let query = TypedQuery(typed)
         let start = searchStart(in: rows, selection: selection, isNewSearch: isNewSearch)
         for offset in 0..<rows.count {
             let row = rows[(start + offset) % rows.count]
-            if row.title.isReached(by: typed, showingInverted: showingInverted) {
+            if row.forms.begins(with: query, showingInverted: showingInverted, articleAloneCounts: false) {
                 return row.id
             }
         }
@@ -178,7 +266,7 @@ enum TitleTyping {
     /// time a Space keeps its own meaning.
     static func spaceGoesOn<ID: Hashable>(after typed: String, in rows: [TypedRow<ID>], showingInverted: Bool) -> Bool {
         guard !typed.isEmpty else { return false }
-        let withSpace = typed + " "
-        return rows.contains { $0.title.goesOn(with: withSpace, showingInverted: showingInverted) }
+        let query = TypedQuery(typed + " ")
+        return rows.contains { $0.forms.begins(with: query, showingInverted: showingInverted, articleAloneCounts: true) }
     }
 }

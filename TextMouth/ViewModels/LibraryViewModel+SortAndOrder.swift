@@ -273,6 +273,13 @@ extension LibraryViewModel {
         listCache.rowTitle(of: book, articles: articles)
     }
 
+    /// The rows of `books`, a list's books in its order, as letter
+    /// navigation reaches them, their titles folded once and kept until the
+    /// list changes (`LibraryListCache.typedRows(of:)`).
+    func typedRows(of books: [Book]) -> [TypedRow<UUID>] {
+        listCache.typedRows(of: books)
+    }
+
     /// The sort `location` shows, restored from the setting saved for it.
     /// Showing a sort never saves it (TODO A06).
     func sortState(at location: LibraryLocation) -> LibrarySortState {

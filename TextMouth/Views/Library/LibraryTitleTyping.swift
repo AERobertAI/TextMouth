@@ -76,16 +76,22 @@ struct LibraryTitleTyping: ViewModifier {
         guard press.phase == .down else { return .handled }
         let now = TitleTypingSpaceClaim.clock()
         let interval = Self.interval
-        let listed = rows()
         let inverted = articles.sortsWithoutArticles
+        let isNewSearch: Bool
         if press.characters == " " {
-            // A Space reaches the list only while a title goes on with it,
-            // which the shortcuts were told; at any other time it goes on as
-            // it always has.
-            guard search.isUnderWay(at: now, interval: interval),
-                  TitleTyping.spaceGoesOn(after: search.typed, in: listed, showingInverted: inverted) else { return .ignored }
+            // A Space reaches the list only while a title goes on with it, a
+            // claim decided after the last letter (`TitleTypingSpaceClaim`),
+            // which the shortcuts were told too, so no title is looked at
+            // again for it; at any other time it goes on as it always has.
+            guard !search.typed.isEmpty, TitleTypingSpaceClaim.shared.acceptsSpace(in: window, at: now) else {
+                return .ignored
+            }
+            search.extend(with: " ", at: now)
+            isNewSearch = false
+        } else {
+            isNewSearch = search.add(press.characters, at: now, interval: interval)
         }
-        let isNewSearch = search.add(press.characters, at: now, interval: interval)
+        let listed = rows()
         if let row = TitleTyping.firstRow(
             reachedBy: search.typed,
             in: listed,
@@ -100,8 +106,8 @@ struct LibraryTitleTyping: ViewModifier {
             proxy.scrollTo(row)
             reaches += 1
         }
-        // A Space typed next joins the letters only while a title goes on
-        // with them and a space.
+        // Decided once, after this letter: a Space typed next joins the
+        // letters only while a title goes on with them and a space.
         if TitleTyping.spaceGoesOn(after: search.typed, in: listed, showingInverted: inverted) {
             TitleTypingSpaceClaim.shared.claim(in: window, until: now + interval)
         } else {
@@ -230,6 +236,21 @@ final class TitleTypingSpaceClaim {
     func takesSpace(in window: PlatformWindow?, at time: TimeInterval) -> Bool {
         guard let window, let claimed = self.window, claimed === window else { return false }
         return time <= until
+    }
+
+    /// How long past a claim's time the list still accepts a Space the
+    /// shortcuts let through, in seconds: the manager looks at the clock
+    /// first and the list a moment later, and a Space between the two
+    /// readings, at the claim's edge, must not be left with neither.
+    static let acceptanceSlack: TimeInterval = 0.5
+
+    /// Whether the list in `window` takes a Space at `time` as a letter of
+    /// the title it is typing: the window holds the claim, to a time
+    /// `acceptanceSlack` before `time` or later. A Space the shortcuts left
+    /// to the list (`takesSpace(in:at:)`) is always accepted.
+    func acceptsSpace(in window: PlatformWindow?, at time: TimeInterval) -> Bool {
+        guard let window, let claimed = self.window, claimed === window else { return false }
+        return time <= until + Self.acceptanceSlack
     }
 
     /// Whether a Space pressed in `window` now, by `clock`, continues a

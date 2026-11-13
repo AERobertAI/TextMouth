@@ -1411,6 +1411,8 @@ struct LibraryView: View {
         feedID: UUID?,
         articles: LeadingArticles
     ) -> [TypedRow<UUID>] {
+        // The folders and feeds are few and made at each key; the books,
+        // which may be thousands, are the rows kept with their titles folded.
         var rows = folders.map { TypedRow(id: $0.id, name: $0.name) }
         rows += LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles)
             .map { TypedRow(id: $0.id, title: $0.title, language: nil) }
@@ -1430,7 +1432,7 @@ struct LibraryView: View {
                 return nil
             } + listing.otherBooks
         }
-        rows += listedBooks.map { TypedRow(id: $0.id, title: $0.title, language: $0.epubLanguage) }
+        rows += libraryViewModel.typedRows(of: listedBooks)
         return rows
     }
 

@@ -382,7 +382,7 @@ extension LibraryViewModel {
     /// The books a Library window shows at `location`: its view's or
     /// folder's books in the order of the sort it shows (`sortState(at:)`),
     /// titles read as the Leading articles setting says (`leadingArticles`),
-    /// narrowed to those `search` finds (`book(_:isFoundBy:articles:)`). An
+    /// narrowed to those `search` finds (`book(_:isFoundBy:shownTitle:)`). An
     /// empty search narrows nothing.
     ///
     /// Each list is derived once and kept until a book is added, removed,
@@ -415,19 +415,20 @@ extension LibraryViewModel {
             location: location, sort: sort, search: query, feedID: feedID, context: context, articles: articles
         )
         return listCache.books(for: searched, in: library) {
-            books.filter { Self.book($0, isFoundBy: query, articles: articles) }
+            books.filter { Self.book($0, isFoundBy: query, shownTitle: self.rowTitle(of: $0, articles: articles)) }
         }
     }
 
     /// Whether a search for `query`, lowercased already, finds `book`: its
     /// title holds the query, ignoring case, as it is written or, while the
     /// list shows titles with their articles after them, as its row shows
-    /// it ("hobbit, the"); or its author does.
-    nonisolated static func book(_ book: Book, isFoundBy query: String, articles: LeadingArticles) -> Bool {
+    /// it (`shownTitle`, "hobbit, the", nil while titles show as written);
+    /// or its author does.
+    nonisolated static func book(_ book: Book, isFoundBy query: String, shownTitle: String?) -> Bool {
         if book.title.lowercased().contains(query) || book.author.lowercased().contains(query) {
             return true
         }
-        return articles.rowTitle(of: book)?.lowercased().contains(query) ?? false
+        return shownTitle?.lowercased().contains(query) ?? false
     }
 
     /// How many books are in the folder `path` and every folder below it,

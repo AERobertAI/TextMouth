@@ -49,6 +49,69 @@ final class LeadingArticlesDisplayTests: XCTestCase {
         XCTAssertEqual(cache.titleInversionCount, 3)
     }
 
+    /// Letter navigation reads rows the list cache made once for the list:
+    /// every book's title folded when the list was made (3,000 books here),
+    /// and none again for a key, which folds only the letters it types. A
+    /// reading position leaves the rows alone, and a renamed book makes
+    /// them again.
+    func testTheListCacheMakesTheTypedRowsOncePerListAndAKeyFoldsNoTitle() {
+        let cache = LibraryListCache()
+        let books = (0..<3000).map { Self.book($0 % 7 == 0 ? "The Title \($0)" : "Title \($0)") }
+        let rows = cache.typedRows(of: books)
+        XCTAssertEqual(rows.count, 3000)
+        XCTAssertEqual(cache.typedRowBuildCount, 3000)
+
+        // A key: the letters are searched for and a Space is asked about
+        // (`TitleTyping`). Each folds the letters typed once, and no row's
+        // title, whatever the number of rows.
+        let before = TitleFolding.foldCount
+        let reached = TitleTyping.firstRow(
+            reachedBy: "title 29", in: rows, selection: [books[10].id], isNewSearch: true, showingInverted: true
+        )
+        let joins = TitleTyping.spaceGoesOn(after: "title", in: rows, showingInverted: true)
+        XCTAssertEqual(reached, books[29].id)
+        XCTAssertTrue(joins)
+        XCTAssertEqual(TitleFolding.foldCount - before, 2, "a key folded more than the letters typed")
+
+        // Asked for again, the same list gives the same rows, made no more.
+        XCTAssertEqual(cache.typedRows(of: books), rows)
+        XCTAssertEqual(cache.typedRowBuildCount, 3000, "the rows were made again for an unchanged list")
+
+        // A reading position changes no list: the rows are kept.
+        var moved = books
+        moved[5].readingPosition = ReadingPosition(characterOffset: 50)
+        cache.libraryDidChange(from: Library(books: books), to: Library(books: moved))
+        XCTAssertEqual(cache.typedRows(of: moved), rows)
+        XCTAssertEqual(cache.typedRowBuildCount, 3000, "a reading position made the rows again")
+
+        // A renamed book is a change of the list: the rows are made anew,
+        // and the new title is the one typing reaches.
+        var renamed = moved
+        renamed[5].title = "Zebra Crossing"
+        cache.libraryDidChange(from: Library(books: moved), to: Library(books: renamed))
+        let renamedRows = cache.typedRows(of: renamed)
+        XCTAssertEqual(cache.typedRowBuildCount, 6000)
+        XCTAssertEqual(TitleTyping.firstRow(reachedBy: "zebra", in: renamedRows, showingInverted: false), renamed[5].id)
+        XCTAssertNil(TitleTyping.firstRow(reachedBy: "zebra", in: rows, showingInverted: false))
+
+        // Another list (a search's narrowing) is made for its own books.
+        let narrowed = Array(renamed.prefix(10))
+        XCTAssertEqual(cache.typedRows(of: narrowed).map(\.id), narrowed.map(\.id))
+        XCTAssertEqual(cache.typedRowBuildCount, 6010)
+    }
+
+    /// A search finds a book by its title as its row shows it from the
+    /// title the cache already inverted, and by its title as written and
+    /// its author, in every choice.
+    func testASearchFindsABookByItsShownTitleAndItsOwn() {
+        let hobbit = Self.book("The Hobbit", author: "J. R. R. Tolkien")
+        XCTAssertTrue(LibraryViewModel.book(hobbit, isFoundBy: "the hob", shownTitle: nil))
+        XCTAssertFalse(LibraryViewModel.book(hobbit, isFoundBy: "hobbit, the", shownTitle: nil))
+        XCTAssertTrue(LibraryViewModel.book(hobbit, isFoundBy: "hobbit, the", shownTitle: "Hobbit, The"))
+        XCTAssertTrue(LibraryViewModel.book(hobbit, isFoundBy: "tolkien", shownTitle: "Hobbit, The"))
+        XCTAssertFalse(LibraryViewModel.book(hobbit, isFoundBy: "silmarillion", shownTitle: "Hobbit, The"))
+    }
+
     // MARK: - The Feeds Section
 
     /// The Feeds section's rows sort by title without its article and show

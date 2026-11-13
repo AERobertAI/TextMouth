@@ -53,12 +53,25 @@ final class LibraryTitleTypingTests: XCTestCase {
         XCTAssertTrue(claim.takesSpace(in: window, at: 10.5))
         XCTAssertTrue(claim.takesSpace(in: window, at: 11))
         XCTAssertFalse(claim.takesSpace(in: window, at: 11.25))
+        // The list accepts a Space a little later than the shortcuts leave
+        // one to it, so a Space between their two looks at the clock, at the
+        // claim's edge, is never left with neither: whatever the shortcuts
+        // left to the list, the list accepts.
+        XCTAssertTrue(claim.acceptsSpace(in: window, at: 11.25))
+        XCTAssertTrue(claim.acceptsSpace(in: window, at: 11 + TitleTypingSpaceClaim.acceptanceSlack))
+        XCTAssertFalse(claim.acceptsSpace(in: window, at: 11 + TitleTypingSpaceClaim.acceptanceSlack + 0.25))
+        for time in stride(from: 9.0, through: 12.0, by: 0.125) where claim.takesSpace(in: window, at: time) {
+            XCTAssertTrue(claim.acceptsSpace(in: window, at: time), "a Space the shortcuts left at \(time) was not accepted")
+        }
+        XCTAssertFalse(claim.acceptsSpace(in: other, at: 10.5))
+        XCTAssertFalse(claim.acceptsSpace(in: nil, at: 10.5))
         XCTAssertFalse(claim.takesSpace(in: other, at: 10.5))
         XCTAssertFalse(claim.takesSpace(in: nil, at: 10.5))
         claim.release(in: other)
         XCTAssertTrue(claim.takesSpace(in: window, at: 10.5), "another window let the claim go")
         claim.release(in: window)
         XCTAssertFalse(claim.takesSpace(in: window, at: 10.5))
+        XCTAssertFalse(claim.acceptsSpace(in: window, at: 10.5), "a claim let go accepts nothing")
         claim.claim(in: nil, until: 20)
         XCTAssertFalse(claim.takesSpace(in: window, at: 10.5))
     }
@@ -144,24 +157,9 @@ final class LibraryTitleTypingTests: XCTestCase {
         preservePreferences([LeadingArticles.preference.key], in: store)
 
         let folder = "Shelf"
-        let model = LibraryViewModel(initializeServices: false)
-        model.library = Library(
-            books: ["Treasure Island", "The Hobbit", "Hamlet", "A Tale of Two Cities"].enumerated().map { index, title in
-                Book(
-                    title: title,
-                    author: "Author",
-                    format: .epub,
-                    filePath: "/nonexistent/title-typing/\(index).epub",
-                    md5Hash: "title-typing-\(index)",
-                    folderPath: folder,
-                    manualSortOrder: index
-                )
-            },
-            folders: [BookFolder(name: folder)]
+        let (model, settings) = Self.shelf(
+            of: ["Treasure Island", "The Hobbit", "Hamlet", "A Tale of Two Cities"], in: folder
         )
-        let location = LibraryLocation(category: .folders, folderPath: folder)
-        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
-        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
 
         for choice in LeadingArticles.allCases {
             LeadingArticles.preference.write(choice, to: store)
@@ -288,24 +286,7 @@ final class LibraryTitleTypingTests: XCTestCase {
         LeadingArticles.preference.write(.ignoredWhenTyping, to: store)
         let folder = "Long Shelf"
         let titles = (1...60).map { String(format: "Volume %02d", $0) } + ["The Zebra", "Theodora"]
-        let model = LibraryViewModel(initializeServices: false)
-        model.library = Library(
-            books: titles.enumerated().map { index, title in
-                Book(
-                    title: title,
-                    author: "Author",
-                    format: .epub,
-                    filePath: "/nonexistent/title-typing-long/\(index).epub",
-                    md5Hash: "title-typing-long-\(index)",
-                    folderPath: folder,
-                    manualSortOrder: index
-                )
-            },
-            folders: [BookFolder(name: folder)]
-        )
-        let location = LibraryLocation(category: .folders, folderPath: folder)
-        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
-        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let (model, settings) = Self.shelf(of: titles, in: folder)
         let hosted = hostOffscreen(
             LibraryView(
                 currentFolderPath: .constant(folder),
@@ -381,6 +362,30 @@ final class LibraryTitleTypingTests: XCTestCase {
     }
 
     // MARK: - Fixtures
+
+    /// A library with one folder, `folder`, holding books titled `titles`
+    /// in that manual order, and a settings model that starts no services.
+    private static func shelf(of titles: [String], in folder: String) -> (LibraryViewModel, SettingsViewModel) {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(
+            books: titles.enumerated().map { index, title in
+                Book(
+                    title: title,
+                    author: "Author",
+                    format: .epub,
+                    filePath: "/nonexistent/title-typing/\(index).epub",
+                    md5Hash: "title-typing-\(index)",
+                    folderPath: folder,
+                    manualSortOrder: index
+                )
+            },
+            folders: [BookFolder(name: folder)]
+        )
+        let location = LibraryLocation(category: .folders, folderPath: folder)
+        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        return (model, settings)
+    }
 
     /// A titled window, never shown, which the test closes.
     private static func window() -> NSWindow {

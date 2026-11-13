@@ -252,6 +252,51 @@ final class TitleTypingTests: XCTestCase {
         XCTAssertEqual(selected, "Hannibal")
     }
 
+    // MARK: - What a Key Costs
+
+    /// A row folds its title when it is made and a key folds only the letters
+    /// it types: however many rows there are, `firstRow` folds the letters
+    /// once and `spaceGoesOn` once, and no row's title.
+    func testAKeyFoldsTheLettersTypedAndNoRowsTitle() {
+        let few = (0..<10).map { TypedRow(id: $0, title: "Title \($0)", language: nil) }
+        let many = (0..<3000).map { TypedRow(id: $0, title: $0 % 5 == 0 ? "The Title \($0)" : "Title \($0)", language: nil) }
+
+        func folds(_ work: () -> Void) -> Int {
+            let before = TitleFolding.foldCount
+            work()
+            return TitleFolding.foldCount - before
+        }
+        for rows in [few, many] {
+            XCTAssertEqual(folds { _ = TitleTyping.firstRow(reachedBy: "title 7", in: rows, showingInverted: true) }, 1, "\(rows.count) rows")
+            XCTAssertEqual(
+                folds { _ = TitleTyping.firstRow(reachedBy: "zzz", in: rows, selection: [4], isNewSearch: false, showingInverted: true) },
+                1,
+                "a key that reaches nothing scans every row, folding the letters once"
+            )
+            XCTAssertEqual(folds { _ = TitleTyping.spaceGoesOn(after: "the", in: rows, showingInverted: true) }, 1, "\(rows.count) rows")
+        }
+        // Making a row folds its title: its filing form, the title from its
+        // article, and the inverted title; a title with no article, one.
+        XCTAssertEqual(folds { _ = TypedRow(id: 0, title: "The Hobbit", language: nil) }, 3)
+        XCTAssertEqual(folds { _ = TypedRow(id: 0, title: "Hamlet", language: nil) }, 1)
+        XCTAssertEqual(folds { _ = TypedRow(id: 0, name: "The Archive") }, 1)
+    }
+
+    /// A title's forms are folded once and compared with a prefix check, and
+    /// reach what the title reached when each comparison folded it afresh:
+    /// letter case, accents, character width, and either apostrophe never
+    /// matter.
+    func testFoldedFormsReachWhatFoldingEachTimeReached() {
+        let title = FilingTitle("L\u{2019}\u{C9}tranger", language: "fr")
+        for typed in ["e", "E", "\u{E9}tr", "l'e", "l\u{2019}\u{E9}", "etranger"] {
+            XCTAssertTrue(title.isReached(by: typed, showingInverted: false), typed)
+        }
+        XCTAssertFalse(title.isReached(by: "tranger", showingInverted: false))
+        // Full-width letters fold to plain ones.
+        XCTAssertTrue(FilingTitle("The Hobbit", language: nil).isReached(by: "\u{FF48}\u{FF4F}\u{FF42}", showingInverted: false))
+        XCTAssertFalse(FilingTitle("The Hobbit", language: nil).isReached(by: "", showingInverted: false))
+    }
+
     // MARK: - The Letters Typed
 
     /// Letters typed within the interval of the one before add up; one

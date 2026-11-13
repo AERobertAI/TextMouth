@@ -161,6 +161,50 @@ final class LibraryListCache {
         let language: String?
     }
 
+    /// The books of the list last typed into as letter navigation reaches
+    /// them: their IDs in order, the list revision they were made under,
+    /// and their rows with every title folded (`TypedRow`).
+    private struct TypedRowsMemo {
+        let listRevision: Int
+        let ids: [UUID]
+        let rows: [TypedRow<UUID>]
+    }
+
+    /// The memo of the last list typed into; nil before any, or after the
+    /// library dropped it.
+    private var typedRowsMemo: TypedRowsMemo?
+    /// How many books' rows were made (their titles read for articles and
+    /// folded). Tests read it to see that a key reuses rows made before.
+    private(set) var typedRowBuildCount = 0
+
+    // MARK: - Titles as Letter Navigation Reaches Them
+
+    /// The rows of `books`, the books a list shows in its order, as letter
+    /// navigation compares typed letters with them (`TitleTyping`), each
+    /// title folded once and kept for as long as the list is: a key pressed
+    /// in a Library of thousands of titles then reads these rows and folds
+    /// nothing of theirs.
+    ///
+    /// The rows are kept for the last list asked for, while the list
+    /// revision and the books' IDs and order are as they were. A book's
+    /// title and metadata language change the list revision
+    /// (`hasSameListFields`), so a renamed book is made anew, and a change
+    /// that leaves the list alone (a reading position, a word count) keeps
+    /// the rows. The rows follow no setting, so changing the Leading
+    /// articles setting does not make them again.
+    func typedRows(of books: [Book]) -> [TypedRow<UUID>] {
+        if let memo = typedRowsMemo,
+           memo.listRevision == listRevision,
+           memo.ids.count == books.count,
+           zip(memo.ids, books).allSatisfy({ $0 == $1.id }) {
+            return memo.rows
+        }
+        let rows = books.map { TypedRow(id: $0.id, title: $0.title, language: $0.epubLanguage) }
+        typedRowBuildCount += rows.count
+        typedRowsMemo = TypedRowsMemo(listRevision: listRevision, ids: books.map(\.id), rows: rows)
+        return rows
+    }
+
     // MARK: - Titles as Rows Show Them
 
     /// The title `book`'s row shows in place of its own under `articles`
@@ -194,6 +238,7 @@ final class LibraryListCache {
             return
         }
         listRevision &+= 1
+        typedRowsMemo = nil
         entries.removeAll(keepingCapacity: true)
         indexByID = nil
         folderTreeCounts = nil
