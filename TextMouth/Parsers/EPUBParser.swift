@@ -235,15 +235,20 @@ enum EPUBParser {
             throw EPUBParserError.writeFailed("Could not open archive for writing")
         }
 
-        // Remove old OPF and add updated one
-        guard let oldEntry = writeArchive[opfPath] else {
+        // Remove old OPF and add updated one. Reading finds the package
+        // document without regard to case (ST09), so the write does too: a
+        // book whose container.xml spells the path in another case than its
+        // ZIP does is saved, and the new entry takes the spelling the ZIP
+        // already used, so nothing else in the book is renamed.
+        guard let oldEntry = writeArchive.file(at: opfPath) else {
             throw EPUBParserError.writeFailed("Could not find OPF entry")
         }
+        let storedOPFPath = oldEntry.path
         try writeArchive.remove(oldEntry)
 
         let updatedData = updatedXML.data(using: .utf8) ?? Data()
         try writeArchive.addEntry(
-            with: opfPath,
+            with: storedOPFPath,
             type: .file,
             uncompressedSize: Int64(updatedData.count),
             provider: { position, size in
