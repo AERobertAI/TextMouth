@@ -164,8 +164,8 @@ enum LibrarySearchOutcome: Equatable, Sendable {
 /// - **Never downloads.** Every read runs with dataless files left in the
 ///   cloud (`MaintenanceFileAccess.read`), and a book whose package or
 ///   content.md is in the cloud is counted, not read.
-/// - **Stops at once.** `isCancelled` is asked before each book, each
-///   chapter, each line searched, and inside each lookup.
+/// - **Stops at once.** `isCancelled` is asked before each book and each
+///   chapter, and inside each lookup.
 enum LibrarySearchEngine {
     /// The most content.md bytes being parsed at once while books are
     /// prepared: 32 MB, one larger book alone. Parsing takes 5 to 22 times

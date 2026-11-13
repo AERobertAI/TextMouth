@@ -4,15 +4,17 @@ import Foundation
 
 /// What a literal search looks for among a chapter's UTF-8 bytes before
 /// Foundation's search decides (LIBRARY-SEARCH-RESEARCH-2026-11-13.md,
-/// section 3): the lines that may hold a match. Search Library runs
-/// `BookTextSearch.Matcher` over those lines alone, which finds there exactly
-/// the matches a search of the whole chapter finds, so the prefilter changes
-/// how fast a search is and never what it finds.
+/// section 3): the lines that may hold a match. A chapter with none is passed
+/// over without being decoded; any other is searched whole by
+/// `BookTextSearch.Matcher`, with Search in Book's own calls, so the prefilter
+/// changes how fast a search is and never what it finds. (No line is searched
+/// on its own: Foundation does not answer a short range as it answers the
+/// same text inside a longer one.)
 ///
 /// It is sound because of three facts, each pinned by a test:
 /// - A literal query that holds no line feed or carriage return matches no
-///   line feed, so every match lies within one line, and a line no match can
-///   start in can be passed over.
+///   line feed, so every match lies within one line, and a chapter with no
+///   line a match can lie in can be passed over.
 /// - The query's anchor, a run of its ASCII characters none of which stands
 ///   beside a non-ASCII one, is matched by Foundation's search either by the
 ///   same bytes, letters in either case when case is ignored, or by text

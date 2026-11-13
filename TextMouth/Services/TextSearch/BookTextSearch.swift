@@ -160,11 +160,13 @@ enum BookTextSearch {
         /// whole text it runs over (anchors, look-behind), so it is only ever
         /// run over a whole chapter.
         ///
-        /// Search Library runs this over the lines of a chapter that may hold
-        /// a match: a literal query that holds no line feed or carriage
-        /// return can match no line feed, so each of its matches lies within
-        /// one line, and the matches a line holds are those the chapter's
-        /// search finds there (`LibrarySearchScanner`).
+        /// The reader checks a library search's match at its place with this,
+        /// over the few characters around it (`LibrarySearchJumpPlace`).
+        /// Foundation does not answer a short range as it answers the same
+        /// text inside a longer one (in a few dozen characters it takes a
+        /// digit's compatibility forms for the digit; over a whole chapter it
+        /// does not), so a search of part of a text is no stand-in for a
+        /// search of the whole: Search Library searches whole chapters.
         func enumerateLiteralRanges(
             in text: NSString,
             within range: NSRange,
