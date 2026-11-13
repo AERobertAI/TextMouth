@@ -48,6 +48,21 @@ BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 # separately and still gathers coverage.
 NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 
+# The Release app is compiled to be small: -Osize for the Swift packages as
+# well as the app's own code. project.yml gives the app's target the level
+# (its Release block), but not the packages' targets, which it cannot reach;
+# a setting on the command line does, as NO_COVERAGE's does. Given that way,
+# Xcode also compiles each package file by file instead of whole-module,
+# which makes SwiftSoup 1.06 MB smaller than -Osize whole-module would (the
+# November 13, 2026 size audit measured 2.08 MB saved on the three packages
+# together, at the price of slower HTML parsing at import, about 4 ms for a
+# megabyte of EPUB). So do not add SWIFT_COMPILATION_MODE=wholemodule: it
+# made the app 1.15 MB larger. Only Release gets it: `make debug` keeps
+# Debug's own level so that it can still be stepped through. `make check`
+# and `make install` build through the build rule, so they get it too; an
+# Xcode build from its window does not, as with NO_COVERAGE.
+SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
+
 # Xcode records the exact Swift package revisions here. The file is committed,
 # so every checkout and CI run builds the same package versions.
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
@@ -85,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -103,6 +118,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
+	@echo "  make release-goldens - Once per release: run the golden tests against a Release build made with testability on, so an optimizer miscompile cannot hide behind the Debug suite (about 15 minutes; pass options through GOLDEN_ARGS)"
 	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, the version script, and the Scripts/test tools in seconds, without building"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
@@ -189,6 +205,7 @@ build: generate
 		-derivedDataPath "$(DERIVED_BUILD_DIR)" \
 		-destination 'platform=macOS' \
 		$(NO_COVERAGE) \
+		$(SMALL_CODE) \
 		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
 		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
 		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
@@ -251,6 +268,13 @@ test:
 ## make check CHECK_ARGS=--dry-run
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
+
+## Run the golden tests that pin every reader's output against a Release build
+## made with testability on (Scripts/test/release-goldens.sh), once per release
+## and after a change to the Release build settings. Pass options through
+## GOLDEN_ARGS, for example: make release-goldens GOLDEN_ARGS=--dry-run
+release-goldens:
+	@Scripts/test/release-goldens.sh $(GOLDEN_ARGS)
 
 ## Test the gate script, the performance baselines' recording script, the
 ## storage drill script, the version script and the tools in Scripts/test (the
