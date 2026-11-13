@@ -38,7 +38,7 @@ Found by typing into hosted lists: a probe test class, `LibraryTypeSelectProbeTe
 - **The search field never got the letters**, and nothing was announced beyond the new selection.
 - **A row's `typeSelectEquivalent(_:)`, when it names one, is what typing matches:** H selected The Hobbit, named "Hobbit, The". One string a row can't serve both "h" and "the h", so the design does not rest on it.
 - **`onKeyPress` on a list sees each letter before AppKit does:** returning `.handled` kept the letter from AppKit's type select (nothing selected), and `.ignored` passed it on (Zebra Crossing selected).
-- **A row selected in code is not scrolled into view** (row 150 selected, rows 0 to 12 still in view); `ScrollViewReader`'s `scrollTo` scrolled it into view in a plain list (rows 138 to 150). In the Library list, with its taller rows, `scrollTo` fell short (row 62 selected, rows 47 to 54 in view), so letter navigation scrolls through the table itself.
+- **A row selected in code is not scrolled into view** (row 150 selected, rows 0 to 12 still in view); `ScrollViewReader`'s `scrollTo` scrolled it into view in a plain list (rows 138 to 150). In the Library list `scrollTo` fell short (row 62 selected, rows 47 to 54 in view), so letter navigation scrolls through the table itself.
 
 ## The design
 
