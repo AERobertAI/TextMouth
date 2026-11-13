@@ -1493,7 +1493,7 @@ enum FileImportService {
     /// the same APFS volume) costs almost no space, so it counts as empty
     /// too: a big folder on the disk the library is on is not refused for
     /// room its copy will not take.
-    static func requireRoom(forCopying sources: [URL], onVolumeOf destination: URL) throws {
+    private static func requireRoom(forCopying sources: [URL], onVolumeOf destination: URL) throws {
         let limits = ArchiveLimits.current
         guard let available = limits.freeSpace(destination) else { return }
         var needed: Int64 = 0
