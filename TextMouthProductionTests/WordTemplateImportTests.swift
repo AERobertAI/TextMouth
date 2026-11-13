@@ -219,6 +219,28 @@ final class WordTemplateImportTests: XCTestCase {
         }
     }
 
+    /// A Word document whose only text is in a table, or only in a text box,
+    /// holds text: it is not refused as blank, and the book opens with the
+    /// words. (A refusal that looked at the body's ordinary paragraphs alone
+    /// would turn both away.)
+    func testAWordDocumentWhoseOnlyTextIsInATableOrATextBoxIsNotRefused() throws {
+        let tableOnly = "<w:tbl><w:tblPr/><w:tr><w:tc><w:p><w:r><w:t>Cell words</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/>"
+        let textBoxOnly = "<w:p><w:r><w:pict><w:txbxContent><w:p><w:r><w:t>Boxed words</w:t></w:r></w:p></w:txbxContent></w:pict></w:r></w:p>"
+        for (label, body, words) in [("table", tableOnly, "Cell words"), ("text box", textBoxOnly, "Boxed words")] {
+            let url = try copyOfHeadingDocx(named: "\(label).docx")
+            try replaceEntry("word/document.xml", in: url) { _ in
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                    + "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>"
+                    + body + "</w:body></w:document>"
+            }
+
+            let imported = try importedForTest(url)
+
+            XCTAssertEqual(imported.book.format, .docx, label)
+            XCTAssertTrue(allText(of: try openedContent(of: imported.book)).contains(words), label)
+        }
+    }
+
     // MARK: - Making the copies
 
     /// A copy of TestData/test_book.docx (a real Word document with Heading
