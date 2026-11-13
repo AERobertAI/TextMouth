@@ -75,21 +75,34 @@ extension ReaderViewModel {
         let pauses = wasPlaying || isWhereAmIUnderWay
         // A move ends the fade of any timer it carries, wherever it is held
         // (X3, Y1): this reader's own, held for another book or not, or one
-        // held for this book, as a target still loading carries. The fade and
-        // the timer end, the book moved to starts, and the listener is told.
-        // The pause comes first, so the owner's volume is restored only once
-        // its audio is silent; a pause leaves a held fade alone, as the
-        // listener's own Pause does (W2), so the stop is not left to it.
-        let service = sleepTimerService
-        let fadesHere = service.isFadingOut
-            && (service.ownerID == readerID || service.isHeld(forBook: book.id))
+        // held for this book, as a target still loading carries, in this
+        // window or the one it is coming from. The fade and the timer end,
+        // the book moved to starts, and the listener is told. The pause comes
+        // first, so the owner's volume is restored only once its audio is
+        // silent; a pause leaves a held fade alone, as the listener's own
+        // Pause does (W2), so the stop is not left to it.
+        let fading = sleepTimerFadingOutWithThisMove
         if pauses {
             pause(playingPauseSound: false)
         }
-        if fadesHere && service.isFadingOut {
-            service.stop(reason: "a move ended the fade of a timer it carries")
+        if let fading, fading.isFadingOut {
+            fading.stop(reason: "a move ended the fade of a timer it carries")
         }
-        return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fadesHere && !service.isFadingOut)
+        return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fading.map { !$0.isFadingOut } ?? false)
+    }
+
+    /// The sleep timer fading out that a move from this reader carries: its
+    /// own window's, when this reader owns it, or one held for this reader's
+    /// book, wherever it is held; nil when neither fades.
+    private var sleepTimerFadingOutWithThisMove: SleepTimerService? {
+        let own = sleepTimerService
+        if own.isFadingOut, own.ownerID == readerID {
+            return own
+        }
+        if let carried = sleepTimers.timer(heldForBook: book.id), carried.isFadingOut {
+            return carried
+        }
+        return nil
     }
 
     /// Cancels a move this reader announced and has not asked for yet: a

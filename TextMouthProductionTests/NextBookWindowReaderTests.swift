@@ -7,6 +7,13 @@ import XCTest
 /// new one, as the setting says (0.2.5). The window's switch is injected, so
 /// no window opens and nothing plays: the readers are of silent audiobooks,
 /// ended by `handleEndOfBook()` or moved by the reading list's commands.
+///
+/// Each reader window has a sleep timer of its own (November 13, 2026). A
+/// `SwitchRecorder` stands for one window and holds its timer: the readers
+/// made with one, one after another as the window switches, are that window's
+/// and share the timer. A reader in a window of its own (`inOwnWindow`, the
+/// next book of a new window, a book open elsewhere, a book opened from the
+/// Library) has a timer of its own, and a timer carried to it moves there.
 @MainActor
 final class NextBookWindowReaderTests: XCTestCase {
     /// Subscriptions a test keeps until it ends.
@@ -183,14 +190,13 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// switches to it (0.2.5): it is held for the book from the announcement,
     /// still this reader's, with exactly one owner, until the reader that
     /// takes the window over has loaded; then it is that reader's, running,
-    /// with its time left as it was. The old reader's close leaves it running,
-    /// and the restart gesture's last owner is the new reader.
+    /// with its time left as it was. The old reader's close leaves it running.
     func testARunningSleepTimerGoesOnWithASwitchedWindow() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("SwitchTimer")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         let before = timer.remainingSeconds
 
@@ -201,6 +207,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.isActive)
 
         let new = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        XCTAssertTrue(new.sleepTimerService === timer, "The window's next book has another timer than the window's")
         XCTAssertEqual(timer.ownerID, new.readerID, "The reader that took the window does not own the timer")
         XCTAssertFalse(timer.isHeld(forBook: folder.second.id), "The hold was left")
         XCTAssertEqual(timer.duration, .minutes(30))
@@ -210,20 +217,20 @@ final class NextBookWindowReaderTests: XCTestCase {
         old.close()
         XCTAssertTrue(timer.isActive, "The old reader's close stopped the timer")
         XCTAssertEqual(timer.ownerID, new.readerID)
-        XCTAssertEqual(timer.lastOwnerID, new.readerID, "Restart Sleep Timer would go to the closed reader")
     }
 
     /// The timer goes on in a new window too, as a busy window or A New
     /// Window opens one: the old reader stays open, and the new window's
-    /// reader takes the timer when it has loaded.
+    /// reader takes the timer when it has loaded, into its own window's timer,
+    /// while the old window's timer stops.
     func testARunningSleepTimerGoesOnWithANewWindow() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("NewWindowTimer")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let opened = record(.openBookWindow, in: folder.world)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
 
         old.goThroughFolder(.down)
@@ -232,19 +239,22 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id))
         XCTAssertEqual(timer.ownerID, old.readerID)
 
-        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        XCTAssertEqual(timer.ownerID, new.readerID)
-        XCTAssertTrue(timer.isActive)
+        // The next book is in a new window, with a timer of its own.
+        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let taken = new.sleepTimerService
+        XCTAssertEqual(taken.ownerID, new.readerID)
+        XCTAssertTrue(taken.isActive)
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the new window")
     }
 
     /// A timer fading out is not held for the next book: it is putting the
     /// listener to sleep, and ends listening.
     func testATimerFadingOutIsNotHeld() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("FadeTimer")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(1), ownerID: old.readerID, onExpire: {}, fadeOutDuration: 5)
         timer._expireForTesting()
         XCTAssertTrue(timer.isFadingOut)
@@ -261,11 +271,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// to cancel the timer, so it is said after "Starting: <title>", and after
     /// current speech.
     func testACommandWhileTheTimerFadesOutSaysTheTimerWasCancelled() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("CommandDuringFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(1), ownerID: reader.readerID, onExpire: {}, fadeOutDuration: 5)
         timer._expireForTesting()
         XCTAssertTrue(timer.isFadingOut)
@@ -299,12 +309,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// stop the timer: it is held for the next book, which is opened in a new
     /// window as announced, and takes it.
     func testClosingTheWindowBeforeTheAskKeepsTheTimerForTheNextBook() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("CloseBeforeAsk")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let opened = record(.openBookWindow, in: folder.world)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
 
         old.goThroughFolder(.down)
@@ -314,20 +324,23 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
         XCTAssertTrue(switcher.shown.isEmpty, "A closed reader switched a window that is gone")
 
-        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        XCTAssertEqual(timer.ownerID, new.readerID, "The book opened without the timer")
-        XCTAssertTrue(timer.isActive)
+        // The old window is gone: the book opens in a new window, with a timer of its own.
+        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let taken = new.sleepTimerService
+        XCTAssertEqual(taken.ownerID, new.readerID, "The book opened without the timer")
+        XCTAssertTrue(taken.isActive)
+        XCTAssertFalse(timer.isActive, "The closed window's timer ran on beside the one carried to the new window")
     }
 
     /// A second move before the first move's book has loaded passes the
     /// timer on: the book that is still loading counts as playing, goes on to
     /// the next book, and the reader of that book takes the timer and plays.
     func testASecondMoveBeforeTheFirstBookLoadedPassesTheTimerOn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("SecondMove")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let first = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = first.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: first.readerID, onExpire: {})
         // Counts as playing, without a sound: a Where Am I? announcement that
         // will play the book again.
@@ -352,6 +365,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertFalse(timer.isHeld(forBook: folder.second.id))
 
         let third = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        XCTAssertTrue(third.sleepTimerService === timer, "The window's last book has another timer than the window's")
         XCTAssertEqual(timer.ownerID, third.readerID, "The last book's reader does not own the timer")
         XCTAssertTrue(eventually(within: 15) { third.isCurrentlyPlaying }, "The last book never played")
     }
@@ -360,11 +374,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// last command went to, and it still plays: the first command's pause
     /// does not turn the second into an open.
     func testNextThenPreviousAsksOnce() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("NextThenPrevious")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let reader = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
         reader.isWhereAmIResumePending = true
 
@@ -387,13 +401,13 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// told the book could not be opened, and when the load ends the reader
     /// owns the timer and plays.
     func testAHeldTimerIsKeptWhileItsBooksReaderIsOpeningIt() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("DeadlineWhileOpening")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
-        let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
         XCTAssertTrue(timer.hold(
             forBook: folder.second.id, from: old.readerID, deadline: 0.2, isBookOpen: opening.bookIsOpenCheck
@@ -413,7 +427,10 @@ final class NextBookWindowReaderTests: XCTestCase {
 
         heldLoadQueue?.activate()
         waitForReaderToLoad(opening)
-        XCTAssertEqual(timer.ownerID, opening.readerID, "The reader that opened the book did not take the timer")
+        XCTAssertEqual(
+            opening.sleepTimerService.ownerID, opening.readerID, "The reader that opened the book did not take the timer"
+        )
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the book's window")
         XCTAssertTrue(eventually(within: 15) { opening.isCurrentlyPlaying }, "The book never played")
         XCTAssertFalse(recorder.announcements.contains { $0.message == SleepTimerHandOverWording.noBook })
     }
@@ -423,15 +440,17 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// request to play held as an opening download holds it, and the reader
     /// still takes the timer and plays.
     func testASlowLoadPastTheRequestLifetimeStillTakesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("SlowLoad")
         let clock = RequestClock()
         let requests = ReaderAutoplayRequests(now: { clock.now })
         let switcher = SwitchRecorder(requests: requests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
-        let slow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, autoplayRequests: requests)
+        let slow = makeLoadingReader(
+            for: folder.second, in: folder.world, switcher: switcher, autoplayRequests: requests, inOwnWindow: true
+        )
         _ = requests.request(for: folder.second.id, from: folder.first.id)
         requests.hold(for: folder.second.id)
         old.holdSleepTimer(forBook: folder.second.id)
@@ -443,8 +462,9 @@ final class NextBookWindowReaderTests: XCTestCase {
         heldLoadQueue?.activate()
         waitForReaderToLoad(slow)
 
-        XCTAssertEqual(timer.ownerID, slow.readerID, "The slow book did not take the timer")
-        XCTAssertTrue(timer.isActive)
+        XCTAssertEqual(slow.sleepTimerService.ownerID, slow.readerID, "The slow book did not take the timer")
+        XCTAssertTrue(slow.sleepTimerService.isActive)
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the slow book's window")
         XCTAssertTrue(eventually(within: 15) { slow.isCurrentlyPlaying }, "The slow book never played")
     }
 
@@ -452,7 +472,7 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// for the heading after its beginning, not for the end of the book: the
     /// heading looked for at its end found none.
     func testAnEndOfHeadingTimerTakenByAFinishedBookWaitsForTheHeadingAfterItsBeginning() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("FinishedHeading")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let finished = makeReader(for: folder.second, in: folder.world, switcher: switcher)
@@ -460,7 +480,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         finished.currentChapterIndex = place.chapterIndex
         finished.currentCharacterOffset = place.characterOffset
         finished.hasFinishedBook = true
-        SleepTimerService.shared.start(duration: .endOfHeading, ownerID: finished.readerID, onExpire: {})
+        finished.sleepTimerService.start(duration: .endOfHeading, ownerID: finished.readerID, onExpire: {})
         finished.refreshSleepTimerHeading()
         XCTAssertNil(finished.sleepTimerNextHeading, "a heading was found after the book's end")
 
@@ -478,11 +498,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// for the book the command went to, and the timer is held for that book
     /// and not for the one the end announced.
     func testACommandAfterTheEndOfABookCancelsTheHandOver() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("CommandAfterEnd")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let reader = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
 
         let recorder = recordingAnnouncements {
@@ -501,11 +521,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// A timer held for a book is never replaced by a hold the ask of another
     /// book makes: the later move's hold stands.
     func testTheAskOfAnEarlierBookDoesNotReplaceAHoldMadeForALaterOne() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("AskKeepsLaterHold")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
         XCTAssertTrue(timer.hold(forBook: folder.third.id, from: reader.readerID))
 
@@ -515,44 +535,60 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertFalse(timer.isHeld(forBook: folder.second.id))
     }
 
-    /// Restart Sleep Timer during a hold, from any reader, restarts the held
-    /// countdown at its full duration and keeps the hold and its owner: the
-    /// book the timer is held for takes it at that duration, and no reader is
-    /// given it back.
+    /// Restart Sleep Timer during a hold, from the old reader, whose window's
+    /// timer is held, restarts the held countdown at its full duration and
+    /// keeps the hold and its owner: the book the timer is held for takes it
+    /// at that duration, and no reader is given it back. A third book's reader,
+    /// in a window of its own, restarts its own window's timer, which it
+    /// starts at the duration last used, and leaves the held timer as it was.
     func testRestartSleepTimerDuringAHoldKeepsTheHoldAndTheOwner() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RestartHeld")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let other = makeReader(for: folder.third, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let other = makeReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         for _ in 0..<90 { timer._advanceCountdownForTesting() }
         XCTAssertEqual(timer.remainingSeconds, 30 * 60 - 90)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
 
-        // The gesture reaches a reader that is not the owner, then the owner.
+        // The gesture reaches a reader of a third book, in a window of its own:
+        // it acts on its own window's timer, which had none, and starts one of
+        // the duration last used. The timer held for the second book, in the
+        // old reader's window, is not its to restart.
         other.restartOrStartLastSleepTimer()
-        XCTAssertEqual(timer.remainingSeconds, 30 * 60, "The held countdown was not restarted")
+        let othersTimer = other.sleepTimerService
+        XCTAssertTrue(othersTimer.isActive, "The third window's restart started no timer of its own")
+        XCTAssertEqual(othersTimer.duration, .minutes(30), "The third window's timer is not of the duration last used")
+        XCTAssertEqual(othersTimer.ownerID, other.readerID)
+        XCTAssertEqual(timer.remainingSeconds, 30 * 60 - 90, "A third window's restart reached the held timer")
+
+        // Then the old reader, whose window's timer is the one held.
         old.restartOrStartLastSleepTimer()
+        XCTAssertEqual(timer.remainingSeconds, 30 * 60, "The held countdown was not restarted")
 
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The restart ended the hold")
         XCTAssertEqual(timer.ownerID, old.readerID, "The restart changed the owner")
-        XCTAssertFalse(other.isPlaybackUnderWay, "The restart resumed a reader")
+        XCTAssertFalse(old.isPlaybackUnderWay, "The restart resumed the reader that moved on")
         timer.markAsked(forBook: folder.second.id)
-        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        XCTAssertEqual(timer.ownerID, taker.readerID)
-        XCTAssertGreaterThan(timer.remainingSeconds, 30 * 60 - 60, "The book took a timer that was not restarted")
+        // The second book opens in a window of its own and takes the held timer there.
+        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let taken = taker.sleepTimerService
+        XCTAssertEqual(taken.ownerID, taker.readerID)
+        XCTAssertGreaterThan(taken.remainingSeconds, 30 * 60 - 60, "The book took a timer that was not restarted")
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the book's window")
+        XCTAssertTrue(othersTimer.isActive, "The take stopped the third window's timer")
     }
 
     /// A restart after a mid-book Next does not resume the book that moved on:
     /// it stays paused, and the timer's countdown is not resumed for it.
     func testRestartSleepTimerAfterANextDoesNotResumeTheBookThatMovedOn() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RestartAfterNext")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
@@ -571,11 +607,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// not closing it gives: the timer runs out, and the book it was held for
     /// does not start. The close does not stop the timer.
     func testClosingTheOldReaderDuringAHeldFadeLeavesTheFadeToRunOut() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("HeldFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(1), ownerID: old.readerID, onExpire: {}, fadeOutDuration: 5)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
@@ -585,12 +621,14 @@ final class NextBookWindowReaderTests: XCTestCase {
 
         old.close()
         XCTAssertTrue(timer.isFadingOut, "Closing the reader stopped a timer that was fading out")
-        let next = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let next = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         spinMainRunLoop(for: 1.0)
 
         XCTAssertFalse(next.isCurrentlyPlaying, "The book started after the timer began to fade out")
         XCTAssertFalse(folder.world.autoplayRequests.hasRequest(for: folder.second.id))
         XCTAssertNotEqual(timer.ownerID, next.readerID, "The book took a timer that was fading out")
+        XCTAssertNotEqual(next.sleepTimerService.ownerID, next.readerID, "The book's window took a timer that was fading out")
+        XCTAssertFalse(next.sleepTimerService.isActive, "The book's window runs a timer that was fading out")
     }
 
     /// A Pause reaching the old reader during a held fade leaves the fade to
@@ -598,12 +636,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// once, and the book it was held for does not start. The expiry's own pause
     /// stops the timer, with nothing left held.
     func testAPauseDuringAHeldFadeLeavesTheFadeToRunOut() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("PauseHeldFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 1)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 1)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
         timer._expireForTesting()
@@ -623,7 +661,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         )
         XCTAssertFalse(timer.isHolding, "The hold outlived the expiry")
         XCTAssertNil(timer.ownerID)
-        let next = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let next = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         spinMainRunLoop(for: 1.0)
         XCTAssertFalse(next.isCurrentlyPlaying, "The book started after the timer ran out")
     }
@@ -633,12 +671,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// leaves no hold, so its own pause ends the fade as any move's does. The
     /// book moved to starts, and the fade's end is said.
     func testANextDuringAHeldFadeWithAMovePendingEndsTheFadeAndStartsTheBook() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("NextDuringHeldFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 1)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 1)
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id))
@@ -668,11 +706,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// kept, no reader is resumed, and "Timer reset." is said. The book the
     /// timer is held for takes it, at that duration, and plays.
     func testRestartSleepTimerDuringAHeldFadeCancelsTheFadeAndTheNextBookTakesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RestartHeldFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         var fadesCancelled = 0
         let handlers = old.makeSleepTimerHandlers(fadeOutDuration: 5)
         timer.start(
@@ -704,10 +742,12 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(recorder.announcements.contains { $0.message == "Timer reset." })
 
         _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
-        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        XCTAssertEqual(timer.ownerID, taker.readerID, "The next book did not take the timer")
+        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let taken = taker.sleepTimerService
+        XCTAssertEqual(taken.ownerID, taker.readerID, "The next book did not take the timer")
         XCTAssertTrue(eventually(within: 15) { taker.isCurrentlyPlaying }, "The next book never played")
-        XCTAssertGreaterThan(timer.remainingSeconds, 60 - 10)
+        XCTAssertGreaterThan(taken.remainingSeconds, 60 - 10)
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the next book's window")
         XCTAssertFalse(old.isCurrentlyPlaying)
     }
 
@@ -715,11 +755,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// opened, delayed until the reason has been read, is not said over a timer
     /// the listener started meanwhile: that timer is running.
     func testTheDelayedCouldNotBeOpenedSentenceIsNotSaidOverATimerStartedMeanwhile() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("DelayedSentence")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
 
@@ -763,13 +803,13 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// stopped and the listener told. While the reader was open the deadline
     /// left the hold alone, and the reader's own close stopped it silently.
     func testAClosedReaderLeavesTheRegistryAndTheDeadlineActs() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RegistryDeadline")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
-        let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id))
         XCTAssertTrue(timer.hold(
             forBook: folder.second.id, from: old.readerID, deadline: 0.2, isBookOpen: opening.bookIsOpenCheck
@@ -796,14 +836,14 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// timer held for it, which the other reader takes; the last to close
     /// stops it.
     func testOneOfTwoReadersOfABookClosingLeavesTheHold() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("TwoReaders")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
-        let firstWindow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
-        let secondWindow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let firstWindow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let secondWindow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
 
@@ -823,12 +863,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// book moved to now starts and owns the timer, and the first, when it
     /// loads, neither plays nor takes the timer.
     func testALaterMoveBeforeTheFirstBookStartsCancelsItsStartAndTakesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("LastMoveWins")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
@@ -837,7 +877,7 @@ final class NextBookWindowReaderTests: XCTestCase {
             "The first move never asked for its book"
         )
         XCTAssertTrue(timer.isAsked(forBook: folder.third.id))
-        let first = makeLoadingReader(for: folder.third, in: folder.world, switcher: switcher)
+        let first = makeLoadingReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
 
         let recorder = recordingAnnouncements { old.goThroughFolder(.up) }
 
@@ -855,14 +895,16 @@ final class NextBookWindowReaderTests: XCTestCase {
             eventually { folder.world.autoplayRequests.hasRequest(for: folder.first.id) },
             "The second move never asked for its book"
         )
-        let second = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let second = makeReader(for: folder.first, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(eventually(within: 15) { second.isCurrentlyPlaying }, "The book moved to never played")
-        XCTAssertEqual(timer.ownerID, second.readerID, "The book moved to does not own the timer")
+        XCTAssertEqual(second.sleepTimerService.ownerID, second.readerID, "The book moved to does not own the timer")
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the book moved to")
 
         heldLoadQueue?.activate()
         waitForReaderToLoad(first)
         XCTAssertFalse(first.isCurrentlyPlaying, "The first book played after its start was cancelled")
-        XCTAssertEqual(timer.ownerID, second.readerID, "The first book took the timer")
+        XCTAssertEqual(second.sleepTimerService.ownerID, second.readerID, "The first book took the timer")
+        XCTAssertFalse(first.sleepTimerService.isActive, "The first book's window runs a timer it took")
     }
 
     /// The same, once the first book has claimed its request and plays and owns
@@ -870,26 +912,28 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// that is not playing. It only opens the book, and the first book keeps
     /// the timer.
     func testALaterMoveAfterTheFirstBookStartedOnlyOpensTheBookAndLeavesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("LastMoveAfterStart")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
         XCTAssertTrue(eventually { folder.world.autoplayRequests.hasRequest(for: folder.third.id) })
-        let first = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        let first = makeReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(eventually(within: 15) { first.isCurrentlyPlaying }, "The first book never played")
-        XCTAssertEqual(timer.ownerID, first.readerID)
+        XCTAssertEqual(first.sleepTimerService.ownerID, first.readerID)
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the first book's window")
 
         let recorder = recordingAnnouncements { old.goThroughFolder(.up) }
 
         XCTAssertTrue(recorder.announcements.contains { $0.message == "Opening: A Volume" })
         XCTAssertFalse(recorder.announcements.contains { $0.message.hasPrefix("Starting") })
-        XCTAssertEqual(timer.ownerID, first.readerID, "The old window's move took a timer a playing book owns")
-        XCTAssertFalse(timer.isHolding)
+        XCTAssertEqual(first.sleepTimerService.ownerID, first.readerID, "The old window's move took a timer a playing book owns")
+        XCTAssertFalse(first.sleepTimerService.isHolding)
+        XCTAssertFalse(timer.isHolding, "The old window's move held a timer")
         XCTAssertTrue(first.isCurrentlyPlaying)
     }
 
@@ -899,16 +943,16 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// timer, as the owner's move does. The book moved to starts, the sentence
     /// is said once, and no hold is left.
     func testAMoveFromALoadingTargetEndsTheFadeOfThePassedOnTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("PassedOnFade")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 5)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 5)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
         _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
-        let target = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let target = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         target.goThroughFolder(.down)
         XCTAssertTrue(timer.isHeld(forBook: folder.third.id), "The loading target did not pass the hold on")
         timer._expireForTesting()
@@ -935,12 +979,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// it), then played: the countdown, halted until then, runs from the full
     /// duration the restart gave it.
     func testARestartedHeldFadeRunsFromItsFullDurationWhenTheOpenedTakerPlays() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RestartThenPlay")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 5)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 5)
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
         timer._expireForTesting()
@@ -948,18 +992,21 @@ final class NextBookWindowReaderTests: XCTestCase {
         old.restartOrStartLastSleepTimer()
         XCTAssertEqual(timer.remainingSeconds, 60)
 
-        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        XCTAssertEqual(timer.ownerID, taker.readerID, "The opened book did not take the timer")
+        // The taker is in a window of its own: the timer moves to its window's.
+        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
+        let taken = taker.sleepTimerService
+        XCTAssertEqual(taken.ownerID, taker.readerID, "The opened book did not take the timer")
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the opened book's window")
         XCTAssertFalse(taker.isCurrentlyPlaying, "A book only opened played")
         spinMainRunLoop(for: 1.3)
-        XCTAssertEqual(timer.remainingSeconds, 60, "The countdown ran before the taker played")
+        XCTAssertEqual(taken.remainingSeconds, 60, "The countdown ran before the taker played")
 
         taker.play()
         XCTAssertTrue(eventually(within: 15) { taker.isCurrentlyPlaying }, "The taker never played")
         XCTAssertTrue(
-            eventually(within: 3) { timer.remainingSeconds < 60 }, "The countdown did not run once the taker played"
+            eventually(within: 3) { taken.remainingSeconds < 60 }, "The countdown did not run once the taker played"
         )
-        XCTAssertGreaterThanOrEqual(timer.remainingSeconds, 55)
+        XCTAssertGreaterThanOrEqual(taken.remainingSeconds, 55)
     }
 
     /// A move ends the fade of the reader's own timer wherever it is held: held
@@ -968,13 +1015,13 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// alone, so the move stops it itself: the timer ends, "Starting: C" and the
     /// fade sentence are said, C plays, and no hold is left (Y1).
     func testAMoveEndsTheFadeOfTheReadersOwnTimerHeldForAnotherBook() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("OwnFadeHeldElsewhere")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 5)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 5)
         // An earlier move only opened A Volume: held and asked, with no request.
         XCTAssertTrue(timer.hold(forBook: folder.first.id, from: old.readerID))
         timer.markAsked(forBook: folder.first.id)
@@ -994,9 +1041,10 @@ final class NextBookWindowReaderTests: XCTestCase {
             ]
         )
         XCTAssertTrue(eventually { folder.world.autoplayRequests.hasRequest(for: folder.third.id) })
-        let next = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        let next = makeReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(eventually(within: 15) { next.isCurrentlyPlaying }, "The book moved to never played")
-        XCTAssertFalse(timer.isActive, "The book moved to took a timer that was ended")
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on after it was ended")
+        XCTAssertFalse(next.sleepTimerService.isActive, "The book moved to took a timer that was ended")
     }
 
     /// A request made later for the book a move asked for, by another window's
@@ -1004,16 +1052,16 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// the first move is over, and a later move from the old window does not
     /// discard the new request or count itself as playing (Y2).
     func testARequestMadeLaterForTheSameBookDoesNotReviveAClaimedMove() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("ClaimedNotRevived")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        SleepTimerService.shared.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        old.sleepTimerService.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
         XCTAssertTrue(eventually { folder.world.autoplayRequests.hasRequest(for: folder.third.id) })
-        let claimed = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        let claimed = makeReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(eventually(within: 15) { claimed.isCurrentlyPlaying })
         claimed.close()
         // Another window's move makes a new request for the same book.
@@ -1034,18 +1082,18 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// fade and the timer, and says so, and the book first moved to neither
     /// plays nor takes anything when it loads (Y3).
     func testAnAskedHoldUndoneWhileItFadesEndsTheFadeWithTheMove() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("AskedHoldFades")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
-        startTimer(for: old, fade: 5)
+        let timer = old.sleepTimerService
+        startOneMinuteSleepTimer(for: old, fade: 5)
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
         XCTAssertTrue(eventually { folder.world.autoplayRequests.hasRequest(for: folder.third.id) })
         XCTAssertTrue(timer.isAsked(forBook: folder.third.id))
-        let loading = makeLoadingReader(for: folder.third, in: folder.world, switcher: switcher)
+        let loading = makeLoadingReader(for: folder.third, in: folder.world, switcher: switcher, inOwnWindow: true)
         timer._expireForTesting()
         XCTAssertTrue(timer.isFadingOut)
 
@@ -1070,12 +1118,12 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// opened is not playing, so nothing is cancelled; the timer's hold moves
     /// to the book the second move opens.
     func testASecondMoveAfterAnOpeningMoveMovesTheHold() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("OpeningThenOpening")
         folder.world.settings.nextBookWindow = .newWindow
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.second, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.goThroughFolder(.down)
         XCTAssertTrue(eventually { timer.isAsked(forBook: folder.third.id) }, "The first move never asked")
@@ -1093,11 +1141,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// reader is released or closed: a later move to that book, with no timer
     /// started since, plays it.
     func testTheRunOutMarkDoesNotOutliveTheMoveItWasMadeFor() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("MarkCleared")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(1), ownerID: old.readerID, onExpire: {})
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer._expireForTesting()
@@ -1107,7 +1155,7 @@ final class NextBookWindowReaderTests: XCTestCase {
 
         XCTAssertNil(timer.expiredWhileHeldBookID, "The mark outlived the release")
         _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
-        let later = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let later = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         XCTAssertTrue(eventually(within: 15) { later.isCurrentlyPlaying }, "A later move to the book did not play it")
     }
 
@@ -1115,16 +1163,16 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// cancels it returns the timer to how it was: held for the target again,
     /// asked as before, and the target takes it when its load ends.
     func testACancelledMoveFromALoadingTargetHoldsTheTimerForItAgain() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("PassedOnThenCancelled")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
         timer.markAsked(forBook: folder.second.id)
         _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
-        let target = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let target = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
 
         // The move announces itself, as `showNextBook`'s half second does.
         target.noteMoveAnnounced(to: folder.third.id)
@@ -1137,15 +1185,19 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertFalse(timer.isHeld(forBook: folder.third.id))
         heldLoadQueue?.activate()
         waitForReaderToLoad(target)
-        XCTAssertEqual(timer.ownerID, target.readerID, "The target did not take the timer when it loaded")
+        XCTAssertEqual(
+            target.sleepTimerService.ownerID, target.readerID, "The target did not take the timer when it loaded"
+        )
+        XCTAssertFalse(timer.isActive, "The old window's timer ran on beside the one carried to the target's window")
     }
 
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.
     func testAHeldTimerNobodyTakesIsStoppedAtTheDeadline() throws {
-        preserveSharedSleepTimer()
-        let timer = SleepTimerService.shared
+        preserveSleepTimers()
+        // A window's timer with no reader to show it.
+        let timer = SleepTimerService()
         let owner = UUID()
         let book = UUID()
         timer.start(duration: .minutes(30), ownerID: owner, onExpire: {})
@@ -1167,13 +1219,13 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// timer belongs to stops it, rather than left with a book that will never
     /// play, and the mark that it ran out for that book goes with it.
     func testClosingTheTargetsWindowBeforeItLoadsReleasesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("TargetCloses")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
-        let loading = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        let loading = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         old.holdSleepTimer(forBook: folder.second.id)
         XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The loading reader took the timer")
 
@@ -1190,11 +1242,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// The Library refuses to open the book a timer is held for: the timer is
     /// released with the book's other requests.
     func testARefusedOpenReleasesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("RefusedOpen")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.holdSleepTimer(forBook: folder.second.id)
 
@@ -1208,11 +1260,11 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// with an ID of its own: the timer held for the book asked for is
     /// released, not left for a reader that will never come.
     func testAPlaceholderForADeletedBookReleasesTheTimer() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let folder = try makeFolderWorld("DeletedBook")
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        let timer = SleepTimerService.shared
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         let deleted = UUID()
         XCTAssertTrue(timer.hold(forBook: deleted, from: old.readerID))
@@ -1231,7 +1283,8 @@ final class NextBookWindowReaderTests: XCTestCase {
                 autoplayRequests: ReaderAutoplayRequests(),
                 readingListRequests: ReadingListOpenRequests(),
                 windowSwitchRequests: WindowSwitchRequests(),
-                notificationCenter: folder.world.notifications
+                notificationCenter: folder.world.notifications,
+                sleepTimer: SleepTimerService()
             )
             // True at once, the sentence waits for the error view's reason.
             stoppedAtOnce = !timer.isActive
@@ -1280,7 +1333,8 @@ final class NextBookWindowReaderTests: XCTestCase {
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let asked = record(.continueToNextBook, in: folder.world)
         let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        _ = folder.world.openReader(for: folder.second)
+        // Open in a window of its own, with a timer of its own.
+        _ = folder.world.openReader(for: folder.second, sleepTimer: SleepTimerService())
         XCTAssertTrue(folder.world.library.openBookIDs.contains(folder.second.id))
 
         reader.handleEndOfBook()
@@ -1295,7 +1349,7 @@ final class NextBookWindowReaderTests: XCTestCase {
     func testAReaderWithNoSwitcherOpensANewWindow() throws {
         let folder = try makeFolderWorld("EndNoSwitcher")
         let asked = record(.continueToNextBook, in: folder.world)
-        let reader = folder.world.openReader(for: folder.first)
+        let reader = folder.world.openReader(for: folder.first, sleepTimer: SleepTimerService())
         waitForReaderToLoad(reader)
 
         reader.handleEndOfBook()
@@ -1416,7 +1470,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let opened = record(.openBookWindow, in: folder.world)
         let last = makeReader(for: folder.third, in: folder.world, switcher: switcher)
-        let first = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let first = makeReader(for: folder.first, in: folder.world, switcher: switcher, inOwnWindow: true)
 
         let down = recordingAnnouncements { last.goThroughFolder(.down) }
         let up = recordingAnnouncements { first.goThroughFolder(.up) }
@@ -1450,7 +1504,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         // Only a finished book lies below the second one.
         markFinished(folder.third, in: folder.world)
         setFolderOptions(nil, in: folder.world)
-        let middle = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let middle = makeReader(for: folder.second, in: folder.world, switcher: switcher, inOwnWindow: true)
         let said = recordingAnnouncements { middle.goThroughFolder(.down) }
         XCTAssertEqual(said.announcements.map(\.message), ["Every book after it in the folder is finished."])
     }
@@ -1667,7 +1721,8 @@ final class NextBookWindowReaderTests: XCTestCase {
             autoplayRequests: folder.world.autoplayRequests,
             windowSwitchRequests: claims,
             notificationCenter: folder.world.notifications,
-            loadQueue: held
+            loadQueue: held,
+            sleepTimer: SleepTimerService()
         )
         addTeardownBlock { reader.close() }
         var placed: [NSWindow] = []
@@ -1699,7 +1754,9 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
         XCTAssertFalse(claims.hasRequest(for: folder.second.id), "A new window left a claim")
 
-        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+        let new = makeReader(
+            for: folder.second, in: folder.world, switcher: switcher, windowSwitchRequests: claims, inOwnWindow: true
+        )
         var placed: [NSWindow] = []
         new.placeFocusAfterSwitch = { placed.append($0) }
         new.attach(to: makeWindow())
@@ -1729,8 +1786,8 @@ final class NextBookWindowReaderTests: XCTestCase {
     func testTheOldReadersCloseLeavesTheNewReadersMediaSessionAlone() throws {
         let folder = try makeFolderWorld("Teardown")
         let coordinator = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
-        let old = folder.world.openReader(for: folder.first, nowPlaying: coordinator)
-        let new = folder.world.openReader(for: folder.second, nowPlaying: coordinator)
+        let old = folder.world.openReader(for: folder.first, nowPlaying: coordinator, sleepTimer: SleepTimerService())
+        let new = folder.world.openReader(for: folder.second, nowPlaying: coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(old)
         waitForReaderToLoad(new)
         new.windowBecameKey()
@@ -1801,14 +1858,34 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(world.library.library.books[index].restsAtEnd, "\(book.title) does not rest at its end")
     }
 
+    /// The sleep timer of the window a reader made for `switcher` is in.
+    ///
+    /// Each reader window has a timer of its own (November 13, 2026), kept
+    /// above the books it shows. `switcher` stands for one window, so the
+    /// readers made with it, one after another as the window switches, share
+    /// its timer. A reader in a window of its own (a book opened from the
+    /// Library, a second window of a book, the next book in a new window, a
+    /// book open in another window) has a timer of its own.
+    ///
+    /// - Parameters:
+    ///   - switcher: The window the reader is in, unless it is in its own.
+    ///   - inOwnWindow: Whether the reader is in a window of its own.
+    private func windowTimer(for switcher: SwitchRecorder, inOwnWindow: Bool) -> SleepTimerService {
+        inOwnWindow ? SleepTimerService() : switcher.sleepTimer
+    }
+
     /// A reader for `book` in `folder`'s world, loaded, with `switcher` as
     /// its window and its window on screen. It is closed when the test ends.
+    /// It shares `switcher`'s window's sleep timer, as the next book of a
+    /// window that switched in place does, unless `inOwnWindow` puts it in a
+    /// window of its own, with a timer of its own.
     private func makeReader(
         for book: Book,
         in world: IntegrationWorld,
         switcher: SwitchRecorder,
         readingListRequests: ReadingListOpenRequests? = nil,
-        windowSwitchRequests: WindowSwitchRequests = WindowSwitchRequests()
+        windowSwitchRequests: WindowSwitchRequests = WindowSwitchRequests(),
+        inOwnWindow: Bool = false
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -1818,7 +1895,8 @@ final class NextBookWindowReaderTests: XCTestCase {
             autoplayRequests: world.autoplayRequests,
             readingListRequests: readingListRequests,
             windowSwitchRequests: windowSwitchRequests,
-            notificationCenter: world.notifications
+            notificationCenter: world.notifications,
+            sleepTimer: windowTimer(for: switcher, inOwnWindow: inOwnWindow)
         )
         reader.nextBookWindowSwitcher = { switcher.show($0) }
         reader.windowStandingOverride = .onScreen
@@ -1827,11 +1905,11 @@ final class NextBookWindowReaderTests: XCTestCase {
         return reader
     }
 
-    /// Starts the shared sleep timer for `reader` as the reader does, with its
-    /// handlers, counting 1 minute and fading out for `fade` seconds.
-    private func startTimer(for reader: ReaderViewModel, fade: TimeInterval) {
+    /// Starts `reader`'s window's sleep timer for `reader` as the reader does,
+    /// with its handlers, counting 1 minute and fading out for `fade` seconds.
+    private func startOneMinuteSleepTimer(for reader: ReaderViewModel, fade: TimeInterval) {
         let handlers = reader.makeSleepTimerHandlers(fadeOutDuration: fade)
-        SleepTimerService.shared.start(
+        reader.sleepTimerService.start(
             duration: .minutes(1),
             ownerID: reader.readerID,
             onExpire: handlers.onExpire,
@@ -1851,13 +1929,18 @@ final class NextBookWindowReaderTests: XCTestCase {
     /// timer. `switcher` is its window and its window is on screen. Its load
     /// is let go (`heldLoadQueue`), and it is closed, when the test ends.
     ///
-    /// - Parameter autoplayRequests: The requests it claims from, the world's
-    ///   unless a test gives it a store with a clock of its own.
+    /// - Parameters:
+    ///   - autoplayRequests: The requests it claims from, the world's unless a
+    ///     test gives it a store with a clock of its own.
+    ///   - inOwnWindow: Whether it is in a window of its own, with a sleep
+    ///     timer of its own, and not in `switcher`'s window sharing its timer
+    ///     (`windowTimer(for:inOwnWindow:)`).
     private func makeLoadingReader(
         for book: Book,
         in world: IntegrationWorld,
         switcher: SwitchRecorder,
-        autoplayRequests: ReaderAutoplayRequests? = nil
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        inOwnWindow: Bool = false
     ) -> ReaderViewModel {
         // Inactive until activated, which a second activation leaves alone, so
         // the load is let go however the test ends.
@@ -1872,7 +1955,8 @@ final class NextBookWindowReaderTests: XCTestCase {
             autoplayRequests: autoplayRequests ?? world.autoplayRequests,
             windowSwitchRequests: WindowSwitchRequests(),
             notificationCenter: world.notifications,
-            loadQueue: held
+            loadQueue: held,
+            sleepTimer: windowTimer(for: switcher, inOwnWindow: inOwnWindow)
         )
         reader.nextBookWindowSwitcher = { switcher.show($0) }
         reader.windowStandingOverride = .onScreen
@@ -1891,10 +1975,14 @@ final class NextBookWindowReaderTests: XCTestCase {
     }
 }
 
-/// A stand-in for the window's switch: records each book shown, and whether
-/// the requests for it were waiting at that moment.
+/// A stand-in for a reader window and its switch: records each book shown,
+/// and whether the requests for it were waiting at that moment. It holds the
+/// window's sleep timer, which every reader of the window shares, one after
+/// another as the window switches (November 13, 2026).
 @MainActor
 private final class SwitchRecorder {
+    /// The window's sleep timer, given to the readers made for this window.
+    let sleepTimer = SleepTimerService()
     /// The books shown, in order.
     private(set) var shown: [UUID] = []
     /// For each switch, whether the autoplay request for the book waited.

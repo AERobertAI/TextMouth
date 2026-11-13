@@ -760,13 +760,33 @@ final class NowPlayingService {
         receivedAt: Date
     ) -> Bool {
         guard gestureDetector.recordEvent(event, at: receivedAt) else { return false }
+        // The reader whose book the media commands reach as the gesture ends
+        // is the one whose timer it restarts (November 13, 2026: each reader
+        // window has a timer of its own), noted now, before another reader
+        // could play.
+        let owner = activeOwnerID
         // Posting on main keeps SwiftUI views and other main-bound
         // observers safe regardless of which queue the command center
         // dispatched the original handler on.
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .restartSleepTimer, object: nil)
+            NotificationCenter.default.post(
+                name: .restartSleepTimer,
+                object: nil,
+                userInfo: Self.restartGestureUserInfo(owner: owner)
+            )
         }
         return true
+    }
+
+    /// The key under which a Restart Sleep Timer the media gesture posts
+    /// names the reader that owned TextMouth's media controls as the gesture
+    /// ended (`activeOwnerID`): the reader whose window's timer it restarts.
+    nonisolated static let restartGestureOwnerKey = "restartGestureOwner"
+
+    /// What a Restart Sleep Timer the media gesture posts carries: the reader
+    /// that owns the media controls, or nothing while no reader does.
+    nonisolated static func restartGestureUserInfo(owner: UUID?) -> [String: Any]? {
+        owner.map { [restartGestureOwnerKey: $0] }
     }
 
     /// Update Bluetooth monitoring settings at runtime (from Miscellaneous prefs).

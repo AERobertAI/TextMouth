@@ -153,6 +153,7 @@
 		0E1A29F92E28EF1B3E53B2B3 /* TextutilDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47A3A805FE596CCC8861E67 /* TextutilDocumentReader.swift */; };
 		0E33EE22A6748742C1962908 /* PhoneSheetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AF98EAB780321CB9D2EF21 /* PhoneSheetButton.swift */; };
 		0E379D2E07C0A961F4C25565 /* RemovalWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725183EF3DA7A14663C47417 /* RemovalWording.swift */; };
+		0EAC5CAADE1D4D96351D8953 /* WindowSleepTimerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */; };
 		0EAC87B055D3645C1D6A7206 /* ReadingTextCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33D9589C839961150DA506BF /* ReadingTextCacheTests.swift */; };
 		0ED49F931CF52BDF717AB827 /* PlaceClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2257309869F015497FA2341 /* PlaceClock.swift */; };
 		0EF9C00780CA29E8BBEFA53B /* SleepTimerHandOverWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 168DE24CE2925DE1D87D5D52 /* SleepTimerHandOverWording.swift */; };
@@ -240,6 +241,7 @@
 		17F2763C601266B4C1ED0FA9 /* AudioEditRenderer+MP3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917CE421208BB6ED1AF64A9C /* AudioEditRenderer+MP3.swift */; };
 		1801467EF9587955C6209A3B /* CloudMaintenanceCacheBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A56A3FF118A8BDA0E6B9B5D /* CloudMaintenanceCacheBatchTests.swift */; };
 		180FE8D60C005AF3BF367277 /* EndBehaviorMatrixDAISYTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114125DA32FD830E5B1E0998 /* EndBehaviorMatrixDAISYTests.swift */; };
+		1824E69B93FDA40DFCF3C9C1 /* SleepTimerRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049691C0539B9CD19DF010CA /* SleepTimerRegistry.swift */; };
 		183A2EE93C5A7459909D7FBA /* CorpusReportFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C549B5FE2B71EE345E826975 /* CorpusReportFormatTests.swift */; };
 		18423EDBBD8A8F3070E28905 /* PortableXML.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E72869911E1C3024607909 /* PortableXML.swift */; };
 		185140C01557F55CB53651D7 /* DAISYAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A08D74C351B71DD984E214 /* DAISYAudioTests.swift */; };
@@ -2245,6 +2247,7 @@
 		EB5163DE4E7326E3CE2233D9 /* DataDirectoryCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3151A3FE0E28821BBF014CF /* DataDirectoryCopyTests.swift */; };
 		EB6DB4FC9EDAC7E467D76F74 /* RecordingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1C69C9713E5669A3247A48 /* RecordingTestSupport.swift */; };
 		EB99C32E349865CBBC90665E /* LibraryModelBenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 066EB762EA844DAE90B2957E /* LibraryModelBenchmarkTests.swift */; };
+		EBA53479A40EECF57F764369 /* SleepTimerRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049691C0539B9CD19DF010CA /* SleepTimerRegistry.swift */; };
 		EBB293C443E9D39EA175C954 /* TranscribedBooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F25CA63A45738F43F19341 /* TranscribedBooks.swift */; };
 		EBC20A9AD1EDE9E45D768352 /* AudioEditPlaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0BA15CAFA9D0FBB8101343 /* AudioEditPlaces.swift */; };
 		EBC7C891A90F4926B7703D0C /* MetadataEditorBaselineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D563A5995F072C33C006EA2 /* MetadataEditorBaselineTests.swift */; };
@@ -2592,6 +2595,7 @@
 		03C68F1AF671435E173B1BBC /* PlaylistImportWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistImportWording.swift; sourceTree = "<group>"; };
 		041F4C0852AF0AC0888BAA03 /* TextFileDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFileDecoder.swift; sourceTree = "<group>"; };
 		047394C6E514ADEF39C7A7B4 /* TextutilHTMLStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilHTMLStructure.swift; sourceTree = "<group>"; };
+		049691C0539B9CD19DF010CA /* SleepTimerRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerRegistry.swift; sourceTree = "<group>"; };
 		04AE513A59A7BF9107B5E1A6 /* AudioEditorWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWording.swift; sourceTree = "<group>"; };
 		04B569C8B164C39F2683207F /* TextutilSourceCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilSourceCheckTests.swift; sourceTree = "<group>"; };
 		050A9912D3B83783C358308B /* FeedDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDownloadManager.swift; sourceTree = "<group>"; };
@@ -4197,6 +4201,7 @@
 		F21240DBDB9081FF3B899D53 /* EPUBMetadataSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBMetadataSave.swift; sourceTree = "<group>"; };
 		F2287B331AF48028437C93E9 /* NextBookWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextBookWindow.swift; sourceTree = "<group>"; };
 		F22A2D8D42A5F6AC10001ACD /* TranscriptCleanupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupRules.swift; sourceTree = "<group>"; };
+		F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSleepTimerTests.swift; sourceTree = "<group>"; };
 		F2580130FEEDAA657E518D59 /* BrailleHelperProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleHelperProtocolTests.swift; sourceTree = "<group>"; };
 		F25DB42330A6A9F723CED84F /* PhoneAudioWordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAudioWordingTests.swift; sourceTree = "<group>"; };
 		F26395ADCD8B217C5D612A70 /* PlaceClockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceClockTests.swift; sourceTree = "<group>"; };
@@ -4558,6 +4563,7 @@
 				7C33126D3CB872265E468B2A /* RepeatedSymbolRule.swift */,
 				C221A7F9E32DD87EF06B77F1 /* SavedFile.swift */,
 				0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */,
+				049691C0539B9CD19DF010CA /* SleepTimerRegistry.swift */,
 				DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */,
 				12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */,
 				3013F222A6D51AD37D917C0E /* SpeechMarkupGuard.swift */,
@@ -6239,6 +6245,7 @@
 				1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */,
 				B0557EA7BE31086021AE6596 /* WindowFocusPolicyTests.swift */,
 				CB19D8C0D50DF1A16B10F3CB /* WindowScopeShortcutTests.swift */,
+				F2335145B3B4133C082FB14F /* WindowSleepTimerTests.swift */,
 				DB75E9674BA50E5983754569 /* WindowsMatrixTests.swift */,
 				60A753C33CB56BFE06A48F63 /* WordDocumentComparisonTests.swift */,
 				C7A6201412770CD67DA7B8EA /* WordDocumentHostileTests.swift */,
@@ -7688,6 +7695,7 @@
 				589CB6E5B84964FDB3CD0F0C /* WhereAmIPolicyTests.swift in Sources */,
 				C405EB54DBD289ABB124D4AD /* WindowFocusPolicyTests.swift in Sources */,
 				28A8D7812D05D171DBD83F50 /* WindowScopeShortcutTests.swift in Sources */,
+				0EAC5CAADE1D4D96351D8953 /* WindowSleepTimerTests.swift in Sources */,
 				9F30CDE24C418B579ADB9D42 /* WindowsMatrixTests.swift in Sources */,
 				BED855B2A28F66CD2360D6C0 /* WordDocumentComparisonTests.swift in Sources */,
 				D4272BAE375549CA12A8C2E9 /* WordDocumentHostileTests.swift in Sources */,
@@ -8362,6 +8370,7 @@
 				FB34D9868505A6ABBD0171E1 /* ShortcutPressDispatcher.swift in Sources */,
 				3D2C044AF83B930885BEFC33 /* SilentKeyEquivalent.swift in Sources */,
 				0EF9C00780CA29E8BBEFA53B /* SleepTimerHandOverWording.swift in Sources */,
+				1824E69B93FDA40DFCF3C9C1 /* SleepTimerRegistry.swift in Sources */,
 				E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */,
 				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
 				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
@@ -9214,6 +9223,7 @@
 				8F471AAA3EF3B59EA7F5130C /* ShortcutPressDispatcher.swift in Sources */,
 				AB912646BC03364824D94A72 /* SilentKeyEquivalent+iOS.swift in Sources */,
 				DC1DB22B2514B7284B464B25 /* SleepTimerHandOverWording.swift in Sources */,
+				EBA53479A40EECF57F764369 /* SleepTimerRegistry.swift in Sources */,
 				1E7B33BA116954D713AE2C82 /* SleepTimerService.swift in Sources */,
 				44F05FEEEB5591CAC6D012A8 /* SleepTimerView.swift in Sources */,
 				661191DE2028529C2C65B4E1 /* SoundEffectService.swift in Sources */,

@@ -1043,13 +1043,12 @@ final class ReadingListReaderTests: XCTestCase {
     /// Another reader's timer does not stop the list. A timer counting minutes
     /// goes on with the next book instead (0.2.5).
     func testTheSleepTimerKeepsItsRulesForABookReadFromTheList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListSleepTimer")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)
         let second = try makeAudioBook("Second Crossing", in: world)
         let asked = record(.continueToNextBook, in: world)
-        let timer = SleepTimerService.shared
         // Each case ends a book, which counts it finished; no book counts
         // as finished here, so the list always offers the book beside.
         world.library.finishedBookIDs = { [] }
@@ -1064,6 +1063,8 @@ final class ReadingListReaderTests: XCTestCase {
         for testCase in cases {
             list([first, second], in: world, continuation: testCase.continuation)
             let reader = makeReaderFromList(for: testCase.reading, in: world, requests: requests)
+            // Each case's reader is in a window of its own, with its own timer.
+            let timer = reader.sleepTimerService
             timer.start(duration: testCase.duration, ownerID: reader.readerID, onExpire: {})
 
             let recorder = recordingAnnouncements {
@@ -1083,6 +1084,9 @@ final class ReadingListReaderTests: XCTestCase {
         // Another reader's timer pauses only that reader: the list goes on.
         list([first, second], in: world)
         let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        // The reader's window's timer, owned by a reader that is not this one
+        // (as the old reader of a window that switched books in place is).
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: UUID(), onExpire: {})
         let recorder = recordingAnnouncements {
             reader.handleEndOfBook()
@@ -1097,7 +1101,7 @@ final class ReadingListReaderTests: XCTestCase {
     /// reading list (0.2.5): the next book starts, "Starting: <title>", and the
     /// reader of that book owns the timer, still running.
     func testAMinutesTimerGoesOnWithTheNextBookInTheReadingList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListTimerGoesOn")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)
@@ -1105,9 +1109,11 @@ final class ReadingListReaderTests: XCTestCase {
         list([first, second], in: world)
         world.library.finishedBookIDs = { [] }
         let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        // The next book's reader is in a window of its own (`makeReader`).
         let next = makeReader(for: second, in: world, requests: requests)
         waitForReaderToLoad(next)
-        let timer = SleepTimerService.shared
+        // The timer starts in the old reader's window.
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
         let before = timer.remainingSeconds
         let asked = record(.continueToNextBook, in: world)
@@ -1119,10 +1125,14 @@ final class ReadingListReaderTests: XCTestCase {
         }
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
-        XCTAssertTrue(timer.isActive, "The timer ended with the book")
-        XCTAssertEqual(timer.ownerID, next.readerID)
-        XCTAssertLessThanOrEqual(timer.remainingSeconds, before)
-        XCTAssertGreaterThan(timer.remainingSeconds, before - 60)
+        // The next book's reader took the timer into its own window: the
+        // timer in effect is now that window's, and the old window's stopped.
+        let carried = next.sleepTimerService
+        XCTAssertTrue(carried.isActive, "The timer ended with the book")
+        XCTAssertEqual(carried.ownerID, next.readerID)
+        XCTAssertLessThanOrEqual(carried.remainingSeconds, before)
+        XCTAssertGreaterThan(carried.remainingSeconds, before - 60)
+        XCTAssertFalse(timer.isActive, "The old window's timer went on beside the carried one")
     }
 
     /// A book taken off the list while it is read ends as its own
@@ -1518,7 +1528,7 @@ final class ReadingListReaderTests: XCTestCase {
     /// timer is asked for by the book's reader, still this reader's until that
     /// reader takes it.
     func testTheSleepTimerGoesOnWithNextInReadingList() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("ReadingListNextSleepTimer")
         let requests = ReadingListOpenRequests()
         let first = try makeAudioBook("First Crossing", in: world)
@@ -1527,7 +1537,7 @@ final class ReadingListReaderTests: XCTestCase {
         let reader = makeReaderFromList(for: first, in: world, requests: requests)
         reader.play()
         XCTAssertTrue(eventually(within: Self.playbackStartTimeout) { reader.audioPlaybackService.isPlaying }, "The book did not play")
-        let timer = SleepTimerService.shared
+        let timer = reader.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
         let asked = record(.continueToNextBook, in: world)
         let opened = record(.openBookWindow, in: world)
@@ -1670,8 +1680,8 @@ final class ReadingListReaderTests: XCTestCase {
 
     /// A reader for `book` in `world`, which starts loading at once, and
     /// claims what `requests` holds for its book, as a reader window's
-    /// model does. It is closed when the test ends, before the world is
-    /// taken apart.
+    /// model does, in a window of its own with a sleep timer of its own. It is
+    /// closed when the test ends, before the world is taken apart.
     private func makeReader(
         for book: Book,
         in world: IntegrationWorld,
@@ -1684,7 +1694,9 @@ final class ReadingListReaderTests: XCTestCase {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: world.autoplayRequests,
             readingListRequests: requests,
-            notificationCenter: world.notifications
+            notificationCenter: world.notifications,
+            // A window of its own, with a sleep timer of its own.
+            sleepTimer: SleepTimerService()
         )
         addTeardownBlock { reader.close() }
         return reader

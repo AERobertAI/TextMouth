@@ -323,7 +323,8 @@ final class EndBehaviorMatrixTests: XCTestCase {
             reader.startSleepTimer(duration: .minutes(60))
         case .minutesExpired:
             reader.startSleepTimer(duration: .minutes(1))
-            SleepTimerService.shared._expireForTesting()
+            // The reader's window's timer is the one that runs out.
+            reader.sleepTimerService._expireForTesting()
         }
     }
 
@@ -335,7 +336,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     /// its end or waits at its beginning, whether the next book is asked
     /// for, and whether the timer is still in effect.
     func testTextBookEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for cell in Self.textCells {
             try withSpeechReader(
                 "Matrix Text \(cell.behavior) \(cell.timer)", endOfBook: cell.behavior, chapters: headedChapters()
@@ -370,7 +371,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
                         chapter: reader.currentChapterIndex,
                         nextAsked: nextAsked,
                         nextRequested: speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id),
-                        timerInEffect: SleepTimerService.shared.isActive
+                        timerInEffect: reader.sleepTimerService.isActive
                     ),
                     is: cell, title: speech.book.title, next: speech.nextBook.title, lastChapter: 2, content: "text"
                 )
@@ -386,7 +387,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     /// end, so it plays out in real time, silently, and a loop plays on for
     /// long after.
     func testSingleFileAudioEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let seconds: TimeInterval = 10
         for cell in Self.singleFileAudioCells {
             let world = try makeIntegrationWorld("Matrix Audio \(cell.behavior) \(cell.timer)")

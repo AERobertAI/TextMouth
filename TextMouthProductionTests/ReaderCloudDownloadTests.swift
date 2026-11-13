@@ -388,7 +388,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// when the book has downloaded and loaded it neither plays nor takes the
     /// timer (the last move wins until its book has started).
     func testALaterMoveBeforeACloudTargetHasDownloadedCancelsItsStart() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cloud = try makeCloudReaders("Cloud Last Move")
         let world = cloud.world
         // In folder order: A Volume, the old reader's B Volume, the cloud C Volume.
@@ -402,7 +402,8 @@ final class ReaderCloudDownloadTests: XCTestCase {
         cloud.storage.scriptDownload(of: target.id, steps: [Self.halfway], holdsOpen: true)
         let old = cloud.open(current)
         waitForReaderToLoad(old)
-        let timer = SleepTimerService.shared
+        // The old reader's window's timer, held for the next book by the move.
+        let timer = old.sleepTimerService
         timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
         old.isWhereAmIResumePending = true
         old.goThroughFolder(.down)
@@ -417,7 +418,10 @@ final class ReaderCloudDownloadTests: XCTestCase {
         cloud.storage.finishHeldDownload(of: target.id)
         waitForReaderToLoad(downloading)
         XCTAssertFalse(downloading.audioPlaybackService.isPlaying, "The cancelled book played")
-        XCTAssertNotEqual(timer.ownerID, downloading.readerID, "The cancelled book took the timer")
+        // The cancelled book's reader is in a window of its own: had it taken
+        // the timer, that window's timer would be the one in effect.
+        XCTAssertNotEqual(downloading.sleepTimerService.ownerID, downloading.readerID, "The cancelled book took the timer")
+        XCTAssertFalse(downloading.sleepTimerService.isActive, "The cancelled book's window has a timer in effect")
     }
 
     /// A download that is cancelled, or fails, drops the request to start
@@ -869,7 +873,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// The sleep timer running out while a chapter's files download pauses
     /// the reader for good: the download's end plays nothing.
     func testSleepTimerRunningOutDuringAChaptersDownloadLeavesTheReaderPaused() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let cloud = try makeCloudReaders("Cloud Chapter Sleep Timer", clone: Self.failingClone)
         // No fade, so the timer pauses the reader as it runs out.
         cloud.world.settings.sleepFadeOutDuration = 0
@@ -877,7 +881,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.startSleepTimer(duration: .minutes(5))
         let mark = announcementMark()
 
-        SleepTimerService.shared._expireForTesting()
+        reader.sleepTimerService._expireForTesting()
 
         XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
         XCTAssertNil(reader.cloudPhase)
@@ -1889,10 +1893,15 @@ private final class CloudReaders {
     /// claiming its autoplay requests from `autoplayRequests`, or from the
     /// world's when nil, and reading the book on `loadQueue`, which a test
     /// can hold (a global queue when nil, as in the app).
+    ///
+    /// The reader is in a window of its own, as a book opened from the
+    /// Library is: it gets `sleepTimer`, or a sleep timer of its own when nil,
+    /// so no two readers opened here share one.
     func open(
         _ book: Book,
         autoplayRequests: ReaderAutoplayRequests? = nil,
-        loadQueue: DispatchQueue? = nil
+        loadQueue: DispatchQueue? = nil,
+        sleepTimer: SleepTimerService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -1909,7 +1918,8 @@ private final class CloudReaders {
                 quietAnnouncementInterval: quietAnnouncementInterval
             ),
             nowPlaying: nowPlaying,
-            loadQueue: loadQueue
+            loadQueue: loadQueue,
+            sleepTimer: sleepTimer ?? SleepTimerService()
         )
         readers.append(reader)
         return reader

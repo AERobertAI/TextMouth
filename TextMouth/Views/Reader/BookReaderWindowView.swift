@@ -1,5 +1,60 @@
 import SwiftUI
 
+/// Holds a reader window's sleep timer for the window's content, without
+/// observing it: it publishes nothing. A `@StateObject` timer would subscribe
+/// `ReaderWindowContent` to every change of the timer, and so run its body, and
+/// `BookReaderWindowView.init` below it (a linear look-up of the book among
+/// the library's), once a second in every window with a counting timer. The
+/// sleep timer's sheet observes the timer itself, and the reader's status
+/// shows it as the reader publishes, as it did before each window had one.
+@MainActor
+final class WindowSleepTimerHolder: ObservableObject {
+    /// The window's sleep timer.
+    let timer = SleepTimerService()
+}
+
+/// A reader window's content, above the book it shows (November 13, 2026):
+/// the window's own sleep timer lives here, made once for the window, and
+/// each book the window shows is a `BookReaderWindowView` below it, with an
+/// identity of its own (`.id`). So when listening goes on to another book in
+/// this window (0.2.5), SwiftUI makes a new view and reader for the book, and
+/// the window keeps its timer, which the new reader takes over
+/// (`ReaderViewModel.claimSleepTimerHandOver()`). The user, November 13: "I
+/// want each sleep timer to be refactored to be per book view window not
+/// global".
+struct ReaderWindowContent: View {
+    /// The book the window shows, which the scene keeps: a switch to the
+    /// next book in place sets it.
+    @Binding var bookID: UUID?
+    let libraryViewModel: LibraryViewModel
+    let settingsViewModel: SettingsViewModel
+    /// The window's sleep timer, made once for the window and kept for as
+    /// long as SwiftUI keeps the window, in a holder that publishes nothing
+    /// (`WindowSleepTimerHolder`), so a tick of the timer does not run this
+    /// body.
+    @StateObject private var sleepTimerHolder = WindowSleepTimerHolder()
+
+    var body: some View {
+        let _ = ViewBodyCounter.record("ReaderWindowContent")
+        if let shownBookID = bookID {
+            BookReaderWindowView(
+                bookID: shownBookID,
+                libraryViewModel: libraryViewModel,
+                settingsViewModel: settingsViewModel,
+                sleepTimer: sleepTimerHolder.timer,
+                // Listening goes on to another book in this window (0.2.5):
+                // the window's book changes, and `.id` below makes a new view,
+                // with a new reader, of it.
+                showBook: { nextBookID in $bookID.wrappedValue = nextBookID }
+            )
+            // Without an identity of its own for each book, SwiftUI would
+            // keep the old view and its reader, and the window would go on
+            // showing the old book.
+            .id(shownBookID)
+        }
+    }
+}
+
 /// Root view for a book reader window. Creates and manages a ReaderViewModel for the book.
 struct BookReaderWindowView: View {
     /// The identifier of the reader window scene. Each of its windows
@@ -15,10 +70,19 @@ struct BookReaderWindowView: View {
     /// its own, to open a book's reader while no Library window is open.
     @Environment(\.openWindow) private var openWindow
 
+    /// A view of the book `bookID` in a reader window.
+    ///
+    /// - Parameters:
+    ///   - sleepTimer: The window's sleep timer, which the window's content
+    ///     keeps above each book it shows (`ReaderWindowContent`); nil, for a
+    ///     view with no window content around it, gives the reader the
+    ///     default (`ReaderViewModel.init(sleepTimer:)`).
+    ///   - showBook: Sets the window's book (`makeReader`).
     init(
         bookID: UUID,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
+        sleepTimer: SleepTimerService? = nil,
         showBook: ((UUID) -> Void)? = nil
     ) {
         self.bookID = bookID
@@ -34,14 +98,16 @@ struct BookReaderWindowView: View {
             libraryViewModel: libraryViewModel,
             settingsViewModel: settingsViewModel,
             showBook: showBook,
-            requestedBookID: bookID
+            requestedBookID: bookID,
+            sleepTimer: sleepTimer
         ))
     }
 
-    /// The reader of `book`, given the means to show another book in this
-    /// window when listening goes on to it (0.2.5): `showBook` changes the
-    /// book the window's scene presents, which makes a new view, and a new
-    /// reader, in the same window (`TextMouthApp`).
+    /// The reader of `book`, given its window's sleep timer and the means to
+    /// show another book in this window when listening goes on to it
+    /// (0.2.5): `showBook` changes the book the window's scene presents,
+    /// which makes a new view, and a new reader, in the same window
+    /// (`ReaderWindowContent`), which keeps the window's timer.
     ///
     /// - Parameters:
     ///   - requestedBookID: The book the window was asked for, which the reader
@@ -51,6 +117,8 @@ struct BookReaderWindowView: View {
     ///   - showBook: Sets the window's book; nil, for a view with no
     ///   scene to set it in, leaves the reader unable to switch, and it then
     ///   opens a new window as before.
+    ///   - sleepTimer: The sleep timer of the reader's window; nil gives the
+    ///     reader the default (`ReaderViewModel.init(sleepTimer:)`).
     static func makeReader(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -60,7 +128,8 @@ struct BookReaderWindowView: View {
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
         windowSwitchRequests: WindowSwitchRequests? = nil,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        sleepTimer: SleepTimerService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -69,7 +138,8 @@ struct BookReaderWindowView: View {
             autoplayRequests: autoplayRequests,
             readingListRequests: readingListRequests,
             windowSwitchRequests: windowSwitchRequests,
-            notificationCenter: notificationCenter
+            notificationCenter: notificationCenter,
+            sleepTimer: sleepTimer
         )
         reader.nextBookWindowSwitcher = showBook
         // A book deleted since the window was asked for is a placeholder with

@@ -193,12 +193,12 @@ final class ReaderRequestStore<Request: ReaderRequest> {
 enum ReaderOpenRefusal {
     /// Drops the autoplay request and the reading list's request waiting
     /// for the book `action` opens (`GlobalAction.bookToOpen`), and releases
-    /// a sleep timer held for it (0.2.5): the book will not open, so the
-    /// timer would count toward pausing nothing. Search Library's request
-    /// to move to a match in the book goes too, so opening the book some
-    /// other way within the request's lifetime never jumps to an old match
-    /// (the review of Search Library, November 13, finding 9). An action
-    /// that opens no book drops nothing.
+    /// a sleep timer held for it (0.2.5), in whichever window it is held: the
+    /// book will not open, so the timer would count toward pausing nothing.
+    /// Search Library's request to move to a match in the book goes too, so
+    /// opening the book some other way within the request's lifetime never
+    /// jumps to an old match (the review of Search Library, November 13,
+    /// finding 9). An action that opens no book drops nothing.
     ///
     /// - Parameters:
     ///   - action: The app-wide action refused.
@@ -206,8 +206,8 @@ enum ReaderOpenRefusal {
     ///     its own.
     ///   - readingList: The reading list's requests: the app's, unless a
     ///     test gives its own.
-    ///   - sleepTimer: The sleep timer service: the app's, unless a test gives
-    ///     its own.
+    ///   - sleepTimers: The registry of every window's sleep timer: the
+    ///     app's, unless a test gives its own.
     ///   - librarySearch: Search Library's requests to move to a match: the
     ///     app's, unless a test gives its own.
     @MainActor
@@ -215,13 +215,13 @@ enum ReaderOpenRefusal {
         for action: GlobalAction,
         autoplay: ReaderAutoplayRequests = .shared,
         readingList: ReadingListOpenRequests = .shared,
-        sleepTimer: SleepTimerService = .shared,
+        sleepTimers: SleepTimerRegistry = .shared,
         librarySearch: LibrarySearchJumpRequests = .shared
     ) {
         guard let bookID = action.bookToOpen else { return }
         autoplay.discard(for: bookID)
         readingList.discard(for: bookID)
         librarySearch.discard(for: bookID)
-        sleepTimer.releaseHeld(forBook: bookID, reason: "the Library refused the open")
+        sleepTimers.releaseHeld(forBook: bookID, reason: "the Library refused the open")
     }
 }

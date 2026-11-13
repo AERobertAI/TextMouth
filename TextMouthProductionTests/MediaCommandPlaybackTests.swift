@@ -121,13 +121,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// pause found the book paused already, and the announcement's end
     /// resumed it at full volume with no timer left to stop it.
     func testASleepTimerRunningOutDuringWhereAmILeavesTheBookPaused() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             let system = MediaSystem()
             let world = try makeIntegrationWorld("Where Am I Timer \(kind)")
             world.settings.sleepFadeOutDuration = 0
             let book = try openPlayingBook(kind, in: world, joining: system)
+            let timer = book.reader.sleepTimerService
             book.reader.startSleepTimer(duration: .minutes(15))
             let announcement = try pressWhereAmI(in: book)
 
@@ -510,13 +510,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// nothing, and the book resumed at full volume with no timer left to
     /// stop it (REV11).
     func testASleepTimerRunningOutAsWhereAmIEndsLeavesTheBookPaused() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             let system = MediaSystem()
             let world = try makeIntegrationWorld("Where Am I Ends Timer \(kind)")
             world.settings.sleepFadeOutDuration = 0
             let book = try openPlayingBook(kind, in: world, joining: system)
+            let timer = book.reader.sleepTimerService
             book.reader.startSleepTimer(duration: .minutes(15))
             finishWhereAmIByItself(book, try pressWhereAmI(in: book))
 
@@ -952,14 +952,14 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// which ended the announcement and left the book paused (REV12's
     /// leftovers).
     func testASleepTimerSetDuringWhereAmIPlaysTheBookAsItEnds() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for kind in BookKind.allCases {
             for pausedBefore in [false, true] {
                 let context = "\(kind), \(pausedBefore ? "paused before" : "playing")"
                 let system = MediaSystem()
                 let world = try makeIntegrationWorld("Where Am I Sleep Timer \(kind) \(pausedBefore)")
                 let book = try openPlayingBook(kind, in: world, joining: system)
+                let timer = book.reader.sleepTimerService
                 if pausedBefore {
                     XCTAssertEqual(system.press(.pause), .success, context)
                 }
@@ -988,12 +988,12 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// speech; Play from the AirPods then resumes it where the fade began,
     /// at full volume, and the system is told it plays again.
     func testPlayAfterTheSleepTimerFadesOutResumesAtFullVolume() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Sleep Timer")
         world.settings.sleepFadeOutDuration = 2
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let timer = quay.reader.sleepTimerService
 
         quay.reader.play()
         reportWordSpoken(by: quay)
@@ -1014,12 +1014,12 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// AirPods moves the place back while speech stays paused, and Play then
     /// speaks from there at full volume.
     func testPreviousTrackAfterTheSleepTimerMovesBackAndPlayStartsThere() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Timer Skip")
         world.settings.sleepFadeOutDuration = 2
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let timer = quay.reader.sleepTimerService
         let speech = quay.reader.speechService
 
         quay.reader.play()
@@ -1060,11 +1060,11 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// the heading move speech and keep the timer, also once the reader has
     /// checked, at its usual pace, whether playback left the heading.
     func testTrackCommandsSkipWithinTheHeadingOfAnEndOfHeadingTimer() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Heading Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let timer = quay.reader.sleepTimerService
 
         quay.reader.play()
         reportWordSpoken(by: quay)
@@ -1171,7 +1171,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(finished)
 
         // The first book plays to its end and continues to the next one,
@@ -1184,7 +1184,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
         }
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: nextBook.id), "The next book was not asked for")
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         let audio = next.audioPlaybackService
         XCTAssertTrue(audio.isPlaying && !audio.isPaused, "Continue to Next Book did not start the next book")
@@ -1223,7 +1223,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(finished)
         let audio = finished.audioPlaybackService
 
@@ -1258,7 +1258,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             eventually { world.autoplayRequests.hasRequest(for: nextBook.id) },
             "The next book was never asked for"
         )
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         let nextAudio = next.audioPlaybackService
         XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
@@ -1296,7 +1296,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(finished)
 
         // The first book plays, and ends with the hand-over.
@@ -1315,7 +1315,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             eventually { world.autoplayRequests.hasRequest(for: nextBook.id) },
             "The next book was never asked for"
         )
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         let nextAudio = next.audioPlaybackService
         XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
@@ -1354,7 +1354,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             title: "First Crossing", trackDurations: [30], endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(finished)
         var asked = 0
         let watching = world.notifications.publisher(for: .continueToNextBook).sink { _ in asked += 1 }
@@ -1381,7 +1381,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertFalse(finished.isCurrentlyPlaying, "\(label): the finished book shows Playing")
 
         // The next book's window opens for the request and starts it.
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         let nextAudio = next.audioPlaybackService
         XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "\(label): the next book did not start")
@@ -1430,7 +1430,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator)
+        let finished = world.openReader(for: finishedBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(finished)
         var asked = 0
         let watching = world.notifications.publisher(for: .continueToNextBook).sink { _ in asked += 1 }
@@ -1461,7 +1461,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: nextBook.id), "\(label): the next book's request is gone")
 
         // The next book's window opens for the request and starts it.
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         XCTAssertTrue(next.audioPlaybackService.isPlaying, "\(label): the next book did not start")
         assertToldSystem(system, that: next, plays: true, "\(label): the next book's start")
@@ -1639,12 +1639,13 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// told it is paused, and Play from the AirPods resumes it where the
     /// fade began, at full volume, while the book in front stays silent.
     func testABookWhoseSleepTimerRunsOutBehindAnotherWindowIsShownPausedAndPlayResumesIt() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Timer Behind")
         world.settings.sleepFadeOutDuration = 2
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        // Quay's window's timer; Slipway's window has a timer of its own.
+        let timer = quay.reader.sleepTimerService
         let slipway = openTextBook(titled: "Slipway Ledger", in: world, joining: system)
 
         quay.reader.play()
@@ -1806,11 +1807,11 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// refusal stopped speech, as it halts at a pause, so it cannot run out
     /// while nothing plays; Play resumes it.
     func testARefusedTextHaltsTheSleepTimersCountdownUntilPlay() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Refusal Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let timer = quay.reader.sleepTimerService
 
         quay.reader.play()
         quay.reader.startSleepTimer(duration: .minutes(15))
@@ -1835,11 +1836,11 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// (`ReaderViewModel.finishStopping`); before, only a pause did, and a
     /// stop left the countdown running on, or running out, over silence.
     func testReleasingMediaControlsHaltsTheSleepTimersCountdownUntilPlay() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Release Timer")
         let quay = openTextBook(titled: "Quay Ledger", in: world, joining: system)
+        let timer = quay.reader.sleepTimerService
 
         quay.reader.play()
         reportWordSpoken(by: quay)
@@ -2138,7 +2139,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
 
         // Another book's window opens, becomes key, and plays its book.
         let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
-        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(other)
         other.windowBecameKey()
         other.play()
@@ -2201,7 +2202,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
 
         // Another book's window opens, becomes key, and plays its book.
         let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
-        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(other)
         other.windowBecameKey()
         other.play()
@@ -2240,7 +2241,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         // Another book's window opens, becomes key, and plays its book, then
         // pauses it.
         let otherBook = try world.makeSilentAudioBook(title: "Harbour Timetable", trackDurations: [30])
-        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator)
+        let other = world.openReader(for: otherBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(other)
         other.windowBecameKey()
         other.play()
@@ -2268,8 +2269,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
     /// full volume; and at the end, with no timer left, Continue to Next
     /// Book starts the next book.
     func testAfterAnEndOfBookTimerStopsTheBookARewindReplaysItsEndThenItContinues() throws {
-        let timer = SleepTimerService.shared
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Finished Timer Continue")
         world.settings.skipBackwardUnit = .seconds15
@@ -2284,7 +2284,8 @@ final class MediaCommandPlaybackTests: XCTestCase {
             endOfBook: .continueNext
         )
         let nextBook = try world.makeSilentAudioBook(title: "Second Crossing", trackDurations: [30])
-        let reader = world.openReader(for: firstBook, nowPlaying: system.coordinator)
+        let reader = world.openReader(for: firstBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
+        let timer = reader.sleepTimerService
         waitForReaderToLoad(reader)
         let audio = reader.audioPlaybackService
 
@@ -2332,7 +2333,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         }
         XCTAssertEqual(continuing.announcements.map(\.message), ["Starting: Second Crossing"])
         XCTAssertFalse(reader.hasFinishedBook, "The book that continued still rests finished at its end")
-        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator)
+        let next = world.openReader(for: nextBook, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(next)
         let nextAudio = next.audioPlaybackService
         XCTAssertTrue(nextAudio.isPlaying && !nextAudio.isPaused, "Continue to Next Book did not start the next book")
@@ -2351,14 +2352,14 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Metadata Stopped")
         let soundings = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1])
-        let audioReader = world.openReader(for: soundings, nowPlaying: system.coordinator)
+        let audioReader = world.openReader(for: soundings, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(audioReader)
         let openedAudio = try XCTUnwrap(audioReader.audioMetadata, "The reader read no audio metadata")
         var editedAudio = openedAudio
         editedAudio.title = "Breakwater Soundings, Second Survey"
 
         let alice = try world.importBook(from: requireFile("alice.epub"))
-        let epubReader = world.openReader(for: alice, nowPlaying: system.coordinator)
+        let epubReader = world.openReader(for: alice, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(epubReader)
         XCTAssertTrue(waitUntil(timeout: 10) { epubReader.epubMetadata != nil }, "The reader showed no EPUB metadata")
         let openedEPUB = try XCTUnwrap(epubReader.epubMetadata)
@@ -2385,7 +2386,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
         let system = MediaSystem()
         let world = try makeIntegrationWorld("Media Commands Metadata Held")
         let soundings = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [30])
-        let reader = world.openReader(for: soundings, nowPlaying: system.coordinator)
+        let reader = world.openReader(for: soundings, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(reader)
 
         reader.play()
@@ -2608,7 +2609,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: Self.openingOffset)
         )
         world.library.library.addBook(book)
-        let reader = world.openReader(for: book, renderScheduler: HeldRenderQueue(), nowPlaying: system.coordinator)
+        let reader = world.openReader(for: book, renderScheduler: HeldRenderQueue(), nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         let handedOver = HandedOverUtterances()
         reader.speechService._directUtteranceRecorderForTesting = { handedOver.utterances.append($0) }
         waitForReaderToLoad(reader)
@@ -2799,7 +2800,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: lastHalfSecond),
             endOfBook: .stop
         )
-        let reader = world.openReader(for: book, nowPlaying: system.coordinator)
+        let reader = world.openReader(for: book, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
         waitForReaderToLoad(reader, file: file, line: line)
         let audio = reader.audioPlaybackService
         let recorder = recordingAnnouncements {
@@ -2936,7 +2937,7 @@ final class MediaCommandPlaybackTests: XCTestCase {
             text = quay
         case .audio:
             let soundings = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: audioTracks)
-            reader = world.openReader(for: soundings, nowPlaying: system.coordinator)
+            reader = world.openReader(for: soundings, nowPlaying: system.coordinator, sleepTimer: SleepTimerService())
             waitForReaderToLoad(reader, file: file, line: line)
             reader.play()
         }

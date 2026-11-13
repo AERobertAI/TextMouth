@@ -29,6 +29,14 @@ final class SleepTimerServiceTests: XCTestCase {
         try await super.tearDown()
     }
 
+    /// A timer made as the next launch makes one: in a registry of its own,
+    /// so it reads the duration saved in `testDefaults`, not the copy this
+    /// launch's registry keeps of the duration last started
+    /// (`SleepTimerRegistry.lastStartedDuration(savedIn:)`).
+    private func timerOfTheNextLaunch() -> SleepTimerService {
+        SleepTimerService(userDefaults: testDefaults, registry: SleepTimerRegistry())
+    }
+
     /// Starts a timer with inert callbacks unless a test supplies behavior.
     private func start(
         _ duration: SleepTimerDuration,
@@ -166,7 +174,6 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertNil(service.ownerID)
         XCTAssertEqual(expirations, 0, "The expiry callback was called at the heading's end")
         XCTAssertEqual(service.lastUsedDuration, .endOfHeading)
-        XCTAssertEqual(service.lastOwnerID, owner)
         XCTAssertFalse(service.waitsForHeadingEnd(ownedBy: owner))
         XCTAssertFalse(service.expireAtHeadingEnd(by: owner), "An ended timer ended again")
     }
@@ -518,7 +525,6 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertNil(service.ownerID)
         XCTAssertEqual(expirations, 0, "The expiry callback was called at the chapter's end")
         XCTAssertEqual(service.lastUsedDuration, .endOfHeading)
-        XCTAssertEqual(service.lastOwnerID, owner)
         XCTAssertFalse(
             service.expireAtChapterEnd(endingTheHeading: true, endingTheBook: false, by: owner),
             "An ended timer ended again"
@@ -600,37 +606,14 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(service.remainingSeconds, 299)
     }
 
-    /// A reader that closes forgets itself as the last owner only when it
-    /// set the most recent timer; the duration is kept either way, for
-    /// Restart Sleep Timer in another reader.
-    func testForgettingTheLastOwnerKeepsTheDuration() {
-        start(.minutes(20))
-        service.stop()
-
-        service.forgetLastOwner(UUID())
-        XCTAssertEqual(service.lastOwnerID, owner, "Another reader's closing forgot the last owner")
-
-        service.forgetLastOwner(owner)
-        XCTAssertNil(service.lastOwnerID)
-        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
-    }
-
     func testLastUsedDurationSurvivesStop() {
         start(.minutes(20))
 
         service.stop()
 
         XCTAssertNil(service.duration)
-        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
-    }
-
-    func testLastOwnerSurvivesStop() {
-        start(.minutes(20))
-
-        service.stop()
-
         XCTAssertNil(service.ownerID)
-        XCTAssertEqual(service.lastOwnerID, owner)
+        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
     }
 
     func testNewStartOverwritesLastUsedDuration() {
@@ -645,7 +628,7 @@ final class SleepTimerServiceTests: XCTestCase {
         for duration: SleepTimerDuration in [.endOfHeading, .endOfBook, .minutes(25)] {
             start(duration)
 
-            let restored = SleepTimerService(userDefaults: testDefaults)
+            let restored = timerOfTheNextLaunch()
 
             XCTAssertEqual(restored.lastUsedDuration, duration)
         }
@@ -663,7 +646,7 @@ final class SleepTimerServiceTests: XCTestCase {
         for savedKind in ["endOfHeading", "endOfChapter", "endOfDocument"] {
             testDefaults.set(Data(#"{"kind":"\#(savedKind)"}"#.utf8), forKey: key)
 
-            let restored = SleepTimerService(userDefaults: testDefaults)
+            let restored = timerOfTheNextLaunch()
             defer { restored._resetForTesting() }
 
             XCTAssertEqual(restored.lastUsedDuration, .endOfHeading, "A saved \(savedKind) did not restore End of heading")
@@ -683,7 +666,7 @@ final class SleepTimerServiceTests: XCTestCase {
     func testRestoredMinutesAreLimitedToTheSupportedRange() throws {
         let key = "sleepTimer.lastUsedDuration"
         testDefaults.set(Data(#"{"kind":"minutes","minutes":9223372036854775807}"#.utf8), forKey: key)
-        let restored = SleepTimerService(userDefaults: testDefaults)
+        let restored = timerOfTheNextLaunch()
         defer { restored._resetForTesting() }
 
         XCTAssertEqual(restored.lastUsedDuration, .minutes(480))
@@ -692,10 +675,10 @@ final class SleepTimerServiceTests: XCTestCase {
 
         for minutes in [0, -5] {
             testDefaults.set(Data(#"{"kind":"minutes","minutes":\#(minutes)}"#.utf8), forKey: key)
-            XCTAssertNil(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, "\(minutes)")
+            XCTAssertNil(timerOfTheNextLaunch().lastUsedDuration, "\(minutes)")
         }
         testDefaults.set(Data(#"{"kind":"minutes","minutes":45}"#.utf8), forKey: key)
-        XCTAssertEqual(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, .minutes(45))
+        XCTAssertEqual(timerOfTheNextLaunch().lastUsedDuration, .minutes(45))
     }
 
     func testFixturePersistenceDoesNotTouchStandardDefaults() {
@@ -812,9 +795,7 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     /// A hand-over changes the owner and nothing else: the time left, the
-    /// duration, and the running countdown are the same, and the last owner,
-    /// which Restart Sleep Timer from a media gesture routes by, is the new
-    /// one.
+    /// duration, and the running countdown are the same.
     func testAHandOverKeepsTheCountdownAndChangesTheOwner() {
         let next = UUID()
         start(.minutes(30))
@@ -825,7 +806,6 @@ final class SleepTimerServiceTests: XCTestCase {
 
         XCTAssertTrue(moved)
         XCTAssertEqual(service.ownerID, next)
-        XCTAssertEqual(service.lastOwnerID, next)
         XCTAssertEqual(service.remainingSeconds, before, "the hand-over reset the countdown")
         XCTAssertEqual(service.duration, .minutes(30))
         XCTAssertTrue(service.isActive)
@@ -1064,5 +1044,500 @@ final class SleepTimerServiceTests: XCTestCase {
             service._advanceCountdownForTesting()
         }
         service.stop()
+    }
+}
+
+// MARK: - Every Window's Timer (November 13, 2026)
+
+/// The registry of every window's sleep timer, and the take of a timer held
+/// for a book from another window's timer (November 13, 2026: "I want each
+/// sleep timer to be refactored to be per book view window not global").
+/// Each test has a registry and preferences of its own, so the app's timers
+/// are never touched, and nothing waits on a clock: countdowns are advanced
+/// by hand.
+@MainActor
+final class SleepTimerRegistryTests: XCTestCase {
+    private var registry: SleepTimerRegistry!
+    private var defaults: UserDefaults!
+    /// The reader that owns the timer a test starts first.
+    private let owner = UUID()
+    /// The reader of the next book, in another window.
+    private let taker = UUID()
+    /// The book the timer goes on to.
+    private let nextBook = UUID()
+
+    override func setUp() async throws {
+        try await super.setUp()
+        registry = SleepTimerRegistry()
+        defaults = makeSandboxedPreferences("sleep-timer-registry")
+    }
+
+    override func tearDown() async throws {
+        registry._stopEveryTimerForTesting()
+        registry = nil
+        defaults = nil
+        try await super.tearDown()
+    }
+
+    /// A window's timer, in the test's registry.
+    private func makeWindowTimer() -> SleepTimerService {
+        SleepTimerService(userDefaults: defaults, registry: registry)
+    }
+
+    /// A window's timer running `duration` for `owner`, held for the next
+    /// book and asked for, as a move that opened it in another window leaves
+    /// it.
+    private func makeTimerAskedForTheNextBook(_ duration: SleepTimerDuration, fade: TimeInterval = 0) -> SleepTimerService {
+        let timer = makeWindowTimer()
+        timer.start(duration: duration, ownerID: owner, onExpire: {}, fadeOutDuration: fade)
+        XCTAssertTrue(timer.hold(forBook: nextBook, from: owner), "The timer could not be held")
+        timer.markAsked(forBook: nextBook)
+        return timer
+    }
+
+    /// Counts `timer`'s countdown down by `seconds` without waiting.
+    private func tick(_ timer: SleepTimerService, _ seconds: Int) {
+        for _ in 0..<seconds {
+            timer._advanceCountdownForTesting()
+        }
+    }
+
+    /// The timer held for a book is found in whichever window holds it, and
+    /// nothing is found for a book none is held for.
+    func testATimerHeldForABookIsFoundInWhicheverWindowHoldsIt() {
+        let first = makeWindowTimer()
+        let second = makeWindowTimer()
+        second.start(duration: .minutes(30), ownerID: owner, onExpire: {})
+
+        XCTAssertTrue(second.hold(forBook: nextBook, from: owner))
+
+        XCTAssertTrue(registry.timer(heldForBook: nextBook) === second, "The held timer was not found")
+        XCTAssertTrue(registry.isHeld(forBook: nextBook))
+        XCTAssertNil(registry.timer(heldForBook: UUID()), "A timer was found for a book none is held for")
+        XCTAssertFalse(first.isHeld(forBook: nextBook))
+        XCTAssertEqual(registry.timers.count, 2)
+    }
+
+    /// Taken into another window, a counting timer keeps its duration, its
+    /// time left, and its fade-out time, goes on counting there for the new
+    /// owner, and the window it came from stops it, with its hold, so that
+    /// window shows it no more and its callback never runs.
+    func testATakeFromAnotherWindowMovesTheRunningTimerAndStopsItThere() {
+        var oldExpiries = 0
+        var newExpiries = 0
+        let old = makeWindowTimer()
+        old.start(duration: .minutes(30), ownerID: owner, onExpire: { oldExpiries += 1 })
+        tick(old, 90)
+        XCTAssertTrue(old.hold(forBook: nextBook, from: owner))
+        old.markAsked(forBook: nextBook)
+        let window = makeWindowTimer()
+
+        let taken = window.take(heldForBook: nextBook, from: old, as: taker, onExpire: { newExpiries += 1 })
+
+        XCTAssertTrue(taken)
+        XCTAssertEqual(window.ownerID, taker)
+        XCTAssertEqual(window.duration, .minutes(30))
+        XCTAssertEqual(window.remainingSeconds, 30 * 60 - 90, "The countdown was reset or lost time")
+        XCTAssertTrue(window.isActive)
+        XCTAssertFalse(old.isActive, "The window it came from still shows it")
+        XCTAssertFalse(old.isHolding)
+        XCTAssertNil(registry.timer(heldForBook: nextBook), "The hold outlived the take")
+        XCTAssertFalse(registry.isRetaining(old))
+
+        tick(window, 1)
+        XCTAssertEqual(window.remainingSeconds, 30 * 60 - 91, "The countdown stopped counting")
+        window.remainingSeconds = 1
+        tick(window, 1)
+        XCTAssertEqual(newExpiries, 1, "The new owner's timer did not run out once")
+        XCTAssertEqual(oldExpiries, 0, "The old window's callback ran")
+    }
+
+    /// The fade-out time a timer was armed with goes with it to the window
+    /// that takes it.
+    func testATakenTimerKeepsItsFadeOutTime() {
+        let old = makeTimerAskedForTheNextBook(.minutes(30), fade: 4)
+        let window = makeWindowTimer()
+
+        XCTAssertTrue(window.take(heldForBook: nextBook, from: old, as: taker, onExpire: {}))
+
+        XCTAssertEqual(window.fadeOutDuration, 4)
+    }
+
+    /// A countdown the previous owner's pause halted stays halted in the new
+    /// window until the new owner plays: no time is spent while nothing plays,
+    /// and the old owner can no longer resume it.
+    func testATakenCountdownHaltedByAPauseStaysHaltedUntilTheNewOwnerPlays() {
+        let old = makeTimerAskedForTheNextBook(.minutes(15))
+        tick(old, 20)
+        old.pauseCountdown(by: owner)
+        let window = makeWindowTimer()
+
+        XCTAssertTrue(window.take(heldForBook: nextBook, from: old, as: taker, onExpire: {}))
+        tick(window, 5)
+        XCTAssertEqual(window.remainingSeconds, 15 * 60 - 20, "A halted countdown counted in the new window")
+        window.resumeCountdown(by: owner)
+        tick(window, 5)
+        XCTAssertEqual(window.remainingSeconds, 15 * 60 - 20, "The old owner resumed the timer it gave away")
+
+        window.resumeCountdown(by: taker)
+        tick(window, 5)
+        XCTAssertEqual(window.remainingSeconds, 15 * 60 - 25, "The new owner's play did not resume it")
+    }
+
+    /// The timer listening goes on with replaces a timer of the window's own:
+    /// the window ends up with one timer, the one carried to it.
+    func testATakeReplacesTheWindowsOwnTimer() {
+        let old = makeTimerAskedForTheNextBook(.minutes(30))
+        let window = makeWindowTimer()
+        var replacedExpiries = 0
+        window.start(duration: .minutes(10), ownerID: taker, onExpire: { replacedExpiries += 1 })
+
+        XCTAssertTrue(window.take(heldForBook: nextBook, from: old, as: taker, onExpire: {}))
+
+        XCTAssertEqual(window.duration, .minutes(30))
+        XCTAssertEqual(window.remainingSeconds, 30 * 60)
+        window._expireForTesting()
+        XCTAssertEqual(replacedExpiries, 0, "The replaced timer's callback ran")
+    }
+
+    /// A timer for the end of a heading is taken as it waits, for the new
+    /// owner's heading; one for the end of the book likewise.
+    func testATimerForAPlaceIsTakenWaitingForItsPlace() {
+        for duration in [SleepTimerDuration.endOfHeading, .endOfBook] {
+            let old = makeTimerAskedForTheNextBook(duration)
+            let window = makeWindowTimer()
+
+            XCTAssertTrue(window.take(heldForBook: nextBook, from: old, as: taker, onExpire: {}), "\(duration)")
+
+            XCTAssertEqual(window.duration, duration)
+            XCTAssertEqual(window.waitsForHeadingEnd(ownedBy: taker), duration == .endOfHeading, "\(duration)")
+            XCTAssertTrue(
+                window.stopsPlaybackAtChapterEnd(endingTheHeading: true, endingTheBook: true, ownedBy: taker),
+                "\(duration): the taken timer stops nothing for its new owner"
+            )
+            XCTAssertFalse(old.isActive, "\(duration)")
+        }
+    }
+
+    /// Nothing is taken before the book is asked for, nor a timer fading out,
+    /// which is putting the listener to sleep; either stays where it was.
+    func testATakeWaitsForTheAskAndNeverTakesAFade() {
+        let unasked = makeWindowTimer()
+        unasked.start(duration: .minutes(30), ownerID: owner, onExpire: {})
+        XCTAssertTrue(unasked.hold(forBook: nextBook, from: owner))
+        let window = makeWindowTimer()
+        XCTAssertFalse(window.take(heldForBook: nextBook, from: unasked, as: taker, onExpire: {}), "taken before the ask")
+        XCTAssertTrue(unasked.isHeld(forBook: nextBook))
+        XCTAssertFalse(window.isActive)
+        unasked.stop()
+
+        let fading = makeTimerAskedForTheNextBook(.minutes(1), fade: 5)
+        fading._expireForTesting()
+        XCTAssertTrue(fading.isFadingOut)
+        XCTAssertFalse(window.take(heldForBook: nextBook, from: fading, as: taker, onExpire: {}), "a fade was taken")
+        XCTAssertTrue(fading.isFadingOut, "The refused take ended the fade")
+        XCTAssertFalse(window.isActive)
+    }
+
+    /// Taken from itself, after a switch in place, the window's timer changes
+    /// its owner and nothing else, as `adoptHeld` does.
+    func testATakeFromTheWindowsOwnTimerChangesOnlyItsOwner() {
+        let window = makeTimerAskedForTheNextBook(.minutes(30))
+        tick(window, 30)
+
+        XCTAssertTrue(window.take(heldForBook: nextBook, from: window, as: taker, onExpire: {}))
+
+        XCTAssertEqual(window.ownerID, taker)
+        XCTAssertEqual(window.remainingSeconds, 30 * 60 - 30)
+        XCTAssertFalse(window.isHolding)
+        tick(window, 1)
+        XCTAssertEqual(window.remainingSeconds, 30 * 60 - 31, "The countdown stopped in place")
+    }
+
+    /// One timer goes on to each book: a hold for a book another window's
+    /// timer is held for stops that one.
+    func testOnlyOneTimerIsHeldForABook() {
+        let first = makeTimerAskedForTheNextBook(.minutes(30))
+        let second = makeWindowTimer()
+        let secondOwner = UUID()
+        second.start(duration: .minutes(10), ownerID: secondOwner, onExpire: {})
+
+        XCTAssertTrue(second.hold(forBook: nextBook, from: secondOwner))
+
+        XCTAssertFalse(first.isActive, "Two timers were left going on to one book")
+        XCTAssertTrue(registry.timer(heldForBook: nextBook) === second)
+    }
+
+    /// Every timer's asks are told by the registry, so a reader in any window
+    /// hears that a timer is asked for its book.
+    func testAnAskOfAnyWindowsTimerIsToldByTheRegistry() {
+        var asked: [UUID] = []
+        let subscription = registry.asksMade.sink { asked.append($0) }
+        defer { subscription.cancel() }
+
+        _ = makeTimerAskedForTheNextBook(.minutes(30))
+
+        XCTAssertEqual(asked, [nextBook])
+    }
+
+    /// The registry keeps a held timer alive after its window has let it go,
+    /// and lets it go once the timer stops, which ends its hold.
+    func testTheRegistryKeepsAHeldTimerAliveUntilItIsStopped() {
+        weak var weakTimer: SleepTimerService?
+        do {
+            let timer = makeTimerAskedForTheNextBook(.minutes(30))
+            weakTimer = timer
+        }
+        XCTAssertNotNil(weakTimer, "A held timer went with its window")
+        XCTAssertTrue(registry.isHeld(forBook: nextBook))
+
+        registry.cancelHeld(forBook: nextBook)
+
+        XCTAssertNil(weakTimer, "The registry kept a timer that had stopped")
+        XCTAssertFalse(registry.isHeld(forBook: nextBook))
+    }
+
+    /// A hold that ends with the timer still running (a reader of the book
+    /// took the timer, in place) makes it the window's own again: the registry
+    /// no longer keeps it, so it goes with its window.
+    func testTheRegistryLetsGoOfATimerWhoseHoldEndedWhileItRuns() {
+        weak var weakTimer: SleepTimerService?
+        do {
+            let timer = makeTimerAskedForTheNextBook(.minutes(30))
+            weakTimer = timer
+            timer.dropHold(forBook: nextBook)
+            XCTAssertTrue(timer.isActive, "The hold's end stopped the timer")
+            XCTAssertFalse(registry.isRetaining(timer), "The registry kept a timer that is no longer held")
+        }
+        XCTAssertNil(weakTimer, "The registry kept a running timer after its hold ended")
+    }
+
+    /// A held timer that runs out after its window and reader are gone, so
+    /// the registry is its only owner, is marked as having run out for its
+    /// book, and the mark is still there when the book's reader asks: the
+    /// timer is freed at its run-out, the mark is not (finding 1 of the
+    /// review). Its expiry is said once.
+    func testAHeldTimerOnlyTheRegistryKnowsMarksItsBookWhenItRunsOut() {
+        var expiries = 0
+        weak var weakTimer: SleepTimerService?
+        do {
+            let timer = makeWindowTimer()
+            timer.start(duration: .minutes(1), ownerID: owner, onExpire: { expiries += 1 })
+            XCTAssertTrue(timer.hold(forBook: nextBook, from: owner))
+            timer.markAsked(forBook: nextBook)
+            weakTimer = timer
+        }
+        XCTAssertNotNil(weakTimer, "The held timer went with its window")
+
+        registry.timer(heldForBook: nextBook)?._expireForTesting()
+
+        XCTAssertEqual(expiries, 1, "The expiry was not said exactly once")
+        XCTAssertNil(weakTimer, "The registry kept a timer that had run out")
+        XCTAssertTrue(
+            registry.consumeExpiredWhileHeld(forBook: nextBook),
+            "The next book's reader would play the book after the timer ran out"
+        )
+        XCTAssertFalse(registry.consumeExpiredWhileHeld(forBook: nextBook), "The mark was found twice")
+    }
+
+    /// The mark belongs to the timer that ran out: a timer that starts again
+    /// has not, and leaves no mark behind it for the book.
+    func testAStartedTimerForgetsItsRunOutMark() {
+        let timer = makeTimerAskedForTheNextBook(.minutes(1))
+        timer._expireForTesting()
+        XCTAssertEqual(timer.expiredWhileHeldBookID, nextBook)
+
+        timer.start(duration: .minutes(5), ownerID: owner, onExpire: {})
+
+        XCTAssertNil(timer.expiredWhileHeldBookID)
+        XCTAssertFalse(registry.consumeExpiredWhileHeld(forBook: nextBook), "The mark outlived the new timer")
+    }
+
+    /// A held timer fading out that the book's reader drops (it ends
+    /// listening) still runs out, though its window is gone and only the
+    /// registry knows it: its expiry is said once, and the registry lets it
+    /// go at the fade's end (W5; finding 1 of the review).
+    func testAFadeTheTakerDroppedRunsOutAndIsSaidOnceWithOnlyTheRegistryKnowingIt() {
+        let expired = expectation(description: "the fade ran out")
+        var expiries = 0
+        weak var weakTimer: SleepTimerService?
+        do {
+            let timer = makeWindowTimer()
+            timer.start(duration: .minutes(1), ownerID: owner, onExpire: {
+                expiries += 1
+                expired.fulfill()
+            }, fadeOutDuration: 0.05)
+            XCTAssertTrue(timer.hold(forBook: nextBook, from: owner))
+            timer.markAsked(forBook: nextBook)
+            timer._expireForTesting()
+            XCTAssertTrue(timer.isFadingOut)
+            // The taker drops the hold of a fading timer, as it ends listening.
+            registry.dropHold(forBook: nextBook)
+            weakTimer = timer
+        }
+        XCTAssertNotNil(weakTimer, "A fading timer went with its window")
+
+        wait(for: [expired], timeout: 2)
+
+        XCTAssertEqual(expiries, 1, "The fade's expiry was not said exactly once")
+        XCTAssertNil(weakTimer, "The registry kept a timer whose fade was over")
+    }
+
+    /// A held timer that runs out through its fade, with its window gone, is
+    /// marked for its book at the fade's end.
+    func testAHeldFadeOnlyTheRegistryKnowsMarksItsBookAtItsEnd() {
+        let expired = expectation(description: "the fade ran out")
+        do {
+            let timer = makeWindowTimer()
+            timer.start(duration: .minutes(1), ownerID: owner, onExpire: { expired.fulfill() }, fadeOutDuration: 0.05)
+            XCTAssertTrue(timer.hold(forBook: nextBook, from: owner))
+            timer.markAsked(forBook: nextBook)
+            timer._expireForTesting()
+        }
+
+        wait(for: [expired], timeout: 2)
+
+        XCTAssertTrue(registry.consumeExpiredWhileHeld(forBook: nextBook), "The fade's run-out was forgotten")
+    }
+
+    /// The sentence that the next book could not be opened is said by a timer
+    /// the stop let the registry go of: it is kept alive for the delay (V7).
+    func testTheCouldNotBeOpenedSentenceIsSaidByATimerNothingElseKeepsAlive() {
+        let said = expectation(description: "the sentence was said")
+        var announcements: [VoiceOverAnnouncement] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in
+            announcements.append(announcement)
+            said.fulfill()
+        }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        weak var weakTimer: SleepTimerService?
+        do {
+            let timer = makeTimerAskedForTheNextBook(.minutes(30))
+            weakTimer = timer
+        }
+        XCTAssertTrue(registry.releaseHeld(forBook: nextBook, announcingAfter: 0.05))
+
+        wait(for: [said], timeout: 2)
+
+        XCTAssertEqual(
+            announcements,
+            [VoiceOverAnnouncement(message: SleepTimerHandOverWording.noBook, priority: .medium)]
+        )
+        XCTAssertNil(weakTimer, "The delayed sentence kept the timer after it was said")
+    }
+
+    /// The sentence that the next book could not be opened is not said over a
+    /// timer the listener started in another window while it waited: the
+    /// timer is running there, and the sentence would be false (W4; finding 2
+    /// of the review).
+    func testTheCouldNotBeOpenedSentenceIsNotSaidOverATimerStartedInAnotherWindow() {
+        let said = expectation(description: "the sentence was said")
+        said.isInverted = true
+        var announcements: [VoiceOverAnnouncement] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in
+            announcements.append(announcement)
+            said.fulfill()
+        }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let held = makeTimerAskedForTheNextBook(.minutes(30))
+        XCTAssertTrue(registry.releaseHeld(forBook: nextBook, announcingAfter: 0.1))
+        XCTAssertFalse(held.isActive)
+
+        // During the delay a Restart in another window starts a timer there.
+        let otherWindow = makeWindowTimer()
+        otherWindow.start(duration: .minutes(15), ownerID: taker, onExpire: {})
+
+        wait(for: [said], timeout: 0.4)
+
+        XCTAssertTrue(announcements.isEmpty, "The sentence was said over a running timer: \(announcements)")
+        XCTAssertTrue(otherWindow.isActive)
+    }
+
+    /// Released through the registry, the timer held for a book stops and the
+    /// listener is told; cancelled, it stops without a word; and the mark
+    /// that a timer ran out for a book is forgotten whichever timer keeps it.
+    func testTheRegistryReleasesCancelsAndForgetsForTheTimerHeldForTheBook() {
+        let released = makeTimerAskedForTheNextBook(.minutes(30))
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(registry.releaseHeld(forBook: nextBook))
+        }
+        XCTAssertFalse(released.isActive)
+        XCTAssertEqual(
+            recorder.announcements,
+            [VoiceOverAnnouncement(message: SleepTimerHandOverWording.noBook, priority: .medium)]
+        )
+        XCTAssertFalse(registry.releaseHeld(forBook: nextBook), "Released twice")
+
+        let cancelled = makeTimerAskedForTheNextBook(.minutes(30))
+        let silent = recordingAnnouncements { registry.cancelHeld(forBook: nextBook) }
+        XCTAssertFalse(cancelled.isActive)
+        XCTAssertTrue(silent.announcements.isEmpty, "The cancel said something")
+
+        let ranOut = makeTimerAskedForTheNextBook(.minutes(1))
+        ranOut._expireForTesting()
+        XCTAssertTrue(registry.consumeExpiredWhileHeld(forBook: nextBook), "The run-out mark was not found")
+        XCTAssertFalse(registry.consumeExpiredWhileHeld(forBook: nextBook), "The mark was found twice")
+    }
+
+    /// The duration last used is one preference for every window: a timer
+    /// started in one window is what another window's Restart Sleep Timer
+    /// repeats.
+    func testTheDurationLastUsedIsOneForEveryWindow() {
+        let first = makeWindowTimer()
+        let second = makeWindowTimer()
+
+        first.start(duration: .minutes(45), ownerID: owner, onExpire: {})
+
+        XCTAssertEqual(second.lastUsedDuration, .minutes(45))
+        second.start(duration: .endOfBook, ownerID: taker, onExpire: {})
+        XCTAssertEqual(first.lastUsedDuration, .endOfBook)
+    }
+
+    /// Once a timer has started, every window's timer repeats that duration
+    /// from the registry's copy, whatever the preferences store answers
+    /// meanwhile, as the one shared timer repeated its own copy: on a GitHub
+    /// runner the hosted tests' store answered an older End of book for
+    /// seconds after a timer saved 30 minutes in it (November 13, 2026), and
+    /// a window's Restart re-armed End of book. A window opened later in the
+    /// launch repeats it too; the next launch, with a registry of its own,
+    /// reads what the store holds.
+    func testEveryWindowRepeatsTheDurationStartedLastWhateverTheStoreAnswers() throws {
+        let key = "sleepTimer.lastUsedDuration"
+        let first = makeWindowTimer()
+        let second = makeWindowTimer()
+        first.start(duration: .minutes(30), ownerID: owner, onExpire: {})
+        XCTAssertNotNil(defaults.data(forKey: key), "The duration was not saved for the next launch")
+
+        // The store answers an older duration, as the runner's did.
+        defaults.set(Data(#"{"kind":"endOfBook"}"#.utf8), forKey: key)
+
+        XCTAssertEqual(first.lastUsedDuration, .minutes(30), "The window that started the timer repeats what the store says")
+        XCTAssertEqual(second.lastUsedDuration, .minutes(30), "Another window repeats what the store says")
+        XCTAssertEqual(makeWindowTimer().lastUsedDuration, .minutes(30), "A window opened later repeats what the store says")
+        let nextLaunch = SleepTimerService(userDefaults: defaults, registry: SleepTimerRegistry())
+        XCTAssertEqual(nextLaunch.lastUsedDuration, .endOfBook, "The next launch does not read the store")
+
+        // A timer saving in a store of its own, as a test's is, never sees
+        // another store's duration.
+        let ownStore = makeSandboxedPreferences("sleep-timer-registry-own-store")
+        XCTAssertNil(SleepTimerService(userDefaults: ownStore, registry: registry).lastUsedDuration)
+    }
+
+    /// A timer's reset for a test forgets the registry's copy of the duration
+    /// last started, as it removes the saved one, and so does the registry's
+    /// stop of every timer at a test's start and end: each test's timers read
+    /// the saved duration until one of them starts.
+    func testTheTestResetsForgetTheDurationStartedLast() {
+        let first = makeWindowTimer()
+        first.start(duration: .minutes(20), ownerID: owner, onExpire: {})
+        first._resetForTesting()
+        XCTAssertNil(makeWindowTimer().lastUsedDuration, "The reset left the registry's copy")
+
+        first.start(duration: .endOfHeading, ownerID: owner, onExpire: {})
+        registry._stopEveryTimerForTesting()
+        defaults.removeObject(forKey: "sleepTimer.lastUsedDuration")
+        XCTAssertNil(first.lastUsedDuration, "Stopping every timer for a test left the registry's copy")
     }
 }
