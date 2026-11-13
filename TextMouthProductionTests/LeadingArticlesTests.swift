@@ -243,17 +243,54 @@ final class LeadingArticlesTests: XCTestCase {
         XCTAssertEqual(mismatches, [])
     }
 
-    /// Every language's articles are tried longest first, with English's
-    /// always among them, and none twice.
-    func testEachLanguageTriesEnglishAndItsOwnArticlesLongestFirst() {
+    /// Every language's articles are tried longest first, with its own and
+    /// English's "the" among them, and none twice; English's "a" and "an"
+    /// only where the book is in English (or a language not known, or none)
+    /// or the language has them itself.
+    func testEachLanguageTriesItsOwnArticlesAndTheLongestFirst() {
         for language in ArticleLanguage.allCases {
             let articles = ArticleLanguage.articles(forMetadataLanguage: Self.code(of: language))
             XCTAssertEqual(articles.map(\.count), articles.map(\.count).sorted(by: >), "\(language): \(articles)")
             XCTAssertEqual(Set(articles).count, articles.count, "\(language) repeats an article: \(articles)")
-            XCTAssertTrue(Set(ArticleLanguage.english.articles).isSubset(of: Set(articles)), "\(language) lacks English's: \(articles)")
+            XCTAssertTrue(articles.contains("the"), "\(language) lacks English's the: \(articles)")
             XCTAssertTrue(Set(language.articles).isSubset(of: Set(articles)), "\(language) lacks its own: \(articles)")
+            // Nothing but its own and "the": "a" and "an" are English's alone.
+            XCTAssertEqual(Set(articles), Set(language.articles + ["the"]), "\(language): \(articles)")
         }
         XCTAssertEqual(ArticleLanguage.articles(forMetadataLanguage: nil), ["the", "an", "a"])
+        XCTAssertEqual(ArticleLanguage.articles(forMetadataLanguage: "ja"), ["the", "an", "a"])
+        XCTAssertEqual(ArticleLanguage.articles(forMetadataLanguage: "en-GB"), ["the", "an", "a"])
+    }
+
+    /// English's "a" and "an" are articles in English books, in books of no
+    /// known language, and where a language has them itself, and are plain
+    /// words in a book of another listed language: "An die Freude" and "A
+    /// ciascuno il suo" keep their first word, as do the Spanish "A sangre
+    /// fría" and the French "A la recherche du temps perdu" written without
+    /// its accent; "The" counts in every language's books.
+    func testEnglishAAndAnAreNoArticlesInOtherLanguagesBooks() {
+        check([
+            Filed("An die Freude", "de"),
+            Filed("A ciascuno il suo", "it"),
+            Filed("A sangre fría", "es"),
+            Filed("A la recherche du temps perdu", "fr"),
+            Filed("An die Freude", "ger"),
+            Filed("A ciascuno il suo", "Italiano"),
+            // English books, and books of no language the app knows articles of.
+            Filed("An die Freude", "en", key: "die Freude", inverted: "die Freude, An"),
+            Filed("A Tale of Two Cities", "en", key: "Tale of Two Cities", inverted: "Tale of Two Cities, A"),
+            Filed("A Tale of Two Cities", nil, key: "Tale of Two Cities", inverted: "Tale of Two Cities, A"),
+            Filed("A Tale of Two Cities", "ja", key: "Tale of Two Cities", inverted: "Tale of Two Cities, A"),
+            // "The" is English's in every language's books.
+            Filed("The Hobbit", "fr", key: "Hobbit", inverted: "Hobbit, The"),
+            Filed("The Hobbit", "de", key: "Hobbit", inverted: "Hobbit, The"),
+            Filed("The Hobbit", "pt", key: "Hobbit", inverted: "Hobbit, The"),
+            // Portuguese has "a" itself.
+            Filed("A casa dos espíritos", "pt", key: "casa dos espíritos", inverted: "casa dos espíritos, A"),
+            // The language's own articles still count.
+            Filed("Die Verwandlung", "de", key: "Verwandlung", inverted: "Verwandlung, Die"),
+            Filed("Le Petit Prince", "fr", key: "Petit Prince", inverted: "Petit Prince, Le"),
+        ])
     }
 
     /// A two-letter code for each language, to name it in metadata.

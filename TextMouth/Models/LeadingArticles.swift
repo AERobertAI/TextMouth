@@ -365,9 +365,13 @@ struct FilingTitle: Equatable, Sendable {
 /// The languages whose leading articles TextMouth knows beside English's,
 /// with the articles the Library of Congress lists for each (MARC 21
 /// Bibliographic, Appendix F, "Initial Definite and Indefinite Articles").
-/// A book uses English's always, and its own language's when its metadata
-/// names one of these (`Book.epubLanguage`), so "Die Hard" in an English
-/// book keeps its "Die" and "Die Verwandlung" in a German one files under V.
+/// A book in English, or in a language not named here (or none), uses
+/// English's "the", "a", and "an". A book whose metadata names one of these
+/// (`Book.epubLanguage`) uses that language's articles and English's "the"
+/// alone, since "a" and "an" are prepositions in most of them ("An die
+/// Freude", "A ciascuno il suo"): "Die Hard" in an English book keeps its
+/// "Die", "Die Verwandlung" in a German one files under V, and "The Hobbit"
+/// in a French book still files under H.
 enum ArticleLanguage: String, CaseIterable, Sendable {
     case english, french, german, spanish, italian, portuguese, dutch, catalan, swedish, danish, norwegian
 
@@ -437,9 +441,10 @@ enum ArticleLanguage: String, CaseIterable, Sendable {
         self = language
     }
 
-    /// English's articles and those of the language `metadataLanguage`
-    /// names, without repeats, longest first, so "les" is tried before
-    /// "le" and "eine" before "ein".
+    /// The articles of the language `metadataLanguage` names, with English's
+    /// "the" alone beside them, without repeats, longest first, so "les" is
+    /// tried before "le" and "eine" before "ein"; English's "the", "a", and
+    /// "an" for English, a language not named here, and no language.
     static func articles(forMetadataLanguage metadataLanguage: String?) -> [String] {
         let language = ArticleLanguage(metadataLanguage: metadataLanguage) ?? .english
         return articleLists[language] ?? englishArticles
@@ -448,12 +453,19 @@ enum ArticleLanguage: String, CaseIterable, Sendable {
     /// English's articles alone, longest first.
     private static let englishArticles = ArticleLanguage.english.articles.sorted { $0.count > $1.count }
 
-    /// Each language's articles with English's, longest first, made once.
+    /// English's definite article, the only one of English's that a book in
+    /// another language keeps: "a" and "an" are prepositions or other words
+    /// there.
+    private static let englishDefiniteArticle = "the"
+
+    /// Each language's articles, longest first, made once: English's for
+    /// English, and for each other language its own with "the".
     private static let articleLists: [ArticleLanguage: [String]] = {
         var lists: [ArticleLanguage: [String]] = [:]
         for language in allCases {
             var seen = Set<String>()
-            let merged = (ArticleLanguage.english.articles + language.articles).filter { seen.insert($0).inserted }
+            let own = language == .english ? language.articles : [englishDefiniteArticle] + language.articles
+            let merged = own.filter { seen.insert($0).inserted }
             // Longest first; among articles of one length, the list's own
             // order, so the result never depends on a hash.
             lists[language] = merged.enumerated()

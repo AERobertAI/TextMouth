@@ -44,8 +44,9 @@ enum LeadingArticleWording {
     /// second and third choices), since under the first nothing passes over
     /// an article, in any language.
     static let languagesNote = "When articles are ignored, a book whose metadata names French, German, Spanish, "
-        + "Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles "
-        + "too, such as Le and Die. Folder names stay as you typed them."
+        + "Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, "
+        + "such as Le and Die, and The. Any other book passes over The, A, and An. "
+        + "Folder names stay as you typed them."
 
     /// The words under the pop-up for `choice`: what it does, and, for the
     /// choices that ignore articles, which languages' articles count.
