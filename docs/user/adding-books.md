@@ -24,7 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - File menu, Open Book… (Command-O) imports the files you choose.
 - Opening a supported file from Finder imports it and opens it.
-- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
+- TextMouth declares itself a viewer of rich text, rich text with attachments, Word 97-2003 documents and templates, Word templates and macro documents, OpenDocument text and templates, web archives, SSML files, Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf), BRF, BRL, and PEF braille files, M3U and M3U8 playlists, MPEG-4, M4V, and QuickTime video files (.mp4, .m4v, and .mov, whose sound alone it plays), the audio formats it converts, and every .xml file, so Finder offers it in the Open With menu for them.
 - It declares them at Alternate rank, as it does for every format but its own .tmb packages, so it never asks to be the default app for any of them.
 - A .pef file is also a Pentax raw photo to macOS, so Open Book… accepts whatever type the system gives a .pef, and the import tells a braille file from a photo by reading it.
 - A photo is refused with the sentence for a PEF that cannot be read (below).
@@ -163,7 +163,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 ### A file with no text to read
 
-- A plain text, Markdown, HTML, web archive, SSML, rich text, Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
+- A plain text, Markdown, HTML, web archive, SSML, rich text, Word (.docx, and its templates and macro documents), Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
 - That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
 - A Markdown file that is only a heading still imports.
 - An .xml file of no bytes or only white space is refused the same way, but at the step "Checking its format", as in "Could not import “empty.xml”. Checking its format failed: This file has no text to read."
@@ -173,6 +173,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 - A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”. Copying it into the library failed: There isn’t enough free space on the disk."
 - The words never name the hidden package the import was building.
+- A folder of tracks or a playlist is checked before the first track is copied: TextMouth adds up the tracks' sizes and refuses the import unless the disk would keep its reserve of 1 GB free (the one the archives use) once they were copied, with the same sentence and nothing written. A track on the same APFS disk as the library counts as nothing, since the copy shares its bytes with the original, so a big folder on the library's own disk is not refused for room its copy will not take.
 
 ### Documents TextMouth's own readers can't read
 
@@ -218,6 +219,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### Documents protected by a password
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password. Save a copy without the password, then import that copy."
+- A PDF locked by a password is refused with "This PDF needs a password to open.", before any page is read, so it is not mistaken for a scan that text recognition could not read. A PDF that only restricts copying or printing is not locked and imports as usual.
 
 ### A Word document's title and author
 
@@ -254,7 +256,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Before TextMouth reads the markup of an EPUB chapter, an HTML file, a DAISY book, a Kindle book, or a web archive's page, it looks through it once. A Word, rich text, or OpenDocument document passes through the same look, in the HTML its reader writes. Markup that would crash TextMouth or fill the Mac's memory is refused, with one of four sentences that never call the file damaged, since it may not be.
 - Markup nested thousands of levels deep, a document of millions of tags, and a broken declaration used to be able to stop TextMouth. No real book tried is refused for any of them.
 - The four sentences, as an alert gives them after "Could not import “x”. Reading its text failed: ":
-  - Markup nested too deeply, more than 128 levels: "This file's markup nests more than 128 levels deep, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
+  - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since November 13, 2026: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library): "This file's markup nests more than 128 levels deep, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
   - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file holds too much markup for TextMouth to read without running out of memory. Divide the document into smaller files, then import them."
   - Too many attributes on one tag, more than 1,000: "One tag in this file has more than 1,000 attributes, which TextMouth can't read safely. Get another copy of the file, or save it in another format, then import it again."
   - Markup built so that reading it would take far too long: "This file's markup is built in a way that would take TextMouth far too long to read. Get another copy of the file, or save it in another format, then import it again."
@@ -346,7 +348,11 @@ Part of [TextMouth's documentation](../../README.md).
 
 - An import that adds its book but has something to tell ends with an alert titled "Book Imported", where a failure's alert is titled "Error": the entries a playlist skipped, the original of an .rtfd that was kept, or chapters or pages that were left out.
 - The book is in the library, but it is not opened, so the alert is not left behind a reader window.
-- A ZIP batch's alert that sums up its failed and incomplete books is still titled "Error".
+- A ZIP batch's alert that sums up its failed and incomplete books is titled by what the batch did, never "Error", since the books that came in are in the library:
+  - "Nothing Imported" when the batch found no book, whether files failed or it was cancelled early.
+  - "Already in Library" when it found books but the library already held every one.
+  - "Some Files Not Imported" when books came in but a file failed or the batch was cancelled.
+  - "Book Imported", for one book, or "Books Imported", for several, when every book came in and only some lack chapters or pages.
 
 ## A book that is already in the library
 
@@ -393,12 +399,24 @@ Part of [TextMouth's documentation](../../README.md).
     - When the new copy is the very same file, TextMouth reads it again in those characters if the copy was read in others and its bytes are not certainly Unicode braille patterns.
     - When the copy can't be read so, nothing is replaced, and the question stays, with the reason, as in "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds “é”, which is not Eurobraille. Nothing was changed."
     - A copy with other bytes keeps what its import read.
-  - The existing copy's files are removed only once the library holds the new copy, so a stop at any moment leaves the old book whole, or the new copy with everything carried over.
+  - A braille book keeps the braille code its existing copy is read with: when the new copy is the very same file and was translated with another code, TextMouth reads it again with the existing copy's. A BRF or BRL book whose characters and code both differ is read again once, with both. A book's code does not record whether you chose it in Book Information's Braille Code pop-up or it was only the Braille setting when the book was added, so after changing the setting, importing the same file again and choosing Replace Existing keeps the old code; choose the new one in Book Information afterwards. A code this Mac no longer offers, as one of VoiceOver's tables a macOS update removed, stops the replacement by name, so the code is never lost without a word: nothing is replaced and the question stays, and choosing another code for the existing copy in Book Information, or Keep Both, is the way on. A copy with other bytes, such as a second edition, is translated with the Braille setting's code.
+  - A plain text, Markdown, or HTML book keeps the encoding you chose in Book Information's Text Encoding pop-up, when both of these hold:
+    - The choice was yours. Automatic, and an encoding TextMouth guessed, are what the new copy's own import does, so there is nothing to carry.
+    - The choice is about this file: the new copy is the very same file, or its bytes name no encoding of their own (no byte order mark, no valid UTF-8, no declaration) and every byte reads in the encoding you chose.
+    - A new copy that names its encoding, or that your choice can't read, is not the file the choice was made about: it keeps what its import read, and Replace Existing goes ahead. The very same file that your choice can't read is refused, with the reason, as in “Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding. Nothing was changed.  - The existing copy's files are removed only once the library holds the new copy, so a stop at any moment leaves the old book whole, or the new copy with everything carried over.
     - An old copy left beside the new one, or put back from the Trash with Finder, is never added to the library as a second book: its package names the book the new copy now is, and the debug log records an ORPHAN_ID_LISTED line for it at the launch that finds it.
+
+## While Replace Existing works
+
+- Replace Existing makes the new copy ready off the main thread, so TextMouth's windows and VoiceOver stay responsive while a long braille book is read again in the code its old copy was read in.
+- The question's sheet dims its buttons, shows "Replacing “X”. This can take a moment." with a spinner, and, if the work is still going after a second, VoiceOver hears the same words once.
+- Another answer to the same question meanwhile does nothing and says "TextMouth is still carrying out your last answer. Wait until it finishes."
+- When the work ends, TextMouth checks that nothing changed under it: the question is still the one being asked, the library is not moving, the existing copy is the one the work was made from, and it is still free to replace. If anything changed, the new copy is put back as its import published it, both copies stay as they were, and the question stays with the reason, as in "“X” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again."
+- Quitting waits for the work, as it waits for a text that is read again.
 
 ## When Replace Existing waits
 
-- Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
+- Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
 - Once the cause is gone, choose Replace Existing again.
 - With X the title of the existing copy, the sentences are:
@@ -408,6 +426,8 @@ Part of [TextMouth's documentation](../../README.md).
   - Its audio being edited in the audio editor, or saved from it: "The audio of “X” is being edited. Close the audio editor, or wait until it has saved, then choose Replace Existing again."
   - Its text being read again in another encoding, from the Text Encoding pop-up in Book Information: "TextMouth is reading “X” again in another encoding. Try again when that finishes."
   - Its text being read again with other braille file characters, from the Braille File Characters pop-up in Book Information: "TextMouth is reading “X” again with other braille file characters. Try again when that finishes."
+  - Its text being read again with another braille code, from the Braille Code pop-up in Book Information: "TextMouth is reading “X” again with another braille code. Try again when that finishes."
+  - Being replaced already: "TextMouth is replacing “X” with the new copy. Try again when that finishes." Edit Text, Redo Text Extraction, a re-read from Book Information, and a reader opening the book say it too, until the replacement ends.
   - Files only in the cloud: "Some of the files of “X” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose Replace Existing again."
   - Books moving between folders: "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
   - The data directory being rebuilt: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose Replace Existing again."
