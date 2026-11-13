@@ -157,6 +157,13 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(Self.keyEquivalent(of: found.item).key, "f")
         XCTAssertEqual(Self.keyEquivalent(of: found.item).modifiers, [.option, .command])
         XCTAssertTrue(found.item.isEnabled)
+        // One Find submenu: none that SwiftUI adds of its own (as a
+        // searchable list might) beside ours, which VoiceOver would read as
+        // two menus of one name.
+        XCTAssertEqual(
+            edit.items.filter { $0.title == "Find" }.count, 1,
+            "the Edit menu's items: \(edit.items.map(\.title))"
+        )
     }
 
     // MARK: - Shift-Command-T in Its Two Kinds of Window (FR12's Branch E)
