@@ -65,7 +65,9 @@ final class LibraryTitleTypingTests: XCTestCase {
 
     /// The shortcut manager takes a Space as Play or Pause, but leaves one
     /// that a window's list claimed to that list, until the claim's time,
-    /// and in that window alone.
+    /// in that window alone, and only while a list has the keyboard there:
+    /// a Space on another control, such as a button tabbed to, plays or
+    /// pauses as always.
     func testASpaceAListClaimedGoesToTheListAndAnyOtherIsPlayOrPause() throws {
         let manager = KeyboardShortcutManager(
             userDefaults: makeSandboxedPreferences("title-typing-space"),
@@ -84,9 +86,10 @@ final class LibraryTitleTypingTests: XCTestCase {
         // another into a double press.
         let start = ProcessInfo.processInfo.systemUptime
         let space = KeyBinding(key: "space")
-        func pressSpace(at offset: TimeInterval, in keyWindow: NSWindow) throws -> Bool {
+        let list = NSTableView()
+        func pressSpace(at offset: TimeInterval, in keyWindow: NSWindow, on responder: NSResponder = list) throws -> Bool {
             let event = try ShortcutKeyPresses.keyPress(of: space, at: start + offset)
-            return manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: nil)
+            return manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: responder)
         }
 
         XCTAssertTrue(try pressSpace(at: 0, in: window), "a Space no list claimed was not Play or Pause")
@@ -95,6 +98,7 @@ final class LibraryTitleTypingTests: XCTestCase {
         XCTAssertTrue(try pressSpace(at: 40, in: window), "a Space after the claim's time was not Play or Pause")
         claim.claim(in: window, until: start + 61)
         XCTAssertTrue(try pressSpace(at: 60, in: other), "a Space in another window was the list's")
+        XCTAssertTrue(try pressSpace(at: 60.25, in: window, on: NSButton()), "a Space on a button was the list's")
     }
 
     // MARK: - Typing in a Hosted Library List
