@@ -131,6 +131,35 @@ final class PlaylistImportTests: XCTestCase {
         XCTAssertEqual(try snapshot(of: folder), before)
     }
 
+    /// A playlist's tracks are checked against the disk's free space before
+    /// any is copied, as a folder's are: with less free than they need, the
+    /// import is refused in the words of a full disk, nothing is left in the
+    /// library, and the tracks are unchanged; with room it imports.
+    func testAPlaylistIsRefusedBeforeCopyingWhenTheDiskLacksRoom() throws {
+        let playlist = try makePlaylist("room.m3u", listing: ["a.wav", "b.wav"], tracks: ["a.wav", "b.wav"])
+        let trackBytes = try ["a.wav", "b.wav"].reduce(Int64(0)) { total, name in
+            total + Int64(try XCTUnwrap(sources.appendingPathComponent(name).resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        }
+        let before = try snapshot(of: sources)
+
+        XCTAssertThrowsError(
+            try ArchiveLimits.$current.withValue(AudioDirectoryImportTests.limits(reserve: 0, freeSpace: trackBytes - 1)) {
+                try FileImportService.importPlaylistWithReport(from: playlist, toFolder: folderPath)
+            }
+        ) { error in
+            let failure = error as? ImportFailure
+            XCTAssertEqual(failure?.step, .copying)
+            XCTAssertEqual(failure?.reason, "Copying it into the library failed: There isn’t enough free space on the disk.")
+        }
+        XCTAssertEqual(try libraryFolderEntries(), [], "nothing may stay staged or published")
+        XCTAssertEqual(try snapshot(of: sources), before, "the playlist and its tracks are never changed")
+
+        let imported = try ArchiveLimits.$current.withValue(AudioDirectoryImportTests.limits(reserve: 0, freeSpace: trackBytes)) {
+            try FileImportService.importPlaylistWithReport(from: playlist, toFolder: folderPath)
+        }
+        XCTAssertEqual(try manifestFiles(of: imported.book), ["a.wav", "b.wav"])
+    }
+
     /// A file listed twice is one track, and the notice says the second
     /// listing was a repeat.
     func testAFileListedTwiceIsOneTrackAndTheNoticeSaysSo() throws {

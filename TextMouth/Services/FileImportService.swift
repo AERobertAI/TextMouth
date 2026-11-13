@@ -1444,11 +1444,7 @@ enum FileImportService {
 
             try run.begin(.copying, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            for path in paths {
-                let destination = audioDirectory.appendingPathComponent(path)
-                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.copyItem(at: folder.appendingPathComponent(path), to: destination)
-            }
+            try copyTracks(paths.map { (path: $0, source: folder.appendingPathComponent($0)) }, into: audioDirectory)
             var imported = try publishTracks(
                 titled: folder.lastPathComponent,
                 in: audioDirectory,
@@ -1465,6 +1461,44 @@ enum FileImportService {
             // a Bonus folder), so it is never deleted or offered for deletion.
             imported.isFromFolder = true
             return imported
+        }
+    }
+
+    /// Copies each of `tracks`, the file at its `source`, to its `path`
+    /// relative to `audioDirectory` in the book's package, laid out as in
+    /// the folder or playlist they come from. The disk is asked first
+    /// (`requireRoom(forCopying:onVolumeOf:)`), so a folder or playlist too
+    /// big for the disk is refused before a byte is written, as an archive
+    /// is (`ArchiveBudget.admit`), and not after minutes of copying.
+    /// - Throws: `CocoaError.fileWriteOutOfSpace` when the disk lacks room,
+    ///   which an import's failure words as a full disk
+    ///   (`ImportFailure.outOfSpaceDescription`); a copy's own error.
+    private static func copyTracks(_ tracks: [(path: String, source: URL)], into audioDirectory: URL) throws {
+        try requireRoom(forCopying: tracks.map(\.source), onVolumeOf: audioDirectory)
+        for track in tracks {
+            let destination = audioDirectory.appendingPathComponent(track.path)
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: track.source, to: destination)
+        }
+    }
+
+    /// Throws `CocoaError.fileWriteOutOfSpace` unless the disk holding
+    /// `destination` keeps the reserve (`ArchiveLimits.freeSpaceReserve`)
+    /// free once `sources` are copied onto it. The limits are the current
+    /// ones, the archives' own, so one rule serves every import; a disk whose
+    /// free space the system cannot tell is not checked, and a file whose
+    /// size cannot be read counts as empty, so the copy itself still fails
+    /// for a real shortage.
+    static func requireRoom(forCopying sources: [URL], onVolumeOf destination: URL) throws {
+        let limits = ArchiveLimits.current
+        guard let available = limits.freeSpace(destination) else { return }
+        var needed: Int64 = 0
+        for source in sources {
+            let size = (try? source.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+            needed = ArchiveInspection.saturatingSum(needed, Int64(size))
+        }
+        guard available - limits.freeSpaceReserve >= needed else {
+            throw CocoaError(.fileWriteOutOfSpace)
         }
     }
 
@@ -1526,11 +1560,7 @@ enum FileImportService {
 
             try run.begin(.copying, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            for track in tracks {
-                let destination = audioDirectory.appendingPathComponent(track.path)
-                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.copyItem(at: track.url, to: destination)
-            }
+            try copyTracks(tracks.map { (path: $0.path, source: $0.url) }, into: audioDirectory)
             // The manifest gives the playlist's order and titles; the check
             // and the format conversion that follow treat it as any other.
             var manifest = AudioManifest()

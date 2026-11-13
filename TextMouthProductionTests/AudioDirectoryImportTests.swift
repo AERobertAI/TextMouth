@@ -354,6 +354,71 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertEqual(parsed.segments?.map(\.file), ["Lectures/a.wav", "Lectures/a.wav"])
     }
 
+    // MARK: - Free Space
+
+    /// A folder of tracks is checked against the disk's free space before
+    /// any track is copied, as an archive is: with less free than the
+    /// tracks need plus the reserve the import keeps, the import is refused
+    /// in the words of a full disk, nothing is left in the library, and the
+    /// folder is untouched; with room, the same folder imports. Both the
+    /// tracks' size alone and the reserve alone are enough to refuse.
+    func testAFolderOfTracksIsRefusedBeforeCopyingWhenTheDiskLacksRoom() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        let libraryFolder = "Audio Space \(UUID().uuidString.prefix(8))"
+        addTeardownBlock {
+            sandbox.restore()
+            try? FileManager.default.removeItem(at: TextMouthPaths.libraryDir.appendingPathComponent(libraryFolder, isDirectory: true))
+        }
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Two Tracks")
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("one.wav"), duration: 1)
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("two.wav"), duration: 1)
+        let trackBytes = try ["one.wav", "two.wav"].reduce(Int64(0)) { total, name in
+            total + Int64(try XCTUnwrap(source.appendingPathComponent(name).resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        }
+        let before = try Set(FileManager.default.contentsOfDirectory(atPath: source.path))
+        let refusal = "Copying it into the library failed: There isn’t enough free space on the disk."
+
+        // Less free than the tracks need, no reserve; then exactly the
+        // tracks' size free but a reserve to keep.
+        let tooLittle = Self.limits(reserve: 0, freeSpace: trackBytes - 1)
+        let reserveEatsIt = Self.limits(reserve: 1, freeSpace: trackBytes)
+        for (label, limits) in [("tracks alone", tooLittle), ("reserve", reserveEatsIt)] {
+            XCTAssertThrowsError(
+                try ArchiveLimits.$current.withValue(limits) {
+                    try FileImportService.importAudioFolderWithReport(from: source, toFolder: libraryFolder)
+                },
+                label
+            ) { error in
+                let failure = error as? ImportFailure
+                XCTAssertEqual(failure?.step, .copying, label)
+                XCTAssertEqual(failure?.reason, refusal, label)
+            }
+            let entries = (try? FileManager.default.contentsOfDirectory(
+                atPath: TextMouthPaths.libraryDir.appendingPathComponent(libraryFolder).path
+            )) ?? []
+            XCTAssertEqual(entries, [], "\(label): nothing may stay staged or published")
+            XCTAssertEqual(try Set(FileManager.default.contentsOfDirectory(atPath: source.path)), before, label)
+        }
+
+        // Room for the tracks and the reserve: the same folder imports.
+        let roomy = Self.limits(reserve: 1, freeSpace: trackBytes + 1)
+        let imported = try ArchiveLimits.$current.withValue(roomy) {
+            try FileImportService.importAudioFolderWithReport(from: source, toFolder: libraryFolder)
+        }
+        XCTAssertEqual(imported.book.format, .audio)
+    }
+
+    /// Limits that change nothing but the disk: the standard ones, with
+    /// `reserve` bytes to keep and `freeSpace` bytes free on every disk.
+    static func limits(reserve: Int64, freeSpace: Int64) -> ArchiveLimits {
+        var limits = ArchiveLimits.standard
+        limits.freeSpaceReserve = reserve
+        limits.freeSpace = { _ in freeSpace }
+        return limits
+    }
+
     /// Every fixture lives under a unique temporary directory.
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
