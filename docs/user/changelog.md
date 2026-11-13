@@ -6,6 +6,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.4.7 (November 13, 2026)
 
+### The sleep timer
+- Each reader window has a sleep timer of its own. A book opened in another window no longer shows a timer it can't run, which is how a timer could seem stuck while you listened to the next book.
+- A window that goes on to another book in place keeps its timer counting; when the next book opens in a new window, that window takes the timer once its book has loaded.
+- Closing a window stops only its own timer. Restart Sleep Timer acts in the window in front, and the headphones' or keyboard's restart gesture acts on the book you're hearing. Two windows' Sleep Timer sheets can be open at once.
+
 ### Search Library
 - Edit > Find > Search Library… (Option-Command-F) searches the text of every book in the library at once, with Match Case and regular expressions, and opens a match in its book at those words (see [Search Library](search-library.md)).
 - With the search texts made, a plain search of a library of 750 books takes about a second.
