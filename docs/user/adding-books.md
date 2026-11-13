@@ -399,12 +399,24 @@ Part of [TextMouth's documentation](../../README.md).
     - When the new copy is the very same file, TextMouth reads it again in those characters if the copy was read in others and its bytes are not certainly Unicode braille patterns.
     - When the copy can't be read so, nothing is replaced, and the question stays, with the reason, as in "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds “é”, which is not Eurobraille. Nothing was changed."
     - A copy with other bytes keeps what its import read.
-  - The existing copy's files are removed only once the library holds the new copy, so a stop at any moment leaves the old book whole, or the new copy with everything carried over.
+  - A braille book keeps the braille code its existing copy is read with: when the new copy is the very same file and was translated with another code, TextMouth reads it again with the existing copy's. A BRF or BRL book whose characters and code both differ is read again once, with both. A book's code does not record whether you chose it in Book Information's Braille Code pop-up or it was only the Braille setting when the book was added, so after changing the setting, importing the same file again and choosing Replace Existing keeps the old code; choose the new one in Book Information afterwards. A code this Mac no longer offers, as one of VoiceOver's tables a macOS update removed, stops the replacement by name, so the code is never lost without a word: nothing is replaced and the question stays, and choosing another code for the existing copy in Book Information, or Keep Both, is the way on. A copy with other bytes, such as a second edition, is translated with the Braille setting's code.
+  - A plain text, Markdown, or HTML book keeps the encoding you chose in Book Information's Text Encoding pop-up, when both of these hold:
+    - The choice was yours. Automatic, and an encoding TextMouth guessed, are what the new copy's own import does, so there is nothing to carry.
+    - The choice is about this file: the new copy is the very same file, or its bytes name no encoding of their own (no byte order mark, no valid UTF-8, no declaration) and every byte reads in the encoding you chose.
+    - A new copy that names its encoding, or that your choice can't read, is not the file the choice was made about: it keeps what its import read, and Replace Existing goes ahead. The very same file that your choice can't read is refused, with the reason, as in “Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding. Nothing was changed.  - The existing copy's files are removed only once the library holds the new copy, so a stop at any moment leaves the old book whole, or the new copy with everything carried over.
     - An old copy left beside the new one, or put back from the Trash with Finder, is never added to the library as a second book: its package names the book the new copy now is, and the debug log records an ORPHAN_ID_LISTED line for it at the launch that finds it.
+
+## While Replace Existing works
+
+- Replace Existing makes the new copy ready off the main thread, so TextMouth's windows and VoiceOver stay responsive while a long braille book is read again in the code its old copy was read in.
+- The question's sheet dims its buttons, shows "Replacing “X”. This can take a moment." with a spinner, and, if the work is still going after a second, VoiceOver hears the same words once.
+- Another answer to the same question meanwhile does nothing and says "TextMouth is still carrying out your last answer. Wait until it finishes."
+- When the work ends, TextMouth checks that nothing changed under it: the question is still the one being asked, the library is not moving, the existing copy is the one the work was made from, and it is still free to replace. If anything changed, the new copy is put back as its import published it, both copies stay as they were, and the question stays with the reason, as in "“X” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again."
+- Quitting waits for the work, as it waits for a text that is read again.
 
 ## When Replace Existing waits
 
-- Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
+- Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
 - Once the cause is gone, choose Replace Existing again.
 - With X the title of the existing copy, the sentences are:
@@ -414,6 +426,8 @@ Part of [TextMouth's documentation](../../README.md).
   - Its audio being edited in the audio editor, or saved from it: "The audio of “X” is being edited. Close the audio editor, or wait until it has saved, then choose Replace Existing again."
   - Its text being read again in another encoding, from the Text Encoding pop-up in Book Information: "TextMouth is reading “X” again in another encoding. Try again when that finishes."
   - Its text being read again with other braille file characters, from the Braille File Characters pop-up in Book Information: "TextMouth is reading “X” again with other braille file characters. Try again when that finishes."
+  - Its text being read again with another braille code, from the Braille Code pop-up in Book Information: "TextMouth is reading “X” again with another braille code. Try again when that finishes."
+  - Being replaced already: "TextMouth is replacing “X” with the new copy. Try again when that finishes." Edit Text, Redo Text Extraction, a re-read from Book Information, and a reader opening the book say it too, until the replacement ends.
   - Files only in the cloud: "Some of the files of “X” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose Replace Existing again."
   - Books moving between folders: "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
   - The data directory being rebuilt: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose Replace Existing again."

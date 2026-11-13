@@ -329,7 +329,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence: "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
 - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
 - A book that recorded no version is never refused for this.
-- Book Info and Speak Info name the code (see [The Library window](library-window.md)).
+- Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](library-window.md)).
 
 #### Braille file characters
 
@@ -453,9 +453,10 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - TextMouth guesses among the encodings below.
 - Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
 - Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted, though you can choose it.
+- The two DOS code pages and Mac Central European, added on November 13, 2026, are taken only when macOS's own guess names one of them. TextMouth does not try them itself, so a book already in the library is not read differently; the Text Encoding pop-up in Book Information offers all three for you to choose.
 - The encodings, by script:
-  - Western European: "Mac Roman (Western European)" and "ISO 8859-15 (Western European)".
-  - Central European: "Windows-1250 (Central European)" and "ISO 8859-2 (Central European)".
+  - Western European: "Mac Roman (Western European)", "ISO 8859-15 (Western European)", "CP437 (US DOS)", and "CP850 (Western European DOS)".
+  - Central European: "Windows-1250 (Central European)", "ISO 8859-2 (Central European)", and "Mac Central European".
   - Cyrillic: "Windows-1251 (Cyrillic)", "KOI8-R (Russian)", "KOI8-U (Ukrainian)", "CP866 (Russian DOS)", "ISO 8859-5 (Cyrillic)", and "Mac Cyrillic".
   - Greek: "Windows-1253 (Greek)" and "ISO 8859-7 (Greek)".
   - Turkish: "Windows-1254 (Turkish)" and "ISO 8859-9 (Turkish)".
@@ -493,7 +494,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   - Short sentences in Mac Roman, in Spanish, Portuguese, Italian, Dutch, Danish, or German.
   - A file whose only accented letters are capitals inside program names, such as "zeigeÜbersicht", when it is not in Windows-1252: read right, those capitals look as odd as they do read wrong.
   - Hebrew text, which is guessed only when macOS's own guess names Hebrew, so a short Hebrew text may stay as it was.
-  - A file in an encoding that is not listed above, such as the DOS code pages CP437 and CP850 or Mac Central European, which TextMouth does not try.
+  - A file in an encoding that is not listed above, or in CP437, CP850, or Mac Central European when macOS's own guess does not name it, since TextMouth does not try those three itself.
 
 #### A guess can be wrong
 
