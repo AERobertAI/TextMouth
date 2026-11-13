@@ -248,7 +248,7 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
             + "TextMouth has no braille file characters named “ascii-braillo-no-047-01”."
 
         XCTAssertThrowsError(try DuplicateReplacement.prepare(replacing: existing, with: copy)) {
-            XCTAssertEqual($0 as? DuplicateReplacement.Refusal, .brailleCopyNotRead(sentence))
+            XCTAssertEqual($0 as? DuplicateReplacement.Refusal, .copyNotReadAgain(sentence))
             XCTAssertEqual($0.localizedDescription, sentence)
         }
         XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported)
@@ -267,7 +267,7 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         XCTAssertThrowsError(try DuplicateReplacement.prepare(replacing: existing, with: copy, access: cloud.access)) {
             XCTAssertEqual(
                 $0 as? DuplicateReplacement.Refusal,
-                .brailleCopyNotRead(LibraryCloudWording.notDownloaded(titles: [copy.title]))
+                .copyNotReadAgain(LibraryCloudWording.notDownloaded(titles: [copy.title]))
             )
         }
         XCTAssertEqual(try textIndexAndRecord(in: copy.tmbDirectory), asImported)

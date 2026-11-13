@@ -213,13 +213,8 @@ extension LibraryViewModel {
             applyTextCacheUpdate(update, atOnce: true)
             // The debug log's line says what the record now decides, in the
             // choice's own words.
-            switch choice {
-            case .textEncoding:
-                if let record = update.summary?.textEncodingRecord {
-                    DiagnosticLog.event(.storage, Self.textEncodingLogLine(title: book.title, record: record, keptCopy: keptCopy))
-                }
-            case .brailleFileCode(let code):
-                DiagnosticLog.event(.storage, Self.brailleFileCodeLogLine(title: book.title, code: code, keptCopy: keptCopy))
+            if let line = Self.rereadLogLine(title: book.title, choice: choice, update: update, keptCopy: keptCopy) {
+                DiagnosticLog.event(.storage, line)
             }
             let announcement = TextEncodingWording.readAgainAnnouncement(
                 bookTitle: book.title, readingDescription: reading, keptCopy: keptCopy, stoppedEditing: wasEditing
@@ -476,6 +471,25 @@ extension LibraryViewModel {
         guard FileStamp(of: cacheURL) != nil else { return nil }
         let bytes = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
         return DuplicateReplacement.holdsUnwrittenText(bytes, of: book, hasher: access.hasher) ? bytes : nil
+    }
+
+    /// The debug log's line for the book titled `title` read again as
+    /// `choice` says, which `update` committed and which kept `keptCopy` of
+    /// text TextMouth did not write: a text book's
+    /// (`textEncodingLogLine(title:record:keptCopy:)`, none when the commit
+    /// recorded no encoding) or a braille book's
+    /// (`brailleFileCodeLogLine(title:code:keptCopy:)`). One place for the
+    /// re-read of Book Information and the one Replace Existing makes of the
+    /// new copy (`DuplicateReplacement`).
+    nonisolated static func rereadLogLine(
+        title: String, choice: TextRereadChoice, update: TextCacheUpdate, keptCopy: URL?
+    ) -> String? {
+        switch choice {
+        case .textEncoding:
+            return update.summary?.textEncodingRecord.map { textEncodingLogLine(title: title, record: $0, keptCopy: keptCopy) }
+        case .brailleFileCode(let code):
+            return brailleFileCodeLogLine(title: title, code: code, keptCopy: keptCopy)
+        }
     }
 
     /// The debug log's line for a book read again in another encoding: the
