@@ -29,6 +29,15 @@ final class MarkdownNestingTests: XCTestCase {
 
     private let standardLimit = MarkupGuard.Limits.standard.deepestNesting
 
+    /// Runs `body` with the walk's limit on trees lifted, so that only the count of
+    /// containers (the first layer) can refuse a text: a refusal seen inside `body` is
+    /// the count's, not the walk's answering first for a tree that was parsed anyway.
+    private func whereOnlyTheCountRefuses(_ body: () throws -> Void) rethrows {
+        var limits = MarkupGuard.Limits.standard
+        limits.deepestTree = .max
+        try MarkupGuard.$limits.withValue(limits, operation: body)
+    }
+
     // MARK: - The count
 
     /// Quotes count one each, with or without the space after the mark.
@@ -86,20 +95,25 @@ final class MarkdownNestingTests: XCTestCase {
 
     // MARK: - The refusal
 
-    /// Thousands of nested quotes are refused with the sentence HTML's refusal gives, and do not crash.
+    /// Thousands of nested quotes are refused with the sentence HTML's refusal gives, and do not
+    /// crash. The walk's limit is lifted, so only the count of quotes before the parse can refuse.
     func testThousandsOfNestedQuotesAreRefused() {
         let markdown = String(repeating: ">", count: 5_000) + " words"
-        XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
-            XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
-            XCTAssertTrue(($0 as? MarkupRefusal)?.errorDescription?.contains("128") == true)
+        whereOnlyTheCountRefuses {
+            XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
+                XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
+                XCTAssertTrue(($0 as? MarkupRefusal)?.errorDescription?.contains("128") == true)
+            }
         }
     }
 
-    /// So are thousands of nested lists, by marker and by indentation.
+    /// So are thousands of nested lists, by marker and by indentation, by the count alone.
     func testThousandsOfNestedListsAreRefused() {
-        for markdown in [String(repeating: "- ", count: 5_000) + "words", nestedList(2_000)] {
-            XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
-                XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
+        whereOnlyTheCountRefuses {
+            for markdown in [String(repeating: "- ", count: 5_000) + "words", nestedList(2_000)] {
+                XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown)) {
+                    XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
+                }
             }
         }
     }
@@ -141,9 +155,11 @@ final class MarkdownNestingTests: XCTestCase {
     }
 
     /// The rest of a line that begins with a page marker is parsed again as a text of its own
-    /// (ST05), and is counted like one, so nested quotes there are refused too.
+    /// (ST05), and is counted like one, so nested quotes there are refused too. The rest holds
+    /// 200 quotes: past the count's limit of 128, yet a tree of about 204 levels, under the walk's
+    /// own limit of 272, so only the count of the rest can refuse it.
     func testTheRestOfAMarkerLineIsCountedLikeAnyText() throws {
-        let markdown = "<!-- page: 3 --> " + String(repeating: ">", count: 1_000) + " words"
+        let markdown = "<!-- page: 3 --> " + String(repeating: ">", count: 200) + " words"
         XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)) {
             XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
         }
