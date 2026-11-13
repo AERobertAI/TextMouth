@@ -142,7 +142,7 @@ final class MarkdownNestingTests: XCTestCase {
 
     /// The rest of a line that begins with a page marker is parsed again as a text of its own
     /// (ST05), and is counted like one, so nested quotes there are refused too.
-    func testTheRestOfAMarkerLineIsCountedLikeAnyText() {
+    func testTheRestOfAMarkerLineIsCountedLikeAnyText() throws {
         let markdown = "<!-- page: 3 --> " + String(repeating: ">", count: 1_000) + " words"
         XCTAssertThrowsError(try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)) {
             XCTAssertEqual($0 as? MarkupRefusal, .nestedTooDeeply(limit: self.standardLimit))
