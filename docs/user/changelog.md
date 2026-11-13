@@ -19,6 +19,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Remove Download and Stop Keeping on This Mac say when the Reading List keeps a book, and what lets it go.
 - The Reading List's options bar goes on to a second line in a narrow window instead of cutting a label.
 
+### Leading articles
+- Settings > Library > Titles has a Leading articles pop-up: Part of the Title, as before and the default; Ignored When Typing; and Ignored When Typing and Sorting, which files The Hobbit among the H's and shows it as "Hobbit, The" in every Library list, feed, and the Books rotor.
+- In the two new choices, typing a title's first letters passes over its article, so H reaches The Hobbit; typing the same letter again goes on to the next title with it, as the Library always has; letters typed into the search field stay there.
+- A book whose details name French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles too, and English "The"; folder names and a book's own title elsewhere (Book Information, the reader, Now Playing, export) are as written.
+
 ### Replace Existing
 - Replace Existing no longer freezes TextMouth while it reads a long braille book again: the sheet dims its buttons, shows "Replacing “Title”. This can take a moment.", and VoiceOver hears it if the work lasts more than a second.
 - Replace Existing keeps a text encoding you chose in Book Information, when the new copy is the same file or a file that names no encoding of its own and reads in your choice.
