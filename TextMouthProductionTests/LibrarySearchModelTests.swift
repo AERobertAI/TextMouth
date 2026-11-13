@@ -319,11 +319,13 @@ final class LibrarySearchModelTests: XCTestCase {
     func testNewQueryCancelsTheOldSearchWhoseLateResultsNeverPublish() async throws {
         let log = RunLog()
         let announcements = AnnouncementLog()
-        let books = [makeBook(0), makeBook(1)]
+        let book0 = makeBook(0)
+        let book1 = makeBook(1)
+        let books = [book0, book1]
         let list = BookList(books)
-        let oldResult = makeResult(books[0], order: 0, kept: 2, query: "old")
-        let lateOldResult = makeResult(books[1], order: 1, kept: 4, query: "old")
-        let newResult = makeResult(books[1], order: 1, kept: 3, query: "new")
+        let oldResult = makeResult(book0, order: 0, kept: 2, query: "old")
+        let lateOldResult = makeResult(book1, order: 1, kept: 4, query: "old")
+        let newResult = makeResult(book1, order: 1, kept: 3, query: "new")
         let releaseOld = DispatchSemaphore(value: 0)
         // Never leave a search thread blocked, whatever fails below.
         defer { releaseOld.signal() }
@@ -421,10 +423,13 @@ final class LibrarySearchModelTests: XCTestCase {
     func testStopKeepsWhatWasFoundAndIgnoresWhatComesAfter() async throws {
         let log = RunLog()
         let announcements = AnnouncementLog()
-        let books = (0..<3).map { makeBook($0) }
+        let book0 = makeBook(0)
+        let book1 = makeBook(1)
+        let book2 = makeBook(2)
+        let books = [book0, book1, book2]
         let list = BookList(books)
-        let firstResult = makeResult(books[2], order: 2, kept: 4)
-        let lateResult = makeResult(books[0], order: 0, kept: 5)
+        let firstResult = makeResult(book2, order: 2, kept: 4)
+        let lateResult = makeResult(book0, order: 0, kept: 5)
         let release = DispatchSemaphore(value: 0)
         defer { release.signal() }
 
@@ -497,9 +502,14 @@ final class LibrarySearchModelTests: XCTestCase {
     /// order they were reported in.
     func testResultsArriveInBatchesInTheBooksOrder() async throws {
         let announcements = AnnouncementLog()
-        let books = (0..<3).map { makeBook($0) }
+        let book0 = makeBook(0)
+        let book1 = makeBook(1)
+        let book2 = makeBook(2)
+        let books = [book0, book1, book2]
         let list = BookList(books)
-        let results = books.enumerated().map { makeResult($1, order: $0, kept: 2) }
+        let result0 = makeResult(book0, order: 0, kept: 2)
+        let result1 = makeResult(book1, order: 1, kept: 2)
+        let result2 = makeResult(book2, order: 2, kept: 2)
         let afterFirstBatch = DispatchSemaphore(value: 0)
         let afterSecondBatch = DispatchSemaphore(value: 0)
         defer {
@@ -509,10 +519,10 @@ final class LibrarySearchModelTests: XCTestCase {
 
         let model = makeModel(list, announcements) { _, _, _, _, _, report in
             // The last book finishes first, and is listed last.
-            report(results[2], makeTally(given: 3, searched: 1, withMatches: 1, matches: 2))
+            report(result2, makeTally(given: 3, searched: 1, withMatches: 1, matches: 2))
             waitForGate(afterFirstBatch)
-            report(results[1], makeTally(given: 3, searched: 2, withMatches: 2, matches: 4))
-            report(results[0], makeTally(given: 3, searched: 3, withMatches: 3, matches: 6))
+            report(result1, makeTally(given: 3, searched: 2, withMatches: 2, matches: 4))
+            report(result0, makeTally(given: 3, searched: 3, withMatches: 3, matches: 6))
             waitForGate(afterSecondBatch)
             return .finished(makeTally(given: 3, searched: 3, withMatches: 3, matches: 6))
         }
@@ -652,9 +662,11 @@ final class LibrarySearchModelTests: XCTestCase {
     /// A book with more matches than a list shows lists the first twenty and
     /// offers Show All; a book with exactly twenty lists them all.
     func testABookShowsTwentyMatchesAndOffersShowAll() async {
-        let books = [makeBook(0), makeBook(1)]
+        let book0 = makeBook(0)
+        let book1 = makeBook(1)
+        let books = [book0, book1]
         let list = BookList(books)
-        let results = [makeResult(books[0], order: 0, kept: 25), makeResult(books[1], order: 1, kept: 20)]
+        let results = [makeResult(book0, order: 0, kept: 25), makeResult(book1, order: 1, kept: 20)]
         let model = makeModel(list, AnnouncementLog()) { _, _, books, _, _, report in
             playOut(results, given: books.count, report: report)
         }
@@ -723,10 +735,12 @@ final class LibrarySearchModelTests: XCTestCase {
     func testShowAllListsEveryMatchKept() async {
         let log = RunLog()
         let announcements = AnnouncementLog()
-        let books = [makeBook(0, title: "The Long Road"), makeBook(1)]
+        let book0 = makeBook(0, title: "The Long Road")
+        let book1 = makeBook(1)
+        let books = [book0, book1]
         let list = BookList(books)
-        let libraryResults = [makeResult(books[0], order: 0, kept: 100, count: 150), makeResult(books[1], order: 1, kept: 3)]
-        let wholeBookResult = makeResult(books[0], order: 0, kept: 150)
+        let libraryResults = [makeResult(book0, order: 0, kept: 100, count: 150), makeResult(book1, order: 1, kept: 3)]
+        let wholeBookResult = makeResult(book0, order: 0, kept: 150)
         let model = makeModel(list, announcements) { query, options, books, limits, _, report in
             log.record(query: query, options: options, books: books, limits: limits)
             guard limits == .wholeBook else {
@@ -739,13 +753,13 @@ final class LibrarySearchModelTests: XCTestCase {
         XCTAssertEqual(model.sections.first?.rows.count, 20)
         XCTAssertEqual(model.sections.first?.more, .showAll)
 
-        model.showAllMatches(in: books[0].id)
+        model.showAllMatches(in: book0.id)
         await model.showAllTask?.value
 
         let calls = log.calls
         XCTAssertEqual(calls.count, 2, "One library search and one Show All; actual: \(calls.count)")
         XCTAssertEqual(calls.last?.limits, .wholeBook)
-        XCTAssertEqual(calls.last?.bookIDs, [books[0].id], "Show All searches only that book")
+        XCTAssertEqual(calls.last?.bookIDs, [book0.id], "Show All searches only that book")
         XCTAssertEqual(calls.last?.query, "needle")
         XCTAssertEqual(calls.last?.options, TextSearchOptions(matchCase: true, isRegularExpression: false))
         XCTAssertEqual(model.sections.first?.rows.count, 150, "Every match kept is listed")
@@ -891,9 +905,10 @@ final class LibrarySearchModelTests: XCTestCase {
     /// The cloud and unreadable notes reach the status a search ends with.
     func testTheFinishedStatusCarriesTheNotesOfTheTally() async {
         let announcements = AnnouncementLog()
-        let books = (0..<4).map { makeBook($0) }
+        let book0 = makeBook(0)
+        let books = [book0] + (1..<4).map { makeBook($0) }
         let list = BookList(books)
-        let result = makeResult(books[0], order: 0, kept: 2)
+        let result = makeResult(book0, order: 0, kept: 2)
         let model = makeModel(list, announcements) { _, _, books, _, _, report in
             playOut([result], given: books.count, inCloud: 1, unreadable: 2, report: report)
         }
