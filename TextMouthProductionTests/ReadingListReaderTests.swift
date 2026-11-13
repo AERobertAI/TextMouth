@@ -779,6 +779,39 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertFalse(world.library.readingList.contains(first.id), "stayed after the last hold was released")
     }
 
+    /// The library started as the app starts it (`startLibrary()`) hears of
+    /// finished books and of changes to the list by itself: a listed book
+    /// leaves the list when Books Finished counts it, and the kept books
+    /// receive the list's IDs, then drop the one that left. Nothing here
+    /// calls an observer: deleting either observer's line from `startLibrary()`
+    /// fails this test, as the app would lose the feature. The library is a
+    /// sandbox's, never the user's.
+    func testALibraryStartedAsTheAppStartsItWiresBothReadingListObservers() async throws {
+        let fixture = try LibraryFixture(test: self, label: "ReadingListWiring")
+        let model = LibraryViewModel(dataDirectoryEnvironment: fixture.environment)
+        XCTAssertTrue(model.hasStartedLibrary, "the library did not start")
+        let kept = KeptBooks(file: nil)
+        model.cloudCommands = LibraryCloudCommands(
+            states: BookCloudStates(),
+            kept: kept,
+            storage: { FakeBookCloudStorage(location: .local) }
+        )
+        let first = cloudTestBook("First Crossing")
+        let second = cloudTestBook("Second Crossing")
+        model.library = Library(books: [first, second])
+
+        // The list changes: the kept books receive its books.
+        model.library.readingList = ReadingList(bookIDs: [first.id, second.id], removesFinished: true)
+        await drainMainQueue()
+        XCTAssertEqual(kept.readingListBookIDs, [first.id, second.id], "the list's books never reached the kept books")
+
+        // A listed book is finished: it leaves the list, and is no longer kept for it.
+        ReadingStatsService.shared.markBookFinished(bookID: first.id, title: first.title)
+        XCTAssertTrue(eventually { model.library.readingList.bookIDs == [second.id] }, "the finished book never left the list")
+        await drainMainQueue()
+        XCTAssertEqual(kept.readingListBookIDs, [second.id])
+    }
+
     /// Three books on a list with the option on, the second read from the
     /// list under `continuation`: the end counts the book finished and says
     /// "Starting: <title>" of `next`, or why nothing follows when it is nil;
