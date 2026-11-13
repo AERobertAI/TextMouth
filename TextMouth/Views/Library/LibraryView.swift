@@ -514,8 +514,8 @@ struct LibraryView: View {
             .accessibilityRotor("Books") {
                 // Each title as its row shows it ("Hobbit, The" while sorting
                 // passes over articles), in the list's order.
-                ForEach(books) { book in
-                    AccessibilityRotorEntry(libraryViewModel.rowTitle(of: book, articles: articles) ?? book.title, id: book.id)
+                ForEach(libraryViewModel.booksRotorEntries(of: books, articles: articles)) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
             .accessibilityRotor("Folders") {

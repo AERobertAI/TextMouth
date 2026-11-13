@@ -203,6 +203,39 @@ final class LeadingArticlesSortTests: XCTestCase {
         XCTAssertEqual(shown, ["Tale of Two Cities, A", "Hobbit, The", "Ivanhoe"])
     }
 
+    /// The Books rotor lists the titles the rows show, in the list's order
+    /// and for the book each row is: as written in the first two choices,
+    /// "Hobbit, The" in the third, where the list is ordered by it. The
+    /// window's rotor reads these entries, so a rotor that said the book's
+    /// own title would fail here.
+    func testTheBooksRotorListsTheShownTitlesInTheListsOrder() {
+        let store = TextMouthRuntime.current.preferences
+        preservePreferences([LeadingArticles.preference.key], in: store)
+        let folder = "Shelf"
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(
+            books: ["The Hobbit", "Ivanhoe", "A Tale of Two Cities", "Die Verwandlung"].map { Self.book($0, folderPath: folder) },
+            folders: [BookFolder(name: folder)]
+        )
+        let location = LibraryLocation(category: .folders, folderPath: folder)
+        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .title, sortAscending: true)
+        let german = model.library.books.firstIndex { $0.title == "Die Verwandlung" }
+        model.library.books[german ?? 0].epubLanguage = "de"
+
+        let expected: [LeadingArticles: [String]] = [
+            .partOfTitle: ["A Tale of Two Cities", "Die Verwandlung", "Ivanhoe", "The Hobbit"],
+            .ignoredWhenTyping: ["A Tale of Two Cities", "Die Verwandlung", "Ivanhoe", "The Hobbit"],
+            .ignoredWhenTypingAndSorting: ["Hobbit, The", "Ivanhoe", "Tale of Two Cities, A", "Verwandlung, Die"],
+        ]
+        for choice in LeadingArticles.allCases {
+            LeadingArticles.preference.write(choice, to: store)
+            let books = model.displayedBooks(at: location, matching: "")
+            let entries = model.booksRotorEntries(of: books, articles: model.leadingArticles)
+            XCTAssertEqual(entries.map(\.label), expected[choice], "\(choice)")
+            XCTAssertEqual(entries.map(\.id), books.map(\.id), "\(choice): an entry is for its row's book")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// A book titled `title`, with the given fields, at a path that exists

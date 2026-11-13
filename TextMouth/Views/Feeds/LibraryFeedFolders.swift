@@ -121,6 +121,15 @@ struct FolderRotorEntry: Equatable, Identifiable {
     let id: UUID
 }
 
+/// One entry of a Library window's Books rotor: the title its row shows,
+/// which VoiceOver says, and the book's ID, which is its row's.
+struct BookRotorEntry: Equatable, Identifiable {
+    /// What the rotor says: the book's title as its row shows it.
+    let label: String
+    /// The book's ID, the ID of its row.
+    let id: UUID
+}
+
 /// The Folders section's rows and the Folders rotor's entries at one
 /// location of a Library window (FR03).
 struct LibraryFolderRows: Equatable {

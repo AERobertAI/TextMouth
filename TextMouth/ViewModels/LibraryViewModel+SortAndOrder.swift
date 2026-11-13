@@ -273,6 +273,14 @@ extension LibraryViewModel {
         listCache.rowTitle(of: book, articles: articles)
     }
 
+    /// The Books rotor's entries for `books`, a list's books in its order:
+    /// each book's title as its row shows it, "Hobbit, The" while sorting
+    /// passes over articles (`rowTitle(of:articles:)`), and otherwise the
+    /// title as written. The window's rotor and its tests both read them.
+    func booksRotorEntries(of books: [Book], articles: LeadingArticles) -> [BookRotorEntry] {
+        books.map { BookRotorEntry(label: rowTitle(of: $0, articles: articles) ?? $0.title, id: $0.id) }
+    }
+
     /// The rows of `books`, a list's books in its order, as letter
     /// navigation reaches them, their titles folded once and kept until the
     /// list changes (`LibraryListCache.typedRows(of:)`).
