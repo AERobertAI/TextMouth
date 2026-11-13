@@ -25,6 +25,7 @@ Each owns its region; post a `finding` on the board for a problem in another's r
 - `optaudit` (Fable): an audit of the app's size, memory, and processing. Read-only; builds Release variants under the lock.
 - `triage1113` (Sonnet): reads the TODO's open items. Read-only.
 - `iosunitfix2` (Sonnet): the iPhone unit tests on GitHub. `Scripts/agents/`, `TextMouthiOSUITests/`.
+- From 01:00, the TODO's batches (Sonnet), each owning the files section 2 of `build/orchestrator/nov13/triage-report.md` lists for it: `batchA` (import edges), `batchB` (parser safety), `batchC` (replace and encodings), `batchF` (metadata and Book Information).
 
 `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate`, `KeyboardShortcuts*`, and the config test fixtures are shared: add your lines next to, not into, other agents' lines, and expect adjacent-line conflicts when you rebase (keep both sides).
 
