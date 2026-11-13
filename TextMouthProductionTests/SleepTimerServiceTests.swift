@@ -29,6 +29,14 @@ final class SleepTimerServiceTests: XCTestCase {
         try await super.tearDown()
     }
 
+    /// A timer made as the next launch makes one: in a registry of its own,
+    /// so it reads the duration saved in `testDefaults`, not the copy this
+    /// launch's registry keeps of the duration last started
+    /// (`SleepTimerRegistry.lastStartedDuration(savedIn:)`).
+    private func timerOfTheNextLaunch() -> SleepTimerService {
+        SleepTimerService(userDefaults: testDefaults, registry: SleepTimerRegistry())
+    }
+
     /// Starts a timer with inert callbacks unless a test supplies behavior.
     private func start(
         _ duration: SleepTimerDuration,
@@ -620,7 +628,7 @@ final class SleepTimerServiceTests: XCTestCase {
         for duration: SleepTimerDuration in [.endOfHeading, .endOfBook, .minutes(25)] {
             start(duration)
 
-            let restored = SleepTimerService(userDefaults: testDefaults)
+            let restored = timerOfTheNextLaunch()
 
             XCTAssertEqual(restored.lastUsedDuration, duration)
         }
@@ -638,7 +646,7 @@ final class SleepTimerServiceTests: XCTestCase {
         for savedKind in ["endOfHeading", "endOfChapter", "endOfDocument"] {
             testDefaults.set(Data(#"{"kind":"\#(savedKind)"}"#.utf8), forKey: key)
 
-            let restored = SleepTimerService(userDefaults: testDefaults)
+            let restored = timerOfTheNextLaunch()
             defer { restored._resetForTesting() }
 
             XCTAssertEqual(restored.lastUsedDuration, .endOfHeading, "A saved \(savedKind) did not restore End of heading")
@@ -658,7 +666,7 @@ final class SleepTimerServiceTests: XCTestCase {
     func testRestoredMinutesAreLimitedToTheSupportedRange() throws {
         let key = "sleepTimer.lastUsedDuration"
         testDefaults.set(Data(#"{"kind":"minutes","minutes":9223372036854775807}"#.utf8), forKey: key)
-        let restored = SleepTimerService(userDefaults: testDefaults)
+        let restored = timerOfTheNextLaunch()
         defer { restored._resetForTesting() }
 
         XCTAssertEqual(restored.lastUsedDuration, .minutes(480))
@@ -667,10 +675,10 @@ final class SleepTimerServiceTests: XCTestCase {
 
         for minutes in [0, -5] {
             testDefaults.set(Data(#"{"kind":"minutes","minutes":\#(minutes)}"#.utf8), forKey: key)
-            XCTAssertNil(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, "\(minutes)")
+            XCTAssertNil(timerOfTheNextLaunch().lastUsedDuration, "\(minutes)")
         }
         testDefaults.set(Data(#"{"kind":"minutes","minutes":45}"#.utf8), forKey: key)
-        XCTAssertEqual(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, .minutes(45))
+        XCTAssertEqual(timerOfTheNextLaunch().lastUsedDuration, .minutes(45))
     }
 
     func testFixturePersistenceDoesNotTouchStandardDefaults() {
@@ -1327,5 +1335,51 @@ final class SleepTimerRegistryTests: XCTestCase {
         XCTAssertEqual(second.lastUsedDuration, .minutes(45))
         second.start(duration: .endOfBook, ownerID: taker, onExpire: {})
         XCTAssertEqual(first.lastUsedDuration, .endOfBook)
+    }
+
+    /// Once a timer has started, every window's timer repeats that duration
+    /// from the registry's copy, whatever the preferences store answers
+    /// meanwhile, as the one shared timer repeated its own copy: on a GitHub
+    /// runner the hosted tests' store answered an older End of book for
+    /// seconds after a timer saved 30 minutes in it (November 13, 2026), and
+    /// a window's Restart re-armed End of book. A window opened later in the
+    /// launch repeats it too; the next launch, with a registry of its own,
+    /// reads what the store holds.
+    func testEveryWindowRepeatsTheDurationStartedLastWhateverTheStoreAnswers() throws {
+        let key = "sleepTimer.lastUsedDuration"
+        let first = makeWindowTimer()
+        let second = makeWindowTimer()
+        first.start(duration: .minutes(30), ownerID: owner, onExpire: {})
+        XCTAssertNotNil(defaults.data(forKey: key), "The duration was not saved for the next launch")
+
+        // The store answers an older duration, as the runner's did.
+        defaults.set(Data(#"{"kind":"endOfBook"}"#.utf8), forKey: key)
+
+        XCTAssertEqual(first.lastUsedDuration, .minutes(30), "The window that started the timer repeats what the store says")
+        XCTAssertEqual(second.lastUsedDuration, .minutes(30), "Another window repeats what the store says")
+        XCTAssertEqual(makeWindowTimer().lastUsedDuration, .minutes(30), "A window opened later repeats what the store says")
+        let nextLaunch = SleepTimerService(userDefaults: defaults, registry: SleepTimerRegistry())
+        XCTAssertEqual(nextLaunch.lastUsedDuration, .endOfBook, "The next launch does not read the store")
+
+        // A timer saving in a store of its own, as a test's is, never sees
+        // another store's duration.
+        let ownStore = makeSandboxedPreferences("sleep-timer-registry-own-store")
+        XCTAssertNil(SleepTimerService(userDefaults: ownStore, registry: registry).lastUsedDuration)
+    }
+
+    /// A timer's reset for a test forgets the registry's copy of the duration
+    /// last started, as it removes the saved one, and so does the registry's
+    /// stop of every timer at a test's start and end: each test's timers read
+    /// the saved duration until one of them starts.
+    func testTheTestResetsForgetTheDurationStartedLast() {
+        let first = makeWindowTimer()
+        first.start(duration: .minutes(20), ownerID: owner, onExpire: {})
+        first._resetForTesting()
+        XCTAssertNil(makeWindowTimer().lastUsedDuration, "The reset left the registry's copy")
+
+        first.start(duration: .endOfHeading, ownerID: owner, onExpire: {})
+        registry._stopEveryTimerForTesting()
+        defaults.removeObject(forKey: "sleepTimer.lastUsedDuration")
+        XCTAssertNil(first.lastUsedDuration, "Stopping every timer for a test left the registry's copy")
     }
 }

@@ -69,12 +69,21 @@ final class SleepTimerService: ObservableObject {
     private(set) var ownerID: UUID?
 
     /// Most recently used duration, in any window: one preference for the
-    /// app (`sleepTimer.lastUsedDuration`), saved by `start()` and read from
-    /// the preferences each time it is asked, so the "Restart Sleep Timer"
-    /// shortcut and the media-gesture detector re-arm a fresh timer with the
-    /// duration the user last picked, wherever they picked it, even after
-    /// that timer has fully expired, and after the app restarts.
+    /// app (`sleepTimer.lastUsedDuration`), saved by `start()`, so the
+    /// "Restart Sleep Timer" shortcut and the media-gesture detector re-arm a
+    /// fresh timer with the duration the user last picked, wherever they
+    /// picked it, even after that timer has fully expired, and after the app
+    /// restarts. Once any window's timer has started, the registry's copy
+    /// answers (`SleepTimerRegistry.lastStartedDuration(savedIn:)`), as the
+    /// one shared timer's own copy did; until then, the preference does.
     var lastUsedDuration: SleepTimerDuration? {
+        registry.lastStartedDuration(savedIn: userDefaults) ?? savedLastUsedDuration
+    }
+
+    /// The duration saved in the preferences as the one last used, by this
+    /// launch or an earlier one; nil when none is saved, or the saved one
+    /// cannot be read.
+    private var savedLastUsedDuration: SleepTimerDuration? {
         guard let data = userDefaults.data(forKey: Self.lastUsedDurationKey) else { return nil }
         // Encoded as JSON for forward-compatibility — adding new
         // SleepTimerDuration cases later won't break decoding old
@@ -239,12 +248,15 @@ final class SleepTimerService: ObservableObject {
 
     // MARK: - Last-Used-Duration Persistence
 
-    /// Persist a duration as the most recently used, for every window.
-    /// Called from `start()` whenever a fresh timer is configured. Failures
-    /// to encode are swallowed: the timer runs all the same, and Restart
-    /// Sleep Timer repeats the duration saved before, the saving being only
-    /// a convenience.
-    private func persistLastUsedDuration(_ duration: SleepTimerDuration) {
+    /// Remember a duration as the most recently used, for every window: in
+    /// the registry, which every window's timer reads it from, and in the
+    /// preferences, for later launches. Called from `start()` whenever a
+    /// fresh timer is configured. Failures to encode are swallowed: the timer
+    /// runs all the same, Restart Sleep Timer repeats it in this launch, and
+    /// a later launch repeats the duration saved before, the saving being
+    /// only a convenience.
+    private func rememberLastUsedDuration(_ duration: SleepTimerDuration) {
+        registry.noteStarted(duration, savedIn: userDefaults)
         let model = PersistedDuration(from: duration)
         if let data = try? JSONEncoder().encode(model) {
             userDefaults.set(data, forKey: Self.lastUsedDurationKey)
@@ -335,7 +347,7 @@ final class SleepTimerService: ObservableObject {
         self.onFadeCancelled = onFadeCancelled
         self.fadeOutDuration = fadeOutDuration
         self.duration = duration
-        persistLastUsedDuration(duration)
+        rememberLastUsedDuration(duration)
         self.isActive = true
         self.pendingFadeCompletion = false
         self.lastExpiredOwnerID = nil
@@ -1239,12 +1251,14 @@ final class SleepTimerService: ObservableObject {
     }
 
     /// Reset shared state for unit tests. Production code must not
-    /// call this. Clears the persisted last-used duration too so a
-    /// later test isn't surprised by leaked state from earlier ones.
+    /// call this. Clears the last-used duration too, the registry's copy and
+    /// the saved one, so a later test isn't surprised by leaked state from
+    /// earlier ones.
     func _resetForTesting() {
         stop(reason: "test-reset")
         lastExpiredOwnerID = nil
         expiredWhileHeldBookID = nil
+        registry.forgetLastStarted(savedIn: userDefaults)
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }
 }

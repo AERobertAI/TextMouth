@@ -14,7 +14,9 @@ import Foundation
 /// path that knows the book will not open releases it, and a reader open for
 /// the book in another window hears that it was asked for (`asksMade`). Each
 /// of its calls about a book finds that one timer and calls the timer's own
-/// method, which says what it does.
+/// method, which says what it does. It also keeps the duration a timer last
+/// started with, in any window (`lastStartedDuration(savedIn:)`), which every
+/// window's Restart Sleep Timer repeats.
 ///
 /// Each timer registers itself as it is made, weakly, so a timer goes when its
 /// window does. A timer held for a book is retained besides, until its hold
@@ -141,15 +143,53 @@ final class SleepTimerRegistry {
         timer(heldForBook: bookID)?.cancelHeld(forBook: bookID)
     }
 
+    // MARK: The Duration Last Started
+
+    /// The duration a timer of this registry last started with, and the
+    /// preferences store it saved it in; nil until a timer starts, and after
+    /// it is forgotten. One app preference (`sleepTimer.lastUsedDuration`)
+    /// holds it for later launches, but every window's timer reads it from
+    /// here once one has started, as the one shared timer read the copy it
+    /// kept: the duration one window started is the one another window's
+    /// Restart repeats, at once, whatever the store answers meanwhile. (A
+    /// GitHub runner's store answered an older value for seconds after a
+    /// write, November 13, 2026.)
+    private var lastStarted: (store: UserDefaults, duration: SleepTimerDuration)?
+
+    /// Notes that a timer saving its last duration in `store` has started
+    /// with `duration`.
+    func noteStarted(_ duration: SleepTimerDuration, savedIn store: UserDefaults) {
+        lastStarted = (store, duration)
+    }
+
+    /// The duration a timer saving in `store` last started with, or nil when
+    /// none has since the registry was made or last forgot it: a timer then
+    /// reads the duration saved in its store. A timer saving in another store,
+    /// as a test's own timers do, never sees it.
+    func lastStartedDuration(savedIn store: UserDefaults) -> SleepTimerDuration? {
+        guard let lastStarted, lastStarted.store === store else { return nil }
+        return lastStarted.duration
+    }
+
+    /// Forgets the duration last started in `store`, which a timer's reset
+    /// for a test removes from the store too.
+    func forgetLastStarted(savedIn store: UserDefaults) {
+        if lastStarted?.store === store {
+            lastStarted = nil
+        }
+    }
+
     // MARK: Test Support
 
     /// Stops every timer that runs or is held, so none a test made runs on
-    /// into the next test, and the registry keeps none alive. Production code
-    /// must not call this.
+    /// into the next test, and the registry keeps none alive. It forgets the
+    /// duration last started too, so each test's timers read the saved one
+    /// until one of them starts. Production code must not call this.
     func _stopEveryTimerForTesting() {
         for timer in timers where timer.isActive || timer.isHolding {
             timer.stop(reason: "test ended")
         }
         retainedWhileHeld = [:]
+        lastStarted = nil
     }
 }
