@@ -49,6 +49,13 @@ struct LibraryBookInfoReader: Sendable {
     var readEPUBMetadata: @Sendable (URL) throws -> EPUBMetadata
     /// Reads the metadata of the audio file at a URL.
     var readAudioMetadata: @Sendable (URL) async -> AudioMetadata
+    /// How long reading an audio file's tags may take before Book Info
+    /// stops waiting and shows the metadata the library keeps. Tests pass a
+    /// short one.
+    var audioTagsTimeLimit: Duration = AsyncBridge.audioTagsTimeLimit
+    /// The audio files whose tag read passed its limit, which are not read
+    /// again until TextMouth is opened again. Tests pass their own.
+    var abandonedReads: AsyncBridge.AbandonedReads = .session
 
     /// The reads the app uses. An EPUB is read with dataless files left in
     /// the cloud, so one evicted after the check fails at once instead of
@@ -87,7 +94,21 @@ struct LibraryBookInfoReader: Sendable {
             if isCloudOnly {
                 return .audio(book.storedAudioMetadata, isCloudOnly: true)
             }
-            let tags = await Task.detached(priority: .userInitiated) { await reader.readAudioMetadata(file) }.value
+            // A tag read that never returns (a file that hangs AVFoundation)
+            // would leave the sheet on its loading state for good: after the
+            // limit, or for a file an earlier read gave up on, the sheet
+            // shows the metadata the library keeps. That is not the
+            // cloud-only case, so the sheet says nothing of a download.
+            let tags = await Task.detached(priority: .userInitiated) {
+                try? AsyncBridge.waitForResult(
+                    reading: file,
+                    timeLimit: reader.audioTagsTimeLimit,
+                    abandoned: reader.abandonedReads
+                ) { await reader.readAudioMetadata(file) }
+            }.value
+            guard let tags else {
+                return .audio(book.storedAudioMetadata, isCloudOnly: false)
+            }
             return .audio(book.mergingEditableAudioMetadata(tags), isCloudOnly: false)
         case .txt, .markdown, .html, .webarchive, .ssml, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .daisy, .pdf, .mobi, .kfx:
             return .simple
