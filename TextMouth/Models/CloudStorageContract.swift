@@ -352,9 +352,20 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// book waits to upload, and `.removalFailed` when the sync service
     /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
+    /// The bytes of `package` not on this Mac yet, as its files report their
+    /// sizes, read without downloading anything: what a download of it needs
+    /// room for. Nil when they cannot be told, such as a package that syncs
+    /// as one item and is only in the cloud, whose files are not listed, or
+    /// a file that reports no size.
+    func bytesToDownload(of package: BookPackage) -> Int64?
 }
 
 extension BookCloudStorage {
+    /// Storage that cannot tell a package's size says so.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        nil
+    }
+
     /// `state(of:)`, for storage that works out nothing from the location:
     /// the local placeholder below, and the test doubles.
     func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {

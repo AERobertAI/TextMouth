@@ -178,6 +178,19 @@ final class BookCloudStorageService: BookCloudStorage {
         }
     }
 
+    // MARK: How Much a Book Needs
+
+    /// The bytes of `package`'s files that are not on this Mac yet, from
+    /// the sizes the file system reports for them, read without downloading
+    /// anything (`Survey.sizesAreKnown`). Nil when a size is unknown, such as
+    /// for a folder only in the cloud, or when the package cannot be read.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        guard let survey = try? survey(of: package), survey.sizesAreKnown else { return nil }
+        return survey.files
+            .filter { !$0.status.state.isOnThisMac && $0.status.state != .missing }
+            .reduce(0) { $0 + ($1.status.byteCount ?? 0) }
+    }
+
     // MARK: Downloading a Book
 
     /// Downloads every file of `package` (see `BookCloudStorage`). One task

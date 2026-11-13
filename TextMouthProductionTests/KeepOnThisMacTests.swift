@@ -751,19 +751,134 @@ final class KeepOnThisMacTests: XCTestCase {
     }
 
     /// A list book that the sync service evicted downloads again after a
-    /// refresh, as a kept book does, quietly; with the choice cleared, or in
-    /// a library outside the cloud, nothing downloads.
+    /// refresh, as a kept book does; with the choice cleared, or in a library
+    /// outside the cloud, nothing downloads. Nobody asked just then, so
+    /// VoiceOver hears one notice of it, at medium priority, the first time
+    /// and never again for the same book.
     func testAnEvictedListBookDownloadsAgainAfterARefresh() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
         fixture.kept.setReadingListBooks([book.id])
         let refresher = makeRefresher(for: fixture)
 
-        let said = await announcements { await refresher.waitForRefreshes() }
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
         await waitUntil(fixture.states, records: .downloaded, for: book.id)
 
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
-        XCTAssertEqual(said, [], "nobody asked just then")
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
+
+        // Evicted again, it downloads again and says nothing more.
+        fixture.fake.setState(.inCloud, of: book.id)
+        fixture.states.record(.inCloud, for: book.id)
+        let saidAgain = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id, book.id])
+        XCTAssertEqual(saidAgain, [])
+    }
+
+    /// The notice's words, word for word: the books that start, in the
+    /// listener's own words or the quiet ones, and the books that found no
+    /// room.
+    func testTheReadingListDownloadNoticeIsWordedInOnePlace() {
+        let notice = LibraryCloudWording.readingListDownloadsStarted(titles:short:quietly:)
+        XCTAssertEqual(notice(["Moby-Dick"], 0, false), "Downloading Moby-Dick")
+        XCTAssertEqual(notice(["Moby-Dick"], 0, true), "Downloading Moby-Dick")
+        XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, false), "Downloading 2 books")
+        XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, true), "Downloading 2 reading list books")
+        XCTAssertEqual(
+            notice(["Moby-Dick", "Emma"], 3, true),
+            "Downloading 2 reading list books. There isn't enough free space for 3 more books"
+        )
+        XCTAssertEqual(
+            notice(["Moby-Dick"], 1, true),
+            "Downloading Moby-Dick. There isn't enough free space for 1 more book"
+        )
+        XCTAssertEqual(notice([], 1, true), "There isn't enough free space to download 1 reading list book")
+        XCTAssertEqual(notice([], 4, false), "There isn't enough free space to download 4 reading list books")
+    }
+
+    /// Only the list books that fit in the free space, less the reserve an
+    /// import leaves, start downloading; the notice says how many download
+    /// and that space ran short, once, at medium priority. A refresh that
+    /// finds the rest still short says nothing more, and they download,
+    /// quietly, once space is free.
+    func testOnlyTheListBooksThatFitStartDownloading() async {
+        let books = [cloudTestBook("One"), cloudTestBook("Two"), cloudTestBook("Three")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        for book in books {
+            fixture.fake.setBytesToDownload(400_000_000, of: book.id)
+        }
+        // Room for two of the three, with the reserve left over.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 900_000_000
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[1].id)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[1].id], "a book that did not fit downloaded")
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(
+                message: "Downloading 2 reading list books. There isn't enough free space for 1 more book",
+                priority: .medium
+            )]
+        )
+
+        // Still short: the refresh tries the third again and says nothing.
+        let saidAgain = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+        XCTAssertEqual(saidAgain, [])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[1].id])
+
+        // Space is free again: the third book downloads, with no notice.
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 5_000_000_000
+        let saidLast = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[2].id)
+        }
+        XCTAssertEqual(fixture.fake.downloadsStarted, books.map(\.id))
+        XCTAssertEqual(saidLast, [])
+    }
+
+    /// With less free than the reserve, no list book starts, whatever its
+    /// size, and the notice says so.
+    func testNoListBookStartsBelowTheReserve() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve - 1
+        fixture.kept.setReadingListBooks([book.id])
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(
+                message: "There isn't enough free space to download 1 reading list book",
+                priority: .medium
+            )]
+        )
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud, "the book showed a download that never started")
     }
 
     /// Clearing the choice keeps no list book downloaded, and a library
@@ -941,15 +1056,20 @@ final class KeepOnThisMacTests: XCTestCase {
         await drainMainQueue()
         XCTAssertEqual(fixture.kept.readingListBookIDs, [])
 
-        let said = await announcements {
+        let said = await announcementsWithPriority {
             fixture.model.library.readingList = ReadingList(bookIDs: [book.id])
             await drainMainQueue()
+            await waitForPlanning(of: fixture.commands)
             await waitUntil(fixture.states, records: .downloaded, for: book.id)
         }
 
         XCTAssertEqual(fixture.kept.readingListBookIDs, [book.id])
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "a book not on the list downloaded")
-        XCTAssertEqual(said, [], "a sync's books download quietly")
+        XCTAssertEqual(
+            said,
+            [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)],
+            "a sync's books download with one notice, at medium priority"
+        )
 
         // A book taken off the list is no longer kept for it, and nothing
         // is removed.
@@ -962,24 +1082,65 @@ final class KeepOnThisMacTests: XCTestCase {
     }
 
     /// A book the listener adds to the list in a cloud library downloads at
-    /// once under Download Now's announcement, after the add's own, and only
-    /// once when the library's observation follows.
-    func testABookTheListenerAddsDownloadsUnderDownloadNowsWords() async {
+    /// once, and only once when the library's observation follows. VoiceOver
+    /// hears the add's own words at high priority, then one notice of the
+    /// download at medium priority, which waits for them rather than cutting
+    /// them off (as the import's follow-up does), then the download's end as
+    /// Download Now's.
+    func testABookTheListenerAddsDownloadsUnderOneNoticeAfterTheAdd() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
         fixture.model.cloudCommands = fixture.commands
         fixture.model.observeReadingListKeeping()
         await drainMainQueue()
 
-        let said = await announcements {
+        let said = await announcementsWithPriority {
             fixture.model.addToReadingList([book], announcingFrom: nil)
             await drainMainQueue()
+            await waitForPlanning(of: fixture.commands)
             await waitUntil(fixture.states, records: .downloaded, for: book.id)
+            await drainMainQueue()
         }
 
-        XCTAssertTrue(said.contains(ReadingListWording.addedAnnouncement(added: [book.title], alreadyIn: 0)), "\(said)")
-        XCTAssertTrue(said.contains(LibraryCloudWording.downloadStarted(titles: [book.title])), "\(said)")
+        XCTAssertEqual(
+            Array(said.prefix(2)),
+            [
+                VoiceOverAnnouncement(
+                    message: ReadingListWording.addedAnnouncement(added: [book.title], alreadyIn: 0),
+                    priority: .high
+                ),
+                VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium),
+            ]
+        )
+        XCTAssertEqual(said.filter { $0.message.hasPrefix("Downloading") }.count, 1, "\(said)")
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "downloaded twice")
+    }
+
+    /// Adding books to the list checks the room as the refresh does: those
+    /// that fit download, and the notice says that space ran short.
+    func testAddingToTheListDownloadsOnlyWhatFits() async {
+        let books = [cloudTestBook("One"), cloudTestBook("Two")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.model.cloudCommands = fixture.commands
+        for book in books {
+            fixture.fake.setBytesToDownload(600_000_000, of: book.id)
+        }
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve + 700_000_000
+
+        let said = await announcementsWithPriority {
+            fixture.model.addToReadingList(books, announcingFrom: nil)
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: books[0].id)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id])
+        XCTAssertTrue(
+            said.contains(VoiceOverAnnouncement(
+                message: "Downloading One. There isn't enough free space for 1 more book",
+                priority: .medium
+            )),
+            "\(said)"
+        )
     }
 
     /// With the choice cleared, or outside the cloud, adding a book to the
@@ -1007,10 +1168,16 @@ final class KeepOnThisMacTests: XCTestCase {
         fixture.kept.setReadingListBooks([book.id])
         fixture.kept.setKeepsReadingListBooks(false)
 
-        fixture.model.setKeepsReadingListBooks(true)
-        await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        // Checking the box says what it starts, at medium priority, after
+        // VoiceOver's own "checked".
+        let said = await announcementsWithPriority {
+            fixture.model.setKeepsReadingListBooks(true)
+            await waitForPlanning(of: fixture.commands)
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
         XCTAssertTrue(fixture.kept.keepsReadingListBooks)
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
 
         fixture.model.setKeepsReadingListBooks(false)
         XCTAssertFalse(fixture.kept.keepsReadingListBooks)

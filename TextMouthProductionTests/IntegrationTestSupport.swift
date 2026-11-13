@@ -621,6 +621,11 @@ final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
         return storage.state(of: package)
     }
 
+    /// `storage`'s size.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        storage.bytesToDownload(of: package)
+    }
+
     /// `storage`'s download.
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
         storage.download(package)

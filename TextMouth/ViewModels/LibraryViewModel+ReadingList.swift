@@ -233,11 +233,17 @@ extension LibraryViewModel {
 
     /// Makes this Mac keep the reading list's books downloaded in a cloud
     /// library, or not, and saves the choice in this Mac's own folder. Turning
-    /// it on downloads the list's books that are only in the cloud, quietly;
-    /// turning it off removes nothing from this Mac.
+    /// it on downloads the list's books that are only in the cloud, those
+    /// that fit in the free space, and says once how many it is downloading
+    /// and whether some found no room
+    /// (`LibraryCloudCommands.downloadEvictedKeptBooks(in:)`); turning it off
+    /// removes nothing from this Mac.
     func setKeepsReadingListBooks(_ keeps: Bool) {
         cloudCommands.kept.setKeepsReadingListBooks(keeps)
         if keeps {
+            // Turned on again, the choice tells what it starts as it did the
+            // first time.
+            cloudCommands.forgetReadingListDownloadNotices()
             cloudCommands.downloadEvictedKeptBooks(in: self)
         }
     }

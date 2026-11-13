@@ -86,6 +86,44 @@ enum LibraryCloudWording {
         return "\(keeping). Downloading \(which) now"
     }
 
+    // MARK: - The Reading List's Books
+
+    /// What VoiceOver hears, once, when this Mac starts downloading the
+    /// reading list's books in a cloud library, or finds no room for some
+    /// (the user, November 13, 2026: this Mac keeps them downloaded). It is
+    /// said at medium priority, so it waits for what the listener's own
+    /// command just said rather than cutting it off.
+    ///
+    /// "Downloading Moby-Dick" for one book, "Downloading 7 books" for
+    /// several; with `quietly`, the books came without a command of the
+    /// listener's (a first refresh after an update, the choice turned on, a
+    /// sync from another Mac), so the sentence names the list:
+    /// "Downloading 7 reading list books". Then, for the `short` books that
+    /// do not fit in the space free: "There isn't enough free space for 3
+    /// more books", or, when none starts, "There isn't enough free space to
+    /// download 3 reading list books".
+    /// - Parameters:
+    ///   - titles: The titles of the books starting to download.
+    ///   - short: How many more books were left out for want of space.
+    ///   - quietly: Whether no command of the listener's started them.
+    static func readingListDownloadsStarted(titles: [String], short: Int, quietly: Bool) -> String {
+        var sentences: [String] = []
+        if titles.count == 1, let title = titles.first {
+            sentences.append("Downloading \(title)")
+        } else if !titles.isEmpty {
+            let books = quietly ? "\(titles.count) reading list books" : CountWording.books(titles.count)
+            sentences.append("Downloading \(books)")
+        }
+        if short > 0 {
+            sentences.append(
+                titles.isEmpty
+                    ? "There isn't enough free space to download \(CountWording.phrase(short, singular: "reading list book", plural: "reading list books"))"
+                    : "There isn't enough free space for \(short) more \(short == 1 ? "book" : "books")"
+            )
+        }
+        return sentences.joined(separator: ". ")
+    }
+
     /// What Stop Keeping on This Mac announces: "Stopped keeping Moby-Dick
     /// on this Mac" for one book, "Stopped keeping 3 books on this Mac" for
     /// several.
