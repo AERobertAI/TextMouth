@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Combine
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -631,6 +632,126 @@ final class WindowSleepTimerTests: XCTestCase {
         XCTAssertEqual(closed, [], "A window's sleep timer sheet closed another's")
     }
 
+    // MARK: - Commands Nobody Names a Window For
+
+    /// The restart gesture names the reader that owns Now Playing, and that
+    /// reader acts although no window is focused: the gesture often comes
+    /// while another app is in front, or while no window of the app is key,
+    /// and the owner key needs no focus. Both readers sit in windows that are
+    /// not key, and only the one named acts.
+    func testTheRestartGestureNamingTheOwnerActsWithNoWindowFocused() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.audio, titled: "Unfocused A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Unfocused B"), in: windowB)
+        let hostA = NSWindow()
+        let hostB = NSWindow()
+        a.attach(to: hostA)
+        b.attach(to: hostB)
+        XCTAssertFalse(hostA.isKeyWindow || hostB.isKeyWindow, "A window the test made is key")
+        a.startSleepTimer(duration: .minutes(15))
+        windowA.sleepTimer.remainingSeconds = 160
+        a.pause(playingPauseSound: false)
+
+        let recorder = recordingAnnouncements {
+            world.notifications.post(
+                name: .restartSleepTimer,
+                object: nil,
+                userInfo: NowPlayingService.restartGestureUserInfo(owner: b.readerID)
+            )
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Timer restarted: 15 minutes."])
+        XCTAssertEqual(windowB.sleepTimer.ownerID, b.readerID, "The owner did not act with no window focused")
+        XCTAssertEqual(windowA.sleepTimer.remainingSeconds, 160, "The reader not named acted")
+        withExtendedLifetime((hostA, hostB)) {}
+    }
+
+    /// A Restart Sleep Timer that names neither a window nor an owner (the
+    /// gesture while no reader owns Now Playing, as the app posted it before
+    /// November 13) is the focused reader's alone: no reader whose window is
+    /// not key acts, and the key window's reader acts, on its own timer.
+    func testRestartNamingNeitherAWindowNorAnOwnerIsTheFocusedReadersAlone() throws {
+        let windowA = makeWindow()
+        let windowB = makeWindow()
+        let a = openReader(for: try makeBook(.audio, titled: "Fallback A"), in: windowA)
+        let b = openReader(for: try makeBook(.audio, titled: "Fallback B"), in: windowB)
+        let hostA = NSWindow()
+        let hostB = NSWindow()
+        a.attach(to: hostA)
+        b.attach(to: hostB)
+        b.startSleepTimer(duration: .minutes(30))
+        windowB.sleepTimer.remainingSeconds = 1000
+
+        let unfocused = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil)
+        }
+
+        XCTAssertEqual(unfocused.announcements.map(\.message), [], "A reader in a window that is not key acted")
+        XCTAssertFalse(windowA.sleepTimer.isActive)
+        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1000)
+
+        // Now the first reader's window is the key window.
+        let keyHost = KeyStubWindow()
+        a.attach(to: keyHost)
+        let focused = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil)
+        }
+
+        XCTAssertEqual(focused.announcements.map(\.message), ["Timer restarted: 30 minutes."])
+        XCTAssertEqual(windowA.sleepTimer.ownerID, a.readerID, "The focused reader did not start its own timer")
+        XCTAssertEqual(windowB.sleepTimer.remainingSeconds, 1000, "The unfocused reader's timer was restarted")
+        withExtendedLifetime((hostA, hostB, keyHost)) {}
+    }
+
+    /// The Show Sleep Timer menu command, posted as the menu posts it, with no
+    /// window named, opens the sheet of the reader whose window is key and no
+    /// other (the reader's own panel commands receive it, as in the app).
+    func testTheShowSleepTimerCommandPostedForRealOpensTheKeyWindowsSheetOnly() throws {
+        try XCTSkipUnless(PlatformApplication.keyWindow == nil, "A window of the app is key here, which a menu command follows")
+        let a = openReader(for: try makeBook(.audio, titled: "Command A"), in: makeWindow())
+        let b = openReader(for: try makeBook(.audio, titled: "Command B"), in: makeWindow())
+        let keyHost = KeyStubWindow()
+        let otherHost = NSWindow()
+        a.attach(to: keyHost)
+        b.attach(to: otherHost)
+        let boxA = PanelBox()
+        let boxB = PanelBox()
+
+        withHostedView(PanelCommandsProbe(reader: a, box: boxA), until: { _ in true }) { _ in
+            withHostedView(PanelCommandsProbe(reader: b, box: boxB), until: { _ in true }) { _ in
+                // Lets SwiftUI subscribe each view to the command.
+                spinMainRunLoop(for: 0.3)
+                NotificationCenter.default.post(name: .showSleepTimer, object: nil)
+            }
+        }
+
+        XCTAssertTrue(boxA.panels.sleepTimer, "The key window's sheet did not open")
+        XCTAssertFalse(boxB.panels.sleepTimer, "A window that is not key opened its sheet")
+        withExtendedLifetime((keyHost, otherHost)) {}
+    }
+
+    /// What a reader's panels are, kept where a test can read them.
+    private final class PanelBox {
+        var panels = ReaderPanels()
+    }
+
+    /// A view that receives a reader's panel commands (`ReaderPanelCommands`),
+    /// as the reader's own view does, and keeps the panels they open in `box`.
+    private struct PanelCommandsProbe: View {
+        let reader: ReaderViewModel
+        let box: PanelBox
+
+        var body: some View {
+            Color.clear.modifier(
+                ReaderPanelCommands(
+                    viewModel: reader,
+                    panels: Binding(get: { box.panels }, set: { box.panels = $0 })
+                )
+            )
+        }
+    }
+
     // MARK: - Helpers
 
     /// The two kinds of book a window shows.
@@ -744,4 +865,11 @@ final class TestReaderWindow {
     func switchTo(_ bookID: UUID) {
         switchedTo.append(bookID)
     }
+}
+
+/// A window that says it is the key window, without being on screen: the
+/// window a menu command and a gesture with no one named follow, so a test
+/// can tell the focused reader from one in a window that is not key.
+final class KeyStubWindow: NSWindow {
+    override var isKeyWindow: Bool { true }
 }
