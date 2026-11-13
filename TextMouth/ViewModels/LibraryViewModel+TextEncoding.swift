@@ -48,6 +48,45 @@ enum TextRereadChoice: Hashable, Sendable {
     }
 }
 
+/// The work a book is marked as being read again for
+/// (`TextRereads.begin(_:for:)`), so the sentence that says why something
+/// waits names the work under way.
+enum TextRereadWork: Equatable, Sendable {
+    /// A text book read again in another encoding (Book Information's Text
+    /// Encoding pop-up).
+    case encoding
+    /// A BRF or BRL braille book read again with other braille file
+    /// characters (the Braille File Characters pop-up).
+    case brailleFileCode
+    /// A braille book read again with another braille code (the Braille
+    /// Code pop-up).
+    case brailleCode
+    /// A new copy taking the place of the book (Replace Existing), made
+    /// ready off the main actor, which may read it again in the old copy's
+    /// reading.
+    case replacement
+
+    /// The work a re-read of `choice` is.
+    init(_ choice: TextRereadChoice) {
+        switch choice {
+        case .textEncoding: self = .encoding
+        case .brailleFileCode: self = .brailleFileCode
+        case .brailleTable, .brailleFileCodeAndTable: self = .brailleCode
+        }
+    }
+
+    /// Why what would rewrite the text of the book titled `bookTitle` waits
+    /// while this work is under way, in full.
+    func refusal(bookTitle: String) -> String {
+        switch self {
+        case .encoding: return TextEncodingWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .brailleFileCode: return BrailleFileCodeWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .brailleCode: return BrailleCodeWording.readingAgainRefusal(bookTitle: bookTitle)
+        case .replacement: return DuplicateCopyWording.replacingRefusal(bookTitle: bookTitle)
+        }
+    }
+}
+
 /// What the work of reading a book's text again, off the main actor, came
 /// to (`LibraryViewModel.rereadText(of:as:access:isOpenInReader:)`).
 enum TextReread: Sendable {
@@ -124,13 +163,13 @@ extension LibraryViewModel {
         let busy = library.books.first { book in
             booksBeingReadAgain.contains(book.id) && (bookID == nil || book.id == bookID)
         }
-        // A braille book is only ever read again for its braille file
-        // characters, and any other book for its encoding, so its format
-        // says which re-read is under way.
+        // The work that marked the book names itself (a replacement, a
+        // braille code's re-read, ...). A book marked without one (the set
+        // assigned directly) is worded by its format: a braille book's by its
+        // braille file characters, any other book's by its encoding.
         return busy.map { book in
-            book.format == .braille
-                ? BrailleFileCodeWording.readingAgainRefusal(bookTitle: book.title)
-                : TextEncodingWording.readingAgainRefusal(bookTitle: book.title)
+            let work = textRereads.works[book.id] ?? (book.format == .braille ? .brailleFileCode : .encoding)
+            return work.refusal(bookTitle: book.title)
         }
     }
 
@@ -197,8 +236,8 @@ extension LibraryViewModel {
         }
         // The book is busy until its row has the new reading: whatever would
         // rewrite its text meanwhile waits (`readingAgainRefusal(of:)`).
-        booksBeingReadAgain.insert(bookID)
-        defer { booksBeingReadAgain.remove(bookID) }
+        textRereads.begin(bookID, for: TextRereadWork(choice))
+        defer { textRereads.end(bookID) }
         // Edit Text's session pauses, an editor made only for a session
         // there is, as Replace Existing makes one.
         let editor = textEditSessions.isEditing(bookID) ? bookTextEditor() : nil
@@ -623,9 +662,10 @@ private struct CommitDropped: Error {}
 
 // MARK: - Re-reads Under Way
 
-/// The books whose text is being read again, in another encoding or with
-/// other braille file characters, app-wide: from the listener's confirmation
-/// until the library row has the new reading
+/// The books whose text is being read again, in another encoding, with
+/// other braille file characters, or with another braille code, or whose
+/// copy is being replaced by a new one, app-wide: from the listener's
+/// confirmation until the library row has the new reading
 /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`, which marks
 /// them through `LibraryViewModel.booksBeingReadAgain`). What would rewrite
 /// such a book's text waits for its re-read
@@ -647,8 +687,29 @@ final class TextRereads {
     var bookIDs: Set<UUID> = [] {
         didSet {
             begun &+= bookIDs.subtracting(oldValue).count
+            // The work of a book that is no longer being read again is forgotten.
+            if works.keys.contains(where: { !bookIDs.contains($0) }) {
+                works = works.filter { bookIDs.contains($0.key) }
+            }
             resumeWaitersWhoMayGoOn()
         }
+    }
+
+    /// What each book in `bookIDs` is being read again for, when the work
+    /// that marked it said (`begin(_:for:)`): the busy sentence names it
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`). A book marked without
+    /// (`bookIDs` set directly) has none, and is worded by its format.
+    private(set) var works: [UUID: TextRereadWork] = [:]
+
+    /// Marks the book `bookID` as being read again for `work`.
+    func begin(_ bookID: UUID, for work: TextRereadWork) {
+        works[bookID] = work
+        bookIDs.insert(bookID)
+    }
+
+    /// Marks the book `bookID` as no longer being read again.
+    func end(_ bookID: UUID) {
+        bookIDs.remove(bookID)
     }
 
     /// How many re-reads have begun, so a reader of a book's text can tell

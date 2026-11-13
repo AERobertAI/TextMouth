@@ -168,6 +168,44 @@ final class BrailleCodeRereadTests: CloudMaintenanceTestCase {
         XCTAssertNil(recorded.brailleTableVersion, "the record kept the Mac's version for a bundled table")
     }
 
+    /// What waits for a book being read again says which work is under way,
+    /// not always an encoding's or the braille file characters': a braille
+    /// code's re-read and a replacement have their own sentences, and a book
+    /// marked without its work (the set assigned directly) is worded by its
+    /// format, as it always was.
+    func testTheBusySentenceNamesTheWorkUnderWay() throws {
+        let braille = try importedSample(title: "Wharf")
+        let text = Book(title: "Gazette", format: .txt, filePath: "/nowhere/Gazette.txt", md5Hash: "braille-code-busy-text")
+        let model = makeModel(with: [braille, text])
+        model.textRereads = TextRereads()
+        let cases: [(work: TextRereadWork, book: Book, expected: String)] = [
+            (.encoding, text, "TextMouth is reading “Gazette” again in another encoding. Try again when that finishes."),
+            (.brailleFileCode, braille, "TextMouth is reading “\(braille.title)” again with other braille file characters. Try again when that finishes."),
+            (.brailleCode, braille, "TextMouth is reading “\(braille.title)” again with another braille code. Try again when that finishes."),
+            (.replacement, braille, "TextMouth is replacing “\(braille.title)” with the new copy. Try again when that finishes."),
+            (.replacement, text, "TextMouth is replacing “Gazette” with the new copy. Try again when that finishes."),
+        ]
+        for testCase in cases {
+            model.textRereads.begin(testCase.book.id, for: testCase.work)
+            XCTAssertEqual(model.readingAgainRefusal(of: testCase.book.id), testCase.expected, "\(testCase.work)")
+            XCTAssertEqual(model.readingAgainRefusal(), testCase.expected, "\(testCase.work), asked for any book")
+            model.textRereads.end(testCase.book.id)
+            XCTAssertNil(model.readingAgainRefusal(of: testCase.book.id), "\(testCase.work) left the book marked")
+            XCTAssertTrue(model.textRereads.works.isEmpty, "\(testCase.work) was not forgotten")
+        }
+        // Marked without a work: by format.
+        model.booksBeingReadAgain = [braille.id]
+        XCTAssertEqual(model.readingAgainRefusal(of: braille.id), BrailleFileCodeWording.readingAgainRefusal(bookTitle: braille.title))
+        model.booksBeingReadAgain = [text.id]
+        XCTAssertEqual(model.readingAgainRefusal(of: text.id), TextEncodingWording.readingAgainRefusal(bookTitle: text.title))
+        model.booksBeingReadAgain = []
+        // The work of each re-read choice.
+        XCTAssertEqual(TextRereadWork(.textEncoding(.automatic)), .encoding)
+        XCTAssertEqual(TextRereadWork(.brailleFileCode(.eurobraille)), .brailleFileCode)
+        XCTAssertEqual(TextRereadWork(.brailleTable(try table(Self.grade2))), .brailleCode)
+        XCTAssertEqual(TextRereadWork(.brailleFileCodeAndTable(.eurobraille, try table(Self.grade2))), .brailleCode)
+    }
+
     // MARK: - Who Is Offered the Choice
 
     /// Any braille book is offered the choice of its braille code, a PEF

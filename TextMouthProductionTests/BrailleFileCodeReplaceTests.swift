@@ -484,7 +484,10 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
 
         XCTAssertEqual(model.importDecisions.answering, questionID)
         XCTAssertTrue(model.booksBeingReadAgain.contains(existing.id))
-        XCTAssertNotNil(model.readingAgainRefusal(of: existing.id), "what would rewrite the book's text does not wait")
+        XCTAssertEqual(
+            model.readingAgainRefusal(of: existing.id), DuplicateCopyWording.replacingRefusal(bookTitle: existing.title),
+            "what would rewrite the book's text does not wait, or does not say it is being replaced"
+        )
         let busy = OperationOutcome.failure(DuplicateCopyWording.answerUnderWay)
         XCTAssertEqual(model.answerImportDecision(questionID, with: .keepBoth), busy)
         XCTAssertEqual(model.answerImportDecision(questionID, with: .cancel), busy)

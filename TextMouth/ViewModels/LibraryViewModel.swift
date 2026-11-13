@@ -250,8 +250,9 @@ final class LibraryViewModel: ObservableObject {
     /// The re-reads in another encoding under way, app-wide, which a quit
     /// waits for (`TextRereads`): the app's, unless a test gives its own.
     var textRereads: TextRereads = .shared
-    /// The books whose text is being read again in another encoding or with
-    /// other braille file characters, from the moment the listener confirms
+    /// The books whose text is being read again in another encoding, with
+    /// other braille file characters, or with another braille code, or whose
+    /// copy Replace Existing is replacing, from the moment the listener confirms
     /// until the library row has the new reading
     /// (`readTextAgain(bookID:choosing:access:)`, encodingchoice and
     /// braillecodes), kept in

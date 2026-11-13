@@ -526,10 +526,10 @@ extension LibraryViewModel {
             return outcome
         case .prepare(let existing):
             importDecisions.beginAnswering(decision.id)
-            booksBeingReadAgain.insert(existing.id)
+            textRereads.begin(existing.id, for: .replacement)
             let copy = duplicate.book
             let prepared = await OffMainWork.run { Result { try prepare(existing, copy) } }
-            booksBeingReadAgain.remove(existing.id)
+            textRereads.end(existing.id)
             importDecisions.endAnswering()
             // Back on the main actor, with the library as it is now.
             guard importDecisions.current?.id == decision.id else {

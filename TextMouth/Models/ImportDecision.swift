@@ -483,6 +483,15 @@ enum DuplicateCopyWording {
         "Replacing “\(bookTitle)”. This can take a moment."
     }
 
+    /// Why what would rewrite the text of the book titled `bookTitle`, or
+    /// replace it again, waits while Replace Existing makes the new copy
+    /// ready to take its place (`LibraryViewModel.readingAgainRefusal(of:)`):
+    /// a second re-read of it, Edit Text, Redo Text Extraction, a second
+    /// replacement, and a reader opening it.
+    static func replacingRefusal(bookTitle: String) -> String {
+        "TextMouth is replacing “\(bookTitle)” with the new copy. Try again when that finishes."
+    }
+
     /// What Replace Existing says, keeping the question, when the library's
     /// copy of the book titled `bookTitle` changed while the new copy was
     /// being made ready to take its place: what the replacement carried over

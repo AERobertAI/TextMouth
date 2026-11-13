@@ -119,6 +119,15 @@ enum BrailleCodeWording {
     /// The pop-up's hint, which VoiceOver says after its label and value.
     static let popUpHint = "Choose another braille code to read the book's file again with it."
 
+    /// Why what would rewrite the text of the braille book titled
+    /// `bookTitle` waits while TextMouth reads it again with another braille
+    /// code, as the other re-reads' sentences say it
+    /// (`TextEncodingWording.readingAgainRefusal(bookTitle:)`,
+    /// `BrailleFileCodeWording.readingAgainRefusal(bookTitle:)`).
+    static func readingAgainRefusal(bookTitle: String) -> String {
+        "TextMouth is reading “\(bookTitle)” again with another braille code. Try again when that finishes."
+    }
+
     // MARK: The Confirmation
 
     /// The title of the alert that asks before the book titled `bookTitle`
