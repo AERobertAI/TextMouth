@@ -79,25 +79,26 @@ final class LargeTextUITests: TextMouthUITestCase {
     }
 
     /// The least each part must grow, as its height at the largest text size over its height at the default size. Each
-    /// bound lies between what a part capped at Accessibility 2 (`.accessibility2`, the largest cap that still shows
-    /// growth) measures and what the uncapped sheet measures, so a cap at that size or any smaller one fails and the
-    /// sheet as it is passes. The ratios come from the heights of GitHub run 43066870675 (the uncapped sheet) and
-    /// PROOF_RUN (the sheet with all four parts capped at `.accessibility2`):
+    /// bound lies about halfway between what the sheet measures with every part capped at Accessibility 2
+    /// (`.accessibility2`, the largest cap that still shows growth) and what it measures uncapped, so that a cap at that
+    /// size or at any smaller one fails and the sheet as it is passes, with room on both sides. The heights come from two
+    /// GitHub runs of this test: 43066870675 (the sheet as it is) and 43374972739 (the proof branch, which capped the sheet
+    /// at `.accessibility2` and was never merged; this test failed there naming all four parts):
     ///
-    /// | part                          | default height | uncapped | capped at AX2 | bound |
-    /// | ----------------------------- | -------------- | -------- | ------------- | ----- |
-    /// | the field                     | 22             | 2.95     | CAPPED_FIELD  | 2.4   |
-    /// | the status line               | 52             | 1.79     | CAPPED_STATUS | 1.5   |
-    /// | the regular-expression switch | 52             | 2.99     | CAPPED_SWITCH | 2.4   |
-    /// | the "Search results" heading  | 40.3           | 2.07     | CAPPED_HEADING | 1.8  |
+    /// | part                          | default | largest, as is | ratio | largest, capped | ratio | bound |
+    /// | ----------------------------- | ------- | -------------- | ----- | --------------- | ----- | ----- |
+    /// | the field                     | 22.0    | 65.0           | 2.95  | 41.3            | 1.88  | 2.4   |
+    /// | the status line               | 52.0    | 93.3           | 1.79  | 69.7            | 1.34  | 1.55  |
+    /// | the regular-expression switch | 52.0    | 155.3          | 2.99  | 109.7           | 2.11  | 2.5   |
+    /// | the "Search results" heading  | 40.3    | 83.3           | 2.07  | 59.7            | 1.48  | 1.75  |
     ///
     /// The parts do not share one bound because they do not grow alike: the status line and the heading carry padding
-    /// that does not grow, so their ratios are lower, and the field is one line of the largest text.
+    /// that does not grow, so their ratios are lower, and the field is a single line of text.
     private static let minimumGrowth: [String: CGFloat] = [
         TextMouthUITestCase.searchFieldLabel: 2.4,
-        "the status line": 1.5,
-        "Use regular expression": 2.4,
-        "Search results": 1.8,
+        "the status line": 1.55,
+        "Use regular expression": 2.5,
+        "Search results": 1.75,
     ]
 
     /// The Search in Book sheet with results, at the largest size: its text grows with the text size (so the findings of
@@ -130,12 +131,14 @@ final class LargeTextUITests: TextMouthUITestCase {
             print(line)
             NSLog("%@", line)
             if !(ratio >= bound) {
-                shortfalls.append("\"\(part)\" grew \(ratio) times (\(before) to \(after) points) and must grow at least \(bound) times")
+                // Short, with two decimals: the failure line of a run's summary is cut at 300 characters, and it must name
+                // every part. The log's SEARCH-GROWTH lines above hold the heights.
+                shortfalls.append("\"\(part)\" grew \(String(format: "%.2f", Double(ratio)))x, needs \(bound)x")
             }
         }
         XCTAssertTrue(
             shortfalls.isEmpty,
-            "The text of \(shortfalls.count) part(s) of the Search sheet did not grow with the text size: " + shortfalls.joined(separator: "; ")
+            "Search sheet text did not grow: " + shortfalls.joined(separator: "; ")
         )
         keepScreenshot(of: large, named: "Search in Book at the largest text")
         // The keyboard's own Search key puts it away, as the sheet's audit test does, so that the audit reads the sheet.
