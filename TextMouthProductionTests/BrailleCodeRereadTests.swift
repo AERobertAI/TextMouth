@@ -139,6 +139,35 @@ final class BrailleCodeRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(book.title)"), 0)
     }
 
+    /// A book read with one of this Mac's tables, which records the version of
+    /// the Mac's tables it was made with, and then read again with a bundled
+    /// table, which changes only with TextMouth and records none: the commit
+    /// (`LibraryPersistenceService.takingDecisions(of:into:)`) hands the row
+    /// the table and no version, and the record in the package holds the same
+    /// pair, never the bundled table beside the Mac's old version.
+    func testAReReadFromAMacTableToABundledOneKeepsNoVersion() async throws {
+        var book = try importedSample(title: "Gazetteer", tableID: Self.grade1)
+        book.brailleTable = "mac:fr-bfu-g2.ctb"
+        book.brailleTableVersion = "3.34.0"
+        try book.saveBookInfoThrowing()
+        let stored = try BookInfo.load(from: book.tmbDirectory).metadata
+        XCTAssertEqual(
+            [stored.brailleTable, stored.brailleTableVersion], ["mac:fr-bfu-g2.ctb", "3.34.0"],
+            "the record must start with the Mac's pair"
+        )
+        let model = makeModel(with: [book])
+
+        let (outcome, _) = await readAgain(book, with: try table(Self.grade2), in: model)
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        let row = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(row.brailleTable, Self.grade2)
+        XCTAssertNil(row.brailleTableVersion, "the row kept the Mac's version for a bundled table")
+        let recorded = try BookInfo.load(from: book.tmbDirectory).metadata
+        XCTAssertEqual(recorded.brailleTable, Self.grade2)
+        XCTAssertNil(recorded.brailleTableVersion, "the record kept the Mac's version for a bundled table")
+    }
+
     // MARK: - Who Is Offered the Choice
 
     /// Any braille book is offered the choice of its braille code, a PEF

@@ -1281,8 +1281,14 @@ struct Book: Identifiable, Codable, Hashable {
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
         // The braille table: the row's, or else the stored record's (FMT21).
-        info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
-        info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
+        // Its version is the row's, or else the stored record's only when
+        // that describes the same table: a book read again from one of this
+        // Mac's tables to a bundled one has no version, and keeps none of
+        // the Mac table's.
+        let storedTable = stored?.info.metadata.brailleTable
+        info.metadata.brailleTable = brailleTable ?? storedTable
+        info.metadata.brailleTableVersion = brailleTableVersion
+            ?? (info.metadata.brailleTable == storedTable ? stored?.info.metadata.brailleTableVersion : nil)
         // The braille file code (braillecodes): this write's own when it
         // decides anew, and otherwise the one that stands between the row
         // and the stored record, the record's whenever it names one.
