@@ -653,8 +653,8 @@ final class BookSearchModelTests: XCTestCase {
         let announcements = AnnouncementLog()
         // Generous beside the pauses between edits, so a busy machine cannot
         // split the burst.
-        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -672,8 +672,8 @@ final class BookSearchModelTests: XCTestCase {
     /// Edits separated by more than the debounce interval each get a search.
     func testEditsAfterAPauseSearchAgain() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -698,8 +698,8 @@ final class BookSearchModelTests: XCTestCase {
         // Never leave a background thread blocked, whatever fails below.
         defer { releaseOldSearch.signal() }
 
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             if query == "old" {
                 oldSearchStarted.fulfill()
                 releaseOldSearch.wait()
@@ -738,8 +738,8 @@ final class BookSearchModelTests: XCTestCase {
         let releaseSearch = DispatchSemaphore(value: 0)
         defer { releaseSearch.signal() }
 
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             searchStarted.fulfill()
             releaseSearch.wait()
             log.recordCancellation(waitUntilCancelled())
@@ -828,8 +828,8 @@ final class BookSearchModelTests: XCTestCase {
     func testClearingTheQueryStopsThePendingSearch() async throws {
         let log = SearchLog()
         let announcements = AnnouncementLog()
-        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([fakeResult(for: query)], isTruncated: false)
         }
 
@@ -897,8 +897,8 @@ final class BookSearchModelTests: XCTestCase {
     /// field, starts no new search.
     func testUnchangedInputsDoNotSearchAgain() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -915,8 +915,8 @@ final class BookSearchModelTests: XCTestCase {
     /// responsive however long one takes.
     func testSearchesRunOffTheMainThread() async {
         let log = SearchLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
-            log.recordSearch(query: query, useRegex: useRegex)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, options in
+            log.recordSearch(query: query, useRegex: options.isRegularExpression)
             return .matches([], isTruncated: false)
         }
 
@@ -931,8 +931,8 @@ final class BookSearchModelTests: XCTestCase {
     /// with a log of what it announces.
     private func makeModel(searching corpus: BookSearchCorpus) -> (BookSearchModel, AnnouncementLog) {
         let announcements = AnnouncementLog()
-        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
-            try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, options in
+            try BookSearchEngine.search(query: query, options: options, in: corpus)
         }
         return (model, announcements)
     }
