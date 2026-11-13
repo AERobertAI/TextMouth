@@ -141,6 +141,7 @@ final class PlaylistImportTests: XCTestCase {
             total + Int64(try XCTUnwrap(sources.appendingPathComponent(name).resourceValues(forKeys: [.fileSizeKey]).fileSize))
         }
         let before = try snapshot(of: sources)
+        let stagedBefore = try stagedImportPackages()
 
         XCTAssertThrowsError(
             try ArchiveLimits.$current.withValue(AudioDirectoryImportTests.limits(reserve: 0, freeSpace: trackBytes - 1)) {
@@ -151,7 +152,10 @@ final class PlaylistImportTests: XCTestCase {
             XCTAssertEqual(failure?.step, .copying)
             XCTAssertEqual(failure?.reason, "Copying it into the library failed: There isn’t enough free space on the disk.")
         }
-        XCTAssertEqual(try libraryFolderEntries(), [], "nothing may stay staged or published")
+        XCTAssertEqual(try libraryFolderEntries(), [], "nothing may stay published")
+        // The package is built in this Mac's Import Staging folder, not in
+        // the library folder.
+        XCTAssertEqual(try stagedImportPackages().subtracting(stagedBefore), [], "no staged package may be left")
         XCTAssertEqual(try snapshot(of: sources), before, "the playlist and its tracks are never changed")
 
         let imported = try ArchiveLimits.$current.withValue(AudioDirectoryImportTests.limits(reserve: 0, freeSpace: trackBytes)) {

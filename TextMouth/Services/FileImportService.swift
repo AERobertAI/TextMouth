@@ -1470,10 +1470,11 @@ enum FileImportService {
     /// (`requireRoom(forCopying:onVolumeOf:)`), so a folder or playlist too
     /// big for the disk is refused before a byte is written, as an archive
     /// is (`ArchiveBudget.admit`), and not after minutes of copying.
+    /// Internal so a test can show the disk is asked before the first copy.
     /// - Throws: `CocoaError.fileWriteOutOfSpace` when the disk lacks room,
     ///   which an import's failure words as a full disk
     ///   (`ImportFailure.outOfSpaceDescription`); a copy's own error.
-    private static func copyTracks(_ tracks: [(path: String, source: URL)], into audioDirectory: URL) throws {
+    static func copyTracks(_ tracks: [(path: String, source: URL)], into audioDirectory: URL) throws {
         try requireRoom(forCopying: tracks.map(\.source), onVolumeOf: audioDirectory)
         for track in tracks {
             let destination = audioDirectory.appendingPathComponent(track.path)

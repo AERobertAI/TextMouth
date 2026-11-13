@@ -378,6 +378,9 @@ final class AudioDirectoryImportTests: XCTestCase {
             total + Int64(try XCTUnwrap(source.appendingPathComponent(name).resourceValues(forKeys: [.fileSizeKey]).fileSize))
         }
         let before = try Set(FileManager.default.contentsOfDirectory(atPath: source.path))
+        // The package is built in this Mac's Import Staging folder, not in
+        // the library folder, so a package left there would go unseen below.
+        let stagedBefore = try stagedImportPackages()
         let refusal = "Copying it into the library failed: There isn’t enough free space on the disk."
 
         // Less free than the tracks need, no reserve; then exactly the
@@ -398,7 +401,11 @@ final class AudioDirectoryImportTests: XCTestCase {
             let entries = (try? FileManager.default.contentsOfDirectory(
                 atPath: TextMouthPaths.libraryDir.appendingPathComponent(libraryFolder).path
             )) ?? []
-            XCTAssertEqual(entries, [], "\(label): nothing may stay staged or published")
+            XCTAssertEqual(entries, [], "\(label): nothing may stay published")
+            XCTAssertEqual(
+                try stagedImportPackages().subtracting(stagedBefore), [],
+                "\(label): no staged package may be left"
+            )
             XCTAssertEqual(try Set(FileManager.default.contentsOfDirectory(atPath: source.path)), before, label)
         }
 
@@ -408,6 +415,56 @@ final class AudioDirectoryImportTests: XCTestCase {
             try FileImportService.importAudioFolderWithReport(from: source, toFolder: libraryFolder)
         }
         XCTAssertEqual(imported.book.format, .audio)
+    }
+
+    /// The disk is asked before the first track is copied, not after: with
+    /// a second track the copy cannot read, a disk lacking room is refused
+    /// in the words of a full disk, not with the second track's permission
+    /// error, and not a byte has been copied; with room, the same tracks
+    /// fail on the second one, so the first was copied and the refusal above
+    /// was the disk's own.
+    func testTheDiskIsAskedBeforeTheFirstTrackIsCopied() throws {
+        let directory = temporaryDirectory()
+        let first = directory.appendingPathComponent("one.wav")
+        let unreadable = directory.appendingPathComponent("two.wav")
+        let destination = directory.appendingPathComponent("Copies", isDirectory: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try AudioTestFixtures.writeSilence(to: first, duration: 1)
+        try AudioTestFixtures.writeSilence(to: unreadable, duration: 1)
+        // The second block runs first (teardown blocks run last in, first
+        // out), so the file can be removed with its folder.
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: unreadable.path) }
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: unreadable.path)
+        try XCTSkipIf(
+            FileManager.default.isReadableFile(atPath: unreadable.path),
+            "this process reads files whatever their permissions"
+        )
+        let tracks = [(path: "one.wav", source: first), (path: "two.wav", source: unreadable)]
+        let trackBytes = try tracks.reduce(Int64(0)) { total, track in
+            total + Int64(try XCTUnwrap(track.source.resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        }
+
+        XCTAssertThrowsError(
+            try ArchiveLimits.$current.withValue(Self.limits(reserve: 0, freeSpace: trackBytes - 1)) {
+                try FileImportService.copyTracks(tracks, into: destination)
+            }
+        ) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace)
+        }
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: destination.path), [],
+            "nothing may be copied before the refusal"
+        )
+
+        XCTAssertThrowsError(
+            try ArchiveLimits.$current.withValue(Self.limits(reserve: 0, freeSpace: trackBytes)) {
+                try FileImportService.copyTracks(tracks, into: destination)
+            }
+        ) { error in
+            XCTAssertNotEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace, "with room, the second track's own error")
+        }
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: destination.path).contains("one.wav"))
     }
 
     /// Limits that change nothing but the disk: the standard ones, with
