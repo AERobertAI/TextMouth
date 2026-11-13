@@ -100,97 +100,20 @@ struct LibrarySearchWindowView: View {
     // MARK: The Results
 
     /// The list of results, grouped by book, or nothing while there are
-    /// none: the status line says why.
+    /// none: the status line says why. Built from parts of its own, so the
+    /// compiler type-checks each apart (as `ReaderView`'s body is built).
     @ViewBuilder
     private var results: some View {
         let sections = model.sections
         if sections.isEmpty {
             Spacer()
         } else {
-            List(selection: $selection) {
-                ForEach(sections) { section in
-                    Section {
-                        ForEach(section.rows) { row in
-                            LibrarySearchMatchRowView(row: row)
-                                .tag(row.id)
-                                .accessibilityAction(.default) { model.open(row) }
-                        }
-                        moreRow(after: section)
-                    } header: {
-                        Text(section.group.heading)
-                            .font(.headline)
-                            .accessibilityAddTraits(.isHeader)
-                    }
-                }
-            }
-            .focused($areResultsFocused)
-            .contextMenu(forSelectionType: String.self) { ids in
-                if let id = ids.first, let row = matchRow(id, in: sections) {
-                    Button(LibrarySearchWording.matchHint) { model.open(row) }
-                }
-            } primaryAction: { ids in
-                if let id = ids.first { activate(id, in: sections) }
-            }
-            .accessibilityLabel(LibrarySearchWording.resultsLabel)
-            .accessibilityRotor(LibrarySearchWording.booksRotor) {
-                ForEach(sections) { section in
-                    if let first = section.rows.first {
-                        AccessibilityRotorEntry(section.group.heading, id: first.id)
-                    } else if section.more == .showAll {
-                        AccessibilityRotorEntry(section.group.heading, id: Self.showAllRowID(section.id))
-                    }
-                }
-            }
-            .accessibilityRotor(LibrarySearchWording.matchesRotor) {
-                ForEach(sections) { section in
-                    ForEach(section.rows) { row in
-                        AccessibilityRotorEntry(row.spokenLabel, id: row.id)
-                    }
-                }
-            }
-        }
-    }
-
-    /// The row after a book's matches: Show All while the list shows fewer
-    /// than the book holds, or a note once even Show All lists fewer.
-    @ViewBuilder
-    private func moreRow(after section: LibrarySearchSection) -> some View {
-        switch section.more {
-        case .nothing:
-            EmptyView()
-        case .showAll:
-            let title = LibrarySearchWording.showAll(
-                matches: section.group.matchCount,
-                isLowerBound: section.group.countReachedLimit,
-                bookTitle: section.group.book.title
+            LibrarySearchResultsList(
+                model: model,
+                sections: sections,
+                selection: $selection,
+                isFocused: $areResultsFocused
             )
-            Text(title)
-                .foregroundColor(.accentColor)
-                .tag(Self.showAllRowID(section.id))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityHint(LibrarySearchWording.showAllHint)
-                .accessibilityAction(.default) { model.showAllMatches(in: section.id) }
-        case .beyondShowAll:
-            Text(LibrarySearchWording.moreThanListed(section.rows.count))
-                .foregroundColor(.secondary)
-        }
-    }
-
-    /// The match row `id` names, if it names one.
-    private func matchRow(_ id: String, in sections: [LibrarySearchSection]) -> LibrarySearchMatchRow? {
-        for section in sections {
-            if let row = section.rows.first(where: { $0.id == id }) { return row }
-        }
-        return nil
-    }
-
-    /// What Return or a double-click on the row `id` does: opens a match, or
-    /// lists all of a book's matches.
-    private func activate(_ id: String, in sections: [LibrarySearchSection]) {
-        if let row = matchRow(id, in: sections) {
-            model.open(row)
-        } else if let section = sections.first(where: { Self.showAllRowID($0.id) == id }) {
-            model.showAllMatches(in: section.id)
         }
     }
 
@@ -200,6 +123,155 @@ struct LibrarySearchWindowView: View {
         guard let first = model.sections.first(where: { !$0.rows.isEmpty })?.rows.first else { return }
         selection = first.id
         areResultsFocused = true
+    }
+}
+
+/// The results: each book's section in a list with one selection, whose
+/// Return and double-click open the selected match or list a book's rest,
+/// with the Books and Matches rotors.
+private struct LibrarySearchResultsList: View {
+    /// The searches, which a row's action opens or lists more of.
+    @ObservedObject var model: LibrarySearchModel
+    /// What the list shows.
+    let sections: [LibrarySearchSection]
+    /// The selected row's ID.
+    @Binding var selection: String?
+    /// Whether the list has the keyboard.
+    var isFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        List(selection: $selection) {
+            ForEach(sections) { section in
+                LibrarySearchSectionView(model: model, section: section)
+            }
+        }
+        .focused(isFocused)
+        .contextMenu(forSelectionType: String.self, menu: menu(for:), primaryAction: activate)
+        .accessibilityLabel(LibrarySearchWording.resultsLabel)
+        .modifier(LibrarySearchRotors(sections: sections))
+    }
+
+    /// The context menu of the selected rows: Open for a match.
+    @ViewBuilder
+    private func menu(for ids: Set<String>) -> some View {
+        if let id = ids.first, let row = LibrarySearchWindowView.matchRow(id, in: sections) {
+            Button(LibrarySearchWording.matchHint) { model.open(row) }
+        }
+    }
+
+    /// What Return or a double-click on the selected row does: opens a
+    /// match, or lists all of a book's matches.
+    private func activate(_ ids: Set<String>) {
+        guard let id = ids.first else { return }
+        if let row = LibrarySearchWindowView.matchRow(id, in: sections) {
+            model.open(row)
+        } else if let section = sections.first(where: { LibrarySearchWindowView.showAllRowID($0.id) == id }) {
+            model.showAllMatches(in: section.id)
+        }
+    }
+}
+
+/// One book's part of the results: its heading, its matches, and the row
+/// after them.
+private struct LibrarySearchSectionView: View {
+    /// The searches, which a row's action opens or lists more of.
+    @ObservedObject var model: LibrarySearchModel
+    /// The book's part.
+    let section: LibrarySearchSection
+
+    var body: some View {
+        Section {
+            ForEach(section.rows) { row in
+                LibrarySearchMatchRowView(row: row)
+                    .tag(row.id)
+                    .accessibilityAction(.default) { model.open(row) }
+            }
+            moreRow
+        } header: {
+            Text(section.group.heading)
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+        }
+    }
+
+    /// The row after the book's matches: Show All while the list shows
+    /// fewer than the book holds, or a note once even Show All lists fewer.
+    @ViewBuilder
+    private var moreRow: some View {
+        switch section.more {
+        case .nothing:
+            EmptyView()
+        case .showAll:
+            Text(LibrarySearchWording.showAll(
+                matches: section.group.matchCount,
+                isLowerBound: section.group.countReachedLimit,
+                bookTitle: section.group.book.title
+            ))
+            .foregroundColor(.accentColor)
+            .tag(LibrarySearchWindowView.showAllRowID(section.id))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(LibrarySearchWording.showAllHint)
+            .accessibilityAction(.default) { model.showAllMatches(in: section.id) }
+        case .beyondShowAll:
+            Text(LibrarySearchWording.moreThanListed(section.rows.count))
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+/// The results' rotors: Books, moving to each book's first row, and Matches,
+/// moving to each match listed, each entry its row's words.
+private struct LibrarySearchRotors: ViewModifier {
+    /// What the list shows.
+    let sections: [LibrarySearchSection]
+
+    /// One rotor entry: its words and the row it moves to.
+    private struct Entry: Identifiable {
+        let id: String
+        let label: String
+    }
+
+    /// Each book's entry: its heading, at its first match, or at its Show
+    /// All row when it lists no match.
+    private var books: [Entry] {
+        sections.compactMap { section in
+            if let first = section.rows.first {
+                return Entry(id: first.id, label: section.group.heading)
+            }
+            guard section.more == .showAll else { return nil }
+            return Entry(id: LibrarySearchWindowView.showAllRowID(section.id), label: section.group.heading)
+        }
+    }
+
+    /// Each match's entry, as its row speaks it.
+    private var matches: [Entry] {
+        sections.flatMap { section in
+            section.rows.map { Entry(id: $0.id, label: $0.spokenLabel) }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .accessibilityRotor(LibrarySearchWording.booksRotor) {
+                ForEach(books) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
+                }
+            }
+            .accessibilityRotor(LibrarySearchWording.matchesRotor) {
+                ForEach(matches) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
+                }
+            }
+    }
+}
+
+extension LibrarySearchWindowView {
+    /// The match row `id` names, if it names one.
+    static func matchRow(_ id: String, in sections: [LibrarySearchSection]) -> LibrarySearchMatchRow? {
+        for section in sections {
+            if let row = section.rows.first(where: { $0.id == id }) { return row }
+        }
+        return nil
     }
 }
 
