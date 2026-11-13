@@ -7,8 +7,9 @@ import XCTest
 /// this macOS, found by typing into hosted lists, for the leading-articles
 /// design (TITLE-ARTICLES-RESEARCH-2026-11-13.md): which string a typed
 /// letter matches, where AppKit's search starts, when typed letters stop
-/// adding up, whether `onKeyPress` takes a letter before AppKit's type
-/// select does, and whether a list scrolls to a row selected in code.
+/// adding up and whether that time follows a system setting, whether
+/// `onKeyPress` takes a letter before AppKit's type select does, and
+/// whether a list scrolls to a row selected in code or typed to.
 ///
 /// Each finding is printed on a line beginning `TYPE-SELECT-PROBE:`, so the
 /// run's log holds them. The tests assert only what must hold for the probe
@@ -196,6 +197,139 @@ final class LibraryTypeSelectProbeTests: XCTestCase {
         // What the window's search fields hold after the typing.
         let fields = descendants(of: hosted.window.contentView ?? hosted.hostingView, as: NSSearchField.self)
         report("Library list: search fields in the window \(fields.count), holding \(fields.map(\.stringValue))")
+    }
+
+    /// Whether AppKit's own type select, which the first choice keeps,
+    /// scrolls a row far down the Library list into view whole: T selects
+    /// The Zebra, the row before last, in a list of sixty volumes then The
+    /// Zebra and Theodora.
+    func testWhetherAppKitScrollsFarDownTheLibraryList() throws {
+        let store = TextMouthRuntime.current.preferences
+        preservePreferences([LeadingArticles.preference.key], in: store)
+        LeadingArticles.preference.write(.partOfTitle, to: store)
+        let folder = "Long Probe"
+        let titles = (1...60).map { String(format: "Volume %02d", $0) } + ["The Zebra", "Theodora"]
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(
+            books: titles.enumerated().map { index, title in
+                Book(
+                    title: title,
+                    author: "Author",
+                    format: .epub,
+                    filePath: "/nonexistent/type-select-probe-long/\(index).epub",
+                    md5Hash: "type-select-probe-long-\(index)",
+                    folderPath: folder,
+                    manualSortOrder: index
+                )
+            },
+            folders: [BookFolder(name: folder)]
+        )
+        let location = LibraryLocation(category: .folders, folderPath: folder)
+        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let hosted = hostOffscreen(
+            LibraryView(
+                currentFolderPath: .constant(folder),
+                category: .constant(.folders),
+                showFileImporter: .constant(false),
+                showTextInput: .constant(false),
+                onOpenBook: { _ in }
+            )
+            .environmentObject(model)
+            .environmentObject(settings),
+            size: NSSize(width: 700, height: 420)
+        )
+        defer { takeDown(hosted.window) }
+        settle(hosted.hostingView, seconds: 0.5)
+        let table = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTableView.self).first, "the window shows no list")
+        guard hosted.window.makeFirstResponder(table), hosted.window.firstResponder === table else {
+            return report("Long Library list: the table did not take the keyboard, so nothing was typed")
+        }
+        typeKey("t", into: hosted.window)
+        settle(hosted.hostingView, seconds: 0.5)
+        let selected = table.selectedRow
+        let visible = table.rows(in: table.visibleRect)
+        let whole = selected >= 0 && table.visibleRect.contains(table.rect(ofRow: selected))
+        report(
+            "Long Library list, first choice: typed t: row \(selected) of \(table.numberOfRows) selected; "
+                + "rows \(visible.location)..<\(visible.location + visible.length) show; the row shows whole: \(whole)"
+        )
+    }
+
+    // MARK: - When Typed Letters Start Afresh
+
+    /// When AppKit's type select starts a new search, in a fresh list for
+    /// each try, so no try's letters linger into the next: T then R is
+    /// Treasure Island while they add up, Robinson Crusoe once R starts
+    /// afresh. First at the runner's own settings, in steps between the 1.2
+    /// seconds that added up and the 1.6 that did not (train 1113-0322);
+    /// then with a longer key repeat delay, and then a longer double-click
+    /// interval, each set only while it is tried, to learn whether the time
+    /// follows either setting.
+    func testWhenTypedLettersStartANewSearch() throws {
+        try tryLettersApart(by: [1.3, 1.4, 1.45, 1.5, 1.55], named: "Interval")
+        try withAppSetting("InitialKeyRepeat", 120, read: { NSEvent.keyRepeatDelay }, named: "keyRepeatDelay") { name in
+            try tryLettersApart(by: [2.0, 4.0], named: name)
+        }
+        try withAppSetting("com.apple.mouse.doubleClickThreshold", 2.0, read: { NSEvent.doubleClickInterval }, named: "doubleClickInterval") { name in
+            try tryLettersApart(by: [2.0, 4.0], named: name)
+        }
+    }
+
+    /// Types T, then R each of `gaps` seconds later, into a fresh list of
+    /// Apple Pie, Treasure Island, and Robinson Crusoe, printing what each
+    /// selects. Both letters reach a row however they are taken, so nothing
+    /// beeps. Each try waits longer than the runner's interval first, in
+    /// case AppKit keeps one search for all its tables.
+    private func tryLettersApart(by gaps: [TimeInterval], named name: String) throws {
+        let titles = ["Apple Pie", "Treasure Island", "Robinson Crusoe"]
+        for gap in gaps {
+            let rows = ProbeRows(titles: titles, equivalents: nil)
+            let hosted = hostOffscreen(ProbeList(rows: rows, selection: ProbeSelection(), usesEquivalents: false))
+            defer { takeDown(hosted.window) }
+            settle(hosted.hostingView, seconds: 1.7)
+            let table = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTableView.self).first, "no list drawn")
+            guard hosted.window.makeFirstResponder(table), hosted.window.firstResponder === table else {
+                return report("\(name): the table did not take the keyboard, so nothing was typed")
+            }
+            /// The title of the row selected, for the report.
+            func selectedTitle() -> String {
+                titles.indices.contains(table.selectedRow) ? titles[table.selectedRow] : "row \(table.selectedRow)"
+            }
+            typeKey("t", into: hosted.window)
+            settle(hosted.hostingView, seconds: gap)
+            let afterT = selectedTitle()
+            typeKey("r", into: hosted.window)
+            flush(hosted.hostingView)
+            report("\(name): t then r \(gap) s apart: \(afterT), then \(selectedTitle())")
+        }
+    }
+
+    /// Runs `body` with `key` set to `value` in this app's own domain,
+    /// which AppKit reads before the system's, and then takes it away: only
+    /// when no domain holds the key already, as on GitHub's fresh runner,
+    /// so a setting someone made is never touched, and only once `read`,
+    /// AppKit's reading of the setting, shows the new value. `body` is
+    /// given a name for its findings that carries that value.
+    private func withAppSetting(
+        _ key: String,
+        _ value: Any,
+        read: () -> TimeInterval,
+        named name: String,
+        _ body: (String) throws -> Void
+    ) rethrows {
+        guard UserDefaults.standard.object(forKey: key) == nil else {
+            return report("\(name): \(key) is set already, so it was left alone and not tried")
+        }
+        let before = read()
+        UserDefaults.standard.set(value, forKey: key)
+        defer { UserDefaults.standard.removeObject(forKey: key) }
+        let after = read()
+        report("\(name): \(before) with \(key) unset, \(after) with it \(value)")
+        guard after != before else {
+            return report("\(name): AppKit kept its reading, so nothing was typed")
+        }
+        try body("\(name) \(after)")
     }
 
     // MARK: - SwiftUI Lists
