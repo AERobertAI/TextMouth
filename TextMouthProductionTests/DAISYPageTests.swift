@@ -598,6 +598,78 @@ final class DAISYPageTests: XCTestCase {
         XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["iv", "5", "3"])
     }
 
+    /// The six content files of `smilSpinePackage`, one word each.
+    private static let orderWords = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
+
+    /// A DAISY 3 package of six DTBook files, one word each, whose manifest lists
+    /// them as `manifestOrder` says and whose spine lists only SMIL files, as a
+    /// conformant book's does: `first.smil` points at `firstPoints` and `second.smil`
+    /// at `secondPoints` (by file, some with a fragment), and the files neither points at
+    /// are left to the manifest. With `spineHoldsSmil` false the spine is empty.
+    private func smilSpinePackage(
+        manifestOrder: [String], firstPoints: [String], secondPoints: [String], spineHoldsSmil: Bool = true
+    ) throws -> URL {
+        /// A SMIL file whose `text` elements point at `words`' files.
+        func smil(_ words: [String]) -> String {
+            let pars = words.enumerated().map { "<par id=\"p\($0.offset)\"><text src=\"\($0.element).xml#w\"/></par>" }
+            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><smil xmlns=\"http://www.w3.org/2001/SMIL20/\"><body><seq>"
+                + pars.joined() + "</seq></body></smil>"
+        }
+        let items = manifestOrder.map { "<item id=\"\($0)\" href=\"\($0).xml\" media-type=\"application/x-dtbook+xml\"/>" }
+            + ["<item id=\"first\" href=\"first.smil\" media-type=\"application/smil\"/>",
+               "<item id=\"second\" href=\"second.smil\" media-type=\"application/smil\"/>"]
+        let spine = spineHoldsSmil ? "<spine><itemref idref=\"first\"/><itemref idref=\"second\"/></spine>" : "<spine/>"
+        let opf = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://openebook.org/namespaces/oeb-package/1.0/">
+        <metadata><dc-metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <dc:Title>Six Files</dc:Title><dc:Creator>Odile Marchetti</dc:Creator>
+        </dc-metadata></metadata>
+        <manifest>\(items.joined(separator: "\n"))</manifest>
+        \(spine)
+        </package>
+        """
+        var files = ["book.opf": opf, "first.smil": smil(firstPoints), "second.smil": smil(secondPoints)]
+        for word in Self.orderWords {
+            files["\(word).xml"] = Self.dtbookFile("<p>\(word)</p><pagenum> </pagenum>")
+        }
+        return try DAISYPackageFixtures.writeFolder(files, named: "SixFiles", in: try makeSandboxDirectory("DAISYPagesSixFiles"))
+    }
+
+    /// The words of a book's text, in reading order.
+    private func readingOrder(of package: URL) throws -> [String] {
+        let content = parsed(try DAISYParser.extractMarkdown(from: package))
+        return spokenText(of: content).components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+    }
+
+    /// A conformant spine lists SMIL files, and the DTBook files are read in the order
+    /// those point at them, whatever order the manifest lists them in, on every read. Six
+    /// files make a dictionary's order all but certain to differ from the SMIL files'.
+    func testDTBookFilesAreReadInTheOrderTheSMILSpinePointsAtThem() throws {
+        let package = try smilSpinePackage(
+            manifestOrder: ["delta", "alpha", "foxtrot", "bravo", "echo", "charlie"],
+            firstPoints: ["charlie", "echo", "charlie", "alpha"], secondPoints: ["delta", "bravo"])
+
+        for _ in 0..<5 {
+            // The file no SMIL file points at (foxtrot) is read last.
+            XCTAssertEqual(try readingOrder(of: package), ["charlie", "echo", "alpha", "delta", "bravo", "foxtrot"])
+        }
+        // The empty pages are numbered in that order, one a file, through the whole book.
+        let markdown = try DAISYParser.extractMarkdown(from: package)
+        XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["1", "2", "3", "4", "5", "6"])
+    }
+
+    /// With no SMIL file to say, the files are read in the manifest's document order.
+    func testDTBookFilesAreReadInTheManifestsOrderWhenNoSMILFileSaysOtherwise() throws {
+        let order = ["delta", "alpha", "foxtrot", "bravo", "echo", "charlie"]
+        let package = try smilSpinePackage(
+            manifestOrder: order, firstPoints: ["charlie"], secondPoints: ["alpha"], spineHoldsSmil: false)
+
+        for _ in 0..<5 {
+            XCTAssertEqual(try readingOrder(of: package), order)
+        }
+    }
+
     /// With pages off the converter writes "[Page N]" on a line of its own,
     /// as it did, even for markup inside the number.
     func testPageNumberWithoutPagesIsTheOldLine() throws {

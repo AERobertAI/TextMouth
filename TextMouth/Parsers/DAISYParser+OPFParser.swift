@@ -7,6 +7,11 @@ struct DAISYOPFResult {
     var title: String = ""
     var author: String = ""
     var manifest: [String: DAISYManifestItem] = [:]
+    /// The manifest items' IDs in the order the file lists them (a dictionary
+    /// has no order, and one that changes from launch to launch must never
+    /// decide the order a book is read in). An ID listed twice is placed where
+    /// it first appears.
+    var manifestOrder: [String] = []
     /// Ordered list of manifest item IDs defining the reading sequence
     var spineItemRefs: [String] = []
 }
@@ -48,6 +53,7 @@ class DAISYOPFParser: DAISYSAXParser {
             // Manifest item
             if let id = attributes["id"], let href = attributes["href"],
                let mediaType = attributes["media-type"] {
+                if result.manifest[id] == nil { result.manifestOrder.append(id) }
                 result.manifest[id] = DAISYManifestItem(id: id, href: href, mediaType: mediaType)
             }
         case "itemref":

@@ -550,30 +550,8 @@ enum DAISYParser {
         // Parse OPF to find the DTBook XML file
         let opfResult = try DAISYOPFParser(path: opfPath, in: provider).parse()
 
-        // Collect DTBook content files, using spine order when available
-        let opfDir = (opfPath as NSString).deletingLastPathComponent
-        var dtbookPaths: [String] = []
-
-        if !opfResult.spineItemRefs.isEmpty {
-            // Use spine order to determine reading sequence
-            for idref in opfResult.spineItemRefs {
-                guard let item = opfResult.manifest[idref] else { continue }
-                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
-                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
-                    dtbookPaths.append(path)
-                }
-            }
-        }
-
-        // Fall back to scanning manifest if spine didn't yield DTBook files
-        if dtbookPaths.isEmpty {
-            for (_, item) in opfResult.manifest {
-                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
-                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
-                    dtbookPaths.append(path)
-                }
-            }
-        }
+        // Collect DTBook content files, in the one order every launch reads them in
+        var dtbookPaths = orderedDTBookPaths(of: opfResult, opfPath: opfPath, in: provider)
 
         // Last resort: find any .xml file that looks like DTBook
         if dtbookPaths.isEmpty {
@@ -605,6 +583,63 @@ enum DAISYParser {
             }
         }
         return allMarkdown.joined(separator: "\n\n")
+    }
+
+    /// The DTBook content files of a DAISY 3 package, in one fixed reading
+    /// order that is the same on every launch (the order pages are numbered
+    /// through, so a changing order would relabel them from one launch to the next):
+    /// 1. the order of the spine, when it lists DTBook files;
+    /// 2. else the order the SMIL files of the spine point at them, by the
+    ///    `src` of their `text` elements (a conformant DAISY 3 spine lists SMIL
+    ///    files), then any DTBook file no SMIL file points at, in the manifest's
+    ///    document order. A SMIL file that is missing or damaged only orders
+    ///    nothing: the files it would have pointed at come last;
+    /// 3. else the manifest's document order, never a dictionary's.
+    /// - Returns: The paths, empty when the manifest holds no DTBook file.
+    private static func orderedDTBookPaths(
+        of opfResult: DAISYOPFResult, opfPath: String, in provider: DAISYFileProvider
+    ) -> [String] {
+        let opfDir = (opfPath as NSString).deletingLastPathComponent
+
+        /// Whether a manifest item is a DTBook content file.
+        func isDTBook(_ item: DAISYManifestItem) -> Bool {
+            item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook")
+        }
+        /// An item's path in the package, as it is read.
+        func path(of item: DAISYManifestItem) -> String {
+            opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
+        }
+        /// An item's path normalized, to compare with a SMIL file's references.
+        func key(of item: DAISYManifestItem) -> String {
+            ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+        }
+
+        // 1. The spine's own DTBook files, in spine order.
+        let spineItems = opfResult.spineItemRefs.compactMap { opfResult.manifest[$0] }
+        let spineDTBooks = spineItems.filter(isDTBook)
+        if !spineDTBooks.isEmpty { return spineDTBooks.map(path(of:)) }
+
+        // 3. The manifest's DTBook files in document order.
+        let manifestDTBooks = opfResult.manifestOrder.compactMap { opfResult.manifest[$0] }.filter(isDTBook)
+        // One file has no order to find, so no SMIL file is read for it.
+        guard manifestDTBooks.count > 1 else { return manifestDTBooks.map(path(of:)) }
+
+        // 2. The order the spine's SMIL files point at them.
+        var itemsByKey: [String: DAISYManifestItem] = [:]
+        for item in manifestDTBooks where itemsByKey[key(of: item)] == nil { itemsByKey[key(of: item)] = item }
+        var ordered: [DAISYManifestItem] = []
+        var placed = Set<String>()
+        for smil in spineItems where smil.mediaType.lowercased().contains("smil") {
+            let smilPath = path(of: smil)
+            guard let sources = try? DAISYSMILParser(path: smilPath, in: provider).parseTextReferences() else { continue }
+            for source in sources {
+                let target = ParserUtilities.resolvedPackagePath(source, relativeTo: smilPath, preserveFragment: false)
+                if let item = itemsByKey[target], placed.insert(target).inserted { ordered.append(item) }
+            }
+        }
+        // Files no SMIL file points at keep the manifest's order, after those that are.
+        let unpointedAt = manifestDTBooks.filter { !placed.contains(key(of: $0)) }
+        return (ordered + unpointedAt).map(path(of:))
     }
 
     /// Convert one DTBook content file to Markdown, its pages numbered after
