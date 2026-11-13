@@ -1745,15 +1745,16 @@ enum FileImportService {
 
     /// The formats whose import is refused when the file holds no text
     /// (`FileImportError.noTextToRead`): the plain ones, and the five that
-    /// textutil reads, and braille books (FMT20), whose reading already
-    /// refuses a file with no blocks, and this refuses a book whose blocks
-    /// translate to nothing but white space. A rich text, Word, or
+    /// textutil reads, Word documents (`.docx`, which also covers templates
+    /// and macro-enabled documents), and braille books (FMT20), whose reading
+    /// already refuses a file with no blocks, and this refuses a book whose
+    /// blocks translate to nothing but white space. A rich text, Word, or
     /// OpenDocument file whose text is only white space (a few empty
     /// paragraphs) converts without error, so without this it would be added
-    /// as a silent book. EPUB, DOCX, DAISY, and PDF have their own refusals
-    /// or none.
+    /// as a silent book. EPUB, DAISY, and PDF have their own refusals or
+    /// none.
     private static let formatsRefusedWhenBlank: Set<BookFormat> = [
-        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml, .braille,
+        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .docx, .odt, .wordml, .braille,
     ]
 
     /// Whether an import of `book` is refused when the book holds no text:

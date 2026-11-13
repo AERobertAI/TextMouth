@@ -187,6 +187,35 @@ final class WordTemplateImportTests: XCTestCase {
         XCTAssertEqual(allText(of: content), allText(of: expected))
     }
 
+    // MARK: - A document with no text
+
+    /// A Word document of the three forms and the plain .docx whose body
+    /// holds only empty paragraphs and white space is refused with "This
+    /// file has no text to read.", as a blank RTF or ODT is, instead of being
+    /// added as a silent, empty book.
+    func testAWordDocumentWithNoTextIsRefused() throws {
+        let blankBody = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+        <w:p/><w:p><w:r><w:t xml:space="preserve">   </w:t></w:r></w:p><w:p><w:r><w:tab/></w:r></w:p>
+        </w:body></w:document>
+        """
+        var blankDocuments = [try copyOfHeadingDocx(named: "blank.docx")]
+        for form in Self.forms {
+            blankDocuments.append(try makeForm(form))
+        }
+        for url in blankDocuments {
+            try replaceEntry("word/document.xml", in: url) { _ in blankBody }
+
+            XCTAssertThrowsError(try FileImportService.importFileWithReport(from: url), url.lastPathComponent) { error in
+                guard case FileImportError.noTextToRead? = error as? FileImportError else {
+                    return XCTFail("\(url.lastPathComponent): expected noTextToRead, got \(error)")
+                }
+                XCTAssertEqual(error.localizedDescription, "This file has no text to read.")
+            }
+        }
+    }
+
     // MARK: - Making the copies
 
     /// A copy of TestData/test_book.docx (a real Word document with Heading
