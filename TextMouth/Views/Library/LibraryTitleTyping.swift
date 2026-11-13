@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - The List's Letter Navigation
 
@@ -10,8 +13,9 @@ import SwiftUI
 /// to it too.
 ///
 /// The row is selected, which VoiceOver follows and reads as it reads any
-/// row, so nothing more is announced, and scrolled into view. A key that
-/// reaches no row leaves the selection where it was, and makes no sound.
+/// row, so nothing more is announced, and scrolled into view once the list
+/// has drawn it selected (`scrollSelectedRowIntoView`). A key that reaches
+/// no row leaves the selection where it was, and makes no sound.
 /// Typed letters add up within `interval` of each other, as AppKit's type
 /// select gathers them (`TitleTypingSearch`); a held key types once.
 ///
@@ -36,20 +40,28 @@ struct LibraryTitleTyping: ViewModifier {
 
     /// The letters typed so far.
     @State private var search = TitleTypingSearch()
+    /// How many times typing has reached a row, each of which the list then
+    /// scrolls into view: a count, so reaching the row reached last time, or
+    /// any other, scrolls again.
+    @State private var reaches = 0
 
     func body(content: Content) -> some View {
-        ScrollViewReader { proxy in
-            content.onKeyPress(phases: [.down, .repeat]) { press in
-                take(press, scrollingWith: proxy)
+        content
+            .onKeyPress(phases: [.down, .repeat]) { press in
+                take(press)
             }
-        }
+            // A newer reach cancels a look still waiting for the last one.
+            .task(id: reaches) {
+                guard reaches > 0 else { return }
+                await scrollSelectedRowIntoView()
+            }
     }
 
     /// Acts on `press` as letter navigation: returns `.ignored` for a key
     /// the list's own handling keeps, and `.handled` for one typed here. A
     /// key that is not typing, such as an arrow, ends the search, so the
     /// next letter starts afresh.
-    private func take(_ press: KeyPress, scrollingWith proxy: ScrollViewProxy) -> KeyPress.Result {
+    private func take(_ press: KeyPress) -> KeyPress.Result {
         guard articles.typesWithoutArticles else { return .ignored }
         guard Self.isTyping(press.characters, modifiers: press.modifiers) else {
             search = TitleTypingSearch()
@@ -72,7 +84,7 @@ struct LibraryTitleTyping: ViewModifier {
         search.add(press.characters, at: now, interval: interval)
         if let row = TitleTyping.firstRow(reachedBy: search.typed, in: listed, showingInverted: inverted) {
             selection = [row]
-            proxy.scrollTo(row)
+            reaches += 1
         }
         // A Space typed next joins the letters only while a title goes on
         // with them and a space.
@@ -83,6 +95,47 @@ struct LibraryTitleTyping: ViewModifier {
         }
         return .handled
     }
+
+    /// Scrolls the row typing reached into view, as AppKit's own type
+    /// select does, once the list has drawn it selected: through the Mac's
+    /// table, which scrolls by the heights its rows are drawn at. SwiftUI's
+    /// `scrollTo` fell short of a row far down the Library list (row 62
+    /// selected with rows 47 to 54 in view, on GitHub's runner). The table
+    /// is looked at again a moment after each scroll, up to `scrollLooks`
+    /// times, in case rows drawn only once scrolled to moved the row on.
+    /// Only the Mac's list has letter navigation (on the iPhone,
+    /// `LibraryViewModel.leadingArticles` is always the first choice), so
+    /// elsewhere there is nothing to scroll.
+    private func scrollSelectedRowIntoView() async {
+        #if os(macOS)
+        for _ in 0..<Self.scrollLooks {
+            // Lets the list draw the selection, and the rows scrolled to.
+            try? await Task.sleep(for: Self.scrollLookDelay)
+            // The list has the keyboard while it is typed into, so its
+            // table is the window's first responder.
+            guard !Task.isCancelled, let table = window?.firstResponder as? NSTableView else { return }
+            if Self.showsSelectedRow(of: table) { return }
+        }
+        #endif
+    }
+
+    /// How many times the table is looked at after a row is reached.
+    static let scrollLooks = 4
+    /// How long the list is given to draw before each look: two frames.
+    static let scrollLookDelay = Duration.milliseconds(30)
+
+    #if os(macOS)
+    /// Whether `table`'s selected row shows whole: if it does not, scrolls
+    /// it into view and returns false, so the caller looks again once the
+    /// rows scrolled to are drawn. With no row selected there is nothing to
+    /// show, which counts as shown.
+    static func showsSelectedRow(of table: NSTableView) -> Bool {
+        let row = table.selectedRow
+        guard row >= 0, !table.visibleRect.contains(table.rect(ofRow: row)) else { return true }
+        table.scrollRowToVisible(row)
+        return false
+    }
+    #endif
 
     /// How long after one typed key the next still adds to the search, in
     /// seconds, as AppKit's type select gathers keys.

@@ -256,12 +256,19 @@ final class LibraryTitleTypingTests: XCTestCase {
     }
 
     /// Typing a title far down a long list selects it and scrolls it into
-    /// view, as the list's own type select does. The list ends with The
-    /// Zebra and then Theodora, so T reaches Theodora, the last row, only by
-    /// letter navigation that passes over articles, and The Zebra by
-    /// AppKit's own type select; either way T reaches a row, so nothing
-    /// beeps.
+    /// view, whole, as the list's own type select does, and typing one at
+    /// the top scrolls back up to it. The list ends with The Zebra and then
+    /// Theodora, so T reaches Theodora, the last row, only by letter
+    /// navigation that passes over articles, and The Zebra by AppKit's own
+    /// type select; either way T reaches a row, so nothing beeps. V, for
+    /// Volume 01, the first, is typed only once letter navigation has taken
+    /// T. Time is the test's own clock, stepped past the interval between
+    /// the two, so nothing waits for it.
     func testTheRowTypedToIsScrolledIntoView() throws {
+        var now = ProcessInfo.processInfo.systemUptime
+        let previousClock = TitleTypingSpaceClaim.clock
+        TitleTypingSpaceClaim.clock = { now }
+        defer { TitleTypingSpaceClaim.clock = previousClock }
         let store = TextMouthRuntime.current.preferences
         preservePreferences([LeadingArticles.preference.key], in: store)
         LeadingArticles.preference.write(.ignoredWhenTyping, to: store)
@@ -306,16 +313,31 @@ final class LibraryTitleTypingTests: XCTestCase {
         let visibleBefore = table.rows(in: table.visibleRect)
         XCTAssertLessThan(visibleBefore.location + visibleBefore.length, table.numberOfRows, "the whole list fit the window, so nothing could scroll")
 
+        /// Checks that the selected row shows whole, naming the rows that
+        /// show when it does not.
+        func selectedRowShows(after typed: String) {
+            let selected = table.selectedRow
+            let visible = table.rows(in: table.visibleRect)
+            XCTAssertTrue(
+                selected >= 0 && table.visibleRect.contains(table.rect(ofRow: selected)),
+                "after \(typed), row \(selected) was selected but rows \(visible.location)..<\(visible.location + visible.length) show"
+            )
+        }
+
         hosted.window.sendEvent(try Self.keyDown("t", in: hosted.window))
         settle(hosted.hostingView, seconds: 0.5)
+        // Without letter navigation, AppKit would take V too, after T, and
+        // "tv" reaches nothing, so no further key is typed.
+        guard table.selectedRow == table.numberOfRows - 1 else {
+            return XCTFail("T selected row \(table.selectedRow), not Theodora, the last row; letter navigation did not take the key (The Zebra, the row before, is AppKit's)")
+        }
+        selectedRowShows(after: "T")
 
-        let selected = table.selectedRow
-        XCTAssertEqual(selected, table.numberOfRows - 1, "T did not select Theodora, the last row (The Zebra is the row before)")
-        let visible = table.rows(in: table.visibleRect)
-        XCTAssertTrue(
-            NSLocationInRange(selected, visible),
-            "row \(selected) was selected but rows \(visible.location)..<\(visible.location + visible.length) show"
-        )
+        now += LibraryTitleTyping.interval + 0.5
+        hosted.window.sendEvent(try Self.keyDown("v", in: hosted.window))
+        settle(hosted.hostingView, seconds: 0.5)
+        XCTAssertEqual(table.selectedRow, table.numberOfRows - titles.count, "V did not select Volume 01, the first book")
+        selectedRowShows(after: "V")
     }
 
     /// A key-down event typing `character`, with the key code the keyboard
@@ -323,7 +345,7 @@ final class LibraryTitleTypingTests: XCTestCase {
     /// `isARepeat` for a held key's repeat.
     private static func keyDown(_ character: Character, in window: NSWindow, isARepeat: Bool = false) throws -> NSEvent {
         let keyCodes: [Character: UInt16] = [
-            "a": 0, "h": 4, "z": 6, "b": 11, "e": 14, "t": 17, "o": 31, "i": 34, " ": 49, ",": 43,
+            "a": 0, "h": 4, "z": 6, "v": 9, "b": 11, "e": 14, "t": 17, "o": 31, "i": 34, " ": 49, ",": 43,
         ]
         let text = String(character)
         return try XCTUnwrap(NSEvent.keyEvent(
