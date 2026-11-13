@@ -1,4 +1,5 @@
 import Foundation
+import os
 import XCTest
 @testable import TextMouth
 
@@ -452,6 +453,67 @@ final class LibrarySearchTextStoreTests: XCTestCase {
 
         XCTAssertFalse(file.readChapter(0, into: &buffer), "A closed file has nothing to read")
         file.close()
+    }
+
+    // MARK: - Room on the Disk
+
+    /// A text is not kept, and nothing of it is written, when keeping it
+    /// would leave less free on the disk than the app's reserve; with room,
+    /// it is (the review of November 13, finding 10). The free space is read
+    /// at most once in each reading's lifetime, and what is kept meanwhile
+    /// counts against it; a text is kept when the system cannot tell; and
+    /// asking whether there is room takes none.
+    func testAStoreKeepsTheAppsFreeSpaceReserve() throws {
+        let book = LibrarySearchTextBook(parsed: Self.shortChapters)
+        let key = Self.key()
+        // The size of one book's file, measured with room to spare.
+        let measuring = try makeStore()
+        try measuring.store(book, for: UUID(), key: key)
+        let size = try XCTUnwrap(
+            try FileManager.default.contentsOfDirectory(at: measuring.folder, includingPropertiesForKeys: [.fileSizeKey])
+                .first.flatMap { try $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }
+        )
+        let reserve: Int64 = 1_000_000
+        let free = OSAllocatedUnfairLock<Int64?>(initialState: reserve + Int64(size) * 5 / 2)
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        let clock = OSAllocatedUnfairLock(initialState: Date(timeIntervalSince1970: 1_800_000_000))
+        let space = LibrarySearchTextSpace(
+            reserve: reserve,
+            readingLifetime: 5,
+            freeSpace: { _ in
+                readings.withLock { $0 += 1 }
+                return free.withLock { $0 }
+            },
+            now: { clock.withLock { $0 } }
+        )
+        let store = LibrarySearchTextStore(folder: try makeSandboxDirectory("LibrarySearchText"), space: space)
+        let (first, second, third, fourth) = (UUID(), UUID(), UUID(), UUID())
+
+        // Room for two and a half files: two are kept, the third is not.
+        try store.store(book, for: first, key: key)
+        try store.store(book, for: second, key: key)
+        XCTAssertThrowsError(try store.store(book, for: third, key: key)) { error in
+            XCTAssertEqual(error as? LibrarySearchTextStore.StoreError, .notEnoughSpace(needed: Int64(size)))
+        }
+        XCTAssertEqual(
+            try fileNames(in: store), [first, second].map { "\($0.uuidString).searchtext" }.sorted(),
+            "only the two with room are kept, and no partial file is left"
+        )
+        XCTAssertEqual(readings.withLock { $0 }, 1, "the free space was read again within a reading's lifetime")
+        XCTAssertTrue(store.hasRoom(forAbout: Int64(size) / 2), "half a file still fits")
+        XCTAssertFalse(store.hasRoom(forAbout: Int64(size)), "a whole file no longer fits")
+
+        // Past the reading's lifetime the disk is read again, with more room.
+        free.withLock { $0 = reserve + Int64(size) * 10 }
+        clock.withLock { $0 = $0.addingTimeInterval(6) }
+        try store.store(book, for: third, key: key)
+        XCTAssertEqual(readings.withLock { $0 }, 2, "the free space was not read again after its lifetime")
+
+        // A disk whose free space the system cannot tell keeps the text.
+        free.withLock { $0 = nil }
+        clock.withLock { $0 = $0.addingTimeInterval(6) }
+        try store.store(book, for: fourth, key: key)
+        XCTAssertTrue(exists(store.url(for: fourth)), "a text was not kept where the free space is unknown")
     }
 
     // MARK: - Sweeping

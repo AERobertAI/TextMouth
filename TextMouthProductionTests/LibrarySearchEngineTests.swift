@@ -405,6 +405,36 @@ final class LibrarySearchEngineTests: XCTestCase {
         XCTAssertEqual(again.tally?.booksPrepared, 0, "the file made again is used")
     }
 
+    /// On a disk with less free than the app's reserve, a search keeps no
+    /// search text and works from what it parsed: the same matches as with
+    /// room, every book prepared, none counted unreadable, so the status says
+    /// nothing new; and the next search prepares them again (the review of
+    /// November 13, finding 10).
+    func testOnAFullDiskTheSearchWorksFromTheParseAndKeepsNothing() throws {
+        let books = [("Full One", "the fox and the fox"), ("Full Two", "<!-- chapter: A -->\na fox\n\n<!-- chapter: B -->\nno match")]
+        let roomy = try makeLibrary(books)
+        let full = try makeLibrary(books, space: LibrarySearchTextSpace(reserve: 1_000_000_000, freeSpace: { _ in 10_000 }))
+
+        let withRoom = search("fox", TextSearchOptions(), in: roomy)
+        let onAFullDisk = search("fox", TextSearchOptions(), in: full)
+
+        let tally = try XCTUnwrap(onAFullDisk.tally, "the search on a full disk did not finish")
+        XCTAssertEqual(tally.booksPrepared, 2, "\(tally)")
+        XCTAssertEqual(tally.booksUnreadable, 0, "a book that could not be kept was counted unreadable: \(tally)")
+        XCTAssertEqual(tally.matches, 3, "\(tally)")
+        for index in books.indices {
+            let id = try full.book(index).id
+            let roomyID = try roomy.book(index).id
+            XCTAssertEqual(
+                onAFullDisk.results[id]?.matches.map(\.globalOffset), withRoom.results[roomyID]?.matches.map(\.globalOffset),
+                "book \(index): the matches on a full disk differ from those with room"
+            )
+        }
+        let kept = (try? FileManager.default.contentsOfDirectory(atPath: full.store.folder.path)) ?? []
+        XCTAssertEqual(kept, [], "a search text was kept on a full disk")
+        XCTAssertEqual(search("fox", TextSearchOptions(), in: full).tally?.booksPrepared, 2, "the next search prepares again")
+    }
+
     // MARK: Speed
 
     /// A plain search of a prepared synthetic library takes no longer than a
@@ -445,8 +475,12 @@ final class LibrarySearchEngineTests: XCTestCase {
         }
     }
 
-    /// Writes `books` as packages in a sandbox folder.
-    private func makeLibrary(_ books: [(title: String, markdown: String)]) throws -> Library {
+    /// Writes `books` as packages in a sandbox folder, with a store whose
+    /// room on the disk `space` decides (the disk's own by default).
+    private func makeLibrary(
+        _ books: [(title: String, markdown: String)],
+        space: LibrarySearchTextSpace = LibrarySearchTextSpace()
+    ) throws -> Library {
         let folder = try makeSandboxDirectory("LibrarySearch")
         var made: [LibrarySearchBook] = []
         for (index, book) in books.enumerated() {
@@ -458,7 +492,10 @@ final class LibrarySearchEngineTests: XCTestCase {
                 id: UUID(), title: book.title, author: "Test", contentURL: content, packageURL: package, isAudiobook: false
             ))
         }
-        return Library(books: made, store: LibrarySearchTextStore(folder: folder.appendingPathComponent("Store", isDirectory: true)))
+        return Library(
+            books: made,
+            store: LibrarySearchTextStore(folder: folder.appendingPathComponent("Store", isDirectory: true), space: space)
+        )
     }
 
     /// What one library search found: its outcome, its tally, and each

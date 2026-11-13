@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // This Mac's copy of each book's reading text, kept for Search Library
 // (LIBRARY-SEARCH-RESEARCH-2026-11-13.md, section 2). Parsing content.md
@@ -143,12 +144,32 @@ struct LibrarySearchTextStore: Sendable {
     let folder: URL
     /// Who writes the files, which reads only what the same producer wrote.
     let producer: String
+    /// The room the store may take on the disk holding it, the app's
+    /// free-space reserve kept.
+    let space: LibrarySearchTextSpace
 
-    /// A store in `folder`, reading only what `producer` wrote. Tests pass a
-    /// folder of their own; the app uses `shared`.
-    init(folder: URL, producer: String = Self.currentProducer) {
+    /// A store in `folder`, reading only what `producer` wrote, and keeping
+    /// a text only while `space` has room for it. Tests pass a folder of
+    /// their own, and a space of their own to try a full disk; the app uses
+    /// `shared`.
+    init(folder: URL, producer: String = Self.currentProducer, space: LibrarySearchTextSpace = LibrarySearchTextSpace()) {
         self.folder = folder
         self.producer = producer
+        self.space = space
+    }
+
+    /// Why a text was not kept.
+    enum StoreError: Error, Equatable {
+        /// Keeping it would leave less free on the disk than the app's
+        /// reserve (`LibrarySearchTextSpace`); `needed` is the file's size.
+        case notEnoughSpace(needed: Int64)
+    }
+
+    /// Whether a text of about `bytes` would be kept now: what a pass that
+    /// prepares books ahead of a search asks before it parses one, so a full
+    /// disk costs it no parse it could not keep.
+    func hasRoom(forAbout bytes: Int64) -> Bool {
+        space.hasRoom(for: bytes, in: folder)
     }
 
     /// This build's producer: the file layout, the content index's version,
@@ -191,7 +212,9 @@ struct LibrarySearchTextStore: Sendable {
     /// Keeps `book`, the search text of the book `bookID` read from the
     /// content.md `key` describes, in place of anything kept for it before.
     /// The file is written in full under a partial name, then renamed into
-    /// place.
+    /// place. Throws `StoreError.notEnoughSpace`, writing nothing, when the
+    /// file would leave the disk with less free than the app's reserve: the
+    /// search goes on from the text it parsed, and keeps nothing.
     func store(_ book: LibrarySearchTextBook, for bookID: UUID, key: LibrarySearchTextKey) throws {
         let header = Header(producer: producer, key: key, chapters: book.chapters.map(ChapterEntry.init))
         let headerData = try JSONEncoder().encode(header)
@@ -200,6 +223,8 @@ struct LibrarySearchTextStore: Sendable {
         Self.append(UInt32(headerData.count), to: &start)
         start.append(headerData)
 
+        let size = book.texts.reduce(Int64(start.count)) { $0 + Int64($1.utf8.count) }
+        guard space.take(size, in: folder) else { throw StoreError.notEnoughSpace(needed: size) }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let partial = folder.appendingPathComponent("\(bookID.uuidString)-\(UUID().uuidString).partial")
         do {
@@ -554,6 +579,92 @@ final class LibrarySearchTextFile {
     /// The little-endian 32-bit number at `offset` in `data`.
     private static func number(at offset: Int, in data: Data) -> UInt32 {
         data.withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(fromByteOffset: offset, as: UInt32.self)) }
+    }
+}
+
+// MARK: - Room on the Disk
+
+/// Whether the disk holding the search texts has room for one more, the
+/// app's free-space reserve kept (`ArchiveLimits.freeSpaceReserve`, 1 GB, as
+/// an import keeps it): the texts take about the size of the library's text
+/// (650 MB for the user's), on the disk the system and the library also
+/// write to, so on a nearly full disk a search keeps nothing and works from
+/// what it parsed (the review of November 13, finding 10).
+///
+/// Asking the system for the free space can take milliseconds, too long to
+/// ask for each of hundreds of books, so a reading is kept for
+/// `readingLifetime` seconds, and what the store keeps meanwhile is counted
+/// against it. When the system cannot tell, a text is kept, as an import
+/// goes ahead.
+final class LibrarySearchTextSpace: Sendable {
+    /// What is known of the disk: its free space when last read (nil when the
+    /// system could not tell), when that was, and the bytes kept since.
+    private struct Reading: Sendable {
+        var available: Int64?
+        var takenAt: Date
+        var keptSince: Int64 = 0
+    }
+
+    /// The bytes left free on the disk.
+    let reserve: Int64
+    /// How long a reading of the free space is used, in seconds.
+    let readingLifetime: TimeInterval
+    /// The free bytes on the disk holding a folder, or nil when the system
+    /// cannot tell.
+    private let freeSpace: @Sendable (URL) -> Int64?
+    /// The time now.
+    private let now: @Sendable () -> Date
+    /// The latest reading, under its lock; nil before the first.
+    private let reading = OSAllocatedUnfairLock<Reading?>(initialState: nil)
+
+    /// A space keeping `reserve` bytes free, reading the free space with
+    /// `freeSpace` at most once in each `readingLifetime` seconds of `now`.
+    /// The app's are the defaults; tests pass a disk and a clock of their own.
+    init(
+        reserve: Int64 = ArchiveLimits.standard.freeSpaceReserve,
+        readingLifetime: TimeInterval = 5,
+        freeSpace: @escaping @Sendable (URL) -> Int64? = { ArchiveLimits.volumeFreeSpace(at: $0) },
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        self.reserve = reserve
+        self.readingLifetime = readingLifetime
+        self.freeSpace = freeSpace
+        self.now = now
+    }
+
+    /// Whether `bytes` more fit on the disk holding `folder` with the
+    /// reserve kept; when they do, they are counted as kept.
+    func take(_ bytes: Int64, in folder: URL) -> Bool {
+        admits(bytes, in: folder, counting: true)
+    }
+
+    /// Whether `bytes` more would fit now, counting nothing.
+    func hasRoom(for bytes: Int64, in folder: URL) -> Bool {
+        admits(bytes, in: folder, counting: false)
+    }
+
+    /// Whether `bytes` more fit, from a reading no older than
+    /// `readingLifetime`, taken afresh when there is none; counts them in
+    /// when `counting` and they fit.
+    private func admits(_ bytes: Int64, in folder: URL, counting: Bool) -> Bool {
+        let time = now()
+        let isFresh = reading.withLock { reading in
+            reading.map { time.timeIntervalSince($0.takenAt) < readingLifetime } ?? false
+        }
+        if !isFresh {
+            // Read outside the lock: the system can take a while to answer.
+            let available = freeSpace(folder)
+            reading.withLock { $0 = Reading(available: available, takenAt: time) }
+        }
+        return reading.withLock { reading in
+            guard var current = reading, let available = current.available else { return true }
+            guard available - reserve - current.keptSince >= bytes else { return false }
+            if counting {
+                current.keptSince += bytes
+                reading = current
+            }
+            return true
+        }
     }
 }
 
