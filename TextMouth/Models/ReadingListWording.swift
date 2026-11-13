@@ -69,6 +69,19 @@ enum ReadingListWording {
     static let keepBooksHint = "Keeps the books on the reading list downloaded on this Mac, as Keep on This Mac does. "
         + "This choice is this Mac's alone. Clearing it removes no download."
 
+    /// What lets a book go that this Mac keeps for the reading list: take it
+    /// off the list, or clear the options bar's keep choice, which keeps all
+    /// the list's books. "Take it off the reading list, or clear Keep these
+    /// books on this Mac in the Reading List's options" begins a sentence;
+    /// "take it off ..." follows one.
+    /// - Parameters:
+    ///   - plural: Whether it is about several books ("them").
+    ///   - capitalized: Whether the sentence begins with this advice.
+    static func letGoOfBooksAdvice(plural: Bool, capitalized: Bool) -> String {
+        let take = capitalized ? "Take" : "take"
+        return "\(take) \(plural ? "them" : "it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options"
+    }
+
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the

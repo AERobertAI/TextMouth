@@ -625,8 +625,13 @@ final class LibraryCloudCommands {
         let titles = books.filter { released.contains($0.id) }.map(\.title)
         guard !titles.isEmpty else { return }
         released.forEach { keptBookRetryTimes[$0] = nil }
+        // A book the reading list also keeps stays kept; the words say so.
+        let stillKept = books.filter { released.contains($0.id) && kept.isKeptForReadingList($0.id) }.count
         DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(CountWording.list(titles)) on this Mac")
-        VoiceOverAnnouncer.announce(LibraryCloudWording.stoppedKeeping(titles: titles), from: window)
+        VoiceOverAnnouncer.announce(
+            LibraryCloudWording.stoppedKeeping(titles: titles, stillKept: stillKept),
+            from: window
+        )
     }
 
     /// Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen in
@@ -656,7 +661,8 @@ final class LibraryCloudCommands {
                 LibraryCloudWording.keepMenuRefusal(
                     keeping: keeping,
                     selected: selection.map(\.title),
-                    inCloudLibrary: states.showsCloudNotes
+                    inCloudLibrary: states.showsCloudNotes,
+                    keptOnlyForReadingList: selection.filter { kept.isKeptOnlyForReadingList($0.id) }.count
                 ),
                 from: window
             )
@@ -1053,8 +1059,14 @@ final class LibraryCloudCommands {
         // storage: the book is open in a reader, or kept on this Mac.
         let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
             if library.openBookIDs.contains(book.id) { return .failure(.bookIsOpen) }
-            if kept.contains(book.id) { return .failure(.keptOnThisMac) }
-            if kept.isKeptForReadingList(book.id) { return .failure(.keptForReadingList) }
+            // Both reasons are named at once, so the advice never leads to a
+            // second refusal.
+            switch (kept.contains(book.id), kept.isKeptForReadingList(book.id)) {
+            case (true, true): return .failure(.keptOnThisMacAndForReadingList)
+            case (true, false): return .failure(.keptOnThisMac)
+            case (false, true): return .failure(.keptForReadingList)
+            case (false, false): break
+            }
             return .success(BookPackage(book))
         }
         DiagnosticLog.event(

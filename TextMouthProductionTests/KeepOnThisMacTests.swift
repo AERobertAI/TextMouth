@@ -973,9 +973,28 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsRemoved, [])
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
 
+        // Kept by the listener too, it names both reasons at once, so the
+        // advice never leads to a second refusal.
         fixture.kept.keep([book.id])
         let again = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
-        XCTAssertEqual(again?.message, BookCloudError.keptOnThisMac.explanation(in: .iCloudDrive))
+        XCTAssertEqual(
+            again?.message,
+            "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, "
+                + "so its download can't be removed. Choose Stop Keeping on This Mac first. "
+                + "Then take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+
+        // Following it: after Stop Keeping, the list's refusal is the one the
+        // first refusal ended on.
+        fixture.commands.stopKeeping([book], from: nil)
+        let last = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(last?.message, BookCloudError.keptForReadingList.explanation(in: .iCloudDrive))
+        XCTAssertTrue(
+            again?.message.hasSuffix(
+                "take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+            ) == true
+        )
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
     }
 
     /// With the choice cleared, Remove Download takes a list book's download
@@ -1013,8 +1032,10 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertTrue(kinds().contains(.stopKeepingOnThisMac))
     }
 
-    /// Stop Keeping in the Library menu says nothing is kept by the
-    /// listener's choice for a list book, and stops nothing.
+    /// Stop Keeping in the Library menu, on a book only the reading list
+    /// keeps, stops nothing and says so in words that agree with the book's
+    /// row ("Kept on this Mac"): it is kept for the reading list, and how to
+    /// let it go; never that it isn't kept.
     func testTheMenuStopsNothingForAListBook() async {
         let book = cloudTestBook()
         let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
@@ -1024,8 +1045,71 @@ final class KeepOnThisMacTests: XCTestCase {
             fixture.commands.setKeptFromMenu(false, for: [book], in: fixture.model, from: nil)
         }
 
-        XCTAssertEqual(said.count, 1, "the menu said why nothing changed")
+        XCTAssertEqual(
+            said,
+            [
+                "Moby-Dick is kept on this Mac for the reading list. "
+                    + "To let it go, take it off the reading list, or clear Keep these books on this Mac in the Reading List's options.",
+            ]
+        )
         XCTAssertTrue(fixture.kept.isKept(book.id))
+    }
+
+    /// The same refusal for a selection, word for word: all kept for the
+    /// list, some, and the plain words for a library outside the list's
+    /// keep.
+    func testTheMenusRefusalNamesTheReadingListsKeepForASelection() {
+        let refusal = { (titles: [String], onlyList: Int) in
+            LibraryCloudWording.keepMenuRefusal(
+                keeping: false,
+                selected: titles,
+                inCloudLibrary: true,
+                keptOnlyForReadingList: onlyList
+            )
+        }
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula"], 2),
+            "The 2 selected books are kept on this Mac for the reading list. "
+                + "To let them go, take them off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula", "Ulysses"], 2),
+            "None of the 3 selected books is kept on this Mac by your choice, and 2 are kept for the reading list. "
+                + "To let them go, take them off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(
+            refusal(["Emma", "Dracula"], 1),
+            "None of the 2 selected books is kept on this Mac by your choice, and 1 is kept for the reading list. "
+                + "To let it go, take it off the reading list, or clear Keep these books on this Mac in the Reading List's options."
+        )
+        XCTAssertEqual(refusal(["Emma"], 0), "Emma isn't kept on this Mac.")
+    }
+
+    /// Stop Keeping on a book kept for both reasons stops the listener's own
+    /// keep and says the reading list still keeps it, since the book stays
+    /// kept; a selection says how many.
+    func testStopKeepingSaysWhenTheReadingListStillKeepsTheBook() async {
+        let book = cloudTestBook()
+        let plain = cloudTestBook("Emma")
+        let fixture = CommandFixture(books: [book, plain], states: [book.id: .downloaded, plain.id: .downloaded])
+        fixture.kept.keep([book.id, plain.id])
+        fixture.kept.setReadingListBooks([book.id])
+
+        let alone = await announcements { fixture.commands.stopKeeping([book], from: nil) }
+        XCTAssertEqual(alone, ["Stopped keeping Moby-Dick on this Mac. The reading list still keeps it downloaded"])
+        XCTAssertTrue(fixture.kept.isKept(book.id), "the list stopped keeping the book")
+        XCTAssertFalse(fixture.kept.contains(book.id))
+
+        fixture.kept.keep([book.id])
+        let both = await announcements { fixture.commands.stopKeeping([book, plain], from: nil) }
+        XCTAssertEqual(both, ["Stopped keeping 2 books on this Mac. The reading list still keeps 1 of them downloaded"])
+
+        // The words themselves.
+        XCTAssertEqual(
+            LibraryCloudWording.stoppedKeeping(titles: ["Emma", "Dracula"], stillKept: 2),
+            "Stopped keeping 2 books on this Mac. The reading list still keeps them downloaded"
+        )
+        XCTAssertEqual(LibraryCloudWording.stoppedKeeping(titles: ["Emma"]), "Stopped keeping Emma on this Mac")
     }
 
     /// A list book's row says "Kept on this Mac", as any kept book's does,

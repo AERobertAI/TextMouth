@@ -286,6 +286,9 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// Mac keeps downloaded in a cloud library (`KeptBooks`), and the
     /// listener did not keep the book themselves.
     case keptForReadingList
+    /// Remove Download refused: the listener keeps the book themselves, and
+    /// it is on the reading list too, so both must be let go.
+    case keptOnThisMacAndForReadingList
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
@@ -317,7 +320,11 @@ enum BookCloudError: Error, Equatable, Sendable {
                 + "Choose Stop Keeping on This Mac first."
         case .keptForReadingList:
             return "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed. "
-                + "Take it off the reading list, or clear Keep these books on this Mac in the Reading List's options first."
+                + "\(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: true)) first."
+        case .keptOnThisMacAndForReadingList:
+            return "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, "
+                + "so its download can't be removed. Choose Stop Keeping on This Mac first. "
+                + "Then \(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: false))."
         case .removalFailed(let message):
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
