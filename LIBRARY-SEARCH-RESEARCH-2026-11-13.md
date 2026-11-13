@@ -94,26 +94,28 @@ The orchestrator measured the library read-only that day: 750 books with a `cont
 
 ## 8. Measurements on the user's library
 
-**Method.** A harness built for Release from the app's own sources at 42aa5487 (`measure.py` in the agent's scratch folder: the app's sources with a `main.swift` in place of its `@main`, and `swift build -c release`) ran `LibrarySearchEngine` itself over `~/.TextMouth/Library`, which it only read: files opened read-only, the store in `build/orchestrator/libsearch/store-1`, and the process run as a hosted test is (`XCTestConfigurationFilePath` set), so any default place the app's code names is a sandbox in the temporary folder. Each run was its own process, under the heavy-work lock, so nothing else heavy ran beside it, and it printed counts, times, and memory only. The books are the 737 packages below the Library folder holding a content.md (676.3 MB; the orchestrator counted 750 content.md files in the whole data directory). The Mac is the development Mac (Apple M3, 4 performance and 4 efficiency cores, 8 GB); a run used every core but those of the whole-chapter searches, which used four. "Total" is from the search's start to its last book.
+**Method.** A harness built for Release from the app's own sources, at 42aa5487 for the first series and at 8037759b for the engine as built (`measure.py` in the agent's scratch folder: the app's sources with a `main.swift` in place of its `@main`, and `swift build -c release`) ran `LibrarySearchEngine` itself over `~/.TextMouth/Library`, which it only read: files opened read-only, the store in `build/orchestrator/libsearch/store-1`, and the process run as a hosted test is (`XCTestConfigurationFilePath` set), so any default place the app's code names is a sandbox in the temporary folder. Each run was its own process, under the heavy-work lock, so nothing else heavy ran beside it, and it printed counts, times, and memory only. The books are the 737 packages below the Library folder holding a content.md (676.3 MB; the orchestrator counted 750 content.md files in the whole data directory). The Mac is the development Mac (Apple M3, 4 performance and 4 efficiency cores, 8 GB); a run used every core but those of the whole-chapter searches, which used four. "Total" is from the search's start to its last book.
+
+The engine as built (8037759b: a chapter the prefilter cannot pass over is searched whole), measured 46 minutes after the first series, with other agents' builds and type-checks run in between, so the first run is the first after a while:
 
 | Search | Total | Processor | Peak resident | Books with matches | Matches counted |
 |---|---|---|---|---|---|
-| First search ever: "window", ignoring case, preparing all 737 books | 8.73 s | 51.1 s | 591 MB | 706 | 35,162 |
-| "window", ignoring case, from the store | 0.64 s | 3.2 s | 91 MB | 706 | 35,162 |
-| "window", matching case | 0.48 s | 3.0 s | 98 MB | 704 | 34,295 |
-| again | 0.43 s | 3.0 s | 97 MB | 704 | 34,295 |
-| "the garden" (a phrase), ignoring case | 0.27 s | 1.8 s | 87 MB | 460 | 4,784 |
-| "zebra" (a rare word), ignoring case | 0.18 s | 1.1 s | 75 MB | 109 | 201 |
-| "the" (a common word), ignoring case | 0.31 s | 2.1 s | 94 MB | 730 | more than 715,364 (693 books past 1,000) |
-| "café" (no ASCII anchor: whole chapters), ignoring case | 1.41 s | 9.2 s | 90 MB | 198 | 1,336 |
-| "colou?r" (a regular expression), ignoring case | 3.58 s | 14.1 s | 68 MB | 709 | 26,197 |
-| again | 3.72 s | 14.7 s | 70 MB | 709 | 26,197 |
+| "window", ignoring case: the first run after 46 minutes | 1.20 s | 7.1 s | 100 MB | 706 | 35,162 |
+| "window", ignoring case, again | 1.07 s | 7.4 s | 101 MB | 706 | 35,162 |
+| "window", matching case | 0.99 s | 7.0 s | 99 MB | 704 | 34,295 |
+| again | 0.98 s | 6.8 s | 97 MB | 704 | 34,295 |
+| "the garden" (a phrase), ignoring case | 0.57 s | 3.9 s | 101 MB | 460 | 4,784 |
+| "zebra" (a rare word), ignoring case | 0.24 s | 1.6 s | 86 MB | 109 | 201 |
+| "the" (a common word), ignoring case | 0.29 s | 1.9 s | 103 MB | 730 | more than 715,364 (693 books past 1,000) |
+| "café" (no ASCII anchor: every chapter whole), ignoring case | 1.51 s | 10.1 s | 95 MB | 198 | 1,336 |
+| "colou?r" (a regular expression), ignoring case | 3.25 s | 12.9 s | 75 MB | 709 | 26,197 |
+| again | 3.18 s | 12.6 s | 70 MB | 709 | 26,197 |
 
-[cold: the series again after a while, below.]
+The first search ever, which prepared all 737 books into an empty store (the first series, 42aa5487, whose preparing is the same code): 8.73 s, 51.1 s of processor time, 591 MB resident at its peak, 706 books with 35,162 matches for "window". The first version, which searched the candidate lines alone, took about half as long for a plain search (0.43 to 0.64 s for "window", 0.18 s for "zebra") and found the same counts here; it is replaced because Foundation does not answer a line as it answers its chapter (section 3).
 
-- **The five seconds.** Every plain search, ignoring case or matching it, ends in under 0.7 seconds once the books are prepared, and a regular expression in under 4. The one search over five seconds is the first ever, which prepares every book once (8.7 seconds; then 0.64).
-- **Memory.** A search holds one chapter per worker: its peak was 68 to 98 MB resident for the whole process. Preparing, which parses content.md, peaked at 591 MB with the 32 MB gate.
-- **Foundation's speed** (probe on one core, 32 MB of synthetic prose with curly quotes and dashes): its case-insensitive search reads 137 MB a second through a native Swift string and 286 MB a second through a UTF-16 NSString, against 1,759 MB a second for `memmem` on the UTF-8 bytes: the prefilter's scan of bytes is why a plain search costs 1 to 3 seconds of processor time where the whole-chapter search of "café" costs 9.
+- **The five seconds.** Every plain search, ignoring case or matching it, ends in under 1.3 seconds once the books are prepared, the first after a while included, and a regular expression in under 3.5. The one search over five seconds is the first ever, which prepares every book once (8.7 seconds), and the first after a parser change or after macOS empties the Caches folder.
+- **Memory.** A search holds one chapter per worker: its peak was 70 to 103 MB resident for the whole process. Preparing, which parses content.md, peaked at 591 MB with the 32 MB gate.
+- **Foundation's speed** (probe on one core, 32 MB of synthetic prose with curly quotes and dashes): its case-insensitive search reads 137 MB a second through a native Swift string and 286 MB a second through a UTF-16 NSString, against 1,759 MB a second for `memmem` on the UTF-8 bytes: the prefilter's scan of bytes is why a rare word costs under 2 seconds of processor time, where "café", for which every chapter is searched by Foundation, costs 10.
 
 ## 9. Cases where the two searches differ, named
 
