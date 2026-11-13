@@ -267,6 +267,82 @@ final class LibraryTitleTypingTests: XCTestCase {
         }
     }
 
+    /// The list takes a key only while a table has the keyboard: not while
+    /// the search field does (its field editor is the first responder), nor
+    /// when no window or no responder is known.
+    func testTheListTakesKeysOnlyWhileATableHasTheKeyboard() throws {
+        let window = Self.window()
+        defer { window.close() }
+        let content = try XCTUnwrap(window.contentView)
+        let table = NSTableView()
+        let field = NSSearchField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        content.addSubview(table)
+        content.addSubview(field)
+        guard window.makeFirstResponder(table), window.firstResponder === table else {
+            throw XCTSkip("This macOS gives a window that was never shown no keyboard focus")
+        }
+        XCTAssertTrue(LibraryTitleTyping.tableHasKeyboard(in: window), "a table has the keyboard")
+        XCTAssertTrue(window.makeFirstResponder(field), "the search field took the keyboard")
+        XCTAssertFalse(LibraryTitleTyping.tableHasKeyboard(in: window), "the search field has the keyboard, not a table")
+        XCTAssertTrue(window.makeFirstResponder(nil))
+        XCTAssertFalse(LibraryTitleTyping.tableHasKeyboard(in: window), "nothing has the keyboard")
+        XCTAssertFalse(LibraryTitleTyping.tableHasKeyboard(in: nil), "no window")
+    }
+
+    /// Letters typed into the Library's search field reach the field in the
+    /// choices that pass over articles, and select no row: the list's key
+    /// handler lets them go on. The field is in the window's toolbar, which
+    /// a window hosting the view alone may not draw, so the test is skipped
+    /// where it finds no search field (the runner's first trains did not
+    /// find one in an offscreen window), and the guard
+    /// (`LibraryTitleTyping.tableHasKeyboard(in:)`) is tested on its own.
+    func testLettersTypedInTheSearchFieldReachTheField() throws {
+        let store = TextMouthRuntime.current.preferences
+        preservePreferences([LeadingArticles.preference.key], in: store)
+        let folder = "Shelf"
+        let (model, settings) = Self.shelf(of: ["Treasure Island", "The Hobbit", "Hamlet"], in: folder)
+        var sawAField = false
+        for choice in [LeadingArticles.ignoredWhenTyping, .ignoredWhenTypingAndSorting] {
+            LeadingArticles.preference.write(choice, to: store)
+            let controller = NSHostingController(
+                rootView: LibraryView(
+                    currentFolderPath: .constant(folder),
+                    category: .constant(.folders),
+                    showFileImporter: .constant(false),
+                    showTextInput: .constant(false),
+                    onOpenBook: { _ in }
+                )
+                .environmentObject(model)
+                .environmentObject(settings)
+            )
+            let window = NSWindow(contentViewController: controller)
+            window.isReleasedWhenClosed = false
+            window.title = "Hosted search field test"
+            window.setContentSize(NSSize(width: 900, height: 700))
+            defer {
+                window.contentViewController = nil
+                window.close()
+            }
+            window.orderFrontRegardless()
+            settle(window.contentView, seconds: 0.5)
+            // The toolbar's items live in the window's frame view, above the content.
+            let frameView = try XCTUnwrap(window.contentView?.superview)
+            guard let field = descendants(of: frameView, as: NSSearchField.self).first,
+                  window.makeFirstResponder(field), let editor = field.currentEditor() else {
+                continue
+            }
+            sawAField = true
+            for character in "ha" {
+                window.sendEvent(try Self.keyDown(character, in: window))
+                settle(window.contentView, seconds: 0.1)
+            }
+            XCTAssertEqual(editor.string, "ha", "\(choice): the letters typed in the search field did not reach it")
+            let table = descendants(of: frameView, as: NSTableView.self).first
+            XCTAssertEqual(table?.selectedRow, -1, "\(choice): letters typed in the search field selected a row")
+        }
+        try XCTSkipUnless(sawAField, "This window shows no search field, so nothing could be typed into one")
+    }
+
     /// Typing a title far down a long list selects it and scrolls it into
     /// view, whole, as the list's own type select does, and typing one at
     /// the top scrolls back up to it. The list ends with The Zebra and then

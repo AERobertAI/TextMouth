@@ -65,8 +65,14 @@ struct LibraryTitleTyping: ViewModifier {
     /// the list's own handling keeps, and `.handled` for one typed here. A
     /// key that is not typing, such as an arrow, ends the search, so the
     /// next letter starts afresh.
+    ///
+    /// Only while the list's table has the keyboard: the Library's search
+    /// field (`searchable`) is in the same window, and a key press that
+    /// reaches this handler from it must not be taken, or no letter would
+    /// ever reach the field. A key typed in the field, or on any other
+    /// control, is left to it.
     private func take(_ press: KeyPress, scrollingWith proxy: ScrollViewProxy) -> KeyPress.Result {
-        guard articles.typesWithoutArticles else { return .ignored }
+        guard articles.typesWithoutArticles, Self.tableHasKeyboard(in: window) else { return .ignored }
         guard Self.isTyping(press.characters, modifiers: press.modifiers) else {
             search = TitleTypingSearch()
             TitleTypingSpaceClaim.shared.release(in: window)
@@ -114,6 +120,19 @@ struct LibraryTitleTyping: ViewModifier {
             TitleTypingSpaceClaim.shared.release(in: window)
         }
         return .handled
+    }
+
+    /// Whether a table, the Library list's, is `window`'s first responder:
+    /// the list has the keyboard, rather than the search field, a button, or
+    /// nothing at all (no window yet). Only the Mac's list has letter
+    /// navigation, so elsewhere this is always true and the setting alone
+    /// decides.
+    static func tableHasKeyboard(in window: PlatformWindow?) -> Bool {
+        #if os(macOS)
+        return window?.firstResponder is NSTableView
+        #else
+        return true
+        #endif
     }
 
     /// Finishes scrolling the row typing reached into view, once the list
