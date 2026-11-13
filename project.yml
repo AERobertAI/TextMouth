@@ -202,6 +202,13 @@ targets:
           # level from the command line, which project.yml cannot do. Debug,
           # where the tests run, is left as it is.
           SWIFT_OPTIMIZATION_LEVEL: -Osize
+          # Write no export trie. The stripped executable still carried one,
+          # 174 KB naming a single symbol, because strip does not rebuild
+          # it. An app's executable exports nothing that anything links
+          # against (the braille helper is run, not loaded), so the linker
+          # writes none. Release only: in Debug the test bundle loads
+          # against the app (BUNDLE_LOADER) and needs its exports.
+          OTHER_LDFLAGS: -Wl,-no_exported_symbols
     dependencies:
       - package: ZIPFoundation
       - package: SwiftSoup

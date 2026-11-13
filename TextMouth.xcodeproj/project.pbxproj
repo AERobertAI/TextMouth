@@ -9783,6 +9783,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.4.6;
+				OTHER_LDFLAGS = "-Wl,-no_exported_symbols";
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
