@@ -27,11 +27,12 @@ import SwiftUI
 /// Merging both states into one persistent layout makes the behavior
 /// predictable and gives VoiceOver users a single, stable focus order.
 ///
-/// ## Single-sheet enforcement
-/// When this view appears, it broadcasts `.sleepTimerSheetOpened` with
-/// its own `viewID`. Any other open sheet receives the notification,
-/// compares IDs, and if mismatched, closes itself. This stops the
-/// "two book windows = two timer sheets" duplication the user reported.
+/// ## One timer for each window
+/// The sheet shows its own window's timer (November 13, 2026: each reader
+/// window has its own), so two windows' sheets show two timers, and opening
+/// one no longer closes the other. While the app had one timer, every sheet
+/// showed the same one, and a sheet opening closed the others, which the
+/// user had reported as two timer sheets for two book windows.
 struct SleepTimerView: View {
     /// Presets share one source of truth for rendering and initial focus.
     /// Constants, so nonisolated: tests read them from any context.
@@ -82,11 +83,6 @@ struct SleepTimerView: View {
     /// attached would create a new focus bridge that could reactivate a sheet
     /// while it was being dismissed.
     @State private var shouldRequestInitialFocus = true
-    /// Unique identifier for this sheet instance. Other sheets close
-    /// themselves when they receive a `sleepTimerSheetOpened`
-    /// notification with a different ID — so only one timer sheet is
-    /// ever open across all book windows.
-    @State private var viewID = UUID()
 
     var body: some View {
         let _ = ViewBodyCounter.record("SleepTimerView")
@@ -121,25 +117,11 @@ struct SleepTimerView: View {
         .frame(width: 320)
         .navigationTitle("Sleep Timer")
         .onAppear {
-            // Tell any other open sleep-timer sheets to close themselves —
-            // only one sheet visible at a time across all book windows.
-            NotificationCenter.default.post(
-                name: .sleepTimerSheetOpened,
-                object: nil,
-                userInfo: ["sheetID": viewID]
-            )
-
             // Once the initial focus attempts have had time to complete,
             // remove the trigger so countdown updates cannot request focus
             // again. Timer actions also clear it immediately.
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 shouldRequestInitialFocus = false
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .sleepTimerSheetOpened)) { notif in
-            // Another sheet opened. If it's not us, dismiss ourselves.
-            if let otherID = notif.userInfo?["sheetID"] as? UUID, otherID != viewID {
-                closeSheet()
             }
         }
     }
@@ -149,7 +131,7 @@ struct SleepTimerView: View {
     /// Shown while `sleepTimerService.isActive`. Heading, remaining time
     /// or the place the timer stops at, Reset and Cancel buttons. The
     /// Reset/Cancel actions go through the view-model wrappers so they
-    /// always touch the shared service via the same code path the timer
+    /// always touch the window's timer via the same code path the timer
     /// sheet uses to arm a timer.
     private var currentTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -422,18 +404,10 @@ struct SleepTimerView: View {
 /// plays, with new closures; closures cannot be compared, so without this
 /// SwiftUI redrew the sheet every time. The closures are not compared: they
 /// act on the presenter's state as it is when they run. Nor is the timer
-/// service: a reader's is always the one shared timer.
+/// service: a reader's is always its window's timer, the same for the
+/// reader's whole life.
 extension SleepTimerView: Equatable {
     nonisolated static func == (lhs: SleepTimerView, rhs: SleepTimerView) -> Bool {
         lhs.viewModel === rhs.viewModel && lhs.autoClose == rhs.autoClose
     }
-}
-
-// MARK: - Notification Bridge
-
-extension Notification.Name {
-    /// Posted when any sleep-timer sheet appears. Other open sheets
-    /// listen and dismiss themselves so only one is visible at a time
-    /// across all book windows. UserInfo carries `sheetID: UUID`.
-    static let sleepTimerSheetOpened = Notification.Name("sleepTimerSheetOpened")
 }

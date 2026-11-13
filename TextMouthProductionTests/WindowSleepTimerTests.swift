@@ -591,6 +591,27 @@ final class WindowSleepTimerTests: XCTestCase {
         XCTAssertEqual(windowB.sleepTimer.spokenLabel, "Sleep timer: stops at the end of the book")
     }
 
+    /// Two windows' sleep timer sheets stay open together, each about its
+    /// own window's timer: one opening no longer closes the other, as it did
+    /// while every sheet showed the one timer there was. Each sheet is hosted
+    /// in a window of its own that is never shown.
+    func testTwoWindowsSheetsStayOpenTogether() throws {
+        let a = openReader(for: try makeBook(.audio, titled: "Sheet A"), in: makeWindow())
+        let b = openReader(for: try makeBook(.audio, titled: "Sheet B"), in: makeWindow())
+        a.startSleepTimer(duration: .minutes(10))
+        var closed: [String] = []
+
+        withHostedView(SleepTimerView.sheet(for: a) { closed.append("A") }, until: { _ in true }) { _ in
+            withHostedView(SleepTimerView.sheet(for: b) { closed.append("B") }, until: { _ in true }) { _ in
+                // Lets SwiftUI make each sheet appear, and deliver what it
+                // posts as it does.
+                spinMainRunLoop(for: 0.5)
+            }
+        }
+
+        XCTAssertEqual(closed, [], "A window's sleep timer sheet closed another's")
+    }
+
     // MARK: - Helpers
 
     /// The two kinds of book a window shows.
