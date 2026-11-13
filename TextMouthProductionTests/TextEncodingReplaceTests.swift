@@ -216,7 +216,7 @@ final class TextEncodingReplaceTests: CloudMaintenanceTestCase {
                 title: "Ledger", format: format, filePath: "/nonexistent/\(name)", md5Hash: hash, sourceFilePath: source
             )
             book.textEncodingRecord = record
-            if isFeedItem { book.feedID = UUID() }
+            if isFeedItem { book.feedLink = FeedBookLink(feedID: UUID(), itemID: "encoding-replace-feed-item") }
             return book
         }
         let chosen = TextEncodingRecord(identifier: "windows-1251", source: .chosen)
