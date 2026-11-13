@@ -32,6 +32,7 @@ final class LibraryTypeSelectBehaviorTests: XCTestCase {
     /// A hosted Library list of `titles` in their manual order, with its
     /// table holding the keyboard, and the number of rows above the books
     /// (the Books section's header).
+    @MainActor
     private struct Hosted {
         let window: NSWindow
         let view: NSView
