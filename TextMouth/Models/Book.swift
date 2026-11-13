@@ -355,14 +355,17 @@ struct Book: Identifiable, Codable, Hashable {
     var metadataReaderVersion: String?
     /// Which of this book's metadata fields the user edited by hand, and
     /// since when (`HandEdits`); nil for a book nothing has recorded for:
-    /// every row saved before October 7, 2026, and every book made since,
-    /// until an editor's save begins its record. Every editor's save
-    /// records the fields it changed (`LibraryViewModel.updateBookMetadata`),
-    /// Book Info says which values are the user's own, and the launch
-    /// metadata refresh never replaces a recorded field
-    /// (`LibraryViewModel.refreshedValues(of:from:)`). Kept in the row and
-    /// in the book's record; a reader's copy takes the row's
-    /// (`EditableMetadata`).
+    /// every row saved before October 7, 2026, and a book made since by an
+    /// import that does not begin a record (a feed's download, a recording,
+    /// New from Text, an audio or DAISY archive), until an editor's save
+    /// begins one. A file imported since then begins an empty record kept
+    /// since the import (`HandEdits.noneSinceImport`, `FileImportService`).
+    /// Every editor's save records the fields it changed
+    /// (`LibraryViewModel.updateBookMetadata`), Book Info says which
+    /// values are the user's own, and the launch metadata refresh never
+    /// replaces a recorded field (`LibraryViewModel.refreshedValues(of:from:)`).
+    /// Kept in the row and in the book's record; a reader's copy takes the
+    /// row's (`EditableMetadata`).
     var handEdits: HandEdits?
     /// The feed item this row's book was downloaded from (FR03): set for a
     /// podcast episode or an article while it belongs to its feed (FR11),
