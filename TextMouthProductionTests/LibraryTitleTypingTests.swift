@@ -25,9 +25,11 @@ final class LibraryTitleTypingTests: XCTestCase {
         for (characters, modifiers) in typing {
             XCTAssertTrue(LibraryTitleTyping.isTyping(characters, modifiers: modifiers), "\(characters.debugDescription) is typing")
         }
+        // An arrow and Forward Delete, as AppKit writes them in the
+        // private-use area.
         let notTyping: [(String, EventModifiers)] = [
             ("h", .command), ("h", .control), ("h", [.command, .shift]), ("", []),
-            ("\r", []), ("\t", []), ("\u{1B}", []), ("\u{7F}", []), ("\u{F700}", .function), ("\u{F728}", .function),
+            ("\r", []), ("\t", []), ("\u{1B}", []), ("\u{7F}", []), ("\u{F700}", []), ("\u{F728}", []),
         ]
         for (characters, modifiers) in notTyping {
             XCTAssertFalse(LibraryTitleTyping.isTyping(characters, modifiers: modifiers), "\(characters.debugDescription) is not typing")
@@ -208,6 +210,13 @@ final class LibraryTitleTypingTests: XCTestCase {
                 // Letters a pause apart start afresh: T, then H on its own.
                 try expect("t", "Treasure Island")
                 try expect("h", "The Hobbit")
+                // A held key types once: an A that only repeats adds nothing,
+                // so the search stays "h" rather than reaching Hamlet.
+                hosted.window.sendEvent(try Self.keyDown("a", in: hosted.window, isARepeat: true))
+                flush(hosted.hostingView)
+                if let held = selectedTitle(), held != "The Hobbit" {
+                    steps.append("a held A's repeat selected \(held)")
+                }
                 if choice == .ignoredWhenTypingAndSorting {
                     try expect("hobbit, t", "The Hobbit")
                 }
@@ -216,9 +225,69 @@ final class LibraryTitleTypingTests: XCTestCase {
         }
     }
 
+    /// Typing a title far down a long list selects it and scrolls it into
+    /// view, as the list's own type select does.
+    func testTheRowTypedToIsScrolledIntoView() throws {
+        let store = TextMouthRuntime.current.preferences
+        preservePreferences([LeadingArticles.preference.key], in: store)
+        LeadingArticles.preference.write(.ignoredWhenTyping, to: store)
+        let folder = "Long Shelf"
+        let titles = (1...60).map { String(format: "Volume %02d", $0) } + ["The Zebra"]
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(
+            books: titles.enumerated().map { index, title in
+                Book(
+                    title: title,
+                    author: "Author",
+                    format: .epub,
+                    filePath: "/nonexistent/title-typing-long/\(index).epub",
+                    md5Hash: "title-typing-long-\(index)",
+                    folderPath: folder,
+                    manualSortOrder: index
+                )
+            },
+            folders: [BookFolder(name: folder)]
+        )
+        let location = LibraryLocation(category: .folders, folderPath: folder)
+        model.library.folderSortSettings[location.sortSettingsKey] = FolderSortSetting(sortField: .manual, sortAscending: true)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let hosted = hostOffscreen(
+            LibraryView(
+                currentFolderPath: .constant(folder),
+                category: .constant(.folders),
+                showFileImporter: .constant(false),
+                showTextInput: .constant(false),
+                onOpenBook: { _ in }
+            )
+            .environmentObject(model)
+            .environmentObject(settings),
+            size: NSSize(width: 700, height: 420)
+        )
+        defer { takeDown(hosted.window) }
+        settle(hosted.hostingView, seconds: 0.5)
+        let table = try XCTUnwrap(descendants(of: hosted.hostingView, as: NSTableView.self).first, "the window shows no list")
+        guard hosted.window.makeFirstResponder(table), hosted.window.firstResponder === table else {
+            throw XCTSkip("This macOS gives an offscreen window's list no keyboard focus, so nothing is typed")
+        }
+        let visibleBefore = table.rows(in: table.visibleRect)
+        XCTAssertLessThan(visibleBefore.location + visibleBefore.length, table.numberOfRows, "the whole list fit the window, so nothing could scroll")
+
+        hosted.window.sendEvent(try Self.keyDown("z", in: hosted.window))
+        settle(hosted.hostingView, seconds: 0.5)
+
+        let selected = table.selectedRow
+        XCTAssertEqual(selected, table.numberOfRows - 1, "Z did not select The Zebra, the last row")
+        let visible = table.rows(in: table.visibleRect)
+        XCTAssertTrue(
+            NSLocationInRange(selected, visible),
+            "row \(selected) was selected but rows \(visible.location)..<\(visible.location + visible.length) show"
+        )
+    }
+
     /// A key-down event typing `character`, with the key code the keyboard
-    /// gives it, so AppKit and SwiftUI read it as they read a key pressed.
-    private static func keyDown(_ character: Character, in window: NSWindow) throws -> NSEvent {
+    /// gives it, so AppKit and SwiftUI read it as they read a key pressed;
+    /// `isARepeat` for a held key's repeat.
+    private static func keyDown(_ character: Character, in window: NSWindow, isARepeat: Bool = false) throws -> NSEvent {
         let keyCodes: [Character: UInt16] = [
             "a": 0, "h": 4, "z": 6, "b": 11, "e": 14, "t": 17, "o": 31, "i": 34, " ": 49, ",": 43,
         ]
@@ -232,7 +301,7 @@ final class LibraryTitleTypingTests: XCTestCase {
             context: nil,
             characters: text,
             charactersIgnoringModifiers: text,
-            isARepeat: false,
+            isARepeat: isARepeat,
             keyCode: keyCodes[character] ?? 0
         ), "no key-down event for \(text)")
     }
