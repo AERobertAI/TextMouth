@@ -128,6 +128,12 @@ final class LibrarySearchModel: ObservableObject {
         _ report: @escaping @Sendable (LibrarySearchBookResult?, LibrarySearchTally) -> Void
     ) -> LibrarySearchOutcome
 
+    /// Clears away what the search texts keep for books other than
+    /// `bookIDs`, every book a search that finished was given: the store's
+    /// sweep in the app (`storeSweep(store:)`); tests record what they are
+    /// asked. Called on the search queue.
+    typealias Sweep = @Sendable (_ bookIDs: Set<UUID>) -> Void
+
     /// What the status line says.
     enum Status: Equatable {
         /// Nothing is typed.
@@ -245,6 +251,8 @@ final class LibrarySearchModel: ObservableObject {
     private let books: @MainActor () -> [LibrarySearchBook]
     /// Runs a search.
     private let runner: Runner
+    /// Sweeps the search texts after a search that finished.
+    private let sweep: Sweep
     /// Opens a match's book at the match.
     private let opener: Opener
     /// Speaks a finished search's status through VoiceOver.
@@ -258,18 +266,22 @@ final class LibrarySearchModel: ObservableObject {
     /// - Parameters:
     ///   - books: The books to search, in the order they are listed.
     ///   - runner: Runs a search; the engine by default.
+    ///   - sweep: Sweeps the search texts after a search that finished; the
+    ///     store's by default.
     ///   - debounceInterval: How long typing must pause before a search.
     ///   - announce: Speaks a finished search's status.
     ///   - opener: Opens a match's book at the match.
     init(
         books: @escaping @MainActor () -> [LibrarySearchBook],
         runner: @escaping Runner = LibrarySearchModel.engineRunner(store: .shared),
+        sweep: @escaping Sweep = LibrarySearchModel.storeSweep(store: .shared),
         opener: @escaping Opener = LibrarySearchModel.openInReader,
         debounceInterval: Duration = LibrarySearchModel.debounceInterval,
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.books = books
         self.runner = runner
+        self.sweep = sweep
         self.opener = opener
         self.debounceInterval = debounceInterval
         self.announce = announce
@@ -289,6 +301,13 @@ final class LibrarySearchModel: ObservableObject {
                 limits: limits, isCancelled: isCancelled, report: report
             )
         }
+    }
+
+    /// `store`'s sweep as the model's: the files of the books not among the
+    /// IDs, and the partial files a quit or a crash left
+    /// (`LibrarySearchTextStore.removeFiles(notFor:)`).
+    nonisolated static func storeSweep(store: LibrarySearchTextStore) -> Sweep {
+        { bookIDs in store.removeFiles(notFor: bookIDs) }
     }
 
     // MARK: Starting and Stopping
@@ -373,7 +392,9 @@ final class LibrarySearchModel: ObservableObject {
         let inbox = LibrarySearchInbox()
         let flag = LibrarySearchCancellation()
         let runner = runner
+        let sweep = sweep
         let queue = queue
+        let bookIDs = Set(books.map(\.id))
         // The query and options the results are found with.
         let found = (query, options)
         running = (inbox, found)
@@ -392,6 +413,15 @@ final class LibrarySearchModel: ObservableObject {
                         inbox.add(result, tally)
                     })
                     continuation.resume(returning: outcome)
+                    // A search that went through every book of the library
+                    // clears what the search texts keep for any other: books
+                    // removed since, another data directory's, and partial
+                    // files a quit or a crash left (the review of November
+                    // 13, finding 5). On the search queue, once the outcome
+                    // is on its way, so no search runs beside the sweep.
+                    if case .finished = outcome {
+                        sweep(bookIDs)
+                    }
                 }
             }
         } onCancel: {

@@ -177,6 +177,19 @@ private func waitForGate(_ gate: DispatchSemaphore, timeout: TimeInterval = 10) 
     gate.wait(timeout: .now() + timeout) == .success
 }
 
+/// What a model asked its sweep to keep: one set of book IDs for each
+/// sweep, recorded from the search queue.
+private final class SweepLog: Sendable {
+    private let sweeps = OSAllocatedUnfairLock<[Set<UUID>]>(initialState: [])
+
+    /// Notes a sweep keeping the texts of `bookIDs`.
+    func record(_ bookIDs: Set<UUID>) {
+        sweeps.withLock { $0.append(bookIDs) }
+    }
+
+    var all: [Set<UUID>] { sweeps.withLock { $0 } }
+}
+
 /// Records what a model announces through VoiceOver.
 @MainActor
 private final class AnnouncementLog {
@@ -226,18 +239,21 @@ final class LibrarySearchModelTests: XCTestCase {
     /// Keeps tests fast; tests about debouncing itself choose their own.
     private let quickDebounce: Duration = .milliseconds(10)
 
-    /// A model over `list`, announcing into `announcements` and opening into
-    /// `openings`, whose searches `runner` makes up.
+    /// A model over `list`, announcing into `announcements`, opening into
+    /// `openings`, and sweeping into `sweeps`, whose searches `runner` makes
+    /// up.
     private func makeModel(
         _ list: BookList,
         _ announcements: AnnouncementLog,
         openings: OpenLog = OpenLog(),
+        sweeps: SweepLog = SweepLog(),
         debounce: Duration? = nil,
         runner: @escaping LibrarySearchModel.Runner
     ) -> LibrarySearchModel {
         LibrarySearchModel(
             books: { list.books },
             runner: runner,
+            sweep: { sweeps.record($0) },
             opener: openings.record,
             debounceInterval: debounce ?? quickDebounce,
             announce: announcements.record
@@ -440,6 +456,66 @@ final class LibrarySearchModelTests: XCTestCase {
 
         XCTAssertEqual(announcements.messages, [])
         XCTAssertEqual(model.groups, [])
+    }
+
+    // MARK: The Sweep
+
+    /// A search that finished sweeps the search texts once, with every book
+    /// it was given, where until November 13 nothing ever swept them (the
+    /// review's finding 5); a search that ended cancelled, an invalid
+    /// pattern, and Show All, which searches one book, sweep nothing. The
+    /// sweeps run one after another on the search queue, so once the last
+    /// search's sweep has come, any other would have come before it.
+    func testAFinishedSearchSweepsWithTheBooksItWasGiven() async {
+        let sweeps = SweepLog()
+        let book0 = makeBook(0)
+        let book1 = makeBook(1)
+        let list = BookList([book0, book1])
+        let model = makeModel(list, AnnouncementLog(), sweeps: sweeps) { query, _, books, _, _, report in
+            switch query {
+            case "cancelled": return .cancelled
+            case "invalid": return .invalidPattern("not a pattern")
+            default: return playOut([makeResult(book0, order: 0, kept: 30)], given: books.count, report: report)
+            }
+        }
+        let everyBook: Set<UUID> = [book0.id, book1.id]
+
+        await searchAndWait(model, "needle")
+        let sweptOnce = await eventually { sweeps.all.count == 1 }
+        XCTAssertTrue(sweptOnce, "a finished search did not sweep; sweeps: \(sweeps.all)")
+        XCTAssertEqual(sweeps.all, [everyBook], "the sweep keeps every book the search was given")
+
+        model.showAllMatches(in: book0.id)
+        await model.showAllTask?.value
+        await searchAndWait(model, "cancelled")
+        await searchAndWait(model, "invalid")
+        await searchAndWait(model, "haystack")
+        let sweptTwice = await eventually { sweeps.all.count == 2 }
+
+        XCTAssertTrue(sweptTwice, "the last finished search did not sweep; sweeps: \(sweeps.all)")
+        XCTAssertEqual(sweeps.all, [everyBook, everyBook], "only the two finished searches sweep")
+    }
+
+    /// The store's sweep, the model's in the app, removes the search texts
+    /// of the books it is not given and keeps the others.
+    func testTheStoresSweepRemovesTheTextsOfOtherBooks() throws {
+        let store = LibrarySearchTextStore(folder: try makeSandboxDirectory("LibrarySearchModelSweep"))
+        let kept = UUID()
+        let gone = UUID()
+        let key = LibrarySearchTextKey(
+            content: ContentFileIdentity(
+                byteCount: 6, modificationTimeNanoseconds: 1, statusChangeTimeNanoseconds: 1, inode: 1
+            ),
+            bookTitle: "Sweep"
+        )
+        for bookID in [kept, gone] {
+            try store.store(LibrarySearchTextBook(parsed: [Chapter(title: "One", text: "Alpha.")]), for: bookID, key: key)
+        }
+
+        LibrarySearchModel.storeSweep(store: store)([kept])
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.url(for: kept).path), "the given book's text was removed")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.url(for: gone).path), "another book's text was kept")
     }
 
     // MARK: Stopping
