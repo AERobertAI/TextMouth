@@ -745,10 +745,12 @@ final class WindowSleepTimerTests: XCTestCase {
     /// window named, opens the sheet of the reader whose window is key and no
     /// other (the reader's own panel commands receive it, as in the app).
     func testTheShowSleepTimerCommandPostedForRealOpensTheKeyWindowsSheetOnly() throws {
-        try XCTSkipUnless(PlatformApplication.keyWindow == nil, "A window of the app is key here, which a menu command follows")
         let a = openReader(for: try makeBook(.audio, titled: "Command A"), in: makeWindow())
         let b = openReader(for: try makeBook(.audio, titled: "Command B"), in: makeWindow())
-        let keyHost = KeyStubWindow()
+        // A menu command follows the key window: the app's own, if one is key
+        // while the test runs (a window an earlier test left key), else one
+        // that says it is.
+        let keyHost: NSWindow = PlatformApplication.keyWindow ?? KeyStubWindow()
         let otherHost = NSWindow()
         a.attach(to: keyHost)
         b.attach(to: otherHost)
