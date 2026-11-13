@@ -149,7 +149,8 @@ extension ReaderViewModel {
     /// The move saves the place for Go Back and follows Auto-play on
     /// navigate, as a pick from Search in Book does
     /// (`goToSearchResult(chapterIndex:characterOffset:inTranscript:)`), and
-    /// VoiceOver hears where the reader moved to.
+    /// VoiceOver hears where the reader moved to, or why it did not move,
+    /// once the reader's window is in front (`afterReaderComesForward(_:)`).
     func claimLibrarySearchJump() {
         guard !hasClosed, !isLoading else { return }
         guard let request = libraryJumpRequests.consume(for: book.id) else { return }
@@ -161,7 +162,10 @@ extension ReaderViewModel {
         guard let corpus = searchCorpus else {
             // There is no text to find the match in. The words the Search in
             // Book command speaks for an audiobook tell why and what to do.
-            announceNoTextToSearch(hasTranscript: TranscribedBooks.shared.contains(book.id))
+            let hasTranscript = TranscribedBooks.shared.contains(book.id)
+            afterReaderComesForward { reader in
+                reader.announceNoTextToSearch(hasTranscript: hasTranscript)
+            }
             return
         }
 
@@ -193,7 +197,9 @@ extension ReaderViewModel {
             // match compiled it), but if it were, no match can be found.
             guard case let .matches(matches, _)? = outcome,
                   let found = LibrarySearchJumpPlace.nearest(to: request, among: matches) else {
-                self.announceToVoiceOver(LibrarySearchWording.matchGone)
+                self.afterReaderComesForward { reader in
+                    reader.announceToVoiceOver(LibrarySearchWording.matchGone)
+                }
                 return
             }
             self.moveToLibrarySearchMatch(found, isTranscript: corpus.timing != nil)
@@ -232,12 +238,14 @@ extension ReaderViewModel {
     }
 
     /// Move to `found` the way a Search in Book pick does, then say where
-    /// the move went. A text book hears the match's place ("Moved to the
-    /// match, Chapter 3."), or that the text changed and the nearest match
-    /// was taken. A transcript's move has already made its words, with the
-    /// time the audio moved to (`pendingJumpAnnouncement`), which no
-    /// closing sheet is here to speak, so they are spoken now and
-    /// forgotten; a transcript's match found again says so first.
+    /// the move went, once the reader's window is in front
+    /// (`afterReaderComesForward(_:)`). A text book hears the match's place
+    /// ("Moved to the match, Chapter 3."), or that the text changed and the
+    /// nearest match was taken. A transcript's move has already made its
+    /// words, with the time the audio moved to (`pendingJumpAnnouncement`),
+    /// which no closing sheet is here to speak, so they are taken now, said
+    /// with the rest, and forgotten; a transcript's match found again says
+    /// so first. Nothing is said if Go Back has undone the move by then.
     private func moveToLibrarySearchMatch(_ found: LibrarySearchJumpPlace.Found, isTranscript: Bool) {
         goToSearchResult(
             chapterIndex: found.chapterIndex,
@@ -250,16 +258,39 @@ extension ReaderViewModel {
         let transcriptWords = isTranscript ? pendingJumpAnnouncement : nil
         pendingJumpAnnouncement = nil
 
-        if found.isFoundAgain {
-            announceToVoiceOver(LibrarySearchWording.movedToMatchFoundAgain)
-            // The time, after the note, not over it.
-            if let transcriptWords {
-                announceToVoiceOverAfterCurrentSpeech(transcriptWords)
+        afterReaderComesForward { reader in
+            // The move saved the place it left for Go Back; once Go Back has
+            // returned there, the move is no longer where the reader is.
+            guard reader.hasSavedPosition else { return }
+            if found.isFoundAgain {
+                reader.announceToVoiceOver(LibrarySearchWording.movedToMatchFoundAgain)
+                // The time, after the note, not over it.
+                if let transcriptWords {
+                    reader.announceToVoiceOverAfterCurrentSpeech(transcriptWords)
+                }
+            } else if let transcriptWords {
+                reader.announceToVoiceOver(transcriptWords)
+            } else {
+                reader.announceToVoiceOver(LibrarySearchWording.movedToMatch(location: found.locationTitle))
             }
-        } else if let transcriptWords {
-            announceToVoiceOver(transcriptWords)
-        } else {
-            announceToVoiceOver(LibrarySearchWording.movedToMatch(location: found.locationTitle))
+        }
+    }
+
+    /// Runs `announce` with this reader once its window is in front for a
+    /// Search Library request: a moment later
+    /// (`VoiceOverAnnouncer.afterSheetDelay`, REV11 F6's wait for VoiceOver
+    /// to settle after a sheet closes). The Search Library window asks for
+    /// the move just before it brings the reader's window forward
+    /// (`LibrarySearchModel.openInReader`), and a reader that opens with the
+    /// request claims it as its window appears, so words said at once came
+    /// while the window changed, and the change cut them off. Nothing is said
+    /// once the reader has closed, or has claimed a later request, whose own
+    /// words are the ones to say.
+    private func afterReaderComesForward(_ announce: @escaping @MainActor (ReaderViewModel) -> Void) {
+        let generation = libraryJumpGeneration
+        VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+            guard let self, !self.hasClosed, self.libraryJumpGeneration == generation else { return }
+            announce(self)
         }
     }
 }

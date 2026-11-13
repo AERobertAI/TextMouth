@@ -106,6 +106,14 @@ final class LibrarySearchJumpTests: XCTestCase {
         LibrarySearchWording.movedToMatch(location: result.locationTitle)
     }
 
+    /// Whether `reader` says `words` within a few seconds, the main run loop
+    /// spinning meanwhile: a reader says what a Search Library request did
+    /// once its window is in front, a moment after the move
+    /// (`VoiceOverAnnouncer.afterSheetDelay`), not at once.
+    private func hears(_ words: String, from reader: ReaderViewModel) -> Bool {
+        waitUntil(timeout: 5) { reader.lastAnnouncement == words }
+    }
+
     // MARK: - Claimed as the Load Ends
 
     /// A request made before the reader exists, as the Search Library window
@@ -128,7 +136,7 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertEqual(reader.currentChapterIndex, target.chapterIndex, "chapter of the cursor")
         XCTAssertEqual(reader.currentCharacterOffset, target.characterOffset, "offset of the cursor")
         XCTAssertFalse(requests.hasRequest(for: book.id), "the request was not used up")
-        XCTAssertEqual(reader.lastAnnouncement, movedWords(to: target), "what VoiceOver was told")
+        XCTAssertTrue(hears(movedWords(to: target), from: reader), "what VoiceOver was told: \(reader.lastAnnouncement ?? "nothing")")
         XCTAssertTrue(reader.hasSavedPosition, "the place before the move was not saved for Go Back")
     }
 
@@ -172,7 +180,35 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertEqual(reader.currentChapterIndex, target.chapterIndex, "chapter of the cursor")
         XCTAssertEqual(reader.currentCharacterOffset, target.characterOffset, "offset of the cursor")
         XCTAssertFalse(requests.hasRequest(for: book.id), "the request was not used up")
-        XCTAssertEqual(reader.lastAnnouncement, movedWords(to: target), "what VoiceOver was told")
+        XCTAssertTrue(hears(movedWords(to: target), from: reader), "what VoiceOver was told: \(reader.lastAnnouncement ?? "nothing")")
+    }
+
+    /// The move to a match is said once the reader's window is in front, a
+    /// moment after the request, and not at once: the Search Library window
+    /// asks for the move just before it brings the reader's window forward,
+    /// and words said at once were cut off by the window change (the review
+    /// of November 13; REV11 F6's wait after a sheet closes). The words
+    /// come no sooner than that moment.
+    func testTheMoveIsSaidOnceTheReadersWindowIsInFront() throws {
+        let world = try makeIntegrationWorld("Library Jump Said Later")
+        let book = try makeRiverBook("River Said Later", in: world)
+        let requests = LibrarySearchJumpRequests()
+        let reader = makeReader(for: book, in: world, requests: requests)
+        waitForReaderToLoad(reader)
+        let target = try match("winch", in: reader)
+        let saidBefore = reader.lastAnnouncement
+
+        let requested = Date()
+        requests.request(bookID: book.id, match: target, query: "winch", options: TextSearchOptions())
+
+        XCTAssertEqual(reader.currentChapterIndex, target.chapterIndex, "the move itself is made at once")
+        XCTAssertEqual(reader.lastAnnouncement, saidBefore, "the move was said at once, as the window changed")
+        XCTAssertTrue(hears(movedWords(to: target), from: reader), "the move was never said: \(reader.lastAnnouncement ?? "nothing")")
+        let delay = Date().timeIntervalSince(requested)
+        XCTAssertGreaterThanOrEqual(
+            delay, VoiceOverAnnouncer.afterSheetDelay - 0.05,
+            "the move was said \(delay) seconds after the request, before the window could come forward"
+        )
     }
 
     /// The request is used once: asking again for the same place after Go
@@ -221,6 +257,13 @@ final class LibrarySearchJumpTests: XCTestCase {
         XCTAssertEqual(reader.currentCharacterOffset, beforeOffset, "offset after Go Back")
         XCTAssertFalse(reader.hasSavedPosition, "Go Back kept the place")
         XCTAssertEqual(reader.lastAnnouncement, "Returned to previous position", "what VoiceOver was told")
+
+        // The move's words, due once the window was in front, are not said
+        // over Go Back's after Go Back undid the move.
+        XCTAssertFalse(
+            waitUntil(timeout: VoiceOverAnnouncer.afterSheetDelay + 0.5) { reader.lastAnnouncement != "Returned to previous position" },
+            "after Go Back, VoiceOver was told \(reader.lastAnnouncement ?? "nothing")"
+        )
     }
 
     // MARK: - A Match That Moved
@@ -259,12 +302,11 @@ final class LibrarySearchJumpTests: XCTestCase {
         // so the move comes a moment after the request: not at once.
         XCTAssertEqual(reader.currentChapterIndex, 0, "the cursor moved before the search for the new place ended")
         XCTAssertTrue(
-            waitUntil(timeout: 10) { reader.lastAnnouncement != nil },
-            "the reader never moved to the nearest match"
+            waitUntil(timeout: 10) { reader.lastAnnouncement == LibrarySearchWording.movedToMatchFoundAgain },
+            "the reader never said it moved to the nearest match: \(reader.lastAnnouncement ?? "nothing")"
         )
         XCTAssertEqual(reader.currentChapterIndex, later.chapterIndex, "chapter of the nearest match")
         XCTAssertEqual(reader.currentCharacterOffset, later.characterOffset, "offset of the nearest match")
-        XCTAssertEqual(reader.lastAnnouncement, LibrarySearchWording.movedToMatchFoundAgain, "what VoiceOver was told")
         XCTAssertTrue(reader.hasSavedPosition, "the move saved no place for Go Back")
     }
 
@@ -620,7 +662,10 @@ final class LibrarySearchJumpTests: XCTestCase {
         requests.request(bookID: book.id, match: target, query: "QUAY", options: TextSearchOptions())
         XCTAssertEqual(reader.currentChapterIndex, target.chapterIndex, "chapter of the cursor without Match Case")
         XCTAssertEqual(reader.currentCharacterOffset, target.characterOffset, "offset of the cursor without Match Case")
-        XCTAssertEqual(reader.lastAnnouncement, movedWords(to: target), "what VoiceOver was told without Match Case")
+        XCTAssertTrue(
+            hears(movedWords(to: target), from: reader),
+            "what VoiceOver was told without Match Case: \(reader.lastAnnouncement ?? "nothing")"
+        )
     }
 
     /// A regular expression request finds its match by the pattern, as the
@@ -638,7 +683,7 @@ final class LibrarySearchJumpTests: XCTestCase {
 
         XCTAssertEqual(reader.currentChapterIndex, target.chapterIndex, "chapter of the cursor")
         XCTAssertEqual(reader.currentCharacterOffset, target.characterOffset, "offset of the cursor")
-        XCTAssertEqual(reader.lastAnnouncement, movedWords(to: target), "what VoiceOver was told")
+        XCTAssertTrue(hears(movedWords(to: target), from: reader), "what VoiceOver was told: \(reader.lastAnnouncement ?? "nothing")")
     }
 
     // MARK: - Another Book's Request
@@ -659,7 +704,11 @@ final class LibrarySearchJumpTests: XCTestCase {
         requests.request(bookID: other.id, match: target, query: "bollard", options: TextSearchOptions())
 
         XCTAssertEqual(reader.currentChapterIndex, 0, "chapter of the other book's reader")
-        XCTAssertNotEqual(reader.lastAnnouncement, movedWords(to: target), "the other book's reader announced the move")
+        // Past the moment a move's words would come.
+        XCTAssertFalse(
+            waitUntil(timeout: VoiceOverAnnouncer.afterSheetDelay + 0.3) { reader.lastAnnouncement == movedWords(to: target) },
+            "the other book's reader announced the move"
+        )
         XCTAssertTrue(requests.hasRequest(for: other.id), "the other book's request was used")
         XCTAssertFalse(requests.hasRequest(for: book.id), "a request appeared for this book")
 
@@ -737,10 +786,9 @@ final class LibrarySearchJumpTests: XCTestCase {
 
         XCTAssertEqual(reader.currentChapterIndex, 0, "chapter of the cursor")
         XCTAssertFalse(reader.hasSavedPosition, "a place was saved for a move that did not happen")
-        XCTAssertEqual(
-            reader.lastAnnouncement,
-            BookSearchWording.noTranscript(bookTitle: book.title),
-            "what VoiceOver was told"
+        XCTAssertTrue(
+            hears(BookSearchWording.noTranscript(bookTitle: book.title), from: reader),
+            "what VoiceOver was told: \(reader.lastAnnouncement ?? "nothing")"
         )
         XCTAssertFalse(requests.hasRequest(for: book.id), "the request was not used up")
     }
@@ -776,7 +824,6 @@ final class LibrarySearchJumpTests: XCTestCase {
         )
         XCTAssertTrue(reader.hasSavedPosition, "the move saved no place for Go Back")
         XCTAssertNil(reader.pendingJumpAnnouncement, "the words were left for a sheet that will not close")
-        let said = try XCTUnwrap(reader.lastAnnouncement, "nothing was said")
         // The place is named as a Search in Book pick of a transcript names
         // it: by its chapter's title, unless that says nothing.
         let location = BookSearchView.locationTitles(
@@ -785,14 +832,11 @@ final class LibrarySearchJumpTests: XCTestCase {
             chapterTitles: reader.content?.chapters.map(\.title) ?? [],
             bookTitle: book.title
         ).first ?? nil
-        XCTAssertEqual(
-            said,
-            BookSearchWording.movedTo(
-                time: timing.time(chapterIndex: 1, characterOffset: target.characterOffset),
-                location: location
-            ),
-            "what VoiceOver was told"
+        let words = BookSearchWording.movedTo(
+            time: timing.time(chapterIndex: 1, characterOffset: target.characterOffset),
+            location: location
         )
+        XCTAssertTrue(hears(words, from: reader), "what VoiceOver was told: \(reader.lastAnnouncement ?? "nothing")")
     }
 
     // MARK: - The Cost of Finding the Place
