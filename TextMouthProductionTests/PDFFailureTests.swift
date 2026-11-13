@@ -63,26 +63,21 @@ final class PDFFailureTests: XCTestCase {
     }
 
     /// A PDF locked by a password opens, but PDFKit gives its page neither
-    /// text nor a drawing, so the app's own recognizer cannot draw the page
-    /// (and never reaches Vision): today it fails saying OCR could not run,
-    /// not that the PDF is locked.
-    func testAPasswordProtectedPDFSaysOCRCouldNotRun() throws {
+    /// text nor a drawing: it is refused as needing a password, before OCR
+    /// is asked for anything, not as a failure of OCR.
+    func testAPasswordProtectedPDFSaysItNeedsAPassword() throws {
         let url = try makeLockedPDF(holding: "Close the sluice before the spring tide.")
         let document = try XCTUnwrap(PDFDocument(url: url))
         XCTAssertTrue(document.isLocked, "the fixture must be locked")
+        let recognizer = ScriptedTextRecognizer.findingNothing()
 
-        XCTAssertThrowsError(try PDFTextParser.extract(from: url, recognizer: VisionPDFTextRecognizer())) { error in
-            guard case .ocrFailed(let reason)? = error as? PDFParserError else {
-                return XCTFail("Expected ocrFailed, got \(error)")
+        XCTAssertThrowsError(try PDFTextParser.extract(from: url, recognizer: recognizer)) { error in
+            guard case .passwordProtected? = error as? PDFParserError else {
+                return XCTFail("Expected passwordProtected, got \(error)")
             }
-            XCTAssertEqual(reason, "the page could not be drawn for text recognition")
-            // Doubtful, pinned as today: nothing says the PDF is locked by a password (posted to tests-lead).
-            XCTAssertEqual(
-                error.localizedDescription,
-                "No text could be read from the PDF: it has no embedded text, and OCR could not run "
-                    + "(the page could not be drawn for text recognition)."
-            )
+            XCTAssertEqual(error.localizedDescription, "This PDF needs a password to open.")
         }
+        XCTAssertTrue(recognizer.requests.isEmpty, "a locked PDF must be refused before OCR is asked to read a page")
     }
 
     // MARK: - Outline Depth
