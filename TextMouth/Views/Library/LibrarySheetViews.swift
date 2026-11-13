@@ -53,6 +53,16 @@ struct LibraryBookInfoSheet: View {
         book.offersTextEncodingChoice || book.offersBrailleFileCodeChoice || book.offersBrailleTableChoice
     }
 
+    /// The message the sheet's one line for a refusal shows: that of the
+    /// re-read pop-up used last, if it left one (`RereadFailureOrder`).
+    private var rereadFailureMessage: String? {
+        RereadFailureOrder.latest(among: [
+            (encoding.failureMessage, encoding.failureStamp),
+            (fileCode.failureMessage, fileCode.failureStamp),
+            (brailleCode.failureMessage, brailleCode.failureStamp),
+        ])
+    }
+
     /// Whether the book is being read again from any pop-up, which shows
     /// the work indicator and keeps the sheet open until it ends.
     private var isReadingAgain: Bool {
@@ -121,8 +131,10 @@ struct LibraryBookInfoSheet: View {
             // Why the last choice of an encoding, or of braille file
             // characters, or of a braille code, changed nothing, and the
             // re-read under way (encodingchoice, braillecodes). Only the
-            // pop-up that was used has a message to show.
-            OperationFailureNotice(message: encoding.failureMessage ?? fileCode.failureMessage ?? brailleCode.failureMessage)
+            // pop-up that was used last has a message to show, its own: a
+            // new choice or re-read in either braille pop-up clears the
+            // other's older one.
+            OperationFailureNotice(message: rereadFailureMessage)
             if isReadingAgain {
                 SheetWorkIndicator(label: TextEncodingWording.workingLabel)
             }

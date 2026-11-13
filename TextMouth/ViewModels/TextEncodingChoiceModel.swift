@@ -72,6 +72,13 @@ final class TextEncodingChoiceModel: ObservableObject, BookRereadChoosing {
         flow.failureMessage
     }
 
+    /// When the pop-up last said or cleared its failure message, in the order
+    /// of every pop-up's (`RereadFailureOrder`), so the sheet shows the one
+    /// used last.
+    var failureStamp: Int {
+        flow.failureStamp
+    }
+
     /// The book whose encoding the pop-up shows.
     var bookID: UUID {
         flow.bookID

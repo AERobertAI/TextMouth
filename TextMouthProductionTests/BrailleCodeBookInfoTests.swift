@@ -220,6 +220,66 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         XCTAssertEqual(model.failureMessage, "The book is no longer in the library, so it was not read again.")
     }
 
+    // MARK: - The Sheet's One Line for a Refusal
+
+    /// A BRF book's sheet has two re-read pop-ups, the Braille Code and the
+    /// Braille File Characters, and one line under them for a refusal. It
+    /// shows the message of the pop-up used last, and only that: a choice in
+    /// either pop-up clears what the other left, so the line never repeats an
+    /// older refusal beside a newer choice that was not refused, nor shows an
+    /// older one in place of a newer refusal.
+    func testTheSheetShowsOnlyTheRefusalOfThePopUpUsedLast() async throws {
+        let book = try makeBrailleBook("Quay", table: Self.grade1)
+        let library = makeModel(with: [book])
+        library.textRereads = TextRereads()
+        defer { library.booksBeingReadAgain = [] }
+        let brailleCode = BrailleCodeChoiceModel(book: book, library: library)
+        let fileCode = BrailleFileCodeChoiceModel(book: book, library: library)
+        await brailleCode.load()
+        await fileCode.load()
+        /// The line as the sheet makes it from its pop-ups.
+        func shown() -> String? {
+            RereadFailureOrder.latest(among: [
+                (fileCode.failureMessage, fileCode.failureStamp),
+                (brailleCode.failureMessage, brailleCode.failureStamp),
+            ])
+        }
+        XCTAssertNil(shown(), "nothing was used")
+
+        // The file characters pop-up is refused while the library's text is read.
+        library.textExtraction.begin("Updating text cache", total: 1)
+        await fileCode.choose(.code(.eurobraille))
+        library.textExtraction.end()
+        XCTAssertEqual(shown(), TextEncodingWording.extractionRefusal)
+
+        // The Braille Code pop-up is then used and asks, refused for nothing:
+        // the earlier refusal of the other pop-up is not shown beside it.
+        await brailleCode.choose(.table(Self.grade2))
+        XCTAssertNotNil(brailleCode.pending)
+        XCTAssertNil(brailleCode.failureMessage)
+        XCTAssertEqual(fileCode.failureMessage, TextEncodingWording.extractionRefusal, "the other pop-up's own message stays its own")
+        XCTAssertNil(shown(), "an older refusal of the other pop-up was shown beside a choice that was not refused")
+        brailleCode.cancel()
+
+        // The Braille Code pop-up is refused with another sentence: that one
+        // is shown, not the older one of the file characters pop-up.
+        library.textExtraction.begin("Updating text cache", total: 1)
+        await fileCode.choose(.code(.eurobraille))
+        library.textExtraction.end()
+        library.booksBeingReadAgain = [book.id]
+        let busy = try XCTUnwrap(library.readingAgainRefusal(of: book.id))
+        await brailleCode.choose(.table(Self.grade2))
+        XCTAssertEqual(brailleCode.failureMessage, busy)
+        XCTAssertEqual(shown(), busy, "an older refusal of the other pop-up was shown in place of this one")
+        library.booksBeingReadAgain = []
+
+        // A choice in the file characters pop-up clears the Braille Code one's.
+        await fileCode.choose(.code(.eurobraille))
+        XCTAssertNotNil(fileCode.pending)
+        XCTAssertNil(shown())
+        fileCode.cancel()
+    }
+
     // MARK: - Reading Again
 
     /// Read Again reads a book imported with the uncontracted table again
