@@ -304,6 +304,54 @@ class TextMouthUITestCase: XCTestCase {
         return Array(elements[start...])
     }
 
+    // MARK: - The Search in Book Sheet
+
+    /// The search field's label, which the sheet's order reads.
+    static let searchFieldLabel = "Search text"
+
+    /// Launches into the reader (at the text size `textSize`, the default when
+    /// none), opens the Search in Book sheet from its button, and types `text`
+    /// into its field when it is given, returning the app. A test that types
+    /// skips, before it launches anything, where sound isn't allowed. Shared
+    /// by `SearchUITests` and by `LargeTextUITests`, which looks at the same
+    /// sheet at the largest text size.
+    func openSearchSheet(typing text: String?, textSize: String? = nil) throws -> XCUIApplication {
+        if text != nil {
+            try requireSound("Typing a search")
+        }
+        let app = try launchIntoTheReader(textSize: textSize)
+        _ = try openReaderSheet("Search in Book", titled: "Search in Book", waitingFor: "Back to Book", in: app)
+        if let text {
+            try type(text, intoFieldLabeled: Self.searchFieldLabel, in: app)
+        }
+        return app
+    }
+
+    /// Waits, for at most `patience`, until a static text of the sheet reads
+    /// `ending` (the search's status), and returns the sheet's elements in
+    /// order, from the sheet's title on. The status is "Searching…" until the search, which waits a
+    /// second for typing to pause, has finished.
+    func waitForStatus(ending suffixes: [String], in app: XCUIApplication) throws -> [Element] {
+        let predicate = NSPredicate(format: suffixes.map { _ in "label ENDSWITH %@" }.joined(separator: " OR "), argumentArray: suffixes)
+        let status = app.staticTexts.matching(predicate).firstMatch
+        XCTAssertTrue(
+            status.waitForExistence(timeout: Self.patience),
+            "No status ending \(suffixes) appeared. The screen:\n\(app.debugDescription)"
+        )
+        return try elementsOfSheet(titled: "Search in Book", in: app)
+    }
+
+    /// Waits for the "Search results" heading, which only a search that found something has, and then for the status
+    /// line of a search with matches, and returns the sheet's elements in order. "No matches" also ends with " matches",
+    /// so the status alone could be met by a search that found nothing: the heading is what says results came.
+    func waitForResults(in app: XCUIApplication) throws -> [Element] {
+        XCTAssertTrue(
+            app.staticTexts["Search results"].waitForExistence(timeout: Self.patience),
+            "No results came. The screen:\n\(app.debugDescription)"
+        )
+        return try waitForStatus(ending: [" matches", " match"], in: app)
+    }
+
     // MARK: - The Audit and the Record
 
     /// A finding the audit makes of a part of iOS the app doesn't draw, which

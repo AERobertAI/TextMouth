@@ -25,6 +25,8 @@ from pathlib import Path
 
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ios_ui_tests  # noqa: E402
 
 EXECUTED = re.compile(r"Executed (\d+) tests?, with (?:(\d+) tests? skipped and )?(\d+) failures?"
                       r"(?: \((\d+) unexpected\))?(?: in ([\d.]+) \(([\d.]+)\) seconds)?")
@@ -104,7 +106,7 @@ def shard_number(folder):
 # The files the iPhone job uploads (run-ios-build.py's three, then run-ios-ui-tests.py's two), which the join passes on
 # beside the tests' own.
 IOS_FILES = ("ios-summary.txt", "ios-errors.txt", "ios.log", "ios-ui-summary.txt", "ios-ui.log")
-# How many failed interface tests summary.md names.
+# How many failed iPhone tests (unit or interface) summary.md names.
 IOS_UI_FAILURES_NAMED = 40
 
 
@@ -128,10 +130,10 @@ def merge_ios(ios_dir, out_dir):
 
 
 def merge_ios_ui(ios_dir, out_dir):
-    """Passes the interface tests' summary on into `out_dir` (merge_ios copies the files), and returns the lines
-    summary.md shows for it: the verdict with the Executed line, then each failed test. With no summary in `ios_dir`
-    (the step was cut off), writes one that says NOT RUN. The interface tests never decide whether the Mac tests
-    passed: their verdict is shown beside it."""
+    """Passes the iPhone tests' summary (the unit tests' and the interface tests') on into `out_dir` (merge_ios copies
+    the files), and returns the lines summary.md shows for it: the verdict with the Executed line and the count of each
+    bundle, then each failed test. With no summary in `ios_dir` (the step was cut off), writes one that says NOT RUN. The
+    iPhone tests never decide whether the Mac tests passed: their verdict is shown beside it."""
     ios_dir, out_dir = Path(ios_dir), Path(out_dir)
     path = ios_dir / "ios-ui-summary.txt"
     if not path.exists():
@@ -141,7 +143,8 @@ def merge_ios_ui(ios_dir, out_dir):
         return ["- iOS UI tests: NOT RUN (the step reported nothing)"]
     lines = [line.strip() for line in path.read_text(encoding="utf-8", errors="replace").splitlines() if line.strip()]
     verdict = lines[0] if lines else "iOS UI tests: unknown"
-    executed = next((line for line in lines if line.startswith("Executed ")), "")
+    # The Executed line with how many unit tests and how many interface tests ran.
+    executed = ios_ui_tests.executed_with_counts(lines)
     failures = [line for line in lines if line.startswith("FAILED ")]
     reasons = [line for line in lines if line.startswith("Reason: ")]
     shown = f"- {verdict}" + (f"; {executed[0].lower()}{executed[1:]}" if executed else "")

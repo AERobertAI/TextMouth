@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""run-ios-ui-tests.py: runs the iPhone app's interface tests (TextMouthiOSUITests) in the iOS Simulator, on a GitHub
-Actions runner.
+"""run-ios-ui-tests.py: runs the iPhone app's tests, its unit tests (TextMouthiOSTests) and its interface tests
+(TextMouthiOSUITests), in the iOS Simulator, on a GitHub Actions runner.
 
 The workflow's `ios` job (.github/workflows/tests.yml) calls this after run-ios-build.py has built the app and its test
-bundle (`build-for-testing`). It runs them with `xcodebuild test-without-building`, in an iPhone 17 simulator on the
-iOS runtime the job downloaded. Which classes run is decided by ios_ui_tests.py from the request the commit carries
-(.github/test-request.json): every full suite, a request for the phone area, and a request that names an interface test
-class ask for them; any other request does not, and this writes "NOT ASKED" and stops.
+bundles (`build-for-testing`). It runs them with one `xcodebuild test-without-building` (one start-up, which is 2 to 2.7
+minutes less than a run for each bundle), in an iPhone 17 simulator on the iOS runtime the job downloaded. Which classes
+run is decided by ios_ui_tests.py from the request the commit carries (.github/test-request.json): every full suite, a
+request for the phone area, and a request that names a class of either bundle ask for them; any other request does not,
+and this writes "NOT ASKED" and stops. The script keeps its name, and its summary's first line ("iOS UI tests: ..."),
+because the workflow, the join, and the Mac's tools read them; the verdict is of both bundles together, and the summary
+counts each bundle apart.
 
-**The sound rule.** These tests press Play and type, as a person does. That makes sound, so on the development Mac they
-skip: TextMouthUITestCase runs such a test only when the environment variable TEXTMOUTH_UI_SOUND is 1. This script is the
+**The sound rule.** The interface tests press Play and type, as a person does. That makes sound, so on the development
+Mac they skip: TextMouthUITestCase runs such a test only when the environment variable TEXTMOUTH_UI_SOUND is 1. (The unit
+tests play and record nothing, and a test pins that no unit test file names an audio framework.) This script is the
 one place that sets it (as TEST_RUNNER_TEXTMOUTH_UI_SOUND, which xcodebuild hands to the test runner without the prefix),
 and it runs only on a GitHub runner, where nobody listens: anywhere else, where GITHUB_ACTIONS is not "true", it stops
 at once with exit status 2, before it reads a request, writes a file, or starts a simulator. Never set the variable
@@ -17,17 +21,19 @@ anywhere else.
 
 It writes three files into the output folder, which the workflow uploads and the Mac downloads:
 
-  ios-ui-summary.txt   "iOS UI tests: PASSED", "FAILED", "NOT RUN" or "NOT ASKED", then the Executed line, the simulator,
-                       the minutes, a "FAILED Class.test at file:line: message" line for each failed test (the form the
-                       Mac's runs print), a "Skipped Class.test: why" line for each skipped one, and a "Reason:" line for
-                       a run that did not finish
+  ios-ui-summary.txt   "iOS UI tests: PASSED", "FAILED", "NOT RUN" or "NOT ASKED", then the Executed line (both bundles),
+                       a "Unit tests (TextMouthiOSTests): N ran, ..." line and an "Interface tests (TextMouthiOSUITests):
+                       N ran, ..." line, the simulator, the minutes, a "FAILED Class.test (Bundle) at file:line: message"
+                       line for each failed test (the form the Mac's runs print, with the bundle added), a
+                       "Skipped Class.test: why" line for each skipped one, and a "Reason:" line for a run that did not
+                       finish
   ios-ui.log           the simulator set-up and xcodebuild's whole output
   ios-ui-result.xcresult  xcodebuild's result bundle, with the screenshots and trees the tests attached
 
 It exits 0 when the tests passed or were not asked for or could not start for a reason that is not theirs (the build
-did not pass), and 1 when an asked-for test failed or the run could not be finished, so that the job's verdict follows
-the interface tests, and never the Mac's. It exits 2, having done nothing, anywhere but on a GitHub runner. Every wait
-has a limit.
+did not pass), and 1 when an asked-for test of either bundle failed, or was missing, or the run could not be finished,
+so that the job's verdict follows the iPhone tests, and never the Mac's. It exits 2, having done nothing, anywhere but on
+a GitHub runner. Every wait has a limit.
 
 Usage: python3 -I -B Scripts/agents/run-ios-ui-tests.py [--out DIR] [--derived-data DIR] [--request FILE]
                                                          [--limit-minutes N]
@@ -51,7 +57,8 @@ import ios_ui_tests  # noqa: E402
 # The repository's root, where the tests run.
 ROOT = AGENTS.parents[1]
 SCHEME = "TextMouthiOS"
-BUNDLE = "TextMouthiOSUITests"
+# The two test bundles, the scheme's (the unit tests first, as the scheme lists them).
+BUNDLES = (ios_ui_tests.UNIT_BUNDLE, ios_ui_tests.UI_BUNDLE)
 # The simulator: an iPhone 17, as on the development Mac, on the iOS runtime the job downloaded (the one of the SDK
 # Xcode 26.0.1 builds with). A different iOS version is used only when the wanted one is not there, and the summary says so.
 DEVICE_NAME = "iPhone 17"
@@ -60,8 +67,9 @@ RUNTIME_VERSION = "26.0"
 # The environment variable that lets a test make sound or type, and the name xcodebuild takes it by.
 SOUND_VARIABLE = "TEXTMOUTH_UI_SOUND"
 RUNNER_SOUND_VARIABLE = "TEST_RUNNER_" + SOUND_VARIABLE
-# The longest the interface tests may take, in minutes. The slowest full run so far took 21.0 minutes of tests (run
-# 42968173876), so 35 leaves room for a slower runner without a false "stopped at its time limit".
+# The longest the iPhone tests may take, in minutes. The slowest full run so far took 21.0 minutes of interface tests (run
+# 42968173876), and the 19 unit tests add about a minute (their host starts once), so 35 leaves room for a slower runner
+# without a false "stopped at its time limit".
 DEFAULT_LIMIT_MINUTES = 35
 # The whole step, in minutes, as the workflow's step limit (`timeout-minutes: 45` of "Run the iPhone interface tests")
 # less a minute of margin: the tests' limit is cut by what the simulator's set-up used, so that this script always has
@@ -226,10 +234,18 @@ def parallel_arguments():
             "-maximum-parallel-testing-workers", str(PARALLEL_WORKERS)]
 
 
+def only_testing(classes):
+    """The `-only-testing:` arguments for `classes`: each class as "Bundle/Class" (the bundle that holds it), or, when
+    none is named, both whole bundles. One xcodebuild run takes them all, so its start-up is paid once."""
+    if not classes:
+        return [f"-only-testing:{bundle}" for bundle in BUNDLES]
+    return [f"-only-testing:{ios_ui_tests.bundle_of(name, ROOT)}/{name}" for name in classes]
+
+
 def test_command(udid, derived_data, result_bundle, classes):
-    """The argv of the run: `test-without-building` of the scheme, in the simulator `udid`, on the interface test bundle
-    (or only `classes` of it, each as -only-testing), with a time limit for any one test."""
-    only = [f"-only-testing:{BUNDLE}/{name}" for name in classes] if classes else [f"-only-testing:{BUNDLE}"]
+    """The argv of the run: `test-without-building` of the scheme, in the simulator `udid`, on both test bundles (or only
+    `classes` of them, each as -only-testing), with a time limit for any one test."""
+    only = only_testing(classes)
     return ["xcodebuild", "test-without-building", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME,
             "-destination", f"id={udid}", "-derivedDataPath", str(derived_data), *only,
             "-resultBundlePath", str(result_bundle), *parallel_arguments(), "-test-timeouts-enabled", "YES",
@@ -254,8 +270,13 @@ def test_environment():
 # One test's result in an xcodebuild log, in the two forms Xcode prints: the test process's own,
 # "Test Case '-[TextMouthiOSUITests.ReaderUITests testX]' passed (3.4 seconds).", and xcodebuild's,
 # "Test case 'ReaderUITests.testX()' passed on 'iPhone 17 - TextMouthiOS (4242)' (3.4 seconds)".
-CASE_OBJC = re.compile(r"^Test Case '-\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed|skipped) \(", re.M)
+CASE_OBJC = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed|skipped) \(", re.M)
 CASE_SWIFT = re.compile(r"^Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (passed|failed|skipped) on ", re.M)
+# A test the test process began: "Test Case '-[TextMouthiOSUITests.ReaderUITests testX]' started." A test that began and has no
+# outcome line was cut off: the host app crashed in the middle of it, or the time limit stopped the run there.
+CASE_STARTED = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' started\.", re.M)
+# What the summary says of a test that began and never finished, in place of a failure message.
+UNFINISHED = "started and never finished (the host app crashed, or the run was stopped, in the middle of it)"
 # A failure the test process printed: "<path>:<line>: error: -[Module.Class test] : <message>".
 FAILURE_LINE = re.compile(r"^(\S.*?):(\d+): error: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\] : (.*)$", re.M)
 # A skip: "<path>:<line>: -[Module.Class test] : Test skipped - <why>".
@@ -280,13 +301,34 @@ def relative(path, root=ROOT):
 
 def parse_results(log_text, root=ROOT):
     """What an xcodebuild log says of the tests: a dictionary with
-    "cases" (a dictionary from "Class.test" to "passed", "failed" or "skipped"; a test printed twice keeps the last),
-    "failures" ("FAILED Class.test at path:line: message", for each failed case, the first message of the case),
+    "cases" (a dictionary from "Class.test" to "passed", "failed" or "skipped"; a test printed twice keeps the last; a
+    test that started and has no outcome line, because the host app crashed in it or the run was stopped there, is "failed"),
+    "bundles" (a dictionary from "Class.test" to the bundle the test is in, "TextMouthiOSTests" or
+    "TextMouthiOSUITests", or "" when neither the log nor the sources under `root` say),
+    "failures" ("FAILED Class.test (Bundle) at path:line: message", for each failed case, the first message of the case;
+    the parenthesis is left out where the bundle is not known),
     and "skips" ("Class.test: why", one for each skipped case, in the order met)."""
     cases = {}
-    for regex in (CASE_OBJC, CASE_SWIFT):
-        for owner, test, outcome in regex.findall(log_text):
-            cases[f"{owner}.{test}"] = outcome
+    modules = {}
+    for module, owner, test, outcome in CASE_OBJC.findall(log_text):
+        cases[f"{owner}.{test}"] = outcome
+        # The test process names the bundle as the module of the class: the bundle's own name.
+        if module in BUNDLES:
+            modules[f"{owner}.{test}"] = module
+    for owner, test, outcome in CASE_SWIFT.findall(log_text):
+        cases[f"{owner}.{test}"] = outcome
+    # A test that started and has no outcome line is a failure, named: otherwise a crash in the middle of a test would show
+    # only through the status and the count, and the summary would not say which test it was.
+    unfinished = set()
+    for module, owner, test in CASE_STARTED.findall(log_text):
+        name = f"{owner}.{test}"
+        if name not in cases:
+            cases[name] = "failed"
+            unfinished.add(name)
+            if module in BUNDLES:
+                modules[name] = module
+    # xcodebuild's own form names no bundle, so a class it does not name there is looked up in the sources.
+    bundles = {name: modules.get(name) or ios_ui_tests.bundle_of(name.split(".", 1)[0], root) for name in cases}
     first_error = {}
     for path, line, owner, test, message in FAILURE_LINE.findall(log_text):
         first_error.setdefault(f"{owner}.{test}", (relative(path, root), line, message.strip()[:MESSAGE_LIMIT]))
@@ -294,18 +336,29 @@ def parse_results(log_text, root=ROOT):
     for name, outcome in cases.items():
         if outcome != "failed":
             continue
-        where, message = (f"{first_error[name][0]}:{first_error[name][1]}", first_error[name][2]) if name in first_error else ("(no location)", "failed")
-        failures.append(f"FAILED {name} at {where}: {message}")
+        # The first message the test printed, where it printed one; else why it has none.
+        where, message = (f"{first_error[name][0]}:{first_error[name][1]}", first_error[name][2]) if name in first_error \
+            else ("(no location)", UNFINISHED if name in unfinished else "failed")
+        named = f"{name} ({bundles[name]})" if bundles[name] else name
+        failures.append(f"FAILED {named} at {where}: {message}")
     why = {f"{owner}.{test}": reason.strip()[:MESSAGE_LIMIT] for owner, test, reason in SKIP_LINE.findall(log_text)}
     skips = [f"{name}: {why.get(name, 'no reason printed')}" for name, outcome in cases.items() if outcome == "skipped"]
-    return {"cases": cases, "failures": failures, "skips": skips}
+    return {"cases": cases, "bundles": bundles, "failures": failures, "skips": skips}
 
 
-def judge(status, timed_out, log_text, parsed, expected=0):
+def bundle_results(parsed, bundle):
+    """The outcomes ("passed", "failed", "skipped") of the tests of `bundle` that `parsed` (parse_results' answer) holds."""
+    return [outcome for name, outcome in parsed["cases"].items() if parsed["bundles"].get(name) == bundle]
+
+
+def judge(status, timed_out, log_text, parsed, expected=0, expected_by_bundle=None):
     """(whether the run passed, the reasons it did not): xcodebuild exited 0 and printed TEST SUCCEEDED, the time limit
     did not stop it, no case failed, at least one test ran (a run of nothing is a mistake, not a pass), no test skipped
     because it makes sound (this script sets the variable that allows it, so such a skip means it never arrived), and,
-    when `expected` is given, at least that many results came back (the tests the asked classes hold)."""
+    when `expected` is given, at least that many results came back (the tests the asked classes hold). With
+    `expected_by_bundle` ({bundle: count}), each bundle must have given back at least its own count, so a unit test
+    that is missing turns the run red even when the interface tests are all there, and the other way round; each reason
+    names its bundle."""
     reasons = []
     if timed_out:
         reasons.append("the run was stopped at its time limit")
@@ -321,19 +374,36 @@ def judge(status, timed_out, log_text, parsed, expected=0):
                        f"{SOUND_VARIABLE} did not reach the test runner ({', '.join(silenced[:3])}{', ...' if len(silenced) > 3 else ''})")
     if expected and len(parsed["cases"]) < expected:
         reasons.append(f"{len(parsed['cases'])} test results came back, and the classes asked for hold {expected}")
+    for bundle, held in (expected_by_bundle or {}).items():
+        came = len(bundle_results(parsed, bundle))
+        if held and came < held:
+            reasons.append(f"{came} {ios_ui_tests.BUNDLE_KIND[bundle]} ({bundle}) results came back, and the classes asked for hold {held}")
     return not reasons, reasons
 
 
-def summary_lines(verdict, parsed, seconds, setup_seconds, simulator, classes, reasons):
-    """The lines of ios-ui-summary.txt for a run that was made (see the module's comment for the form)."""
+def bundle_line(parsed, bundle, asked):
+    """The line of ios-ui-summary.txt that counts one bundle's tests: "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped,
+    0 failed", or "...: not asked" for a bundle no asked class is in."""
+    kind = ios_ui_tests.BUNDLE_KIND[bundle]
+    head = f"{kind[0].upper()}{kind[1:]} ({bundle}): "
+    if bundle not in asked:
+        return head + "not asked"
+    outcomes = bundle_results(parsed, bundle)
+    return head + f"{len(outcomes)} ran, {outcomes.count('skipped')} skipped, {outcomes.count('failed')} failed"
+
+
+def summary_lines(verdict, parsed, seconds, setup_seconds, simulator, classes, reasons, asked=BUNDLES):
+    """The lines of ios-ui-summary.txt for a run that was made (see the module's comment for the form). `asked` holds the
+    bundles the request asked for (both by default), so that a bundle left out says "not asked" and not "0 ran"."""
     counts = list(parsed["cases"].values())
     failed, skipped = counts.count("failed"), counts.count("skipped")
     shown = ", ".join(classes) if classes else "every class"
     return [f"iOS UI tests: {verdict}",
             f"Executed {len(counts)} tests, with {skipped} tests skipped and {failed} failures (0 unexpected) "
             f"in {seconds:.3f} ({seconds:.3f}) seconds",
+            *[bundle_line(parsed, bundle, asked) for bundle in BUNDLES],
             f"Classes: {shown}", f"Simulator: {simulator}",
-            f"Sound: allowed ({SOUND_VARIABLE}=1, set by this script alone, so the tests press Play and type)",
+            f"Sound: allowed ({SOUND_VARIABLE}=1, set by this script alone, so the interface tests press Play and type)",
             f"Minutes: {(seconds + setup_seconds) / 60:.1f} (the simulator's set-up took {setup_seconds / 60:.1f})",
             *parsed["failures"], *[f"Skipped {line}" for line in parsed["skips"]],
             *[f"Reason: {reason}" for reason in reasons]]
@@ -382,7 +452,7 @@ def main(argv):
     if not on_github_runner(os.environ):
         print("run-ios-ui-tests.py runs only on a GitHub Actions runner, and GITHUB_ACTIONS is not \"true\" here. "
               "Its tests press Play and type, which makes sound wherever the simulator runs. To run them, ask a GitHub "
-              "run for them: a full suite, the phone area, or an interface test class.", file=sys.stderr)
+              "run for them: a full suite, the phone area, or a unit or interface test class.", file=sys.stderr)
         return 2
     out = (ROOT / args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -400,13 +470,16 @@ def main(argv):
         request = {}
     classes = ios_ui_tests.wanted(request if isinstance(request, dict) else {}, ROOT)
     if not classes:
-        return finish(not_run_lines("NOT ASKED", "the request does not ask for the interface tests (a full suite, "
-                                    "the phone area, or an interface test class does)"), 0)
+        return finish(not_run_lines("NOT ASKED", "the request does not ask for the iPhone tests (a full suite, "
+                                    "the phone area, or a unit or interface test class does)"), 0)
     if not build_passed(out):
         return finish(not_run_lines("NOT RUN", "the iPhone build did not pass, so there is no test bundle to run"), 0)
-    # All classes are one run of the whole bundle; a subset names each class.
-    every = ios_ui_tests.ui_classes(ROOT)
+    # All classes of both bundles are one run of the two whole bundles; a subset names each class.
+    every = ios_ui_tests.all_classes(ROOT)
     named = [] if classes == every else classes
+    # The bundles the asked classes are in, and how many tests each must give back.
+    expected_by_bundle = ios_ui_tests.counts_by_bundle(classes, ROOT)
+    asked = tuple(bundle for bundle in BUNDLES if bundle in expected_by_bundle)
     started = time.monotonic()
     # One fresh handle serves the set-up's notes and xcodebuild's output, which writes through the same file. It is opened
     # to write, not to append, so that a folder used before cannot lend this run an old run's results.
@@ -436,10 +509,10 @@ def main(argv):
         seconds = time.monotonic() - began
     log_text = (out / "ios-ui.log").read_text(encoding="utf-8", errors="replace")
     parsed = parse_results(log_text)
-    counts = ios_ui_tests.test_counts(ROOT)
-    passed, reasons = judge(status, timed_out, log_text, parsed, expected=sum(counts.get(name, 0) for name in classes))
+    # Each bundle's own count is checked (the total would say the same thing twice).
+    passed, reasons = judge(status, timed_out, log_text, parsed, expected_by_bundle=expected_by_bundle)
     return finish(summary_lines("PASSED" if passed else "FAILED", parsed, seconds, setup_seconds, simulator, named,
-                                reasons), 0 if passed else 1)
+                                reasons, asked), 0 if passed else 1)
 
 
 if __name__ == "__main__":
