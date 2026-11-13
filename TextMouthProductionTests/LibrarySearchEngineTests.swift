@@ -133,7 +133,7 @@ final class LibrarySearchEngineTests: XCTestCase {
     /// their case changed: the prefiltered search of lines finds exactly what
     /// Search in Book finds in whole chapters.
     func testThePrefilteredSearchAgreesWithSearchInBookOnRandomText() throws {
-        var generator = SeededGenerator(seed: 20_261_113)
+        var generator = LibrarySearchRandomNumbers(seed: 20_261_113)
         let alphabet: [String] = [
             "a", "b", "e", "f", "i", "k", "s", "t", "A", "E", "I", "K", "S", " ", " ", " ", ",", "\n", "\n", "\r\n",
             "é", "e\u{301}", "É", "ß", "ẞ", "ss", "ﬁ", "ﬀ", "fi", "İ", "ı", "i\u{307}", "\u{212A}", "ſ", "σ", "ς", "Σ",
@@ -418,7 +418,7 @@ final class LibrarySearchEngineTests: XCTestCase {
 
 /// A generator of the same random numbers for the same seed (SplitMix64), so
 /// a failure of the random rounds comes back on every run.
-private struct SeededGenerator: RandomNumberGenerator {
+private struct LibrarySearchRandomNumbers: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UInt64) {
