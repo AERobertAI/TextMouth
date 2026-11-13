@@ -939,8 +939,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// library changes that row while the reader has the book open (TODO
     /// P10): where the book's files are, its editable metadata, what content
     /// analysis measured, the encoding its text file is read in, with who
-    /// decided it (encodingchoice), and the braille file characters its BRF
-    /// or BRL file is read in (braillecodes), so the reader's Book
+    /// decided it (encodingchoice), the braille file characters its BRF
+    /// or BRL file is read in (braillecodes), and the braille table its
+    /// braille is translated to print by, with the version of this Mac's
+    /// tables it was read under (FMT21), so the reader's Book
     /// Information shows a new choice and any reading of the file the
     /// reader makes uses it.
     ///
@@ -956,6 +958,8 @@ struct Book: Identifiable, Codable, Hashable {
         var analysis: ContentAnalysisFields
         var textEncoding: TextEncodingRecord
         var brailleFileCode: String?
+        var brailleTable: String?
+        var brailleTableVersion: String?
     }
 
     /// This book's library fields. Setting them changes exactly those
@@ -967,7 +971,9 @@ struct Book: Identifiable, Codable, Hashable {
                 metadata: editableMetadata,
                 analysis: contentAnalysisFields,
                 textEncoding: textEncodingRecord,
-                brailleFileCode: brailleFileCode
+                brailleFileCode: brailleFileCode,
+                brailleTable: brailleTable,
+                brailleTableVersion: brailleTableVersion
             )
         }
         set {
@@ -976,6 +982,8 @@ struct Book: Identifiable, Codable, Hashable {
             contentAnalysisFields = newValue.analysis
             textEncodingRecord = newValue.textEncoding
             brailleFileCode = newValue.brailleFileCode
+            brailleTable = newValue.brailleTable
+            brailleTableVersion = newValue.brailleTableVersion
         }
     }
 
