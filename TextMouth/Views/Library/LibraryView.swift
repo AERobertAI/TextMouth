@@ -1438,7 +1438,9 @@ struct LibraryView: View {
     /// `folders`, the folders directly inside this location
     /// (`LibraryFeedFolders.folderRows(_:at:bookCount:)`, FR03).
     private func shownFolderRows(of folders: [BookFolder]) -> LibraryFolderRows {
-        feedFolders.folderRows(folders, at: location) { libraryViewModel.bookCount(inFolderTree: $0.fullPath) }
+        feedFolders.folderRows(folders, at: location, articles: libraryViewModel.leadingArticles) {
+            libraryViewModel.bookCount(inFolderTree: $0.fullPath)
+        }
     }
 
     /// The library folder of the feed a Feeds row shows, or nil when it is

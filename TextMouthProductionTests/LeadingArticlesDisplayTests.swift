@@ -72,6 +72,20 @@ final class LeadingArticlesDisplayTests: XCTestCase {
         XCTAssertEqual(inverted.map(\.rowTitle), ["Digital Antiquarian, The", "Planet Money", "Way with Words, A"])
         let label = inverted.first?.label ?? ""
         XCTAssertTrue(label.hasPrefix("Digital Antiquarian, The, Feed, "), label)
+
+        // The Folders rotor's entry for each feed's folder names the feed as
+        // its row in the Feeds section shows it.
+        let base = LibraryLocation(category: .folders, folderPath: world.folder.path)
+        let folders = LibraryFeedFolders(center: world.center)
+        func rotorLabels(_ articles: LeadingArticles) -> [String] {
+            folders.folderRows(world.library.subfoldersOf(world.folder.path), at: base, articles: articles) { _ in 0 }
+                .rotorEntries.map(\.label).sorted()
+        }
+        let shownEntries = rotorLabels(.ignoredWhenTypingAndSorting)
+        XCTAssertTrue(shownEntries.contains { $0.hasPrefix("Digital Antiquarian, The, Feed") }, "\(shownEntries)")
+        XCTAssertTrue(shownEntries.contains { $0.hasPrefix("Way with Words, A, Feed") }, "\(shownEntries)")
+        let writtenEntries = rotorLabels(.partOfTitle)
+        XCTAssertTrue(writtenEntries.contains { $0.hasPrefix("The Digital Antiquarian, Feed") }, "\(writtenEntries)")
     }
 
     // MARK: - A Feed's Item
