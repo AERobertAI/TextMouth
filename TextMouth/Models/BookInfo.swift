@@ -114,7 +114,10 @@ struct BookMetadata: Codable {
 
     /// Which of the book's metadata fields the user edited by hand, and
     /// since when (`Book.handEdits`); nil in a record written before edits
-    /// were recorded, and for a book with no edit recorded yet.
+    /// were recorded, and for a book made by an import that begins no
+    /// record (a feed's download, a recording, New from Text, an audio or
+    /// DAISY archive) until an edit is recorded. A file imported since then
+    /// begins an empty record (`Book.HandEdits.noneSinceImport`).
     var handEdits: Book.HandEdits?
 
     /// The feed item the book was downloaded from (FR03), for a podcast

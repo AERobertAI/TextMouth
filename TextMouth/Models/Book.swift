@@ -355,14 +355,17 @@ struct Book: Identifiable, Codable, Hashable {
     var metadataReaderVersion: String?
     /// Which of this book's metadata fields the user edited by hand, and
     /// since when (`HandEdits`); nil for a book nothing has recorded for:
-    /// every row saved before October 7, 2026, and every book made since,
-    /// until an editor's save begins its record. Every editor's save
-    /// records the fields it changed (`LibraryViewModel.updateBookMetadata`),
-    /// Book Info says which values are the user's own, and the launch
-    /// metadata refresh never replaces a recorded field
-    /// (`LibraryViewModel.refreshedValues(of:from:)`). Kept in the row and
-    /// in the book's record; a reader's copy takes the row's
-    /// (`EditableMetadata`).
+    /// every row saved before October 7, 2026, and a book made since by an
+    /// import that does not begin a record (a feed's download, a recording,
+    /// New from Text, an audio or DAISY archive), until an editor's save
+    /// begins one. A file imported since then begins an empty record kept
+    /// since the import (`HandEdits.noneSinceImport`, `FileImportService`).
+    /// Every editor's save records the fields it changed
+    /// (`LibraryViewModel.updateBookMetadata`), Book Info says which
+    /// values are the user's own, and the launch metadata refresh never
+    /// replaces a recorded field (`LibraryViewModel.refreshedValues(of:from:)`).
+    /// Kept in the row and in the book's record; a reader's copy takes the
+    /// row's (`EditableMetadata`).
     var handEdits: HandEdits?
     /// The feed item this row's book was downloaded from (FR03): set for a
     /// podcast episode or an article while it belongs to its feed (FR11),
@@ -1588,16 +1591,33 @@ extension Book {
         /// has its blank swapped for another (`clearsTitle(opened:edited:)`),
         /// whichever editor asks, so that the refusal an editor makes is not
         /// the only thing between a save and a book with no name.
+        ///
+        /// Every value is saved without the blanks around it, whichever
+        /// editor typed it, so a field of nothing but blanks over an empty
+        /// one is no change, and "Press " is saved as "Press". A field is
+        /// a change only when what was typed differs from what the editor
+        /// opened with, and so does the trimmed value: a value the editor
+        /// opened with and the user left alone is never rewritten, even
+        /// when it keeps blanks an earlier version saved.
         var changes: MetadataValues {
-            saved.filter { field, value in
-                if field == .title, Self.isBlank(value) { return false }
-                return (opened[field] ?? "") != value
+            var changed: MetadataValues = [:]
+            for (field, typed) in saved {
+                if field == .title, Self.isBlank(typed) { continue }
+                let before = opened[field] ?? ""
+                let value = Self.trimmed(typed)
+                if typed != before, value != before { changed[field] = value }
             }
+            return changed
+        }
+
+        /// `text` without the blanks and line breaks around it.
+        private static func trimmed(_ text: String) -> String {
+            text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
         /// Whether `title` holds nothing but blanks, or nothing.
         private static func isBlank(_ title: String) -> Bool {
-            title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            trimmed(title).isEmpty
         }
 
         /// Whether saving `edited` as a title would leave the book without

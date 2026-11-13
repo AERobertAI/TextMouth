@@ -39,7 +39,11 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         // Kindle books (FMT42). The order of the rows does not matter: each is found by its extension.
         Declaration(name: "Kindle Book (MOBI)", extensions: ["mobi", "prc", "azw", "azw3"], contentTypes: ["com.textmouth.mobi"]),
         // Kindle KFX books (FMT52); a .kpf is listed so it can be refused with its own sentence.
-        Declaration(name: "Kindle Book (KFX)", extensions: ["kfx", "kfx-zip", "azw8", "kpf"], contentTypes: ["com.textmouth.kfx"])
+        Declaration(name: "Kindle Book (KFX)", extensions: ["kfx", "kfx-zip", "azw8", "kpf"], contentTypes: ["com.textmouth.kfx"]),
+        // Video files whose audio is the book (an audio-only .mp4, .m4v, or .mov is read as an audiobook). A Viewer at
+        // rank Alternate puts TextMouth in Open With without ever making it the default app for a video.
+        Declaration(name: "MP4 / QuickTime Video", extensions: ["mp4", "m4v", "mov"],
+                    contentTypes: ["public.mpeg-4", "com.apple.m4v-video", "com.apple.quicktime-movie"])
     ]
 
     // MARK: - Document types
@@ -66,11 +70,12 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         }
     }
 
-    /// Every extension of every format (the audio formats' are team
-    /// audiofmt's to keep) is listed by some document type, so a format added
-    /// later without one fails here rather than going unnoticed in the Finder.
+    /// Every extension of every format, the audio formats' (mp4, m4v, and
+    /// mov among them) too, is listed by some document type, so a format
+    /// added later without one fails here rather than going unnoticed in the
+    /// Finder.
     func testEveryFormatsExtensionIsListedInSomeDocumentType() {
-        for format in BookFormat.allCases where format != .audio {
+        for format in BookFormat.allCases {
             for fileExtension in format.fileExtensions {
                 XCTAssertNotNil(
                     documentType(listing: fileExtension),
