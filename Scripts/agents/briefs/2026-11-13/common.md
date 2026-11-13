@@ -50,6 +50,7 @@ Each owns its region; post a `finding` on the board for a problem in another's r
 
 - **Nobody deletes anything during a run.** No `rm` at all, not even with a relative name, and no deleting from scripts. Overwrite files in a fixed folder instead, and the orchestrator clears scratch folders at the end. Git branches you made yourself are fine to leave in place.
 - **Keep shell commands plain.** Nested `${...}`, a substitution in a redirect, or a long chain can stop at a permission prompt only the user can answer. Use a small Python script run with `python3 -I -B` for anything fancy.
+- **Never search from `/` or the home folder** (`find`, `bfs`, `mdfind`, `du`, `ls -R`): it walks the user's Downloads, Documents, Music, and cloud drives and puts macOS privacy prompts on their screen. Search only the repository, the package checkouts in `build/DerivedData/SourcePackages/checkouts/`, and Xcode's own folders.
 - **Never read, stat, or copy the user's live library:** `~/.TextMouth`, anything under `~/Library/CloudStorage/`, or any data directory the settings name. The one exception is `libsearch`'s, which its own brief defines exactly.
 - No test may trap, hang, play sound aloud, or use a microphone. Every wait has a limit. Never play, probe, or decode Ogg through Apple's frameworks in-process.
 - Never push (except to `TestBuild`, only through `github_run.py`, `run_suite.py --remote`, or a train), never `make install`, and never merge into main.
