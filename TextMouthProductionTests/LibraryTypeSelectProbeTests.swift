@@ -21,14 +21,32 @@ import XCTest
 /// the Mac beep and no test may make a sound. Even so, a key AppKit turned
 /// down would beep, so the probe runs only on GitHub's runner, which has no
 /// sound and sets `TEXTMOUTH_TEST_TIME_SCALE`; on this Mac it skips.
+///
+/// **It runs only on request.** The probe's findings are settled (the leading
+/// articles design holds them, and `LibraryTypeSelectBehaviorTests` asserts
+/// the ones that can be asserted), and it costs about 72 seconds of a runner
+/// run, so no train or suite runs it: it skips unless the test host has
+/// `TEXTMOUTH_TYPE_SELECT_PROBE` set as well. To run it, send a request by
+/// hand (as `github_run.run_remotely` takes it) with
+/// `"classes": ["LibraryTypeSelectProbeTests"]` and
+/// `"type_select_probe": true`, which `run-on-runner.py` hands to the test
+/// host as that variable; read the `TYPE-SELECT-PROBE:` lines of the run's
+/// `run.log`. Its timing test writes `InitialKeyRepeat` and
+/// `com.apple.mouse.doubleClickThreshold` into the app's own defaults
+/// domain, which is safe only on a fresh runner.
 @MainActor
 final class LibraryTypeSelectProbeTests: XCTestCase {
 
-    /// Skips the probe anywhere but GitHub's runner (see the class).
+    /// Skips the probe anywhere but GitHub's runner, and there unless the
+    /// request asked for it (see the class).
     override func setUpWithError() throws {
         try super.setUpWithError()
-        guard ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil else {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil else {
             throw XCTSkip("The type-select probe types into lists, which can beep, so it runs on GitHub's runner only")
+        }
+        guard environment["TEXTMOUTH_TYPE_SELECT_PROBE"] != nil else {
+            throw XCTSkip("The type-select probe runs only on request: its request says type_select_probe")
         }
     }
 

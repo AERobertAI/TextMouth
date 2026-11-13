@@ -418,9 +418,9 @@ final class LibraryTitleTypingTests: XCTestCase {
     /// A key-down event typing `character`, with the key code the keyboard
     /// gives it, so AppKit and SwiftUI read it as they read a key pressed;
     /// `isARepeat` for a held key's repeat.
-    private static func keyDown(_ character: Character, in window: NSWindow, isARepeat: Bool = false) throws -> NSEvent {
+    static func keyDown(_ character: Character, in window: NSWindow, isARepeat: Bool = false) throws -> NSEvent {
         let keyCodes: [Character: UInt16] = [
-            "a": 0, "h": 4, "z": 6, "v": 9, "b": 11, "e": 14, "t": 17, "o": 31, "i": 34, " ": 49, ",": 43,
+            "a": 0, "h": 4, "z": 6, "v": 9, "b": 11, "e": 14, "r": 15, "t": 17, "o": 31, "i": 34, " ": 49, ",": 43,
         ]
         let text = String(character)
         return try XCTUnwrap(NSEvent.keyEvent(
@@ -441,7 +441,7 @@ final class LibraryTitleTypingTests: XCTestCase {
 
     /// A library with one folder, `folder`, holding books titled `titles`
     /// in that manual order, and a settings model that starts no services.
-    private static func shelf(of titles: [String], in folder: String) -> (LibraryViewModel, SettingsViewModel) {
+    static func shelf(of titles: [String], in folder: String) -> (LibraryViewModel, SettingsViewModel) {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(
             books: titles.enumerated().map { index, title in
