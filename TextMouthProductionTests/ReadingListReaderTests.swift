@@ -807,7 +807,8 @@ final class ReadingListReaderTests: XCTestCase {
 
         // A listed book is finished: it leaves the list, and is no longer kept for it.
         ReadingStatsService.shared.markBookFinished(bookID: first.id, title: first.title)
-        XCTAssertTrue(eventually { model.library.readingList.bookIDs == [second.id] }, "the finished book never left the list")
+        let left = await eventually { model.library.readingList.bookIDs == [second.id] }
+        XCTAssertTrue(left, "the finished book never left the list")
         await drainMainQueue()
         XCTAssertEqual(kept.readingListBookIDs, [second.id])
     }
