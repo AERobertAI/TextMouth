@@ -28,6 +28,9 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     private static let sample = "brf/pride-and-prejudice-ch1-grade1.brf"
     /// The table the sample is written in: uncontracted UEB.
     private static let table = "en-ueb-g1.ctb"
+    /// Another table, contracted UEB, which the listener may choose for the
+    /// book in Book Information (FMT21).
+    private static let otherTable = "en-ueb-g2.ctb"
     /// The id of a code no TextMouth knows yet, as a later TextMouth might
     /// record one.
     private static let unknownCode = "ascii-braillo-no-047-01"
@@ -38,8 +41,10 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// table and with `code` as the Braille setting's file code, titled
     /// `title` with a suffix of its own, in its row and its record, so the
     /// debug log's lines that name it are this test's.
-    private func imported(_ url: URL, settingCode code: BrailleFileCode, title: String) throws -> Book {
-        var book = try BraillePreferences.$tableForImports.withValue(Self.table) {
+    private func imported(
+        _ url: URL, settingCode code: BrailleFileCode, title: String, settingTable table: String = BrailleFileCodeReplaceTests.table
+    ) throws -> Book {
+        var book = try BraillePreferences.$tableForImports.withValue(table) {
             try BraillePreferences.$fileCodeForImports.withValue(code.id) {
                 try importedForTest(url).book
             }
@@ -72,9 +77,9 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
     /// The North American sample read as North American Braille ASCII, with
     /// pages, as a generation writes content.md: its UTF-8, which the sample
     /// written in any code reads as when it is read in that code.
-    private func northAmericanReading() throws -> Data {
+    private func northAmericanReading(table: String = BrailleFileCodeReplaceTests.table) throws -> Data {
         Data(try BrailleBookReader.markdown(
-            of: copyOfFormatSample(Self.sample), table: Self.table, fileCode: "ascii-na", includesPages: true
+            of: copyOfFormatSample(Self.sample), table: table, fileCode: "ascii-na", includesPages: true
         ).utf8)
     }
 
@@ -141,7 +146,108 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(copy.title)"), 0, "the copy was read again")
     }
 
+    /// The sample imported with the Braille setting's uncontracted table,
+    /// then read again with the contracted table in Book Information (the
+    /// Braille Code pop-up). The same file added again is translated with the
+    /// setting's table too; answered Replace Existing, the copy taking the
+    /// book's place is read again with the table the listener chose: its row
+    /// and record hold it, its content.md is the contracted reading, and the
+    /// debug log says the copy was read again with a table, and with no file
+    /// code, for the characters were not in question.
+    func testReplaceExistingKeepsTheBrailleCodeChosenInBookInformation() async throws {
+        keepDeletionsOutOfTheTrash()
+        let file = try copyOfFormatSample(Self.sample)
+        let existing = try imported(file, settingCode: .northAmerican, title: "Concordance")
+        let model = makeModel(with: [existing])
+        let contracted = try XCTUnwrap(BrailleTableCatalog.table(withID: Self.otherTable))
+        let corrected = await model.readTextAgain(bookID: existing.id, choosing: .brailleTable(contracted))
+        XCTAssertTrue(corrected.succeeded, "the book was not read again: \(corrected)")
+        let copy = try imported(file, settingCode: .northAmerican, title: "Second Concordance")
+        let expected = try northAmericanReading(table: Self.otherTable)
+        XCTAssertEqual(copy.md5Hash, existing.md5Hash, "the same file must have the same content hash, or this proves nothing")
+        XCTAssertEqual(copy.brailleTable, Self.table)
+        XCTAssertNotEqual(try contentMD(in: copy.tmbDirectory), expected, "the setting's table must read the copy otherwise, or this proves nothing")
+
+        XCTAssertFalse(model.addBookCheckingDuplicate(copy), "the copy was not asked about as a duplicate")
+        let outcome = model.answerCurrentImportDecision(.replaceExisting)
+
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(model.bookByID(existing.id))
+        XCTAssertEqual(row.tmbDirectoryName, copy.tmbDirectoryName, "the copy did not take the book's place")
+        XCTAssertEqual(row.brailleTable, Self.otherTable)
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).metadata.brailleTable, Self.otherTable)
+        XCTAssertEqual(try contentMD(in: row.tmbDirectory), expected)
+        XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(copy.title): read again with \(Self.otherTable)"), 1)
+        XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(copy.title)"), 0, "a table was logged as a file code's")
+    }
+
+    /// A book whose listener chose both its braille file characters and its
+    /// braille code, each with its own pop-up, keeps both through Replace
+    /// Existing, in one re-read of the copy: its row and record hold the
+    /// Eurobraille and the contracted table, its content.md is the North
+    /// American sample's own text translated with the contracted table, and
+    /// the debug log says each.
+    func testReplaceExistingKeepsBothCodesChosenInBookInformation() async throws {
+        keepDeletionsOutOfTheTrash()
+        let file = try copyOfBrailleSample(Self.sample, writtenIn: .eurobraille)
+        let existing = try imported(file, settingCode: .northAmerican, title: "Lexicon")
+        let model = makeModel(with: [existing])
+        let contracted = try XCTUnwrap(BrailleTableCatalog.table(withID: Self.otherTable))
+        let firstRead = await model.readTextAgain(bookID: existing.id, choosing: .brailleFileCode(.eurobraille))
+        let secondRead = await model.readTextAgain(bookID: existing.id, choosing: .brailleTable(contracted))
+        XCTAssertTrue(firstRead.succeeded && secondRead.succeeded, "the book was not read again: \(firstRead) \(secondRead)")
+        let copy = try imported(file, settingCode: .northAmerican, title: "Second Lexicon")
+        let expected = try northAmericanReading(table: Self.otherTable)
+        XCTAssertNotEqual(try contentMD(in: copy.tmbDirectory), expected, "the setting must misread the copy, or this proves nothing")
+
+        XCTAssertFalse(model.addBookCheckingDuplicate(copy), "the copy was not asked about as a duplicate")
+        let outcome = model.answerCurrentImportDecision(.replaceExisting)
+
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(model.bookByID(existing.id))
+        XCTAssertEqual(row.tmbDirectoryName, copy.tmbDirectoryName, "the copy did not take the book's place")
+        XCTAssertEqual(row.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(row.brailleTable, Self.otherTable)
+        let record = try BookInfo.load(from: row.tmbDirectory).metadata
+        XCTAssertEqual(record.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(record.brailleTable, Self.otherTable)
+        XCTAssertEqual(try contentMD(in: row.tmbDirectory), expected)
+        XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(copy.title): read again with ascii-eurobraille"), 1)
+        XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(copy.title): read again with \(Self.otherTable)"), 1)
+    }
+
     // MARK: - When a Copy Is Read Again
+
+    /// A copy is read again with the book's table only when both are braille
+    /// books of the same bytes, and the book's table, as its stored value
+    /// names it (none is the default table), is not the copy's. A PEF has a
+    /// table too; a text book has none.
+    func testACopyIsTranslatedAgainOnlyWithTheBooksOtherTable() {
+        /// A book of the file named `name`, of content `hash`, translated
+        /// with `table`.
+        func book(_ name: String, hash: String = "same", table: String?, format: BookFormat = .braille) -> Book {
+            Book(title: "Gazetteer", format: format, filePath: "/nonexistent/\(name)", md5Hash: hash, brailleTable: table)
+        }
+        let copy = book("Copy.brf", table: Self.table)
+        let cases: [(existing: Book, copy: Book, expected: String?, label: String)] = [
+            (book("Book.brf", table: Self.otherTable), copy, Self.otherTable, "another table"),
+            (book("Book.pef", table: Self.otherTable), book("Copy.pef", table: Self.table), Self.otherTable, "a PEF"),
+            (book("Book.brf", table: Self.table), copy, nil, "the same table"),
+            (book("Book.brf", table: nil), book("Copy.brf", table: BrailleTableCatalog.defaultTableID), nil, "none, the default"),
+            (book("Book.brf", table: nil), copy, BrailleTableCatalog.defaultTableID, "none against another table"),
+            (book("Book.brf", table: Self.otherTable), book("Copy.brf", table: nil), nil, "the default, which is the book's"),
+            (book("Book.brf", hash: "other", table: Self.otherTable), copy, nil, "other bytes"),
+            (book("Book.brf", hash: "", table: Self.otherTable), book("Copy.brf", hash: "", table: Self.table), nil, "no content hash"),
+            (book("Book.txt", table: Self.otherTable, format: .txt), copy, nil, "a text book"),
+        ]
+        for testCase in cases {
+            XCTAssertEqual(
+                DuplicateReplacement.brailleTableToReadAgain(replacing: testCase.existing, with: testCase.copy),
+                testCase.expected,
+                testCase.label
+            )
+        }
+    }
 
     /// A copy is read again only when both books are BRF or BRL braille books
     /// of the same bytes, and the book's characters, as each stored code
