@@ -33,13 +33,24 @@ import Foundation
 /// Foundation on each run of the suite, so a macOS that matches more fails
 /// there rather than missing matches.
 enum LibrarySearchSpecials {
-    /// The characters that can match ASCII when case is ignored.
-    static let ignoringCase: Set<UInt32> = Set(
-        [0x00B2, 0x00B3, 0x00B9, 0x00DF, 0x017F, 0x037E, 0x1E9E, 0x1FEF, 0x2070, 0x212A, 0x2185, 0x24EA, 0x24FF]
-            + Array(0x2074...0x2089) + Array(0x2460...0x249B) + Array(0x24F5...0x24FD)
-            + Array(0x3251...0x325F) + Array(0x32B1...0x32BF) + Array(0xFB00...0xFB06) + Array(0xFF10...0xFF19)
-            + Array(0x1CCF0...0x1CCF9) + Array(0x1D7CE...0x1D7FF) + Array(0x1F100...0x1F10A) + Array(0x1FBF0...0x1FBF9)
-    )
+    /// The characters that can match ASCII when case is ignored: the single
+    /// ones, and the runs of digit forms, written apart so the compiler
+    /// types each part on its own.
+    static let ignoringCase: Set<UInt32> = {
+        let single: [UInt32] = [
+            0x00B2, 0x00B3, 0x00B9, 0x00DF, 0x017F, 0x037E, 0x1E9E, 0x1FEF, 0x2070, 0x212A, 0x2185, 0x24EA, 0x24FF,
+        ]
+        let runs: [ClosedRange<UInt32>] = [
+            0x2074...0x2079, 0x2080...0x2089, 0x2460...0x249B, 0x24F5...0x24FD, 0x3251...0x325F, 0x32B1...0x32BF,
+            0xFB00...0xFB06, 0xFF10...0xFF19, 0x1CCF0...0x1CCF9, 0x1D7CE...0x1D7FF, 0x1F100...0x1F10A,
+            0x1FBF0...0x1FBF9,
+        ]
+        var characters = Set(single)
+        for run in runs {
+            characters.formUnion(run)
+        }
+        return characters
+    }()
 
     /// The characters that can match ASCII when case must match.
     static let matchingCase: Set<UInt32> = [
