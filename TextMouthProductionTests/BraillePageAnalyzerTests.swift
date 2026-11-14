@@ -1367,10 +1367,10 @@ extension BraillePageAnalyzerTests {
     /// "to" and "by" joined to the next word, and "ation" and "ally" inside a
     /// word, are the old code's signs; a book full of them looks like it.
     func testWordsWithTheOldCodesSignsAreCountedAndTheBookLooksOld() {
-        // Two words with a joined "to" and "by", then "populN" and "reY" (a capital N or Y after a letter).
+        // Two words with a joined "to" and "by"; a capital N or Y after a letter is UEB's own -ation and -ity.
         let count = detectorCount(["6GO 0,JOHN POPUL,N RE,Y PLAIN"])
         XCTAssertEqual(count.words, 5)
-        XCTAssertEqual(count.hits, 4)
+        XCTAssertEqual(count.hits, 2)
         let book = detectorCount(Array(repeating: "6GO 6BE 0THE 6SEE 6DO 6SAY", count: 3))
         XCTAssertEqual(book.hits, 18)
         XCTAssertTrue(book.looksLikeEBAE)
@@ -1380,7 +1380,18 @@ extension BraillePageAnalyzerTests {
     /// and its capital sign begins a word.
     func testUEBTextDoesNotLookOld() {
         let count = detectorCount(["THE CAT SAT ON THE MAT6 ,HE SAID0 ,MC,NEIL", "6 0 ,NAME ,YES"])
-        XCTAssertEqual(count.hits, 1, "only a capital N after a letter, as in a name, shows a sign")
+        XCTAssertEqual(count.hits, 0)
+        XCTAssertFalse(count.looksLikeEBAE)
+    }
+
+    /// A contracted UEB passage full of -ation and -ity words (a capital sign
+    /// and n or y after a letter), "ff" in the middle of words, closing
+    /// quotes, "was" alone, and "!" never looks old, however often it repeats.
+    func testAContractedUEBPassageWithAtionItyAndFFDoesNotLookOld() {
+        // NATION, CITY, OFFER, "WAS" (0 alone), a quoted word ending in a closing quote (0), "!" (6) after a word.
+        let line = "N,N C,Y O6ER 0 ,\"HELLO0 STOP6 ,NATIONAL ,CITY"
+        let count = detectorCount(Array(repeating: line, count: 200))
+        XCTAssertEqual(count.hits, 0)
         XCTAssertFalse(count.looksLikeEBAE)
     }
 

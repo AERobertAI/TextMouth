@@ -11,13 +11,16 @@ import Foundation
 /// write at all, and those give EBAE away:
 ///
 /// - the signs for "to" (⠖, dots 2-3-5) and for "by" (⠴, dots 3-5-6), which EBAE
-///   writes joined to the word that follows, where UEB writes "to" and "by"
-///   in letters, and uses those cells only as punctuation, which ends a word
-///   or stands alone. A word that begins with either, followed by a letter or
-///   a capital sign, is EBAE's.
-/// - the sign for "ation" and for "ally" (a capital sign, then n or y), which
-///   EBAE writes in the middle of a word after a letter, where UEB's capital
-///   sign begins a word or a capital in a name ("McNeil"), which is rare.
+///   writes joined to the word that follows. UEB writes "to" and "by" in
+///   letters, and uses those cells otherwise only as "ff" (a groupsign that
+///   never begins a word), "!", "+", the word "was" (alone), and the closing
+///   quote, none of which has a letter or capital sign directly after it at
+///   the start of a word. A word that begins with either, followed by a
+///   letter or a capital sign, is EBAE's.
+///
+/// The capital sign before n or y in the middle of a word ("ation", "ally" in
+/// EBAE) is not counted: it is UEB's own "-ation" and "-ity" groupsigns, which
+/// every contracted UEB book is full of.
 ///
 /// A book is taken for EBAE only when such words are not few: at least
 /// `minimumWords` of them, and one in a hundred of the book's words.
@@ -33,8 +36,6 @@ enum BrailleCodeDetector {
     private static let toSign: UInt8 = 0x16
     private static let bySign: UInt8 = 0x34
     private static let capitalSign: UInt8 = 0x20
-    private static let letterN: UInt8 = 0x1D
-    private static let letterY: UInt8 = 0x3D
     /// The cells of the letters a to z.
     private static let letters: Set<UInt8> = [
         0x01, 0x03, 0x09, 0x19, 0x11, 0x0B, 0x1B, 0x13, 0x0A, 0x1A, 0x05, 0x07, 0x0D,
@@ -62,14 +63,6 @@ enum BrailleCodeDetector {
         // "to" or "by" joined to the next word.
         if first == toSign || first == bySign, letters.contains(second) || second == capitalSign {
             return true
-        }
-        // "ation" or "ally" in the middle of a word: a capital sign directly
-        // after a letter, then n or y.
-        for index in word.indices.dropFirst() where word[index] == capitalSign {
-            let next = index + 1
-            if letters.contains(word[index - 1]), next < word.endIndex, word[next] == letterN || word[next] == letterY {
-                return true
-            }
         }
         return false
     }
