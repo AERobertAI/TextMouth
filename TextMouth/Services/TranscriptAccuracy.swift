@@ -677,7 +677,7 @@ enum TranscriptAccuracy {
                 }
             }
             .map { (pair: $0.key, count: $0.value) }
-            .sorted { ($1.count, $0.pair.heard, $0.pair.written) < ($0.count, $1.pair.heard, $1.pair.written) }
+            .sortedStably { ($1.count, $0.pair.heard, $0.pair.written) < ($0.count, $1.pair.heard, $1.pair.written) }
             .prefix(limit)
             .map { $0 }
         }
@@ -759,7 +759,7 @@ enum TranscriptAccuracy {
                 }
             }
         }
-        return tallied(Array(found.values), over: measured).sorted {
+        return tallied(Array(found.values), over: measured).sortedStably {
             ($1.evidence, $1.fixes, $0.conflicts, $0.pattern, $0.replacement)
                 < ($0.evidence, $0.fixes, $1.conflicts, $1.pattern, $1.replacement)
         }

@@ -280,7 +280,7 @@ struct DAISYPlaybackSequence {
         let positions = references.map(position(of:))
         // Every place a section starts, in playback order, with where the
         // section starting there ends: where the next one starts.
-        let starts = Set(positions.compactMap { $0 }).sorted()
+        let starts = Set(positions.compactMap { $0 }).sortedStably()
         var endOfSectionAt: [Int: Int] = [:]
         for (index, start) in starts.enumerated() {
             endOfSectionAt[start] = index + 1 < starts.count ? starts[index + 1] : clips.count

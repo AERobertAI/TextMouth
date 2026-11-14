@@ -334,7 +334,7 @@ final class PhoneLibraryRows: ObservableObject {
         let query = searchText.lowercased()
         contents.folders = library.library.folders
             .filter { $0.name.lowercased().contains(query) }
-            .sorted { $0.fullPath.localizedStandardCompare($1.fullPath) == .orderedAscending }
+            .sortedStably { $0.fullPath.localizedStandardCompare($1.fullPath) == .orderedAscending }
         let everything = LibraryLocation(category: .allItems, folderPath: "")
         contents.books = library.displayedBooks(at: everything, matching: searchText)
         contents.sortField = library.sortState(at: everything).field

@@ -156,7 +156,7 @@ struct KFXContainer {
         // The entities lie end to end (notes, part 4.3): one that overlaps
         // another, as a row listed many times does, would be decoded again
         // for each row, so it is refused.
-        let ranges = entities.map(\.range).sorted { $0.lowerBound < $1.lowerBound }
+        let ranges = entities.map(\.range).sortedStably { $0.lowerBound < $1.lowerBound }
         for (previous, next) in zip(ranges, ranges.dropFirst()) where next.lowerBound < previous.upperBound {
             throw MOBIError.damaged("two fragments overlap")
         }

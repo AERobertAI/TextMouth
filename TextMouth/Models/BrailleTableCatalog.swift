@@ -460,7 +460,7 @@ enum BrailleTableCatalog {
         return found
             .filter { !isTrueTwin($0.table.fileName, twins: twins) }
             .map(\.table)
-            .sorted { lhs, rhs in
+            .sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order.
                 (lhs.language, lhs.system, lhs.contraction.rank, lhs.id)
                     < (rhs.language, rhs.system, rhs.contraction.rank, rhs.id)
@@ -659,7 +659,7 @@ enum BrailleTableCatalog {
         }
         return order.compactMap { id in
             guard let members = groups[id], let first = members.first else { return nil }
-            let sorted = members.sorted { lhs, rhs in
+            let sorted = members.sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order: contraction,
                 // then a bundled table (0) before a Mac one (1), then name.
                 (lhs.contraction.rank, lhs.source == .bundled ? 0 : 1, lhs.fileName)
@@ -753,7 +753,7 @@ enum BrailleTableCatalog {
             let name = languageName(id, indexName: tables.compactMap(\.indexName).first, displayName: tables.first?.displayName)
             return BrailleLanguage(id: id, name: name, codes: members)
         }
-        return languages.sorted { lhs, rhs in
+        return languages.sortedStably { lhs, rhs in
             let (lhsEnglish, rhsEnglish) = (isEnglish(lhs.id), isEnglish(rhs.id))
             if lhsEnglish != rhsEnglish { return lhsEnglish }
             let order = lhs.name.localizedStandardCompare(rhs.name)

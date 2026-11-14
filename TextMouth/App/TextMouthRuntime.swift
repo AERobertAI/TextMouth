@@ -310,7 +310,7 @@ struct TextMouthRuntime: @unchecked Sendable {
                   !isKept(entry) else { return false }
             return !isMakerRunning(process, values.creationDate)
         }
-        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        .sortedStably { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     /// Deletes the sandboxes earlier hosted-test processes left behind in

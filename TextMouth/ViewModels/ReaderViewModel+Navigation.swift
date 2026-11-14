@@ -346,7 +346,7 @@ extension ReaderViewModel {
     nonisolated static func headingsSharingPlace(with heading: Heading, in headings: [Heading]) -> [Heading] {
         headings.enumerated()
             .filter { $0.element.chapterIndex == heading.chapterIndex && $0.element.characterOffset == heading.characterOffset }
-            .sorted { ($0.element.level, $0.offset) < ($1.element.level, $1.offset) }
+            .sortedStably { ($0.element.level, $0.offset) < ($1.element.level, $1.offset) }
             .map(\.element)
     }
 

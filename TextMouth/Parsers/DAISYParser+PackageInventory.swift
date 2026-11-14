@@ -53,7 +53,7 @@ extension DAISYParser {
 
         let entryNames = names
             .filter { !$0.hasPrefix(".") && isPackageEntryName($0) && isFile($0) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         let books = entryNames.first(where: isNCCFileName).map { [$0] } ?? entryNames
         return books.map { directory.appendingPathComponent($0) }
     }
@@ -192,8 +192,8 @@ struct DAISYPackageInventory {
     private init(root: URL, entryPath: String, files: [File], missingPaths: [String], wholeFolderReason: String?) {
         self.root = root
         self.entryPath = entryPath
-        self.files = files.sorted { Self.pathPrecedes($0.path, $1.path) }
-        self.missingPaths = missingPaths.sorted { Self.pathPrecedes($0, $1) }
+        self.files = files.sortedStably { Self.pathPrecedes($0.path, $1.path) }
+        self.missingPaths = missingPaths.sortedStably { Self.pathPrecedes($0, $1) }
         self.wholeFolderReason = wholeFolderReason
     }
 
@@ -308,7 +308,7 @@ struct DAISYPackageInventory {
         var text = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
         let ordered = files
             .map { (path: $0.path.precomposedStringWithCanonicalMapping, size: $0.size) }
-            .sorted { Self.pathPrecedes($0.path, $1.path) }
+            .sortedStably { Self.pathPrecedes($0.path, $1.path) }
         for file in ordered {
             text += "\u{0}\(file.path)\u{0}\(file.size)"
         }
@@ -431,7 +431,7 @@ struct DAISYPackageInventory {
         guard package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
             return "the manifest of “\(entryPath)” lists no DTBook content file"
         }
-        for href in package.manifest.values.map(\.href).sorted() {
+        for href in package.manifest.values.map(\.href).sortedStably() {
             try collector.add(href, in: entryPath)
         }
         return nil

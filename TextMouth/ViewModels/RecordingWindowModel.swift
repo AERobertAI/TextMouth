@@ -670,7 +670,7 @@ final class RecordingWindowModel: ObservableObject {
     /// The folder choices: the top of the library, then each folder's path
     /// in order.
     private static func folderChoices(_ paths: [String]) -> [String] {
-        [""] + paths.filter { !$0.isEmpty }.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        [""] + paths.filter { !$0.isEmpty }.sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     // MARK: The App's

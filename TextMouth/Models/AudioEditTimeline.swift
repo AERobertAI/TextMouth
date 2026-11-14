@@ -420,7 +420,7 @@ struct AudioEditTimeline: Equatable, Sendable {
     private mutating func normalizeChapters() {
         let end = length
         let ordered = chapters.enumerated()
-            .sorted { ($0.element.frame, $0.offset) < ($1.element.frame, $1.offset) }
+            .sortedStably { ($0.element.frame, $0.offset) < ($1.element.frame, $1.offset) }
             .map(\.element)
         var kept: [Chapter] = []
         for chapter in ordered where chapter.frame >= 0 && chapter.frame < end {

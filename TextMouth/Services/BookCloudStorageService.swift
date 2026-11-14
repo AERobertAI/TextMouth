@@ -674,7 +674,7 @@ final class BookCloudStorageService: BookCloudStorage {
             }
             var listing = PackageListing()
             try collect(package.url, isPackageFolder: true, into: &listing)
-            listing.files.sort { $0.path < $1.path }
+            listing.files.sortStably { $0.path < $1.path }
             return listing
         }
     }

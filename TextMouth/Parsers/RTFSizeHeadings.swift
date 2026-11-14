@@ -94,7 +94,7 @@ enum RTFSizeHeadings {
 
         // The larger sizes, largest first, give levels 1, 2, 3; bold
         // paragraphs take the level after them.
-        let sizes = Set(larger.values).sorted(by: >)
+        let sizes = Set(larger.values).sortedStably(by: >)
         var result = blocks
         for (index, size) in larger {
             if case .paragraph(let paragraph) = blocks[index], let rank = sizes.firstIndex(of: size) {

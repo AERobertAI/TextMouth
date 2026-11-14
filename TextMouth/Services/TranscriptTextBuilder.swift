@@ -130,7 +130,7 @@ enum TranscriptTextBuilder {
             }
         }
         return placed.map { sentences in
-            sentences.sorted {
+            sentences.sortedStably {
                 ($0.sentence.startMilliseconds, $0.address) < ($1.sentence.startMilliseconds, $1.address)
             }
         }

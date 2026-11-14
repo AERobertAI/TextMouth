@@ -362,7 +362,7 @@ struct AudioMediaProber: Sendable {
                 finished.append(done)
             }
             // Probes finish in any order; put each outcome back in place.
-            return finished.sorted { $0.index < $1.index }.map(\.outcome)
+            return finished.sortedStably { $0.index < $1.index }.map(\.outcome)
         }
     }
 }

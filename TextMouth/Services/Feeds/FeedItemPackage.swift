@@ -296,12 +296,12 @@ enum FeedItemPackage {
         let feeds = FeedPaths.recordsFolder(in: root)
         let fileManager = FileManager.default
         let names = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: feeds.path) }) ?? []
-        return names.sorted().flatMap { name -> [URL] in
+        return names.sortedStably().flatMap { name -> [URL] in
             // A feed's own folder is named by its ID alone (FR11).
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
             let folder = FeedPaths.itemsFolder(of: feedID, in: root)
             let entries = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: folder.path) }) ?? []
-            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sorted().map {
+            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sortedStably().map {
                 folder.appendingPathComponent($0, isDirectory: true)
             }
         }

@@ -117,10 +117,10 @@ struct KFXInlineText {
             cuts.insert(range.lowerBound)
             cuts.insert(range.upperBound)
         }
-        let boundaries = cuts.sorted()
+        let boundaries = cuts.sortedStably()
         // The ranges left out do not overlap in a sound book; sorted, one pass
         // along the boundaries finds the one a piece falls in.
-        skipped.sort { $0.lowerBound < $1.lowerBound }
+        skipped.sortStably { $0.lowerBound < $1.lowerBound }
         var nextSkipped = 0
 
         var html = ""
@@ -145,7 +145,7 @@ struct KFXInlineText {
         }
         close(&open, into: &html)
         // Anchors past the end of the text stand at its end.
-        for (offset, anchor) in context.anchorAt.sorted(by: { $0.key < $1.key }) where offset > count {
+        for (offset, anchor) in context.anchorAt.sortedStably(by: { $0.key < $1.key }) where offset > count {
             html += anchor
         }
         return html

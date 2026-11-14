@@ -98,7 +98,7 @@ enum FeedIndexFiles {
     /// a save that changed nothing of a feed writes nothing for it.
     static func encoded(_ index: FeedIndex) throws -> Data {
         var ordered = index
-        ordered.books.sort(by: isInIndexOrder)
+        ordered.books.sortStably(by: isInIndexOrder)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
@@ -143,7 +143,7 @@ enum FeedIndexFiles {
     /// data-directory move's staged copy, whose rows are placed in the new
     /// location (`DataDirectoryMigrator`).
     static func encodedIndexes(of library: Library, placedIn root: URL) throws -> [EncodedIndex] {
-        try library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
+        try library.feedIndexRows.sortedStably { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
             let placedRows = rows.map { placed($0, in: root, of: feedID) }
             // The rows this version cannot read are written back as they
             // were read, and count as rows: an index holding only them is
@@ -202,7 +202,7 @@ enum FeedIndexFiles {
             (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
         }
         var contents: [UUID: Contents] = [:]
-        for name in names.sorted() {
+        for name in names.sortedStably() {
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name),
                   isFolder(feedsFolder.appendingPathComponent(name, isDirectory: true)) else { continue }
             contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages, reader: reader)
@@ -324,7 +324,7 @@ enum FeedIndexFiles {
             (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         }
         var rows: [Book] = []
-        for name in names.sorted() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name)
+        for name in names.sortedStably() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name)
             && !keptRows.owns(tmbDirectoryName: name) {
             let package = folder.appendingPathComponent(name, isDirectory: true)
             let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)

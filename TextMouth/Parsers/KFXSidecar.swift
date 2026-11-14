@@ -47,7 +47,7 @@ enum KFXSidecar {
         var queue: [(url: URL, depth: Int)] = [(folder, 0)]
         while !queue.isEmpty {
             let (directory, depth) = queue.removeFirst()
-            let names = ((try? manager.contentsOfDirectory(atPath: directory.path)) ?? []).sorted()
+            let names = ((try? manager.contentsOfDirectory(atPath: directory.path)) ?? []).sortedStably()
             for name in names {
                 visited += 1
                 guard visited <= maximumEntries else { return scan }

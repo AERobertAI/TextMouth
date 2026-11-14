@@ -108,7 +108,7 @@ extension ReaderViewModel {
     ) -> Int {
         let sameChapter = bookmarks
             .filter { $0.chapterIndex == chapterIndex }
-            .sorted(by: { $0.characterOffset < $1.characterOffset })
+            .sortedStably(by: { $0.characterOffset < $1.characterOffset })
 
         func clamped(_ offset: Int) -> Int {
             guard let chapterLength else { return max(0, offset) }
@@ -226,7 +226,7 @@ extension ReaderViewModel {
     /// the order the bookmarks were made, so going by them passed over a
     /// bookmark made later at an earlier place.
     private var bookmarksInBookOrder: [Bookmark] {
-        bookmarks.sorted { first, second in
+        bookmarks.sortedStably { first, second in
             (first.chapterIndex, first.characterOffset, first.number)
                 < (second.chapterIndex, second.characterOffset, second.number)
         }

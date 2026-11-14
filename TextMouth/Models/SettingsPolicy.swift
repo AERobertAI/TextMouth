@@ -346,7 +346,7 @@ where Case: RawRepresentable & Hashable & Sendable, Case.RawValue == String,
     /// order, so one file always asks for the same values.
     func requestedValues(fromConfig entries: [String: FileValue]) -> [Case: Value] {
         var requested: [Case: Value] = [:]
-        for (name, fileValue) in entries.sorted(by: { $0.key < $1.key }) {
+        for (name, fileValue) in entries.sortedStably(by: { $0.key < $1.key }) {
             guard let named = caseNamed(name), let value = parse(fileValue) else { continue }
             if requested[named] == nil || name == named.rawValue {
                 requested[named] = value

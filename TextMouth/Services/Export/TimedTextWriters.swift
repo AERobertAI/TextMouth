@@ -265,7 +265,7 @@ extension Transcript {
         // Sorted by start, then by place, so cues beginning together keep
         // their order whatever the sort does with equal elements.
         return cues.enumerated()
-            .sorted { ($0.element.startMilliseconds, $0.offset) < ($1.element.startMilliseconds, $1.offset) }
+            .sortedStably { ($0.element.startMilliseconds, $0.offset) < ($1.element.startMilliseconds, $1.offset) }
             .map(\.element)
     }
 

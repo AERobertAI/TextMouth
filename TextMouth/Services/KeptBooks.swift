@@ -192,7 +192,7 @@ final class KeptBooks: ObservableObject {
     /// Replaces the file of kept books with the set in one step.
     private func save() {
         guard let file else { return }
-        Self.write(KeptBooksFile(books: bookIDs.sorted { $0.uuidString < $1.uuidString }), to: file)
+        Self.write(KeptBooksFile(books: bookIDs.sortedStably { $0.uuidString < $1.uuidString }), to: file)
     }
 
     /// Replaces `file` with `contents` in one step, making this Mac's folder

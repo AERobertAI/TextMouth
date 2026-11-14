@@ -134,11 +134,11 @@ enum RecordingTakeFiles {
         let ownedPaths = Set(owned.map(path(of:)))
         return names
             .filter { !$0.hasPrefix(".") && ($0 as NSString).pathExtension.lowercased() == fileExtension }
-            .sorted()
+            .sortedStably()
             .map { folder.appendingPathComponent($0) }
             .filter { !ownedPaths.contains(path(of: $0)) }
             .map { RecoveredTake(url: $0, startedAt: startDate(of: $0), duration: duration(of: $0)) }
-            .sorted { $0.startedAt < $1.startedAt }
+            .sortedStably { $0.startedAt < $1.startedAt }
     }
 
     /// `leftovers(in:excluding:)`, read on a thread of its own, so the main

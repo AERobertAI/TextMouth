@@ -70,7 +70,7 @@ struct AudioEditorLevels: Equatable, Sendable {
     /// tone sets it, as the research recommended.
     var pauseThreshold: Float {
         guard !decibels.isEmpty else { return -45 }
-        let sorted = decibels.map { max($0, -90) }.sorted()
+        let sorted = decibels.map { max($0, -90) }.sortedStably()
         let background = sorted[min(sorted.count - 1, sorted.count / 10)]
         return min(-30, max(-60, background + 15))
     }

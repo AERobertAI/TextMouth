@@ -129,7 +129,7 @@ struct PhoneVoiceModel {
 
     /// The languages of the voices offered, as two-letter codes, sorted.
     var languageCodes: [String] {
-        Set(voices.map(\.languageCode)).sorted()
+        Set(voices.map(\.languageCode)).sortedStably()
     }
 
     /// The Language choices: "All", then each language by the name

@@ -145,7 +145,7 @@ struct HeadingNavigatorView: View {
     }
 
     static func levelsPresent(in headings: [Heading]) -> [Int] {
-        Array(Set(headings.map(\.level))).sorted()
+        Array(Set(headings.map(\.level))).sortedStably()
     }
 
     /// The levels the filter offers a choice of its own for, given the

@@ -115,7 +115,7 @@ struct DocumentContent {
         // Each stretch of the span before an excluded range, in order, then
         // the stretch after the last of them.
         var start = span.lowerBound
-        for range in excluded.sorted(by: { $0.lowerBound < $1.lowerBound }) {
+        for range in excluded.sortedStably(by: { $0.lowerBound < $1.lowerBound }) {
             // A range that ends before what is left of the span changes
             // nothing; one that starts at or after the span's end, and every
             // range after it, changes nothing either.
@@ -402,7 +402,7 @@ struct HeadingSweep {
 
     init(headings: [Heading]) {
         self.headings = headings
-        startOrder = headings.indices.sorted { lhs, rhs in
+        startOrder = headings.indices.sortedStably { lhs, rhs in
             (headings[lhs].chapterIndex, headings[lhs].characterOffset, lhs)
                 < (headings[rhs].chapterIndex, headings[rhs].characterOffset, rhs)
         }

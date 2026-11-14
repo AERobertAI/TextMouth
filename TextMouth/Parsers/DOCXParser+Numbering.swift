@@ -62,7 +62,7 @@ struct DOCXNumbering {
         (levelOverrides[numId] ?? [:])
             .filter { $0.value.startOverride != nil || $0.value.level != nil }
             .keys
-            .sorted()
+            .sortedStably()
     }
 }
 

@@ -560,7 +560,7 @@ struct TimedTextCueList {
         // Each cue's place in the file settles a tie, which keeps the sort
         // stable whatever the sorting algorithm.
         let sorted = cues.enumerated()
-            .sorted { ($0.element.startMilliseconds, $0.offset) < ($1.element.startMilliseconds, $1.offset) }
+            .sortedStably { ($0.element.startMilliseconds, $0.offset) < ($1.element.startMilliseconds, $1.offset) }
             .map(\.element)
         return TimedTextDocument(format: format, cues: sorted, skippedCueCount: skippedCueCount)
     }

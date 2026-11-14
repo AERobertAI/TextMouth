@@ -451,7 +451,7 @@ enum ArticleLanguage: String, CaseIterable, Sendable {
     }
 
     /// English's articles alone, longest first.
-    private static let englishArticles = ArticleLanguage.english.articles.sorted { $0.count > $1.count }
+    private static let englishArticles = ArticleLanguage.english.articles.sortedStably { $0.count > $1.count }
 
     /// English's definite article, the only one of English's that a book in
     /// another language keeps: "a" and "an" are prepositions or other words
@@ -469,7 +469,7 @@ enum ArticleLanguage: String, CaseIterable, Sendable {
             // Longest first; among articles of one length, the list's own
             // order, so the result never depends on a hash.
             lists[language] = merged.enumerated()
-                .sorted { $0.element.count != $1.element.count ? $0.element.count > $1.element.count : $0.offset < $1.offset }
+                .sortedStably { $0.element.count != $1.element.count ? $0.element.count > $1.element.count : $0.offset < $1.offset }
                 .map(\.element)
         }
         return lists

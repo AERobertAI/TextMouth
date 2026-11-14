@@ -77,7 +77,7 @@ struct BookPages: Equatable, Sendable {
     init(breaks: [PageBreak]) {
         // Sorting the indices, not the breaks, keeps the given order among
         // equal places without relying on the sort being stable.
-        self.breaks = breaks.indices.sorted { lhs, rhs in
+        self.breaks = breaks.indices.sortedStably { lhs, rhs in
             (breaks[lhs].chapterIndex, breaks[lhs].characterOffset, lhs)
                 < (breaks[rhs].chapterIndex, breaks[rhs].characterOffset, rhs)
         }.map { breaks[$0] }

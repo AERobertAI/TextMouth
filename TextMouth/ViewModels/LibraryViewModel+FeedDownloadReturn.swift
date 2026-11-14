@@ -138,7 +138,7 @@ extension LibraryViewModel {
         guard let known else { return nil }
         let decidable = library.feedShelf.indexedFeedIDs
             .subtracting(library.feedShelf.indexesLeftAlone)
-            .sorted { $0.uuidString < $1.uuidString }
+            .sortedStably { $0.uuidString < $1.uuidString }
         var here = decidable.filter { known.contains($0) }
         let candidates = decidable.filter { !known.contains($0) }
         guard !candidates.isEmpty else { return ([], here) }
@@ -161,7 +161,7 @@ extension LibraryViewModel {
                 gone.append(feedID)
             }
         }
-        return (gone, here.sorted { $0.uuidString < $1.uuidString })
+        return (gone, here.sortedStably { $0.uuidString < $1.uuidString })
     }
 
     // MARK: One Feed

@@ -89,7 +89,7 @@ enum KF8Book {
         // place it is written at: all the places inside one tag (which an
         // anchor cannot go inside) share the anchor at its start, and the
         // first entry to name it names it.
-        let snapped = MOBIMarkup.anchors(for: places.sorted(), in: text)
+        let snapped = MOBIMarkup.anchors(for: places.sortedStably(), in: text)
         var positionOfPlace: [Int: Int] = [:]
         for anchor in snapped { positionOfPlace[anchor.offset] = anchor.position }
         var headingTargets: [String: MarkdownHeadingAnnotation] = [:]
@@ -100,7 +100,7 @@ enum KF8Book {
                 headingTargets[id] = MarkdownHeadingAnnotation(level: min(destination.depth + 1, 6), text: destination.label)
             }
         }
-        let anchors = Set(positionOfPlace.values).sorted().map {
+        let anchors = Set(positionOfPlace.values).sortedStably().map {
             KF8Layout.Anchor(position: $0, id: MOBIMarkup.anchorID(forOffset: $0))
         }
         // The last document may be a contents page a converter added (see `isGeneratedContents`).

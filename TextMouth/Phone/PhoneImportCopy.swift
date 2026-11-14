@@ -178,7 +178,7 @@ struct PhoneImportCopyItem: Equatable, Sendable {
             bytes += Int64(childValues?.fileSize ?? 0)
             needsDownload = needsDownload || isOnlyInCloud(child)
         }
-        files.sort { $0.relativePath < $1.relativePath }
+        files.sortStably { $0.relativePath < $1.relativePath }
         return PhoneImportCopyItem(source: url, name: name, isFolder: true, files: files, byteCount: bytes, needsDownload: needsDownload)
     }
 

@@ -249,7 +249,7 @@ final class FeedRefresher {
                 startNext()
             }
         }
-        reports.sort { $0.feedTitle.localizedStandardCompare($1.feedTitle) == .orderedAscending }
+        reports.sortStably { $0.feedTitle.localizedStandardCompare($1.feedTitle) == .orderedAscending }
         return FeedRefreshSummary(origin: origin, reports: reports)
     }
 

@@ -87,7 +87,7 @@ enum MarkdownDocParser {
                 headings.append(Heading(level: heading.level, text: heading.text, characterOffset: offset))
             }
         }
-        headings.sort { $0.characterOffset < $1.characterOffset }
+        headings.sortStably { $0.characterOffset < $1.characterOffset }
 
         // Use first heading as title if available
         let docTitle = headings.first?.text ?? title

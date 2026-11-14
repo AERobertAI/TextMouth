@@ -440,7 +440,7 @@ struct NonBookFiles: Equatable, Sendable {
     var kinds: [(fileExtension: String, count: Int)] {
         countsByExtension
             .map { (fileExtension: $0.key, count: $0.value) }
-            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.fileExtension < $1.fileExtension }
+            .sortedStably { $0.count != $1.count ? $0.count > $1.count : $0.fileExtension < $1.fileExtension }
     }
 
     /// Counts the file at `url` by its extension.
@@ -1655,7 +1655,7 @@ enum FileImportService {
     /// folder holding the same files under the same names has the same one.
     private static func folderHash(of paths: [String], in folder: URL) throws -> String {
         var listing = ""
-        for path in paths.sorted() {
+        for path in paths.sortedStably() {
             listing += "\(path)\n\(try md5Hash(of: folder.appendingPathComponent(path)))\n"
         }
         return FingerprintHasher.md5.digestOfData(Data(listing.utf8))
@@ -2182,8 +2182,8 @@ enum FileImportService {
                 found.nonBookFiles.add(url)
             }
         }
-        found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
-        found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        found.books.sortStably { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        found.failures.sortStably { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
         return found
     }
 
@@ -2765,7 +2765,7 @@ enum FileImportService {
             !path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
         }
         let folders = DAISYParser.packageFolders(inArchivePaths: paths)
-        let bookFolder = folders.contains("") ? "" : (folders.sorted().first ?? "")
+        let bookFolder = folders.contains("") ? "" : (folders.sortedStably().first ?? "")
         /// Whether `path` lies in `folder`, "" being the whole archive.
         func lies(_ path: String, in folder: String) -> Bool {
             folder.isEmpty || path.hasPrefix(folder + "/")
@@ -3074,7 +3074,7 @@ enum FileImportService {
         ].compactMap { $0 })
         // The formats macOS decodes that the import converts (FMT09), by
         // their extensions' system types where they have one.
-        types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sorted().compactMap {
+        types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sortedStably().compactMap {
             UTType(filenameExtension: $0)
         })
         // Video, imported as an audiobook whose sound alone plays (FR03).
@@ -3556,7 +3556,7 @@ enum FileImportService {
         }
 
         // Remove empty directories (deepest first so parents become empty too)
-        let sorted = candidatesForRemoval.sorted {
+        let sorted = candidatesForRemoval.sortedStably {
             $0.pathComponents.count > $1.pathComponents.count
         }
         for url in sorted {
@@ -3919,7 +3919,7 @@ enum FileImportService {
         }
 
         // Parents first, so every row's parent already exists when it is added.
-        let parentsFirst = paths.sorted { lhs, rhs in
+        let parentsFirst = paths.sortedStably { lhs, rhs in
             let lhsDepth = lhs.components(separatedBy: "/").count
             let rhsDepth = rhs.components(separatedBy: "/").count
             return lhsDepth == rhsDepth ? lhs < rhs : lhsDepth < rhsDepth

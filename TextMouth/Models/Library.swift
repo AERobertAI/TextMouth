@@ -827,7 +827,7 @@ struct Library: Codable, Equatable {
         var duplicateIDs: Set<UUID> = []
         // Where each surviving row is, so a duplicate can give it its options.
         var survivorIndices: [String: Int] = [:]
-        let visitOrder = folders.indices.sorted { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
+        let visitOrder = folders.indices.sortedStably { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
         for index in visitOrder {
             let folder = folders[index]
             let parentPath = Self.resolve(folder.parentPath, against: survivors, equivalence: equivalence)
@@ -889,7 +889,7 @@ struct Library: Codable, Equatable {
                 respelled.append((key, survivingKey, setting))
             }
         }
-        let byLibraryOrder = respelled.sorted {
+        let byLibraryOrder = respelled.sortedStably {
             (originalPositions[$0.originalKey] ?? Int.max, $0.originalKey)
                 < (originalPositions[$1.originalKey] ?? Int.max, $1.originalKey)
         }
@@ -928,7 +928,7 @@ struct Library: Codable, Equatable {
         let equivalence = subtree.equivalence
         let travelling = folders.enumerated()
             .filter { $0.element.id != vacatedID && subtree.contains($0.element.fullPath) }
-            .sorted { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
+            .sortedStably { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
             .map(\.element)
         var departingIDs = Set(travelling.map(\.id))
         if let vacatedID { departingIDs.insert(vacatedID) }
@@ -1071,7 +1071,7 @@ struct Library: Codable, Equatable {
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {
-        folders.filter { $0.parentPath == parentPath }.sorted { $0.name < $1.name }
+        folders.filter { $0.parentPath == parentPath }.sortedStably { $0.name < $1.name }
     }
 
     func bookByHash(_ hash: String) -> Book? {

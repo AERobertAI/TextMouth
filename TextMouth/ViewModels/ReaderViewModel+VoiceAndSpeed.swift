@@ -230,7 +230,7 @@ enum SkippedSectionFilter {
 
         // Build ranges to exclude
         var excludeRanges: [Range<Int>] = []
-        let sortedHeadings = headings.sorted { $0.characterOffset < $1.characterOffset }
+        let sortedHeadings = headings.sortedStably { $0.characterOffset < $1.characterOffset }
         for (i, heading) in sortedHeadings.enumerated() {
             guard skippedIDs.contains(heading.id) else { continue }
             let start = min(max(0, heading.characterOffset), textLength)
@@ -265,7 +265,7 @@ enum SkippedSectionFilter {
         var cumulativeDelta = 0
         var points: [(targetPos: Int, cumulativeDelta: Int)] = []
 
-        for range in excludeRanges.sorted(by: { $0.lowerBound < $1.lowerBound }) {
+        for range in excludeRanges.sortedStably(by: { $0.lowerBound < $1.lowerBound }) {
             if pos < range.lowerBound {
                 let startIdx = text.index(atUTF16Offset: pos)
                 let endIdx = text.index(atUTF16Offset: min(range.lowerBound, text.utf16Length))

@@ -253,7 +253,7 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
             return false
         }
         guard quitReview == nil else { return true }
-        let open = editors.values.sorted {
+        let open = editors.values.sortedStably {
             $0.model.bookTitle.localizedStandardCompare($1.model.bookTitle) == .orderedAscending
         }
         if let busy = open.first(where: { $0.model.closeNeed == .working || $0.model.closeNeed == .recording }) {

@@ -1217,7 +1217,7 @@ enum ImportAudioConverter {
         where (try? file.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true {
             files.append(file)
         }
-        return files.sorted {
+        return files.sortedStably {
             AudioBookParser.relativeName(of: $0, in: keptFolder).localizedStandardCompare(
                 AudioBookParser.relativeName(of: $1, in: keptFolder)
             ) == .orderedAscending

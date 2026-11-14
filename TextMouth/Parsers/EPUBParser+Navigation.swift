@@ -222,7 +222,7 @@ extension EPUBParser {
 
         // Conversion failures are found after every reading failure, so put
         // the omissions back into reading order.
-        report.omissions.sort { $0.chapterNumber < $1.chapterNumber }
+        report.omissions.sortStably { $0.chapterNumber < $1.chapterNumber }
         guard !chapters.isEmpty else { throw EPUBParserError.noReadableChapters(report) }
         return (chapters, report)
     }
@@ -397,7 +397,7 @@ extension EPUBParser {
         // A guide reference to a navigation document read here would only find
         // the same TOC again, next to that document's page list and landmarks.
         var navigationDocumentPaths: Set<String> = []
-        let manifest = opfData.manifest.sorted { $0.key < $1.key }
+        let manifest = opfData.manifest.sortedStably { $0.key < $1.key }
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
@@ -443,7 +443,7 @@ extension EPUBParser {
         _ body: (_ path: String, _ document: XMLDocument) -> Result
     ) -> Result? {
         let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
-            ?? opfData.manifest.sorted { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
+            ?? opfData.manifest.sortedStably { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
         guard let xml = try? extractString(archive: archive, path: path) else { return nil }
@@ -466,7 +466,7 @@ extension EPUBParser {
         var targets: [PageTarget] = []
         // The entries read so far, which numbers an entry that has no label.
         var entryCount = 0
-        let manifest = opfData.manifest.sorted { $0.key < $1.key }
+        let manifest = opfData.manifest.sortedStably { $0.key < $1.key }
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),

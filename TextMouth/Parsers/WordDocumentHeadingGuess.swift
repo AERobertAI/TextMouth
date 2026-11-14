@@ -70,7 +70,7 @@ enum WordHeadingGuess {
             guard let size = census.bodySize, size > bodySize else { return nil }
             return size
         }
-        let sizes = Set(larger.compactMap { $0 }).sorted(by: >)
+        let sizes = Set(larger.compactMap { $0 }).sortedStably(by: >)
         return zip(candidates, larger).map { census, size in
             if let size {
                 // The largest size is level 1, the next level 2, and so on.

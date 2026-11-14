@@ -508,7 +508,7 @@ final class LibrarySearchModel: ObservableObject {
         for group in added {
             byID[group.id] = group
         }
-        return byID.values.sorted { $0.order < $1.order }
+        return byID.values.sortedStably { $0.order < $1.order }
     }
 
     // MARK: The Status

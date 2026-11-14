@@ -245,7 +245,7 @@ enum TextutilPageBreaks {
         // A break with no letter or digit after it ends a page that holds no
         // words (a blank last page): there is nothing to place it before.
         let candidates = plain.breaks.filter { !$0.context.after.isEmpty }
-        let wanted = Array(Set(candidates.map(\.lettersBefore))).sorted()
+        let wanted = Array(Set(candidates.map(\.lettersBefore))).sortedStably()
         let body: Element = document.body() ?? document
         let found = walk(body, wanted: wanted)
 
@@ -295,7 +295,7 @@ enum TextutilPageBreaks {
         let scalars = Array(node.getWholeText().unicodeScalars)
         // Offsets past the text cannot happen (the walk read this text), but
         // are dropped rather than trusted.
-        let offsets = pagesAtOffset.keys.filter { $0 < scalars.count }.sorted()
+        let offsets = pagesAtOffset.keys.filter { $0 < scalars.count }.sortedStably()
         guard let first = offsets.first else { return }
 
         // The nodes that follow the original, in order.

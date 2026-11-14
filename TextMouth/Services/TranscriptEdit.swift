@@ -147,7 +147,7 @@ enum TranscriptEditing {
         var rest = text as NSString
         // Cut the ranges out from the last, so each earlier range still lies
         // where it did.
-        for range in ranges.sorted(by: { $0.location > $1.location }) {
+        for range in ranges.sortedStably(by: { $0.location > $1.location }) {
             rest = rest.replacingCharacters(in: range, with: "") as NSString
         }
         return rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
