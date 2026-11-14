@@ -1025,6 +1025,22 @@ final class KeepOnThisMacTests: XCTestCase {
         )
     }
 
+    /// A first book that fails does not stop the books put off behind it:
+    /// the next one starts.
+    func testAFailedFirstBookStillLetsTheNextOneStart() async {
+        let books = (1...2).map { cloudTestBook("Failing first \($0)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.fake.scriptDownload(of: books[0].id, steps: [], failingWith: .offline)
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        await refresher.waitForRefreshes()
+        await waitForPlanning(of: fixture.commands)
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, books.map(\.id), "the second book never started")
+        XCTAssertEqual(fixture.states.state(of: books[1].id), .downloaded)
+    }
+
     /// A book left out for want of room is logged though it is the
     /// listener's own kept book, which VoiceOver is told nothing of, and once
     /// only while it stays short.
