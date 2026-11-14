@@ -890,4 +890,21 @@ enum BraillePreferences {
         // Unicode braille patterns, or an unknown id, reads as the default.
         return BrailleFileCode.importChoice(withID: bound)?.id ?? BrailleFileCode.defaultCode.id
     }
+
+    /// Whether an import of a BRF or BRL read with a contracted Unified
+    /// English Braille table may read a book clearly written in English
+    /// Braille, American Edition with that code's table instead
+    /// (`BrailleTableGuess`). On unless the listener turns it off in the
+    /// Braille tab; it changes only books not yet imported.
+    static let guessesTable = StoredPreference.flag("brailleGuessesTable", default: true)
+
+    /// Whether imports guess the table in place of the setting, bound by a
+    /// hosted test, as `tableForImports` is.
+    @TaskLocal static var guessesTableForImports: Bool? = nil
+
+    /// Whether this import guesses the table: the one a test bound, else the
+    /// setting in the runtime's preferences store.
+    static func importGuessesTable() -> Bool {
+        guessesTableForImports ?? guessesTable.read(from: TextMouthRuntime.current.preferences)
+    }
 }
