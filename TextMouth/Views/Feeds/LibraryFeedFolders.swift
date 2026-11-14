@@ -94,7 +94,7 @@ final class LibraryFeedFolders: ObservableObject {
     /// two with one title, the one whose ID sorts first, so the choice never
     /// depends on the order the records happen to be in.
     nonisolated static func feedIDsByFolderID(of feeds: [Feed]) -> [UUID: UUID] {
-        let byTitle = feeds.sorted {
+        let byTitle = feeds.sortedStably {
             let order = $0.title.localizedStandardCompare($1.title)
             return order == .orderedSame ? $0.id.uuidString < $1.id.uuidString : order == .orderedAscending
         }

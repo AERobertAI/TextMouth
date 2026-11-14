@@ -96,7 +96,7 @@ extension LibraryViewModel {
         let names = DatalessFiles.withoutDownloading {
             (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         }
-        return names.sorted().compactMap { name in
+        return names.sortedStably().compactMap { name in
             FeedPaths.feedID(ofRecordNamed: name).map { (.feedRecord($0), FeedPaths.recordFile(of: $0, in: folder)) }
         }
     }

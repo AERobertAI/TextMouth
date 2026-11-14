@@ -85,7 +85,7 @@ enum DuplicateFinderEngine {
                     books: matchingBooks
                 )
             }
-            .sorted { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
+            .sortedStably { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
     }
 
     private static func keyComponent(

@@ -270,7 +270,7 @@ enum LibraryFeedsSectionRows {
         // Each key read once; the feeds' own order breaks ties.
         let keys = rows.map { articles.sortKey(of: $0.title, language: nil) }
         return rows.indices
-            .sorted { first, second in
+            .sortedStably { first, second in
                 let order = keys[first].localizedStandardCompare(keys[second])
                 return order == .orderedSame ? first < second : order == .orderedAscending
             }

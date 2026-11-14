@@ -113,7 +113,7 @@ enum PhoneLogExport {
     static func shares(of limit: Int, among sizes: [Int]) -> [Int] {
         var shares = Array(repeating: 0, count: sizes.count)
         var left = limit
-        let smallestFirst = sizes.indices.sorted { sizes[$0] < sizes[$1] }
+        let smallestFirst = sizes.indices.sortedStably { sizes[$0] < sizes[$1] }
         for (position, index) in smallestFirst.enumerated() {
             let equalShare = left / (smallestFirst.count - position)
             shares[index] = min(sizes[index], equalShare)

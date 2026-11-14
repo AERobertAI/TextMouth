@@ -81,7 +81,7 @@ final class TranscriptionLanguageChoices: ObservableObject {
                 )
             )
         }
-        var choices = listed.sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+        var choices = listed.sortedStably { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
         let currentLocale = Locale(identifier: current)
         if !supported.contains(where: { TranscriptionAvailability.isSameLocale($0, currentLocale) }) {
             choices.insert(TranscriptionLanguageChoice(

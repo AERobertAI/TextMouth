@@ -1911,7 +1911,7 @@ extension LibraryViewModel {
     /// (FR02). Storage settings ask before offering a move.
     var openBooksRefusal: DataDirectoryMoveRefusal? {
         guard !openBookIDs.isEmpty else { return nil }
-        let titles = library.books.filter { openBookIDs.contains($0.id) }.map(\.title).sorted()
+        let titles = library.books.filter { openBookIDs.contains($0.id) }.map(\.title).sortedStably()
         return .booksOpen(titles)
     }
 

@@ -125,7 +125,7 @@ struct PhoneBookmarksModel {
     /// by place within it, two at one place by their numbers, as the reader
     /// orders Next and Previous Bookmark.
     static func bookOrder(of bookmarks: [Bookmark]) -> [Bookmark] {
-        bookmarks.sorted { first, second in
+        bookmarks.sortedStably { first, second in
             (first.chapterIndex, first.characterOffset, first.number)
                 < (second.chapterIndex, second.characterOffset, second.number)
         }

@@ -537,7 +537,7 @@ extension BookmarkPanelView {
     /// The bookmarks in the order the panel lists them: by number, which is
     /// the order they were added in.
     nonisolated static func listOrder(of bookmarks: [Bookmark]) -> [Bookmark] {
-        bookmarks.sorted { $0.number < $1.number }
+        bookmarks.sortedStably { $0.number < $1.number }
     }
 
     /// Where keyboard focus and the VoiceOver cursor go after `operation`.
