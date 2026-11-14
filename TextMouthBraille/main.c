@@ -1459,6 +1459,10 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  *   two or more of these cells, with nothing else, is spaced into words.
  * - "ing" before a hyphen or dash, ⠬⠤: the table reads the two cells as
  *   "±", so "moving-in" came back "mov±in". The "ing" is spelled out.
+ * - EBAE's period ⠲ between single letters, ⠏⠲⠃⠲⠥⠲⠓⠲ "p.b.u.h.": the table
+ *   reads it as "dd" inside a word. Each letter with its period becomes a
+ *   word of its own (a letter sign first, so that ⠏ is "p" and not "people"),
+ *   so the print reads "p. b. u. h.".
  */
 
 /* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
@@ -1530,6 +1534,49 @@ split_word_signs(const widechar *cells, int start, int lead, int end, cell_list 
 	return 1;
 }
 
+/*
+ * Writes `cells[lead..end)` as initials, when the whole of it is single
+ * letters each with its period, at least two periods, the last letter's
+ * period perhaps left out, ⠏⠲⠃⠲⠥⠲⠓⠲ for "p.b.u.h.", a capital letter with
+ * its capital sign (`fix_ebae_cells`): each as a word of a letter sign, the
+ * letter, and its period. A word of one letter, then ⠲, then more than one
+ * letter ("address", ⠁⠲⠗⠑⠎⠎) is no initials. Returns 1 when it wrote the
+ * word, 0 when it did not.
+ */
+static int
+split_initials(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int groups = 0;
+	int periods = 0;
+	int i = lead;
+	int dotted = 1;
+	while (dotted) {
+		int at = i;
+		if (at < end && cells[at] == CELL_6) at++;
+		if (at >= end || !is_letter_cell(cells[at])) break;
+		at++;
+		dotted = at < end && cells[at] == CELL_256;
+		if (dotted) {
+			at++;
+			periods++;
+		}
+		groups++;
+		i = at;
+	}
+	/* At least two periods: "Addy" (⠠⠁⠲⠽) is one letter, "dd", and one letter. */
+	if (periods < 2 || !only_trailing_marks(cells, i, end)) return 0;
+	put_cells(out, cells, start, lead);
+	for (int k = lead, written = 0; written < groups; written++) {
+		int at = k;
+		put_cell(out, CELL_56);
+		if (cells[at] == CELL_6) put_cell(out, cells[at++]);
+		put_cell(out, cells[at++]);
+		if (at < end && cells[at] == CELL_256) put_cell(out, cells[at++]);
+		if (written + 1 < groups) put_cell(out, CELL_BLANK);
+		k = at;
+	}
+	put_cells(out, cells, i, end);
+	return 1;
+}
 
 
 
@@ -1562,6 +1609,7 @@ fix_ebae_word(const widechar *cells, int start, int end, int n, cell_list *out) 
 	int lead = start;
 	while (lead < end && is_leading_mark(cells[lead])) lead++;
 	if (split_word_signs(cells, start, lead, end, out)) return;
+	if (split_initials(cells, start, lead, end, out)) return;
 	spell_inside_word(cells, start, lead, end, out);
 }
 

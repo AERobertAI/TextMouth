@@ -100,6 +100,18 @@ final class BrailleEbaeFixesTests: XCTestCase {
         try assertUnchanged([("MOV+", "moving"), ("MOV+ IN", "moving in")])
     }
 
+    // MARK: - Initials
+
+    /// A period (⠲) between single letters read "dd"; initials read with
+    /// their periods, each letter a word of its own so that "p" is no "people".
+    func testPeriodsBetweenInitialsAreNotDD() throws {
+        try assertFixed([("P4B4U4H4", "p. b. u. h."), (",L4,A4", "L. A."), ("E4G4", "e. g.")])
+    }
+
+    /// Words that hold "dd" between letters are not initials.
+    func testDDInsideWordsStays() throws {
+        try assertUnchanged([("A4RESS", "address"), (",A4Y", "Addy"), ("LA4ER", "ladder")])
+    }
 
 
 
