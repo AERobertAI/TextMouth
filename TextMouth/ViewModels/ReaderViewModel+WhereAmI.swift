@@ -767,7 +767,7 @@ extension ReaderViewModel {
     /// Estimated character count for a heading section (from heading start to next heading or end of book)
     func estimatedCharsInHeading(_ heading: Heading) -> Int {
         guard let content = content else { return 0 }
-        let allHeadings = content.allHeadings
+        let allHeadings = headings
         let headingGlobalStart = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
         var nextOffset = content.totalCharacterCount
         if let idx = allHeadings.firstIndex(where: { $0.id == heading.id }),

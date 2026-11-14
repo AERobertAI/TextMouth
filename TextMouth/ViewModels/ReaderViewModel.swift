@@ -1039,7 +1039,7 @@ final class ReaderViewModel: ObservableObject {
     /// Time estimate for a specific heading (time from heading start to next heading or end of doc)
     func timeEstimateForHeading(_ heading: Heading) -> TimeInterval {
         guard let content = content else { return 0 }
-        let allHeadings = content.allHeadings
+        let allHeadings = headings
         let headingGlobalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
 
         // Find the next heading's global offset
