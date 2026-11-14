@@ -855,7 +855,10 @@ final class ContentAnalysisMergeTests: XCTestCase {
             brailleFileCode: "code-\(seed)",
             textEncoding: "encoding-\(seed)",
             // Two values only, so books of two seeds differ when one is odd and one even.
-            textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen
+            textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen,
+            // One case only (`.guessed`), so an even seed leaves it unset: books
+            // of an odd and an even seed still differ in it.
+            brailleTableOrigin: seed.isMultiple(of: 2) ? nil : .guessed
         )
     }
 
