@@ -1474,6 +1474,7 @@
 		99C09F2E995A542FCDE20419 /* ReaderViewModel+CloudDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF652E07625EAAA30C3E548 /* ReaderViewModel+CloudDownload.swift */; };
 		99C3C2BED34526E93120F4EB /* CloudMaintenanceFingerprintTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3440545957C1EFC3B20B3EB /* CloudMaintenanceFingerprintTests.swift */; };
 		99C74BAE3C7C7C4F3B123BE5 /* LibraryViewModel+Cloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3015B5E165D322F71010DBDD /* LibraryViewModel+Cloud.swift */; };
+		99D8E4748A90BC0184026C44 /* SleepTimerStatusLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2887DC0688488172DB93EFAA /* SleepTimerStatusLabel.swift */; };
 		99EA5AB0D40860E69E9F2477 /* TranscriptAccuracyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C26C5189373481B856CC3CE /* TranscriptAccuracyTests.swift */; };
 		9A223417628B795F5493E677 /* ReadingListOptionsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3627EF55CC526CB11F60CA8A /* ReadingListOptionsBar.swift */; };
 		9A24ECCB38626342665668BA /* LibraryViewGoToTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 835A6980384D8B0E2B787442 /* LibraryViewGoToTests.swift */; };
@@ -2316,6 +2317,7 @@
 		F176483EB57F5C77AAEA0A8F /* MOBIMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EE56BCD187EAA5A8EA6E476 /* MOBIMarkup.swift */; };
 		F1C894C415C9A2A118AB5D9D /* RTFTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FBD47721DEA556E62F89FC4 /* RTFTokenizer.swift */; };
 		F20BE8C671AC77F981848E1B /* KFXContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE97D98056F834C850520386 /* KFXContainer.swift */; };
+		F21493A5119FE90234603292 /* SleepTimerStatusLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2887DC0688488172DB93EFAA /* SleepTimerStatusLabel.swift */; };
 		F238296DDA83F9DC77EE2243 /* LibraryFeedsWindowSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 951B0827E5811A39F2B21C53 /* LibraryFeedsWindowSupport.swift */; };
 		F2702396D27AA83E76B85EBD /* OffsetMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7609C5104C48C023BF2F4EDF /* OffsetMap.swift */; };
 		F273D32AA6BE88139B40112D /* PhoneSettingsWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D26B3C85F14EAD1CFE901933 /* PhoneSettingsWording.swift */; };
@@ -2879,6 +2881,7 @@
 		27B0A6A99A05BE2B716407A0 /* LibraryBookSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookSorter.swift; sourceTree = "<group>"; };
 		281E20A89D2813228F72279E /* utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utils.c; sourceTree = "<group>"; };
 		2853424E04196A2DCB1FD89B /* UseThisLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UseThisLibraryTests.swift; sourceTree = "<group>"; };
+		2887DC0688488172DB93EFAA /* SleepTimerStatusLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerStatusLabel.swift; sourceTree = "<group>"; };
 		28988A40AB57D3DA4D308FEC /* OutsideTranscriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutsideTranscriptTests.swift; sourceTree = "<group>"; };
 		28A3F6623A621E2BD84065AF /* TimedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedText.swift; sourceTree = "<group>"; };
 		28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsView.swift; sourceTree = "<group>"; };
@@ -4631,6 +4634,7 @@
 				E1BF3D87AB3ED4437BF126DF /* ReaderJumpPanels.swift */,
 				7E9E6333DD9D197655A5C717 /* ReaderSnapshot.swift */,
 				227031800A34F0E8E5166D55 /* ReaderView.swift */,
+				2887DC0688488172DB93EFAA /* SleepTimerStatusLabel.swift */,
 				68958730DF17A7371B3258DA /* SleepTimerView.swift */,
 				3D940238BB91BC631475B5B4 /* SpeechRefusalReportSheet.swift */,
 			);
@@ -8392,6 +8396,7 @@
 				0EF9C00780CA29E8BBEFA53B /* SleepTimerHandOverWording.swift in Sources */,
 				1824E69B93FDA40DFCF3C9C1 /* SleepTimerRegistry.swift in Sources */,
 				E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */,
+				99D8E4748A90BC0184026C44 /* SleepTimerStatusLabel.swift in Sources */,
 				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
 				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
 				532B42D410BD9A0A3AA2E1DF /* SoundEffectsSettingsView.swift in Sources */,
@@ -9247,6 +9252,7 @@
 				DC1DB22B2514B7284B464B25 /* SleepTimerHandOverWording.swift in Sources */,
 				EBA53479A40EECF57F764369 /* SleepTimerRegistry.swift in Sources */,
 				1E7B33BA116954D713AE2C82 /* SleepTimerService.swift in Sources */,
+				F21493A5119FE90234603292 /* SleepTimerStatusLabel.swift in Sources */,
 				44F05FEEEB5591CAC6D012A8 /* SleepTimerView.swift in Sources */,
 				661191DE2028529C2C65B4E1 /* SoundEffectService.swift in Sources */,
 				51C5D04F2B4799F2C115579E /* SoundEffectsSettingsView.swift in Sources */,

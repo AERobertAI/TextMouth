@@ -23,6 +23,7 @@ struct ReaderView: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderView")
         readerContent
             .toolbar { toolbarItems }
             .onAppear {
@@ -317,6 +318,7 @@ struct ReaderLocationHeader: View {
     @ObservedObject var viewModel: ReaderViewModel
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderLocationHeader")
         VStack(alignment: .leading, spacing: 4) {
             if viewModel.content != nil {
                 Text(viewModel.book.title)
@@ -377,6 +379,7 @@ struct ReaderTextArea: View {
     static let accessibilityLabel = "Book content"
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderTextArea")
         ScrollView {
             if let content = viewModel.content,
                viewModel.displayChapterIndex < content.chapters.count {
@@ -1239,6 +1242,7 @@ struct BookInfoBar: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("BookInfoBar")
         VStack(spacing: 0) {
             statusRow
             if expandedPanel == .percent {
@@ -1355,9 +1359,11 @@ struct BookInfoBar: View {
 
             // Sleep timer status — non-interactive (managed via the
             // sleep timer sheet; clicking it would duplicate that flow).
-            if viewModel.sleepTimerService.isActive {
+            // The label observes the timer itself, so it moves each second
+            // whether or not the reader publishes (`SleepTimerStatusLabel`).
+            SleepTimerStatusLabel(timer: viewModel.sleepTimerService) { timer in
                 Label {
-                    Text(viewModel.sleepTimerService.formattedRemaining)
+                    Text(timer.formattedRemaining)
                 } icon: {
                     Image(systemName: "moon.fill")
                         .foregroundColor(.orange)
@@ -1368,7 +1374,7 @@ struct BookInfoBar: View {
                 // "Sleep timer: 4:59 remaining", or where a timer set for
                 // a place in the book stops playback. The label holds the
                 // time, so there is no value to read it again (TODO A10).
-                .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
+                .accessibilityLabel(timer.spokenLabel)
             }
         }
         .padding(.horizontal)
