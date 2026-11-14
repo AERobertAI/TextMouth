@@ -333,6 +333,20 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A book that recorded no version is never refused for this.
 - Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](library-window.md)).
 
+#### Guessing the braille code when a book is added
+
+- Many BRF files are old transcriptions in English Braille, American Edition, the code before Unified English Braille. Read as Unified English Braille, such a book reads wrongly with no error, as "to the sea" reading "!the sea".
+- When you add a BRF or BRL file and the Braille tab's code is contracted Unified English Braille, TextMouth checks the braille for the signs of English Braille, American Edition. If the book clearly shows them, it is read with TextMouth's own contracted table for that code, English Braille, American Edition, contracted (Grade 2), in place of the Braille tab's code.
+  - TextMouth counts only signs that Unified English Braille dropped: "to" or "by" joined to the next word, and "ation" or "ally" inside a word.
+  - Clearly means at least 40 words with those signs, at least one in 50 of all the book's words, and, of those, at least 5 words joined with "to" and at least 5 joined with "by".
+  - When TextMouth is unsure, nothing changes: the book is read with the Braille tab's code, and Book Information may still suggest English Braille, American Edition (see [The Library window](library-window.md)).
+- The switch "Guess the braille code of new books" in the Braille tab turns the guess off (see [Settings](settings.md)). It is on by default.
+- Only a book being added is guessed. A book already in the library keeps its code, and the launch's reading again of braille books never guesses.
+- A PEF file is never guessed, and neither is a book read with a code other than contracted Unified English Braille.
+- A guessed book's title and author, read from its title page, are read with the guessed code too.
+- Book Info, Speak Info, and Book Information say the code was guessed: "English Braille, American Edition, contracted (Grade 2), guessed". Book Information can keep the guess or correct it (see [The Library window](library-window.md)).
+- A guessed book that you remove with Remove from Library Only and add back keeps its code and the word "guessed", without a new guess. A book you chose a code for, in Book Information, is never said to be guessed.
+
 #### Braille file characters
 
 - A BRF or BRL file is read in one of three codes, which the book records:
