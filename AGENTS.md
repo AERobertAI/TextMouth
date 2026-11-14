@@ -91,6 +91,27 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 14, 2026
+
+- Main is past version 0.4.9 (tagged `v0.4.9` at 8918f4ee, and `v0.4.8` at 82e68c0d, both unpushed; the user still runs 0.4.2 and has installed neither). Since 0.4.7 it holds:
+  - the audit's runtime fixes C3 (the reader window redraws only when what it shows changes, `ReaderShownState`, the sleep countdown in `SleepTimerStatusLabel`), C4, C6, C7, C8, C9, C16, and C17;
+  - the BRF fixes from the user's Life of Pi: running heads left out (keyed without their numbers), print page change lines, chapter rows as headings, title and author from the braille title page, the English Braille suggestion in Book Information (announced once), braille page reader 1.1.1;
+  - the EBAE decoding fixes in the braille helper (`fix_ebae_cells`);
+  - the Reading List's cloud follow-ups (unknown sizes one at a time, books left out logged);
+  - and, after 0.4.9, the sort helper (C10, 378 KB smaller).
+- Every merge went review, then a fix round, then often a check, then a Mac full suite on `integrate/1113` (read `run_suite.py`'s exit status, not the Executed line), then a fast-forward. The records are in the TODO, the night's log in `build/orchestrator/nov13/agents.md`, and the state for resuming in `build/orchestrator/nov13/resume-after-reset.md`.
+- Held for the user's word, not merged:
+  - `feature/braille-code-guess` (c03cb898): guess the table of a new BRF at import when it is clearly English Braille, American Edition, marked "guessed", with a switch in the Braille tab. Reviewed; fix round done; train 672/9/0; no Mac suite yet.
+  - `scratch/bookbox`: `Book` held in one copy-on-write box measured at 0.92 MB smaller (audit C13); about two hours to finish.
+- Not done: the audit's C11, C12, C14, C15, and C19 (each needs the user's yes); the 13 `,/4` places of Life of Pi against its EPUB (the permission classifier refused the checker's reads); docs for the sort helper; pruning `perf/sort-helper-edit`, `perf/sort-helper-scratch`, and the nested `sortsize-edit` worktree.
+- Lessons of that night, which hold for any campaign:
+  - A braille rule an agent states is a claim to check: a reviewer said UEB writes 6-N and 6-Y, and the user, a braille reader, knew UEB had dropped ation and ally (BANA's UEB FAQ). Check rules against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
+  - Every `make check` an agent runs needs `SIGN_APP=true`: without it `codesign` waits on the login keychain, and two agents' runs held the heavy lock for an hour each.
+  - The Mac suite's exit status is the gate. "1 failure (0 unexpected)" is a real failure: main was fast-forwarded once on the Executed line and taken back within a minute.
+  - A branch that adds a test file must commit the regenerated project: trains regenerate it, so they never notice when it's missing.
+  - Write times from `date`. The orchestrator's log ran up to 5.5 hours ahead of the clock and told the user the reset was near when it was five hours away.
+  - When the disk falls under 8 GB, clear finished worktrees and scratch at once (literal paths); it reached 2.7 GB free during measurements.
+
 ## Where things stood on November 13, 2026
 
 - Main is version 0.4.7, tagged `v0.4.7` (unpushed), with everything the user asked for at midnight that day: Search Library (Option-Command-F; a plain search under a second on their 737-book library, from a search store in Caches prepared in the background after launch), Leading articles (Settings > Library > Titles, three choices, MARC 21's articles in eleven languages), each reader window's own sleep timer (the cause of the "stuck" timer: a second reader opened beside the first showed the app's one shared timer), the Reading List's Remove books when finished and Keep these books on this Mac, batches A, B, C, and F of the TODO's triage (`build/orchestrator/nov13/triage-report.md`), the iPhone unit tests on GitHub, and a Release app compiled for size: 19.5 MB against 23.55 MB, with `make check` failing above 20 MB and a new `make release-goldens`. Every DAISY book is read again once at the first launch. The user still runs 0.4.2. Records in the TODO; the running log, briefs, and reports in `build/orchestrator/nov13/` and `Scripts/agents/briefs/2026-11-13/`; questions in `humanQuestions/2026-11-13.md`.
