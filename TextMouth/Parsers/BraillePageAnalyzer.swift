@@ -625,25 +625,6 @@ enum BraillePageAnalyzer {
             return key
         }
 
-        /// The first row of the page `rows` when it may hold a known running
-        /// head's text with no number word at either end (a book that sets the
-        /// page number somewhere else on such a page, or leaves it out): its
-        /// text between the blanks, as a `PageHead` with no left word. Nil
-        /// when the page has no other row with text, so that a page holding
-        /// nothing else is never emptied by it. The caller still checks the
-        /// text against the book's running heads.
-        func plainHead(ofRows rows: [Span]) -> PageHead? {
-            guard let index = rows.firstIndex(where: { !$0.isEmpty }),
-                  changeLineNumber(of: rows[index]) == nil,
-                  rows[(index + 1)...].contains(where: { !$0.isEmpty }) else { return nil }
-            var start = rows[index].range.lowerBound
-            var end = rows[index].range.upperBound
-            while start < end, cells[start] == blank { start += 1 }
-            while end > start, cells[end - 1] == blank { end -= 1 }
-            guard start < end else { return nil }
-            return PageHead(rowIndex: index, left: nil, text: Span(start..<end))
-        }
-
         /// The texts of the running heads of the book: the head texts
         /// (`pageHead(ofRows:width:)`) that repeat on at least
         /// `minHeadRepeats` pages. A book's running heads are the same line
@@ -705,9 +686,7 @@ enum BraillePageAnalyzer {
             // repeats on several pages is no part of the book's text. A
             // number word at its left is the braille page number when the
             // page's last row held none (a book may put it at the top left).
-            // A first row that holds a known head's text with no number word
-            // is one too (`plainHead`).
-            if let head = pageHead(ofRows: rawRows, width: width) ?? plainHead(ofRows: rawRows),
+            if let head = pageHead(ofRows: rawRows, width: width),
                !(firstIndex == lastIndex && lastIndex != nil && numbers.braillePageNumber != nil),
                runningHeads.contains(headKey(of: head.text)) {
                 if numbers.braillePageNumber == nil, let left = head.left {
