@@ -288,7 +288,7 @@ extension ShortcutEdits {
         // By the losers' places in Settings, and, for one loser, in the
         // order it held its keys.
         let rank = ShortcutAction.settingsRank
-        let ordered = sharedKeys.enumerated().sorted { first, second in
+        let ordered = sharedKeys.enumerated().sortedStably { first, second in
             let ranks = (rank[first.element.loser, default: 0], rank[second.element.loser, default: 0])
             return ranks.0 != ranks.1 ? ranks.0 < ranks.1 : first.offset < second.offset
         }
@@ -576,7 +576,7 @@ extension ShortcutEdits {
         var skipped: [SkippedEntry] = []
         // In the order of their names, so the entries left out are reported
         // in the same order every time.
-        for (name, entry) in entries.sorted(by: { $0.key < $1.key }) {
+        for (name, entry) in entries.sortedStably(by: { $0.key < $1.key }) {
             // A record written under an action's former name still names it.
             guard let action = ShortcutAction.exactlyNamed(name) else {
                 skipped.append(SkippedEntry(name: name, reason: "names nothing TextMouth knows; leaving it out"))

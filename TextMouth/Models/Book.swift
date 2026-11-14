@@ -128,7 +128,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .pdf: return ["pdf"]
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
-                + ImportAudioConverter.coreAudioExtensions.sorted()
+                + ImportAudioConverter.coreAudioExtensions.sortedStably()
         // .prc is a Palm database, which a Kindle book of the first
         // generation was named, .azw is an Amazon Kindle book, and .azw3 is
         // one in the newer KF8 format (FMT48); all are read by the book's own
