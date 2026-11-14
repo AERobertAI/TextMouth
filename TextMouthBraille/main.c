@@ -1095,10 +1095,20 @@ follows_number(const widechar *cells, int at) {
  * 13, 2026); a micro unit that EBAE writes ⠨⠍ for, with no number before it,
  * reads as emphasis, as it cannot be told from it.
  */
+static int spells(const widechar *cells, int from, int end, const char *letters);
+
 static int
 is_sign_before_m_word(const widechar *cells, int sign, int next, int end) {
 	int start = sign;
+	int last = end;
 	if (cells[next] != CELL_134 || next + 1 >= end || is_trailing_mark(cells[next + 1])) return 0;
+	/* liblouis writes "µ" before a unit's letter with the letter sign ⠰ (µm
+	   as ⠨⠍⠰⠍, µg, µs), before a capital letter with the capital sign (µL,
+	   µA, µHz, µV), before "m" with ⠐ ("µmother"), and before "mol": those
+	   are micro, never an emphasized word. */
+	if (cells[next + 1] == CELL_56 || cells[next + 1] == CELL_6 || cells[next + 1] == CELL_5) return 0;
+	while (last > next + 1 && is_trailing_mark(cells[last - 1])) last--;
+	if (spells(cells, next + 1, last, "mol")) return 0;
 	/* The sign begins the word, after the marks that open it. */
 	while (start > 0 && cells[start - 1] != CELL_BLANK) start--;
 	for (int k = start; k < sign; k++)
@@ -1163,7 +1173,7 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 		/* ⠨⠍ beginning a word of letters is a sign, not liblouis's "µ":
 		   the sign is read, and the safety net reads it left out too
 		   (`strip_ebae_word`, `read_ebae`). */
-		if (is_sign_before_m_word(cells, i, i + found.length, end)) {
+		if (emphasis->contracted && is_sign_before_m_word(cells, i, i + found.length, end)) {
 			found.mu = 1;
 		} else {
 			/* A word sign that cannot be told from a print sign, while its

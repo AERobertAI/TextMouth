@@ -143,8 +143,28 @@ final class BrailleEbaeFixesTests: XCTestCase {
         XCTAssertEqual(try read(".MAMA", contracted, liblouisAlone: true).text, "µama")
         XCTAssertEqual(try read(".ME", contracted).text, "me")
         XCTAssertEqual(try read("..,ONE .MAMA TWO THREE .MAMA1", contracted).text, "One mama two three mama,")
-        for sample in [(".M", "µ"), ("#A .MM", "1 µm"), ("#E .MG", "5 µg"), ("KM_/.MS", "km/µs")] {
+        // "a µzoo" is written ⠨⠍⠵⠕⠕, and is an emphasized "mzoo" for contracted EBAE.
+        XCTAssertEqual(try read("A .MZOO", contracted).text, "a mzoo")
+        XCTAssertTrue(try read("A .MZOO", contracted).hasEmphasis)
+    }
+
+    /// Micro as liblouis writes it (cells from its forward translation of
+    /// the print on the right, on this table) stays micro: before a unit's
+    /// letter sign ⠰, before a capital letter, before "mol", and after a
+    /// number or a slash.
+    func testMicroAsLiblouisWritesItStaysMicro() throws {
+        for sample in [
+            ("7.m;m7", "(µm)"), (".m;g_/m,l", "µg/mL"), ("a few .m;m", "a few µm"), (".m;,l", "µL"),
+            (".m,hz", "µHz"), (".m,a", "µA"), (".m;,v", "µV"), (".mmol", "µmol"), ("#e .mmol", "5 µmol"),
+            ("km_/.m;s", "km/µs"), ("#e .m;g ( salt", "5 µg of salt"), (".M", "µ"),
+        ] {
             XCTAssertEqual(try read(sample.0, contracted).text, sample.1, sample.0)
         }
+    }
+
+    /// Uncontracted EBAE is read as liblouis reads it: ⠨⠍ before a word is micro.
+    func testUncontractedEBAEKeepsMicroBeforeAWord() throws {
+        XCTAssertEqual(try read(";a .mzoo", uncontracted).text, "a µzoo")
+        XCTAssertEqual(try read("#e .m;g of salt", uncontracted).text, "5 µg of salt")
     }
 }
