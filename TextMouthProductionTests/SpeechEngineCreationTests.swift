@@ -193,6 +193,8 @@ final class SpeechEngineCreationTests: XCTestCase {
         XCTAssertTrue(speech.audioEngine.hasRenderedAudio)
         XCTAssertEqual(speech.audioEngine.renderedSignature, signature)
         XCTAssertTrue(speech.isSpeaking, "speech starts directly, as ever")
+        // A render request would have set this, and cleared the audio.
+        XCTAssertFalse(speech.audioEngine.isRendering, "no render was requested")
     }
 
     /// Other text still discards the held audio, as a seek or resume must
@@ -250,8 +252,10 @@ final class SpeechEngineCreationTests: XCTestCase {
         try withReader(format: .txt, timingInitializer: { readerInit = $0 }) { reader in
             XCTAssertFalse(reader.speechService.hasAudioEngine)
         }
-        let firstEngine = benchmarkTiming { AudioEngineService() }
-        let secondEngine = benchmarkTiming { AudioEngineService() }
+        // An engine's cost is its graph, built by `prepareGraph()` as speech
+        // makes its engine; the bare initializer builds none (audit C8).
+        let firstEngine = benchmarkTiming { let engine = AudioEngineService(); engine.prepareGraph(); return engine }
+        let secondEngine = benchmarkTiming { let engine = AudioEngineService(); engine.prepareGraph(); return engine }
         withExtendedLifetime((firstEngine.value, secondEngine.value)) {}
 
         reportBenchmark("PERF08 speech engine", [
