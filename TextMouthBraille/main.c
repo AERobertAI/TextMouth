@@ -1674,7 +1674,10 @@ spells(const widechar *cells, int from, int end, const char *letters) {
 static int
 is_before_compound(const widechar *cells, int from, int end) {
 	while (end > from && is_trailing_mark(cells[end - 1])) end--;
+	/* liblouis writes "beforetime" as ⠆⠋⠐⠞: "time" is its ⠐⠞ contraction. */
 	return (end - from == 2 && cells[from] == letter_cell('h') && cells[from + 1] == CELL_AND) ||
+			(end - from >= 2 && end - from <= 3 && cells[from] == CELL_5 && cells[from + 1] == letter_cell('t') &&
+					(end - from == 2 || cells[from + 2] == letter_cell('s'))) ||
 			spells(cells, from, end, "time") || spells(cells, from, end, "times");
 }
 

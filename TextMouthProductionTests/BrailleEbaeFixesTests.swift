@@ -142,7 +142,9 @@ final class BrailleEbaeFixesTests: XCTestCase {
     /// of "before".
     func testBeforeInsideAWordIsBef() throws {
         try assertFixed([("2FU4LED", "befuddled"), ("2FELL", "befell"), (",2FELL", "Befell")])
-        try assertUnchanged([("2F", "before"), ("2F1", "before,"), ("2FH&", "beforehand"), ("2FTIME", "beforetime")])
+        try assertUnchanged([("2F", "before"), ("2F1", "before,"), ("2FH&", "beforehand"), ("2FTIME", "beforetime"),
+                           // The cells liblouis wrote for "beforehand", "beforetime", and "beforetimes".
+                           ("2fh&", "beforehand"), ("2f\"t", "beforetime"), ("2f\"ts", "beforetimes")])
     }
 
     // MARK: - Emphasized words that begin with m
