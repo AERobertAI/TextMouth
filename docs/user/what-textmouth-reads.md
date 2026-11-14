@@ -364,7 +364,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
 - Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
 - Page numbers are left out of the text, so they are never spoken.
-- A running head is left out of the text too. A running head is the line at the top of each page that repeats the book's title or the chapter's, with a page number at one end of it. TextMouth takes it for one only when its words repeat on three or more pages, so a line of the book's own text is never left out for looking like one.
+- A running head is left out of the text too. A running head is the line at the top of each page that repeats the book's title or the chapter's, with a page number at one end of it. TextMouth takes it for one only when its words repeat on three or more pages, so a line of the book's own text is never left out for looking like one. A head that changes from page to page only by a part or volume number, such as "life of pi. part1" and "life of pi. part2", counts as one head, and a line with no page number at either end is never taken for one.
 - A page number at the left of the top line becomes the braille page number when the page's last line has none.
 - A line that marks where a print page changes, a row of dashes with a number after it, is left out of the text, whether the number is Arabic or Roman, as in ";IX" for the print page ix.
 - A chapter heading that stands on the line above its text is a heading. When one to three centered lines run straight into a line indented to cell 3, with no blank line between, they are a level-1 heading, as "Chapter 1" on the line above a paragraph. A row of dashes or other rule marks that sets the heading off is never part of its words.
@@ -418,7 +418,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   - What the page names, with no title or no author, leaves that one as it was: the file's name or Unknown.
   - The title and author are read with the book's own braille code, and they are never longer than a title could be: anything over 200 characters is a paragraph, not a name.
   - A title or author you changed yourself is never replaced. For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
-- Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines.
+- Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines. Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
 
 #### Braille file limits
 
