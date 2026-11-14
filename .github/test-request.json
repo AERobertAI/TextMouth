@@ -1,0 +1,24 @@
+{
+  "areas": [
+    "analysis"
+  ],
+  "classes": [
+    "OnDiskContractTests",
+    "UncheckedConcurrencyPolicyTests",
+    "PerformanceBaselineTests",
+    "BookBoxTests",
+    "ContentAnalysisMergeTests",
+    "LibraryModelBenchmarkTests",
+    "NewerLibraryRowsTests"
+  ],
+  "full": false,
+  "shards": 1,
+  "train": "1114-1227",
+  "requests": [
+    {
+      "agent": "bookbox2",
+      "branch": "perf/book-box",
+      "head": "f4645ee1ff398185d317d5056c5a738c1c1e034c"
+    }
+  ]
+}
