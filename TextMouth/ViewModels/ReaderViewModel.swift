@@ -2454,6 +2454,9 @@ final class ReaderViewModel: ObservableObject {
         pendingPlaybackUIRefresh = nil
         visibleTextWindowState = nil
         displayVisibleTextWindow = ""
+        // The last announced state holds a copy of the text window and the
+        // headings' positions; the closed reader keeps none of it.
+        announcedShownState = nil
         audioChapterFiles = []
         audioSegments = []
         chapterPauses = .none
