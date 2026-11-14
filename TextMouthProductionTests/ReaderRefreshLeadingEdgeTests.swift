@@ -50,7 +50,9 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
         reader.currentChapterIndex = 1
         reader.currentCharacterOffset = 40
         shown.append("\(reader.displayChapterIndex):\(reader.displayCharacterOffset)")
-        spinMainRunLoop(for: 0.01)
+        // The refresh is on the main queue's next turn; a loaded runner may
+        // take longer than a few milliseconds to reach it.
+        _ = eventually(within: 2) { reader.displayCharacterOffset == 40 }
         shown.append("\(reader.displayChapterIndex):\(reader.displayCharacterOffset)")
 
         XCTAssertEqual(shown, ["0:0", "1:40"], "the refresh did not wait for the end of the turn, or did not come")
