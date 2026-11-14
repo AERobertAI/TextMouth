@@ -165,7 +165,7 @@ enum LibrarySearchSpecials {
                 }
             }
         }
-        return pieces.sorted()
+        return pieces.sortedStably()
     }
 
     /// The printable ASCII characters, each a query.

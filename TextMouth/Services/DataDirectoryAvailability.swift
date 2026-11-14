@@ -656,7 +656,7 @@ struct DataDirectoryCheck {
     private static func feedIndexFiles(in folder: URL) -> [URL] {
         let feeds = FeedPaths.recordsFolder(in: folder)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: feeds.path)) ?? []
-        return [feeds] + names.sorted().flatMap { name -> [URL] in
+        return [feeds] + names.sortedStably().flatMap { name -> [URL] in
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
             return [FeedPaths.itemsFolder(of: feedID, in: folder), FeedPaths.indexFile(of: feedID, in: folder)]
         }

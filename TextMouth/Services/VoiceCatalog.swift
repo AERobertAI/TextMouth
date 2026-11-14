@@ -207,7 +207,7 @@ final class VoiceCatalog: ObservableObject {
         listing = nil
         listingCount += 1
         voices = listed
-        languages = Set(listed.map { String($0.language.prefix(2)) }).sorted()
+        languages = Set(listed.map { String($0.language.prefix(2)) }).sortedStably()
         isLoaded = true
         didList.send()
     }
@@ -218,6 +218,6 @@ final class VoiceCatalog: ObservableObject {
     nonisolated static func installedVoices() -> [AVSpeechSynthesisVoice] {
         AVSpeechSynthesisVoice.speechVoices()
             .filter { !$0.voiceTraits.contains(.isNoveltyVoice) }
-            .sorted { $0.name < $1.name }
+            .sortedStably { $0.name < $1.name }
     }
 }

@@ -298,7 +298,7 @@ struct PersistenceBannerRow: Identifiable, Equatable {
     /// subsystem order. Each row leads with its subsystem's latest failure.
     static func rows(for failures: [PersistenceFailure]) -> [PersistenceBannerRow] {
         let bySubsystem = Dictionary(grouping: failures, by: \.subsystem)
-        return bySubsystem.keys.sorted().compactMap { subsystem in
+        return bySubsystem.keys.sortedStably().compactMap { subsystem in
             guard let group = bySubsystem[subsystem],
                   let latest = group.max(by: { $0.id < $1.id }) else { return nil }
             let others = subsystem.othersSentence(count: group.count - 1)
@@ -357,7 +357,7 @@ private final class PersistenceFailureLedger: @unchecked Sendable {
     func snapshot() -> [PersistenceFailure] {
         lock.lock()
         defer { lock.unlock() }
-        return failures.values.sorted { $0.id < $1.id }
+        return failures.values.sortedStably { $0.id < $1.id }
     }
 
     /// Whether the failure `id` is still outstanding: no later outcome has
@@ -596,7 +596,7 @@ final class PersistenceFailureCenter: ObservableObject {
         guard !subsystems.isEmpty else { return }
         let stillFailing = PersistenceBannerRow.rows(for: failures).filter { subsystems.contains($0.subsystem) }
         let message = stillFailing.isEmpty
-            ? subsystems.sorted().map(\.retriedAnnouncement)
+            ? subsystems.sortedStably().map(\.retriedAnnouncement)
             : ["Retry did not succeed."] + stillFailing.map(\.text)
         VoiceOverAnnouncer.announce(message.joined(separator: " "))
     }

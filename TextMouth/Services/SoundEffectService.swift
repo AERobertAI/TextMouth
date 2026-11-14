@@ -327,7 +327,7 @@ class SoundEffectService: ObservableObject {
             let names = files
                 .filter { $0.hasSuffix(".aiff") }
                 .map { $0.replacingOccurrences(of: ".aiff", with: "") }
-                .sorted()
+                .sortedStably()
             sounds.append(contentsOf: names)
         }
         return sounds

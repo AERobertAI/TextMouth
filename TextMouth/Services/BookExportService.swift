@@ -415,7 +415,7 @@ enum BookExportService {
         }
         return BookExportOffer(
             book: book,
-            items: items.sorted { $0.kind.order < $1.kind.order },
+            items: items.sortedStably { $0.kind.order < $1.kind.order },
             isPackageInCloud: false
         )
     }
@@ -553,7 +553,7 @@ enum BookExportService {
             .filter { path in
                 !path.split(separator: "/").contains { $0.hasPrefix(".") } && !isFolder(folder.appendingPathComponent(path))
             }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     /// `listed`, an audiobook folder's audio files by their paths inside
@@ -582,7 +582,7 @@ enum BookExportService {
         }
         let rest = listed
             .filter { !placed.contains(key($0)) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         return ordered + rest.map { (path: $0, title: nil) }
     }
 
@@ -753,7 +753,7 @@ enum BookExportService {
                     && !ownFiles.contains(path)
                     && !isFolder(package.appendingPathComponent(path))
             }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
             .map { copy(package.appendingPathComponent($0), as: $0) }
     }
 

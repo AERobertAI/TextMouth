@@ -690,7 +690,7 @@ private enum DestinationContents: Equatable {
             self = .notAFolder
             return
         }
-        self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sorted())
+        self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sortedStably())
     }
 
     /// What makes this more than the empty folder, or nothing, that a copy
@@ -818,7 +818,7 @@ struct DataDirectoryCopyPlan: Equatable {
     private static func items(in folder: URL, at relativePath: String, fileManager: FileManager) throws -> [Item] {
         var folders: [(item: Item, url: URL)] = []
         var others: [Item] = []
-        for name in try fileManager.contentsOfDirectory(atPath: folder.path).sorted() {
+        for name in try fileManager.contentsOfDirectory(atPath: folder.path).sortedStably() {
             let url = folder.appendingPathComponent(name)
             let path = relativePath.isEmpty ? name : relativePath + "/" + name
             // The item itself, never a link's target.

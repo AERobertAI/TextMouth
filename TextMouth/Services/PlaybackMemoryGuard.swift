@@ -662,7 +662,7 @@ private final class MemoryWatch: Sendable {
             // when it quit: the marker says so, and the words leave the
             // book out.
             let wasNothingPlaying = state.playing.isEmpty && !state.policy.hasStoppedPlayback
-            return (action, state.playing.values.sorted().first ?? state.lastTitle, wasNothingPlaying, state.mainGuard)
+            return (action, state.playing.values.sortedStably().first ?? state.lastTitle, wasNothingPlaying, state.mainGuard)
         }
         switch action {
         case .none:

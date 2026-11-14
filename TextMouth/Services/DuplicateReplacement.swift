@@ -628,7 +628,7 @@ enum DuplicateReplacement {
         var carried = Carried()
 
         // The copies Edit Text kept, which may be the only copy of an edit.
-        carried.keptCopyNames = names.filter(TextMouthPaths.isKeptTextCopy).sorted()
+        carried.keptCopyNames = names.filter(TextMouthPaths.isKeptTextCopy).sortedStably()
         for name in carried.keptCopyNames {
             try old.requireOnThisMac(old.package.appendingPathComponent(name))
         }

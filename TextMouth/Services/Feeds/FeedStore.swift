@@ -172,7 +172,7 @@ final class FeedStore: ObservableObject {
 
     /// Every subscription, by title.
     var feeds: [Feed] {
-        records.values.map(\.feed).sorted {
+        records.values.map(\.feed).sortedStably {
             $0.title.localizedStandardCompare($1.title) == .orderedAscending
         }
     }
@@ -258,7 +258,7 @@ final class FeedStore: ObservableObject {
             (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         }
         let decoder = FeedRecordCoding.decoder()
-        for name in names.sorted() {
+        for name in names.sortedStably() {
             guard let feedID = FeedPaths.feedID(ofRecordNamed: name), only?.contains(feedID) ?? true else { continue }
             let file = FeedPaths.recordFile(of: feedID, in: folder)
             let unusable: (bytes: Data?, reason: String)

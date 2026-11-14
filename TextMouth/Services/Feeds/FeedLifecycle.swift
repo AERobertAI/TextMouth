@@ -343,7 +343,7 @@ extension FeedCenter {
         guard let library else { return [] }
         return library.feedItemRows(of: feedID).kept
             .filter { (itemIDs?.contains($0.key) ?? true) && !downloads.isDownloading($0.key, of: feedID) }
-            .sorted { $0.key < $1.key }
+            .sortedStably { $0.key < $1.key }
             .map(\.value)
     }
 

@@ -337,7 +337,7 @@ private enum FolderContents {
             return
         }
         do {
-            self = .folder(try listing(url).sorted())
+            self = .folder(try listing(url).sortedStably())
         } catch where DatalessFiles.isDownloadRefusal(error) {
             self = .onlyInCloud
         } catch {

@@ -903,7 +903,7 @@ private struct MarkupCapture {
     mutating func openTag(_ name: String, attributes: [String: String]) {
         wroteTags = true
         markup += "<" + name
-        for (key, value) in attributes.sorted(by: { $0.key < $1.key }) {
+        for (key, value) in attributes.sortedStably(by: { $0.key < $1.key }) {
             markup += " \(key)=\"\(FeedTextConverter.escaped(value))\""
         }
         markup += ">"

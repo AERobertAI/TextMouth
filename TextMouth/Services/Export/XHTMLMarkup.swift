@@ -145,7 +145,7 @@ struct XHTMLMarkup {
         let characters = Array(text)
         var markup = ""
         var written = 0
-        for cellPage in pages.sorted(by: { $0.offset < $1.offset }) {
+        for cellPage in pages.sortedStably(by: { $0.offset < $1.offset }) {
             let offset = min(max(cellPage.offset, written), characters.count)
             markup += XMLEscaping.text(String(characters[written..<offset])) + pageBreakMarkup(cellPage.page)
             written = offset

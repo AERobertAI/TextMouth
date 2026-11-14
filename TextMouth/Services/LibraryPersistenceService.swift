@@ -579,7 +579,7 @@ enum LibraryPersistenceService {
             let root = TextMouthPaths.root
             let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
             feedIndexesOnDisk = SavedFile.OnDiskMemory(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
-            let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
+            let rows = read.keys.sortedStably { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
             return FeedShelf(
                 rows: rows,
                 indexedFeedIDs: Set(read.keys),
@@ -1244,7 +1244,7 @@ enum LibraryPersistenceService {
             guard named.insert(bookID).inserted else { return }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys]
-            let contents = Contents(books: named.sorted { $0.uuidString < $1.uuidString })
+            let contents = Contents(books: named.sortedStably { $0.uuidString < $1.uuidString })
             try? encoder.encode(contents).write(to: TextMouthPaths.readingCheckpointsFile, options: .atomic)
         }
 
