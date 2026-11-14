@@ -616,6 +616,11 @@ final class OnDiskContractTests: XCTestCase {
                     // DAISY is at 1.0.1: a page with no words is labelled by its place in the
                     // whole book, not in its DTBook file.
                     "daisy": "1.0.1",
+                    // Braille is at 1.1.0 (November 13, 2026): a running head that
+                    // repeats on three or more pages is left out of the text, a
+                    // Roman-numeral print page change line too, and a centered
+                    // Chapter row that runs into an indented row is a heading.
+                    "braille": "1.1.0",
                 ]
                 // Kindle books (.mobi and .azw3) are at 1.1.0: soft hyphens left out of MOBI 6 books, and the KF8 chapter rule.
                 return (name, raised[name] ?? (name == "mobi" ? "1.1.0" : "1.0.0"))
