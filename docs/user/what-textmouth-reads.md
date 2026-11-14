@@ -364,6 +364,10 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
 - Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
 - Page numbers are left out of the text, so they are never spoken.
+- A running head is left out of the text too. A running head is the line at the top of each page that repeats the book's title or the chapter's, with a page number at one end of it. TextMouth takes it for one only when its words repeat on three or more pages, so a line of the book's own text is never left out for looking like one.
+- A page number at the left of the top line becomes the braille page number when the page's last line has none.
+- A line that marks where a print page changes, a row of dashes with a number after it, is left out of the text, whether the number is Arabic or Roman, as in ";IX" for the print page ix.
+- A chapter heading that stands on the line above its text is a heading. When one to three centered lines run straight into a line indented to cell 3, with no blank line between, they are a level-1 heading, as "Chapter 1" on the line above a paragraph. A row of dashes or other rule marks that sets the heading off is never part of its words.
 
 #### Braille emphasis
 
@@ -391,10 +395,18 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Redo Text Extraction reads a book again at any time.
 - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
 
-#### PEF titles and authors
+#### Titles and authors of PEF, BRF, and BRL files
 
 - A PEF names its book's title and author in its head, and the import reads them from the first 64 KB of the file.
-- A BRF or BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
+- A BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
+- A BRF names them on its title page, if it has one, and the import and the launch read them there:
+  - The title page is the first page with anything on it, and TextMouth reads its centered lines.
+  - A line that holds the word "by" divides the title from the author: "Life of Pi" above "by Yann Martel", or "Life of Pi by Yann Martel" on one line. "By" is read as a braille word, spelled in both codes and as its own sign in English Braille, American Edition.
+  - A title page with no "by" names a title only when it has three or more centered lines and a rule line that sets the title off. A page that is only a part title, a chapter heading, and an epigraph names nothing, so a chapter saved alone keeps its file's name.
+  - What the page names, with no title or no author, leaves that one as it was: the file's name or Unknown.
+  - The title and author are read with the book's own braille code, and they are never longer than a title could be: anything over 200 characters is a paragraph, not a name.
+  - A title or author you changed yourself is never replaced. For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
+- Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines.
 
 #### Braille file limits
 
