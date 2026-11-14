@@ -92,6 +92,13 @@ final class BrailleEbaeFixesTests: XCTestCase {
         }
     }
 
+    // MARK: - "ing" before a hyphen
+
+    /// "ing" (⠬) before a hyphen (⠤) read "±" with the table; it reads "ing".
+    func testIngBeforeAHyphenIsNotPlusMinus() throws {
+        try assertFixed([("MOV+-IN", "moving-in"), ("SMIL+-", "smiling-")])
+        try assertUnchanged([("MOV+", "moving"), ("MOV+ IN", "moving in")])
+    }
 
 
 

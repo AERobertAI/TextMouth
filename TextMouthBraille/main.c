@@ -1457,6 +1457,8 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  *   "with a", ⠿⠮ "for the", ⠾⠮ "with the": EBAE joins them into one unit,
  *   and the table has no rule for it, so they came back "ofthe". A run of
  *   two or more of these cells, with nothing else, is spaced into words.
+ * - "ing" before a hyphen or dash, ⠬⠤: the table reads the two cells as
+ *   "±", so "moving-in" came back "mov±in". The "ing" is spelled out.
  */
 
 /* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
@@ -1543,6 +1545,10 @@ spell_inside_word(const widechar *cells, int start, int lead, int end, cell_list
 	put_cells(out, cells, start, lead);
 	if (i < end && cells[i] == CELL_6) put_cell(out, cells[i++]);
 	for (; i < end; i++) {
+		if (cells[i] == CELL_346 && i > lead && cells[i - 1] != CELL_6 && i + 1 < end &&
+				cells[i + 1] == CELL_36)
+			put_letters(out, "ing");
+		else
 			put_cell(out, cells[i]);
 	}
 }
