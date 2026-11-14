@@ -263,8 +263,11 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             }
             // liblouis alone reads an emphasized word that begins with m as
             // "µ" and the rest (the sentences hold no print "µ"); the pass
-            // reads the sign (November 13, 2026, `is_sign_before_m_word`).
-            let changed = zip(read, alone).filter { $0.text != $1.text.replacingOccurrences(of: "\u{B5}", with: "m") }
+            // reads the sign, except after a number, where a unit is likelier
+            // (November 13, 2026, `is_sign_before_m_word`). So "µ" is "m" in
+            // both readings.
+            let micro = { (text: String) in text.replacingOccurrences(of: "\u{B5}", with: "m") }
+            let changed = zip(read, alone).filter { micro($0.text) != micro($1.text) }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
