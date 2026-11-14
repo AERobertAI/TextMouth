@@ -1292,7 +1292,7 @@ extension BraillePageAnalyzerTests {
             BrailleTitlePage.names(inRows: [braille(",ONE"), braille(",TWO"), braille("BY ,A ,B")]),
             BrailleTitlePage.Names(title: braille(",ONE ,TWO"), author: braille(",A ,B")))
         XCTAssertEqual(
-            BrailleTitlePage.names(inRows: [braille(",TITLE"), "", braille(",PUBLISHED BY ,X"), braille(",ISBN")]),
+            BrailleTitlePage.names(inRows: [braille(",TITLE"), "", braille(",PUBLISHED BY ,X"), braille(",ISBN")], hasRule: true),
             BrailleTitlePage.Names(title: braille(",TITLE"), author: nil))
     }
 
