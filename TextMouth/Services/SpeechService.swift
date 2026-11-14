@@ -722,7 +722,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var isSpeaking = false
     @Published var isPaused = false
-    @Published var currentWordRange: NSRange?
+    /// The word being spoken, in the text. Not published: nothing observes it
+    /// (the reader takes each word from `onWordSpoken`), and publishing it
+    /// announced a change of the service 3 to 5 times a second for nothing.
+    var currentWordRange: NSRange?
     @Published var currentVoice: AVSpeechSynthesisVoice?
     @Published var wordsPerMinute: Double = 200 {
         didSet {

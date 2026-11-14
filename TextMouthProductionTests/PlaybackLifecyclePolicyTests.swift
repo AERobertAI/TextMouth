@@ -36,6 +36,26 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         ))
     }
 
+    /// The word being spoken is a plain property of the speech service, not
+    /// a published one (the audit's C17): nothing subscribes to it, and each
+    /// word, 3 to 5 a second, would announce a change to the service's
+    /// observers for nothing. The reader's flags (`isSpeaking`, `isPaused`)
+    /// still publish, which it does subscribe to.
+    func testTheCurrentWordPublishesNothing() {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("word-range"))
+        var announcements = 0
+        let subscription = speech.objectWillChange.sink { announcements += 1 }
+        defer { subscription.cancel() }
+
+        speech.currentWordRange = NSRange(location: 4, length: 3)
+        speech.currentWordRange = nil
+
+        XCTAssertEqual(announcements, 0, "a word moved the cursor and the speech service announced a change")
+        speech.isSpeaking = true
+        XCTAssertEqual(announcements, 1, "the speaking flag no longer publishes")
+        speech.isSpeaking = false
+    }
+
     /// A reader's live position reaches what the library's rows show
     /// (`livePositions`) without changing the library: no library publish,
     /// and the row keeps its checkpointed position until the next
