@@ -4,6 +4,19 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.10 (November 14, 2026)
+
+### Braille books whose code TextMouth guesses
+- When you add a BRF or BRL file and your Braille Code is contracted Unified English Braille, TextMouth checks whether the book is plainly written in English Braille, American Edition, the code before UEB. If it is, the book is read with that code, so "to the sea" no longer reads "!the sea".
+- Book Information then names the code with ", guessed" after it, followed by a note on how to correct it and a Keep This Code button. Choosing a code in the Braille Code pop-up replaces the guess.
+- The Braille tab has a switch, "Guess the braille code of new books", on by default. Books already in your library are not changed, and PEF files are never guessed.
+
+### Smaller
+- The app is about 0.4 MB smaller, because its lists are sorted by one shared helper. Every list keeps the order it had.
+
+### Not changed
+- How any book already in your library reads, sounds, or is laid out.
+
 ## 0.4.9 (November 14, 2026)
 
 ### Braille
