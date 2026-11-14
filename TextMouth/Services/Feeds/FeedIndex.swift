@@ -98,7 +98,11 @@ enum FeedIndexFiles {
     /// a save that changed nothing of a feed writes nothing for it.
     static func encoded(_ index: FeedIndex) throws -> Data {
         var ordered = index
-        ordered.books.sortStably(by: isInIndexOrder)
+        // The standard sort, specialized, as LibraryBookSorter keeps it: this
+        // sorts every row of a feed's index at each library save, a list of
+        // whole books large enough that the shared helper's unspecialized
+        // comparison would cost more than its share of the app's size.
+        ordered.books.sort(by: isInIndexOrder)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
