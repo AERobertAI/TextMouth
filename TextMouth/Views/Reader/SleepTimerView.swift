@@ -41,7 +41,7 @@ struct SleepTimerView: View {
 
     /// The reader the timer pauses, whose methods start and stop it. Not
     /// observed: the sheet shows nothing of the reader, only the timer, so
-    /// the reader's publishes, eight a second while it plays, never redraw
+    /// the reader's publishes, about one a second while it plays, never redraw
     /// it (PERF30).
     let viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
@@ -400,7 +400,7 @@ struct SleepTimerView: View {
 
 /// Two sheets are the same when they set the timer for the same reader with
 /// the same closing behavior (PERF30). The reader view presenting the sheet
-/// makes it again each time it draws, eight times a second while a book
+/// makes it again each time it draws, about once a second while a book
 /// plays, with new closures; closures cannot be compared, so without this
 /// SwiftUI redrew the sheet every time. The closures are not compared: they
 /// act on the presenter's state as it is when they run. Nor is the timer

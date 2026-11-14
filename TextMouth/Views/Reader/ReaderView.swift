@@ -23,6 +23,7 @@ struct ReaderView: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderView")
         readerContent
             .toolbar { toolbarItems }
             .onAppear {
@@ -311,12 +312,13 @@ struct ReaderLoadFailureView: View {
 /// title, the heading being read, and that heading's number among all the
 /// book's headings, the same list and numbering the headings panel shows.
 /// Internal content units (spine files, audio files) are never counted
-/// here. It follows the throttled display cursor, so it moves with playback
+/// here. It follows the display cursor, so it moves with playback
 /// across headings without drawing again at every word.
 struct ReaderLocationHeader: View {
     @ObservedObject var viewModel: ReaderViewModel
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderLocationHeader")
         VStack(alignment: .leading, spacing: 4) {
             if viewModel.content != nil {
                 Text(viewModel.book.title)
@@ -377,6 +379,7 @@ struct ReaderTextArea: View {
     static let accessibilityLabel = "Book content"
 
     var body: some View {
+        let _ = ViewBodyCounter.record("ReaderTextArea")
         ScrollView {
             if let content = viewModel.content,
                viewModel.displayChapterIndex < content.chapters.count {
@@ -815,7 +818,7 @@ struct BookVoicePickerView: View {
     /// speed in force, the end-of-book choice, and whether the book has
     /// settings of its own (PERF30). The sheet draws again when this
     /// changes, and only then, rather than with each of the reader's
-    /// publishes, eight a second while it plays. Its body reads the reader
+    /// publishes, about one a second while it plays. Its body reads the reader
     /// itself, whose values these are by the time it draws.
     struct ReaderState: Equatable {
         let title: String
@@ -1239,6 +1242,7 @@ struct BookInfoBar: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("BookInfoBar")
         VStack(spacing: 0) {
             statusRow
             if expandedPanel == .percent {
@@ -1355,9 +1359,11 @@ struct BookInfoBar: View {
 
             // Sleep timer status — non-interactive (managed via the
             // sleep timer sheet; clicking it would duplicate that flow).
-            if viewModel.sleepTimerService.isActive {
+            // The label observes the timer itself, so it moves each second
+            // whether or not the reader publishes (`SleepTimerStatusLabel`).
+            SleepTimerStatusLabel(timer: viewModel.sleepTimerService) { timer in
                 Label {
-                    Text(viewModel.sleepTimerService.formattedRemaining)
+                    Text(timer.formattedRemaining)
                 } icon: {
                     Image(systemName: "moon.fill")
                         .foregroundColor(.orange)
@@ -1368,7 +1374,7 @@ struct BookInfoBar: View {
                 // "Sleep timer: 4:59 remaining", or where a timer set for
                 // a place in the book stops playback. The label holds the
                 // time, so there is no value to read it again (TODO A10).
-                .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
+                .accessibilityLabel(timer.spokenLabel)
             }
         }
         .padding(.horizontal)

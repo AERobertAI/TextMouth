@@ -39,7 +39,7 @@ final class PhoneSession: ObservableObject {
 
     /// The reader on screen, or, with no screen showing one, the one reader
     /// open. A view calls it and reads `snapshot` for what it shows: observing
-    /// the reader itself would rebuild the view eight times a second while the
+    /// the reader itself would rebuild the view about once a second while the
     /// book plays.
     @Published private(set) var reader: ReaderViewModel?
     /// The book that goes on behind `reader`'s, playing or paused: the one open

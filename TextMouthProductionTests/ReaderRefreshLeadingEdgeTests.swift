@@ -31,12 +31,16 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
         for step in 1...40 {
             clock.now.addTimeInterval(0.25)
             reader.currentCharacterOffset = step * 10
-            // Far less than the 0.12 s interval the change used to wait.
-            spinMainRunLoop(for: 0.01)
+            // Far less than the 0.12 s interval the change used to wait; a
+            // loaded runner may take longer than ten milliseconds to reach
+            // the next turn, so wait for it, and count the delayed refreshes
+            // below, which are what a wait of the interval would make.
+            _ = eventually(within: 2) { reader.displayCharacterOffset == step * 10 }
             XCTAssertEqual(reader.displayCharacterOffset, step * 10, "step \(step) was not shown at once")
         }
 
         XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 0)
+        XCTAssertEqual(reader.drainedPlaybackUIRefreshCount, 40, "40 changes made 40 refreshes")
     }
 
     /// A chapter index and an offset set together are shown together: the
@@ -50,10 +54,14 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
         reader.currentChapterIndex = 1
         reader.currentCharacterOffset = 40
         shown.append("\(reader.displayChapterIndex):\(reader.displayCharacterOffset)")
-        spinMainRunLoop(for: 0.01)
+        // The refresh is on the main queue's next turn; a loaded runner may
+        // take longer than a few milliseconds to reach it.
+        _ = eventually(within: 2) { reader.displayCharacterOffset == 40 }
         shown.append("\(reader.displayChapterIndex):\(reader.displayCharacterOffset)")
 
         XCTAssertEqual(shown, ["0:0", "1:40"], "the refresh did not wait for the end of the turn, or did not come")
+        // On the leading edge: no wait of the interval stood in its way.
+        XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 0, "the refresh waited out the interval")
     }
 
     // MARK: - Inside the Interval
@@ -63,26 +71,27 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
     func testChangesInsideTheIntervalWaitOutTheRestOfIt() {
         let (reader, clock) = makeReader()
         defer { reader.close() }
-        var refreshed: [Int] = []
-        let subscription = reader.$displayCharacterOffset.dropFirst().sink { refreshed.append($0) }
-        defer { subscription.cancel() }
-
         clock.now.addTimeInterval(1)
         reader.currentCharacterOffset = 5
-        spinMainRunLoop(for: 0.01)
-        XCTAssertEqual(refreshed, [5], "the first change, a whole interval after the last, was not shown at once")
+        _ = eventually(within: 2) { reader.displayCharacterOffset == 5 }
+        XCTAssertEqual(reader.displayCharacterOffset, 5, "the first change, a whole interval after the last, was not shown at once")
+        XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 0)
 
         // Two changes, 0.05 s after the refresh.
         clock.now.addTimeInterval(0.05)
         reader.currentCharacterOffset = 6
         reader.currentCharacterOffset = 7
         spinMainRunLoop(for: 0.01)
-        XCTAssertEqual(refreshed, [5], "a change inside the interval was shown before the interval ended")
+        XCTAssertEqual(reader.displayCharacterOffset, 5, "a change inside the interval was shown before the interval ended")
         XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 1)
 
-        // The rest of the interval, 0.07 s, passes; the refresh shows the last.
-        spinMainRunLoop(for: ReaderViewModel.playbackUIRefreshInterval + 0.1)
-        XCTAssertEqual(refreshed, [5, 7])
+        // The rest of the interval, 0.07 s, passes; the refresh shows the
+        // last, and the middle change (6) was never shown: two refreshes in
+        // all, the first change's and this one.
+        XCTAssertTrue(eventually(within: 2) { reader.displayCharacterOffset == 7 })
+        spinMainRunLoop(for: 0.05)
+        XCTAssertEqual(reader.displayCharacterOffset, 7)
+        XCTAssertEqual(reader.drainedPlaybackUIRefreshCount, 2, "the middle change was shown, or a refresh was missed")
     }
 
     /// A clock set back, so that no interval seems to have passed, still
@@ -92,8 +101,9 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
         defer { reader.close() }
         clock.now.addTimeInterval(1)
         reader.currentCharacterOffset = 5
-        spinMainRunLoop(for: 0.01)
+        _ = eventually(within: 2) { reader.displayCharacterOffset == 5 }
         XCTAssertEqual(reader.displayCharacterOffset, 5)
+        XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 0)
 
         clock.now.addTimeInterval(-3600)
         reader.currentCharacterOffset = 9

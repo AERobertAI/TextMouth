@@ -12,6 +12,7 @@ struct PlaybackControlsView: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("PlaybackControlsView")
         HStack(spacing: 20) {
             // Skip backward
             Button {
@@ -116,21 +117,23 @@ struct PlaybackControlsView: View {
             }
             } // showSpeedInPlaybackControls
 
-            // Sleep timer indicator
-            if viewModel.sleepTimerService.isActive {
+            // Sleep timer indicator. The label observes the timer itself,
+            // so it moves each second whether or not the reader publishes
+            // (`SleepTimerStatusLabel`).
+            SleepTimerStatusLabel(timer: viewModel.sleepTimerService) { timer in
                 HStack(spacing: 4) {
                     Image(systemName: "moon.fill")
                         .font(.caption)
                         .foregroundColor(.orange)
                         .accessibilityHidden(true)
-                    Text(viewModel.sleepTimerService.formattedRemaining)
+                    Text(timer.formattedRemaining)
                         .font(.caption)
                         .foregroundColor(.orange)
                 }
                 .accessibilityElement(children: .combine)
                 // "Sleep timer: 4:59 remaining", or where a timer set for
                 // a place in the book stops playback.
-                .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
+                .accessibilityLabel(timer.spokenLabel)
             }
         }
         .padding()
