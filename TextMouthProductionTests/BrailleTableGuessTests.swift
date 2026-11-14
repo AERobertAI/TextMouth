@@ -103,6 +103,22 @@ final class BrailleTableGuessTests: XCTestCase {
         XCTAssertFalse(found.isClearlyEBAE)
     }
 
+    /// UEB prose (liblouis forward with en-ueb-g2.ctb) with an exclamation mark glued to the front of
+    /// every fourth word and a quotation mark glued between words has joined "to" signs by the
+    /// hundred, and no joined "by": it looks like EBAE to the suggestion's rule, which takes any
+    /// sign, but is never clearly EBAE, and no table is guessed for it.
+    func testUEBProseFullOfGluedExclamationMarksStaysUnguessed() throws {
+        let rows = repeated(BrailleGuessFixtures.uebGluedProse, 2)
+        let found = count(rows)
+        XCTAssertGreaterThan(found.toWords, 100, "the fixture must hold the joined \"to\" this test is about: \(found)")
+        XCTAssertEqual(found.byWords, 0)
+        XCTAssertFalse(found.isClearlyEBAE)
+
+        let url = try file(named: "Glued.brf", rows: rows)
+        XCTAssertEqual(guess(url).table, "en-ueb-g2.ctb")
+        XCTAssertNil(guess(url).origin)
+    }
+
     /// Each limit of the rule, one step each side: 40 signs, one word in 50,
     /// five joined "to" and five joined "by".
     func testEveryLimitOfTheStricterRule() {
@@ -506,6 +522,71 @@ final class BrailleTableGuessImportTests: CloudMaintenanceTestCase {
             "another table is named as it always is"
         )
         XCTAssertNil(model.suggestion)
+    }
+
+    /// A guessed book says where the guess came from and how to correct it, under the pop-up; no
+    /// other book says anything.
+    func testOnlyAGuessedBookShowsTheNote() async throws {
+        let guessed = try imported(try ebaeFile())
+        let model = BrailleCodeChoiceModel(book: guessed, library: makeModel(with: [guessed]))
+        XCTAssertEqual(model.guessNote, BrailleCodeWording.guessedRecovery)
+        XCTAssertEqual(
+            BrailleCodeWording.guessedRecovery,
+            "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code."
+        )
+        XCTAssertEqual(BrailleCodeWording.keepGuessLabel, "Keep This Code")
+
+        let chosen = try imported(try ebaeFile(), guessing: false)
+        let other = BrailleCodeChoiceModel(book: chosen, library: makeModel(with: [chosen]))
+        XCTAssertNil(other.guessNote)
+    }
+
+    /// Choosing the table that was guessed, through the pop-up's own choice, keeps it as the
+    /// listener's word: the row and the record stop saying "guessed", the table and the text are
+    /// not touched, nothing is asked, and VoiceOver hears the book keeps the code. Choosing it
+    /// again, or choosing the selected table of a book that was never guessed, changes nothing.
+    func testChoosingTheGuessedTableKeepsItWithNoRereadAndNothingAsked() async throws {
+        let book = try imported(try ebaeFile())
+        let library = makeModel(with: [book])
+        let model = BrailleCodeChoiceModel(book: book, library: library)
+        await model.load()
+        let textBefore = try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
+        XCTAssertEqual(model.selection, .table(Self.ebae))
+
+        let announced = await announcements { await model.choose(.table(Self.ebae)) }
+
+        XCTAssertNil(model.pending, "keeping the guess asks nothing")
+        XCTAssertNil(model.failureMessage)
+        XCTAssertEqual(model.selection, .table(Self.ebae))
+        XCTAssertEqual(
+            model.name(of: model.selection), "English Braille, American Edition, contracted (Grade 2)",
+            "the pop-up no longer says guessed"
+        )
+        XCTAssertNil(model.guessNote)
+        XCTAssertEqual(announced, [
+            BrailleCodeWording.keptGuess(
+                bookTitle: book.title, codeName: "English Braille, American Edition, contracted (Grade 2)")
+        ])
+        let row = try XCTUnwrap(library.bookByID(book.id))
+        XCTAssertEqual(row.brailleTable, Self.ebae)
+        XCTAssertNil(row.brailleTableOrigin)
+        UnsavedChangesTerminationGuard.flushPendingWrites()
+        let record = try BookInfo.load(from: book.tmbDirectory).metadata
+        XCTAssertEqual(record.brailleTable, Self.ebae)
+        XCTAssertNil(record.brailleTableOrigin, "the record still says guessed")
+        XCTAssertEqual(
+            try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)), textBefore, "the book was read again"
+        )
+
+        // Again, and for a book nobody guessed for: nothing happens, nothing is said.
+        let again = await announcements { await model.choose(.table(Self.ebae)) }
+        XCTAssertEqual(again, [])
+        let plain = try imported(try ebaeFile(), guessing: false)
+        let plainModel = BrailleCodeChoiceModel(book: plain, library: makeModel(with: [plain]))
+        await plainModel.load()
+        let none = await announcements { await plainModel.choose(plainModel.selection) }
+        XCTAssertEqual(none, [])
+        XCTAssertNil(plainModel.pending)
     }
 
     /// Choosing a braille code replaces the guess for good: reading the book again with another table
