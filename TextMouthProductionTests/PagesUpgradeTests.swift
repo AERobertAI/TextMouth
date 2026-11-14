@@ -39,7 +39,7 @@ final class PagesUpgradeTests: XCTestCase {
     /// since) and Word 2003 XML (.wordml, read by its own reader since FMT53,
     /// with hidden row marks and symbols by font since) at 1.3.0, OpenDocument
     /// text (.odt) at 1.1.0, Kindle books (.mobi, .azw3) at 1.1.0 (soft hyphens left out of MOBI 6
-    /// books too, and the KF8 chapter rule), DAISY at 1.0.1 (empty pages numbered through all of a book's files), braille at 1.1.0 (running heads, Roman change lines, and Chapter rows that run into text), and the rest at 1.0.0.
+    /// books too, and the KF8 chapter rule), DAISY at 1.0.1 (empty pages numbered through all of a book's files), braille at 1.1.1 (running heads, also those differing by a part number, Roman change lines, and Chapter rows that run into text), and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub: return "1.0.3"
@@ -47,7 +47,8 @@ final class PagesUpgradeTests: XCTestCase {
         case .txt: return "1.0.1"
         case .rtf, .rtfd: return "1.2.0"
         case .doc, .docx, .wordml: return "1.3.0"
-        case .odt, .mobi, .braille: return "1.1.0"
+        case .odt, .mobi: return "1.1.0"
+        case .braille: return "1.1.1"
         case .daisy: return "1.0.1"
         default: return "1.0.0"
         }
