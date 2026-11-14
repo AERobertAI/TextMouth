@@ -90,6 +90,12 @@ enum BraillePageAnalyzer {
     /// The hyphen and the dash end with the same cell, dots 3-6, and a word
     /// may be divided after either at a line's end.
     private static let hyphen: UInt8 = changeDash
+    /// The letter sign, dots 5-6 (U+2830), and the capital sign, dot 6
+    /// (U+2820): what a Roman numeral's letters follow in a change line.
+    private static let letterSign: UInt8 = 0x30
+    private static let capitalSign: UInt8 = 0x20
+    /// The cells of the Roman numeral letters i, v, x, l, c, d, and m.
+    private static let romanLetters: Set<UInt8> = [0x0A, 0x27, 0x2D, 0x07, 0x09, 0x19, 0x0D]
     /// The ten digit cells, a to j: ⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚.
     private static let digits: Set<UInt8> = [0x01, 0x03, 0x09, 0x19, 0x11, 0x0B, 0x1B, 0x13, 0x0A, 0x1A]
 
@@ -429,8 +435,19 @@ enum BraillePageAnalyzer {
             return zip(slice, slice.dropFirst()).contains { $0 == numberSign && digits.contains($1) }
         }
 
+        /// Whether `word` is a Roman numeral word: a letter sign (or a capital
+        /// sign) and then one to `maxNumberWordLength` Roman numeral letters,
+        /// the way a front matter page's number is written (";IX" is "ix").
+        private func isRomanNumeralWord(_ word: Span) -> Bool {
+            guard word.count >= 2, word.count <= maxNumberWordLength else { return false }
+            let slice = cells[word.range]
+            guard let sign = slice.first, sign == letterSign || sign == capitalSign else { return false }
+            return slice.dropFirst().allSatisfy { romanLetters.contains($0) }
+        }
+
         /// Whether `row` is a print page change line: its leading blanks, then at
-        /// least 3 cells of dots 3-6, then directly a number word, and nothing else.
+        /// least 3 cells of dots 3-6, then directly a number word (a Roman
+        /// numeral word for a front matter page), and nothing else.
         /// Returns the number word, or nil.
         private func changeLineNumber(of row: Span) -> Span? {
             var lead = row.range.lowerBound
@@ -439,7 +456,7 @@ enum BraillePageAnalyzer {
             while dashEnd < row.range.upperBound, cells[dashEnd] == changeDash { dashEnd += 1 }
             guard dashEnd - lead >= minChangeDashes else { return nil }
             let word = Span(dashEnd..<row.range.upperBound)
-            return isNumberWord(word) ? word : nil
+            return isNumberWord(word) || isRomanNumeralWord(word) ? word : nil
         }
 
         /// Splits a number word off the right of `row`: the word and what is left

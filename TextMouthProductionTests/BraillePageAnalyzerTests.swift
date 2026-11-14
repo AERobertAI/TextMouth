@@ -1151,3 +1151,29 @@ extension BraillePageAnalyzerTests {
         XCTAssertTrue(structure.blocks.first?.text.contains(cells("REPEATED")) ?? false)
     }
 }
+
+// MARK: - Roman numeral change lines (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// A front matter page's change line (`------;IX`) is taken out like a
+    /// numbered one, and its numeral is kept as the page's change.
+    func testARomanNumeralChangeLineIsTakenOutOfTheText() {
+        let structure = formattedStructure([row(2, "ONE TWO"), row(0, "THREE"), row(0, "------;IX"), row(0, "FOUR"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("ONE TWO THREE FOUR")])
+        XCTAssertEqual(structure.pages.first?.printPageChanges, [cells(";IX")])
+    }
+
+    /// A capital sign and every Roman numeral letter are accepted; a numeral
+    /// of more than seven letters, or a word with another letter, is no change line.
+    func testRomanNumeralChangeLinesTakeCapitalsAndNoOtherLetters() {
+        let accepted = formattedStructure([row(2, "ONE"), row(0, "---,XLVIII"), row(0, "TWO"), rightAligned("#A")])
+        XCTAssertEqual(accepted.pages.first?.printPageChanges, [cells(",XLVIII")])
+        XCTAssertEqual(accepted.blocks, [paragraph("ONE TWO")])
+        for ascii in ["---;IXA", "---;", "---;IIIIIIII", "--;IX"] {
+            let kept = formattedStructure([row(2, "ONE"), row(0, ascii), row(0, "TWO"), rightAligned("#A")])
+            XCTAssertEqual(kept.pages.first?.printPageChanges, [], ascii)
+            XCTAssertEqual(kept.blocks.count, 1, ascii)
+            XCTAssertTrue(kept.blocks.first?.text.contains(cells(ascii)) ?? false, ascii)
+        }
+    }
+}
