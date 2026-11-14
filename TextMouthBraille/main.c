@@ -1463,6 +1463,9 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  *   reads it as "dd" inside a word. Each letter with its period becomes a
  *   word of its own (a letter sign first, so that ⠏ is "p" and not "people"),
  *   so the print reads "p. b. u. h.".
+ * - ⠠⠌⠲, "Still." or "St.": the table reads "St." always. It is read "St."
+ *   only with a capital sign and a capitalized word after it ("St. Paul");
+ *   any other ⠌⠲ is "still." (the capital sign aside), spelled out.
  */
 
 /* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
@@ -1578,6 +1581,38 @@ split_initials(const widechar *cells, int start, int lead, int end, cell_list *o
 	return 1;
 }
 
+/* Whether the word that follows the one ending at `cells[end]` in
+   `cells[0..n)` begins with a capital sign, after any marks that open it. */
+static int
+next_word_is_capitalized(const widechar *cells, int end, int n) {
+	int i = end;
+	while (i < n && cells[i] == CELL_BLANK) i++;
+	while (i < n && is_leading_mark(cells[i])) i++;
+	return i < n && cells[i] == CELL_6;
+}
+
+/*
+ * Writes `cells[lead..end)` as "still" and its period, when it is ⠌⠲ and the
+ * marks that may end a word, with a capital sign or without, unless it can
+ * be "St." (a capital sign, and the next word capitalized: `next_capital`).
+ * "St." is only that: "Still." ends a sentence, whatever follows it, but
+ * the cells are the same, and a capitalized word after the period is most
+ * often a name ("St. Paul"). Returns 1 when it wrote the word, 0 when it
+ * did not.
+ */
+static int
+spell_still(const widechar *cells, int start, int lead, int end, int next_capital, cell_list *out) {
+	int i = lead;
+	int capital = i < end && cells[i] == CELL_6;
+	if (capital) i++;
+	if (i + 1 >= end || cells[i] != CELL_34 || cells[i + 1] != CELL_256 ||
+			!only_trailing_marks(cells, i + 1, end) || (capital && next_capital))
+		return 0;
+	put_cells(out, cells, start, i);
+	put_letters(out, "still");
+	put_cells(out, cells, i + 1, end);
+	return 1;
+}
 
 
 /*
@@ -1610,6 +1645,7 @@ fix_ebae_word(const widechar *cells, int start, int end, int n, cell_list *out) 
 	while (lead < end && is_leading_mark(cells[lead])) lead++;
 	if (split_word_signs(cells, start, lead, end, out)) return;
 	if (split_initials(cells, start, lead, end, out)) return;
+	if (spell_still(cells, start, lead, end, next_word_is_capitalized(cells, end, n), out)) return;
 	spell_inside_word(cells, start, lead, end, out);
 }
 

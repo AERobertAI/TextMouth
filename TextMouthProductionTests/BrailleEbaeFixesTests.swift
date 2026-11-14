@@ -113,6 +113,14 @@ final class BrailleEbaeFixesTests: XCTestCase {
         try assertUnchanged([("A4RESS", "address"), (",A4Y", "Addy"), ("LA4ER", "ladder")])
     }
 
+    // MARK: - Still and St.
+
+    /// ⠌⠲ read "St." always. It reads "Still." unless a capital sign and a
+    /// capitalized word make it "St.".
+    func testStillIsNotAlwaysSt() throws {
+        try assertFixed([(",/4", "Still."), ("/4", "still."), (",/4 ,/4", "St. Still.")])
+        try assertUnchanged([(",/4 ,P", "St. People")])
+    }
 
 
     // MARK: - Emphasized words that begin with m
