@@ -671,10 +671,32 @@ final class FreeSpaceStandIn: @unchecked Sendable {
     /// The bytes free.
     private var figure: Int64? = 1_000_000_000_000
 
-    /// The bytes free, or nil when the volume cannot tell.
+    /// The figures the next reads return, one each, before `free` answers
+    /// again: a volume that fills as the first download lands.
+    private var scripted: [Int64?] = []
+    /// How many times the free space was read.
+    private var reads = 0
+
+    /// The bytes free, or nil when the volume cannot tell. Each read is
+    /// counted (`readCount`) and takes the next scripted figure, if any.
     var free: Int64? {
-        get { lock.withLock { figure } }
+        get {
+            lock.withLock {
+                reads += 1
+                return scripted.isEmpty ? figure : scripted.removeFirst()
+            }
+        }
         set { lock.withLock { figure = newValue } }
+    }
+
+    /// Makes the next reads return `figures`, one each, in order.
+    func script(_ figures: [Int64?]) {
+        lock.withLock { scripted = figures }
+    }
+
+    /// How many times the free space was read.
+    var readCount: Int {
+        lock.withLock { reads }
     }
 }
 

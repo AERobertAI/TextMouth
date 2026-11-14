@@ -909,6 +909,73 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.states.state(of: book.id), .inCloud, "the book showed a download that never started")
     }
 
+    /// Books the drive gives no size for download one at a time: the free
+    /// space is read again after each, so with room for the first only, the
+    /// rest are left out and logged, never downloaded blindly together.
+    func testBooksOfUnknownSizeDownloadOneAtATimeAndStopWhenRoomRunsOut() async {
+        let marker = UUID().uuidString
+        let books = (1...3).map { cloudTestBook("Unsized \($0) \(marker)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        // Room for the first; the volume is full once it has landed.
+        fixture.space.script([ArchiveLimits.standard.freeSpaceReserve + 1_000_000, ArchiveLimits.standard.freeSpaceReserve - 1])
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        _ = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id], "the unsized books downloaded together")
+        XCTAssertEqual(fixture.space.readCount, 2, "the free space was not read again after the first book")
+        let lines = debugLogLines(containing: marker).filter { $0.contains(": DOWNLOAD_SKIPPED_NO_ROOM: ") }
+        XCTAssertEqual(lines.count, 2, "\(lines)")
+        XCTAssertTrue(lines.allSatisfy { !$0.contains("Unsized 1") }, "the book that started was logged: \(lines)")
+    }
+
+    /// With room for all, books of unknown size still download one after
+    /// another, each pass reading the free space afresh.
+    func testBooksOfUnknownSizeAllDownloadWhenThereIsRoom() async {
+        let books = (1...3).map { cloudTestBook("Roomy \($0)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, books.map(\.id))
+        XCTAssertEqual(fixture.space.readCount, 3, "one read for each unsized book")
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading 3 reading list books", priority: .medium)])
+    }
+
+    /// A book left out for want of room is logged though it is the
+    /// listener's own kept book, which VoiceOver is told nothing of, and once
+    /// only while it stays short.
+    func testAKeptBookLeftOutForRoomIsLoggedOnceAndNeverAnnounced() async {
+        let marker = UUID().uuidString
+        let book = cloudTestBook("Own \(marker)")
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.space.free = ArchiveLimits.standard.freeSpaceReserve - 1
+        fixture.kept.keep([book.id])
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(said, [])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+        let lines = debugLogLines(containing: marker).filter { $0.contains(": DOWNLOAD_SKIPPED_NO_ROOM: ") }
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+    }
+
     /// Clearing the choice keeps no list book downloaded, and a library
     /// outside the cloud downloads nothing for the list.
     func testNoListBookDownloadsWhenTheChoiceIsClearOrTheLibraryIsLocal() async {
