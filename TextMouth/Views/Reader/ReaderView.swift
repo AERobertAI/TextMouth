@@ -312,7 +312,7 @@ struct ReaderLoadFailureView: View {
 /// title, the heading being read, and that heading's number among all the
 /// book's headings, the same list and numbering the headings panel shows.
 /// Internal content units (spine files, audio files) are never counted
-/// here. It follows the throttled display cursor, so it moves with playback
+/// here. It follows the display cursor, so it moves with playback
 /// across headings without drawing again at every word.
 struct ReaderLocationHeader: View {
     @ObservedObject var viewModel: ReaderViewModel
@@ -818,7 +818,7 @@ struct BookVoicePickerView: View {
     /// speed in force, the end-of-book choice, and whether the book has
     /// settings of its own (PERF30). The sheet draws again when this
     /// changes, and only then, rather than with each of the reader's
-    /// publishes, eight a second while it plays. Its body reads the reader
+    /// publishes, about one a second while it plays. Its body reads the reader
     /// itself, whose values these are by the time it draws.
     struct ReaderState: Equatable {
         let title: String

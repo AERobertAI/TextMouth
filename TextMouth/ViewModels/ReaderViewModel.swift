@@ -170,9 +170,10 @@ final class ReaderViewModel: ObservableObject {
         }
     }
     /// Raw reading cursor used for playback, seeking, and persistence.
-    /// UI surfaces observe throttled display mirrors instead of this value
-    /// directly so word-level callbacks do not rebuild the reader view on
-    /// every spoken word.
+    /// UI surfaces read the display mirrors instead of this value, and the
+    /// reader tells them of a change only when what the window shows has
+    /// changed (`ReaderShownState`), so word-level callbacks do not rebuild
+    /// the reader view on every spoken word.
     var currentCharacterOffset = 0 {
         didSet {
             letGoOfOpenedPlaceAnchorIfLeft()

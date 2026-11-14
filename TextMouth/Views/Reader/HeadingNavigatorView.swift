@@ -62,7 +62,7 @@ struct HeadingNavigatorView: View {
     /// What the sheet shows of its reader, which it follows instead of the
     /// whole reader (PERF30): the book's title, its headings, the sections
     /// skipped, and the heading the reading position is in under each level
-    /// filter. While a book plays its position moves eight times a second,
+    /// filter. While a book plays its position moves with every word,
     /// but this changes only when the position crosses into another heading.
     struct ReaderState: Equatable {
         /// The book's title, for the sheet's title.

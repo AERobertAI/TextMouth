@@ -55,7 +55,7 @@ struct BookmarkPanelView: View {
     /// What the panel shows of its reader: the book's title, its bookmarks,
     /// and its headings, which name where each bookmark is (PERF30). The
     /// panel draws again when these change, and only then, rather than with
-    /// each of the reader's publishes, eight a second while it plays. Its
+    /// each of the reader's publishes, about one a second while it plays. Its
     /// body reads the reader itself, whose values these are by the time it
     /// draws.
     struct ReaderState: Equatable {

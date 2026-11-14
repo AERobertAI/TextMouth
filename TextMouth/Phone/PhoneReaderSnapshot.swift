@@ -3,8 +3,8 @@ import Foundation
 /// What a screen of the iPhone app shows of the open book: `PhoneSession`
 /// publishes it, and views read it instead of the reader.
 ///
-/// A reader publishes eight times a second while it plays, as its place moves.
-/// A view observing it would be rebuilt each time, which on a phone also
+/// A reader publishes whenever what its window shows changes, as often as once
+/// a second while it plays. A view observing it would be rebuilt each time, which on a phone also
 /// disturbs VoiceOver's cursor. So only what these fields hold reaches a view:
 /// a new value is published only when one of them changes (`ReaderSnapshot`).
 struct PhoneReaderSnapshot: Equatable, Sendable {
