@@ -261,7 +261,10 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             let alone = try withHelper(liblouisAlone: true, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
-            let changed = zip(read, alone).filter { $0.text != $1.text }
+            // liblouis alone reads an emphasized word that begins with m as
+            // "µ" and the rest (the sentences hold no print "µ"); the pass
+            // reads the sign (November 13, 2026, `is_sign_before_m_word`).
+            let changed = zip(read, alone).filter { $0.text != $1.text.replacingOccurrences(of: "\u{B5}", with: "m") }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
@@ -431,6 +434,15 @@ private struct SymbolSentenceGenerator {
         random = SeededRandom(seed: seed)
     }
 
+    /// The symbol that may stand glued to a word: not "µ", which is no print
+    /// before a word of letters ("µzoo"): braille cannot tell it from an
+    /// emphasized word beginning with m, which the pass reads as emphasis
+    /// (November 13, 2026, `is_sign_before_m_word`). It stands alone, or
+    /// before a unit after a number.
+    private func attachable(_ symbol: String) -> String {
+        symbol == "\u{B5}" ? ">" : symbol
+    }
+
     /// One token; a number is a word in a sentence with dashes.
     private mutating func token(dashes: Bool) -> String {
         let kind = random.pick(10)
@@ -445,16 +457,16 @@ private struct SymbolSentenceGenerator {
         case 4:
             return word + "-" + random.element(of: Self.words)
         case 5:
-            return symbol + word
+            return attachable(symbol) + word
         case 6:
             let k = random.pick(Self.openers.count)
             return Self.openers[k] + symbol + Self.closers[k]
         case 7:
-            return random.element(of: Self.joined) + " " + symbol + word
+            return random.element(of: Self.joined) + " " + attachable(symbol) + word
         case 8:
             return "." + random.element(of: Self.wordsFromAToJ)
         default:
-            return word + "/" + symbol + random.element(of: Self.words)
+            return word + "/" + attachable(symbol) + random.element(of: Self.words)
         }
     }
 
