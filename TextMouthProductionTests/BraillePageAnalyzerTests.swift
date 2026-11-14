@@ -1107,7 +1107,8 @@ extension BraillePageAnalyzerTests {
             headedPage(left: "A#AA", right: "#CB", body: [row(0, "TWO")]),
         ]
         let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
-        XCTAssertEqual(structure.blocks.count, 1)
+        // Each page's head row is text, as before: it stands before the page's paragraph.
+        XCTAssertEqual(structure.blocks.count, 2)
         XCTAssertTrue(structure.blocks.first?.text.contains(cells(",LIFE")) ?? false)
         // With no right-hand braille page number the left word is not read as one either.
         XCTAssertEqual(structure.pages.map(\.braillePageNumber), [nil, nil])
@@ -1147,8 +1148,9 @@ extension BraillePageAnalyzerTests {
     func testARepeatedFirstRowWithNoNumberWordIsKept() {
         let pages = (0..<4).map { _ in [row(2, "REPEATED OPENING")] }
         let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
-        XCTAssertEqual(structure.blocks.count, 1)
-        XCTAssertTrue(structure.blocks.first?.text.contains(cells("REPEATED")) ?? false)
+        // Four pages, four paragraphs: none is taken for a head.
+        XCTAssertEqual(structure.blocks.count, 4)
+        XCTAssertTrue(structure.blocks.allSatisfy { $0.text.contains(cells("REPEATED")) })
     }
 }
 
