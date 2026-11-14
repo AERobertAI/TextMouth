@@ -63,26 +63,25 @@ final class ReaderRefreshLeadingEdgeTests: XCTestCase {
     func testChangesInsideTheIntervalWaitOutTheRestOfIt() {
         let (reader, clock) = makeReader()
         defer { reader.close() }
-        var refreshed: [Int] = []
-        let subscription = reader.$displayCharacterOffset.dropFirst().sink { refreshed.append($0) }
-        defer { subscription.cancel() }
+        // The display mirrors are plain properties, which the refresh sets:
+        // what the window shows at each step is read from them.
 
         clock.now.addTimeInterval(1)
         reader.currentCharacterOffset = 5
         spinMainRunLoop(for: 0.01)
-        XCTAssertEqual(refreshed, [5], "the first change, a whole interval after the last, was not shown at once")
+        XCTAssertEqual(reader.displayCharacterOffset, 5, "the first change, a whole interval after the last, was not shown at once")
 
         // Two changes, 0.05 s after the refresh.
         clock.now.addTimeInterval(0.05)
         reader.currentCharacterOffset = 6
         reader.currentCharacterOffset = 7
         spinMainRunLoop(for: 0.01)
-        XCTAssertEqual(refreshed, [5], "a change inside the interval was shown before the interval ended")
+        XCTAssertEqual(reader.displayCharacterOffset, 5, "a change inside the interval was shown before the interval ended")
         XCTAssertEqual(reader.delayedPlaybackUIRefreshCount, 1)
 
         // The rest of the interval, 0.07 s, passes; the refresh shows the last.
         spinMainRunLoop(for: ReaderViewModel.playbackUIRefreshInterval + 0.1)
-        XCTAssertEqual(refreshed, [5, 7])
+        XCTAssertEqual(reader.displayCharacterOffset, 7)
     }
 
     /// A clock set back, so that no interval seems to have passed, still

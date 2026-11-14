@@ -181,11 +181,21 @@ final class ReaderViewModel: ObservableObject {
         }
     }
     /// Throttled mirror of the current chapter index for SwiftUI/VoiceOver.
-    @Published private(set) var displayChapterIndex = 0
+    ///
+    /// The three display mirrors are plain properties, not `@Published`
+    /// ones: each refresh brings them up to date, then announces one change
+    /// to the views only if something the window shows has changed
+    /// (`announceShownStateIfChanged()`, `ReaderShownState`). Published, each
+    /// mirror's change drew the whole window eight times a second while a
+    /// book played (audit C3).
+    private(set) var displayChapterIndex = 0
     /// Throttled mirror of the current character offset for SwiftUI/VoiceOver.
-    @Published private(set) var displayCharacterOffset = 0
+    private(set) var displayCharacterOffset = 0
     /// Cached visible text window for the reader surface.
-    @Published private(set) var displayVisibleTextWindow = ""
+    private(set) var displayVisibleTextWindow = ""
+    /// What the window showed as of the last change announced to its views:
+    /// nil until the first refresh.
+    private var announcedShownState: ReaderShownState?
     @Published var isLoading = true
     /// What the reader shows in place of its book while it gets the book
     /// from the cloud (FR02): a download, or why the book isn't ready. Nil
@@ -2026,6 +2036,9 @@ final class ReaderViewModel: ObservableObject {
         offset: Int? = nil,
         forceVisibleTextRefresh: Bool = false
     ) {
+        // However the refresh ends, the views hear of a change in what they
+        // show, once, with every mirror in place.
+        defer { announceShownStateIfChanged() }
         guard let content = content,
               !content.chapters.isEmpty else {
             if displayChapterIndex != 0 { displayChapterIndex = 0 }
@@ -2087,6 +2100,20 @@ final class ReaderViewModel: ObservableObject {
                 displayVisibleTextWindow = window.text
             }
         }
+    }
+
+    /// Tells the window's views that the reader changed, when what they show
+    /// of the place differs from what they showed the last time they were
+    /// told (`ReaderShownState`). The mirrors are brought up to date before
+    /// this is called, and a view reads them when SwiftUI next draws it, so
+    /// announcing after the change is as good as before it. A refresh that
+    /// moved the place within what the window shows, as most do while a book
+    /// plays, announces nothing.
+    private func announceShownStateIfChanged() {
+        let latest = ReaderShownState(of: self)
+        guard latest != announcedShownState else { return }
+        announcedShownState = latest
+        objectWillChange.send()
     }
 
     /// The text the reader shows for chapter `chapterIndex` of `content`,
