@@ -1163,14 +1163,15 @@ extension BraillePageAnalyzerTests {
     /// elsewhere (the bottom row), is dropped when its text is a known head.
     func testAKnownHeadWithNoNumberWordsOnItsRowIsDropped() {
         let head = ",LIFE ( ,PI4 ,\"P#A"
-        var pages = (0..<3).map { index in
-            headedPage(left: "A#A" + String(UnicodeScalar(UInt8(65 + index))), right: "#C" + String(UnicodeScalar(UInt8(65 + index))),
-                       head: head, body: [row(index == 0 ? 2 : 0, "TEXT" + String(UnicodeScalar(UInt8(65 + index))))])
+        var pages: [[String]] = []
+        for (left, right, text) in [("A#AJ", "#CA", "TEXTA"), ("A#AA", "#CB", "TEXTB"), ("A#AB", "#CC", "TEXTC")] {
+            pages.append(headedPage(left: left, right: right, head: head, body: [row(pages.isEmpty ? 2 : 0, text)]))
         }
         pages.append([cells(head), row(0, "PLAIN PAGE TEXT"), rightAligned("#AD")])
         let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
         XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",LIFE")) })
-        XCTAssertEqual(structure.pages.map(\.braillePageNumber).last, cells("#AD"))
+        let numbers: [String?] = structure.pages.map { $0.braillePageNumber }
+        XCTAssertEqual(numbers.last, cells("#AD"))
     }
 
     /// A first row of real text that has no number word is never a head,
