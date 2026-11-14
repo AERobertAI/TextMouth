@@ -251,15 +251,16 @@ struct Book: Identifiable, Codable, Hashable {
     /// Every stored field of a book, held once and shared by every copy of
     /// the struct until one is written.
     ///
-    /// Thread safety: the class is `@unchecked Sendable` because a `Book`
-    /// never writes a box it shares. Every write goes through
-    /// `makeUnique()` first, so a box that two `Book` values can reach is
-    /// never changed, and a box one value owns is changed only by that
-    /// value (which, as a struct, only one thread at a time may write).
-    /// The box is private to `Book`'s own file in practice: nothing else
-    /// holds one. The fields follow the struct's documented order, and each
-    /// is documented on the `Book` property that reads it.
-    final class Storage: @unchecked Sendable {
+    /// The fields follow the struct's documented order, and each is
+    /// documented on the `Book` property that reads it. Nothing outside
+    /// `Book` can reach a box.
+    ///
+    /// `@unchecked Sendable`: a box is never written while it is shared.
+    /// Every write goes through `Book.makeUnique()` first, so a box that two
+    /// `Book` values can reach is never changed, and a box one value owns is
+    /// written only by that value, which as a struct only one thread at a
+    /// time may write (no lock is needed).
+    private final class Storage: @unchecked Sendable {
         var id: UUID
         var title: String = ""
         var author: String = ""
