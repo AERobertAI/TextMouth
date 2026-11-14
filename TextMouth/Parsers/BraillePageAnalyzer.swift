@@ -609,6 +609,41 @@ enum BraillePageAnalyzer {
             return PageHead(rowIndex: index, left: left, text: body)
         }
 
+        /// The key a head's text is counted and matched by: its cells with each
+        /// number (a number sign and the digit cells after it) taken out, so
+        /// that "life of pi. part1" and "life of pi. part2" are one head, and a
+        /// head that changes only by its part or volume number still repeats.
+        func headKey(of text: Span) -> [UInt8] {
+            var key: [UInt8] = []
+            var inNumber = false
+            for cell in cells[text.range] {
+                if cell == numberSign { inNumber = true; continue }
+                if inNumber && digits.contains(cell) { continue }
+                inNumber = false
+                key.append(cell)
+            }
+            return key
+        }
+
+        /// The first row of the page `rows` when it may hold a known running
+        /// head's text with no number word at either end (a book that sets the
+        /// page number somewhere else on such a page, or leaves it out): its
+        /// text between the blanks, as a `PageHead` with no left word. Nil
+        /// when the page has no other row with text, so that a page holding
+        /// nothing else is never emptied by it. The caller still checks the
+        /// text against the book's running heads.
+        func plainHead(ofRows rows: [Span]) -> PageHead? {
+            guard let index = rows.firstIndex(where: { !$0.isEmpty }),
+                  changeLineNumber(of: rows[index]) == nil,
+                  rows[(index + 1)...].contains(where: { !$0.isEmpty }) else { return nil }
+            var start = rows[index].range.lowerBound
+            var end = rows[index].range.upperBound
+            while start < end, cells[start] == blank { start += 1 }
+            while end > start, cells[end - 1] == blank { end -= 1 }
+            guard start < end else { return nil }
+            return PageHead(rowIndex: index, left: nil, text: Span(start..<end))
+        }
+
         /// The texts of the running heads of the book: the head texts
         /// (`pageHead(ofRows:width:)`) that repeat on at least
         /// `minHeadRepeats` pages. A book's running heads are the same line
@@ -616,10 +651,11 @@ enum BraillePageAnalyzer {
         /// on the other), where a row of text is not; that a head carries a
         /// number word as well is what keeps text from being taken for one.
         func runningHeads(width: Int) -> Set<[UInt8]> {
+            // Counted by `headKey`, so a head's number does not tell it from another.
             var counts: [[UInt8]: Int] = [:]
             for page in 0..<file.pageCount {
                 guard let head = pageHead(ofRows: rows(ofPage: page), width: width) else { continue }
-                counts[Array(cells[head.text.range]), default: 0] += 1
+                counts[headKey(of: head.text), default: 0] += 1
             }
             return Set(counts.filter { $0.value >= BraillePageAnalyzer.minHeadRepeats }.keys)
         }
@@ -668,9 +704,11 @@ enum BraillePageAnalyzer {
             // repeats on several pages is no part of the book's text. A
             // number word at its left is the braille page number when the
             // page's last row held none (a book may put it at the top left).
-            if let head = pageHead(ofRows: rawRows, width: width),
+            // A first row that holds a known head's text with no number word
+            // is one too (`plainHead`).
+            if let head = pageHead(ofRows: rawRows, width: width) ?? plainHead(ofRows: rawRows),
                !(firstIndex == lastIndex && lastIndex != nil && numbers.braillePageNumber != nil),
-               runningHeads.contains(Array(cells[head.text.range])) {
+               runningHeads.contains(headKey(of: head.text)) {
                 if numbers.braillePageNumber == nil, let left = head.left {
                     numbers.braillePageNumber = BrailleFilePages.string(of: cells[left.range])
                 }

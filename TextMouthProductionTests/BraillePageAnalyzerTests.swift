@@ -1143,6 +1143,36 @@ extension BraillePageAnalyzerTests {
         XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",HEAD")) })
     }
 
+    /// A head that differs only by its part number ("part2" among "part1"
+    /// pages), even on a single page, is the same running head and is dropped.
+    func testAHeadWhoseOnlyDifferenceIsAPartNumberIsDropped() {
+        let part1 = ",LIFE ( ,PI4 ,\"P#A"
+        let part2 = ",LIFE ( ,PI4 ,\"P#B"
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", head: part1, body: [row(2, "FIRST PAGE TEXT")]),
+            headedPage(left: "A#AA", right: "#CB", head: part1, body: [row(0, "SECOND PAGE TEXT")]),
+            headedPage(left: "A#AB", right: "#CC", head: part1, body: [row(0, "THIRD PAGE TEXT")]),
+            headedPage(left: "A#AC", right: "#CD", head: part2, body: [row(0, "FOURTH PAGE TEXT")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("FIRST PAGE TEXT SECOND PAGE TEXT THIRD PAGE TEXT FOURTH PAGE TEXT")])
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber).last, cells("A#AC"))
+    }
+
+    /// A head with no number word at either end, its page number set
+    /// elsewhere (the bottom row), is dropped when its text is a known head.
+    func testAKnownHeadWithNoNumberWordsOnItsRowIsDropped() {
+        let head = ",LIFE ( ,PI4 ,\"P#A"
+        var pages = (0..<3).map { index in
+            headedPage(left: "A#A" + String(UnicodeScalar(UInt8(65 + index))), right: "#C" + String(UnicodeScalar(UInt8(65 + index))),
+                       head: head, body: [row(index == 0 ? 2 : 0, "TEXT" + String(UnicodeScalar(UInt8(65 + index))))])
+        }
+        pages.append([cells(head), row(0, "PLAIN PAGE TEXT"), rightAligned("#AD")])
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",LIFE")) })
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber).last, cells("#AD"))
+    }
+
     /// A first row of real text that has no number word is never a head,
     /// however often it repeats.
     func testARepeatedFirstRowWithNoNumberWordIsKept() {
