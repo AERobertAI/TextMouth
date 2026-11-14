@@ -1466,6 +1466,10 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  * - ⠠⠌⠲, "Still." or "St.": the table reads "St." always. It is read "St."
  *   only with a capital sign and a capitalized word after it ("St. Paul");
  *   any other ⠌⠲ is "still." (the capital sign aside), spelled out.
+ * - ⠆⠋ inside a word, "before" or "be" and "f": the table reads "before"
+ *   inside words, "befuddled" as "beforeuddled". Inside a word it is spelled
+ *   "bef", except for "beforehand" and "beforetime(s)", the compounds that
+ *   word is the shortform for.
  */
 
 /* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
@@ -1614,6 +1618,26 @@ spell_still(const widechar *cells, int start, int lead, int end, int next_capita
 	return 1;
 }
 
+/* Whether `cells[from..end)` is exactly the letters of `letters`, a to z. */
+static int
+spells(const widechar *cells, int from, int end, const char *letters) {
+	if ((size_t)(end - from) != strlen(letters)) return 0;
+	for (int k = from; k < end; k++)
+		if (cells[k] != letter_cell(letters[k - from])) return 0;
+	return 1;
+}
+
+/*
+ * Whether the cells `cells[from..end)`, after "before" (⠆⠋) and before the
+ * marks that may end the word, are what makes it a compound of "before":
+ * "hand" (⠓ and ⠯, "and", as contracted EBAE writes it), "time", or "times".
+ */
+static int
+is_before_compound(const widechar *cells, int from, int end) {
+	while (end > from && is_trailing_mark(cells[end - 1])) end--;
+	return (end - from == 2 && cells[from] == letter_cell('h') && cells[from + 1] == CELL_AND) ||
+			spells(cells, from, end, "time") || spells(cells, from, end, "times");
+}
 
 /*
  * Writes `cells[lead..end)`, a word that no other fix took, with the rest of
@@ -1626,6 +1650,11 @@ spell_inside_word(const widechar *cells, int start, int lead, int end, cell_list
 	int i = lead;
 	put_cells(out, cells, start, lead);
 	if (i < end && cells[i] == CELL_6) put_cell(out, cells[i++]);
+	if (i + 1 < end && cells[i] == CELL_23 && cells[i + 1] == CELL_124 && i + 2 < end &&
+			!is_trailing_mark(cells[i + 2]) && !is_before_compound(cells, i + 2, end)) {
+		put_letters(out, "bef");
+		i += 2;
+	}
 	for (; i < end; i++) {
 		if (cells[i] == CELL_346 && i > lead && cells[i - 1] != CELL_6 && i + 1 < end &&
 				cells[i + 1] == CELL_36)

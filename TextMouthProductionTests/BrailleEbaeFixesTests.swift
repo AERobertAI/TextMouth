@@ -122,6 +122,14 @@ final class BrailleEbaeFixesTests: XCTestCase {
         try assertUnchanged([(",/4 ,P", "St. People")])
     }
 
+    // MARK: - Before inside a word
+
+    /// ⠆⠋ inside a word read "before"; it reads "bef", except in the compounds
+    /// of "before".
+    func testBeforeInsideAWordIsBef() throws {
+        try assertFixed([("2FU4LED", "befuddled"), ("2FELL", "befell"), (",2FELL", "Befell")])
+        try assertUnchanged([("2F", "before"), ("2F1", "before,"), ("2FH&", "beforehand"), ("2FTIME", "beforetime")])
+    }
 
     // MARK: - Emphasized words that begin with m
 
