@@ -907,6 +907,17 @@ enum BraillePageAnalyzer {
             /// row or past the end of the page.
             func endsRun(before index: Int) -> Bool { index >= rows.count || rows[index].isBlank }
 
+            /// Whether the centered rows `run`, which no blank row follows, are
+            /// a heading that goes straight on into the first row of a
+            /// paragraph: a few rows of text (rules apart) followed by a row
+            /// that starts in cell 3, as a transcriber who sets "Chapter 1"
+            /// on the line above its text writes it.
+            func runsOnIntoIndentedText(_ run: Range<Int>) -> Bool {
+                guard run.upperBound < rows.count, rows[run.upperBound].indent == 2 else { return false }
+                let textRows = rows[run].filter { !BraillePageAnalyzer.isRule($0, in: book.cells) }.count
+                return textRows >= 1 && textRows <= BraillePageAnalyzer.maxRunOnHeadingRows
+            }
+
             // Rows before this index cannot begin a centered run: a scan from one
             // of them already ran past the run's end without finding a blank
             // row. It keeps a long stretch of centered-looking rows linear.
@@ -924,17 +935,6 @@ enum BraillePageAnalyzer {
                 if endsRun(before: end) || runsOnIntoIndentedText(start..<end) { return end }
                 noRunBefore = end
                 return nil
-            }
-
-            /// Whether the centered rows `run`, which no blank row follows, are
-            /// a heading that goes straight on into the first row of a
-            /// paragraph: a few rows of text (rules apart) followed by a row
-            /// that starts in cell 3, as a transcriber who sets "Chapter 1"
-            /// on the line above its text writes it.
-            func runsOnIntoIndentedText(_ run: Range<Int>) -> Bool {
-                guard run.upperBound < rows.count, rows[run.upperBound].indent == 2 else { return false }
-                let textRows = rows[run].filter { !BraillePageAnalyzer.isRule($0, in: book.cells) }.count
-                return textRows >= 1 && textRows <= BraillePageAnalyzer.maxRunOnHeadingRows
             }
 
             var index = 0
