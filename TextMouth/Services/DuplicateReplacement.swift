@@ -262,9 +262,7 @@ enum DuplicateReplacement {
     static func brailleTableOrigin(replacing existing: Book, with copy: Book) -> BrailleTableOrigin? {
         guard existing.offersBrailleTableChoice, copy.offersBrailleTableChoice,
               !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return copy.brailleTableOrigin }
-        let standing = existing.brailleTable ?? BrailleTableCatalog.defaultTableID
-        let ending = copy.brailleTable ?? BrailleTableCatalog.defaultTableID
-        return standing == ending ? existing.brailleTableOrigin : copy.brailleTableOrigin
+        return standingTable(of: existing) == standingTable(of: copy) ? existing.brailleTableOrigin : copy.brailleTableOrigin
     }
 
     /// Whether `first` and `second` are both audiobooks or both text books,
@@ -1181,8 +1179,14 @@ enum DuplicateReplacement {
     static func brailleTableToReadAgain(replacing existing: Book, with copy: Book) -> String? {
         guard existing.offersBrailleTableChoice, copy.offersBrailleTableChoice,
               !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return nil }
-        let standing = existing.brailleTable ?? BrailleTableCatalog.defaultTableID
-        return standing == (copy.brailleTable ?? BrailleTableCatalog.defaultTableID) ? nil : standing
+        let standing = standingTable(of: existing)
+        return standing == standingTable(of: copy) ? nil : standing
+    }
+
+    /// The stored value of the table a braille book is read with: the row's,
+    /// or the default table's when the row holds none.
+    private static func standingTable(of book: Book) -> String {
+        book.brailleTable ?? BrailleTableCatalog.defaultTableID
     }
 
     /// The text encoding that the new copy `copy` is read in again before it
