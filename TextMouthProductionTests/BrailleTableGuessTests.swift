@@ -75,7 +75,12 @@ final class BrailleTableGuessTests: XCTestCase {
     func testManyInsideWordSignsAloneAreNotClearlyEBAE() {
         // 150 different words, each a word, a capital N, and letters that tell it apart.
         let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        let words = (0..<150).map { "WORD,N" + String(letters[$0 % 26]) + String(letters[($0 / 26) % 26]) }
+        var words: [String] = []
+        for index in 0..<150 {
+            let first = String(letters[index % 26])
+            let second = String(letters[(index / 26) % 26])
+            words.append("WORD,N\(first)\(second)")
+        }
         let found = count([words.joined(separator: " ")])
         XCTAssertEqual(found.hits, 150)
         XCTAssertTrue(found.looksLikeEBAE)
@@ -86,7 +91,12 @@ final class BrailleTableGuessTests: XCTestCase {
     /// "to" to the detector, and never a joined "by": a text of it alone is
     /// not clearly EBAE.
     func testOneJoinedSignAloneIsNotClearlyEBAE() {
-        let line = (0..<200).map { "6WORD" + String(Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")[$0 % 26]) }.joined(separator: " ")
+        let letters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        var words: [String] = []
+        for index in 0..<200 {
+            words.append("6WORD\(letters[index % 26])")
+        }
+        let line = words.joined(separator: " ")
         let found = count([line])
         XCTAssertEqual(found.toWords, 200)
         XCTAssertEqual(found.byWords, 0)
