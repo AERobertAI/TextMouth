@@ -781,9 +781,16 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// already playing keeps playing until its text ends, since switching
     /// mid-playback is never seamless.
     private var renderedAudioMatchesSpeech: Bool {
+        renderedAudioMatches(text: currentText)
+    }
+
+    /// Whether the engine holds audio rendered from exactly `text`, in the
+    /// voice chosen now. The one test behind `renderedAudioMatchesSpeech` and
+    /// `speak(_:)`'s decision to keep a chapter's render (audit C9).
+    private func renderedAudioMatches(text: String) -> Bool {
         // Most direct speech has no rendered audio yet; skip hashing the text.
         guard let rendered = madeAudioEngine?.renderedSignature else { return false }
-        return rendered == SpeechRenderSignature(text: currentText, voiceIdentifier: currentVoice?.identifier)
+        return rendered == SpeechRenderSignature(text: text, voiceIdentifier: currentVoice?.identifier)
     }
 
     /// In direct mode, the character offset into currentText where the trimmed utterance starts.
@@ -1100,11 +1107,16 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         if startOnFinishedRender(of: text, from: charOffset) { return }
         #endif
         stop()
+        // Rendered audio of this very text in this very voice (a Play after
+        // a Stop, or a return to a chapter) is kept, and not rendered again
+        // (audit C9). Speech still starts directly, as always; a seek or a
+        // resume finds the audio ready.
+        let keepsRender = renderedAudioMatches(text: text)
         // `AudioEngineService.stop()` deliberately preserves a completed
         // buffer for ordinary pause/resume flows. This call begins unrelated
         // text, so keeping that buffer would let seek/resume play audio from
         // the previous chapter when the new text is too large to render.
-        if madeAudioEngine?.discardRenderedAudio() == true {
+        if !keepsRender, madeAudioEngine?.discardRenderedAudio() == true {
             transitionLog(.trace, "RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
         }
         currentText = text
@@ -1118,6 +1130,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
         // Start direct mode immediately for zero-latency playback
         speakDirect(text, fromCharOffset: charOffset)
+
+        if keepsRender {
+            transitionLog(.trace, "RENDER_KEPT: the engine already holds this text's rendered audio in this voice; no new render")
+            return
+        }
 
         // Skip background render for very large texts. The concurrent
         // AVSpeechSynthesizer.write() competes with the direct-mode
