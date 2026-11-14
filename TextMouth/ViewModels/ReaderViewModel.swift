@@ -671,6 +671,17 @@ final class ReaderViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     /// Coalesces rapid playback cursor changes into a single UI refresh.
     private var playbackUIRefreshWorkItem: DispatchWorkItem?
+    /// When the playback UI mirrors were last refreshed: what a change's
+    /// refresh counts its interval from (`schedulePlaybackUIRefresh()`).
+    private var lastPlaybackUIRefresh = Date.distantPast
+    /// The time the refreshes are counted by; the clock, unless a test gives
+    /// its own, so that it can move cursors a quarter second apart without
+    /// waiting for them.
+    var playbackUIRefreshNow: () -> Date = { Date() }
+    /// How many refreshes had to wait out part of an interval (a delayed
+    /// work item scheduled); one that came on the leading edge did not.
+    /// Tests read it.
+    private(set) var delayedPlaybackUIRefreshCount = 0
     /// Coalesces word-level cursor changes before publishing to library rows.
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
@@ -1964,16 +1975,31 @@ final class ReaderViewModel: ObservableObject {
             self?.drainPlaybackUIRefresh()
         }
         playbackUIRefreshWorkItem = workItem
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + Self.playbackUIRefreshInterval,
-            execute: workItem
-        )
+        // Refresh on the leading edge (the audit's C6): a change that comes
+        // a whole interval or more after the last refresh is shown on the
+        // main queue's next turn, where a chapter index and an offset set
+        // together are shown together, and not after an interval of waiting
+        // that a lone change, such as an audiobook's each quarter second,
+        // never needed. A change inside the interval waits out what is left
+        // of it, so refreshes still come at most once an interval, and never
+        // later than an interval after their change.
+        let sinceLast = playbackUIRefreshNow().timeIntervalSince(lastPlaybackUIRefresh)
+        if sinceLast >= Self.playbackUIRefreshInterval {
+            DispatchQueue.main.async(execute: workItem)
+        } else {
+            // A clock set back leaves more than an interval to wait: the
+            // wait is never longer than the interval.
+            let remainder = min(Self.playbackUIRefreshInterval, Self.playbackUIRefreshInterval - sinceLast)
+            delayedPlaybackUIRefreshCount += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + remainder, execute: workItem)
+        }
     }
 
     /// Apply the latest pending snapshot, then reschedule if more updates
     /// arrived while the refresh was running.
     private func drainPlaybackUIRefresh() {
         playbackUIRefreshWorkItem = nil
+        lastPlaybackUIRefresh = playbackUIRefreshNow()
         guard let snapshot = pendingPlaybackUIRefresh else { return }
         pendingPlaybackUIRefresh = nil
         refreshPlaybackUI(
