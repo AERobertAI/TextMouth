@@ -692,6 +692,10 @@ final class ReaderViewModel: ObservableObject {
     /// work item scheduled); one that came on the leading edge did not.
     /// Tests read it.
     private(set) var delayedPlaybackUIRefreshCount = 0
+    /// How many refreshes of the display mirrors the main queue has run
+    /// for cursor changes (`drainPlaybackUIRefresh()`). Tests read it, since
+    /// the mirrors no longer publish each refresh.
+    private(set) var drainedPlaybackUIRefreshCount = 0
     /// Coalesces word-level cursor changes before publishing to library rows.
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
@@ -2012,6 +2016,7 @@ final class ReaderViewModel: ObservableObject {
         lastPlaybackUIRefresh = playbackUIRefreshNow()
         guard let snapshot = pendingPlaybackUIRefresh else { return }
         pendingPlaybackUIRefresh = nil
+        drainedPlaybackUIRefreshCount += 1
         refreshPlaybackUI(
             chapterIndex: snapshot.chapterIndex,
             offset: snapshot.offset
