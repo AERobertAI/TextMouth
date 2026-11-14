@@ -38,12 +38,14 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
     /// `table`, nil for none, in a package of its own in this test's folder,
     /// its file holding a line of North American Braille ASCII, with no text
     /// cache: a book whose file nothing here reads.
-    private func makeBrailleBook(_ title: String, table: String?, fileExtension: String = "brf") throws -> Book {
+    private func makeBrailleBook(
+        _ title: String, table: String?, fileExtension: String = "brf", content: String = ",LEDG] ,PAGE #A\n"
+    ) throws -> Book {
         let packageName = "\(title)-\(UUID().uuidString).tmb"
         let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: packageName)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
         let file = package.appendingPathComponent("\(title).\(fileExtension)")
-        try Data(",LEDG] ,PAGE #A\n".utf8).write(to: file)
+        try Data(content.utf8).write(to: file)
         let book = Book(
             title: title, format: .braille, filePath: file.path, md5Hash: UUID().uuidString, folderPath: folderPath,
             tmbDirectoryName: packageName, brailleTable: table, brailleFileCode: nil
@@ -66,6 +68,53 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         book.title = "\(title) \(UUID().uuidString.prefix(8))"
         try book.saveBookInfoThrowing()
         return book
+    }
+
+    // MARK: - The Suggestion (Life of Pi, November 13)
+
+    /// Lines of English Braille, American Edition: "to" and "by" written
+    /// joined to the next word.
+    private static let oldCodeLines = String(repeating: "6GO 6BE 0THE 6SEE 6DO 6SAY\n", count: 3)
+    /// Lines of UEB, which writes none of those signs.
+    private static let uebLines = String(repeating: "THE CAT SAT ON THE MAT\n", count: 3)
+    /// The bundled contracted EBAE table.
+    private static let ebaeContracted = "en_US.tbl"
+
+    /// A book read as UEB whose braille shows the old code's signs is
+    /// suggested the old code, in one plain sentence; the table is not
+    /// changed.
+    func testABookReadAsUEBWithOldCodeSignsIsSuggestedEnglishBrailleAmericanEdition() async throws {
+        let book = try makeBrailleBook("Ledger", table: Self.grade2, content: Self.oldCodeLines)
+        let model = BrailleCodeChoiceModel(book: book, library: makeModel(with: [book]))
+        XCTAssertNil(model.suggestion, "nothing is suggested before the file is looked at")
+
+        await model.load()
+
+        XCTAssertEqual(model.suggestion, BrailleCodeWording.suggestsEnglishBrailleAmericanEdition)
+        XCTAssertEqual(
+            BrailleCodeWording.suggestsEnglishBrailleAmericanEdition,
+            "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.")
+        XCTAssertEqual(model.selection, .table(Self.grade2), "the table is never changed by itself")
+    }
+
+    /// UEB braille, a book already read with the old code's table, and a
+    /// file that cannot be looked at get no suggestion.
+    func testNoSuggestionForUEBBrailleForTheOldCodesOwnTableOrForNoFile() async throws {
+        let ueb = try makeBrailleBook("Almanac", table: Self.grade2, content: Self.uebLines)
+        let uebModel = BrailleCodeChoiceModel(book: ueb, library: makeModel(with: [ueb]))
+        await uebModel.load()
+        XCTAssertNil(uebModel.suggestion)
+
+        let old = try makeBrailleBook("Codex", table: Self.ebaeContracted, content: Self.oldCodeLines)
+        let oldModel = BrailleCodeChoiceModel(book: old, library: makeModel(with: [old]))
+        await oldModel.load()
+        XCTAssertNil(oldModel.suggestion, "the book is read with the old code already")
+
+        var missing = try makeBrailleBook("Ghost", table: Self.grade2, content: Self.oldCodeLines)
+        missing.filePath = "/nowhere/Ghost.brf"
+        let missingModel = BrailleCodeChoiceModel(book: missing, library: makeModel(with: [missing]))
+        await missingModel.load()
+        XCTAssertNil(missingModel.suggestion)
     }
 
     // MARK: - The Items and the Selection

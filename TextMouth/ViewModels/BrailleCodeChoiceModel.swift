@@ -50,6 +50,10 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     @Published private(set) var names: [String: String] = [:]
     /// Whether the offered tables are listed.
     @Published private(set) var isLoaded = false
+    /// Whether the book's braille shows the signs of English Braille,
+    /// American Edition (`BrailleCodeDetector`), found by `load()` for a book
+    /// read with a UEB table.
+    @Published private(set) var showsEBAESigns = false
 
     /// The choice, its confirmation, and the re-read, as every re-read
     /// pop-up runs them, with the book, its library, and how its files are
@@ -153,6 +157,36 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
         isLoaded && !isWorking
     }
 
+    // MARK: The Suggestion
+
+    /// The sentence that suggests English Braille, American Edition: the
+    /// book's braille shows that code's signs and the book is read as UEB,
+    /// so it probably reads wrongly. Nil when there is nothing to suggest.
+    /// Nothing changes the book's table by itself (the user chooses it in
+    /// the pop-up, which asks first).
+    var suggestion: String? {
+        showsEBAESigns && BrailleTableCatalog.table(withID: currentTableID)?.system == "ueb"
+            ? BrailleCodeWording.suggestsEnglishBrailleAmericanEdition : nil
+    }
+
+    /// Whether the braille of `book` shows English Braille, American
+    /// Edition's signs, found off the main actor and never downloading the
+    /// file (`BrailleCodeDetector`); false for a book read with no UEB
+    /// table, since there is nothing to suggest then, and for one whose file
+    /// is not on this Mac or cannot be read.
+    private func looksLikeEBAE(_ book: Book) async -> Bool {
+        guard BrailleTableCatalog.table(withID: book.brailleTable ?? BrailleTableCatalog.defaultTableID)?.system == "ueb" else {
+            return false
+        }
+        let file = book.bookFileURL
+        let fileCode = book.brailleFileCode
+        let access = flow.access
+        return await OffMainWork.run {
+            guard access.presence(of: file) == .present else { return false }
+            return (try? access.read(file) { BrailleCodeDetector.looksLikeEBAE(fileAt: file, fileCode: fileCode) }) ?? false
+        }
+    }
+
     // MARK: Listing the Tables
 
     /// Lists the offered tables and the words each is named by, off the main
@@ -171,6 +205,7 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
         storedTable = book.brailleTable
         offered = listing.tables
         names = listing.names
+        showsEBAESigns = await looksLikeEBAE(book)
         isLoaded = true
     }
 

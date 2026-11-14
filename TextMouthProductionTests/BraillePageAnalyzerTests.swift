@@ -1353,3 +1353,43 @@ final class BrailleTitlePageImportTests: XCTestCase {
         XCTAssertEqual(metadata.author, Book.unknownAuthor)
     }
 }
+
+// MARK: - Telling English Braille, American Edition from UEB (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The detector's count of pages made of `rows` (North American Braille ASCII).
+    private func detectorCount(_ rows: [String]) -> BrailleCodeDetector.Count {
+        BrailleCodeDetector.count(of: BrailleFilePages(kind: .brf, pages: [rows.map { cells($0) }]))
+    }
+
+    /// "to" and "by" joined to the next word, and "ation" and "ally" inside a
+    /// word, are the old code's signs; a book full of them looks like it.
+    func testWordsWithTheOldCodesSignsAreCountedAndTheBookLooksOld() {
+        // Two words with a joined "to" and "by", then "populN" and "reY" (a capital N or Y after a letter).
+        let count = detectorCount(["6GO 0,JOHN POPUL,N RE,Y PLAIN"])
+        XCTAssertEqual(count.words, 5)
+        XCTAssertEqual(count.hits, 4)
+        let book = detectorCount(Array(repeating: "6GO 6BE 0THE 6SEE 6DO 6SAY", count: 3))
+        XCTAssertEqual(book.hits, 18)
+        XCTAssertTrue(book.looksLikeEBAE)
+    }
+
+    /// UEB writes none of those signs: its "!" and closing quote stand alone or end a word,
+    /// and its capital sign begins a word.
+    func testUEBTextDoesNotLookOld() {
+        let count = detectorCount(["THE CAT SAT ON THE MAT6 ,HE SAID0 ,MC,NEIL", "6 0 ,NAME ,YES"])
+        XCTAssertEqual(count.hits, 1, "only a capital N after a letter, as in a name, shows a sign")
+        XCTAssertFalse(count.looksLikeEBAE)
+    }
+
+    /// A few such words in a long book are not enough, nor are several
+    /// words too few of the book's: the book needs at least ten and one in a hundred.
+    func testAFewOrAFractionOfAPercentOfOldSignsDoesNotLookOld() {
+        var rows = Array(repeating: "6GO", count: 9)
+        XCTAssertFalse(detectorCount(rows).looksLikeEBAE, "nine words are too few")
+        rows.append("6GO")
+        XCTAssertTrue(detectorCount(rows).looksLikeEBAE, "ten of ten words")
+        rows += Array(repeating: "THE CAT SAT ON THE MAT", count: 300)
+        XCTAssertFalse(detectorCount(rows).looksLikeEBAE, "ten of 1,810 words is under one in a hundred")
+    }
+}

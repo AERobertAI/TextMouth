@@ -132,6 +132,16 @@ enum BrailleCodeWording {
         "TextMouth is reading “\(bookTitle)” again with another braille code. Try again when that finishes."
     }
 
+    // MARK: The Suggestion
+
+    /// What Book Information says under the pop-up of a braille book that is
+    /// read as UEB but whose braille shows English Braille, American
+    /// Edition's signs (`BrailleCodeDetector`): which code it looks like and
+    /// where to choose it. Plain, so that VoiceOver and a braille display read
+    /// it as it is.
+    static let suggestsEnglishBrailleAmericanEdition =
+        "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information."
+
     // MARK: The Confirmation
 
     /// The title of the alert that asks before the book titled `bookTitle`
