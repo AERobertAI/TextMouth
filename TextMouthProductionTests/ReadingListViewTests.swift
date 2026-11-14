@@ -756,7 +756,7 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ReadingListWording.removeFinishedLabel, "Remove books when finished")
         XCTAssertEqual(
             ReadingListWording.removeFinishedHint,
-            "When a book is finished, take it off the reading list once its reader window moves on or closes. "
+            "Takes a finished book off the reading list once its reader window moves on or closes. "
                 + "Books finished before you turn this on stay on it."
         )
         XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
