@@ -762,6 +762,7 @@ final class LibraryCloudCommands {
         return Task { [self] in
             var pending = candidates
             var isFirstPass = true
+            var toldOfLaterShortfall = false
             while !pending.isEmpty, !Task.isCancelled {
                 // Books put off waited through a whole download: the listener
                 // may have cleared the choice, stopped keeping a book, or
@@ -782,6 +783,11 @@ final class LibraryCloudCommands {
                     origin: origin,
                     from: window
                 )
+                // A later pass that finds the room gone corrects that notice,
+                // once, counting only the books it leaves out.
+                if !isFirstPass, !toldOfLaterShortfall {
+                    toldOfLaterShortfall = announceShortfallOfLaterPass(plan.short, origin: origin, from: window)
+                }
                 logBooksLeftOutForRoom(plan.short, starting: starting, origin: origin)
                 await download(starting, in: library, from: window, origin: origin)?.value
                 pending = waiting
@@ -804,6 +810,26 @@ final class LibraryCloudCommands {
         case .readingListAdd:
             return kept.keepsReadingListBooks && library.readingList.contains(book.id)
         }
+    }
+
+    /// Tells the listener, at medium priority, that the books of `short`
+    /// that are the reading list's found no room, in the words of the first
+    /// notice for a list none of whose books starts. The first notice counted
+    /// the books it put off as downloading, so this one corrects it.
+    /// - Returns: Whether a notice was said; nothing is for no list book.
+    private func announceShortfallOfLaterPass(_ short: [Book], origin: DownloadOrigin, from window: PlatformWindow?) -> Bool {
+        let listBooks = short.filter { origin == .readingListAdd || kept.isKeptForReadingList($0.id) }
+        guard !listBooks.isEmpty else { return false }
+        VoiceOverAnnouncer.announce(
+            LibraryCloudWording.readingListDownloadsStarted(
+                titles: [],
+                short: listBooks.count,
+                quietly: origin == .keptBookRefresh
+            ),
+            from: window,
+            priority: .medium
+        )
+        return true
     }
 
     /// Which of `books` fit in the space free on the library's volume, in

@@ -997,6 +997,34 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[2].id])
     }
 
+    /// The first notice counts the books put off behind an unsized one as
+    /// downloading; when a later pass finds the room gone, one more notice
+    /// says so, counting only the books left out, and says it once.
+    func testALaterPassThatFindsNoRoomCorrectsTheFirstNoticeOnce() async {
+        let books = (1...4).map { cloudTestBook("Corrected \($0)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        // Room for the first only; then the volume is full for the next passes.
+        fixture.space.script([ArchiveLimits.standard.freeSpaceReserve + 1_000_000, ArchiveLimits.standard.freeSpaceReserve - 1])
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        let said = await announcementsWithPriority {
+            await refresher.waitForRefreshes()
+            await waitForPlanning(of: fixture.commands)
+        }
+
+        XCTAssertEqual(
+            said,
+            [
+                VoiceOverAnnouncement(message: "Downloading 4 reading list books", priority: .medium),
+                VoiceOverAnnouncement(
+                    message: "There isn't enough free space to download 3 reading list books",
+                    priority: .medium
+                ),
+            ]
+        )
+    }
+
     /// A book left out for want of room is logged though it is the
     /// listener's own kept book, which VoiceOver is told nothing of, and once
     /// only while it stays short.
