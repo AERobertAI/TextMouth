@@ -103,6 +103,18 @@ struct LibraryBookInfoSheet: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
+                    // A guessed code says where it came from and how to
+                    // correct or keep it, as the next item after the pop-up.
+                    if let guessNote = brailleCode.guessNote {
+                        Text(guessNote)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        // A menu pop-up gives no choice for the item already
+                        // selected, so keeping the guess is a button.
+                        Button(BrailleCodeWording.keepGuessLabel) { brailleCode.keepGuessedTable() }
+                            .accessibilityHint(BrailleCodeWording.keepGuessHint)
+                            .disabled(!brailleCode.isEnabled)
+                    }
                 } else if let row = book.bookInfoBrailleCodeRow {
                     LabeledContent(row.label) {
                         Text(row.value)

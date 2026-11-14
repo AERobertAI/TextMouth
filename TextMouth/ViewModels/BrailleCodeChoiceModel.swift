@@ -248,12 +248,40 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     /// kept beside the new reading and whether Edit Text stops, or refused,
     /// with the reason shown and announced, for a book that can't be read
     /// again now (`RereadChoiceFlow.choose(_:)`). The table already
-    /// selected, one this Mac does not offer, and a choice while the pop-up
-    /// takes none change nothing.
+    /// selected changes nothing, unless it was guessed: choosing it then
+    /// keeps it as the listener's own word, with no re-read and nothing
+    /// asked (`keepGuessedTable()`), so someone who agrees with the guess can
+    /// say so. One this Mac does not offer, and a choice while the pop-up
+    /// takes none, change nothing.
     func choose(_ item: Item) async {
-        guard case .table(let id) = item, item != selection, isEnabled,
+        guard case .table(let id) = item, isEnabled,
               let table = offered.first(where: { $0.id == id }) else { return }
+        if item == selection {
+            keepGuessedTable()
+            return
+        }
         await flow.choose(table)
+    }
+
+    /// Makes the guessed table the listener's own: the row and the record
+    /// stop saying "guessed" (`Book.brailleTableOrigin`), and the choice is
+    /// announced. The book's text is not read again, since it is read with
+    /// that table already. Nothing happens for a table that was not guessed.
+    func keepGuessedTable() {
+        guard storedOrigin == .guessed, let book = flow.library.bookByID(bookID) else { return }
+        flow.library.updateBook(id: bookID) { $0.brailleTableOrigin = nil }
+        // The row has no origin now, so the selected item's name is the code's alone.
+        reload()
+        VoiceOverAnnouncer.announce(BrailleCodeWording.keptGuess(bookTitle: book.title, codeName: name(of: selection)))
+    }
+
+    // MARK: The Guess's Note
+
+    /// The sentence under the pop-up of a guessed book that says where the
+    /// guess came from and how to correct or keep it; nil for every other
+    /// book.
+    var guessNote: String? {
+        storedOrigin == .guessed ? BrailleCodeWording.guessedRecovery : nil
     }
 
     /// The confirmation's title for `table`, naming the book as the library

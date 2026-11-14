@@ -135,6 +135,24 @@ enum BrailleCodeWording {
         origin == .guessed ? "\(name), \(guessedNote)" : name
     }
 
+    /// What Book Information says under the pop-up of a book whose code the
+    /// import guessed: where the code came from, how to correct it, and how
+    /// to keep it. Plain and short, so VoiceOver and a braille display read
+    /// it as it is.
+    static let guessedRecovery =
+        "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code."
+    /// The label of the button under that note that keeps the guessed code
+    /// (a pop-up cannot be asked for the choice already selected), and what
+    /// it does.
+    static let keepGuessLabel = "Keep This Code"
+    static let keepGuessHint = "Stops saying the code was guessed. The book is not read again."
+
+    /// What VoiceOver hears when the listener keeps a guessed code by
+    /// choosing it again: the book and the code, now the listener's own.
+    static func keptGuess(bookTitle: String, codeName: String) -> String {
+        "“\(bookTitle)” keeps \(codeName)."
+    }
+
     // MARK: The Pop-up
 
     /// The pop-up's hint, which VoiceOver says after its label and value.
