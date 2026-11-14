@@ -94,6 +94,15 @@ struct LibraryBookInfoSheet: View {
                 // Braille, contracted (Grade 2)".
                 if book.offersBrailleTableChoice {
                     BookRereadPopUp(model: brailleCode, label: BrailleCodeWording.bookInfoLabel, hint: BrailleCodeWording.popUpHint)
+                    // A book read as UEB whose braille is English Braille,
+                    // American Edition's: say so, in words VoiceOver reads
+                    // as the next item after the pop-up. The table is never
+                    // changed by itself.
+                    if let suggestion = brailleCode.suggestion {
+                        Text(suggestion)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 } else if let row = book.bookInfoBrailleCodeRow {
                     LabeledContent(row.label) {
                         Text(row.value)

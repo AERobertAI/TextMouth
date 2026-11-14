@@ -1068,3 +1068,428 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.braillePageLabel), ["1", "2"])
     }
 }
+
+// MARK: - Running heads (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The first row of a page the way an old transcription writes it: a
+    /// braille page number at the left, the running head, a print page
+    /// number at the right end of a 40-cell line.
+    private func headRow(left: String, head: String, right: String) -> String {
+        rightAligned(right, text: left + " " + head)
+    }
+
+    /// A page of an old-style book: its head row, then a paragraph's rows.
+    private func headedPage(left: String, right: String, head: String = ",LIFE ( ,PI4 ,\"P#A", body: [String]) -> [String] {
+        [headRow(left: left, head: head, right: right)] + body
+    }
+
+    /// A head with a braille page number at its left and a print page number
+    /// at its right, repeated on three pages, is taken out whole: the book's
+    /// text has none of it, and both numbers are the page's.
+    func testARunningHeadThatRepeatsOnThreePagesIsDropped() {
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", body: [row(2, "FIRST PAGE TEXT")]),
+            headedPage(left: "A#AA", right: "#CB", body: [row(0, "SECOND PAGE TEXT")]),
+            headedPage(left: "A#AB", right: "#CC", body: [row(0, "THIRD PAGE TEXT")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("FIRST PAGE TEXT SECOND PAGE TEXT THIRD PAGE TEXT")])
+        // The left word is the braille page number, the right word the print page's.
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("A#AJ"), cells("A#AA"), cells("A#AB")])
+        XCTAssertEqual(structure.pages.map(\.printPageNumber), [cells("#CA"), cells("#CB"), cells("#CC")])
+    }
+
+    /// A head on only two pages could be text: it stays, as it did.
+    func testAHeadThatRepeatsOnTwoPagesIsKept() {
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", body: [row(2, "ONE")]),
+            headedPage(left: "A#AA", right: "#CB", body: [row(0, "TWO")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        // Each page's head row is text, as before: it stands before the page's paragraph.
+        XCTAssertEqual(structure.blocks.count, 2)
+        XCTAssertTrue(structure.blocks.first?.text.contains(cells(",LIFE")) ?? false)
+        // With no right-hand braille page number the left word is not read as one either.
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [nil, nil])
+    }
+
+    /// A head that alternates between two texts (title, chapter) is dropped
+    /// when each text repeats on three pages.
+    func testAlternatingHeadsAreBothDropped() {
+        /// A letter A to F by index, to make each page's numbers differ.
+        func letter(_ index: Int) -> String { String(UnicodeScalar(UInt8(65 + index))) }
+        var pages: [[String]] = []
+        for index in 0..<6 {
+            let head = index % 2 == 0 ? ",TITLE" : ",CHAPTER"
+            pages.append(headedPage(left: "#" + letter(index), right: "#A" + letter(index), head: head,
+                                    body: [row(index == 0 ? 2 : 0, "TEXT" + letter(index))]))
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",TITLE")) || $0.text.contains(cells(",CHAPTER")) })
+        XCTAssertEqual(structure.pages.count, 6)
+    }
+
+    /// A page whose last row already holds the braille page number keeps it,
+    /// and the head's left word is not read as another.
+    func testABraillePageNumberAtTheBottomWinsOverTheHeadsLeftWord() {
+        func page(_ left: String, _ right: String, _ bottom: String) -> [String] {
+            [headRow(left: left, head: ",HEAD", right: right), row(2, "BODY TEXT"), rightAligned(bottom)]
+        }
+        let structure = BraillePageAnalyzer.structure(
+            of: [page("#A", "#CA", "#AA"), page("#B", "#CB", "#AB"), page("#C", "#CC", "#AC")], formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("#AA"), cells("#AB"), cells("#AC")])
+        XCTAssertEqual(structure.pages.map(\.printPageNumber), [cells("#CA"), cells("#CB"), cells("#CC")])
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",HEAD")) })
+    }
+
+    /// A first row of real text that has no number word is never a head,
+    /// however often it repeats.
+    func testARepeatedFirstRowWithNoNumberWordIsKept() {
+        let pages = (0..<4).map { _ in [row(2, "REPEATED OPENING")] }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        // Four pages, four paragraphs: none is taken for a head.
+        XCTAssertEqual(structure.blocks.count, 4)
+        XCTAssertTrue(structure.blocks.allSatisfy { $0.text.contains(cells("REPEATED")) })
+    }
+}
+
+// MARK: - Roman numeral change lines (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// A front matter page's change line (`------;IX`) is taken out like a
+    /// numbered one, and its numeral is kept as the page's change.
+    func testARomanNumeralChangeLineIsTakenOutOfTheText() {
+        let structure = formattedStructure([row(2, "ONE TWO"), row(0, "THREE"), row(0, "------;IX"), row(0, "FOUR"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("ONE TWO THREE FOUR")])
+        XCTAssertEqual(structure.pages.first?.printPageChanges, [cells(";IX")])
+    }
+
+    /// A capital sign and every Roman numeral letter are accepted; a numeral
+    /// of more than seven letters, or a word with another letter, is no change line.
+    func testRomanNumeralChangeLinesTakeCapitalsAndNoOtherLetters() {
+        let accepted = formattedStructure([row(2, "ONE"), row(0, "---,XLVIII"), row(0, "TWO"), rightAligned("#A")])
+        XCTAssertEqual(accepted.pages.first?.printPageChanges, [cells(",XLVIII")])
+        XCTAssertEqual(accepted.blocks, [paragraph("ONE TWO")])
+        for ascii in ["---;IXA", "---;", "---;IIIIIIII", "--;IX"] {
+            let kept = formattedStructure([row(2, "ONE"), row(0, ascii), row(0, "TWO"), rightAligned("#A")])
+            XCTAssertEqual(kept.pages.first?.printPageChanges, [], ascii)
+            XCTAssertEqual(kept.blocks.count, 1, ascii)
+            XCTAssertTrue(kept.blocks.first?.text.contains(cells(ascii)) ?? false, ascii)
+        }
+    }
+}
+
+// MARK: - Chapter rows that run straight into text (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// "Chapter 1" centered under a rule and followed directly by the
+    /// paragraph's indented first row, with no blank row between, is a
+    /// heading; the rule is no part of its text.
+    func testACenteredChapterRowRunningIntoAnIndentedRowIsAHeadingWithoutItsRule() {
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", centered("333333333333"), centered(",*APT] #A"),
+            row(2, "THE FIRST ROW"), row(0, "RUNS ON"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            paragraph("BEFORE"), .heading(level: 1, text: cells(",*APT] #A")), paragraph("THE FIRST ROW RUNS ON"),
+        ])
+    }
+
+    /// A part title above the rule is part of the same heading, rule left out.
+    func testAPartTitleAndAChapterRowAreOneHeading() {
+        let structure = formattedStructure([
+            centered(",PART ONE"), centered("333333333333"), centered(",*APT] #A"), row(2, "TEXT"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [.heading(level: 1, text: cells(",PART ONE ,*APT] #A")), paragraph("TEXT")])
+    }
+
+    /// A rule row alone, between blank rows, is no heading and no text.
+    func testARuleRowAloneMakesNoHeading() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("333333333333"), "", row(2, "AFTER"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AFTER")])
+    }
+
+    /// Letters repeated are not a rule: a centered row of them stays text.
+    func testARowOfLettersIsNotARule() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("AAAA"), "", rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), .heading(level: 1, text: cells("AAAA"))])
+    }
+
+    /// More than three centered rows of text running into an indented row
+    /// are not a heading: they are as likely to be a centered verse.
+    func testFourCenteredRowsRunningIntoTextAreNotAHeading() {
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", centered("ONE"), centered("TWO"), centered("THREE"), centered("FOUR"),
+            row(2, "TEXT"), rightAligned("#A"),
+        ])
+        XCTAssertFalse(structure.blocks.contains { if case .heading(level: 1, text: _) = $0 { return true } else { return false } })
+    }
+
+    /// A centered row that runs into a row at cell 1, not cell 3, is not a heading, as before.
+    func testACenteredRowRunningIntoACellOneRowIsStillNotAHeading() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("AAAA"), row(0, "RUNS ON"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AAAA RUNS ON")])
+    }
+}
+
+// MARK: - The title page (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The cells of `ascii`, as one braille text with its blanks.
+    private func braille(_ ascii: String) -> String { cells(ascii) }
+
+    /// The centered rows of the first page come back one by one, a rule or a
+    /// row of another kind parting two stretches with an empty string.
+    func testTheCenteredRowsOfTheFirstPageAreGivenRowByRow() {
+        let page = [
+            rightAligned("#A"), centered(",LIFE ( ,PI"), centered("0,YANN ,M>TEL"), centered("333333333333"),
+            centered(",9 #D ,VOLUMES"), "", row(2, "A PARAGRAPH OF TEXT"),
+        ]
+        let found = BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: [page]))
+        XCTAssertTrue(found.hasRule)
+        XCTAssertEqual(found.lines, [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
+    }
+
+    /// A page with no text before the title page (a form feed at the file's
+    /// start) is passed over, and a BRL has no title page.
+    func testAnEmptyFirstPageIsPassedOverAndABRLHasNoTitlePage() {
+        let pages = [[""], [centered(",TITLE"), centered(",ONE"), centered(",TWO")]]
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: pages)).lines.count, 3)
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brl, pages: pages)).lines, [])
+    }
+
+    /// English Braille's "by" sign written against the author's capital,
+    /// "Title / by Author", the title is the first row and the author the
+    /// words after the sign.
+    func testTheEnglishBrailleBySignNamesTheAuthor() {
+        let names = BrailleTitlePage.names(inRows: [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
+        XCTAssertEqual(names, BrailleTitlePage.Names(title: braille(",LIFE ( ,PI"), author: braille(",YANN ,M>TEL")))
+    }
+
+    /// "by" spelled, on a row of its own with the author on the next, or
+    /// with the author after it, or inside the title's row, names the author.
+    func testASpelledByNamesTheAuthorOnItsOwnRowOrInTheTitlesRow() {
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE"), braille("BY"), braille(",SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE"), braille("BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        // A "by" inside the title is the title's when the next row begins with "by".
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",STAND BY ,ME"), braille("BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",STAND BY ,ME"), author: braille(",SOME ,ONE")))
+    }
+
+    /// A title of two rows before the author's is one title, and a
+    /// "Published by" row of a later stretch is no author's.
+    func testATwoRowTitleIsOneTitleAndALaterPublishedByNamesNoAuthor() {
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",ONE"), braille(",TWO"), braille("BY ,A ,B")]),
+            BrailleTitlePage.Names(title: braille(",ONE ,TWO"), author: braille(",A ,B")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",TITLE"), "", braille(",PUBLISHED BY ,X"), braille(",ISBN")], hasRule: true),
+            BrailleTitlePage.Names(title: braille(",TITLE"), author: nil))
+    }
+
+    /// A page of one or two rows with no "by" is no title page (a chapter
+    /// opening with the book's title and its heading is not): nothing is
+    /// named, and the file's name stands.
+    func testAPageWithNoByAndFewerThanThreeRowsNamesNothing() {
+        XCTAssertNil(BrailleTitlePage.names(inRows: []))
+        XCTAssertNil(BrailleTitlePage.names(inRows: [braille(",PRIDE"), "", braille(",CHAPTER ,I")]))
+    }
+
+    /// Three centered rows with no "by" and no rule (a part title, a chapter
+    /// heading, an epigraph) are no title page; with a rule they are.
+    func testThreeCenteredRowsWithNoByNeedARuleToBeATitlePage() {
+        let rows = [braille(",PART ,ONE"), braille(",CHAPTER ,I"), braille(",AN ,EPIGRAPH")]
+        XCTAssertNil(BrailleTitlePage.names(inRows: rows))
+        XCTAssertEqual(BrailleTitlePage.names(inRows: rows, hasRule: true)?.title, braille(",PART ,ONE"))
+    }
+}
+
+/// A BRF's title page, read into the title and author a new book is listed
+/// under.
+final class BrailleTitlePageImportTests: XCTestCase {
+    /// A file named `name` holding `rows` as BRF text (CR LF between rows),
+    /// in a folder of this test's own.
+    private func brf(named name: String, rows: [String]) throws -> URL {
+        let url = try makeSandboxDirectory("BrailleTitlePage").appendingPathComponent(name)
+        try Data(rows.joined(separator: "\r\n").utf8).write(to: url)
+        return url
+    }
+
+    /// `ascii` centered in a 40-cell line.
+    private func centered(_ ascii: String) -> String {
+        String(repeating: " ", count: (40 - ascii.count) / 2) + ascii
+    }
+
+    /// An invented title page: the title, "by" and the author, a rule, a
+    /// publisher's line, and a first page of text after it.
+    private var titlePageRows: [String] {
+        [centered(",A ,QUIET ,HARBOUR"), centered("0,JOHN ,SMITH"), centered("333333333333"),
+         centered(",PUBLI%$ BY ,ACME"), centered(",SEATTLE"), "", "\u{0C}" + "  ,THE ,FIRST ,CHAPTER"]
+    }
+
+    /// The Braille setting's table, Grade 2 UEB, reads the title page, and
+    /// the book is listed under its title and author, not its file's name.
+    func testANewBRFIsListedUnderItsTitlePagesTitleAndAuthor() throws {
+        let url = try brf(named: "000012345.brf", rows: titlePageRows)
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "en-ueb-g2.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "A Quiet Harbour")
+        XCTAssertEqual(metadata.author, "John Smith")
+    }
+
+    /// A BRF with no title page, such as the sample that opens with a chapter, keeps its file's name.
+    func testABRFWithoutATitlePageKeepsItsFileNameAndAnUnknownAuthor() throws {
+        let url = try brf(named: "just-a-chapter.brf", rows: [centered(",CHAPTER ,ONE"), "", "  ,SOME ,TEXT"])
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "en-ueb-g2.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "just-a-chapter")
+        XCTAssertEqual(metadata.author, Book.unknownAuthor)
+    }
+
+    /// A table the book cannot be read with leaves the file's name, never a refusal.
+    func testAnUnknownTableLeavesTheFileNameAndNeverFails() throws {
+        let url = try brf(named: "named.brf", rows: titlePageRows)
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "no-such-table.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "named")
+        XCTAssertEqual(metadata.author, Book.unknownAuthor)
+    }
+}
+
+// MARK: - Telling English Braille, American Edition from UEB (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The detector's count of pages made of `rows` (North American Braille ASCII).
+    private func detectorCount(_ rows: [String]) -> BrailleCodeDetector.Count {
+        BrailleCodeDetector.count(of: BrailleFilePages(kind: .brf, pages: [rows.map { cells($0) }]))
+    }
+
+    /// "to" and "by" joined to the next word, and "ation" and "ally" inside a
+    /// word, are the old code's signs; a book full of them looks like it.
+    func testWordsWithTheOldCodesSignsAreCountedAndTheBookLooksOld() {
+        // Two words with a joined "to" and "by", then "populN" and "reY" (a capital N or Y after a letter).
+        let count = detectorCount(["6GO 0,JOHN POPUL,N RE,Y PLAIN"])
+        XCTAssertEqual(count.words, 5)
+        XCTAssertEqual(count.hits, 4)
+        let book = detectorCount(Array(repeating: "6GO 6BE 0THE 6SEE 6DO 6SAY", count: 3))
+        XCTAssertEqual(book.hits, 18)
+        XCTAssertTrue(book.looksLikeEBAE)
+    }
+
+    /// UEB writes none of those signs: its "!" and closing quote stand alone or end a word,
+    /// and its capital sign begins a word.
+    func testUEBTextDoesNotLookOld() {
+        let count = detectorCount(["THE CAT SAT ON THE MAT6 ,HE SAID0 ,MC,NEIL", "6 0 ,NAME ,YES"])
+        XCTAssertEqual(count.hits, 1, "only a capital N after a letter, as in a name, shows a sign")
+        XCTAssertFalse(count.looksLikeEBAE)
+    }
+
+    /// A UEB passage full of -tion and -ity words (the dots 5-6 sign, ASCII
+    /// ";N" and ";Y"), "ff" inside words, closing quotes, "was", "!", and
+    /// names with a capital inside them, repeated hundreds of times, does not
+    /// look old: a name counts once, however often it stands.
+    func testAUEBPassageWithTionItyFFAndInternalCapitalNamesDoesNotLookOld() {
+        let line = "NA;N ,MC,NEIL ,MAC,YOUNG C;Y O6ER 0 ,\"HELLO0 STOP6"
+        let count = detectorCount(Array(repeating: line, count: 400))
+        XCTAssertEqual(count.hits, 2, "the two names, once each")
+        XCTAssertFalse(count.looksLikeEBAE)
+    }
+
+    /// EBAE's "ation" and "ally" words are many different words, and count each.
+    func testManyDifferentAtionAndAllyWordsLookOld() {
+        let words = ["POPUL,N", "RE,Y", "NA,N", "TOTAL,Y", "ACT,N", "REAL,Y", "NOT,N", "FINAL,Y", "RAT,N", "LOCAL,Y", "MOT,N"]
+        let count = detectorCount([words.joined(separator: " ")])
+        XCTAssertEqual(count.hits, 11)
+        XCTAssertTrue(count.looksLikeEBAE)
+    }
+
+    /// A few such words in a long book are not enough, nor are several
+    /// words too few of the book's: the book needs at least ten and one in a hundred.
+    func testAFewOrAFractionOfAPercentOfOldSignsDoesNotLookOld() {
+        var rows = Array(repeating: "6GO", count: 9)
+        XCTAssertFalse(detectorCount(rows).looksLikeEBAE, "nine words are too few")
+        rows.append("6GO")
+        XCTAssertTrue(detectorCount(rows).looksLikeEBAE, "ten of ten words")
+        rows += Array(repeating: "THE CAT SAT ON THE MAT", count: 300)
+        XCTAssertFalse(detectorCount(rows).looksLikeEBAE, "ten of 1,810 words is under one in a hundred")
+    }
+}
+
+// MARK: - What a left-hand page number is (review of Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// A list item's "1." (number sign, digit, period) at the start of a
+    /// first row is no page number, however often its row repeats.
+    func testAListItemNumberAtTheLeftOfARepeatedFirstRowIsNoHead() {
+        let pages = (0..<4).map { _ in [row(0, "#A4 ,ITEM TEXT"), row(2, "BODY")] }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [nil, nil, nil, nil])
+        XCTAssertEqual(structure.blocks.map(\.text).joined().components(separatedBy: cells("#A4")).count - 1, 4)
+    }
+
+    /// A letter and up to four digits are a page number: "a10" and "#ABCD".
+    func testALetterAndUpToFourDigitsAreALeftPageNumber() {
+        let pages = ["A#AJ", "#ABCD", "P#B"].map { left in
+            headedPage(left: left, right: "#CA", head: ",HEAD", body: [row(2, "BODY")])
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("A#AJ"), cells("#ABCD"), cells("P#B")])
+    }
+}
+
+// MARK: - The launch refresh never replaces what the user typed (review of Life of Pi, November 13)
+
+extension BrailleTitlePageImportTests {
+    /// What a BRF's title page names, as the refresh reads it.
+    private var named: MetadataReading {
+        MetadataReading(bookID: UUID(), named: [.title: "Life of Pi", .author: "Yann Martel"])
+    }
+
+    /// A braille book listed under the file's name, with `handEdits` as its record.
+    private func brfBook(handEdits: Book.HandEdits?, author: String = Book.unknownAuthor) -> Book {
+        var book = Book(title: "000058499", author: author, format: .braille, filePath: "/nowhere/000058499.brf", md5Hash: "x")
+        book.handEdits = handEdits
+        return book
+    }
+
+    /// Only braille books are read again for the title page's reader: a row
+    /// stamped by the version before it is outdated, an EPUB's is not, and a
+    /// braille book stamped by the new version is current.
+    func testOnlyBrailleBooksAreRefreshedForTheTitlePageReader() {
+        var brf = brfBook(handEdits: nil)
+        brf.metadataReaderVersion = ImportedFileMetadata.readerVersion
+        XCTAssertTrue(LibraryViewModel.needsMetadataRefresh(brf))
+        brf.metadataReaderVersion = ImportedFileMetadata.readerVersion(for: .braille)
+        XCTAssertFalse(LibraryViewModel.needsMetadataRefresh(brf))
+        var epub = Book(title: "E", format: .epub, filePath: "/nowhere/e.epub", md5Hash: "y")
+        epub.metadataReaderVersion = ImportedFileMetadata.readerVersion
+        XCTAssertFalse(LibraryViewModel.needsMetadataRefresh(epub))
+        XCTAssertNotEqual(ImportedFileMetadata.readerVersion(for: .braille), ImportedFileMetadata.readerVersion(for: .epub))
+    }
+
+    /// A title or author the user edited stays; the field they did not edit takes the title page's.
+    func testTheRefreshKeepsAHandEditedTitleAndAuthor() {
+        let edited = brfBook(handEdits: Book.HandEdits(fields: [.title, .author], sinceImport: true), author: "My Author")
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: edited, from: named), [:])
+        let titleOnly = brfBook(handEdits: Book.HandEdits(fields: [.title], sinceImport: true))
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: titleOnly, from: named), [.author: "Yann Martel"])
+    }
+
+    /// A row with no record of its edits (from before records) gives up only
+    /// a placeholder author: a title or an author it holds may be typed, so it stays.
+    func testTheRefreshOfARowWithNoRecordKeepsATypedTitleAndAuthor() {
+        let typed = brfBook(handEdits: nil, author: "Someone Typed")
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: typed, from: named), [:])
+        let placeholder = brfBook(handEdits: nil)
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: placeholder, from: named), [.author: "Yann Martel"])
+    }
+}

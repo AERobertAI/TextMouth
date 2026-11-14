@@ -142,8 +142,15 @@ enum PageReaderVersions {
             // a PEF (PG12), so its own case reads again only braille books
             // (V07). A BRL, which has no pages, shares the format: it is read
             // again once, as every braille book from before pages is, and
-            // then stamped.
-            return "1.0.0"
+            // then stamped. At "1.1.0" the page analyzer drops a running head
+            // that repeats on three pages or more (and takes a braille page
+            // number at its left), takes a Roman numeral print page change
+            // line out of the text, and reads a centered "Chapter" row that
+            // runs straight into an indented row as a heading, so every
+            // braille book is read again once; a book with none of those
+            // reads byte for byte as before. (The braille helper's own
+            // fixes, `brfdecode`'s, ride on this bump.)
+            return "1.1.0"
         case .txt:
             // Plain text's form feeds begin pages (PG13), and its own case
             // reads again only plain text books (V07). Most hold no form

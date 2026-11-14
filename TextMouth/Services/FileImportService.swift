@@ -258,6 +258,19 @@ struct ImportedFileMetadata {
     /// with the author role (`EPUBParser.authorName(in:)`); rows never
     /// stamped were read by what came before.
     static let readerVersion = "1.0.0"
+    /// The version of the braille books' reader. 1.1.0: a BRF's title and
+    /// author are read from its braille title page (`BrailleTitlePage`), so
+    /// each braille book is read again once at launch, and no other format's
+    /// book is (`readerVersion(for:)`).
+    static let brailleReaderVersion = "1.1.0"
+
+    /// The version of the reader of `format`'s metadata: what a row of that
+    /// format is stamped with, and what the launch refresh compares its stamp
+    /// with, so a better reader of one format reads only that format's books
+    /// again.
+    static func readerVersion(for format: BookFormat) -> String {
+        format == .braille ? brailleReaderVersion : readerVersion
+    }
 
     /// Whether this reader opens a file of `format` at all: a plain text,
     /// Markdown, or HTML file keeps no title or author it reads.
@@ -284,11 +297,18 @@ struct ImportedFileMetadata {
     /// sets `readingTextutilNames` false, since the conversion that reads
     /// its text names them too (`MarkdownCacheService.GeneratedCache`), and
     /// the launch refresh leaves it true.
+    ///
+    /// A BRF names its title and author on its title page, in braille, which
+    /// is read with a table: `brailleReading` gives the table and the braille
+    /// file characters a book already recorded (the launch refresh), and an
+    /// import, which has none yet, passes nil and takes the Braille setting's
+    /// table and the file's own characters, as the import records them.
     static func read(
         from url: URL,
         format: BookFormat,
         fallbackTitle: String? = nil,
-        readingTextutilNames: Bool = true
+        readingTextutilNames: Bool = true,
+        brailleReading: (table: String, fileCode: String?)? = nil
     ) -> ImportedFileMetadata {
         var metadata = ImportedFileMetadata(title: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
         /// Adopts the title and author a format's metadata names, keeping
@@ -319,11 +339,20 @@ struct ImportedFileMetadata {
             }
         case .braille:
             // A PEF names its title and author in its head (FMT20); a BRF
-            // or a BRL names nothing, so it keeps its file's name and the
-            // unknown author.
-            if BrailleBookReader.kind(of: url) == .pef {
+            // names them on its title page, in braille (`BrailleTitlePage`);
+            // a BRL has no layout, so it keeps its file's name and the
+            // unknown author, as does a BRF whose title page names none.
+            switch BrailleBookReader.kind(of: url) {
+            case .pef:
                 let named = BrailleFileReader.pefMetadata(of: url)
                 adopt(title: named.title ?? "", author: named.author ?? "")
+            case .brf:
+                let table = brailleReading?.table ?? BraillePreferences.importTable()
+                let fileCode = brailleReading.map(\.fileCode) ?? FileImportService.brailleFileCode(ofImported: url)
+                let named = BrailleTitlePage.names(ofFileAt: url, table: table, fileCode: fileCode)
+                adopt(title: named.title ?? "", author: named.author ?? "")
+            case .brl:
+                break
             }
         case .pdf:
             // Title and author from the document's attributes.
@@ -1063,7 +1092,7 @@ enum FileImportService {
                 epubLanguage: metadata.epub?.language,
                 epubIdentifier: metadata.epub?.identifier,
                 epubVersion: metadata.epub?.epubVersion,
-                metadataReaderVersion: ImportedFileMetadata.readerVersion,
+                metadataReaderVersion: ImportedFileMetadata.readerVersion(for: format),
                 // The book's record of hand edits begins here, empty (#1291):
                 // its title and author are what the metadata reader stamped
                 // above read in this very file, so a launch refresh by a
