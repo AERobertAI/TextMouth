@@ -1068,3 +1068,86 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.braillePageLabel), ["1", "2"])
     }
 }
+
+// MARK: - Running heads (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The first row of a page the way an old transcription writes it: a
+    /// braille page number at the left, the running head, a print page
+    /// number at the right end of a 40-cell line.
+    private func headRow(left: String, head: String, right: String) -> String {
+        rightAligned(right, text: left + " " + head)
+    }
+
+    /// A page of an old-style book: its head row, then a paragraph's rows.
+    private func headedPage(left: String, right: String, head: String = ",LIFE ( ,PI4 ,\"P#A", body: [String]) -> [String] {
+        [headRow(left: left, head: head, right: right)] + body
+    }
+
+    /// A head with a braille page number at its left and a print page number
+    /// at its right, repeated on three pages, is taken out whole: the book's
+    /// text has none of it, and both numbers are the page's.
+    func testARunningHeadThatRepeatsOnThreePagesIsDropped() {
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", body: [row(2, "FIRST PAGE TEXT")]),
+            headedPage(left: "A#AA", right: "#CB", body: [row(0, "SECOND PAGE TEXT")]),
+            headedPage(left: "A#AB", right: "#CC", body: [row(0, "THIRD PAGE TEXT")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("FIRST PAGE TEXT SECOND PAGE TEXT THIRD PAGE TEXT")])
+        // The left word is the braille page number, the right word the print page's.
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("A#AJ"), cells("A#AA"), cells("A#AB")])
+        XCTAssertEqual(structure.pages.map(\.printPageNumber), [cells("#CA"), cells("#CB"), cells("#CC")])
+    }
+
+    /// A head on only two pages could be text: it stays, as it did.
+    func testAHeadThatRepeatsOnTwoPagesIsKept() {
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", body: [row(2, "ONE")]),
+            headedPage(left: "A#AA", right: "#CB", body: [row(0, "TWO")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks.count, 1)
+        XCTAssertTrue(structure.blocks.first?.text.contains(cells(",LIFE")) ?? false)
+        // With no right-hand braille page number the left word is not read as one either.
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [nil, nil])
+    }
+
+    /// A head that alternates between two texts (title, chapter) is dropped
+    /// when each text repeats on three pages.
+    func testAlternatingHeadsAreBothDropped() {
+        /// A letter A to F by index, to make each page's numbers differ.
+        func letter(_ index: Int) -> String { String(UnicodeScalar(UInt8(65 + index))) }
+        var pages: [[String]] = []
+        for index in 0..<6 {
+            let head = index % 2 == 0 ? ",TITLE" : ",CHAPTER"
+            pages.append(headedPage(left: "#" + letter(index), right: "#A" + letter(index), head: head,
+                                    body: [row(index == 0 ? 2 : 0, "TEXT" + letter(index))]))
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",TITLE")) || $0.text.contains(cells(",CHAPTER")) })
+        XCTAssertEqual(structure.pages.count, 6)
+    }
+
+    /// A page whose last row already holds the braille page number keeps it,
+    /// and the head's left word is not read as another.
+    func testABraillePageNumberAtTheBottomWinsOverTheHeadsLeftWord() {
+        func page(_ left: String, _ right: String, _ bottom: String) -> [String] {
+            [headRow(left: left, head: ",HEAD", right: right), row(2, "BODY TEXT"), rightAligned(bottom)]
+        }
+        let structure = BraillePageAnalyzer.structure(
+            of: [page("#A", "#CA", "#AA"), page("#B", "#CB", "#AB"), page("#C", "#CC", "#AC")], formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("#AA"), cells("#AB"), cells("#AC")])
+        XCTAssertEqual(structure.pages.map(\.printPageNumber), [cells("#CA"), cells("#CB"), cells("#CC")])
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",HEAD")) })
+    }
+
+    /// A first row of real text that has no number word is never a head,
+    /// however often it repeats.
+    func testARepeatedFirstRowWithNoNumberWordIsKept() {
+        let pages = (0..<4).map { _ in [row(2, "REPEATED OPENING")] }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks.count, 1)
+        XCTAssertTrue(structure.blocks.first?.text.contains(cells("REPEATED")) ?? false)
+    }
+}

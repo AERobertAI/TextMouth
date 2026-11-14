@@ -70,6 +70,8 @@ enum BraillePageAnalyzer {
     /// The most rows a heading that stands alone may have, to count toward
     /// the implied width of a book (see `Book.measure()`).
     private static let maxStandAloneRows = 12
+    /// The fewest pages a head's text must repeat on to be a running head.
+    private static let minHeadRepeats = 3
     /// The fewest dots-3-6 cells a print page change line starts with.
     private static let minChangeDashes = 3
     /// The indent of a level-2 heading's rows: it starts in cell 5.
@@ -114,6 +116,8 @@ enum BraillePageAnalyzer {
         // before anything is taken out of any row.
         let measure = book.measure()
         let width = measure.width
+        // The running heads: first rows whose text repeats on several pages.
+        let runningHeads = book.runningHeads(width: width)
 
         // One page at a time: take its numbers and change lines out, keeping
         // the rows left, and read its rows into blocks.
@@ -122,7 +126,8 @@ enum BraillePageAnalyzer {
         var reader = BlockReader(book: book, width: width, pageCount: file.pageCount)
         for pageIndex in 0..<file.pageCount {
             let (numbers, kept) = book.extractNumbers(
-                fromPage: pageIndex, width: width, dropsTopBlankRows: measure.dropsPageTopBlankRows)
+                fromPage: pageIndex, width: width, dropsTopBlankRows: measure.dropsPageTopBlankRows,
+                runningHeads: runningHeads)
             pageNumbers.append(numbers)
             reader.read(kept, onPage: pageIndex)
         }
@@ -466,6 +471,79 @@ enum BraillePageAnalyzer {
             return (word, Span(rowStart..<gapStart))
         }
 
+        // MARK: Running heads
+
+        /// The first row of a page read as a running head: the number words
+        /// at its two ends, and the text between them.
+        struct PageHead {
+            /// The index of the row among the page's rows.
+            let rowIndex: Int
+            /// The number word at the row's left (a braille page number that a
+            /// book puts before its head), when it has one.
+            let left: Span?
+            /// The text between the number words, with no blank cell at either end.
+            let text: Span
+        }
+
+        /// Splits a number word off the left of `row`: the word, which must
+        /// start in the row's first cell and be followed by a blank cell, and
+        /// what is left of the row after the blanks that follow it.
+        private func numberWordAtLeft(of row: Span) -> (word: Span, rest: Span)? {
+            let rowStart = row.range.lowerBound
+            guard rowStart < row.range.upperBound, cells[rowStart] != blank else { return nil }
+            // The word ends at the first blank cell; one longer than a number
+            // word is no number, so the search stops a cell past that length.
+            var wordEnd = rowStart
+            while wordEnd < row.range.upperBound, cells[wordEnd] != blank, wordEnd - rowStart <= maxNumberWordLength {
+                wordEnd += 1
+            }
+            let word = Span(rowStart..<wordEnd)
+            guard isNumberWord(word), wordEnd < row.range.upperBound else { return nil }
+            var restStart = wordEnd
+            while restStart < row.range.upperBound, cells[restStart] == blank { restStart += 1 }
+            return (word, Span(restStart..<row.range.upperBound))
+        }
+
+        /// The first row of the page `rows` read as a running head: the first
+        /// row with text, less a print page number at its right (ending the
+        /// line) and a number word at its left. Nil when the row has neither
+        /// number word, or is a print page change line, or has no text
+        /// between a lone number word and the row's end: such a row is no head.
+        func pageHead(ofRows rows: [Span], width: Int) -> PageHead? {
+            guard let index = rows.firstIndex(where: { !$0.isEmpty }),
+                  changeLineNumber(of: rows[index]) == nil else { return nil }
+            var body = rows[index]
+            var hasRight = false
+            if body.count == width, let (_, rest) = numberWordAtRight(of: body) {
+                body = rest
+                hasRight = true
+            }
+            var left: Span?
+            if let (word, rest) = numberWordAtLeft(of: body) {
+                left = word
+                body = rest
+            }
+            guard hasRight || left != nil else { return nil }
+            // A number word alone with no text is not a head (a page number's row).
+            guard !body.isEmpty || (hasRight && left != nil) else { return nil }
+            return PageHead(rowIndex: index, left: left, text: body)
+        }
+
+        /// The texts of the running heads of the book: the head texts
+        /// (`pageHead(ofRows:width:)`) that repeat on at least
+        /// `minHeadRepeats` pages. A book's running heads are the same line
+        /// page after page (its title on one side of a spread, the chapter's
+        /// on the other), where a row of text is not; that a head carries a
+        /// number word as well is what keeps text from being taken for one.
+        func runningHeads(width: Int) -> Set<[UInt8]> {
+            var counts: [[UInt8]: Int] = [:]
+            for page in 0..<file.pageCount {
+                guard let head = pageHead(ofRows: rows(ofPage: page), width: width) else { continue }
+                counts[Array(cells[head.text.range]), default: 0] += 1
+            }
+            return Set(counts.filter { $0.value >= BraillePageAnalyzer.minHeadRepeats }.keys)
+        }
+
         /// Takes a page's numbers out of its rows: the braille page number from
         /// the last row, the print page number from the first, and every print
         /// page change line. Returns the numbers and the rows left, in order: a
@@ -473,7 +551,9 @@ enum BraillePageAnalyzer {
         /// and must not end a paragraph that goes on over the page), a row that
         /// was blank stays blank (except at the page's top, where blank rows
         /// go when `dropsTopBlankRows`), and the rows after the braille page number go.
-        func extractNumbers(fromPage page: Int, width: Int, dropsTopBlankRows: Bool) -> (BraillePageNumbers, [Row]) {
+        func extractNumbers(
+            fromPage page: Int, width: Int, dropsTopBlankRows: Bool, runningHeads: Set<[UInt8]> = []
+        ) -> (BraillePageNumbers, [Row]) {
             let rawRows = rows(ofPage: page)
             var numbers = BraillePageNumbers(firstBlockIndex: 0)
             // The rows a number was taken from (shortened, or dropped when
@@ -503,6 +583,19 @@ enum BraillePageAnalyzer {
             let firstIndex = rawRows.firstIndex { !$0.isEmpty }
             if firstIndex != lastIndex || numbers.braillePageNumber == nil {
                 numbers.printPageNumber = takeNumber(at: firstIndex)
+            }
+            // A running head leaves the page, row and numbers: the text that
+            // repeats on several pages is no part of the book's text. A
+            // number word at its left is the braille page number when the
+            // page's last row held none (a book may put it at the top left).
+            if let head = pageHead(ofRows: rawRows, width: width),
+               !(firstIndex == lastIndex && lastIndex != nil && numbers.braillePageNumber != nil),
+               runningHeads.contains(Array(cells[head.text.range])) {
+                if numbers.braillePageNumber == nil, let left = head.left {
+                    numbers.braillePageNumber = BrailleFilePages.string(of: cells[left.range])
+                }
+                dropped.insert(head.rowIndex)
+                shortened[head.rowIndex] = nil
             }
             // Change lines leave the page altogether.
             for (index, word) in changeWords {
