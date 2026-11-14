@@ -149,13 +149,20 @@ struct TimeRemainingBar: View {
     /// alone. A feed's episodes and articles are never among `books`.
     var feedCount: Int = 0
 
+    /// The figures of the books' times left, kept between redraws: a redraw
+    /// when a reader moves estimates only the books readers have open
+    /// (`TimeRemainingTally`). Nothing in the bar depends on it but its speed.
+    @State private var tally = TimeRemainingTally()
+
     var body: some View {
-        let (time, known, unknown) = computeTimeRemaining()
-        if known > 0 || unknown > 0 || feedSummary != nil || feedCount > 0 {
+        let sum = tally.sum(of: books, wpm: wpm, livePositions: livePositions)
+        // Built once for the bar's text and its label.
+        let counted = countText
+        if sum.known > 0 || sum.unknown > 0 || feedSummary != nil || feedCount > 0 {
             HStack(spacing: 12) {
                 Label {
-                    if known > 0 {
-                        Text("\(TimeFormatting.format(time)) remaining")
+                    if sum.known > 0 {
+                        Text("\(TimeFormatting.format(sum.time)) remaining")
                     }
                 } icon: {
                     Image(systemName: "clock")
@@ -163,8 +170,8 @@ struct TimeRemainingBar: View {
                 }
                 .font(.caption)
 
-                if unknown > 0 {
-                    Text("(\(CountWording.books(unknown)) not yet opened)")
+                if sum.unknown > 0 {
+                    Text("(\(CountWording.books(sum.unknown)) not yet opened)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -189,7 +196,7 @@ struct TimeRemainingBar: View {
                         .foregroundColor(feedSummary.check.failed ? .red : .secondary)
                 }
 
-                Text(countText)
+                Text(counted)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -197,7 +204,7 @@ struct TimeRemainingBar: View {
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.08))
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(accessibilityLabel(time: time, known: known, unknown: unknown))
+            .accessibilityLabel(accessibilityLabel(for: sum, counting: counted))
             .accessibilityIdentifier(focusIdentifier ?? "")
             .background(
                 Group {
@@ -209,24 +216,6 @@ struct TimeRemainingBar: View {
         }
     }
 
-    /// The time left in `books` at `wpm`, each from its reader's live
-    /// position while that is newer than the library's, with how many books
-    /// have a known and an unknown time left.
-    private func computeTimeRemaining() -> (TimeInterval, Int, Int) {
-        var total: TimeInterval = 0
-        var known = 0
-        var unknown = 0
-        for book in books {
-            if let remaining = livePositions.applied(to: book).estimatedTimeRemaining(wpm: wpm) {
-                total += remaining
-                known += 1
-            } else {
-                unknown += 1
-            }
-        }
-        return (total, known, unknown)
-    }
-
     /// What the bar counts, shown and spoken alike: in a feed's folder, the
     /// feed's items in place of the books; elsewhere the books, the episodes
     /// and articles listed beside them, as Recently Opened and the Reading
@@ -236,14 +225,17 @@ struct TimeRemainingBar: View {
         feedSummary?.counts ?? CountWording.listItems(of: books, feeds: feedCount)
     }
 
-    private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {
+    /// What VoiceOver says for the whole bar: the books counted as
+    /// `counting` says, then the time left in `sum`, the books not yet
+    /// opened, and where books are kept.
+    private func accessibilityLabel(for sum: TimeRemainingTally.Sum, counting countText: String) -> String {
         var parts: [String] = []
         parts.append(countText)
-        if known > 0 {
-            parts.append("\(TimeFormatting.spoken(time)) total remaining at current speed")
+        if sum.known > 0 {
+            parts.append("\(TimeFormatting.spoken(sum.time)) total remaining at current speed")
         }
-        if unknown > 0 {
-            parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
+        if sum.unknown > 0 {
+            parts.append("\(CountWording.phrase(sum.unknown, singular: "book has", plural: "books have")) not been opened yet")
         }
         if booksInCloud > 0 {
             parts.append(Self.spokenCount(booksInCloud, "in the cloud"))
@@ -259,8 +251,8 @@ struct TimeRemainingBar: View {
 
     /// What VoiceOver says for the whole bar, as its body sets it.
     var summaryAccessibilityLabel: String {
-        let (time, known, unknown) = computeTimeRemaining()
-        return accessibilityLabel(time: time, known: known, unknown: unknown)
+        let sum = TimeRemainingTally.sum(of: books, wpm: wpm, livePositions: livePositions)
+        return accessibilityLabel(for: sum, counting: countText)
     }
 
     /// The bar's visible count of books in the cloud: "1 book in the cloud",

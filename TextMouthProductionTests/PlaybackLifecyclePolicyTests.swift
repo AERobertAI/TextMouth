@@ -36,6 +36,26 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         ))
     }
 
+    /// The word being spoken is a plain property of the speech service, not
+    /// a published one (the audit's C17): nothing subscribes to it, and each
+    /// word, 3 to 5 a second, would announce a change to the service's
+    /// observers for nothing. The reader's flags (`isSpeaking`, `isPaused`)
+    /// still publish, which it does subscribe to.
+    func testTheCurrentWordPublishesNothing() {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("word-range"))
+        var announcements = 0
+        let subscription = speech.objectWillChange.sink { announcements += 1 }
+        defer { subscription.cancel() }
+
+        speech.currentWordRange = NSRange(location: 4, length: 3)
+        speech.currentWordRange = nil
+
+        XCTAssertEqual(announcements, 0, "a word moved the cursor and the speech service announced a change")
+        speech.isSpeaking = true
+        XCTAssertEqual(announcements, 1, "the speaking flag no longer publishes")
+        speech.isSpeaking = false
+    }
+
     /// A reader's live position reaches what the library's rows show
     /// (`livePositions`) without changing the library: no library publish,
     /// and the row keeps its checkpointed position until the next
@@ -320,6 +340,100 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
     func testPositionRestartEstablishesFreshGeneration() {
         XCTAssertTrue(SpeechService.shouldPublishPosition(capturedGeneration: 9, currentGeneration: 9))
         XCTAssertFalse(SpeechService.shouldPublishPosition(capturedGeneration: 8, currentGeneration: 9))
+    }
+
+    // MARK: - Rendered Speech's Position Ticks (the audit's C4)
+
+    /// A speech service with `text` as its text, recording each word its
+    /// ticks hand `onWordSpoken`.
+    private func makePositionTrackedSpeech(
+        text: String,
+        label: String
+    ) -> (speech: SpeechService, heard: () -> [String]) {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences(label))
+        speech._setTextForTesting(text)
+        var words: [(NSRange, String)] = []
+        speech.onWordSpoken = { range, word in words.append((range, word)) }
+        return (speech, { words.map { "\($0.0.location),\($0.0.length):\($0.1)" } })
+    }
+
+    /// An engine whose offset stands still for five ticks publishes the
+    /// word once: the position did not move, so nothing is published again.
+    func testAnOffsetThatStandsStillIsPublishedOnce() {
+        let tracked = makePositionTrackedSpeech(text: "Mooring lines are fast.", label: "position-still")
+        let generation = tracked.speech.positionGeneration
+
+        let published = (0..<5).map { _ in tracked.speech.publishRenderedPosition(8, generation: generation) }
+
+        XCTAssertEqual(published, [true, false, false, false, false])
+        XCTAssertEqual(tracked.heard(), ["8,1:lines"])
+        XCTAssertEqual(tracked.speech.currentWordRange, NSRange(location: 8, length: 1))
+    }
+
+    /// A moving offset publishes each position with the range and the word
+    /// the timer has always given: the word from the offset to the next
+    /// white space; an offset back where an earlier one was publishes again.
+    func testAMovingOffsetPublishesEachWordAsItAlwaysDid() {
+        let tracked = makePositionTrackedSpeech(text: "Mooring lines are fast.", label: "position-moving")
+        let generation = tracked.speech.positionGeneration
+
+        for offset in [0, 8, 10, 8] {
+            XCTAssertTrue(tracked.speech.publishRenderedPosition(offset, generation: generation))
+        }
+
+        XCTAssertEqual(tracked.heard(), ["0,1:Mooring", "8,1:lines", "10,1:nes", "8,1:lines"])
+    }
+
+    /// An offset on white space, or past the text's end, moves the word
+    /// range but hands no word on, as before.
+    func testAnOffsetOnWhiteSpaceOrPastTheEndSpeaksNoWord() {
+        let tracked = makePositionTrackedSpeech(text: "Mooring lines are fast.", label: "position-no-word")
+        let generation = tracked.speech.positionGeneration
+
+        XCTAssertTrue(tracked.speech.publishRenderedPosition(7, generation: generation), "white space")
+        XCTAssertTrue(tracked.speech.publishRenderedPosition(500, generation: generation), "past the end")
+        XCTAssertTrue(tracked.speech.publishRenderedPosition(-3, generation: generation), "before the start")
+
+        XCTAssertEqual(tracked.heard(), [])
+        XCTAssertEqual(tracked.speech.currentWordRange, NSRange(location: -3, length: 1))
+    }
+
+    /// A tick from a timer that started before a seek or a stop publishes
+    /// nothing, and does not use up the offset the new timer will report.
+    func testATickFromAnOlderGenerationPublishesNothing() {
+        let tracked = makePositionTrackedSpeech(text: "Mooring lines are fast.", label: "position-stale")
+        let stale = tracked.speech.positionGeneration
+
+        tracked.speech.seek(toCharOffset: 0)
+
+        XCTAssertFalse(tracked.speech.publishRenderedPosition(8, generation: stale))
+        XCTAssertTrue(tracked.speech.publishRenderedPosition(8, generation: tracked.speech.positionGeneration))
+    }
+
+    /// A tick in a million characters of non-ASCII text, at its far end,
+    /// takes about the time of the word, not of the text, once the string's
+    /// lookup table exists. This is a cost check of the tick only: the test
+    /// makes the table itself, so it does not prove that
+    /// `startPositionTracking` calls `warmPositionLookup(in:)`. Losing that
+    /// call would move the table's one walk over the text onto the main
+    /// thread at the first tick, which this test cannot see.
+    func testATickInAMillionCharactersOfNonASCIITextStaysFast() {
+        let unit = "Śródziemie é 日本語 "
+        let text = String(repeating: unit, count: 1_000_000 / unit.count)
+        let tracked = makePositionTrackedSpeech(text: text, label: "position-large")
+        let generation = tracked.speech.positionGeneration
+        // The first use makes the lookup table, as the warm-up beside the
+        // timer's start does off the main thread.
+        _ = text.index(atUTF16Offset: text.utf16Length / 2)
+        let offset = text.utf16Length - 40
+
+        let started = Date()
+        for step in 0..<20 {
+            tracked.speech.publishRenderedPosition(offset - step * 3, generation: generation)
+        }
+        let perTick = Date().timeIntervalSince(started) / 20
+
+        XCTAssertLessThan(perTick, 0.005, "a position tick took \(perTick) s")
     }
 
     func testIdleDirectSpeechRecoveryRequiresEverySafetyCondition() {

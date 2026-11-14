@@ -298,8 +298,7 @@ final class LibraryListCache {
     /// revision alone is refreshed this way, and such a change keeps every
     /// book at its index, so each ID is found where the index says.
     private func currentBooks(_ ids: [UUID], in library: Library) -> [Book] {
-        let index = indexByID ?? Self.index(of: library.books)
-        indexByID = index
+        let index = bookIndex(of: library)
         let books = library.books
         return ids.compactMap { id in
             guard let position = index[id], books.indices.contains(position), books[position].id == id else {
@@ -307,6 +306,31 @@ final class LibraryListCache {
             }
             return books[position]
         }
+    }
+
+    /// Each book's index in `library`'s books, by ID, made once for each list
+    /// revision and kept (`indexByID`).
+    private func bookIndex(of library: Library) -> [UUID: Int] {
+        let index = indexByID ?? Self.index(of: library.books)
+        indexByID = index
+        return index
+    }
+
+    /// The book `id` of `library`, found by the kept index instead of a scan
+    /// of every book, as `LibraryViewModel.bookByID` reads it for each live
+    /// position a reader publishes (the audit's C17). Nil for an ID the
+    /// library does not hold. An index that does not point at the book it
+    /// names, which no change of the library leaves behind, falls back to
+    /// the scan, so a wrong index can slow the answer but never change it.
+    func book(withID id: UUID, in library: Library) -> Book? {
+        let books = library.books
+        if let position = bookIndex(of: library)[id] {
+            if books.indices.contains(position), books[position].id == id {
+                return books[position]
+            }
+            return books.first { $0.id == id }
+        }
+        return nil
     }
 
     /// Each book's index in `books`, by ID; the first one wins should an ID

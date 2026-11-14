@@ -608,12 +608,15 @@ protocol SpeechWatchdogTimer: AnyObject {
 /// common modes, so that it ticks while a menu is open too.
 final class RunLoopWatchdogTimer: SpeechWatchdogTimer {
     /// The timer ticking.
-    private let timer: Timer
+    let timer: Timer
 
     /// Starts calling `tick` every `interval` seconds on the main run loop.
     /// Made on the main thread, as the speech service makes it.
     init(interval: TimeInterval, tick: @escaping @Sendable () -> Void) {
         let timer = Timer(timeInterval: interval, repeats: true) { _ in tick() }
+        // A watchdog's recovery may come a tenth of its interval later;
+        // that lets macOS coalesce its wake-up with other work.
+        TimerCoalescing.loosen(timer)
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
@@ -719,7 +722,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var isSpeaking = false
     @Published var isPaused = false
-    @Published var currentWordRange: NSRange?
+    /// The word being spoken, in the text. Not published: nothing observes it
+    /// (the reader takes each word from `onWordSpoken`), and publishing it
+    /// announced a change of the service 3 to 5 times a second for nothing.
+    var currentWordRange: NSRange?
     @Published var currentVoice: AVSpeechSynthesisVoice?
     @Published var wordsPerMinute: Double = 200 {
         didSet {
@@ -968,17 +974,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private var directPace: (startedAt: Date, words: Int)?
     #endif
 
-    /// Generation counter for in-flight position-tracking dispatches. The
-    /// poll timer runs every 100 ms, captures the current offset on main,
-    /// hops to a background queue to extract the current word, then hops
-    /// back to main to publish via `currentWordRange` / `onWordSpoken`.
-    /// A seek that happens between the offset capture and the final main-
-    /// queue publish would otherwise cause the stale offset to overwrite
-    /// the now-correct one. Each tick captures the generation at the
-    /// start; the publish guard drops the result if the generation moved.
-    /// Bumped by `startPositionTracking`, `stopPositionTracking`, and any
-    /// path that seeks (`seek(toCharOffset:)`).
-    private var positionGeneration: Int = 0
+    /// Generation counter for the position timer's ticks. The timer runs
+    /// every 100 ms and publishes the engine's offset in its own turn on
+    /// the main thread. A seek bumps the generation, so that a timer
+    /// started before it, which would put the stale offset over the
+    /// now-correct one, publishes nothing more; each tick carries the
+    /// generation its timer started in, and the publish guard drops it if
+    /// the generation moved. Bumped by `startPositionTracking`,
+    /// `stopPositionTracking`, and any path that seeks
+    /// (`seek(toCharOffset:)`).
+    private(set) var positionGeneration: Int = 0
+    /// The offset the position timer last published, nil before its first,
+    /// so a tick at an offset that did not move publishes nothing
+    /// (`publishRenderedPosition(_:generation:)`).
+    private var lastPublishedPositionOffset: Int?
 
     private var settingsCancellables = Set<AnyCancellable>()
 
@@ -2345,65 +2354,82 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return madeAudioEngine?.currentCharOffset() ?? 0
     }
 
-    /// Background queue for position tracking string operations.
-    /// String.index(offsetBy:) is O(n) for Swift strings — running
-    /// it on the main thread every 100ms with large chapter texts
-    /// (30K+ chars) causes UI freezes. The word extraction happens
-    /// here; only the final result is dispatched to main.
-    private static let positionQueue = DispatchQueue(
-        label: "com.textmouth.positionTracking",
-        qos: .userInteractive
-    )
+    /// How far past its time the position timer may fire: 20 ms of its
+    /// 100 ms, which lets macOS coalesce its wake-up with other work and
+    /// moves a word's highlight no more than a frame.
+    static let positionTimerTolerance: TimeInterval = 0.02
+
+    /// The word that starts at UTF-16 `offset` of `text`, through the next
+    /// white space; empty for an offset outside the text or on white space,
+    /// where no word is spoken. Ran on a background queue until November
+    /// 13, 2026, when its cost fell to the word's length: a string's
+    /// UTF-16 index is a constant-time lookup once its first use has made
+    /// the string's lookup table (`warmPositionLookup(in:)`).
+    nonisolated static func wordStarting(at offset: Int, in text: String) -> String {
+        guard offset >= 0, offset < text.utf16Length else { return "" }
+        let start = text.index(atUTF16Offset: offset)
+        var end = start
+        while end < text.endIndex && !text[end].isWhitespace {
+            end = text.index(after: end)
+        }
+        return String(text[start..<end])
+    }
+
+    /// Makes `text`'s UTF-16 lookup table off the main thread, so that the
+    /// first position tick, which runs on it, does not pay for the walk over
+    /// a long chapter's text. A text of ASCII needs none.
+    private static func warmPositionLookup(in text: String) {
+        DispatchQueue.global(qos: .utility).async {
+            _ = text.index(atUTF16Offset: text.utf16Length / 2)
+        }
+    }
+
+    /// Publishes the position `offset` that the audio engine reports, as
+    /// the position timer does on each tick, on the main thread: the word
+    /// range, and the word there to `onWordSpoken` when there is one. Only
+    /// a position that moved since the last published one is published: a
+    /// paused or still engine reports the same offset every tick, and
+    /// publishing it again changed nothing and woke the reader for it.
+    ///
+    /// - Parameters:
+    ///   - offset: The engine's character offset.
+    ///   - generation: The position generation the timer started in; a seek
+    ///     or a stop since then drops the position (`shouldPublishPosition`).
+    /// - Returns: Whether the position was published.
+    @discardableResult
+    func publishRenderedPosition(_ offset: Int, generation: Int) -> Bool {
+        guard Self.shouldPublishPosition(capturedGeneration: generation, currentGeneration: positionGeneration),
+              offset != lastPublishedPositionOffset else { return false }
+        lastPublishedPositionOffset = offset
+        let range = NSRange(location: offset, length: 1)
+        currentWordRange = range
+        let word = Self.wordStarting(at: offset, in: currentText)
+        if !word.isEmpty {
+            onWordSpoken?(range, word)
+        }
+        return true
+    }
 
     private func startPositionTracking() {
         // stopPositionTracking() invalidates the previous timer AND bumps
-        // the generation, so any in-flight dispatch from the old timer is
-        // dropped before the new timer starts. Capture the post-bump
-        // generation for the new timer's ticks.
+        // the generation, so a tick of the old timer is dropped before the
+        // new timer starts. Capture the post-bump generation for the new
+        // timer's ticks.
         stopPositionTracking()
         let myGeneration = positionGeneration
+        // The new timer's first position is always published.
+        lastPublishedPositionOffset = nil
+        Self.warmPositionLookup(in: currentText)
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            // The timer runs on the main run loop, and publishes from its own
+            // turn, with no hop to another queue and back.
             guard let self = self, !self.usingDirectMode, let engine = self.madeAudioEngine,
                   engine.isPlaying || engine.isPaused else { return }
             // currentCharOffset() reads the audio node's render time,
             // which is safe from the main thread (the timer's thread)
-            let offset = engine.currentCharOffset()
-            let range = NSRange(location: offset, length: 1)
-            // Capture the text for background processing. The text
-            // doesn't change during playback so this reference is safe.
-            let text = self.currentText
-            let publish: @MainActor @Sendable (String) -> Void = { [weak self] word in
-                guard let self else { return }
-                guard Self.shouldPublishPosition(
-                    capturedGeneration: myGeneration,
-                    currentGeneration: self.positionGeneration
-                ) else { return }
-                self.currentWordRange = range
-                if !word.isEmpty {
-                    self.onWordSpoken?(range, word)
-                }
-            }
-
-            // Move the O(n) string indexing off the main thread.
-            // String.index(startIndex, offsetBy:) iterates through
-            // Unicode scalars from the start — expensive for large texts.
-            Self.positionQueue.async {
-                let word: String
-                if offset >= 0 && offset < text.utf16Length {
-                    let idx = text.index(atUTF16Offset: offset)
-                    var end = idx
-                    while end < text.endIndex && !text[end].isWhitespace {
-                        end = text.index(after: end)
-                    }
-                    word = String(text[idx..<end])
-                } else {
-                    word = ""
-                }
-                // Drop the publish if the position generation moved while
-                // extraction ran; the main-actor closure owns that check.
-                DispatchQueue.main.async { publish(word) }
-            }
+            self.publishRenderedPosition(engine.currentCharOffset(), generation: myGeneration)
         }
+        timer.tolerance = Self.positionTimerTolerance
         RunLoop.main.add(timer, forMode: .common)
         positionTimer = timer
     }
@@ -2612,6 +2638,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         usingDirectMode = true
         directModeBaseOffset = baseOffset
         liveDirectUtterance = utterance
+    }
+
+    /// Sets the text being spoken, as speech preparation does, so hosted
+    /// tests can publish rendered positions (`publishRenderedPosition`) in a
+    /// text of their own without rendering any speech.
+    func _setTextForTesting(_ text: String) {
+        currentText = text
     }
 
     /// Takes every utterance direct speech would hand the synthesizer, in

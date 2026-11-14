@@ -122,7 +122,7 @@ struct ReadingStatsView: View {
     /// Ticks every `refreshInterval` seconds on the main run loop, in its
     /// common modes so the pane keeps refreshing while a menu is open.
     private static func timerTicks() -> AnyPublisher<Void, Never> {
-        Timer.publish(every: refreshInterval, on: .main, in: .common)
+        Timer.publish(every: refreshInterval, tolerance: TimerCoalescing.tolerance(forInterval: refreshInterval), on: .main, in: .common)
             .autoconnect()
             .map { _ in () }
             .eraseToAnyPublisher()

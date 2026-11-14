@@ -1093,12 +1093,20 @@ final class SleepTimerService: ObservableObject {
         // Ensure timer runs on main thread for @Published safety. A window's
         // timer can go with its window (November 13, 2026), and its countdown
         // then ends itself rather than tick for nothing.
+        // The interval stays exact, with no tolerance: the countdown's
+        // announcements and its expiry are heard. The tick is already on the
+        // main thread (the main run loop), so it acts at once, as the fade
+        // timer does, instead of hopping to the main queue and waking twice.
         let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] tick in
-            guard let self = self else {
-                tick.invalidate()
-                return
-            }
-            DispatchQueue.main.async {
+            // The timer is not Sendable, and is used only inside the block
+            // below, on the main thread: assumeIsolated would trap if it
+            // ever did not run there.
+            nonisolated(unsafe) let callbackTimer = tick
+            MainActor.assumeIsolated {
+                guard let self = self else {
+                    callbackTimer.invalidate()
+                    return
+                }
                 guard self.generation == gen else { return }
                 self.advanceCountdown()
             }
@@ -1283,6 +1291,16 @@ final class SleepTimerService: ObservableObject {
     /// time. Hosted tests use this to cover long pause/restart sequences.
     func _advanceCountdownForTesting() {
         advanceCountdown()
+    }
+
+    /// Fires the armed countdown timer now, as the main run loop does each
+    /// second, and returns that timer's tolerance (nil without a countdown).
+    /// A test reads whether the tick acted at once and whether the interval
+    /// stayed exact.
+    func _fireCountdownTimerForTesting() -> TimeInterval? {
+        guard let timer else { return nil }
+        timer.fire()
+        return timer.tolerance
     }
 
     /// Starts the real expiry/fade path without waiting for a full countdown.

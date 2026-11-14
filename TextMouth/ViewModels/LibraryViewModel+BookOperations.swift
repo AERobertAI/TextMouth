@@ -929,8 +929,10 @@ extension LibraryViewModel {
 
     // MARK: - Queries
 
+    /// The book `id` of the library, found by the list cache's index of the
+    /// books by ID rather than a scan of every book.
     func bookByID(_ id: UUID) -> Book? {
-        library.books.first { $0.id == id }
+        listCache.book(withID: id, in: library)
     }
 
     // MARK: - Open Book Tracking

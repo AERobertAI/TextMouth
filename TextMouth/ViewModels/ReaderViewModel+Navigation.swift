@@ -294,8 +294,10 @@ extension ReaderViewModel {
     /// saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func nextSubheading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        // `headings` is the book's headings (`content`'s didSet), kept as an
+        // array, so the book's index need not rebuild them for each jump.
+        let allHeadings = headings
         if let nextIndex = allHeadings.firstIndex(where: {
             $0.level >= 2 && (
                 $0.chapterIndex > currentChapterIndex ||
@@ -312,8 +314,8 @@ extension ReaderViewModel {
     /// position, saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousSubheading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let prevIndex = allHeadings.lastIndex(where: {
             $0.level >= 2 && (
                 $0.chapterIndex < currentChapterIndex ||
@@ -831,8 +833,8 @@ extension ReaderViewModel {
     /// (`headingAnnouncement(arrivingAt:in:)`). Headings that share a place
     /// are one stop: the next jump goes on to the next place.
     func nextHeading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let heading = Self.nextHeading(
             in: allHeadings,
             chapterIndex: currentChapterIndex,
@@ -850,8 +852,8 @@ extension ReaderViewModel {
     /// level, saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousHeading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let heading = Self.previousHeading(
             in: allHeadings,
             chapterIndex: currentChapterIndex,

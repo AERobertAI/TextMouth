@@ -139,7 +139,7 @@ final class ReadingStatsService: ObservableObject {
     private var activeSession: ActiveSession?
 
     /// Fires every `checkpointInterval` to checkpoint the open session.
-    private var checkpointTimer: Timer?
+    private(set) var checkpointTimer: Timer?
 
     /// When the Mac said it was going to sleep, by the wall clock and by the
     /// awake clock (`awakeClock`), which stops while the Mac sleeps, so the
@@ -838,6 +838,8 @@ final class ReadingStatsService: ObservableObject {
         }
         // The common modes keep checkpoints coming while a menu is open or a
         // modal panel runs; a timer in the default mode would wait for them.
+        // A checkpoint is bookkeeping nobody hears: let macOS coalesce it.
+        TimerCoalescing.loosen(timer)
         RunLoop.main.add(timer, forMode: .common)
         checkpointTimer = timer
     }
