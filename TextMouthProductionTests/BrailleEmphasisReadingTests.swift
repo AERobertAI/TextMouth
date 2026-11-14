@@ -267,9 +267,14 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             // (November 13, 2026, `is_sign_before_m_word`). So "µ" is "m" in
             // both readings.
             let micro = { (text: String) in text.replacingOccurrences(of: "\u{B5}", with: "m") }
-            // liblouis alone also reads "ing" before a hyphen as "±" ("someth±-aunt"),
-            // which the helper's own fix reads as "ing" (November 13, 2026).
-            let changed = zip(read, alone).filter { micro($0.text) != micro($1.text) && !$1.text.contains("\u{B1}") }
+            // liblouis alone also reads "ing" and a hyphen before another hyphen
+            // as "±" and a hyphen ("someth±-aunt"), which the helper's own fix
+            // reads as "ing" and a dash, spaced ("something -- aunt")
+            // (November 13, 2026); so "±-" is "ing -- " in the alone reading.
+            let plusMinus = { (text: String) in
+                text.replacingOccurrences(of: "\u{B1}-", with: "ing -- ").replacingOccurrences(of: "\u{B1}", with: "ing-")
+            }
+            let changed = zip(read, alone).filter { micro($0.text) != micro(plusMinus($1.text)) }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
@@ -439,13 +444,17 @@ private struct SymbolSentenceGenerator {
         random = SeededRandom(seed: seed)
     }
 
-    /// The symbol that may stand glued to a word: not "µ", which is no print
-    /// before a word of letters ("µzoo"): braille cannot tell it from an
-    /// emphasized word beginning with m, which the pass reads as emphasis
-    /// (November 13, 2026, `is_sign_before_m_word`). It stands alone, or
-    /// before a unit after a number.
-    private func attachable(_ symbol: String) -> String {
-        symbol == "\u{B5}" ? ">" : symbol
+    /// The units a micro sign stands before, which liblouis writes with the
+    /// letter sign ⠰ or a capital sign (⠨⠍⠰⠛ "µg", ⠨⠍⠰⠠⠇ "µL"), and which
+    /// the pass reads as micro (November 13, 2026, `is_sign_before_m_word`).
+    private static let units = ["g", "m", "s", "L"]
+
+    /// `symbol` glued to `word`; a micro sign stands before a unit instead of
+    /// the word: before a word of letters ("µzoo") braille cannot tell it
+    /// from an emphasized word beginning with m, which the pass reads as
+    /// emphasis.
+    private func attached(_ symbol: String, _ word: String) -> String {
+        symbol == "\u{B5}" ? symbol + Self.units[word.count % Self.units.count] : symbol + word
     }
 
     /// One token; a number is a word in a sentence with dashes.
@@ -462,16 +471,16 @@ private struct SymbolSentenceGenerator {
         case 4:
             return word + "-" + random.element(of: Self.words)
         case 5:
-            return attachable(symbol) + word
+            return attached(symbol, word)
         case 6:
             let k = random.pick(Self.openers.count)
             return Self.openers[k] + symbol + Self.closers[k]
         case 7:
-            return random.element(of: Self.joined) + " " + attachable(symbol) + word
+            return random.element(of: Self.joined) + " " + attached(symbol, word)
         case 8:
             return "." + random.element(of: Self.wordsFromAToJ)
         default:
-            return word + "/" + attachable(symbol) + random.element(of: Self.words)
+            return word + "/" + attached(symbol, random.element(of: Self.words))
         }
     }
 
