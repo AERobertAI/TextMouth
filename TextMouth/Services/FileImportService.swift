@@ -257,9 +257,20 @@ struct ImportedFileMetadata {
     /// role, from a dcterms:creator meta element, or from a contributor
     /// with the author role (`EPUBParser.authorName(in:)`); rows never
     /// stamped were read by what came before.
-    /// 1.1.0: a BRF's title and author are read from its braille title page
-    /// (`BrailleTitlePage`), so each BRF book is read again once at launch.
-    static let readerVersion = "1.1.0"
+    static let readerVersion = "1.0.0"
+    /// The version of the braille books' reader. 1.1.0: a BRF's title and
+    /// author are read from its braille title page (`BrailleTitlePage`), so
+    /// each braille book is read again once at launch, and no other format's
+    /// book is (`readerVersion(for:)`).
+    static let brailleReaderVersion = "1.1.0"
+
+    /// The version of the reader of `format`'s metadata: what a row of that
+    /// format is stamped with, and what the launch refresh compares its stamp
+    /// with, so a better reader of one format reads only that format's books
+    /// again.
+    static func readerVersion(for format: BookFormat) -> String {
+        format == .braille ? brailleReaderVersion : readerVersion
+    }
 
     /// Whether this reader opens a file of `format` at all: a plain text,
     /// Markdown, or HTML file keeps no title or author it reads.
@@ -1081,7 +1092,7 @@ enum FileImportService {
                 epubLanguage: metadata.epub?.language,
                 epubIdentifier: metadata.epub?.identifier,
                 epubVersion: metadata.epub?.epubVersion,
-                metadataReaderVersion: ImportedFileMetadata.readerVersion,
+                metadataReaderVersion: ImportedFileMetadata.readerVersion(for: format),
                 // The book's record of hand edits begins here, empty (#1291):
                 // its title and author are what the metadata reader stamped
                 // above read in this very file, so a launch refresh by a

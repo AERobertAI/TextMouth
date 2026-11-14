@@ -1453,6 +1453,21 @@ extension BrailleTitlePageImportTests {
         return book
     }
 
+    /// Only braille books are read again for the title page's reader: a row
+    /// stamped by the version before it is outdated, an EPUB's is not, and a
+    /// braille book stamped by the new version is current.
+    func testOnlyBrailleBooksAreRefreshedForTheTitlePageReader() {
+        var brf = brfBook(handEdits: nil)
+        brf.metadataReaderVersion = ImportedFileMetadata.readerVersion
+        XCTAssertTrue(LibraryViewModel.needsMetadataRefresh(brf))
+        brf.metadataReaderVersion = ImportedFileMetadata.readerVersion(for: .braille)
+        XCTAssertFalse(LibraryViewModel.needsMetadataRefresh(brf))
+        var epub = Book(title: "E", format: .epub, filePath: "/nowhere/e.epub", md5Hash: "y")
+        epub.metadataReaderVersion = ImportedFileMetadata.readerVersion
+        XCTAssertFalse(LibraryViewModel.needsMetadataRefresh(epub))
+        XCTAssertNotEqual(ImportedFileMetadata.readerVersion(for: .braille), ImportedFileMetadata.readerVersion(for: .epub))
+    }
+
     /// A title or author the user edited stays; the field they did not edit takes the title page's.
     func testTheRefreshKeepsAHandEditedTitleAndAuthor() {
         let edited = brfBook(handEdits: Book.HandEdits(fields: [.title, .author], sinceImport: true), author: "My Author")
