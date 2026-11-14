@@ -45,6 +45,15 @@ enum BrailleSettingsWording {
     /// that a BRF export starts with them, and what a book keeps.
     static let fileCodeCaption =
         "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself. The Export dialog starts a BRF with them. A book keeps the characters it was imported with, which Book Information can change."
+    /// The label of the switch that turns the guess of a braille book's code
+    /// at import on or off (brfguess).
+    static let guessLabel = "Guess the braille code of new books"
+    /// What the switch does, spoken after its label and value.
+    static let guessHint =
+        "When on, a braille file read as Unified English Braille, contracted, that is clearly English Braille, American Edition, is read with that code instead."
+    /// The caption under the switch: when the guess is made and where it shows.
+    static let guessCaption =
+        "Only a book that clearly shows English Braille, American Edition is changed, when it is added. Book Information says the code was guessed and can choose another."
     /// What the group says in place of the pop-ups when the app's bundle
     /// holds no braille tables.
     static let noTables = "TextMouth found no braille tables in its bundle."
@@ -178,6 +187,11 @@ struct BrailleSettingsView: View {
         /// The braille file characters' own caption
         /// (`BrailleSettingsWording.fileCodeCaption`).
         case fileCodeCaption
+        /// The switch that turns the guess of a new book's code on or off
+        /// (`BrailleSettingsWording.guessLabel`).
+        case guessSwitch
+        /// The switch's own caption (`BrailleSettingsWording.guessCaption`).
+        case guessCaption
     }
 
     /// The rows after the table pop-ups, in reading order, which the body
@@ -188,7 +202,9 @@ struct BrailleSettingsView: View {
     /// test pins the order without drawing the view, whose captions hosted
     /// tests cannot read.
     static func trailingRows(for content: Content) -> [TrailingRow] {
-        content == .choices ? [.caption, .fileCodePopUp, .fileCodeCaption] : [.caption]
+        content == .choices
+            ? [.caption, .fileCodePopUp, .fileCodeCaption, .guessSwitch, .guessCaption]
+            : [.caption]
     }
 
     /// The sentence that says where the table in use comes from
@@ -230,6 +246,16 @@ struct BrailleSettingsView: View {
                         fileCodePicker
                     case .fileCodeCaption:
                         captionText(BrailleSettingsWording.fileCodeCaption)
+                    case .guessSwitch:
+                        // An explicit binding, so the settings model announces the change.
+                        Toggle(BrailleSettingsWording.guessLabel, isOn: Binding(
+                            get: { settingsViewModel.guessesBrailleTable },
+                            set: { settingsViewModel.guessesBrailleTable = $0 }
+                        ))
+                        .accessibilityLabel(BrailleSettingsWording.guessLabel)
+                        .accessibilityHint(BrailleSettingsWording.guessHint)
+                    case .guessCaption:
+                        captionText(BrailleSettingsWording.guessCaption)
                     }
                 }
             } header: {

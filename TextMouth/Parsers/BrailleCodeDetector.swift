@@ -35,6 +35,26 @@ enum BrailleCodeDetector {
     /// The words with those signs must be at least one in this many of the book's words.
     static let wordsPerHit = 100
 
+    // The stricter rule for guessing the table at import (`Count.isClearlyEBAE`).
+    // Checked on forward braille from liblouis with the repo's tables
+    // (November 14, 2026): invented EBAE prose (en_US.tbl) shows a sign in
+    // about one word in eighteen, while 236,000 dictionary words, 20,000
+    // words in 20 punctuation forms, 4,000 camel-case identifiers, and 100
+    // names with a capital inside them, all in en-ueb-g2.ctb, show no joined
+    // "by" at all. Only a "!" typed directly against a word ("!word") gave
+    // UEB a joined "to", and never a joined "by".
+
+    /// The fewest words with EBAE's signs for the guess.
+    static let clearMinimumWords = 40
+    /// The signs must be at least one in this many of the book's words.
+    static let clearWordsPerHit = 50
+    /// The fewest words joined with "to", and the fewest joined with "by":
+    /// every EBAE book of any length has both. UEB text with many "!word"
+    /// has no joined "by", and camel-case identifiers or names with a
+    /// capital inside them show only the inside-word sign, which is never
+    /// enough alone.
+    static let clearMinimumPerJoinedSign = 5
+
     /// The cells, as the bytes of their dots (dot 1 is 0x01, dot 6 is 0x20).
     private static let toSign: UInt8 = 0x16
     private static let bySign: UInt8 = 0x34
@@ -54,17 +74,32 @@ enum BrailleCodeDetector {
     struct Count: Equatable {
         var words = 0
         var hits = 0
+        /// Words joined with "to" (⠖) and words joined with "by" (⠴), counted at each place.
+        var toWords = 0
+        var byWords = 0
 
         /// Whether the book is taken for EBAE: enough words show the signs, and not few of all.
         var looksLikeEBAE: Bool {
             hits >= BrailleCodeDetector.minimumWords && hits * BrailleCodeDetector.wordsPerHit >= words
         }
+
+        /// Whether the book is clearly EBAE, which guessing its table at
+        /// import requires: more signs than the suggestion needs, a higher
+        /// share of the words, and both joined signs, "to" and "by".
+        var isClearlyEBAE: Bool {
+            hits >= BrailleCodeDetector.clearMinimumWords
+                && hits * BrailleCodeDetector.clearWordsPerHit >= words
+                && toWords >= BrailleCodeDetector.clearMinimumPerJoinedSign
+                && byWords >= BrailleCodeDetector.clearMinimumPerJoinedSign
+        }
     }
 
     /// The EBAE sign a word shows.
     private enum Sign {
-        /// "to" or "by" joined to the next word.
-        case joined
+        /// "to" joined to the next word.
+        case joinedTo
+        /// "by" joined to the next word.
+        case joinedBy
         /// "ation" or "ally" inside a word, which a name with a capital inside it also shows.
         case insideWord
     }
@@ -77,7 +112,7 @@ enum BrailleCodeDetector {
         guard word.count >= 2, let first = word.first else { return nil }
         let second = word[word.startIndex + 1]
         if first == toSign || first == bySign, letters.contains(second) || second == capitalSign {
-            return .joined
+            return first == toSign ? .joinedTo : .joinedBy
         }
         // "ation" or "ally" in the middle of a word: a capital sign directly
         // after a letter, then n or y.
@@ -102,8 +137,12 @@ enum BrailleCodeDetector {
             for word in cells[file.cellRange(ofRow: rowIndex)].split(separator: 0x00, omittingEmptySubsequences: true) {
                 count.words += 1
                 switch sign(of: word) {
-                case .joined:
+                case .joinedTo:
                     count.hits += 1
+                    count.toWords += 1
+                case .joinedBy:
+                    count.hits += 1
+                    count.byWords += 1
                 case .insideWord:
                     // A new distinct word counts; a name repeated does not.
                     if insideWords.count < maxDistinctInsideWords, insideWords.insert(Array(word)).inserted {
@@ -122,9 +161,22 @@ enum BrailleCodeDetector {
     /// Braille ASCII), looks like English Braille, American Edition. False
     /// for a file that cannot be read.
     static func looksLikeEBAE(fileAt url: URL, fileCode: String?) -> Bool {
+        count(ofFileAt: url, fileCode: fileCode)?.looksLikeEBAE ?? false
+    }
+
+    /// Whether the braille book at `url` is clearly EBAE, by the stricter
+    /// rule that guessing its table at import uses (`Count.isClearlyEBAE`).
+    /// False for a file that cannot be read.
+    static func isClearlyEBAE(fileAt url: URL, fileCode: String?) -> Bool {
+        count(ofFileAt: url, fileCode: fileCode)?.isClearlyEBAE ?? false
+    }
+
+    /// The count of the braille book at `url`, read with `fileCode`; nil for
+    /// a file that cannot be read.
+    private static func count(ofFileAt url: URL, fileCode: String?) -> Count? {
         let kind = BrailleBookReader.kind(of: url)
         guard let code = BrailleFileCode.code(forStored: fileCode),
-              let file = try? BrailleFileReader.read(url, as: kind, code: code) else { return false }
-        return count(of: file).looksLikeEBAE
+              let file = try? BrailleFileReader.read(url, as: kind, code: code) else { return nil }
+        return count(of: file)
     }
 }

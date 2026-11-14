@@ -301,8 +301,10 @@ struct ImportedFileMetadata {
     /// A BRF names its title and author on its title page, in braille, which
     /// is read with a table: `brailleReading` gives the table and the braille
     /// file characters a book already recorded (the launch refresh), and an
-    /// import, which has none yet, passes nil and takes the Braille setting's
-    /// table and the file's own characters, as the import records them.
+    /// import, which has none yet, passes what it decided
+    /// (`FileImportService.brailleReading(ofImported:)`, the setting's table
+    /// or a guessed one, and the file's own characters), and nil takes the
+    /// same decision here.
     static func read(
         from url: URL,
         format: BookFormat,
@@ -347,8 +349,14 @@ struct ImportedFileMetadata {
                 let named = BrailleFileReader.pefMetadata(of: url)
                 adopt(title: named.title ?? "", author: named.author ?? "")
             case .brf:
-                let table = brailleReading?.table ?? BraillePreferences.importTable()
-                let fileCode = brailleReading.map(\.fileCode) ?? FileImportService.brailleFileCode(ofImported: url)
+                // The reading a caller gave, else the import's own decision,
+                // made only when none was given (it reads the whole file).
+                let reading = brailleReading ?? {
+                    let decided = FileImportService.brailleReading(ofImported: url)
+                    return (table: decided.table, fileCode: decided.fileCode)
+                }()
+                let table = reading.table
+                let fileCode = reading.fileCode
                 let named = BrailleTitlePage.names(ofFileAt: url, table: table, fileCode: fileCode)
                 adopt(title: named.title ?? "", author: named.author ?? "")
             case .brl:
@@ -1040,6 +1048,10 @@ enum FileImportService {
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
             let hash = try checksum ?? importHash(of: sourceURL, package: package)
+            // A braille book's table and braille file characters, decided
+            // once, here, so the title page below is read with the table the
+            // book will be read with, a guessed one included (brfguess).
+            let brailleReading = format == .braille ? Self.brailleReading(ofImported: sourceURL) : nil
             // A textutil format is listed by its file's name until its text
             // is read: that one conversion names its title and author
             // (`publishReadableBook`), so none is run here.
@@ -1047,7 +1059,8 @@ enum FileImportService {
                 from: package?.entryURL ?? sourceURL,
                 format: format,
                 fallbackTitle: package?.untitledName,
-                readingTextutilNames: false
+                readingTextutilNames: false,
+                brailleReading: brailleReading.map { (table: $0.table, fileCode: $0.fileCode) }
             )
             let bookID = UUID()
             let dateAdded = Date()
@@ -1068,10 +1081,10 @@ enum FileImportService {
 
             // A braille book's table, read from the setting once, so the
             // version recorded with it is that table's (review R2).
-            let brailleTable = format == .braille ? BraillePreferences.importTable() : nil
-            // And its braille file characters, decided once: those its bytes
-            // name for certain, else the setting's (braillecodes).
-            let brailleFileCode = format == .braille ? Self.brailleFileCode(ofImported: stagedFile) : nil
+            // (`brailleReading`, decided above from the source file, whose
+            // bytes the staged copy holds.)
+            let brailleTable = brailleReading?.table
+            let brailleFileCode = brailleReading?.fileCode
             let staged = Book(
                 id: bookID,
                 title: metadata.title,
@@ -1112,7 +1125,8 @@ enum FileImportService {
                 // American Braille ASCII's included; a PEF keeps none.
                 brailleTable: brailleTable,
                 brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:)),
-                brailleFileCode: brailleFileCode
+                brailleFileCode: brailleFileCode,
+                brailleTableOrigin: brailleReading?.origin
             )
             // The one import that guesses (FMT16): a file the user chose, whose
             // bytes may name no encoding, is read in the encoding the guesser
@@ -1147,6 +1161,22 @@ enum FileImportService {
     static func brailleFileCode(ofImported url: URL) -> String? {
         guard BrailleBookReader.kind(of: url) != .pef else { return nil }
         return BrailleFileReader.certainCode(ofFileAt: url)?.id ?? BraillePreferences.importFileCode()
+    }
+
+    /// How the import of the braille book whose file is at `url` reads it,
+    /// decided once: its braille file characters
+    /// (`brailleFileCode(ofImported:)`) and its table, the Braille
+    /// setting's, or, when the setting is a contracted Unified English
+    /// table, the guess is on, and the book is clearly English Braille,
+    /// American Edition, the bundled contracted table of that code, with
+    /// `origin` saying it was guessed (`BrailleTableGuess`, brfguess).
+    static func brailleReading(ofImported url: URL) -> (table: String, fileCode: String?, origin: BrailleTableOrigin?) {
+        let fileCode = brailleFileCode(ofImported: url)
+        let chosen = BrailleTableGuess.table(
+            forImportedFileAt: url, fileCode: fileCode,
+            settingTable: BraillePreferences.importTable(), guessing: BraillePreferences.importGuessesTable()
+        )
+        return (chosen.table, fileCode, chosen.origin)
     }
 
     // MARK: - Loose DAISY Packages

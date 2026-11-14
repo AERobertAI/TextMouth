@@ -294,6 +294,9 @@ final class OnDiskContractTests: XCTestCase {
             "epubISBN", "epubLanguage", "epubIdentifier", "epubVersion", "cacheFormatVersion",
             "contentIndexVersion", "textCacheFingerprint", "editedText", "pageReaderVersion",
             "metadataReaderVersion", "handEdits", "brailleTable", "brailleTableVersion",
+            // brfguess: who chose the braille table, "guessed" or absent. An optional key, read leniently; an
+            // older TextMouth drops it, and the book's table then reads as the listener's own.
+            "brailleTableOrigin",
             // braillecodes: the braille file characters a BRF or BRL book is read with, by the code's id. An
             // optional key, read leniently; an older TextMouth drops it, and the book then reads as North
             // American Braille ASCII.
@@ -335,6 +338,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
+            // brfguess: who chose the braille table, as in a library row.
+            "brailleTableOrigin",
             // braillecodes: the braille file code, as in a library row.
             "brailleFileCode",
             // FMT16, and encodingchoice's source, as in a library row.
@@ -410,6 +415,8 @@ final class OnDiskContractTests: XCTestCase {
         let expected: Set<String> = [
             "bookID", "title", "author", "removedAt", "brailleTable", "brailleTableVersion", "textEncoding",
             "textEncodingSource",
+            // brfguess: who chose the braille table, so a book added back keeps "guessed" said of it.
+            "brailleTableOrigin",
             // B12: the record of an edit taken with Edit Text and the fingerprints of the text cache, so that a
             // book added back keeps the text the user changed. Optional keys, read leniently; an older
             // TextMouth ignores them, and reads the book's file over the edit as it always did.
@@ -777,7 +784,8 @@ final class OnDiskContractTests: XCTestCase {
             brailleTableVersion: "liblouis",
             brailleFileCode: "ascii-eurobraille",
             textEncoding: "windows-1251",
-            textEncodingSource: .chosen
+            textEncodingSource: .chosen,
+            brailleTableOrigin: .guessed
         )
     }
 }

@@ -733,6 +733,7 @@ enum LibraryPersistenceService {
             if let brailleTable {
                 merged.brailleTable = brailleTable.table
                 merged.brailleTableVersion = brailleTable.version
+                merged.brailleTableOrigin = brailleTable.origin
             }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
@@ -918,6 +919,7 @@ enum LibraryPersistenceService {
         book.brailleFileCode = written.brailleFileCode
         book.brailleTable = written.brailleTable
         book.brailleTableVersion = written.brailleTableVersion
+        book.brailleTableOrigin = written.brailleTableOrigin
         return book
     }
 
@@ -930,6 +932,9 @@ enum LibraryPersistenceService {
         let table: String
         /// The version the book is read under (`Book.brailleTableVersion`).
         let version: String?
+        /// Who chose it (`Book.brailleTableOrigin`): nil, since a re-read
+        /// with a table is the listener's choice, which replaces a guess.
+        var origin: BrailleTableOrigin? = nil
     }
 
     /// What changed about the content of `analyzed` by the time its analysis

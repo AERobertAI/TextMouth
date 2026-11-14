@@ -88,6 +88,7 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "transcriptionLocale",
         "offerTranscriptionAfterImport",
         "brailleTable",
+        "brailleGuessesTable",
         "leadingArticles"
     ]
 

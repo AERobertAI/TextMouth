@@ -512,6 +512,9 @@ extension LibraryViewModel {
     private nonisolated static func settingBrailleTable(_ table: BrailleTable, on updated: inout Book) {
         updated.brailleTable = table.id
         updated.brailleTableVersion = BrailleTableCatalog.versionToRecord(forTable: table.id)
+        // A choice replaces a guess for good (brfguess): the table is the
+        // listener's now, whichever table it is, the guessed one included.
+        updated.brailleTableOrigin = nil
     }
 
     /// The record a choice of `option` gives `book`: the first identifier of

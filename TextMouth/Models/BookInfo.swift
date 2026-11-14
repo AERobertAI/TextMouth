@@ -137,6 +137,12 @@ struct BookMetadata: Codable {
     /// (`Book.brailleTableVersion`, review R2); nil for a bundled table and
     /// for a record written before it was kept.
     var brailleTableVersion: String? = nil
+    /// Who chose the braille table (`Book.brailleTableOrigin`, brfguess):
+    /// `.guessed` when the import found the book clearly English Braille,
+    /// American Edition and read it so; nil for every other book and for a
+    /// record written before guesses were kept. A value that cannot be read
+    /// is nil, as the row's is, and does not fail the record.
+    @LenientOptional var brailleTableOrigin: BrailleTableOrigin? = nil
     /// The braille file characters a BRF or BRL book's file writes its cells
     /// in (braillecodes): the row's field (`Book.brailleFileCode`), by the
     /// code's id, kept here too, where it stands over a row that lags behind

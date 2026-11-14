@@ -82,7 +82,10 @@ extension Book {
     /// say it, from this one expression.
     var brailleCodeDescription: String? {
         guard format == .braille else { return nil }
-        return BrailleTableCatalog.description(ofTableID: brailleTable ?? BrailleTableCatalog.defaultTableID)
+        return BrailleCodeWording.describe(
+            BrailleTableCatalog.description(ofTableID: brailleTable ?? BrailleTableCatalog.defaultTableID),
+            origin: brailleTableOrigin
+        )
     }
 
     /// The words of Book Information's "Braille Code" row for this book: the
@@ -117,6 +120,38 @@ enum BrailleCodeWording {
     /// The label of Book Information's row that names a braille book's code,
     /// and of its pop-up, which reads the book again with another.
     static let bookInfoLabel = "Braille Code"
+
+    // MARK: What Chose It (brfguess)
+
+    /// What follows a braille code's name when the import guessed it from the
+    /// braille, in the text encoding's word for the same (`TextEncodingWording.guessNote`).
+    static let guessedNote = TextEncodingWording.guessNote
+
+    /// The braille code named `name`, as `origin` says who chose it: with
+    /// ", guessed" after it for a guess, and as it is otherwise
+    /// ("English Braille, American Edition, contracted (Grade 2), guessed").
+    /// Book Information's row and pop-up, and Speak Info, all say it so.
+    static func describe(_ name: String, origin: BrailleTableOrigin?) -> String {
+        origin == .guessed ? "\(name), \(guessedNote)" : name
+    }
+
+    /// What Book Information says under the pop-up of a book whose code the
+    /// import guessed: where the code came from, how to correct it, and how
+    /// to keep it. Plain and short, so VoiceOver and a braille display read
+    /// it as it is.
+    static let guessedRecovery =
+        "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code."
+    /// The label of the button under that note that keeps the guessed code
+    /// (a pop-up cannot be asked for the choice already selected), and what
+    /// it does.
+    static let keepGuessLabel = "Keep This Code"
+    static let keepGuessHint = "Stops saying the code was guessed. The book is not read again."
+
+    /// What VoiceOver hears when the listener keeps a guessed code by
+    /// choosing it again: the book and the code, now the listener's own.
+    static func keptGuess(bookTitle: String, codeName: String) -> String {
+        "“\(bookTitle)” keeps \(codeName)."
+    }
 
     // MARK: The Pop-up
 
