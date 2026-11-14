@@ -379,11 +379,11 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - In EBAE, italic and bold are read where the sign is certain: words that start with l or with n to z, capitals, numbers, and most contractions.
 - In EBAE, a passage of several words ends where its last sign says.
 - The signs liblouis writes for bold italic, which BANA's EBAE has not got, are not read as bold italic.
-- No word of an EBAE book differs from before. The emphasis is what is new.
+- Emphasis changes no word of an EBAE book: the emphasis is what is new. The fixes below do change words, in contracted EBAE only.
 - Where a sign cannot be told from print, it is left as it was:
   - An emphasized word that starts with a to j still reads with a stray period, as in ".cat" for an italic "cat".
   - One that starts with k reads with an equals sign, as in "=ite" for "kite".
-  - One that starts with m reads with µ, as in "µe" for "me".
+  - One that starts with m reads with µ, as in "µe" for "me", in uncontracted EBAE. In contracted EBAE an italic word that begins with m is read as italic, so "mama" is italic "mama" (see English Braille, American Edition words, below).
   - The emphasis on those words is lost.
 - TextMouth checks each paragraph against liblouis's own reading, and a paragraph whose words would differ in any character is read without emphasis.
 - Most of this Mac's tables are read as plain braille, since liblouis cannot read their emphasis back exactly.
@@ -394,6 +394,18 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A book whose new reading differs from its text keeps a copy of its old text beside it, and its saved places follow their words (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 - Redo Text Extraction reads a book again at any time.
 - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
+
+#### English Braille, American Edition words
+
+- A book in contracted (Grade 2) English Braille, American Edition, read with a table that writes it, such as an English EBAE table of this Mac's, is read with fixes for what liblouis's own EBAE table misreads. Uncontracted EBAE, Unified English Braille, and every other table are read as they were.
+- Words that EBAE writes joined are read as separate words: "of the", "and the", "of a", "with a", "for the", and "with the", where they read run together as "ofthe". A name such as Thea, which is the signs for "the" and "a" with a capital, stays one word.
+- "ing" before a hyphen or dash is read as "ing": "moving-in", where it read "mov±in".
+- Initials with periods between single letters are read as letters and periods: "p.b.u.h." reads "p. b. u. h.", where the table read each period between letters as "dd". Each letter and its period are now a word apart, so the book's text holds "e. g." with a space, and a search in the book or the library for "e.g." won't find it: search for "e. g." instead.
+- "St." and "Still." are told apart. "St." is read only where it stands before a capitalized word ("St. Paul") or after a capitalized word that does not end a sentence ("Main St."). Any other such sign is "still."
+- The sign for "before" at the start of a longer word is read as "bef", as in "befuddled", where it read "beforeuddled". "Beforehand", "beforetime", and "beforetimes" keep "before".
+- A micro sign before a unit stays µ: "5 µm", "10 µmol", and units written with it, as µg, µs, µL, and µHz. An italic word of two or more letters that begins with m, and does not follow a number, is read as italic: "mama", and not "µama". A micro unit with no number before it cannot be told from such a word, so it reads as italic.
+- Computer braille, between its begin and end signs, is left as it was.
+- A braille book is read again once for these, with the page and title changes above, at the first launch after the update that added them (0.4.8).
 
 #### Titles and authors of PEF, BRF, and BRL files
 
