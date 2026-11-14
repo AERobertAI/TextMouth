@@ -94,8 +94,9 @@ enum LibraryCloudWording {
     /// said at medium priority, so it waits for what the listener's own
     /// command just said rather than cutting it off.
     ///
-    /// "Downloading Moby-Dick" for one book, "Downloading 7 books" for
-    /// several; with `quietly`, the books came without a command of the
+    /// "Downloading Moby-Dick, a reading list book" for one book (the notice
+    /// names the list, which the title alone does not), "Downloading 7 books"
+    /// for several; with `quietly`, the books came without a command of the
     /// listener's (a first refresh after an update, the choice turned on, a
     /// sync from another Mac), so the sentence names the list:
     /// "Downloading 7 reading list books". Then, for the `short` books that
@@ -109,7 +110,7 @@ enum LibraryCloudWording {
     static func readingListDownloadsStarted(titles: [String], short: Int, quietly: Bool) -> String {
         var sentences: [String] = []
         if titles.count == 1, let title = titles.first {
-            sentences.append("Downloading \(title)")
+            sentences.append("Downloading \(title), a reading list book")
         } else if !titles.isEmpty {
             let books = quietly ? "\(titles.count) reading list books" : CountWording.books(titles.count)
             sentences.append("Downloading \(books)")

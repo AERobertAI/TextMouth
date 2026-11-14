@@ -793,7 +793,7 @@ final class KeepOnThisMacTests: XCTestCase {
         await waitUntil(fixture.states, records: .downloaded, for: book.id)
 
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
-        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick, a reading list book", priority: .medium)])
 
         // Evicted again, it downloads again and says nothing more.
         fixture.fake.setState(.inCloud, of: book.id)
@@ -813,8 +813,8 @@ final class KeepOnThisMacTests: XCTestCase {
     /// room.
     func testTheReadingListDownloadNoticeIsWordedInOnePlace() {
         let notice = LibraryCloudWording.readingListDownloadsStarted(titles:short:quietly:)
-        XCTAssertEqual(notice(["Moby-Dick"], 0, false), "Downloading Moby-Dick")
-        XCTAssertEqual(notice(["Moby-Dick"], 0, true), "Downloading Moby-Dick")
+        XCTAssertEqual(notice(["Moby-Dick"], 0, false), "Downloading Moby-Dick, a reading list book")
+        XCTAssertEqual(notice(["Moby-Dick"], 0, true), "Downloading Moby-Dick, a reading list book")
         XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, false), "Downloading 2 books")
         XCTAssertEqual(notice(["Moby-Dick", "Emma"], 0, true), "Downloading 2 reading list books")
         XCTAssertEqual(
@@ -823,7 +823,7 @@ final class KeepOnThisMacTests: XCTestCase {
         )
         XCTAssertEqual(
             notice(["Moby-Dick"], 1, true),
-            "Downloading Moby-Dick. There isn't enough free space for 1 more book"
+            "Downloading Moby-Dick, a reading list book. There isn't enough free space for 1 more book"
         )
         XCTAssertEqual(notice([], 1, true), "There isn't enough free space to download 1 reading list book")
         XCTAssertEqual(notice([], 4, false), "There isn't enough free space to download 4 reading list books")
@@ -1179,7 +1179,7 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id], "a book not on the list downloaded")
         XCTAssertEqual(
             said,
-            [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)],
+            [VoiceOverAnnouncement(message: "Downloading Moby-Dick, a reading list book", priority: .medium)],
             "a sync's books download with one notice, at medium priority"
         )
 
@@ -1221,7 +1221,7 @@ final class KeepOnThisMacTests: XCTestCase {
                     message: ReadingListWording.addedAnnouncement(added: [book.title], alreadyIn: 0),
                     priority: .high
                 ),
-                VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium),
+                VoiceOverAnnouncement(message: "Downloading Moby-Dick, a reading list book", priority: .medium),
             ]
         )
         XCTAssertEqual(said.filter { $0.message.hasPrefix("Downloading") }.count, 1, "\(said)")
@@ -1248,7 +1248,7 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id])
         XCTAssertTrue(
             said.contains(VoiceOverAnnouncement(
-                message: "Downloading One. There isn't enough free space for 1 more book",
+                message: "Downloading One, a reading list book. There isn't enough free space for 1 more book",
                 priority: .medium
             )),
             "\(said)"
@@ -1289,7 +1289,7 @@ final class KeepOnThisMacTests: XCTestCase {
         }
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
         XCTAssertTrue(fixture.kept.keepsReadingListBooks)
-        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick", priority: .medium)])
+        XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading Moby-Dick, a reading list book", priority: .medium)])
 
         fixture.model.setKeepsReadingListBooks(false)
         XCTAssertFalse(fixture.kept.keepsReadingListBooks)
