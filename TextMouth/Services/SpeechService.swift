@@ -661,6 +661,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var audioEngine: AudioEngineService {
         if let madeAudioEngine { return madeAudioEngine }
         let engine = AudioEngineService()
+        // Built here, while direct speech speaks, and not at the first seek
+        // or resume onto the engine, where the listener would wait for it.
+        engine.prepareGraph()
         engine.onPlaybackFinished = { [weak self] in
             self?.handleEngineFinished()
         }

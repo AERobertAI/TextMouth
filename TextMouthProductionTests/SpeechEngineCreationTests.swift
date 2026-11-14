@@ -164,6 +164,18 @@ final class SpeechEngineCreationTests: XCTestCase {
         XCTAssertEqual(rendered._engineBuildCountForTesting, 0)
     }
 
+    /// The speech service's own engine has its graph built as it is made,
+    /// once, so that no seek or resume waits for it; a look-ahead's does not.
+    func testTheSpeechServicesEngineBuildsItsGraphWhenMade() {
+        let speech = makeSpeech()
+        defer { speech.stop() }
+        let lookAhead = AudioEngineService()
+
+        XCTAssertEqual(speech.audioEngine._engineBuildCountForTesting, 1)
+        XCTAssertEqual(speech.audioEngine._engineBuildCountForTesting, 1, "reading it again builds nothing more")
+        XCTAssertEqual(lookAhead._engineBuildCountForTesting, 0)
+    }
+
     // MARK: - Play after Stop (audit C9)
 
     /// Speaking the text the engine holds rendered audio of, in the same

@@ -972,6 +972,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return engine
     }
 
+    /// Builds the engine graph now, if it is not built. The speech service
+    /// calls this as it makes its own engine, while direct speech already
+    /// speaks, so that the first seek, resume, or chapter handoff onto the
+    /// engine does not wait for the build (PERF08: 142 ms, 2.5 s cold). A
+    /// look-ahead never calls it.
+    func prepareGraph() {
+        _ = engine
+    }
+
     /// Whether the engine is built and running; false, without building one,
     /// when it is not built.
     private var engineIsRunning: Bool { builtEngine?.isRunning ?? false }
