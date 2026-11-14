@@ -32,6 +32,12 @@ final class LiveReadingPositions: ObservableObject {
     /// so a row and its book's reports always share one object.
     private var entries: [UUID: LiveReadingPosition] = [:]
 
+    /// The books whose entries hold a live position now, kept beside the
+    /// entries, of which there is one for every book a row has asked about
+    /// and few hold a position: the summary bar adds up only these anew
+    /// each time a reader moves (`TimeRemainingTally`).
+    private(set) var liveBookIDs: Set<UUID> = []
+
     /// The entry of the book `bookID`, which its row observes: made the
     /// first time it is asked for and kept for the session, so asking twice
     /// gives the same object. Asking publishes nothing, so a view may ask
@@ -51,6 +57,15 @@ final class LiveReadingPositions: ObservableObject {
         entries[book.id]?.applied(to: book) ?? book
     }
 
+    /// The time left in `book` at `wpm`, from its reader's live position
+    /// while that is newer than the library's: what
+    /// `applied(to:).estimatedTimeRemaining(wpm:)` says, without copying the
+    /// book for each of the many that have no live position.
+    func estimatedTimeRemaining(of book: Book, wpm: Double) -> TimeInterval? {
+        guard liveBookIDs.contains(book.id) else { return book.estimatedTimeRemaining(wpm: wpm) }
+        return applied(to: book).estimatedTimeRemaining(wpm: wpm)
+    }
+
     /// Records `position` as where a reader of `book` is now, unless the
     /// cursor has not moved from the position `book`'s row shows: then
     /// nothing is published. Otherwise the book's entry publishes, which
@@ -65,6 +80,7 @@ final class LiveReadingPositions: ObservableObject {
         guard !position.hasSameCursor(as: shown) else { return }
         objectWillChange.send()
         entry(for: book.id).position = position
+        liveBookIDs.insert(book.id)
     }
 
     /// Drops the live position of every book not in `bookIDs`, the books
@@ -74,8 +90,9 @@ final class LiveReadingPositions: ObservableObject {
         let closed = entries.filter { !bookIDs.contains($0.key) && $0.value.position != nil }
         guard !closed.isEmpty else { return }
         objectWillChange.send()
-        for (_, entry) in closed {
+        for (bookID, entry) in closed {
             entry.position = nil
+            liveBookIDs.remove(bookID)
         }
     }
 }

@@ -196,14 +196,15 @@ extension FolderInfoFacts {
     init(_ folder: BookFolder, library: LibraryViewModel, feedFolders: LibraryFeedFolders, wordsPerMinute: Double) {
         let path = folder.fullPath
         let books = library.library.booksInFolderTree(path)
-        let timesLeft = books.compactMap { library.livePositions.applied(to: $0).estimatedTimeRemaining(wpm: wordsPerMinute) }
+        // The time left, added up as the summary bar adds it up.
+        let timeLeft = TimeRemainingTally.sum(of: books, wpm: wordsPerMinute, livePositions: library.livePositions)
         self.init(
             name: folder.name,
             bookCount: books.count,
             unopenedCount: books.filter { $0.isUnopened }.count,
             feedCount: LibraryFeedsSectionRows.feeds(at: LibraryLocation(category: .folders, folderPath: path), center: feedFolders.center).count,
             subfolderCount: library.subfoldersOf(path).count,
-            timeRemaining: timesLeft.isEmpty ? nil : timesLeft.reduce(0, +)
+            timeRemaining: timeLeft.known == 0 ? nil : timeLeft.time
         )
     }
 }
