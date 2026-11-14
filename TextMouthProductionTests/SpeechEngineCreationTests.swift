@@ -101,6 +101,102 @@ final class SpeechEngineCreationTests: XCTestCase {
         XCTAssertFalse(speech.audioEngine.hasRenderedAudio)
     }
 
+    // MARK: - The engine's graph (audit C8)
+
+    /// A service that only renders, lends its audio, is stopped, set to a
+    /// speed, pitch, or volume, seeked, or discarded builds no engine graph:
+    /// the look-ahead is such a service.
+    func testAServiceThatNeverPlaysBuildsNoEngineGraph() {
+        let lookAhead = AudioEngineService()
+        lookAhead._installRenderedAudioForTesting(signature: nil)
+        let taker = AudioEngineService()
+
+        lookAhead.setSpeed(wpm: 300)
+        lookAhead.setPitch(multiplier: 1.2)
+        lookAhead.setVolume(0.5)
+        lookAhead.restoreVolume()
+        lookAhead.seek(toCharOffset: 0)
+        lookAhead.stop()
+        taker.adoptRenderedAudio(from: lookAhead)
+        _ = lookAhead.outputVolume
+        _ = lookAhead.discardRenderedAudio()
+
+        XCTAssertEqual(lookAhead.engineBuildCount, 0)
+        XCTAssertEqual(taker.engineBuildCount, 0)
+        XCTAssertTrue(taker.hasRenderedAudio, "the audio was adopted all the same")
+    }
+
+    /// The first play builds the graph, once, and what was set before it
+    /// (speed, pitch, volume) holds: the graph's setup must not reset them.
+    func testThePlayBuildsTheGraphOnceAndKeepsWhatWasSetBeforeIt() {
+        let service = AudioEngineService()
+        service._refusesToStartForTesting = true
+        service._installRenderedAudioForTesting(signature: nil, lasting: 1)
+        service.setSpeed(wpm: 600)
+        service.setPitch(multiplier: 1.5)
+        service.setVolume(0.4)
+        let rate = service.playbackRate
+        let pitch = service.playbackPitchCents
+
+        service.play()
+        service.play()
+
+        XCTAssertEqual(service.engineBuildCount, 1)
+        XCTAssertEqual(service.playbackRate, rate)
+        XCTAssertEqual(service.playbackPitchCents, pitch)
+        XCTAssertEqual(service.outputVolume, 0.4, accuracy: 0.001)
+        service.stop()
+    }
+
+    /// A chapter taken from the look-ahead builds no graph in the look-ahead.
+    func testAdoptingTheLookAheadsAudioBuildsNothingInTheLookAhead() {
+        let speech = makeSpeech()
+        defer { speech.stop() }
+        let text = "Gulls circled the cranes."
+        let rendered = AudioEngineService()
+        rendered._installRenderedAudioForTesting(
+            signature: SpeechRenderRequest(text: text, voice: speech.currentVoice).signature
+        )
+
+        speech.usePreRenderedEngine(rendered, text: text)
+        speech.stop()
+
+        XCTAssertEqual(rendered.engineBuildCount, 0)
+    }
+
+    // MARK: - Play after Stop (audit C9)
+
+    /// Speaking the text the engine holds rendered audio of, in the same
+    /// voice, keeps that audio: no discard and no new render.
+    func testPlayAfterStopOnTheSameTextKeepsTheRender() {
+        let speech = makeSpeech()
+        defer { speech.stop() }
+        let text = "The ferry left the quay at noon."
+        let signature = SpeechRenderRequest(text: text, voice: speech.currentVoice).signature
+        speech.audioEngine._installRenderedAudioForTesting(signature: signature)
+
+        speech.stop()
+        speech.speak(text)
+
+        XCTAssertTrue(speech.audioEngine.hasRenderedAudio)
+        XCTAssertEqual(speech.audioEngine.renderedSignature, signature)
+        XCTAssertTrue(speech.isSpeaking, "speech starts directly, as ever")
+    }
+
+    /// Other text still discards the held audio, as a seek or resume must
+    /// not play another chapter's.
+    func testSpeakingOtherTextStillDiscardsTheRender() {
+        let speech = makeSpeech()
+        defer { speech.stop() }
+        let signature = SpeechRenderRequest(text: "The ferry left the quay at noon.", voice: speech.currentVoice).signature
+        speech.audioEngine._installRenderedAudioForTesting(signature: signature)
+
+        // Too long to render, so nothing is rendered afresh.
+        speech.speak(Self.longText)
+
+        XCTAssertFalse(speech.audioEngine.hasRenderedAudio)
+    }
+
     // MARK: - Readers
 
     /// An audiobook's reader never makes a speech engine: opening, stopping,

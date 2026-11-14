@@ -836,7 +836,14 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
 /// the node's report that a segment played back hops to the main queue,
 /// reading only the test hook `_segmentPlayedBackForTesting` first.
 final class AudioEngineService: ObservableObject, @unchecked Sendable {
-    private var engine = AVAudioEngine()
+    /// The audio engine, built with its node graph at the first thing that
+    /// needs one (`engine`), or nil until then. A look-ahead only renders
+    /// and lends its audio to the speech service's engine, so it never
+    /// builds one (audit C8).
+    private var builtEngine: AVAudioEngine?
+    /// How many engine graphs this service has built: 0 or 1. Lets a test
+    /// show that a service which only rendered, or lent its audio, built none.
+    private(set) var engineBuildCount = 0
     private let playerNode: AVAudioPlayerNode
     private var timePitch = AVAudioUnitTimePitch()
     /// Feeds each play to `playerNode` a few slices at a time.
@@ -943,13 +950,45 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         playerNode = node
         feeder = RenderedSpeechFeeder(node: node, sliceFrameCount: sliceFrameCount, slicesAhead: slicesAhead)
         self.renderQueue = renderQueue
-        setupEngine()
-        #if os(iOS)
-        observeConfigurationChanges()
-        #endif
+        timePitch.rate = 1.0
     }
 
-    private func setupEngine() {
+    /// The audio engine, with the player node and time-pitch unit attached
+    /// and connected, built on first use. Everything that only needs to know
+    /// whether the engine runs reads `builtEngine` instead, so that stopping
+    /// or asking never builds one.
+    private var engine: AVAudioEngine {
+        if let builtEngine { return builtEngine }
+        let engine = AVAudioEngine()
+        builtEngine = engine
+        engineBuildCount += 1
+        setupEngine(engine)
+        #if os(iOS)
+        observeConfigurationChanges(of: engine)
+        #endif
+        // The tracked volume holds from the first play on, set before the
+        // graph existed.
+        engine.mainMixerNode.outputVolume = currentVolume
+        return engine
+    }
+
+    /// Whether the engine is built and running; false, without building one,
+    /// when it is not built.
+    private var engineIsRunning: Bool { builtEngine?.isRunning ?? false }
+
+    /// Stops the engine if it is built and running; nothing otherwise.
+    private func stopEngineIfRunning() {
+        if let builtEngine, builtEngine.isRunning { builtEngine.stop() }
+    }
+
+    /// Stops the player node and ends the play being fed. A service whose
+    /// engine was never built has nothing playing and its node is attached
+    /// to nothing, so it is left alone.
+    private func stopPlayerNodeIfBuilt() {
+        if builtEngine != nil { feeder.stopNode() }
+    }
+
+    private func setupEngine(_ engine: AVAudioEngine) {
         engine.attach(playerNode)
         engine.attach(timePitch)
         let defaultFormat = AVAudioFormat(standardFormatWithSampleRate: 22050, channels: 1)!
@@ -961,7 +1000,6 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         engine.connect(playerNode, to: timePitch, format: defaultFormat)
         engine.connect(timePitch, to: engine.mainMixerNode, format: defaultFormat)
         #endif
-        timePitch.rate = 1.0
     }
 
     // MARK: - Rendering (AVSpeechSynthesizer.write)
@@ -1295,6 +1333,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func play(fromCharOffset charOffset: Int = 0) {
         guard let audio = renderedAudio else { return }
 
+        // The first play builds the engine graph; the player node must be
+        // attached to it before it is stopped and scheduled.
+        _ = engine
         feeder.stopNode()
         #if os(iOS)
         guard connectNodes(format: audio.format, for: "a play") else {
@@ -1328,7 +1369,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// the failure is logged with `purpose`, "a play" or "a resume"
     /// (`AUDIO_ENGINE_START_FAILED`), and the caller then plays nothing.
     private func startEngineIfStopped(for purpose: String) -> Bool {
-        guard !engine.isRunning else { return true }
+        guard !engineIsRunning else { return true }
         do {
             if _refusesToStartForTesting {
                 throw CocoaError(.featureUnsupported)
@@ -1427,7 +1468,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // main queue now is no end of the chapter: the speech service plays on
         // from its place, or the next Play starts cold. Taken for the end, the
         // engine's silence would start the next chapter.
-        if outcome == .finishedPlayback, !knownToHaveReachedItsEnd, !engine.isRunning {
+        if outcome == .finishedPlayback, !knownToHaveReachedItsEnd, !engineIsRunning {
             DiagnosticLog.trace(.playback, "speech audio end ignored: the engine stopped itself before the report arrived")
             _segmentEndHandledForTesting?(.ignoredShortOfTheEnd)
             return .ignoredShortOfTheEnd
@@ -1494,8 +1535,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func stopAfterFadePreservingPosition() -> Int {
         let offset = currentCharOffset()
         playbackGeneration += 1
-        feeder.stopNode()
-        if engine.isRunning { engine.stop() }
+        stopPlayerNodeIfBuilt()
+        stopEngineIfRunning()
         segmentStartFrame = frameForCharOffset(offset)
         isPlaying = false
         isPaused = false
@@ -1550,8 +1591,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     func stop() {
         playbackGeneration += 1  // Invalidate pending completion handlers
-        feeder.stopNode()
-        if engine.isRunning { engine.stop() }
+        stopPlayerNodeIfBuilt()
+        stopEngineIfRunning()
         isPlaying = false
         isPaused = false
     }
@@ -1605,17 +1646,18 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     func setVolume(_ volume: Float) {
         currentVolume = max(0.0, min(volume, 1.0))
-        engine.mainMixerNode.outputVolume = currentVolume
+        // An engine not yet built takes the volume when it is built.
+        builtEngine?.mainMixerNode.outputVolume = currentVolume
     }
 
     func restoreVolume() {
         currentVolume = 1.0
-        engine.mainMixerNode.outputVolume = 1.0
+        builtEngine?.mainMixerNode.outputVolume = 1.0
     }
 
     /// Intended and effective mixer volume. Internal visibility supports
     /// hosted verification of fade persistence without exposing engine nodes.
-    var outputVolume: Float { engine.mainMixerNode.outputVolume }
+    var outputVolume: Float { builtEngine?.mainMixerNode.outputVolume ?? currentVolume }
     var intendedVolume: Float { currentVolume }
 
     /// The speed and pitch the time-pitch unit applies to rendered audio as it
@@ -1630,7 +1672,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         guard let audio = renderedAudio else { return }
         let wasPlaying = isPlaying && !isPaused
 
-        feeder.stopNode()
+        stopPlayerNodeIfBuilt()
 
         if wasPlaying {
             scheduleAndPlay(audio, fromCharOffset: charOffset)
@@ -1784,8 +1826,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// its place are kept; `resume()` starts the engine again
     /// (`startEngineIfStopped(for:)`), though the reader's next Play starts cold.
     func pauseEngine() {
-        guard engine.isRunning else { return }
-        let engine = self.engine
+        guard let engine = builtEngine, engine.isRunning else { return }
         if let exception = ObjCException.catching({ engine.pause() }) {
             DiagnosticLog.event(
                 .playback,
@@ -1798,7 +1839,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// Observes this engine's configuration changes. Each engine is its own
     /// notification's `object`, and there can be two at once, the speech
     /// service's and the look-ahead's (the engineer's review, F5).
-    private func observeConfigurationChanges() {
+    private func observeConfigurationChanges(of engine: AVAudioEngine) {
         configurationObservation = EngineNotificationObservation(
             NotificationCenter.default.addObserver(
                 forName: .AVAudioEngineConfigurationChange,
@@ -1839,7 +1880,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private func engineConfigurationChanged() {
         DiagnosticLog.event(
             .playback,
-            "AUDIO_ENGINE_CONFIGURATION_CHANGED: running=\(engine.isRunning) playing=\(isPlaying) paused=\(isPaused)",
+            "AUDIO_ENGINE_CONFIGURATION_CHANGED: running=\(engineIsRunning) playing=\(isPlaying) paused=\(isPaused)",
             in: .speechTransitions
         )
         guard isPlaying else { return }
@@ -1980,7 +2021,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// resume does when the engine must start again
     /// (`startEngineIfStopped(for:)`).
     func _stopEngineOnlyForTesting() {
-        if engine.isRunning { engine.stop() }
+        stopEngineIfRunning()
     }
 
     /// Runs the same interpolation used by production seeking.
