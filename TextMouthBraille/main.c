@@ -1606,21 +1606,46 @@ next_word_is_capitalized(const widechar *cells, int end, int n) {
 }
 
 /*
- * Writes `cells[lead..end)` as "still" and its period, when it is ⠌⠲ and the
- * marks that may end a word, with a capital sign or without, unless it can
- * be "St." (a capital sign, and the next word capitalized: `next_capital`).
- * "St." is only that: "Still." ends a sentence, whatever follows it, but
- * the cells are the same, and a capitalized word after the period is most
- * often a name ("St. Paul"). Returns 1 when it wrote the word, 0 when it
- * did not.
+ * Whether the word before the one at `cells[start]` is capitalized (its
+ * first cell, after the marks that open it, is a capital sign) and does not
+ * end a sentence (its last cell, before closing marks, is no period ⠲,
+ * exclamation mark ⠖, or question mark ⠦). 0 when no word is before it.
  */
 static int
-spell_still(const widechar *cells, int start, int lead, int end, int next_capital, cell_list *out) {
+follows_unfinished_capitalized_word(const widechar *cells, int start) {
+	int end = start;
+	int first;
+	while (end > 0 && cells[end - 1] == CELL_BLANK) end--;
+	if (end == start || end == 0) return 0;
+	first = end;
+	while (first > 0 && cells[first - 1] != CELL_BLANK) first--;
+	for (int k = first; k < end && is_leading_mark(cells[k]); k++) first = k + 1;
+	/* Closing quotation marks and parentheses come after the sentence's mark. */
+	while (end > first && (cells[end - 1] == CELL_356 || cells[end - 1] == CELL_2356)) end--;
+	return first < end && cells[first] == CELL_6 &&
+			!(cells[end - 1] == CELL_256 || cells[end - 1] == CELL_235 || cells[end - 1] == CELL_236);
+}
+
+/*
+ * Writes `cells[lead..end)` as "still" and its period, when it is ⠌⠲ and the
+ * marks that may end a word, with a capital sign or without, unless it can
+ * be "St.": a capital sign, and either the next word capitalized ("St.
+ * Paul"), or the word before it a capitalized one that does not end a
+ * sentence ("Main St." at a paragraph's end, or before "and"). "Still." ends a
+ * sentence, whatever follows it, but the cells are the same, and a
+ * capitalized word after the period is most often a name; it is read when
+ * ⠠⠌⠲ is the whole record, or follows a sentence's end. Returns 1 when it
+ * wrote the word, 0 when it did not.
+ */
+static int
+spell_still(const widechar *cells, int start, int lead, int end, int n, cell_list *out) {
 	int i = lead;
 	int capital = i < end && cells[i] == CELL_6;
 	if (capital) i++;
 	if (i + 1 >= end || cells[i] != CELL_34 || cells[i + 1] != CELL_256 ||
-			!only_trailing_marks(cells, i + 1, end) || (capital && next_capital))
+			!only_trailing_marks(cells, i + 1, end))
+		return 0;
+	if (capital && (next_word_is_capitalized(cells, end, n) || follows_unfinished_capitalized_word(cells, start)))
 		return 0;
 	put_cells(out, cells, start, i);
 	put_letters(out, "still");
@@ -1684,7 +1709,7 @@ fix_ebae_word(const widechar *cells, int start, int end, int n, cell_list *out) 
 	while (lead < end && is_leading_mark(cells[lead])) lead++;
 	if (split_word_signs(cells, start, lead, end, out)) return;
 	if (split_initials(cells, start, lead, end, out)) return;
-	if (spell_still(cells, start, lead, end, next_word_is_capitalized(cells, end, n), out)) return;
+	if (spell_still(cells, start, lead, end, n, out)) return;
 	spell_inside_word(cells, start, lead, end, out);
 }
 

@@ -122,6 +122,13 @@ final class BrailleEbaeFixesTests: XCTestCase {
         try assertUnchanged([(",/4 ,P", "St. People")])
     }
 
+    /// "Main St." at the end of a record stays "St." (cells liblouis wrote for
+    /// the print), and "Still." after a sentence's end or alone reads "Still.".
+    func testStAtTheEndOfARecordStaysSt() throws {
+        try assertUnchanged([(",ma9 ,/4", "Main St."), ("a ,ma9 ,/4 &", "a Main St. and")])
+        try assertFixed([(",d\"o4 ,/4", "Done. Still."), (",/4", "Still.")])
+    }
+
     // MARK: - Before inside a word
 
     /// ⠆⠋ inside a word read "before"; it reads "bef", except in the compounds
