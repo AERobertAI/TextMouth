@@ -13,6 +13,9 @@ final class BookBoxTests: XCTestCase {
     private static let id = UUID(uuidString: "6F0C2B1E-3D4A-4B5C-8E7F-0A1B2C3D4E5F")!
     private static let added = Date(timeIntervalSince1970: 1_700_000_000)
 
+    /// A fixed bookmark id, so books built apart are alike.
+    private static let bookmarkID = UUID(uuidString: "1A2B3C4D-0000-4000-8000-000000000001")!
+
     /// The IDs of two skipped headings, in the form a book keeps (`Heading.id`).
     private static let skipOne = SkippedHeading(level: 1, label: "One", chapterIndex: 0, characterOffset: 5).id
     private static let skipTwo = SkippedHeading(level: 2, label: "Two", chapterIndex: 1, characterOffset: 9).id
@@ -25,7 +28,7 @@ final class BookBoxTests: XCTestCase {
             md5Hash: String(repeating: "a", count: 32), folderPath: "Fiction", dateAdded: added,
             tmbDirectoryName: "A-Title-1.tmb"
         )
-        book.bookmarks = [Bookmark(number: 1, chapterIndex: 2, characterOffset: 30, label: "Here", dateCreated: added)]
+        book.bookmarks = [Bookmark(id: bookmarkID, number: 1, chapterIndex: 2, characterOffset: 30, label: "Here", dateCreated: added)]
         book.totalWordCount = 90_000
         book.epubPublisher = "A Publisher"
         book.skippedHeadingIDs = [skipOne]
@@ -130,8 +133,8 @@ final class BookBoxTests: XCTestCase {
     // MARK: - Stored Form
 
     /// A book survives a JSON round trip with every field, the braille
-    /// table's origin included, and its fields are written in the order the
-    /// struct declared them (`OnDiskContractTests` pins the keys).
+    /// table's origin included, and writes the keys a struct of these
+    /// fields did (`OnDiskContractTests` pins them all).
     func testABookRoundTripsThroughJSON() throws {
         let book = Self.makeBook()
         let encoder = JSONEncoder()
@@ -142,13 +145,12 @@ final class BookBoxTests: XCTestCase {
         let decoded = try decoder.decode(Book.self, from: data)
         XCTAssertEqual(decoded, book)
 
-        // The keys appear in declaration order, so a library written before
-        // the box and one written after it are the same bytes.
+        // Every key of a plain struct of these fields is written (the bytes
+        // and key set are pinned by `OnDiskContractTests`).
         let text = String(decoding: data, as: UTF8.self)
-        let positions = ["\"id\"", "\"title\"", "\"folderPath\"", "\"brailleTable\"", "\"brailleTableOrigin\""]
-            .compactMap { text.range(of: $0)?.lowerBound }
-        XCTAssertEqual(positions.count, 5)
-        XCTAssertEqual(positions, positions.sorted())
+        for key in ["title", "folderPath", "brailleTable", "brailleTableOrigin", "skippedHeadingIDs"] {
+            XCTAssertTrue(text.contains("\"\(key)\""), key)
+        }
     }
 
     // MARK: - What Copying Costs
