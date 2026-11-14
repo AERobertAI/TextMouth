@@ -657,7 +657,8 @@ enum BraillePageAnalyzer {
                 guard let head = pageHead(ofRows: rows(ofPage: page), width: width) else { continue }
                 counts[headKey(of: head.text), default: 0] += 1
             }
-            return Set(counts.filter { $0.value >= BraillePageAnalyzer.minHeadRepeats }.keys)
+            // A key with nothing left (a head of numbers alone) names no head.
+            return Set(counts.filter { !$0.key.isEmpty && $0.value >= BraillePageAnalyzer.minHeadRepeats }.keys)
         }
 
         /// Takes a page's numbers out of its rows: the braille page number from
