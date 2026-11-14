@@ -1230,3 +1230,126 @@ extension BraillePageAnalyzerTests {
         XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AAAA RUNS ON")])
     }
 }
+
+// MARK: - The title page (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// The cells of `ascii`, as one braille text with its blanks.
+    private func braille(_ ascii: String) -> String { cells(ascii) }
+
+    /// The centered rows of the first page come back one by one, a rule or a
+    /// row of another kind parting two stretches with an empty string.
+    func testTheCenteredRowsOfTheFirstPageAreGivenRowByRow() {
+        let page = [
+            rightAligned("#A"), centered(",LIFE ( ,PI"), centered("0,YANN ,M>TEL"), centered("333333333333"),
+            centered(",9 #D ,VOLUMES"), "", row(2, "A PARAGRAPH OF TEXT"),
+        ]
+        let rows = BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: [page]))
+        XCTAssertEqual(rows, [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
+    }
+
+    /// A page with no text before the title page (a form feed at the file's
+    /// start) is passed over, and a BRL has no title page.
+    func testAnEmptyFirstPageIsPassedOverAndABRLHasNoTitlePage() {
+        let pages = [[""], [centered(",TITLE"), centered(",ONE"), centered(",TWO")]]
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: pages)).count, 3)
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brl, pages: pages)), [])
+    }
+
+    /// English Braille's "by" sign written against the author's capital,
+    /// "Title / by Author", the title is the first row and the author the
+    /// words after the sign.
+    func testTheEnglishBrailleBySignNamesTheAuthor() {
+        let names = BrailleTitlePage.names(inRows: [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
+        XCTAssertEqual(names, BrailleTitlePage.Names(title: braille(",LIFE ( ,PI"), author: braille(",YANN ,M>TEL")))
+    }
+
+    /// "by" spelled, on a row of its own with the author on the next, or
+    /// with the author after it, or inside the title's row, names the author.
+    func testASpelledByNamesTheAuthorOnItsOwnRowOrInTheTitlesRow() {
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE"), braille("BY"), braille(",SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE"), braille("BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",A ,TITLE BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",A ,TITLE"), author: braille(",SOME ,ONE")))
+        // A "by" inside the title is the title's when the next row begins with "by".
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",STAND BY ,ME"), braille("BY ,SOME ,ONE")]),
+            BrailleTitlePage.Names(title: braille(",STAND BY ,ME"), author: braille(",SOME ,ONE")))
+    }
+
+    /// A title of two rows before the author's is one title, and a
+    /// "Published by" row of a later stretch is no author's.
+    func testATwoRowTitleIsOneTitleAndALaterPublishedByNamesNoAuthor() {
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",ONE"), braille(",TWO"), braille("BY ,A ,B")]),
+            BrailleTitlePage.Names(title: braille(",ONE ,TWO"), author: braille(",A ,B")))
+        XCTAssertEqual(
+            BrailleTitlePage.names(inRows: [braille(",TITLE"), "", braille(",PUBLISHED BY ,X"), braille(",ISBN")]),
+            BrailleTitlePage.Names(title: braille(",TITLE"), author: nil))
+    }
+
+    /// A page of one or two rows with no "by" is no title page (a chapter
+    /// opening with the book's title and its heading is not): nothing is
+    /// named, and the file's name stands.
+    func testAPageWithNoByAndFewerThanThreeRowsNamesNothing() {
+        XCTAssertNil(BrailleTitlePage.names(inRows: []))
+        XCTAssertNil(BrailleTitlePage.names(inRows: [braille(",PRIDE"), "", braille(",CHAPTER ,I")]))
+    }
+}
+
+/// A BRF's title page, read into the title and author a new book is listed
+/// under.
+final class BrailleTitlePageImportTests: XCTestCase {
+    /// A file named `name` holding `rows` as BRF text (CR LF between rows),
+    /// in a folder of this test's own.
+    private func brf(named name: String, rows: [String]) throws -> URL {
+        let url = try makeSandboxDirectory("BrailleTitlePage").appendingPathComponent(name)
+        try Data(rows.joined(separator: "\r\n").utf8).write(to: url)
+        return url
+    }
+
+    /// `ascii` centered in a 40-cell line.
+    private func centered(_ ascii: String) -> String {
+        String(repeating: " ", count: (40 - ascii.count) / 2) + ascii
+    }
+
+    /// An invented title page: the title, "by" and the author, a rule, a
+    /// publisher's line, and a first page of text after it.
+    private var titlePageRows: [String] {
+        [centered(",A ,QUIET ,HARBOUR"), centered("0,JOHN ,SMITH"), centered("333333333333"),
+         centered(",PUBLI%$ BY ,ACME"), centered(",SEATTLE"), "", "\u{0C}" + "  ,THE ,FIRST ,CHAPTER"]
+    }
+
+    /// The Braille setting's table, Grade 2 UEB, reads the title page, and
+    /// the book is listed under its title and author, not its file's name.
+    func testANewBRFIsListedUnderItsTitlePagesTitleAndAuthor() throws {
+        let url = try brf(named: "000012345.brf", rows: titlePageRows)
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "en-ueb-g2.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "A Quiet Harbour")
+        XCTAssertEqual(metadata.author, "John Smith")
+    }
+
+    /// A BRF with no title page, such as the sample that opens with a chapter, keeps its file's name.
+    func testABRFWithoutATitlePageKeepsItsFileNameAndAnUnknownAuthor() throws {
+        let url = try brf(named: "just-a-chapter.brf", rows: [centered(",CHAPTER ,ONE"), "", "  ,SOME ,TEXT"])
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "en-ueb-g2.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "just-a-chapter")
+        XCTAssertEqual(metadata.author, Book.unknownAuthor)
+    }
+
+    /// A table the book cannot be read with leaves the file's name, never a refusal.
+    func testAnUnknownTableLeavesTheFileNameAndNeverFails() throws {
+        let url = try brf(named: "named.brf", rows: titlePageRows)
+        let metadata = ImportedFileMetadata.read(
+            from: url, format: .braille, brailleReading: (table: "no-such-table.ctb", fileCode: nil))
+        XCTAssertEqual(metadata.title, "named")
+        XCTAssertEqual(metadata.author, Book.unknownAuthor)
+    }
+}

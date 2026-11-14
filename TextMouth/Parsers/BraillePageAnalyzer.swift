@@ -162,6 +162,42 @@ enum BraillePageAnalyzer {
         return BrailleStructure(blocks: blocks, pages: pageNumbers)
     }
 
+    // MARK: The title page
+
+    /// The centered rows of the first page that has text, which is where a
+    /// braille book's title page sets its title and author: each row's cells
+    /// as Unicode braille, in order, with an empty string between two
+    /// stretches of such rows that rows of another kind (blank, a rule, or
+    /// not centered) part. The rows are as the analyzer reads them, before
+    /// any heading is made of them, so that a caller sees each row apart
+    /// (`BrailleTitlePage`). Empty for a BRL, which has no layout, and for a
+    /// file with no row on any page that is centered.
+    static func centeredRowsOfFirstPage(of file: BrailleFilePages) -> [String] {
+        guard file.kind != .brl else { return [] }
+        let book = Book(file: file)
+        let width = book.measure().width
+        // The first page with anything on it (a form feed may leave an empty
+        // page at a file's start).
+        for page in 0..<file.pageCount {
+            let spans = book.rows(ofPage: page)
+            guard spans.contains(where: { !$0.isEmpty }) else { continue }
+            var lines: [String] = []
+            for span in spans {
+                let row = book.makeRow(span)
+                if row.isBlank || !isCentered(row, width: width) || isRule(row, in: book.cells) {
+                    // One separator between stretches, none at the start.
+                    if let last = lines.last, !last.isEmpty { lines.append("") }
+                } else {
+                    lines.append(BrailleFilePages.string(of: book.cells[row.content.range]))
+                }
+            }
+            // No separator at the end.
+            if lines.last?.isEmpty == true { lines.removeLast() }
+            return lines
+        }
+        return []
+    }
+
     // MARK: Spans and rows
 
     /// Where a page's first row lands in the blocks (PG12): the index of the

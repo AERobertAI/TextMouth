@@ -169,7 +169,11 @@ extension LibraryViewModel {
                 // With an empty fallback title, a file that names no title
                 // reads as naming none, where an import would list the
                 // book under its file's name.
-                let read = ImportedFileMetadata.read(from: file, format: book.format, fallbackTitle: "")
+                // A braille book's title page is read with the table and the
+                // file characters the book was imported with.
+                let braille = book.brailleTable.map { (table: $0, fileCode: book.brailleFileCode) }
+                let read = ImportedFileMetadata.read(
+                    from: file, format: book.format, fallbackTitle: "", brailleReading: braille)
                 return MetadataReading(bookID: book.id, read: read)
             }
             // A file that went to the cloud while it was read may have been
