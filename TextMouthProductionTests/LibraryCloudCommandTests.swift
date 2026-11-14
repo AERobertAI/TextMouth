@@ -630,7 +630,7 @@ final class CommandFixture {
             refreshAfterRemoval: { refreshRequests.count += 1 },
             revealInFinder: { revealed.files.append($0) },
             now: { clock.now },
-            freeSpace: { _ in space.free }
+            freeSpace: { _ in space.next() }
         )
         model.library = Library(books: books)
         states.setLibraryLocation(.cloud(.iCloudDrive))
@@ -671,10 +671,37 @@ final class FreeSpaceStandIn: @unchecked Sendable {
     /// The bytes free.
     private var figure: Int64? = 1_000_000_000_000
 
-    /// The bytes free, or nil when the volume cannot tell.
+    /// The figures the next reads return, one each, before `free` answers
+    /// again: a volume that fills as the first download lands.
+    private var scripted: [Int64?] = []
+    /// How many times the free space was read.
+    private var reads = 0
+
+    /// The bytes free, or nil when the volume cannot tell. Reading it counts
+    /// nothing, so a test may look at it freely; the commands read through
+    /// `next()`.
     var free: Int64? {
         get { lock.withLock { figure } }
         set { lock.withLock { figure = newValue } }
+    }
+
+    /// What the commands' read of the volume returns: the next scripted
+    /// figure, if any, else `free`. Each call is counted (`readCount`).
+    func next() -> Int64? {
+        lock.withLock {
+            reads += 1
+            return scripted.isEmpty ? figure : scripted.removeFirst()
+        }
+    }
+
+    /// Makes the next reads return `figures`, one each, in order.
+    func script(_ figures: [Int64?]) {
+        lock.withLock { scripted = figures }
+    }
+
+    /// How many times the commands read the free space (`next()`).
+    var readCount: Int {
+        lock.withLock { reads }
     }
 }
 

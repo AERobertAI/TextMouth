@@ -532,6 +532,10 @@ final class LibraryCloudCommands {
     /// a refresh that finds them evicted again, or still short of room,
     /// says nothing more.
     private var booksToldOfReadingListDownload: Set<UUID> = []
+    /// The books logged as left out for want of room
+    /// (`logBooksLeftOutForRoom`), until they next start, so each refresh
+    /// that finds one still short adds no line.
+    private var booksLoggedShortOfRoom: Set<UUID> = []
 
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
@@ -739,6 +743,12 @@ final class LibraryCloudCommands {
     /// The planning reads the books' sizes and the volume's free space off
     /// the main thread, since both can wait on the file system or the
     /// network. Books being planned by an earlier call are left to it.
+    ///
+    /// A book whose size is unknown takes a pass of its own: the plan
+    /// starts the first such book and puts the books after it off, then the
+    /// task plans those again once that download has ended, reading the free
+    /// space afresh, so a long list of books the drive gives no size for
+    /// cannot fill the volume at once.
     private func downloadWhatFits(
         of books: [Book],
         in library: LibraryViewModel,
@@ -750,22 +760,89 @@ final class LibraryCloudCommands {
         let candidateIDs = Set(candidates.map(\.id))
         booksBeingPlanned.formUnion(candidateIDs)
         return Task { [self] in
-            let plan = await planDownloads(of: candidates)
+            var pending = candidates
+            var isFirstPass = true
+            var toldOfLaterShortfall = false
+            while !pending.isEmpty, !Task.isCancelled {
+                // Books put off waited through a whole download: the listener
+                // may have cleared the choice, stopped keeping a book, or
+                // taken it off the list meanwhile. The first pass is checked
+                // already, by the command that started it.
+                if !isFirstPass {
+                    pending = pending.filter { isStillWanted($0, in: library, origin: origin) }
+                }
+                let plan = await planDownloads(of: pending)
+                // The states may have moved on while the plan was read.
+                let starting = plan.fits.filter(canStartDownload)
+                let waiting = plan.deferred.filter(canStartDownload)
+                // The listener hears of the whole list once, at its first
+                // pass: the books put off start later, and say nothing then.
+                announceReadingListDownloads(
+                    starting: isFirstPass ? starting + waiting : starting,
+                    short: plan.short,
+                    origin: origin,
+                    from: window
+                )
+                // A later pass that finds the room gone corrects that notice,
+                // once, counting only the books it leaves out.
+                if !isFirstPass, !toldOfLaterShortfall {
+                    toldOfLaterShortfall = announceShortfallOfLaterPass(plan.short, origin: origin, from: window)
+                }
+                logBooksLeftOutForRoom(plan.short, starting: starting, origin: origin)
+                await download(starting, in: library, from: window, origin: origin)?.value
+                pending = waiting
+                isFirstPass = false
+            }
             booksBeingPlanned.subtract(candidateIDs)
-            // The states may have moved on while the plan was read.
-            let starting = plan.fits.filter(canStartDownload)
-            announceReadingListDownloads(starting: starting, short: plan.short, origin: origin, from: window)
-            await download(starting, in: library, from: window, origin: origin)?.value
         }
+    }
+
+    /// Whether the download of `book`, begun for `origin`, is still wanted:
+    /// Download Now's books always; a refresh's and a keep's while the book
+    /// is kept on this Mac for either reason; the reading list's add while
+    /// the book is on the list and this Mac keeps the list's books.
+    private func isStillWanted(_ book: Book, in library: LibraryViewModel, origin: DownloadOrigin) -> Bool {
+        switch origin {
+        case .downloadNow:
+            return true
+        case .keepOnThisMac, .keptBookRefresh:
+            return kept.isKept(book.id)
+        case .readingListAdd:
+            return kept.keepsReadingListBooks && library.readingList.contains(book.id)
+        }
+    }
+
+    /// Tells the listener, at medium priority, that the books of `short`
+    /// that are the reading list's found no room, in the words of the first
+    /// notice for a list none of whose books starts. The first notice counted
+    /// the books it put off as downloading, so this one corrects it.
+    /// - Returns: Whether a notice was said; nothing is for no list book.
+    private func announceShortfallOfLaterPass(_ short: [Book], origin: DownloadOrigin, from window: PlatformWindow?) -> Bool {
+        let listBooks = short.filter { origin == .readingListAdd || kept.isKeptForReadingList($0.id) }
+        guard !listBooks.isEmpty else { return false }
+        VoiceOverAnnouncer.announce(
+            LibraryCloudWording.readingListDownloadsStarted(
+                titles: [],
+                short: listBooks.count,
+                quietly: origin == .keptBookRefresh
+            ),
+            from: window,
+            priority: .medium
+        )
+        return true
     }
 
     /// Which of `books` fit in the space free on the library's volume, in
     /// order, each taking what it still needs to download, less the reserve
     /// (`freeSpaceReserve`) that stays free; the rest are short of room.
-    /// A book whose size is unknown takes nothing, so with room above the
-    /// reserve it starts. Nothing is short when the volume's free space
-    /// cannot be told. Reads off the main thread, and downloads nothing.
-    private func planDownloads(of books: [Book]) async -> (fits: [Book], short: [Book]) {
+    ///
+    /// A book whose size is unknown takes nothing from the room, so with
+    /// room above the reserve it starts, but the room that is left cannot be
+    /// weighed until it has downloaded: the books after the first such book
+    /// are put off (`deferred`), to be planned again then. Nothing is short
+    /// when the volume's free space cannot be told. Reads off the main
+    /// thread, and downloads nothing.
+    private func planDownloads(of books: [Book]) async -> (fits: [Book], short: [Book], deferred: [Book]) {
         let storage = storage()
         let packages = books.map { BookPackage($0) }
         let root = TextMouthPaths.root
@@ -773,20 +850,37 @@ final class LibraryCloudCommands {
         let reads = await Task.detached(priority: .userInitiated) {
             (free: freeSpace(root), needs: packages.map { storage.bytesToDownload(of: $0) })
         }.value
-        guard let free = reads.free else { return (books, []) }
-        var room = free - freeSpaceReserve
+        // nil: the volume cannot tell its free space, so every book fits.
+        var room = reads.free.map { $0 - freeSpaceReserve }
         var fits: [Book] = []
         var short: [Book] = []
+        var deferred: [Book] = []
+        var unknownSizeStarted = false
         for (book, need) in zip(books, reads.needs) {
-            let bytes = need ?? 0
-            if bytes <= room {
-                fits.append(book)
-                room -= bytes
-            } else {
+            if unknownSizeStarted {
+                deferred.append(book)
+            } else if let left = room, (need ?? 0) > left {
                 short.append(book)
+            } else {
+                fits.append(book)
+                room = room.map { $0 - (need ?? 0) }
+                unknownSizeStarted = need == nil
             }
         }
-        return (fits, short)
+        return (fits, short, deferred)
+    }
+
+    /// Logs each of `short`, the books left out of a plan for want of room,
+    /// under DOWNLOAD_SKIPPED_NO_ROOM, whoever's they are (the reading
+    /// list's, or books the listener keeps on this Mac): only the log tells
+    /// of the listener's own, since VoiceOver hears of the list's alone. A
+    /// book is logged once until it next starts (`starting`), so a refresh
+    /// that finds it still short each minute adds no line.
+    private func logBooksLeftOutForRoom(_ short: [Book], starting: [Book], origin: DownloadOrigin) {
+        booksLoggedShortOfRoom.subtract(starting.map(\.id))
+        for book in short where booksLoggedShortOfRoom.insert(book.id).inserted {
+            DiagnosticLog.event(.storage, "DOWNLOAD_SKIPPED_NO_ROOM: \(origin.logSource): \(book.title)")
+        }
     }
 
     /// Tells the listener, once for each book, that the reading list's books
@@ -889,6 +983,17 @@ final class LibraryCloudCommands {
         /// Whether VoiceOver hears how the downloads ended.
         var announcesEnd: Bool {
             self != .keptBookRefresh
+        }
+
+        /// What the line of a book left out for want of room says started
+        /// the plan, so the log tells a refresh's books from the list's adds.
+        var logSource: String {
+            switch self {
+            case .downloadNow: return "Download Now"
+            case .keepOnThisMac: return "Keep on This Mac"
+            case .keptBookRefresh: return "refresh of kept books"
+            case .readingListAdd: return "added to the reading list"
+            }
         }
 
         /// The tags of the lines logged as the downloads start, as one of

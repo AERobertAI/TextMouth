@@ -57,8 +57,8 @@ enum ReadingListWording {
     /// The checkbox's hint: when it applies, and what it does. It says that
     /// only books finished from then on leave the list, so no one expects
     /// the books already finished to go at once.
-    static let removeFinishedHint = "When a book is finished, take it off the reading list. "
-        + "Books finished before you turn this on stay on it. Books stay in the library."
+    static let removeFinishedHint = "When a book is finished, take it off the reading list once its reader window moves on or closes. "
+        + "Books finished before you turn this on stay on it."
 
     /// The label of the options bar's checkbox for keeping the list's books
     /// downloaded on this Mac, shown only while the library is in the cloud.
