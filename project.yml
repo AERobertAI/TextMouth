@@ -48,7 +48,7 @@ settings:
 # MARKETING_VERSION line, and the Mac app and the iOS app share it.
 settingGroups:
   appVersion:
-    MARKETING_VERSION: "0.4.8"
+    MARKETING_VERSION: "0.4.9"
     CURRENT_PROJECT_VERSION: "1"
 
 # The two C libraries both apps link, each defined once and built for each
