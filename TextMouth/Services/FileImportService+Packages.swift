@@ -448,7 +448,15 @@ extension FileImportService {
         } else {
             throw FileImportError.unsupportedFormat(content.pathExtension.lowercased())
         }
-        let metadata = isTracksFolder ? nil : ImportedFileMetadata.read(from: content, format: format)
+        // A braille book's title page is read with the table and characters
+        // the marker kept, so adding a book back runs no fresh guess
+        // (brfguess); a marker that kept no table reads with the setting's.
+        let brailleReading = format == .braille
+            ? (table: marker.brailleTable ?? BraillePreferences.importTable(), fileCode: marker.brailleFileCode)
+            : nil
+        let metadata = isTracksFolder
+            ? nil
+            : ImportedFileMetadata.read(from: content, format: format, brailleReading: brailleReading)
 
         return Book(
             id: marker.bookID,
