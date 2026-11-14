@@ -233,40 +233,264 @@ struct EditedText: Codable, Hashable, Sendable {
     var takenAt: Date
 }
 
+/// One book of the library: its row, and what the app keeps of it.
+///
+/// A `Book` is a value, and it behaves as one: copying it and changing the
+/// copy never changes the original. It holds its fields, though, in one
+/// shared box (`Storage`), copied only when a copy is written (copy on
+/// write, as `Array` does). A book has about fifty fields, and a struct that
+/// held them inline made every type that holds a book copy and destroy each
+/// field by its own written-out code; one reference makes each of those a
+/// retain and a release, which is a megabyte less in the app (audit C13).
+///
+/// The API is the struct's own: every field is a property, and `Codable`,
+/// `Equatable`, and `Hashable` read the fields, so the stored JSON is
+/// exactly what a plain struct of the same fields wrote
+/// (`OnDiskContractTests`).
 struct Book: Identifiable, Codable, Hashable {
-    let id: UUID
-    var title: String
-    var author: String
-    var format: BookFormat
-    var filePath: String
-    var md5Hash: String
-    var folderPath: String  // e.g. "Fiction/Sci-Fi" or "" for root
-    var dateAdded: Date
-    var lastOpened: Date?
-    /// A book is unopened while it has never been opened (`lastOpened` is
-    /// nil). It is what the Unopened category lists, and what a row's "New"
-    /// and `BookState.isNew` read.
-    var isUnopened: Bool { lastOpened == nil }
-    var readingPosition: ReadingPosition?
-    var bookmarks: [Bookmark]
+    /// Every stored field of a book, held once and shared by every copy of
+    /// the struct until one is written.
+    ///
+    /// The fields follow the struct's documented order, and each is
+    /// documented on the `Book` property that reads it. Nothing outside
+    /// `Book` can reach a box.
+    ///
+    /// `@unchecked Sendable`: a box is never written while it is shared.
+    /// Every write goes through `Book.makeUnique()` first, so a box that two
+    /// `Book` values can reach is never changed, and a box one value owns is
+    /// written only by that value, which as a struct only one thread at a
+    /// time may write (no lock is needed).
+    private final class Storage: @unchecked Sendable {
+        var id: UUID
+        var title: String = ""
+        var author: String = ""
+        var format: BookFormat
+        var filePath: String = ""
+        var md5Hash: String = ""
+        var folderPath: String = ""
+        var dateAdded: Date
+        var lastOpened: Date? = nil
+        var readingPosition: ReadingPosition? = nil
+        var bookmarks: [Bookmark] = []
+        var totalWordCount: Int? = nil
+        var totalCharacterCount: Int? = nil
+        var tmbDirectoryName: String = ""
+        var sourceFilePath: String? = nil
+        var lastPlaybackStarted: Date? = nil
+        var lastPlaybackStopped: Date? = nil
+        var localVoiceID: String? = nil
+        var localWPM: Double? = nil
+        var localPitch: Double? = nil
+        var skippedHeadingIDs: [String]? = nil
+        var skippedHeadings: [SkippedHeading]? = nil
+        var waitingSkippedHeadings: [SkippedHeading]? = nil
+        var localEndOfBookBehavior: String? = nil
+        var localSkipForwardUnit: String? = nil
+        var localSkipBackwardUnit: String? = nil
+        var manualSortOrder: Int? = nil
+        var audioDuration: TimeInterval? = nil
+        var audioAlbum: String? = nil
+        var audioGenre: String? = nil
+        var audioYear: String? = nil
+        var epubPublisher: String? = nil
+        var epubPublicationDate: String? = nil
+        var epubISBN: String? = nil
+        var epubLanguage: String? = nil
+        var epubIdentifier: String? = nil
+        var epubVersion: String? = nil
+        var cacheFormatVersion: String? = nil
+        var contentIndexVersion: String? = nil
+        var textCacheFingerprint: TextCacheFingerprint? = nil
+        var editedText: EditedText? = nil
+        var pageReaderVersion: String? = nil
+        var metadataReaderVersion: String? = nil
+        var handEdits: HandEdits? = nil
+        var feedLink: FeedBookLink? = nil
+        var brailleTable: String? = nil
+        var brailleTableVersion: String? = nil
+        var brailleTableOrigin: BrailleTableOrigin? = nil
+        var brailleFileCode: String? = nil
+        var textEncoding: String? = nil
+        var textEncodingSource: TextEncodingSource? = nil
+        init(id: UUID, format: BookFormat, dateAdded: Date) {
+            self.id = id
+            self.format = format
+            self.dateAdded = dateAdded
+        }
+        /// A field-for-field copy, for a write to a shared box.
+        func copy() -> Storage {
+            let c = Storage(id: id, format: format, dateAdded: dateAdded)
+            c.title = title
+            c.author = author
+            c.filePath = filePath
+            c.md5Hash = md5Hash
+            c.folderPath = folderPath
+            c.lastOpened = lastOpened
+            c.readingPosition = readingPosition
+            c.bookmarks = bookmarks
+            c.totalWordCount = totalWordCount
+            c.totalCharacterCount = totalCharacterCount
+            c.tmbDirectoryName = tmbDirectoryName
+            c.sourceFilePath = sourceFilePath
+            c.lastPlaybackStarted = lastPlaybackStarted
+            c.lastPlaybackStopped = lastPlaybackStopped
+            c.localVoiceID = localVoiceID
+            c.localWPM = localWPM
+            c.localPitch = localPitch
+            c.skippedHeadingIDs = skippedHeadingIDs
+            c.skippedHeadings = skippedHeadings
+            c.waitingSkippedHeadings = waitingSkippedHeadings
+            c.localEndOfBookBehavior = localEndOfBookBehavior
+            c.localSkipForwardUnit = localSkipForwardUnit
+            c.localSkipBackwardUnit = localSkipBackwardUnit
+            c.manualSortOrder = manualSortOrder
+            c.audioDuration = audioDuration
+            c.audioAlbum = audioAlbum
+            c.audioGenre = audioGenre
+            c.audioYear = audioYear
+            c.epubPublisher = epubPublisher
+            c.epubPublicationDate = epubPublicationDate
+            c.epubISBN = epubISBN
+            c.epubLanguage = epubLanguage
+            c.epubIdentifier = epubIdentifier
+            c.epubVersion = epubVersion
+            c.cacheFormatVersion = cacheFormatVersion
+            c.contentIndexVersion = contentIndexVersion
+            c.textCacheFingerprint = textCacheFingerprint
+            c.editedText = editedText
+            c.pageReaderVersion = pageReaderVersion
+            c.metadataReaderVersion = metadataReaderVersion
+            c.handEdits = handEdits
+            c.feedLink = feedLink
+            c.brailleTable = brailleTable
+            c.brailleTableVersion = brailleTableVersion
+            c.brailleTableOrigin = brailleTableOrigin
+            c.brailleFileCode = brailleFileCode
+            c.textEncoding = textEncoding
+            c.textEncodingSource = textEncodingSource
+            return c
+        }
+    }
+    /// The box that holds this book's fields. Shared by every copy of the
+    /// book until one of them is written; only `makeUnique()` replaces it.
+    private var storage: Storage
+
+    /// Gives this copy its own box before a write when the box is shared.
+    /// Every setter and `_modify` below calls it first, so a shared box is
+    /// never written. The accessors below all read and write `storage`
+    /// the same way, and each is documented as the field it stands for.
+    private mutating func makeUnique() {
+        if !isKnownUniquelyReferenced(&storage) { storage = storage.copy() }
+    }
+
+    /// The book's identity: fixed when it is made, never written.
+    var id: UUID { storage.id }
+    /// The book's title.
+    var title: String {
+        get { storage.title }
+        set { makeUnique(); storage.title = newValue }
+        _modify { makeUnique(); yield &storage.title }
+    }
+    var author: String {
+        get { storage.author }
+        set { makeUnique(); storage.author = newValue }
+        _modify { makeUnique(); yield &storage.author }
+    }
+    var format: BookFormat {
+        get { storage.format }
+        set { makeUnique(); storage.format = newValue }
+        _modify { makeUnique(); yield &storage.format }
+    }
+    var filePath: String {
+        get { storage.filePath }
+        set { makeUnique(); storage.filePath = newValue }
+        _modify { makeUnique(); yield &storage.filePath }
+    }
+    var md5Hash: String {
+        get { storage.md5Hash }
+        set { makeUnique(); storage.md5Hash = newValue }
+        _modify { makeUnique(); yield &storage.md5Hash }
+    }
+    /// e.g. "Fiction/Sci-Fi" or "" for root
+    var folderPath: String {
+        get { storage.folderPath }
+        set { makeUnique(); storage.folderPath = newValue }
+        _modify { makeUnique(); yield &storage.folderPath }
+    }
+    var dateAdded: Date {
+        get { storage.dateAdded }
+        set { makeUnique(); storage.dateAdded = newValue }
+        _modify { makeUnique(); yield &storage.dateAdded }
+    }
+    var lastOpened: Date? {
+        get { storage.lastOpened }
+        set { makeUnique(); storage.lastOpened = newValue }
+        _modify { makeUnique(); yield &storage.lastOpened }
+    }
+    var readingPosition: ReadingPosition? {
+        get { storage.readingPosition }
+        set { makeUnique(); storage.readingPosition = newValue }
+        _modify { makeUnique(); yield &storage.readingPosition }
+    }
+    var bookmarks: [Bookmark] {
+        get { storage.bookmarks }
+        set { makeUnique(); storage.bookmarks = newValue }
+        _modify { makeUnique(); yield &storage.bookmarks }
+    }
     /// Total word count — populated when the book is first opened and parsed
-    var totalWordCount: Int?
+    var totalWordCount: Int? {
+        get { storage.totalWordCount }
+        set { makeUnique(); storage.totalWordCount = newValue }
+        _modify { makeUnique(); yield &storage.totalWordCount }
+    }
     /// Total character count — populated when the book is first opened and parsed
-    var totalCharacterCount: Int?
+    var totalCharacterCount: Int? {
+        get { storage.totalCharacterCount }
+        set { makeUnique(); storage.totalCharacterCount = newValue }
+        _modify { makeUnique(); yield &storage.totalCharacterCount }
+    }
     /// Name of the .tmb directory (e.g. "Title-Author-123456.tmb")
-    var tmbDirectoryName: String
+    var tmbDirectoryName: String {
+        get { storage.tmbDirectoryName }
+        set { makeUnique(); storage.tmbDirectoryName = newValue }
+        _modify { makeUnique(); yield &storage.tmbDirectoryName }
+    }
     /// Path to the original source file this book was imported from
-    var sourceFilePath: String?
+    var sourceFilePath: String? {
+        get { storage.sourceFilePath }
+        set { makeUnique(); storage.sourceFilePath = newValue }
+        _modify { makeUnique(); yield &storage.sourceFilePath }
+    }
     /// When playback was last started (for rewind-on-resume)
-    var lastPlaybackStarted: Date?
+    var lastPlaybackStarted: Date? {
+        get { storage.lastPlaybackStarted }
+        set { makeUnique(); storage.lastPlaybackStarted = newValue }
+        _modify { makeUnique(); yield &storage.lastPlaybackStarted }
+    }
     /// When playback was last stopped/paused (for rewind-on-resume)
-    var lastPlaybackStopped: Date?
+    var lastPlaybackStopped: Date? {
+        get { storage.lastPlaybackStopped }
+        set { makeUnique(); storage.lastPlaybackStopped = newValue }
+        _modify { makeUnique(); yield &storage.lastPlaybackStopped }
+    }
     /// Per-book voice ID override (nil = use global setting)
-    var localVoiceID: String?
+    var localVoiceID: String? {
+        get { storage.localVoiceID }
+        set { makeUnique(); storage.localVoiceID = newValue }
+        _modify { makeUnique(); yield &storage.localVoiceID }
+    }
     /// Per-book WPM override (nil = use global setting)
-    var localWPM: Double?
+    var localWPM: Double? {
+        get { storage.localWPM }
+        set { makeUnique(); storage.localWPM = newValue }
+        _modify { makeUnique(); yield &storage.localWPM }
+    }
     /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
-    var localPitch: Double?
+    var localPitch: Double? {
+        get { storage.localPitch }
+        set { makeUnique(); storage.localPitch = newValue }
+        _modify { makeUnique(); yield &storage.localPitch }
+    }
     /// Heading IDs that should be skipped during playback (`Heading.id`):
     /// what the reader matches against the book's headings, and all older
     /// builds read. Written from `skippedHeadings`, which the reader saves
@@ -275,7 +499,8 @@ struct Book: Identifiable, Codable, Hashable {
     /// set them: `skippedHeadings` then follows, keeping the anchor of each
     /// heading still named.
     var skippedHeadingIDs: [String]? {
-        didSet { skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings) }
+        get { storage.skippedHeadingIDs }
+        set { makeUnique(); storage.skippedHeadingIDs = newValue; storage.skippedHeadings = SkippedHeading.inStep(with: storage.skippedHeadingIDs, keeping: storage.skippedHeadings) }
     }
     /// The headings skipped during playback by their level, label, and
     /// place, with the text at their start (T06), so a skip can follow its
@@ -285,7 +510,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// before T06 does, has them made from its IDs, without anchors; one
     /// holding both keeps the anchor of each heading its IDs name, since
     /// the IDs, which every build writes, say which headings are skipped.
-    private(set) var skippedHeadings: [SkippedHeading]?
+    private(set) var skippedHeadings: [SkippedHeading]? {
+        get { storage.skippedHeadings }
+        set { makeUnique(); storage.skippedHeadings = newValue }
+        _modify { makeUnique(); yield &storage.skippedHeadings }
+    }
     /// The headings skipped during playback for which a rebuild of the
     /// book's text found no heading (T06's branch D). Each waits, naming no
     /// heading, so neither this build's reader nor an older build skips
@@ -293,45 +522,121 @@ struct Book: Identifiable, Codable, Hashable {
     /// heading. Never in `skippedHeadingIDs`; written with the moved places
     /// (`takeMovedPlaces(original:moved:)`). Nil when there are none, never
     /// an empty array.
-    var waitingSkippedHeadings: [SkippedHeading]?
+    var waitingSkippedHeadings: [SkippedHeading]? {
+        get { storage.waitingSkippedHeadings }
+        set { makeUnique(); storage.waitingSkippedHeadings = newValue }
+        _modify { makeUnique(); yield &storage.waitingSkippedHeadings }
+    }
     /// Per-book end-of-book behavior override (nil = use global)
-    var localEndOfBookBehavior: String?
+    var localEndOfBookBehavior: String? {
+        get { storage.localEndOfBookBehavior }
+        set { makeUnique(); storage.localEndOfBookBehavior = newValue }
+        _modify { makeUnique(); yield &storage.localEndOfBookBehavior }
+    }
     /// Per-book forward navigation unit (nil or invalid = use global).
-    var localSkipForwardUnit: String?
+    var localSkipForwardUnit: String? {
+        get { storage.localSkipForwardUnit }
+        set { makeUnique(); storage.localSkipForwardUnit = newValue }
+        _modify { makeUnique(); yield &storage.localSkipForwardUnit }
+    }
     /// Per-book backward navigation unit (nil or invalid = use global).
-    var localSkipBackwardUnit: String?
+    var localSkipBackwardUnit: String? {
+        get { storage.localSkipBackwardUnit }
+        set { makeUnique(); storage.localSkipBackwardUnit = newValue }
+        _modify { makeUnique(); yield &storage.localSkipBackwardUnit }
+    }
     /// Manual sort order within folder (lower = earlier)
-    var manualSortOrder: Int?
+    var manualSortOrder: Int? {
+        get { storage.manualSortOrder }
+        set { makeUnique(); storage.manualSortOrder = newValue }
+        _modify { makeUnique(); yield &storage.manualSortOrder }
+    }
     /// Total audio duration in seconds (for audio books only)
-    var audioDuration: TimeInterval?
+    var audioDuration: TimeInterval? {
+        get { storage.audioDuration }
+        set { makeUnique(); storage.audioDuration = newValue }
+        _modify { makeUnique(); yield &storage.audioDuration }
+    }
     /// Audio-specific metadata fields (album, genre, year) persisted in bookInfo.json
-    var audioAlbum: String?
-    var audioGenre: String?
-    var audioYear: String?
+    var audioAlbum: String? {
+        get { storage.audioAlbum }
+        set { makeUnique(); storage.audioAlbum = newValue }
+        _modify { makeUnique(); yield &storage.audioAlbum }
+    }
+    var audioGenre: String? {
+        get { storage.audioGenre }
+        set { makeUnique(); storage.audioGenre = newValue }
+        _modify { makeUnique(); yield &storage.audioGenre }
+    }
+    var audioYear: String? {
+        get { storage.audioYear }
+        set { makeUnique(); storage.audioYear = newValue }
+        _modify { makeUnique(); yield &storage.audioYear }
+    }
     /// EPUB metadata is stored independently from optional file write-back so
     /// library-only edits survive reopening the editor and saving reading state.
-    var epubPublisher: String?
-    var epubPublicationDate: String?
-    var epubISBN: String?
-    var epubLanguage: String?
-    var epubIdentifier: String?
-    var epubVersion: String?
+    var epubPublisher: String? {
+        get { storage.epubPublisher }
+        set { makeUnique(); storage.epubPublisher = newValue }
+        _modify { makeUnique(); yield &storage.epubPublisher }
+    }
+    var epubPublicationDate: String? {
+        get { storage.epubPublicationDate }
+        set { makeUnique(); storage.epubPublicationDate = newValue }
+        _modify { makeUnique(); yield &storage.epubPublicationDate }
+    }
+    var epubISBN: String? {
+        get { storage.epubISBN }
+        set { makeUnique(); storage.epubISBN = newValue }
+        _modify { makeUnique(); yield &storage.epubISBN }
+    }
+    var epubLanguage: String? {
+        get { storage.epubLanguage }
+        set { makeUnique(); storage.epubLanguage = newValue }
+        _modify { makeUnique(); yield &storage.epubLanguage }
+    }
+    var epubIdentifier: String? {
+        get { storage.epubIdentifier }
+        set { makeUnique(); storage.epubIdentifier = newValue }
+        _modify { makeUnique(); yield &storage.epubIdentifier }
+    }
+    var epubVersion: String? {
+        get { storage.epubVersion }
+        set { makeUnique(); storage.epubVersion = newValue }
+        _modify { makeUnique(); yield &storage.epubVersion }
+    }
     /// Version of the content.md cache format. When this is lower than
     /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
     /// on the next app launch to pick up parser improvements.
-    var cacheFormatVersion: String?
+    var cacheFormatVersion: String? {
+        get { storage.cacheFormatVersion }
+        set { makeUnique(); storage.cacheFormatVersion = newValue }
+        _modify { makeUnique(); yield &storage.cacheFormatVersion }
+    }
     /// Compact validity marker for the full index stored in bookInfo.json.
-    var contentIndexVersion: String?
+    var contentIndexVersion: String? {
+        get { storage.contentIndexVersion }
+        set { makeUnique(); storage.contentIndexVersion = newValue }
+        _modify { makeUnique(); yield &storage.contentIndexVersion }
+    }
     /// The fingerprints of the source and content.md the text cache was
     /// written from (see `TextCacheFingerprint`), recorded with the analysis
     /// that measured them; nil for audio and for a cache written before
     /// fingerprints. Startup maintenance compares them with the files.
-    var textCacheFingerprint: TextCacheFingerprint?
+    var textCacheFingerprint: TextCacheFingerprint? {
+        get { storage.textCacheFingerprint }
+        set { makeUnique(); storage.textCacheFingerprint = newValue }
+        _modify { makeUnique(); yield &storage.textCacheFingerprint }
+    }
     /// The edit of the book's text that content.md holds, if the user made
     /// one with Edit Text (`EditedText`, B12): nil for every book until an
     /// edit is taken, and again once content.md is no longer that edit. It
     /// is an analysis field, so it follows the fingerprints it describes.
-    var editedText: EditedText?
+    var editedText: EditedText? {
+        get { storage.editedText }
+        set { makeUnique(); storage.editedText = newValue }
+        _modify { makeUnique(); yield &storage.editedText }
+    }
     /// The version of the page reader (`PageReaderVersions`, PG09) that read
     /// the book's file into content.md: the version of its format when
     /// content.md was last written from the file with page markers, nil for
@@ -343,7 +648,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// after the version, as in "1.0.0+failed-once", says that reader could
     /// not read the book's pages (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`).
     /// An analysis field, like the cache's own version.
-    var pageReaderVersion: String?
+    var pageReaderVersion: String? {
+        get { storage.pageReaderVersion }
+        set { makeUnique(); storage.pageReaderVersion = newValue }
+        _modify { makeUnique(); yield &storage.pageReaderVersion }
+    }
     /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
     /// that last read this book's file for its title and author: the
     /// import's, or the launch refresh's. A row stamped by an older reader,
@@ -352,7 +661,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// in the row and, from the book's next save on, in its record, so a
     /// library rebuilt from its records reads again only the books whose
     /// records were written before that.
-    var metadataReaderVersion: String?
+    var metadataReaderVersion: String? {
+        get { storage.metadataReaderVersion }
+        set { makeUnique(); storage.metadataReaderVersion = newValue }
+        _modify { makeUnique(); yield &storage.metadataReaderVersion }
+    }
     /// Which of this book's metadata fields the user edited by hand, and
     /// since when (`HandEdits`); nil for a book nothing has recorded for:
     /// every row saved before October 7, 2026, and a book made since by an
@@ -366,7 +679,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// replaces a recorded field (`LibraryViewModel.refreshedValues(of:from:)`).
     /// Kept in the row and in the book's record; a reader's copy takes the
     /// row's (`EditableMetadata`).
-    var handEdits: HandEdits?
+    var handEdits: HandEdits? {
+        get { storage.handEdits }
+        set { makeUnique(); storage.handEdits = newValue }
+        _modify { makeUnique(); yield &storage.handEdits }
+    }
     /// The feed item this row's book was downloaded from (FR03): set for a
     /// podcast episode or an article while it belongs to its feed (FR11),
     /// nil for every other book. A row with a link is a feed item's: its
@@ -377,8 +694,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// so library.json's rows are exactly as they were. The package's record
     /// keeps the link too (`BookMetadata.feedLink`), and keeps it when a
     /// row's link is cleared.
-    var feedLink: FeedBookLink?
-
+    var feedLink: FeedBookLink? {
+        get { storage.feedLink }
+        set { makeUnique(); storage.feedLink = newValue }
+        _modify { makeUnique(); yield &storage.feedLink }
+    }
     /// The braille table this braille book's text was read with (FMT21), by
     /// its stored value (`BrailleTableSource`): a bundled table's file name,
     /// such as "en-ueb-g2.ctb", or "mac:" and the file name of one of this
@@ -391,8 +711,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// fails by name. Nil for every other book, and read as
     /// `BrailleTableCatalog.defaultTableID` for a braille book whose row and
     /// record lack one. Kept in the row and the record.
-    var brailleTable: String?
-
+    var brailleTable: String? {
+        get { storage.brailleTable }
+        set { makeUnique(); storage.brailleTable = newValue }
+        _modify { makeUnique(); yield &storage.brailleTable }
+    }
     /// The liblouis version of this Mac's tables when this braille book was
     /// read with one of them (review R2, decision 8), such as "3.34.0", from
     /// the property list beside the Mac's tables. Apple installs liblouis's
@@ -403,7 +726,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// for a bundled table, for a book imported before it was recorded, and
     /// when the Mac's tables name no version. Kept in the row, the record,
     /// and the removal marker.
-    var brailleTableVersion: String?
+    var brailleTableVersion: String? {
+        get { storage.brailleTableVersion }
+        set { makeUnique(); storage.brailleTableVersion = newValue }
+        _modify { makeUnique(); yield &storage.brailleTableVersion }
+    }
 
     /// Who chose `brailleTable` when it was not the listener (brfguess):
     /// `.guessed` for a BRF or BRL whose import found it clearly written in
@@ -413,10 +740,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// before guesses were recorded, and one whose table the listener
     /// chose; choosing a table in Book Information sets it nil for good. A
     /// value that cannot be read, as a later TextMouth's might be, is nil.
-    /// Kept in the row, the record, and the removal marker, and read with
-    /// the table (`BrailleTableOrigin`).
-    var brailleTableOrigin: BrailleTableOrigin?
-
+    var brailleTableOrigin: BrailleTableOrigin? {
+        get { storage.brailleTableOrigin }
+        set { makeUnique(); storage.brailleTableOrigin = newValue }
+        _modify { makeUnique(); yield &storage.brailleTableOrigin }
+    }
     /// The braille file characters this BRF or BRL book's file writes its
     /// cells in (braillecodes), by the code's id (`BrailleFileCode`), such
     /// as "ascii-na" for North American Braille ASCII, "ascii-eurobraille"
@@ -441,8 +769,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// changelog asks that such a library not be opened in an earlier
     /// TextMouth (the review of October 30, finding 1). Kept in the row, the
     /// record, and the removal marker.
-    var brailleFileCode: String?
-
+    var brailleFileCode: String? {
+        get { storage.brailleFileCode }
+        set { makeUnique(); storage.brailleFileCode = newValue }
+        _modify { makeUnique(); yield &storage.brailleFileCode }
+    }
     /// The encoding TextMouth guessed this plain-text, Markdown, or HTML
     /// book's file is in (FMT16), by its identifier in `TextEncodingCatalog`,
     /// such as "windows-1251" or "koi8-r": set when the book is imported from
@@ -460,22 +791,196 @@ struct Book: Identifiable, Codable, Hashable {
     /// Since the listener can choose a book's encoding in Book Information
     /// (encodingchoice), it holds the choice too, and `textEncodingSource`
     /// says who decided it: the two travel together (`textEncodingRecord`).
-    var textEncoding: String?
-
+    var textEncoding: String? {
+        get { storage.textEncoding }
+        set { makeUnique(); storage.textEncoding = newValue }
+        _modify { makeUnique(); yield &storage.textEncoding }
+    }
     /// Who decided `textEncoding` (encodingchoice): the listener's choice of
     /// an encoding, or of Automatic, in Book Information; nil for the
     /// import (FMT16), which is every book the listener has not chosen for,
     /// so their rows and records are written exactly as before. A value that
     /// cannot be read, as a later TextMouth's might be, is nil. Kept in the
     /// row, the record, and the removal marker.
-    var textEncodingSource: TextEncodingSource?
+    var textEncodingSource: TextEncodingSource? {
+        get { storage.textEncodingSource }
+        set { makeUnique(); storage.textEncodingSource = newValue }
+        _modify { makeUnique(); yield &storage.textEncodingSource }
+    }
+    private enum CodingKeys: String, CodingKey {
+        case id, title, author, format, filePath, md5Hash, folderPath, dateAdded, lastOpened, readingPosition, bookmarks, totalWordCount, totalCharacterCount, tmbDirectoryName, sourceFilePath, lastPlaybackStarted, lastPlaybackStopped, localVoiceID, localWPM, localPitch, skippedHeadingIDs, skippedHeadings, waitingSkippedHeadings, localEndOfBookBehavior, localSkipForwardUnit, localSkipBackwardUnit, manualSortOrder, audioDuration, audioAlbum, audioGenre, audioYear, epubPublisher, epubPublicationDate, epubISBN, epubLanguage, epubIdentifier, epubVersion, cacheFormatVersion, contentIndexVersion, textCacheFingerprint, editedText, pageReaderVersion, metadataReaderVersion, handEdits, feedLink, brailleTable, brailleTableVersion, brailleTableOrigin, brailleFileCode, textEncoding, textEncodingSource
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(storage.id, forKey: .id)
+        try container.encode(storage.title, forKey: .title)
+        try container.encode(storage.author, forKey: .author)
+        try container.encode(storage.format, forKey: .format)
+        try container.encode(storage.filePath, forKey: .filePath)
+        try container.encode(storage.md5Hash, forKey: .md5Hash)
+        try container.encode(storage.folderPath, forKey: .folderPath)
+        try container.encode(storage.dateAdded, forKey: .dateAdded)
+        try container.encodeIfPresent(storage.lastOpened, forKey: .lastOpened)
+        try container.encodeIfPresent(storage.readingPosition, forKey: .readingPosition)
+        try container.encode(storage.bookmarks, forKey: .bookmarks)
+        try container.encodeIfPresent(storage.totalWordCount, forKey: .totalWordCount)
+        try container.encodeIfPresent(storage.totalCharacterCount, forKey: .totalCharacterCount)
+        try container.encode(storage.tmbDirectoryName, forKey: .tmbDirectoryName)
+        try container.encodeIfPresent(storage.sourceFilePath, forKey: .sourceFilePath)
+        try container.encodeIfPresent(storage.lastPlaybackStarted, forKey: .lastPlaybackStarted)
+        try container.encodeIfPresent(storage.lastPlaybackStopped, forKey: .lastPlaybackStopped)
+        try container.encodeIfPresent(storage.localVoiceID, forKey: .localVoiceID)
+        try container.encodeIfPresent(storage.localWPM, forKey: .localWPM)
+        try container.encodeIfPresent(storage.localPitch, forKey: .localPitch)
+        try container.encodeIfPresent(storage.skippedHeadingIDs, forKey: .skippedHeadingIDs)
+        try container.encodeIfPresent(storage.skippedHeadings, forKey: .skippedHeadings)
+        try container.encodeIfPresent(storage.waitingSkippedHeadings, forKey: .waitingSkippedHeadings)
+        try container.encodeIfPresent(storage.localEndOfBookBehavior, forKey: .localEndOfBookBehavior)
+        try container.encodeIfPresent(storage.localSkipForwardUnit, forKey: .localSkipForwardUnit)
+        try container.encodeIfPresent(storage.localSkipBackwardUnit, forKey: .localSkipBackwardUnit)
+        try container.encodeIfPresent(storage.manualSortOrder, forKey: .manualSortOrder)
+        try container.encodeIfPresent(storage.audioDuration, forKey: .audioDuration)
+        try container.encodeIfPresent(storage.audioAlbum, forKey: .audioAlbum)
+        try container.encodeIfPresent(storage.audioGenre, forKey: .audioGenre)
+        try container.encodeIfPresent(storage.audioYear, forKey: .audioYear)
+        try container.encodeIfPresent(storage.epubPublisher, forKey: .epubPublisher)
+        try container.encodeIfPresent(storage.epubPublicationDate, forKey: .epubPublicationDate)
+        try container.encodeIfPresent(storage.epubISBN, forKey: .epubISBN)
+        try container.encodeIfPresent(storage.epubLanguage, forKey: .epubLanguage)
+        try container.encodeIfPresent(storage.epubIdentifier, forKey: .epubIdentifier)
+        try container.encodeIfPresent(storage.epubVersion, forKey: .epubVersion)
+        try container.encodeIfPresent(storage.cacheFormatVersion, forKey: .cacheFormatVersion)
+        try container.encodeIfPresent(storage.contentIndexVersion, forKey: .contentIndexVersion)
+        try container.encodeIfPresent(storage.textCacheFingerprint, forKey: .textCacheFingerprint)
+        try container.encodeIfPresent(storage.editedText, forKey: .editedText)
+        try container.encodeIfPresent(storage.pageReaderVersion, forKey: .pageReaderVersion)
+        try container.encodeIfPresent(storage.metadataReaderVersion, forKey: .metadataReaderVersion)
+        try container.encodeIfPresent(storage.handEdits, forKey: .handEdits)
+        try container.encodeIfPresent(storage.feedLink, forKey: .feedLink)
+        try container.encodeIfPresent(storage.brailleTable, forKey: .brailleTable)
+        try container.encodeIfPresent(storage.brailleTableVersion, forKey: .brailleTableVersion)
+        try container.encodeIfPresent(storage.brailleTableOrigin, forKey: .brailleTableOrigin)
+        try container.encodeIfPresent(storage.brailleFileCode, forKey: .brailleFileCode)
+        try container.encodeIfPresent(storage.textEncoding, forKey: .textEncoding)
+        try container.encodeIfPresent(storage.textEncodingSource, forKey: .textEncodingSource)
+    }
+    static func == (lhs: Book, rhs: Book) -> Bool {
+        if lhs.storage === rhs.storage { return true }
+        return lhs.storage.id == rhs.storage.id
+            && lhs.storage.title == rhs.storage.title
+            && lhs.storage.author == rhs.storage.author
+            && lhs.storage.format == rhs.storage.format
+            && lhs.storage.filePath == rhs.storage.filePath
+            && lhs.storage.md5Hash == rhs.storage.md5Hash
+            && lhs.storage.folderPath == rhs.storage.folderPath
+            && lhs.storage.dateAdded == rhs.storage.dateAdded
+            && lhs.storage.lastOpened == rhs.storage.lastOpened
+            && lhs.storage.readingPosition == rhs.storage.readingPosition
+            && lhs.storage.bookmarks == rhs.storage.bookmarks
+            && lhs.storage.totalWordCount == rhs.storage.totalWordCount
+            && lhs.storage.totalCharacterCount == rhs.storage.totalCharacterCount
+            && lhs.storage.tmbDirectoryName == rhs.storage.tmbDirectoryName
+            && lhs.storage.sourceFilePath == rhs.storage.sourceFilePath
+            && lhs.storage.lastPlaybackStarted == rhs.storage.lastPlaybackStarted
+            && lhs.storage.lastPlaybackStopped == rhs.storage.lastPlaybackStopped
+            && lhs.storage.localVoiceID == rhs.storage.localVoiceID
+            && lhs.storage.localWPM == rhs.storage.localWPM
+            && lhs.storage.localPitch == rhs.storage.localPitch
+            && lhs.storage.skippedHeadingIDs == rhs.storage.skippedHeadingIDs
+            && lhs.storage.skippedHeadings == rhs.storage.skippedHeadings
+            && lhs.storage.waitingSkippedHeadings == rhs.storage.waitingSkippedHeadings
+            && lhs.storage.localEndOfBookBehavior == rhs.storage.localEndOfBookBehavior
+            && lhs.storage.localSkipForwardUnit == rhs.storage.localSkipForwardUnit
+            && lhs.storage.localSkipBackwardUnit == rhs.storage.localSkipBackwardUnit
+            && lhs.storage.manualSortOrder == rhs.storage.manualSortOrder
+            && lhs.storage.audioDuration == rhs.storage.audioDuration
+            && lhs.storage.audioAlbum == rhs.storage.audioAlbum
+            && lhs.storage.audioGenre == rhs.storage.audioGenre
+            && lhs.storage.audioYear == rhs.storage.audioYear
+            && lhs.storage.epubPublisher == rhs.storage.epubPublisher
+            && lhs.storage.epubPublicationDate == rhs.storage.epubPublicationDate
+            && lhs.storage.epubISBN == rhs.storage.epubISBN
+            && lhs.storage.epubLanguage == rhs.storage.epubLanguage
+            && lhs.storage.epubIdentifier == rhs.storage.epubIdentifier
+            && lhs.storage.epubVersion == rhs.storage.epubVersion
+            && lhs.storage.cacheFormatVersion == rhs.storage.cacheFormatVersion
+            && lhs.storage.contentIndexVersion == rhs.storage.contentIndexVersion
+            && lhs.storage.textCacheFingerprint == rhs.storage.textCacheFingerprint
+            && lhs.storage.editedText == rhs.storage.editedText
+            && lhs.storage.pageReaderVersion == rhs.storage.pageReaderVersion
+            && lhs.storage.metadataReaderVersion == rhs.storage.metadataReaderVersion
+            && lhs.storage.handEdits == rhs.storage.handEdits
+            && lhs.storage.feedLink == rhs.storage.feedLink
+            && lhs.storage.brailleTable == rhs.storage.brailleTable
+            && lhs.storage.brailleTableVersion == rhs.storage.brailleTableVersion
+            && lhs.storage.brailleTableOrigin == rhs.storage.brailleTableOrigin
+            && lhs.storage.brailleFileCode == rhs.storage.brailleFileCode
+            && lhs.storage.textEncoding == rhs.storage.textEncoding
+            && lhs.storage.textEncodingSource == rhs.storage.textEncodingSource
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(storage.id)
+        hasher.combine(storage.title)
+        hasher.combine(storage.author)
+        hasher.combine(storage.format)
+        hasher.combine(storage.filePath)
+        hasher.combine(storage.md5Hash)
+        hasher.combine(storage.folderPath)
+        hasher.combine(storage.dateAdded)
+        hasher.combine(storage.lastOpened)
+        hasher.combine(storage.readingPosition)
+        hasher.combine(storage.bookmarks)
+        hasher.combine(storage.totalWordCount)
+        hasher.combine(storage.totalCharacterCount)
+        hasher.combine(storage.tmbDirectoryName)
+        hasher.combine(storage.sourceFilePath)
+        hasher.combine(storage.lastPlaybackStarted)
+        hasher.combine(storage.lastPlaybackStopped)
+        hasher.combine(storage.localVoiceID)
+        hasher.combine(storage.localWPM)
+        hasher.combine(storage.localPitch)
+        hasher.combine(storage.skippedHeadingIDs)
+        hasher.combine(storage.skippedHeadings)
+        hasher.combine(storage.waitingSkippedHeadings)
+        hasher.combine(storage.localEndOfBookBehavior)
+        hasher.combine(storage.localSkipForwardUnit)
+        hasher.combine(storage.localSkipBackwardUnit)
+        hasher.combine(storage.manualSortOrder)
+        hasher.combine(storage.audioDuration)
+        hasher.combine(storage.audioAlbum)
+        hasher.combine(storage.audioGenre)
+        hasher.combine(storage.audioYear)
+        hasher.combine(storage.epubPublisher)
+        hasher.combine(storage.epubPublicationDate)
+        hasher.combine(storage.epubISBN)
+        hasher.combine(storage.epubLanguage)
+        hasher.combine(storage.epubIdentifier)
+        hasher.combine(storage.epubVersion)
+        hasher.combine(storage.cacheFormatVersion)
+        hasher.combine(storage.contentIndexVersion)
+        hasher.combine(storage.textCacheFingerprint)
+        hasher.combine(storage.editedText)
+        hasher.combine(storage.pageReaderVersion)
+        hasher.combine(storage.metadataReaderVersion)
+        hasher.combine(storage.handEdits)
+        hasher.combine(storage.feedLink)
+        hasher.combine(storage.brailleTable)
+        hasher.combine(storage.brailleTableVersion)
+        hasher.combine(storage.brailleTableOrigin)
+        hasher.combine(storage.brailleFileCode)
+        hasher.combine(storage.textEncoding)
+        hasher.combine(storage.textEncodingSource)
+    }
+    /// A book is unopened while it has never been opened (`lastOpened` is
+    /// nil). It is what the Unopened category lists, and what a row's "New"
+    /// and `BookState.isNew` read.
+    var isUnopened: Bool { lastOpened == nil }
 
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
     var isFeedItem: Bool {
         feedLink != nil
     }
-
     /// The author a book is listed under when nothing names one: what every
     /// import, parser, and recording writes for it, which a reader leaves
     /// out of its window title and a metadata refresh may replace
@@ -541,57 +1046,59 @@ struct Book: Identifiable, Codable, Hashable {
         textEncodingSource: TextEncodingSource? = nil,
         brailleTableOrigin: BrailleTableOrigin? = nil
     ) {
-        self.id = id
-        self.title = title
-        self.author = author
-        self.format = format
-        self.filePath = filePath
-        self.md5Hash = md5Hash
-        self.folderPath = folderPath
-        self.dateAdded = dateAdded
-        self.lastOpened = lastOpened
-        self.readingPosition = readingPosition
-        self.bookmarks = bookmarks
-        self.totalWordCount = totalWordCount
-        self.totalCharacterCount = totalCharacterCount
-        self.tmbDirectoryName = tmbDirectoryName
-        self.sourceFilePath = sourceFilePath
-        self.lastPlaybackStarted = lastPlaybackStarted
-        self.lastPlaybackStopped = lastPlaybackStopped
-        self.localVoiceID = localVoiceID
-        self.localWPM = localWPM
-        self.localPitch = localPitch
-        self.skippedHeadingIDs = skippedHeadingIDs
-        self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
-        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
-        self.localEndOfBookBehavior = localEndOfBookBehavior
-        self.localSkipForwardUnit = localSkipForwardUnit
-        self.localSkipBackwardUnit = localSkipBackwardUnit
-        self.manualSortOrder = manualSortOrder
-        self.audioDuration = audioDuration
-        self.audioAlbum = audioAlbum
-        self.audioGenre = audioGenre
-        self.audioYear = audioYear
-        self.epubPublisher = epubPublisher
-        self.epubPublicationDate = epubPublicationDate
-        self.epubISBN = epubISBN
-        self.epubLanguage = epubLanguage
-        self.epubIdentifier = epubIdentifier
-        self.epubVersion = epubVersion
-        self.cacheFormatVersion = cacheFormatVersion
-        self.contentIndexVersion = contentIndexVersion
-        self.textCacheFingerprint = textCacheFingerprint
-        self.editedText = editedText
-        self.pageReaderVersion = pageReaderVersion
-        self.metadataReaderVersion = metadataReaderVersion
-        self.handEdits = handEdits
-        self.feedLink = feedLink
-        self.brailleTable = brailleTable
-        self.brailleTableVersion = brailleTableVersion
-        self.brailleFileCode = brailleFileCode
-        self.textEncoding = textEncoding
-        self.textEncodingSource = textEncodingSource
-        self.brailleTableOrigin = brailleTableOrigin
+        storage = Storage(id: id, format: format, dateAdded: dateAdded)
+        // The assignments below write this new, unshared box directly, so
+        // they need no copy on write.
+        storage.title = title
+        storage.author = author
+        storage.format = format
+        storage.filePath = filePath
+        storage.md5Hash = md5Hash
+        storage.folderPath = folderPath
+        storage.dateAdded = dateAdded
+        storage.lastOpened = lastOpened
+        storage.readingPosition = readingPosition
+        storage.bookmarks = bookmarks
+        storage.totalWordCount = totalWordCount
+        storage.totalCharacterCount = totalCharacterCount
+        storage.tmbDirectoryName = tmbDirectoryName
+        storage.sourceFilePath = sourceFilePath
+        storage.lastPlaybackStarted = lastPlaybackStarted
+        storage.lastPlaybackStopped = lastPlaybackStopped
+        storage.localVoiceID = localVoiceID
+        storage.localWPM = localWPM
+        storage.localPitch = localPitch
+        storage.skippedHeadingIDs = skippedHeadingIDs
+        storage.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
+        storage.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
+        storage.localEndOfBookBehavior = localEndOfBookBehavior
+        storage.localSkipForwardUnit = localSkipForwardUnit
+        storage.localSkipBackwardUnit = localSkipBackwardUnit
+        storage.manualSortOrder = manualSortOrder
+        storage.audioDuration = audioDuration
+        storage.audioAlbum = audioAlbum
+        storage.audioGenre = audioGenre
+        storage.audioYear = audioYear
+        storage.epubPublisher = epubPublisher
+        storage.epubPublicationDate = epubPublicationDate
+        storage.epubISBN = epubISBN
+        storage.epubLanguage = epubLanguage
+        storage.epubIdentifier = epubIdentifier
+        storage.epubVersion = epubVersion
+        storage.cacheFormatVersion = cacheFormatVersion
+        storage.contentIndexVersion = contentIndexVersion
+        storage.textCacheFingerprint = textCacheFingerprint
+        storage.editedText = editedText
+        storage.pageReaderVersion = pageReaderVersion
+        storage.metadataReaderVersion = metadataReaderVersion
+        storage.handEdits = handEdits
+        storage.feedLink = feedLink
+        storage.brailleTable = brailleTable
+        storage.brailleTableVersion = brailleTableVersion
+        storage.brailleFileCode = brailleFileCode
+        storage.textEncoding = textEncoding
+        storage.textEncodingSource = textEncodingSource
+        storage.brailleTableOrigin = brailleTableOrigin
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -601,99 +1108,102 @@ struct Book: Identifiable, Codable, Hashable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
-        id = try container.decode(UUID.self, forKey: .id)
-        title = try container.decode(String.self, forKey: .title)
-        author = try container.decode(String.self, forKey: .author)
-        format = try container.decode(BookFormat.self, forKey: .format)
-        filePath = try container.decode(String.self, forKey: .filePath)
-        md5Hash = try container.decode(String.self, forKey: .md5Hash)
-        folderPath = try container.decode(String.self, forKey: .folderPath)
-        dateAdded = try container.decode(Date.self, forKey: .dateAdded)
-        lastOpened = try container.decodeIfPresent(Date.self, forKey: .lastOpened)
-        readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
-        bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
-        totalWordCount = fields.count(.totalWordCount)
-        totalCharacterCount = fields.count(.totalCharacterCount)
-        tmbDirectoryName = try container.decodeIfPresent(String.self, forKey: .tmbDirectoryName) ?? ""
-        sourceFilePath = try container.decodeIfPresent(String.self, forKey: .sourceFilePath)
-        lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
-        lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
-        localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
+        // The box needs an id, a format, and a date to exist; each is
+        // overwritten by its decoded value just below.
+        storage = Storage(id: UUID(), format: .epub, dateAdded: Date())
+        storage.id = try container.decode(UUID.self, forKey: .id)
+        storage.title = try container.decode(String.self, forKey: .title)
+        storage.author = try container.decode(String.self, forKey: .author)
+        storage.format = try container.decode(BookFormat.self, forKey: .format)
+        storage.filePath = try container.decode(String.self, forKey: .filePath)
+        storage.md5Hash = try container.decode(String.self, forKey: .md5Hash)
+        storage.folderPath = try container.decode(String.self, forKey: .folderPath)
+        storage.dateAdded = try container.decode(Date.self, forKey: .dateAdded)
+        storage.lastOpened = try container.decodeIfPresent(Date.self, forKey: .lastOpened)
+        storage.readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
+        storage.bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
+        storage.totalWordCount = fields.count(.totalWordCount)
+        storage.totalCharacterCount = fields.count(.totalCharacterCount)
+        storage.tmbDirectoryName = try container.decodeIfPresent(String.self, forKey: .tmbDirectoryName) ?? ""
+        storage.sourceFilePath = try container.decodeIfPresent(String.self, forKey: .sourceFilePath)
+        storage.lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
+        storage.lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
+        storage.localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
         // `localWPM` holds words per minute for text and a multiplier for audio.
         let isAudio = format.isAudio
-        localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
-        localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
-        skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
+        storage.localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
+        storage.localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
+        storage.skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         // Skipped headings that cannot be read count as none; either way
         // they are put in step with the IDs, which an older build may have
         // changed alone.
-        skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
+        storage.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         // Waiting skips that cannot be read count as none; an empty list is
         // none too.
-        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
-        localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
-        localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
-        localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
-        manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
-        audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
-        audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
-        audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
-        audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
-        epubPublisher = try container.decodeIfPresent(String.self, forKey: .epubPublisher)
-        epubPublicationDate = try container.decodeIfPresent(String.self, forKey: .epubPublicationDate)
-        epubISBN = try container.decodeIfPresent(String.self, forKey: .epubISBN)
-        epubLanguage = try container.decodeIfPresent(String.self, forKey: .epubLanguage)
-        epubIdentifier = try container.decodeIfPresent(String.self, forKey: .epubIdentifier)
-        epubVersion = try container.decodeIfPresent(String.self, forKey: .epubVersion)
+        storage.waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
+        storage.localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
+        storage.localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
+        storage.localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
+        storage.manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
+        storage.audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
+        storage.audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
+        storage.audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
+        storage.audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
+        storage.epubPublisher = try container.decodeIfPresent(String.self, forKey: .epubPublisher)
+        storage.epubPublicationDate = try container.decodeIfPresent(String.self, forKey: .epubPublicationDate)
+        storage.epubISBN = try container.decodeIfPresent(String.self, forKey: .epubISBN)
+        storage.epubLanguage = try container.decodeIfPresent(String.self, forKey: .epubLanguage)
+        storage.epubIdentifier = try container.decodeIfPresent(String.self, forKey: .epubIdentifier)
+        storage.epubVersion = try container.decodeIfPresent(String.self, forKey: .epubVersion)
         // Decode as String, falling back to converting old Int values for compatibility
         if let str = try? container.decodeIfPresent(String.self, forKey: .cacheFormatVersion) {
-            cacheFormatVersion = str
+            storage.cacheFormatVersion = str
         } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .cacheFormatVersion) {
-            cacheFormatVersion = "\(intVal).0.0"
+            storage.cacheFormatVersion = "\(intVal).0.0"
         } else {
-            cacheFormatVersion = nil
+            storage.cacheFormatVersion = nil
         }
-        contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+        storage.contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
         // A fingerprint that cannot be read counts as none: the cache is then
         // checked as one written before fingerprints, instead of the whole
         // library failing over one damaged field.
-        textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        storage.textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
         // A record of an edit that cannot be read counts as none, as a
         // fingerprint does; older rows have none (B12).
-        editedText = fields.optionalValue(.editedText) { $0 }
+        storage.editedText = fields.optionalValue(.editedText) { $0 }
         // A version that cannot be read counts as none: the book is then
         // read again for its pages, which only keeps its text if it is
         // unchanged (PG09).
-        pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
-        metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
+        storage.pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
+        storage.metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
         // A record of hand edits that cannot be read counts as none, as a
         // fingerprint does: the row is then one nothing was recorded for,
         // which the metadata refresh treats with the most care.
-        handEdits = fields.optionalValue(.handEdits) { $0 }
+        storage.handEdits = fields.optionalValue(.handEdits) { $0 }
         // A feed link that cannot be read counts as none (FR11): the row is
         // then a book of the library's own rather than the whole library
         // failing over it.
-        feedLink = fields.optionalValue(.feedLink) { $0 }
+        storage.feedLink = fields.optionalValue(.feedLink) { $0 }
         // A braille table name that cannot be read counts as none (FMT21),
         // so the book reads with the default table instead of the whole
         // library failing over one damaged field.
-        brailleTable = fields.optionalValue(.brailleTable) { $0 }
-        brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
+        storage.brailleTable = fields.optionalValue(.brailleTable) { $0 }
+        storage.brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
         // A braille file code that cannot be read counts as none
         // (braillecodes), as a damaged table name does, instead of the whole
         // library failing over it; the package record's code, when it names
         // one, stands over it (`BrailleFileCodeRecord.standing(row:recorded:)`).
-        brailleFileCode = fields.optionalValue(.brailleFileCode) { $0 }
+        storage.brailleFileCode = fields.optionalValue(.brailleFileCode) { $0 }
         // A text encoding that cannot be read counts as none (FMT16): the book
         // is then read as every book was before guesses were recorded.
-        textEncoding = fields.optionalValue(.textEncoding) { $0 }
+        storage.textEncoding = fields.optionalValue(.textEncoding) { $0 }
         // Who decided it, when it cannot be read (a later TextMouth's value),
         // counts as the import: the encoding then reads as a guess.
-        textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
+        storage.textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
         // Who chose the braille table, when it cannot be read (a later
         // TextMouth's value), counts as nobody: the table then reads as the
         // listener's own, with no "guessed" said of it.
-        brailleTableOrigin = fields.optionalValue(.brailleTableOrigin) { $0 }
+        storage.brailleTableOrigin = fields.optionalValue(.brailleTableOrigin) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import

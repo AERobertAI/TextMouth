@@ -39,7 +39,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
         let analysis = Self.bookWithEveryFieldSet(seed: 2)
         XCTAssertEqual(
             Self.fieldsThatDiffer(user, analysis).count,
-            Mirror(reflecting: user).children.count,
+            user.reflectedFields.children.count,
             "the fixtures must differ in every field, or this test proves nothing about it"
         )
 
@@ -947,7 +947,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// The names of `Book`'s stored properties whose values differ between
     /// `a` and `b`.
     private static func fieldsThatDiffer(_ a: Book, _ b: Book) -> [String] {
-        zip(Mirror(reflecting: a).children, Mirror(reflecting: b).children).compactMap { left, right in
+        zip(a.reflectedFields.children, b.reflectedFields.children).compactMap { left, right in
             String(reflecting: left.value) == String(reflecting: right.value) ? nil : left.label
         }
     }
