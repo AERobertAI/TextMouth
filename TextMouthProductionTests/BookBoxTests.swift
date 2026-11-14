@@ -159,7 +159,7 @@ final class BookBoxTests: XCTestCase {
     /// book to the second's value and nothing else. `id` is a `let`, so its
     /// edit is made through the stored form. A new field of `Book` must be
     /// added here: `testTheEditsNameEveryField` fails until it is.
-    private static let fieldEdits: [(name: String, apply: (inout Book, Book) -> Void)] = [
+    private static var fieldEdits: [(name: String, apply: (inout Book, Book) -> Void)] { [
         ("id", { book, other in book = bookWithID(of: other, in: book) }),
             ("title", { $0.title = $1.title }),
             ("author", { $0.author = $1.author }),
@@ -211,7 +211,7 @@ final class BookBoxTests: XCTestCase {
             ("brailleFileCode", { $0.brailleFileCode = $1.brailleFileCode }),
             ("textEncoding", { $0.textEncoding = $1.textEncoding }),
             ("textEncodingSource", { $0.textEncodingSource = $1.textEncodingSource }),
-    ]
+    ] }
 
     /// `book` with `other`'s id, made through its JSON (the id is a `let`).
     private static func bookWithID(of other: Book, in book: Book) -> Book {
