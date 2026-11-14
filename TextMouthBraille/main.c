@@ -131,6 +131,11 @@ enum {
 #define CELL_34 CELL(D3 | D4)           /* ⠌ after ⠸, EBAE's slash */
 #define CELL_35 CELL(D3 | D5)           /* ⠔ "in" in contracted EBAE, as in ⠔⠖ "into" */
 #define CELL_36 CELL(D3 | D6)           /* ⠤ hyphen; two make EBAE's dash */
+#define CELL_23 CELL(D2 | D3)           /* ⠆ "be", as in ⠆⠋ "before" */
+#define CELL_124 CELL(D1 | D2 | D4)     /* ⠋ the letter f */
+#define CELL_134 CELL(D1 | D3 | D4)     /* ⠍ the letter m; after ⠨, liblouis's "µ" */
+#define CELL_256 CELL(D2 | D5 | D6)     /* ⠲ EBAE's period, and "dd" inside a word */
+#define CELL_56 CELL(D5 | D6)           /* ⠰ the letter sign */
 #define CELL_45 CELL(D4 | D5)           /* ⠘ UEB's bold prefix */
 #define CELL_46 CELL(D4 | D6)           /* ⠨ EBAE's emphasis sign; UEB's italic prefix */
 #define CELL_156 CELL(D1 | D5 | D6)     /* ⠱ after ⠸, the end of EBAE's computer braille */
@@ -141,6 +146,13 @@ enum {
 #define CELL_456 CELL(D4 | D5 | D6)     /* ⠸ EBAE's bold prefix; UEB's underline prefix */
 #define CELL_2356 CELL(D2 | D3 | D5 | D6) /* ⠶ EBAE's parenthesis; UEB's passage indicator */
 #define CELL_3456 CELL(D3 | D4 | D5 | D6) /* ⠼ number sign; in UEB's transcriber prefixes */
+/* The cells of contracted braille's wordsigns EBAE writes together (`fix_ebae_cells`). */
+#define CELL_AND CELL(D1 | D2 | D3 | D4 | D6)      /* ⠯ "and" */
+#define CELL_FOR CELL(D1 | D2 | D3 | D4 | D5 | D6) /* ⠿ "for" */
+#define CELL_OF CELL(D1 | D2 | D3 | D5 | D6)       /* ⠷ "of" */
+#define CELL_THE CELL(D2 | D3 | D4 | D6)           /* ⠮ "the" */
+#define CELL_WITH CELL(D2 | D3 | D4 | D5 | D6)     /* ⠾ "with" */
+#define CELL_A CELL(D1)                            /* ⠁ "a" */
 
 /*
  * The braille codes whose emphasis signs the helper reads itself, before
@@ -215,6 +227,11 @@ typedef struct {
 	   liblouis, reading as `back` read before the EBAE pass, writes nothing
 	   for the sign before that cell (`find_strippable_signs`). */
 	unsigned char strippable[4][64];
+	/* For a table that writes EBAE's signs: whether it is contracted EBAE,
+	   which reads the six word signs ⠯ ⠿ ⠷ ⠮ ⠾ ⠁ alone as "and", "for", "of",
+	   "the", "with", and "a" (`reads_word_signs`), and so is given the
+	   fixes of `fix_ebae_cells`. */
+	int contracted;
 } table_emphasis;
 
 /* The EBAE signs, as indexes of `table_emphasis.strippable`: italic's word
@@ -803,6 +820,33 @@ reads_cell_as_punctuation(const char *table, widechar cell) {
 }
 
 /*
+ * Whether `table` reads each of the six cells that stand for the words "and"
+ * ⠯, "for" ⠿, "of" ⠷, "the" ⠮, "with" ⠾, and "a" ⠁, alone, as that word:
+ * the table is contracted (grade 2) braille, whose wordsigns EBAE writes
+ * together, "ofthe" as ⠷⠮, with no space (`fix_ebae_cells`).
+ */
+static int
+reads_word_signs(const char *table) {
+	static const struct {
+		widechar cell;
+		const char *word;
+	} signs[] = {{CELL_AND, "and"}, {CELL_FOR, "for"}, {CELL_OF, "of"}, {CELL_THE, "the"},
+			{CELL_WITH, "with"}, {CELL_A, "a"}};
+	for (size_t k = 0; k < sizeof signs / sizeof signs[0]; k++) {
+		widechar cell = signs[k].cell;
+		translation print;
+		size_t length = strlen(signs[k].word);
+		int same;
+		if (!translate(table, 0, &cell, NULL, 1, 0, &print)) return 0;
+		same = (size_t)print.length == length;
+		for (size_t c = 0; same && c < length; c++) same = print.chars[c] == (widechar)signs[k].word[c];
+		free_translation(&print);
+		if (!same) return 0;
+	}
+	return 1;
+}
+
+/*
  * Fills `emphasis->strippable`: for each EBAE sign and each six-dot cell X,
  * whether liblouis, reading with a typeform array as `back` read before the
  * EBAE pass, reads the sign and X, standing alone, exactly as it reads X
@@ -877,7 +921,69 @@ detect_codes(const char *table, table_emphasis *emphasis) {
 	if (uses_code(emphasis, CODE_EBAE) && !reads_cell_as_punctuation(table, CELL_46))
 		for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++)
 			if (emphasis->code[k] == CODE_EBAE) emphasis->code[k] = CODE_NONE;
-	if (uses_code(emphasis, CODE_EBAE)) find_strippable_signs(table, emphasis);
+	if (uses_code(emphasis, CODE_EBAE)) {
+		find_strippable_signs(table, emphasis);
+		emphasis->contracted = reads_word_signs(table);
+	}
+}
+
+/* MARK: - EBAE's cells */
+
+/* Letter cells: a to z, by their dots. */
+static const unsigned LETTER_DOTS[26] = {D1, D1 | D2, D1 | D4, D1 | D4 | D5, D1 | D5, D1 | D2 | D4,
+		D1 | D2 | D4 | D5, D1 | D2 | D5, D2 | D4, D2 | D4 | D5, D1 | D3, D1 | D2 | D3, D1 | D3 | D4,
+		D1 | D3 | D4 | D5, D1 | D3 | D5, D1 | D2 | D3 | D4, D1 | D2 | D3 | D4 | D5, D1 | D2 | D3 | D5,
+		D2 | D3 | D4, D2 | D3 | D4 | D5, D1 | D3 | D6, D1 | D2 | D3 | D6, D2 | D4 | D5 | D6,
+		D1 | D3 | D4 | D6, D1 | D3 | D4 | D5 | D6, D1 | D3 | D5 | D6};
+
+/* The cell of the lowercase letter `letter` ('a' to 'z'). */
+static widechar
+letter_cell(char letter) {
+	return CELL(LETTER_DOTS[letter - 'a']);
+}
+
+/* Whether `cell` is one of the letters a to z. */
+static int
+is_letter_cell(widechar cell) {
+	for (size_t k = 0; k < sizeof LETTER_DOTS / sizeof LETTER_DOTS[0]; k++)
+		if (cell == CELL(LETTER_DOTS[k])) return 1;
+	return 0;
+}
+
+/* Whether `cell` is one of the six cells that stand for "and", "for", "of",
+   "the", "with", and "a" (`reads_word_signs`). */
+static int
+is_word_sign_cell(widechar cell) {
+	return cell == CELL_A || cell == CELL_THE || cell == CELL_WITH || cell == CELL_OF || cell == CELL_AND ||
+			cell == CELL_FOR;
+}
+
+/*
+ * Whether `cell` is a punctuation mark that may end a word in EBAE: a
+ * comma ⠂, semicolon ⠆, colon ⠒, period ⠲, exclamation mark ⠖, question
+ * mark or opening quotation mark ⠦, closing quotation mark ⠴, parenthesis
+ * ⠶, apostrophe ⠄, or hyphen ⠤. None of them is a letter or a word sign.
+ */
+static int
+is_trailing_mark(widechar cell) {
+	return cell == CELL_2 || cell == CELL_23 || cell == CELL(D2 | D5) || cell == CELL_256 ||
+			cell == CELL_235 || cell == CELL_236 || cell == CELL_356 || cell == CELL_2356 ||
+			cell == CELL_3 || cell == CELL_36;
+}
+
+/* Whether `cell` may open a word before its first letter: an emphasis
+   sign ⠨ or ⠸, an opening quotation mark ⠦, a parenthesis ⠶, or a dash ⠤. */
+static int
+is_leading_mark(widechar cell) {
+	return cell == CELL_46 || cell == CELL_456 || cell == CELL_236 || cell == CELL_2356 || cell == CELL_36;
+}
+
+/* Whether `cells[i..end)` are all marks that may end a word. */
+static int
+only_trailing_marks(const widechar *cells, int i, int end) {
+	for (; i < end; i++)
+		if (!is_trailing_mark(cells[i])) return 0;
+	return 1;
 }
 
 /* MARK: - Reading EBAE */
@@ -954,7 +1060,61 @@ typedef struct {
 	int length;
 	formtype word;
 	formtype opens;
+	/* Whether the signs stand before ⠍, where liblouis reads them as "µ",
+	   and are read as signs all the same (`is_sign_before_m_word`). */
+	int mu;
 } ebae_signs;
+
+/*
+ * Whether the word of `cells[0..end)` that holds the cell `at` follows a
+ * number: the blank-delimited word before it begins with the number sign ⠼,
+ * after any marks that open it ("5 µm").
+ */
+static int
+follows_number(const widechar *cells, int at) {
+	int start = at;
+	int end;
+	while (start > 0 && cells[start - 1] != CELL_BLANK) start--;
+	end = start;
+	while (end > 0 && cells[end - 1] == CELL_BLANK) end--;
+	if (end == start) return 0;
+	start = end;
+	while (start > 0 && cells[start - 1] != CELL_BLANK) start--;
+	while (start < end && is_leading_mark(cells[start])) start++;
+	return start < end && cells[start] == CELL_3456;
+}
+
+/*
+ * Whether the EBAE sign at `cells[sign..next)` is a sign, and not the "µ"
+ * liblouis reads ⠨⠍ as: it begins its word, and ⠍ begins two cells or more
+ * (before any mark that may end the word) that are no unit after a number.
+ * A word of one letter, such as "m" alone, a word after a number ("5 µm",
+ * "10 µmol"), and a sign inside a word ("km/µs") stay "µ". An emphasized word of two or more letters that
+ * begins with m ("mama", "my") reads as emphasis, which is what it is far
+ * more often (the Life of Pi braille read italic "mama" as "µama", November
+ * 13, 2026); a micro unit that EBAE writes ⠨⠍ for, with no number before it,
+ * reads as emphasis, as it cannot be told from it.
+ */
+static int spells(const widechar *cells, int from, int end, const char *letters);
+
+static int
+is_sign_before_m_word(const widechar *cells, int sign, int next, int end) {
+	int start = sign;
+	int last = end;
+	if (cells[next] != CELL_134 || next + 1 >= end || is_trailing_mark(cells[next + 1])) return 0;
+	/* liblouis writes "µ" before a unit's letter with the letter sign ⠰ (µm
+	   as ⠨⠍⠰⠍, µg, µs), before a capital letter with the capital sign (µL,
+	   µA, µHz, µV), before "m" with ⠐ ("µmother"), and before "mol": those
+	   are micro, never an emphasized word. */
+	if (cells[next + 1] == CELL_56 || cells[next + 1] == CELL_6 || cells[next + 1] == CELL_5) return 0;
+	while (last > next + 1 && is_trailing_mark(cells[last - 1])) last--;
+	if (spells(cells, next + 1, last, "mol")) return 0;
+	/* The sign begins the word, after the marks that open it. */
+	while (start > 0 && cells[start - 1] != CELL_BLANK) start--;
+	for (int k = start; k < sign; k++)
+		if (!is_leading_mark(cells[k]) && cells[k] != CELL_6) return 0;
+	return !follows_number(cells, next);
+}
 
 /*
  * Whether the pass may read the EBAE sign `sign` (EBAE_ITALIC_WORD to
@@ -991,8 +1151,8 @@ may_strip(const table_emphasis *emphasis, int sign, widechar next) {
  */
 static ebae_signs
 ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int end, formtype open) {
-	const ebae_signs none = {0, 0, 0};
-	ebae_signs found = {0, 0, 0};
+	const ebae_signs none = {0, 0, 0, 0};
+	ebae_signs found = {0, 0, 0, 0};
 	formtype italic = ebae_bit(emphasis, TMB_EMPHASIS_ITALIC);
 	formtype bold = ebae_bit(emphasis, TMB_EMPHASIS_BOLD);
 	int has_bold = bold != 0 && i + 1 < end && cells[i] == CELL_456 && cells[i + 1] == CELL_46;
@@ -1010,13 +1170,20 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 		sign = run == 2 ? EBAE_ITALIC_PASSAGE : EBAE_ITALIC_WORD;
 	}
 	if (!may_strip(emphasis, sign, cells[i + found.length])) {
-		/* A word sign that cannot be told from a print sign, while its
-		   class's passage is open, still closes the passage: it is left for
-		   liblouis, as a sign of no length, and the passage ends with the
-		   word, rather than running on to the paragraph's end. */
-		found.length = 0;
-		found.word = sign == EBAE_ITALIC_WORD ? italic & open : sign == EBAE_BOLD_WORD ? bold & open : 0;
-		return found.word != 0 ? found : none;
+		/* ⠨⠍ beginning a word of letters is a sign, not liblouis's "µ":
+		   the sign is read, and the safety net reads it left out too
+		   (`strip_ebae_word`, `read_ebae`). */
+		if (emphasis->contracted && is_sign_before_m_word(cells, i, i + found.length, end)) {
+			found.mu = 1;
+		} else {
+			/* A word sign that cannot be told from a print sign, while its
+			   class's passage is open, still closes the passage: it is left
+			   for liblouis, as a sign of no length, and the passage ends
+			   with the word, rather than running on to the paragraph's end. */
+			found.length = 0;
+			found.word = sign == EBAE_ITALIC_WORD ? italic & open : sign == EBAE_BOLD_WORD ? bold & open : 0;
+			return found.word != 0 ? found : none;
+		}
 	}
 	if (sign == EBAE_ITALIC_PASSAGE) found.opens = italic;
 	if (sign == EBAE_ITALIC_WORD) found.word = italic;
@@ -1109,7 +1276,7 @@ extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widec
  */
 static int
 strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start, int end,
-		formtype *passage, widechar *kept, formtype *bits, int count) {
+		formtype *passage, widechar *kept, formtype *bits, int count, unsigned char *mu_signs) {
 	/* The classes this word's own signs mark, and of those, the classes
 	   whose passage it closes. */
 	formtype word = 0;
@@ -1155,6 +1322,7 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 			*passage |= signs.opens;
 			word |= signs.word;
 			closing |= signs.word & *passage;
+			if (signs.mu) memset(mu_signs + i, 1, (size_t)signs.length);
 			i += signs.length;
 			capitals = 0;
 			/* "to", "into", or "by" joined to the next word takes these
@@ -1214,6 +1382,7 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 				word |= signs.word;
 				closing |= signs.word & *passage;
 				ended = 0;
+				if (signs.mu) memset(mu_signs + i, 1, (size_t)signs.length);
 				i += signs.length;
 			}
 			continue;
@@ -1236,11 +1405,13 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
  * in `bits`, and returns how many it kept. A blank cell takes the emphasis
  * the words on both sides of it share, so that a passage, or words
  * emphasized one by one, reads as one stretch, as liblouis gives a passage
- * in UEB.
+ * in UEB. `mu_signs`, which holds n bytes of zero, is set to 1 at each cell
+ * of a sign read before ⠍, which liblouis alone reads as "µ"
+ * (`is_sign_before_m_word`).
  */
 static int
 strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, widechar *kept,
-		formtype *bits) {
+		formtype *bits, unsigned char *mu_signs) {
 	formtype passage = 0;
 	formtype beside = 0;
 	int have_beside = 0;
@@ -1254,7 +1425,7 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 			continue;
 		}
 		while (end < n && cells[end] != CELL_BLANK) end++;
-		count = strip_ebae_word(emphasis, cells, i, end, &passage, kept, bits, count);
+		count = strip_ebae_word(emphasis, cells, i, end, &passage, kept, bits, count, mu_signs);
 		i = end;
 	}
 	/* Each blank takes the emphasis of the last cell before it that is not
@@ -1277,6 +1448,331 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 		}
 	}
 	return count;
+}
+
+/* MARK: - Fixing EBAE's known misreadings */
+
+/*
+ * What contracted EBAE's table (liblouis's en-us-g2.ctb) misreads in a book
+ * set in it, as the Life of Pi braille showed on November 13, 2026 (a 2003
+ * transcription in the old code, 4 volumes, read with the default UEB table
+ * and then with EBAE): each is fixed here, in TextMouth's own pass over the
+ * cells before liblouis reads them, so that it holds for any table that
+ * reads EBAE, the bundled or this Mac's, which TextMouth never edits. The
+ * pass only rewrites the cells into cells that liblouis reads right: spaced
+ * apart, or spelled out in letters (which liblouis reads exactly as it reads
+ * the contraction's letters in print), so the emphasis pass and its safety
+ * net (`read_ebae`) read the very same cells.
+ * - Wordsigns written together, ⠷⠮ "of the", ⠯⠮ "and the", ⠷⠁ "of a", ⠾⠁
+ *   "with a", ⠿⠮ "for the", ⠾⠮ "with the": EBAE joins them into one unit,
+ *   and the table has no rule for it, so they came back "ofthe". A run of
+ *   two or more of these cells, with nothing else, is spaced into words.
+ * - "ing" before a hyphen or dash, ⠬⠤: the table reads the two cells as
+ *   "±", so "moving-in" came back "mov±in". The "ing" is spelled out.
+ * - EBAE's period ⠲ between single letters, ⠏⠲⠃⠲⠥⠲⠓⠲ "p.b.u.h.": the table
+ *   reads it as "dd" inside a word. Each letter with its period becomes a
+ *   word of its own (a letter sign first, so that ⠏ is "p" and not "people"),
+ *   so the print reads "p. b. u. h.".
+ * - ⠠⠌⠲, "Still." or "St.": the table reads "St." always. It is read "St."
+ *   only with a capital sign and a capitalized word after it ("St. Paul");
+ *   any other ⠌⠲ is "still." (the capital sign aside), spelled out.
+ * - ⠆⠋ inside a word, "before" or "be" and "f": the table reads "before"
+ *   inside words, "befuddled" as "beforeuddled". Inside a word it is spelled
+ *   "bef", except for "beforehand" and "beforetime(s)", the compounds that
+ *   word is the shortform for.
+ */
+
+/* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
+typedef struct {
+	widechar *cells;
+	int count;
+} cell_list;
+
+/* Appends `cell` to `out`. */
+static void
+put_cell(cell_list *out, widechar cell) {
+	out->cells[out->count++] = cell;
+}
+
+/* Appends the cells `cells[from..to)` to `out`. */
+static void
+put_cells(cell_list *out, const widechar *cells, int from, int to) {
+	for (int k = from; k < to; k++) put_cell(out, cells[k]);
+}
+
+/* Appends the letters of `letters`, lowercase a to z, as cells. */
+static void
+put_letters(cell_list *out, const char *letters) {
+	for (; *letters != '\0'; letters++) put_cell(out, letter_cell(*letters));
+}
+
+/*
+ * Reads the word signs in `cells[i..end)`, each with the capital sign it may
+ * have, into `*after`, the cell after the last of them, and returns how
+ * many there are. `*not_a` counts those that are not "a".
+ */
+static int
+scan_word_signs(const widechar *cells, int i, int end, int *after, int *not_a) {
+	int count = 0;
+	*not_a = 0;
+	for (;;) {
+		int at = i;
+		if (at < end && cells[at] == CELL_6) at++;
+		if (at >= end || !is_word_sign_cell(cells[at])) break;
+		if (cells[at] != CELL_A) (*not_a)++;
+		count++;
+		i = at + 1;
+	}
+	*after = i;
+	return count;
+}
+
+/*
+ * Writes the word signs run in `cells[lead..end)` as words, each parted
+ * from the next by a blank, with the word's leading marks and the marks
+ * after the run (`fix_ebae_cells`), when the whole of it is two or more
+ * word signs, one of them not "a", and the marks that may end a word. Returns 1
+ * when it wrote the word, 0 when it did not.
+ */
+static int
+split_word_signs(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int after;
+	int not_a;
+	int count = scan_word_signs(cells, lead, end, &after, &not_a);
+	if (count < 2 || not_a == 0 || !only_trailing_marks(cells, after, end)) return 0;
+	/* A capitalized "the" and "a" is the name "Thea" (⠠⠮⠁), not "The a". */
+	if (count == 2 && after == lead + 3 && cells[lead] == CELL_6 && cells[lead + 1] == CELL_THE &&
+			cells[lead + 2] == CELL_A)
+		return 0;
+	put_cells(out, cells, start, lead);
+	for (int i = lead; i < after;) {
+		int sign = cells[i] == CELL_6 ? i + 2 : i + 1;
+		put_cells(out, cells, i, sign);
+		if (sign < after) put_cell(out, CELL_BLANK);
+		i = sign;
+	}
+	put_cells(out, cells, after, end);
+	return 1;
+}
+
+/*
+ * Writes `cells[lead..end)` as initials, when the whole of it is single
+ * letters each with its period, at least two periods, the last letter's
+ * period perhaps left out, ⠏⠲⠃⠲⠥⠲⠓⠲ for "p.b.u.h.", a capital letter with
+ * its capital sign (`fix_ebae_cells`): each as a word of a letter sign, the
+ * letter, and its period. A word of one letter, then ⠲, then more than one
+ * letter ("address", ⠁⠲⠗⠑⠎⠎) is no initials. Returns 1 when it wrote the
+ * word, 0 when it did not.
+ */
+static int
+split_initials(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int groups = 0;
+	int periods = 0;
+	int i = lead;
+	int dotted = 1;
+	while (dotted) {
+		int at = i;
+		if (at < end && cells[at] == CELL_6) at++;
+		if (at >= end || !is_letter_cell(cells[at])) break;
+		at++;
+		dotted = at < end && cells[at] == CELL_256;
+		if (dotted) {
+			at++;
+			periods++;
+		}
+		groups++;
+		i = at;
+	}
+	/* At least two periods: "Addy" (⠠⠁⠲⠽) is one letter, "dd", and one letter. */
+	if (periods < 2 || !only_trailing_marks(cells, i, end)) return 0;
+	put_cells(out, cells, start, lead);
+	for (int k = lead, written = 0; written < groups; written++) {
+		int at = k;
+		put_cell(out, CELL_56);
+		if (cells[at] == CELL_6) put_cell(out, cells[at++]);
+		put_cell(out, cells[at++]);
+		if (at < end && cells[at] == CELL_256) put_cell(out, cells[at++]);
+		if (written + 1 < groups) put_cell(out, CELL_BLANK);
+		k = at;
+	}
+	put_cells(out, cells, i, end);
+	return 1;
+}
+
+/* Whether the word that follows the one ending at `cells[end]` in
+   `cells[0..n)` begins with a capital sign, after any marks that open it. */
+static int
+next_word_is_capitalized(const widechar *cells, int end, int n) {
+	int i = end;
+	while (i < n && cells[i] == CELL_BLANK) i++;
+	while (i < n && is_leading_mark(cells[i])) i++;
+	return i < n && cells[i] == CELL_6;
+}
+
+/*
+ * Whether the word before the one at `cells[start]` is capitalized (its
+ * first cell, after the marks that open it, is a capital sign) and does not
+ * end a sentence (its last cell, before closing marks, is no period ⠲,
+ * exclamation mark ⠖, or question mark ⠦). 0 when no word is before it.
+ */
+static int
+follows_unfinished_capitalized_word(const widechar *cells, int start) {
+	int end = start;
+	int first;
+	while (end > 0 && cells[end - 1] == CELL_BLANK) end--;
+	if (end == start || end == 0) return 0;
+	first = end;
+	while (first > 0 && cells[first - 1] != CELL_BLANK) first--;
+	for (int k = first; k < end && is_leading_mark(cells[k]); k++) first = k + 1;
+	/* Closing quotation marks and parentheses come after the sentence's mark. */
+	while (end > first && (cells[end - 1] == CELL_356 || cells[end - 1] == CELL_2356)) end--;
+	return first < end && cells[first] == CELL_6 &&
+			!(cells[end - 1] == CELL_256 || cells[end - 1] == CELL_235 || cells[end - 1] == CELL_236);
+}
+
+/*
+ * Writes `cells[lead..end)` as "still" and its period, when it is ⠌⠲ and the
+ * marks that may end a word, with a capital sign or without, unless it can
+ * be "St.": a capital sign, and either the next word capitalized ("St.
+ * Paul"), or the word before it a capitalized one that does not end a
+ * sentence ("Main St." at a paragraph's end, or before "and"). "Still." ends a
+ * sentence, whatever follows it, but the cells are the same, and a
+ * capitalized word after the period is most often a name; it is read when
+ * ⠠⠌⠲ is the whole record, or follows a sentence's end. Returns 1 when it
+ * wrote the word, 0 when it did not.
+ */
+static int
+spell_still(const widechar *cells, int start, int lead, int end, int n, cell_list *out) {
+	int i = lead;
+	int capital = i < end && cells[i] == CELL_6;
+	if (capital) i++;
+	if (i + 1 >= end || cells[i] != CELL_34 || cells[i + 1] != CELL_256 ||
+			!only_trailing_marks(cells, i + 1, end))
+		return 0;
+	if (capital && (next_word_is_capitalized(cells, end, n) || follows_unfinished_capitalized_word(cells, start)))
+		return 0;
+	put_cells(out, cells, start, i);
+	put_letters(out, "still");
+	put_cells(out, cells, i + 1, end);
+	return 1;
+}
+
+/* Whether `cells[from..end)` is exactly the letters of `letters`, a to z. */
+static int
+spells(const widechar *cells, int from, int end, const char *letters) {
+	if ((size_t)(end - from) != strlen(letters)) return 0;
+	for (int k = from; k < end; k++)
+		if (cells[k] != letter_cell(letters[k - from])) return 0;
+	return 1;
+}
+
+/*
+ * Whether the cells `cells[from..end)`, after "before" (⠆⠋) and before the
+ * marks that may end the word, are what makes it a compound of "before":
+ * "hand" (⠓ and ⠯, "and", as contracted EBAE writes it), "time", or "times".
+ */
+static int
+is_before_compound(const widechar *cells, int from, int end) {
+	while (end > from && is_trailing_mark(cells[end - 1])) end--;
+	/* liblouis writes "beforetime" as ⠆⠋⠐⠞: "time" is its ⠐⠞ contraction. */
+	return (end - from == 2 && cells[from] == letter_cell('h') && cells[from + 1] == CELL_AND) ||
+			(end - from >= 2 && end - from <= 3 && cells[from] == CELL_5 && cells[from + 1] == letter_cell('t') &&
+					(end - from == 2 || cells[from + 2] == letter_cell('s'))) ||
+			spells(cells, from, end, "time") || spells(cells, from, end, "times");
+}
+
+/*
+ * Writes `cells[lead..end)`, a word that no other fix took, with the rest of
+ * the fixes: "before" ⠆⠋ at its start, with a capital sign or without, when
+ * more of the word follows and is no compound of it, spelled "bef"; and each
+ * "ing" ⠬ after the word's first cell and before a hyphen ⠤, spelled out.
+ */
+static void
+spell_inside_word(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int i = lead;
+	put_cells(out, cells, start, lead);
+	if (i < end && cells[i] == CELL_6) put_cell(out, cells[i++]);
+	if (i + 1 < end && cells[i] == CELL_23 && cells[i + 1] == CELL_124 && i + 2 < end &&
+			!is_trailing_mark(cells[i + 2]) && !is_before_compound(cells, i + 2, end)) {
+		put_letters(out, "bef");
+		i += 2;
+	}
+	for (; i < end; i++) {
+		if (cells[i] == CELL_346 && i > lead && cells[i - 1] != CELL_6 && i + 1 < end &&
+				cells[i + 1] == CELL_36)
+			put_letters(out, "ing");
+		else
+			put_cell(out, cells[i]);
+	}
+}
+
+/*
+ * Whether the word `cells[start..end)` has any cell in computer braille,
+ * which EBAE brackets with ⠸⠬ (begin) and ⠸⠱ (end): it begins inside it, or
+ * holds an indicator. Updates `*in_computer` to the state after the word.
+ */
+static int
+touches_computer_braille(const widechar *cells, int start, int end, int *in_computer) {
+	int touched = *in_computer;
+	for (int k = start; k + 1 < end; k++) {
+		if (cells[k] != CELL_456) continue;
+		if (cells[k + 1] == CELL_346) {
+			*in_computer = 1;
+			touched = 1;
+		} else if (cells[k + 1] == CELL_156) {
+			*in_computer = 0;
+			touched = 1;
+		}
+	}
+	return touched;
+}
+
+/*
+ * Rewrites the cells of one word, `cells[start..end)` of `cells[0..n)`, with
+ * the first fix that fits it (the header comment above).
+ */
+static void
+fix_ebae_word(const widechar *cells, int start, int end, int n, cell_list *out) {
+	int lead = start;
+	while (lead < end && is_leading_mark(cells[lead])) lead++;
+	if (split_word_signs(cells, start, lead, end, out)) return;
+	if (split_initials(cells, start, lead, end, out)) return;
+	if (spell_still(cells, start, lead, end, n, out)) return;
+	spell_inside_word(cells, start, lead, end, out);
+}
+
+/*
+ * Fixes what contracted EBAE's table misreads (the comment above) in
+ * `cells[0..n)`: returns the new cells, which the caller frees, and sets
+ * `*count` to how many there are. Words are the cells between blanks. The
+ * most a word grows is five times (a lone "still" sign and its period
+ * become seven cells from two), so `6 * n + 16` cells is room for any
+ * input. Returns NULL when there is no memory, and the caller reads the
+ * cells unfixed.
+ */
+static widechar *
+fix_ebae_cells(const widechar *cells, int n, int *count) {
+	cell_list out = {malloc(((size_t)n * 6 + 16) * sizeof(widechar)), 0};
+	int i = 0;
+	/* Whether the cells are in computer braille, between ⠸⠬ and ⠸⠱, where
+	   no cell is a contraction and nothing is fixed. */
+	int in_computer = 0;
+	if (out.cells == NULL) return NULL;
+	while (i < n) {
+		int end = i;
+		if (cells[i] == CELL_BLANK) {
+			put_cell(&out, cells[i++]);
+			continue;
+		}
+		while (end < n && cells[end] != CELL_BLANK) end++;
+		if (touches_computer_braille(cells, i, end, &in_computer))
+			put_cells(&out, cells, i, end);
+		else
+			fix_ebae_word(cells, i, end, n, &out);
+		i = end;
+	}
+	*count = out.count;
+	return out.cells;
 }
 
 /*
@@ -1338,6 +1834,9 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 		translation *result) {
 	widechar *kept = malloc(((size_t)n + 1) * sizeof *kept);
 	formtype *bits = malloc(((size_t)n + 1) * sizeof *bits);
+	/* The cells read as signs before ⠍ (`is_sign_before_m_word`), which
+	   the safety net's reading leaves out too. */
+	unsigned char *mu_signs = calloc((size_t)n + 1, 1);
 	formtype from_liblouis = 0;
 	int count = n;
 	int ok = 0;
@@ -1345,14 +1844,22 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 	/* liblouis's own reading of the classes the pass does not read. */
 	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++)
 		if (emphasis->code[k] != CODE_EBAE) from_liblouis |= emphasis->bit[k];
-	if (kept != NULL && bits != NULL) {
-		count = strip_ebae_signs(emphasis, cells, n, kept, bits);
+	if (kept != NULL && bits != NULL && mu_signs != NULL) {
+		count = strip_ebae_signs(emphasis, cells, n, kept, bits, mu_signs);
 		ok = read_kept_cells(table, kept, bits, count, from_liblouis, result);
+	}
+	/* With no cell left out, liblouis read the very cells it reads alone.
+	   Otherwise it reads them again alone, without the signs before ⠍,
+	   which it would read as µ and the pass reads as signs. */
+	if (ok && count < n) {
+		int alone = 0;
+		for (int i = 0; i < n; i++)
+			if (!mu_signs[i]) kept[alone++] = cells[i];
+		ok = keep_liblouis_words(table, kept, alone, from_liblouis, result);
 	}
 	free(kept);
 	free(bits);
-	/* With no cell left out, liblouis read the very cells it reads alone. */
-	if (ok && count < n) ok = keep_liblouis_words(table, cells, n, from_liblouis, result);
+	free(mu_signs);
 	return ok;
 }
 
@@ -1447,7 +1954,16 @@ read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cell
 static int
 read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
 		translation *result) {
-	if (uses_code(emphasis, CODE_EBAE)) return read_ebae(table, emphasis, cells, n, result);
+	if (uses_code(emphasis, CODE_EBAE)) {
+		/* Contracted EBAE's known misreadings are fixed in the cells first
+		   (`fix_ebae_cells`); with no memory they are read unfixed. */
+		int count = 0;
+		widechar *fixed = emphasis->contracted ? fix_ebae_cells(cells, n, &count) : NULL;
+		int ok = fixed != NULL ? read_ebae(table, emphasis, fixed, count, result)
+							   : read_ebae(table, emphasis, cells, n, result);
+		free(fixed);
+		return ok;
+	}
 	if (uses_code(emphasis, CODE_UEB)) return read_ueb(table, emphasis, cells, n, result);
 	return translate(table, 0, cells, NULL, n, 1, result);
 }

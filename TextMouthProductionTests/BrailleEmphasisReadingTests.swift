@@ -261,7 +261,20 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             let alone = try withHelper(liblouisAlone: true, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
-            let changed = zip(read, alone).filter { $0.text != $1.text }
+            // liblouis alone reads an emphasized word that begins with m as
+            // "µ" and the rest (the sentences hold no print "µ"); the pass
+            // reads the sign, except after a number, where a unit is likelier
+            // (November 13, 2026, `is_sign_before_m_word`). So "µ" is "m" in
+            // both readings.
+            let micro = { (text: String) in text.replacingOccurrences(of: "\u{B5}", with: "m") }
+            // liblouis alone also reads "ing" and a hyphen before another hyphen
+            // as "±" and a hyphen ("someth±-aunt"), which the helper's own fix
+            // reads as "ing" and a dash, spaced ("something -- aunt")
+            // (November 13, 2026); so "±-" is "ing -- " in the alone reading.
+            let plusMinus = { (text: String) in
+                text.replacingOccurrences(of: "\u{B1}-", with: "ing -- ").replacingOccurrences(of: "\u{B1}", with: "ing-")
+            }
+            let changed = zip(read, alone).filter { micro($0.text) != micro(plusMinus($1.text)) }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
@@ -287,7 +300,9 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     /// and "(=)" as "(*knowledge*)".
     func testTheReviewsSymbolSentencesReadBackAsTheirPrint() throws {
         let sentences = ["5 \u{B5}g", "x >= y", "x == y", "(=)", ">quoted", "a->b", "km/\u{B5}s", "\u{B5}", "[=]", "a -- =b",
-                         "go to =x", "into >y", "by \u{B5}"]
+                         "go to =x", "into >y", "by \u{B5}",
+                         // Micro before a unit, as liblouis writes it (⠨⠍⠰⠍, ⠨⠍⠰⠛, ⠨⠍⠰⠠⠇, ⠨⠍⠍⠕⠇).
+                         "(\u{B5}m)", "\u{B5}g/mL", "a few \u{B5}m", "\u{B5}L", "5 \u{B5}mol"]
         for table in [ebaeUncontracted, ebaeContracted] {
             let braille = try BrailleTranslator.translate(sentences, table: table, direction: .printToBraille, workingIn: work)
             XCTAssertEqual(try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work), sentences, table)
@@ -431,6 +446,16 @@ private struct SymbolSentenceGenerator {
         random = SeededRandom(seed: seed)
     }
 
+    /// `symbol` glued to `word`; a micro sign stands before no word of
+    /// letters ("µzoo"), where braille cannot tell it from an emphasized word
+    /// beginning with m, which the pass reads as emphasis, and before a unit
+    /// ("µL") liblouis's own reading of the words after it in the same record
+    /// is not exact (it read "good" after a dash as "gd"), so the micro signs
+    /// before units are in `testTheReviewsSymbolSentencesReadBackAsTheirPrint`.
+    private func attached(_ symbol: String, _ word: String) -> String {
+        symbol == "\u{B5}" ? ">" + word : symbol + word
+    }
+
     /// One token; a number is a word in a sentence with dashes.
     private mutating func token(dashes: Bool) -> String {
         let kind = random.pick(10)
@@ -445,16 +470,16 @@ private struct SymbolSentenceGenerator {
         case 4:
             return word + "-" + random.element(of: Self.words)
         case 5:
-            return symbol + word
+            return attached(symbol, word)
         case 6:
             let k = random.pick(Self.openers.count)
             return Self.openers[k] + symbol + Self.closers[k]
         case 7:
-            return random.element(of: Self.joined) + " " + symbol + word
+            return random.element(of: Self.joined) + " " + attached(symbol, word)
         case 8:
             return "." + random.element(of: Self.wordsFromAToJ)
         default:
-            return word + "/" + symbol + random.element(of: Self.words)
+            return word + "/" + attached(symbol, random.element(of: Self.words))
         }
     }
 
