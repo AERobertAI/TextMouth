@@ -90,9 +90,11 @@ final class TimeRemainingTallyTests: XCTestCase {
         model.library = Library(books: books, folders: [])
         let before = TimeRemainingBar(books: books, wpm: Self.wpm, livePositions: model.livePositions).summaryAccessibilityLabel
 
+        // Far enough on to change the minutes the label says.
+        let halfway = (books[0].totalCharacterCount ?? 100_000) * 9 / 10
         model.updateLiveReadingPosition(
             bookID: books[0].id,
-            position: ReadingPosition(chapterIndex: 0, characterOffset: 1, globalCharacterOffset: 1)
+            position: ReadingPosition(chapterIndex: 0, characterOffset: halfway, globalCharacterOffset: halfway)
         )
         let after = TimeRemainingBar(books: books, wpm: Self.wpm, livePositions: model.livePositions).summaryAccessibilityLabel
 
