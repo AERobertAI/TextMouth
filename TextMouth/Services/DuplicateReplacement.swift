@@ -234,6 +234,7 @@ enum DuplicateReplacement {
         carried.dateAdded = existing.dateAdded
         carried.lastOpened = existing.lastOpened
         carried.keepHandEditedMetadata(of: existing)
+        carried.brailleTableOrigin = brailleTableOrigin(replacing: existing, with: copy)
         // A text book's places and speed mean nothing to an audiobook, and
         // an audiobook's mean nothing to a text book.
         guard areSameKind(existing, copy) else { return carried }
@@ -245,6 +246,25 @@ enum DuplicateReplacement {
         carried.setSkippedHeadings(places.skippedHeadings)
         carried.waitingSkippedHeadings = SkippedHeading.stored(places.waitingSkippedHeadings)
         return carried
+    }
+
+    /// Who chose the braille table of the book that replaces `existing` with
+    /// `copy`, as `copy` ends up read (after any re-read in the old copy's
+    /// table, `readingToCarry(replacing:with:)`) (brfguess). When both are
+    /// braille books of the same bytes (the same content hash) and the table
+    /// the copy ends with is the old copy's, the table is the old copy's
+    /// choice or guess, so the origin is too, nil included: a guess the
+    /// listener kept (Keep This Code) or replaced by choosing, or one made
+    /// while the guess was on, must not come back or go missing because the
+    /// import of the copy guessed again or a re-read recorded no origin.
+    /// Otherwise the copy keeps what its own reading gave it: a different file
+    /// keeps its own guess.
+    static func brailleTableOrigin(replacing existing: Book, with copy: Book) -> BrailleTableOrigin? {
+        guard existing.offersBrailleTableChoice, copy.offersBrailleTableChoice,
+              !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return copy.brailleTableOrigin }
+        let standing = existing.brailleTable ?? BrailleTableCatalog.defaultTableID
+        let ending = copy.brailleTable ?? BrailleTableCatalog.defaultTableID
+        return standing == ending ? existing.brailleTableOrigin : copy.brailleTableOrigin
     }
 
     /// Whether `first` and `second` are both audiobooks or both text books,
