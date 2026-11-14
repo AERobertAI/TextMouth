@@ -95,8 +95,10 @@ enum SubstitutionRuleMoveDirection {
 
 /// Result of applying substitutions: modified text + bidirectional offset mapping.
 /// Uses OffsetMap internally for offset conversion, and exposes it for pipeline composition.
+///
+/// It holds no copy of the original text: nothing reads one, and a cached
+/// speech would keep a source chapter alive by it (the audit's C17, M5).
 struct TextTransformation {
-    let originalText: String
     let modifiedText: String
     /// The offset map for this substitution stage (modified↔original).
     /// Exposed so it can be composed with other pipeline stages.
@@ -104,15 +106,14 @@ struct TextTransformation {
 
     /// Each rule works in the previous rule's output coordinates. Retain the
     /// stages so subsequent edits cannot invalidate earlier breakpoints.
-    init(originalText: String, modifiedText: String, offsetMaps: [OffsetMap]) {
-        self.originalText = originalText
+    init(modifiedText: String, offsetMaps: [OffsetMap]) {
         self.modifiedText = modifiedText
         self.offsetMap = ComposedOffsetMap(stages: offsetMaps)
     }
 
     /// Identity transformation (no changes).
     static func identity(_ text: String) -> TextTransformation {
-        TextTransformation(originalText: text, modifiedText: text, offsetMaps: [])
+        TextTransformation(modifiedText: text, offsetMaps: [])
     }
 
     /// Convert an offset in the modified text to the corresponding offset in the original text.
@@ -124,8 +125,6 @@ struct TextTransformation {
     func toModifiedOffset(_ original: Int) -> Int {
         offsetMap.toModified(original)
     }
-
-    var hasChanges: Bool { originalText != modifiedText }
 }
 
 /// The substitution rules in force at one moment, each compiled and ready
@@ -189,7 +188,7 @@ struct SubstitutionPass: Equatable, Sendable {
             stages.append(stage.offsetMap)
         }
 
-        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
+        return TextTransformation(modifiedText: current, offsetMaps: stages)
     }
 
     /// Every match of `rule` in `text`, in text order.

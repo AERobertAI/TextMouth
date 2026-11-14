@@ -50,12 +50,28 @@ final class SpeechPreparationSubstitutionTests: XCTestCase {
             let actual = service.transform(text)
 
             XCTAssertTrue(haveIdenticalBytes(actual.modifiedText, expected.modifiedText), label)
-            XCTAssertTrue(haveIdenticalBytes(actual.originalText, expected.originalText), label)
             XCTAssertEqual(actual.offsetMap, expected.offsetMap, label)
             comparedStages += expected.offsetMap.stages.count
         }
         // An oracle that compared nothing would prove nothing.
         XCTAssertGreaterThan(comparedStages, 400, "too few rules changed anything")
+    }
+
+    /// A transformation keeps the text it made and its offset maps, and no
+    /// copy of the text it started from (the audit's C17): nothing reads
+    /// one, and a cached speech would keep a source chapter alive by it. The
+    /// offsets still map both ways.
+    func testATransformationKeepsNoCopyOfTheOriginalText() {
+        let rule = SubstitutionRule(name: "Doctor", pattern: "Dr.", replacement: "Doctor")
+        let transformation = TextSubstitutionService(rules: [rule]).transform("Dr. Hale arrived.")
+
+        XCTAssertEqual(transformation.modifiedText, "Doctor Hale arrived.")
+        XCTAssertEqual(
+            Set(Mirror(reflecting: transformation).children.compactMap(\.label)),
+            ["modifiedText", "offsetMap"]
+        )
+        XCTAssertEqual(transformation.toOriginalOffset(7), 4)
+        XCTAssertEqual(transformation.toModifiedOffset(4), 7)
     }
 
     /// Generated prose with the standard rules matches the old algorithm on
@@ -197,7 +213,7 @@ final class SpeechPreparationSubstitutionTests: XCTestCase {
             stages.append(OffsetMap(points: points))
         }
 
-        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
+        return TextTransformation(modifiedText: current, offsetMaps: stages)
     }
 
     // MARK: - Fixtures
