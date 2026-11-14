@@ -81,6 +81,13 @@ final class BrailleEbaeFixesTests: XCTestCase {
         ])
     }
 
+    /// The name "Thea" is a capitalized "the" and "a" in braille (⠠⠮⠁), and
+    /// is not split into "The a".
+    func testTheaIsNotSplit() throws {
+        // Cells liblouis wrote for "Thea", "Thea's", and "I am Thea".
+        try assertUnchanged([(",!a", "Thea"), (",!a's", "Thea's"), (",i am ,!a", "I am Thea")])
+    }
+
     /// A lone wordsign, a run of "a" cells, and every table that is not
     /// contracted EBAE read as liblouis reads them.
     func testWordsignsAloneAndOtherTablesAreLeftAlone() throws {

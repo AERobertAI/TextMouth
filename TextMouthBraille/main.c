@@ -1540,6 +1540,10 @@ split_word_signs(const widechar *cells, int start, int lead, int end, cell_list 
 	int not_a;
 	int count = scan_word_signs(cells, lead, end, &after, &not_a);
 	if (count < 2 || not_a == 0 || !only_trailing_marks(cells, after, end)) return 0;
+	/* A capitalized "the" and "a" is the name "Thea" (⠠⠮⠁), not "The a". */
+	if (count == 2 && after == lead + 3 && cells[lead] == CELL_6 && cells[lead + 1] == CELL_THE &&
+			cells[lead + 2] == CELL_A)
+		return 0;
 	put_cells(out, cells, start, lead);
 	for (int i = lead; i < after;) {
 		int sign = cells[i] == CELL_6 ? i + 2 : i + 1;
