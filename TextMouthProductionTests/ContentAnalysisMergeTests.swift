@@ -783,7 +783,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// A book with every field set, each to a value derived from `seed`, so
     /// books made from two different seeds differ in every field.
-    private static func bookWithEveryFieldSet(seed: Int) -> Book {
+    static func bookWithEveryFieldSet(seed: Int) -> Book {
         let date = Date(timeIntervalSince1970: TimeInterval(1_700_000_000 + seed * 1_000))
         // A skipped heading in step with its ID, as a book keeps both (T06).
         let skipped = SkippedHeading(
@@ -888,7 +888,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
     }
 
     /// The names of the `Book` properties an analysis owns.
-    private static let analysisFieldNames: Set<String> = [
+    static let analysisFieldNames: Set<String> = [
         "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion",
         "textCacheFingerprint", "editedText", "pageReaderVersion"
     ]
@@ -946,7 +946,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// The names of `Book`'s stored properties whose values differ between
     /// `a` and `b`.
-    private static func fieldsThatDiffer(_ a: Book, _ b: Book) -> [String] {
+    static func fieldsThatDiffer(_ a: Book, _ b: Book) -> [String] {
         zip(a.reflectedFields.children, b.reflectedFields.children).compactMap { left, right in
             String(reflecting: left.value) == String(reflecting: right.value) ? nil : left.label
         }

@@ -153,6 +153,122 @@ final class BookBoxTests: XCTestCase {
         }
     }
 
+    // MARK: - Guards: Every Field Is Compared and Copied
+
+    /// One edit for each stored field of a book: sets that field of the first
+    /// book to the second's value and nothing else. `id` is a `let`, so its
+    /// edit is made through the stored form. A new field of `Book` must be
+    /// added here: `testTheEditsNameEveryField` fails until it is.
+    private static let fieldEdits: [(name: String, apply: (inout Book, Book) -> Void)] = [
+        ("id", { book, other in book = bookWithID(of: other, in: book) }),
+            ("title", { $0.title = $1.title }),
+            ("author", { $0.author = $1.author }),
+            ("format", { $0.format = $1.format }),
+            ("filePath", { $0.filePath = $1.filePath }),
+            ("md5Hash", { $0.md5Hash = $1.md5Hash }),
+            ("folderPath", { $0.folderPath = $1.folderPath }),
+            ("dateAdded", { $0.dateAdded = $1.dateAdded }),
+            ("lastOpened", { $0.lastOpened = $1.lastOpened }),
+            ("readingPosition", { $0.readingPosition = $1.readingPosition }),
+            ("bookmarks", { $0.bookmarks = $1.bookmarks }),
+            ("totalWordCount", { $0.totalWordCount = $1.totalWordCount }),
+            ("totalCharacterCount", { $0.totalCharacterCount = $1.totalCharacterCount }),
+            ("tmbDirectoryName", { $0.tmbDirectoryName = $1.tmbDirectoryName }),
+            ("sourceFilePath", { $0.sourceFilePath = $1.sourceFilePath }),
+            ("lastPlaybackStarted", { $0.lastPlaybackStarted = $1.lastPlaybackStarted }),
+            ("lastPlaybackStopped", { $0.lastPlaybackStopped = $1.lastPlaybackStopped }),
+            ("localVoiceID", { $0.localVoiceID = $1.localVoiceID }),
+            ("localWPM", { $0.localWPM = $1.localWPM }),
+            ("localPitch", { $0.localPitch = $1.localPitch }),
+            ("skippedHeadingIDs", { $0.skippedHeadingIDs = $1.skippedHeadingIDs }),
+            ("skippedHeadings", { $0.setSkippedHeadings($1.skippedHeadings) }),
+            ("waitingSkippedHeadings", { $0.waitingSkippedHeadings = $1.waitingSkippedHeadings }),
+            ("localEndOfBookBehavior", { $0.localEndOfBookBehavior = $1.localEndOfBookBehavior }),
+            ("localSkipForwardUnit", { $0.localSkipForwardUnit = $1.localSkipForwardUnit }),
+            ("localSkipBackwardUnit", { $0.localSkipBackwardUnit = $1.localSkipBackwardUnit }),
+            ("manualSortOrder", { $0.manualSortOrder = $1.manualSortOrder }),
+            ("audioDuration", { $0.audioDuration = $1.audioDuration }),
+            ("audioAlbum", { $0.audioAlbum = $1.audioAlbum }),
+            ("audioGenre", { $0.audioGenre = $1.audioGenre }),
+            ("audioYear", { $0.audioYear = $1.audioYear }),
+            ("epubPublisher", { $0.epubPublisher = $1.epubPublisher }),
+            ("epubPublicationDate", { $0.epubPublicationDate = $1.epubPublicationDate }),
+            ("epubISBN", { $0.epubISBN = $1.epubISBN }),
+            ("epubLanguage", { $0.epubLanguage = $1.epubLanguage }),
+            ("epubIdentifier", { $0.epubIdentifier = $1.epubIdentifier }),
+            ("epubVersion", { $0.epubVersion = $1.epubVersion }),
+            ("cacheFormatVersion", { $0.cacheFormatVersion = $1.cacheFormatVersion }),
+            ("contentIndexVersion", { $0.contentIndexVersion = $1.contentIndexVersion }),
+            ("textCacheFingerprint", { $0.textCacheFingerprint = $1.textCacheFingerprint }),
+            ("editedText", { $0.editedText = $1.editedText }),
+            ("pageReaderVersion", { $0.pageReaderVersion = $1.pageReaderVersion }),
+            ("metadataReaderVersion", { $0.metadataReaderVersion = $1.metadataReaderVersion }),
+            ("handEdits", { $0.handEdits = $1.handEdits }),
+            ("feedLink", { $0.feedLink = $1.feedLink }),
+            ("brailleTable", { $0.brailleTable = $1.brailleTable }),
+            ("brailleTableVersion", { $0.brailleTableVersion = $1.brailleTableVersion }),
+            ("brailleTableOrigin", { $0.brailleTableOrigin = $1.brailleTableOrigin }),
+            ("brailleFileCode", { $0.brailleFileCode = $1.brailleFileCode }),
+            ("textEncoding", { $0.textEncoding = $1.textEncoding }),
+            ("textEncodingSource", { $0.textEncodingSource = $1.textEncodingSource }),
+    ]
+
+    /// `book` with `other`'s id, made through its JSON (the id is a `let`).
+    private static func bookWithID(of other: Book, in book: Book) -> Book {
+        do {
+            let data = try JSONEncoder().encode(book)
+            var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            object["id"] = other.id.uuidString
+            return try JSONDecoder().decode(Book.self, from: JSONSerialization.data(withJSONObject: object))
+        } catch {
+            XCTFail("could not change a book's id: \(error)")
+            return book
+        }
+    }
+
+    /// The edits cover exactly the fields the box holds, so a field added to
+    /// `Book` is added to the two guards below too.
+    func testTheEditsNameEveryField() {
+        let edited = Self.fieldEdits.map(\.name)
+        let held = ContentAnalysisMergeTests.bookWithEveryFieldSet(seed: 1).reflectedFields.children.compactMap(\.label)
+        XCTAssertEqual(edited.count, held.count)
+        XCTAssertEqual(Set(edited), Set(held))
+    }
+
+    /// `==` compares every field: change any one field of a book to another
+    /// value and the two are no longer equal. A comparison that forgot a
+    /// field would call the pair equal.
+    func testEqualityComparesEveryField() {
+        let base = ContentAnalysisMergeTests.bookWithEveryFieldSet(seed: 1)
+        let other = ContentAnalysisMergeTests.bookWithEveryFieldSet(seed: 2)
+        XCTAssertEqual(base, base)
+        for (name, apply) in Self.fieldEdits {
+            var changed = base
+            apply(&changed, other)
+            XCTAssertNotEqual(changed, base, "== ignores \(name)")
+            XCTAssertNotEqual(base, changed, "== ignores \(name)")
+        }
+    }
+
+    /// Copying the box keeps every field: write one unrelated field of a
+    /// copy that shares its box, and every other field, the eight an
+    /// analysis owns among them, is what the original holds.
+    func testCopyOnWriteKeepsEveryOtherField() {
+        let original = ContentAnalysisMergeTests.bookWithEveryFieldSet(seed: 1)
+        var copy = original
+        XCTAssertTrue(copy.sharesFields(with: original))
+        copy.title = "Written after the copy"
+        XCTAssertFalse(copy.sharesFields(with: original), "the write must have copied the box")
+
+        let differing = Set(ContentAnalysisMergeTests.fieldsThatDiffer(original, copy))
+        XCTAssertEqual(differing, ["title"])
+        // The analysis fields were compared, and found as they were.
+        let compared = Set(original.reflectedFields.children.compactMap(\.label))
+        XCTAssertTrue(ContentAnalysisMergeTests.analysisFieldNames.isSubset(of: compared))
+        XCTAssertTrue(differing.isDisjoint(with: ContentAnalysisMergeTests.analysisFieldNames))
+        XCTAssertEqual(original.title, "Title 1")
+    }
+
     // MARK: - What Copying Costs
 
     /// Measures what the audit asked about (C13) and prints it: copying a
