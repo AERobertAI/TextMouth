@@ -38,8 +38,11 @@ final class ReaderShownStateTests: XCTestCase {
     /// more, and that a chapter is shown through a window of its text.
     private static let chapterLength = 120_000
 
-    /// Where the second heading and the second page of chapter 0 begin.
+    /// Where the second heading and the second page of chapter 0 begin, at
+    /// different places: a step can change the heading and not the page, or
+    /// the page and not the heading.
     private static let secondHeadingOffset = 60_000
+    private static let secondPageOffset = 80_000
 
     // MARK: - What the State Holds
 
@@ -119,14 +122,28 @@ final class ReaderShownStateTests: XCTestCase {
     func testAStepThatChangesASpokenLabelChangesTheState() {
         let (reader, _) = makeReader()
         defer { reader.close() }
+        reader.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 30_000)]
         var previous: (spoken: String, state: ReaderShownState)?
         var changes = 0
         for offset in stride(from: 0, to: Self.chapterLength, by: 7) {
+            // The raw cursor, which the bookmark button follows.
+            reader.currentChapterIndex = 0
+            reader.currentCharacterOffset = offset
             reader.refreshPlaybackUI(chapterIndex: 0, offset: offset)
+            // Every string a view draws or speaks from the place, built as
+            // each view builds it: the status row's time, percent, and page,
+            // the header's title and heading label, the bookmark button's
+            // label, and the text area's text.
+            let position = reader.displayHeadingPosition
             let spoken = [
                 ReaderTimeWording.timeLeftSpoken(reader.displayTimeRemaining, nil),
+                ReaderTimeWording.timeLeftShown(reader.displayFormattedTimeRemaining, nil),
                 "\(reader.displayFormattedPercentComplete) through the book",
                 reader.displayPagePosition.label,
+                reader.locationTitle(for: position, chapterIndex: reader.displayChapterIndex) ?? "",
+                position.label,
+                reader.hasNearbyBookmark ? "Remove bookmark" : "Add bookmark",
+                String(reader.displayVisibleTextWindow.hashValue),
             ].joined(separator: "|")
             let state = ReaderShownState(of: reader)
             if let previous, previous.spoken != spoken {
@@ -136,6 +153,49 @@ final class ReaderShownStateTests: XCTestCase {
             previous = (spoken, state)
         }
         XCTAssertGreaterThan(changes, 100, "the walk saw too few changes to prove anything")
+    }
+
+    /// A step that changes only the heading, and a step that changes only
+    /// the page, each change the state and are each announced: dropping the
+    /// heading position or the page position from the state fails here, where
+    /// the other would still change with it. The boundary is moved from its
+    /// usual place to one at which the percentage, the time left, and the
+    /// text do not change in the same step.
+    func testAStepThatChangesOnlyTheHeadingOrOnlyThePageIsAnnounced() {
+        for changesPage in [false, true] {
+            let usual = changesPage ? Self.secondPageOffset : Self.secondHeadingOffset
+            let what = changesPage ? "page" : "heading"
+            var found = false
+            for boundary in usual..<(usual + 200) {
+                let (reader, _) = changesPage
+                    ? makeReader(secondPage: boundary)
+                    : makeReader(secondHeading: boundary)
+                defer { reader.close() }
+                reader.refreshPlaybackUI(chapterIndex: 0, offset: boundary - 1)
+                let before = ReaderShownState(of: reader)
+                var announcements = 0
+                let listener = reader.objectWillChange.sink { announcements += 1 }
+                defer { listener.cancel() }
+                reader.refreshPlaybackUI(chapterIndex: 0, offset: boundary)
+                let after = ReaderShownState(of: reader)
+                // A boundary where something else changes too proves nothing.
+                guard before.percentText == after.percentText,
+                      before.timeLeftText == after.timeLeftText,
+                      before.visibleTextWindow == after.visibleTextWindow else { continue }
+                found = true
+                XCTAssertNotEqual(before, after, "a step across a \(what) boundary changed nothing shown")
+                XCTAssertEqual(announcements, 1, "a step across a \(what) boundary was not announced")
+                if changesPage {
+                    XCTAssertNotEqual(before.pagePosition, after.pagePosition)
+                    XCTAssertEqual(before.headingPosition, after.headingPosition)
+                } else {
+                    XCTAssertNotEqual(before.headingPosition, after.headingPosition)
+                    XCTAssertEqual(before.pagePosition, after.pagePosition)
+                }
+                break
+            }
+            XCTAssertTrue(found, "no boundary near \(usual) changed only the \(what)")
+        }
     }
 
     // MARK: - What Is Announced
@@ -184,9 +244,9 @@ final class ReaderShownStateTests: XCTestCase {
         let listener = reader.objectWillChange.sink { announcements += 1 }
         defer { listener.cancel() }
 
-        // Adding a bookmark publishes the bookmarks themselves; the shown
-        // state then has to take it, so the next refresh announces nothing
-        // new for the same place and the button's state is in the state.
+        // Adding a bookmark publishes the bookmarks themselves, which is one
+        // announcement. The refresh that follows is another: the shown state
+        // holds the bookmark button's state, which the refresh finds changed.
         reader.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: run[0])]
         let afterAdding = announcements
         XCTAssertTrue(ReaderShownState(of: reader).hasNearbyBookmark)
@@ -241,7 +301,7 @@ final class ReaderShownStateTests: XCTestCase {
         reader.refreshPlaybackUI(chapterIndex: 0, offset: Self.secondHeadingOffset + 3)
         settle(hosted.hostingView, seconds: 0.2)
         XCTAssertGreaterThan(ViewBodyCounter.count(of: "ReaderLocationHeader"), headerBefore, "the header did not draw for a new heading")
-        XCTAssertEqual(reader.displayHeadingPosition.label, "Heading 2 of 3")
+        XCTAssertEqual(reader.displayHeadingPosition.label, "Heading 2 of 4")
     }
 
     // MARK: - The Sleep Countdown
@@ -310,6 +370,67 @@ final class ReaderShownStateTests: XCTestCase {
         }
         // Each second said, once and in order: 4:59, 4:58, 4:57, then 4:56 ...
         XCTAssertEqual(Set(spoken.labels).count, 7, "a second was said twice or skipped: \(spoken.labels)")
+    }
+
+    /// The reader's own countdown labels, the status row's and the playback
+    /// bar's, read from the hosted views' accessibility tree as VoiceOver
+    /// reads them: the same string as before, "Sleep timer: 4:59 remaining",
+    /// from one second to the next, playing and paused. Skipped where hosted
+    /// windows expose no accessibility elements of their own.
+    func testTheReadersOwnCountdownLabelsSpeakEachSecondPlayingAndPaused() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
+        let (reader, _) = makeReader()
+        defer { reader.close() }
+        let timer = reader.sleepTimerService
+        timer.duration = .minutes(5)
+        timer.remainingSeconds = 300
+        timer.isActive = true
+        defer {
+            timer.isActive = false
+            timer.duration = nil
+        }
+        let root = VStack(spacing: 0) {
+            BookInfoBar(viewModel: reader)
+            PlaybackControlsView(viewModel: reader)
+        }
+        .frame(width: 700, height: 300)
+        let hosted = hostOffscreen(root, size: NSSize(width: 700, height: 300))
+        defer { takeDown(hosted.window) }
+        settle(hosted.hostingView, seconds: 0.3)
+
+        for (state, paused) in [("playing", false), ("paused", true)] {
+            reader.isCurrentlyPlaying = true
+            reader.isCurrentlyPaused = paused
+            settle(hosted.hostingView, seconds: 0.2)
+            for _ in 0..<3 {
+                timer.remainingSeconds -= 1
+                settle(hosted.hostingView, seconds: 0.1)
+                let label = "Sleep timer: \(timer.remainingSeconds / 60):"
+                    + "\(String(format: "%02d", timer.remainingSeconds % 60)) remaining"
+                XCTAssertEqual(
+                    accessibilityElements(labelled: label, in: hosted.hostingView).count, 2,
+                    "\(state): the status row and the playback bar did not both say \"\(label)\""
+                )
+            }
+        }
+    }
+
+    /// Where hosted windows expose no accessibility elements, the two views'
+    /// own labels are checked in their sources: each draws the countdown
+    /// through `SleepTimerStatusLabel`, from the timer it hands over, with
+    /// the same label VoiceOver read before, and neither reads the timer
+    /// from the reader, which would freeze it between the reader's publishes.
+    func testTheReadersCountdownLabelsAreDrawnByTheTimersOwnLabel() throws {
+        let sources = try AppSourceFile.all()
+        for path in ["Views/Reader/ReaderView.swift", "Views/Reader/PlaybackControlsView.swift"] {
+            let file = try XCTUnwrap(sources.first { $0.path == path }, path)
+            XCTAssertTrue(file.text.contains("SleepTimerStatusLabel(timer: viewModel.sleepTimerService)"), path)
+            XCTAssertTrue(file.text.contains("Text(timer.formattedRemaining)"), path)
+            XCTAssertTrue(file.text.contains(".accessibilityLabel(timer.spokenLabel)"), path)
+            XCTAssertFalse(file.text.contains("viewModel.sleepTimerService.formattedRemaining"), path)
+            XCTAssertFalse(file.text.contains("viewModel.sleepTimerService.spokenLabel"), path)
+            XCTAssertFalse(file.text.contains("viewModel.sleepTimerService.isActive"), path)
+        }
     }
 
     /// With no timer, the label draws nothing; starting one draws it, and
@@ -389,10 +510,30 @@ final class ReaderShownStateTests: XCTestCase {
         throw XCTSkip("no run of \(length) places with one state near \(start)")
     }
 
+    /// A chapter's text, `chapterLength` characters of numbered words, so
+    /// that every window cut from it differs from every other.
+    private static func numberedText(prefix: String) -> String {
+        var text = ""
+        var number = 0
+        while text.utf16.count < chapterLength {
+            text += "\(prefix)\(number) "
+            number += 1
+        }
+        return String(text.prefix(chapterLength))
+    }
+
     /// A stopped reader of a book read from memory: two chapters of 120,000
     /// characters, in each its own page and headings (chapter 0 has a second
     /// heading and page halfway), with the clock this test moves.
-    private func makeReader() -> (ReaderViewModel, TestClock) {
+    ///
+    /// - Parameters:
+    ///   - secondHeading: Where chapter 0's second heading begins.
+    ///   - secondPage: Where chapter 0's second page begins, apart from the
+    ///     heading, so that a step can change one and not the other.
+    private func makeReader(
+        secondHeading: Int = ReaderShownStateTests.secondHeadingOffset,
+        secondPage: Int = ReaderShownStateTests.secondPageOffset
+    ) -> (ReaderViewModel, TestClock) {
         let book = Book(
             title: "Shown State",
             format: .txt,
@@ -409,26 +550,26 @@ final class ReaderShownStateTests: XCTestCase {
         )
         let clock = TestClock()
         reader.playbackUIRefreshNow = { clock.now }
-        // 24,000 words of five characters each in a chapter.
-        let text = String(repeating: "word ", count: Self.chapterLength / 5)
         let chapters = [
             Chapter(
                 title: "One",
-                text: text,
+                text: Self.numberedText(prefix: "a"),
                 headings: [
                     Heading(level: 1, text: "One", characterOffset: 0),
-                    Heading(level: 2, text: "One B", characterOffset: Self.secondHeadingOffset),
+                    Heading(level: 2, text: "One B", characterOffset: secondHeading),
+                    Heading(level: 2, text: "One C", characterOffset: 100_000),
                 ],
                 pages: [
                     PageBreak(label: "1", characterOffset: 0),
-                    PageBreak(label: "2", characterOffset: Self.secondHeadingOffset),
+                    PageBreak(label: "2", characterOffset: secondPage),
+                    PageBreak(label: "3", characterOffset: 110_000),
                 ]
             ),
             Chapter(
                 title: "Two",
-                text: text,
+                text: Self.numberedText(prefix: "b"),
                 headings: [Heading(level: 1, text: "Two", characterOffset: 0)],
-                pages: [PageBreak(label: "3", characterOffset: 0)]
+                pages: [PageBreak(label: "4", characterOffset: 0)]
             ),
         ]
         reader.content = DocumentContent(title: book.title, author: book.author, chapters: chapters)
