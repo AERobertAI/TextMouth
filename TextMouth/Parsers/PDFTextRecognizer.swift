@@ -86,7 +86,7 @@ struct VisionPDFTextRecognizer: PDFPageTextRecognizer {
     /// with the origin at the bottom left, so a higher `midY` is higher on
     /// the page. This is the order the parser has always read OCR text in.
     private static func readingOrder(_ observations: [VNRecognizedTextObservation]) -> [VNRecognizedTextObservation] {
-        observations.sorted { first, second in
+        observations.sortedStably { first, second in
             if abs(first.boundingBox.midY - second.boundingBox.midY) > 0.01 {
                 return first.boundingBox.midY > second.boundingBox.midY
             }

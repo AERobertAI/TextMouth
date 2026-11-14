@@ -418,7 +418,7 @@ enum WordDocumentProperties {
                 }
             }
         }
-        result.sort { $0.range.lowerBound < $1.range.lowerBound }
+        result.sortStably { $0.range.lowerBound < $1.range.lowerBound }
         return WordFormatRuns(runs: result)
     }
 }

@@ -31,7 +31,7 @@ enum AudioBookParser {
     /// Respect an explicit order without repeating a file when a manifest lists
     /// it twice; append unlisted files in Finder-style numeric order.
     static func orderedFileNames(_ names: [String], manifestOrder: [String]? = nil) -> [String] {
-        let alphabetical = names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let alphabetical = names.sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         guard let manifestOrder, !manifestOrder.isEmpty else { return alphabetical }
         let available = Set(names)
         var seen = Set<String>()
@@ -139,7 +139,7 @@ enum AudioBookParser {
             }
         }
         if let enumerationError { throw enumerationError }
-        return files.sorted {
+        return files.sortedStably {
             relativeName(of: $0, in: directory).localizedStandardCompare(
                 relativeName(of: $1, in: directory)
             ) == .orderedAscending

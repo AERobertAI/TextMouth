@@ -322,7 +322,7 @@ enum PodcastingJSON {
     /// never rests on how the standard library's sort treats equal items.
     static func sortedByStart<Item>(_ items: [Item], start: (Item) -> Int) -> [Item] {
         items.enumerated()
-            .sorted { first, second in
+            .sortedStably { first, second in
                 let (firstStart, secondStart) = (start(first.element), start(second.element))
                 return firstStart != secondStart ? firstStart < secondStart : first.offset < second.offset
             }

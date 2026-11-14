@@ -74,7 +74,7 @@ struct WordLegacyCodePages {
         var cuts = [0, limit]
         for run in characterRuns.runs { cuts.append(run.range.lowerBound); cuts.append(run.range.upperBound) }
         for run in paragraphs.runs { cuts.append(run.range.lowerBound); cuts.append(run.range.upperBound) }
-        let boundaries = Array(Set(cuts.filter { (0...limit).contains($0) })).sorted()
+        let boundaries = Array(Set(cuts.filter { (0...limit).contains($0) })).sortedStably()
 
         // What each stretch is: marked as the Macintosh's, or in the code page its font names, with the
         // characters above 0x7F it holds.
@@ -119,7 +119,7 @@ struct WordLegacyCodePages {
 
         // The document's default.
         var defaultPage = WordLegacyCharacters.codePage(ofLanguage: characters.languageIdentifier)
-        let ranked = usage.sorted { $0.value > $1.value || ($0.value == $1.value && $0.key < $1.key) }
+        let ranked = usage.sortedStably { $0.value > $1.value || ($0.value == $1.value && $0.key < $1.key) }
         if let top = ranked.first, top.value > otherHighCharacters {
             defaultPage = top.key
         }

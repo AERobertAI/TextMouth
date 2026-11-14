@@ -314,7 +314,7 @@ struct MOBIBook {
 
         // Every place the book names gets an anchor: the places its links
         // name and the places its contents name.
-        let offsets = scan.fileposTargets.union(entries.map(\.offset)).sorted()
+        let offsets = scan.fileposTargets.union(entries.map(\.offset)).sortedStably()
         let anchors = MOBIMarkup.anchors(for: offsets, in: text)
 
         // Where each section starts, with its title when the contents gives one.
@@ -373,7 +373,7 @@ struct MOBIBook {
         // A section that would begin in the head begins where the body does.
         starts = starts.map { (position: max($0.position, bodyStart), title: $0.title) }
         // In order of place; of two sections at one place, the first one stays.
-        starts = starts.enumerated().sorted {
+        starts = starts.enumerated().sortedStably {
             $0.element.position != $1.element.position ? $0.element.position < $1.element.position : $0.offset < $1.offset
         }.map(\.element)
         var unique: [(position: Int, title: String?)] = []

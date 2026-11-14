@@ -176,7 +176,7 @@ struct KFXWalk {
             guard let id = template.structValue?[KFXSymbol.nodeID]?.intValue, let offsets = targets.offsets[id] else { continue }
             output.targetNodeIDs.insert(id)
             output.startNodeIDs.insert(id)
-            for offset in offsets.sorted() { output.pendingAnchors += KFXTargets.anchorHTML(node: id, offset: offset) }
+            for offset in offsets.sortedStably() { output.pendingAnchors += KFXTargets.anchorHTML(node: id, offset: offset) }
         }
         for template in templates.reversed() {
             guard let storyline = template.structValue?[KFXSymbol.storylineName]?.stringValue else { continue }
@@ -297,7 +297,7 @@ struct KFXWalk {
                 }
             } else {
                 // Any place named in a node that writes no text is its start.
-                for offset in offsets.sorted() { output.pendingAnchors += KFXTargets.anchorHTML(node: named, offset: offset) }
+                for offset in offsets.sortedStably() { output.pendingAnchors += KFXTargets.anchorHTML(node: named, offset: offset) }
             }
         }
 

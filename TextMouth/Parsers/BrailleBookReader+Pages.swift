@@ -139,7 +139,7 @@ extension BrailleBookReader {
                 offset > 0 && offset < cells.count
                     && cells[offset - 1] == BrailleCells.blank && cells[offset] != BrailleCells.blank
             }
-            return Array(Set(usable)).sorted()
+            return Array(Set(usable)).sortedStably()
         }
 
         /// The braille `cells` cut at each of `offsets` (from `cutOffsets`),

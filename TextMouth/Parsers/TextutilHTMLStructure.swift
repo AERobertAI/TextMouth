@@ -273,7 +273,7 @@ enum TextutilHTMLStructure {
 
         // The larger sizes, largest first, give levels 1, 2, 3, and so on;
         // bold candidates take the next level after them.
-        let sizes = Set(larger.map { $0.size }).sorted(by: >)
+        let sizes = Set(larger.map { $0.size }).sortedStably(by: >)
         for (paragraph, size) in larger {
             let rank = sizes.firstIndex(of: size) ?? 0
             try paragraph.tagName("h\(min(rank + 1, deepestLevel))")

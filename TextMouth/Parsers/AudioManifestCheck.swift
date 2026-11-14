@@ -287,7 +287,7 @@ enum AudioManifestCheck {
     ///   `.tracksWithOlderKeys`.
     private static func checkTopLevel(_ object: [String: Any]) throws {
         let known = Set(AudioManifest.CodingKeys.allCases.map(\.rawValue))
-        let unknown = object.keys.filter { !known.contains($0) }.sorted()
+        let unknown = object.keys.filter { !known.contains($0) }.sortedStably()
         guard unknown.isEmpty else {
             throw AudioManifestProblem.unknownKeys(unknown, entry: nil)
         }
@@ -309,7 +309,7 @@ enum AudioManifestCheck {
             case .chapters:
                 try require(value, .object, at: name)
                 let titles = (value as? [String: Any]) ?? [:]
-                for file in titles.keys.sorted() {
+                for file in titles.keys.sortedStably() {
                     try require(titles[file] ?? NSNull(), .text, at: "the title for “\(file)” in chapters")
                 }
             }
@@ -343,7 +343,7 @@ enum AudioManifestCheck {
                 }
                 continue
             }
-            let unknown = fields.keys.filter { !known.contains($0) }.sorted()
+            let unknown = fields.keys.filter { !known.contains($0) }.sortedStably()
             guard unknown.isEmpty else {
                 throw AudioManifestProblem.unknownKeys(unknown, entry: number)
             }
@@ -497,7 +497,7 @@ enum AudioManifestCheck {
         let named: [(key: AudioManifest.CodingKeys, files: [String])] = [
             (.tracks, listed),
             (.order, manifest.order ?? []),
-            (.chapters, (manifest.chapters ?? [:]).keys.sorted())
+            (.chapters, (manifest.chapters ?? [:]).keys.sortedStably())
         ]
         for (key, files) in named {
             let missing = uniqued(files.filter { !available.contains($0) })

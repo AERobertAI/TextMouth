@@ -203,7 +203,7 @@ struct WordPieceTable {
     /// The pieces that hold characters in file order, and for each the
     /// largest end offset of it and of those before it.
     private static func fileOrder(of pieces: [Piece]) -> (pieces: [Piece], largestFileEnd: [Int]) {
-        let byFile = pieces.filter { $0.length > 0 }.sorted { $0.fileOffset < $1.fileOffset }
+        let byFile = pieces.filter { $0.length > 0 }.sortedStably { $0.fileOffset < $1.fileOffset }
         var largest = 0
         let ends = byFile.map { piece -> Int in
             largest = max(largest, piece.fileEnd)

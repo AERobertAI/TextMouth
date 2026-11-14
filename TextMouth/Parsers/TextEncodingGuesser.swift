@@ -115,7 +115,7 @@ enum TextEncodingGuesser {
             readings.append(Reading(entry: entry, text: text, plausibility: TextPlausibility(reading: text, judging: .rival)))
         }
         // The fewest surprises first; readings with as many keep the catalog's order.
-        let ranked = readings.enumerated().sorted { first, second in
+        let ranked = readings.enumerated().sortedStably { first, second in
             let (a, b) = (first.element.plausibility.surprise, second.element.plausibility.surprise)
             return a != b ? a < b : first.offset < second.offset
         }.map(\.element)

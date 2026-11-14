@@ -125,7 +125,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
     /// none. Ranges use "to" rather than a dash, which speech may read as
     /// "minus".
     static func pagePhrase(_ pageNumbers: [Int]) -> String {
-        let numbers = Array(Set(pageNumbers)).sorted()
+        let numbers = Array(Set(pageNumbers)).sortedStably()
         guard !numbers.isEmpty else { return "no pages" }
         var items: [String] = []
         var start = 0

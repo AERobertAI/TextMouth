@@ -360,7 +360,7 @@ final class PortableXMLStrictReader: NSObject, XMLParserDelegate {
         // The dictionary has no order; fix one: unprefixed names first, then by name.
         let ordered = attributeDict
             .map { (name: $0.key, value: $0.value) }
-            .sorted { lhs, rhs in
+            .sortedStably { lhs, rhs in
                 let (lhsPlain, rhsPlain) = (!lhs.name.contains(":"), !rhs.name.contains(":"))
                 return lhsPlain != rhsPlain ? lhsPlain : lhs.name < rhs.name
             }
