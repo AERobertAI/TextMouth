@@ -171,9 +171,10 @@ enum BraillePageAnalyzer {
     /// not centered) part. The rows are as the analyzer reads them, before
     /// any heading is made of them, so that a caller sees each row apart
     /// (`BrailleTitlePage`). Empty for a BRL, which has no layout, and for a
-    /// file with no row on any page that is centered.
-    static func centeredRowsOfFirstPage(of file: BrailleFilePages) -> [String] {
-        guard file.kind != .brl else { return [] }
+    /// file with no row on any page that is centered. `hasRule` says whether a
+    /// centered rule row stands on the page.
+    static func centeredRowsOfFirstPage(of file: BrailleFilePages) -> (lines: [String], hasRule: Bool) {
+        guard file.kind != .brl else { return ([], false) }
         let book = Book(file: file)
         let width = book.measure().width
         // The first page with anything on it (a form feed may leave an empty
@@ -182,8 +183,12 @@ enum BraillePageAnalyzer {
             let spans = book.rows(ofPage: page)
             guard spans.contains(where: { !$0.isEmpty }) else { continue }
             var lines: [String] = []
+            // Whether a rule row stands among the rows: a title page sets
+            // its title off with one, where a chapter's opening does not.
+            var hasRule = false
             for span in spans {
                 let row = book.makeRow(span)
+                if isCentered(row, width: width), isRule(row, in: book.cells) { hasRule = true }
                 if row.isBlank || !isCentered(row, width: width) || isRule(row, in: book.cells) {
                     // One separator between stretches, none at the start.
                     if let last = lines.last, !last.isEmpty { lines.append("") }
@@ -193,9 +198,9 @@ enum BraillePageAnalyzer {
             }
             // No separator at the end.
             if lines.last?.isEmpty == true { lines.removeLast() }
-            return lines
+            return (lines, hasRule)
         }
-        return []
+        return ([], false)
     }
 
     // MARK: Spans and rows

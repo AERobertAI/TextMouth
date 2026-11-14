@@ -1246,16 +1246,17 @@ extension BraillePageAnalyzerTests {
             rightAligned("#A"), centered(",LIFE ( ,PI"), centered("0,YANN ,M>TEL"), centered("333333333333"),
             centered(",9 #D ,VOLUMES"), "", row(2, "A PARAGRAPH OF TEXT"),
         ]
-        let rows = BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: [page]))
-        XCTAssertEqual(rows, [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
+        let found = BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: [page]))
+        XCTAssertTrue(found.hasRule)
+        XCTAssertEqual(found.lines, [braille(",LIFE ( ,PI"), braille("0,YANN ,M>TEL"), "", braille(",9 #D ,VOLUMES")])
     }
 
     /// A page with no text before the title page (a form feed at the file's
     /// start) is passed over, and a BRL has no title page.
     func testAnEmptyFirstPageIsPassedOverAndABRLHasNoTitlePage() {
         let pages = [[""], [centered(",TITLE"), centered(",ONE"), centered(",TWO")]]
-        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: pages)).count, 3)
-        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brl, pages: pages)), [])
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brf, pages: pages)).lines.count, 3)
+        XCTAssertEqual(BraillePageAnalyzer.centeredRowsOfFirstPage(of: BrailleFilePages(kind: .brl, pages: pages)).lines, [])
     }
 
     /// English Braille's "by" sign written against the author's capital,
@@ -1301,6 +1302,14 @@ extension BraillePageAnalyzerTests {
     func testAPageWithNoByAndFewerThanThreeRowsNamesNothing() {
         XCTAssertNil(BrailleTitlePage.names(inRows: []))
         XCTAssertNil(BrailleTitlePage.names(inRows: [braille(",PRIDE"), "", braille(",CHAPTER ,I")]))
+    }
+
+    /// Three centered rows with no "by" and no rule (a part title, a chapter
+    /// heading, an epigraph) are no title page; with a rule they are.
+    func testThreeCenteredRowsWithNoByNeedARuleToBeATitlePage() {
+        let rows = [braille(",PART ,ONE"), braille(",CHAPTER ,I"), braille(",AN ,EPIGRAPH")]
+        XCTAssertNil(BrailleTitlePage.names(inRows: rows))
+        XCTAssertEqual(BrailleTitlePage.names(inRows: rows, hasRule: true)?.title, braille(",PART ,ONE"))
     }
 }
 

@@ -53,7 +53,7 @@ enum BrailleTitlePage {
     /// the next row when it ends the row, are the author. A page with no "by"
     /// names its first row as the title and no author, when it has at least
     /// three rows (`minRowsOfTitlePage`). A page with no row names nothing.
-    static func names(inRows lines: [String]) -> Names? {
+    static func names(inRows lines: [String], hasRule: Bool = false) -> Names? {
         // Only the first two stretches of rows, which is where a title and
         // an author stand, and no more than a handful of rows.
         var rows: [String] = []
@@ -81,11 +81,11 @@ enum BrailleTitlePage {
         guard let index = startsWithBy ?? rows.indices.prefix(firstStretchRows).first(where: { splitAtBy(rows[$0]) != nil }),
               let split = splitAtBy(rows[index]) else {
             // With no "by", the page is a title page only if it has the several
-            // rows one has (a title, a publisher, an ISBN): a page that opens
-            // with a book's title and its first chapter's heading, as a
-            // chapter exported alone does, names the file, as it did.
+            // rows one has (a title, a publisher, an ISBN) and a rule that sets
+            // the title off: a page of a part title, a chapter heading and an
+            // epigraph is none, and a chapter exported alone names the file.
             let centeredRows = lines.filter { !$0.isEmpty }.count
-            return centeredRows >= minRowsOfTitlePage ? Names(title: first, author: nil) : nil
+            return centeredRows >= minRowsOfTitlePage && hasRule ? Names(title: first, author: nil) : nil
         }
         var titleRows = Array(rows[..<index])
         if !split.before.isEmpty { titleRows.append(split.before) }
@@ -94,6 +94,12 @@ enum BrailleTitlePage {
         // A title of more rows than a title has is not read: the first row stands for it.
         let title = titleRows.count > maxTitleRows ? first : titleRows.joined(separator: String(blankCell))
         return Names(title: title.isEmpty ? nil : title, author: author.isEmpty ? nil : author)
+    }
+
+    /// What the first page of `pages` names (`names(inRows:hasRule:)`).
+    static func names(of pages: BrailleFilePages) -> Names? {
+        let first = BraillePageAnalyzer.centeredRowsOfFirstPage(of: pages)
+        return names(inRows: first.lines, hasRule: first.hasRule)
     }
 
     /// `row` parted at its first word "by": the words before it and the
@@ -134,7 +140,7 @@ enum BrailleTitlePage {
         guard kind == .brf,
               let code = BrailleFileCode.code(forStored: fileCode),
               let pages = try? BrailleFileReader.read(url, as: kind, code: code),
-              let named = names(inRows: BraillePageAnalyzer.centeredRowsOfFirstPage(of: pages)) else {
+              let named = Self.names(of: pages) else {
             return (nil, nil)
         }
         // Translate what the page names, together, in one run of the helper.
