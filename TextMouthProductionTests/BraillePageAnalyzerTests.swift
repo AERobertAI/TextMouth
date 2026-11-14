@@ -1393,6 +1393,25 @@ extension BraillePageAnalyzerTests {
         XCTAssertFalse(count.looksLikeEBAE)
     }
 
+    /// A UEB passage full of -tion and -ity words (the dots 5-6 sign, ASCII
+    /// ";N" and ";Y"), "ff" inside words, closing quotes, "was", "!", and
+    /// names with a capital inside them, repeated hundreds of times, does not
+    /// look old: a name counts once, however often it stands.
+    func testAUEBPassageWithTionItyFFAndInternalCapitalNamesDoesNotLookOld() {
+        let line = "NA;N ,MC,NEIL ,MAC,YOUNG C;Y O6ER 0 ,\"HELLO0 STOP6"
+        let count = detectorCount(Array(repeating: line, count: 400))
+        XCTAssertEqual(count.hits, 2, "the two names, once each")
+        XCTAssertFalse(count.looksLikeEBAE)
+    }
+
+    /// EBAE's "ation" and "ally" words are many different words, and count each.
+    func testManyDifferentAtionAndAllyWordsLookOld() {
+        let words = ["POPUL,N", "RE,Y", "NA,N", "TOTAL,Y", "ACT,N", "REAL,Y", "NOT,N", "FINAL,Y", "RAT,N", "LOCAL,Y", "MOT,N"]
+        let count = detectorCount([words.joined(separator: " ")])
+        XCTAssertEqual(count.hits, 11)
+        XCTAssertTrue(count.looksLikeEBAE)
+    }
+
     /// A few such words in a long book are not enough, nor are several
     /// words too few of the book's: the book needs at least ten and one in a hundred.
     func testAFewOrAFractionOfAPercentOfOldSignsDoesNotLookOld() {

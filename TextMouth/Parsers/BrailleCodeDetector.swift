@@ -17,7 +17,13 @@ import Foundation
 ///   a capital sign, is EBAE's.
 /// - the sign for "ation" and for "ally" (a capital sign, then n or y), which
 ///   EBAE writes in the middle of a word after a letter, where UEB's capital
-///   sign begins a word or a capital in a name ("McNeil"), which is rare.
+///   sign begins a word or a capital in a name ("McNeil"), which is rare. UEB
+///   dropped both contractions (BANA's "Overview of Changes from EBAE to
+///   UEB"); its "-tion" and "-ity" are the dots 5-6 sign and n or y. A name
+///   with a capital inside it could repeat many times in one book, so these
+///   words are counted once for each distinct word, where a joined "to" or
+///   "by" is counted at each place: EBAE's "ation" and "ally" words are many
+///   different words, a name is one.
 ///
 /// A book is taken for EBAE only when such words are not few: at least
 /// `minimumWords` of them, and one in a hundred of the book's words.
@@ -55,23 +61,33 @@ enum BrailleCodeDetector {
         }
     }
 
-    /// Whether the word `word` (cells, none of them blank) shows an EBAE sign.
-    private static func showsEBAESign(_ word: ArraySlice<UInt8>) -> Bool {
-        guard word.count >= 2, let first = word.first else { return false }
+    /// The EBAE sign a word shows.
+    private enum Sign {
+        /// "to" or "by" joined to the next word.
+        case joined
+        /// "ation" or "ally" inside a word, which a name with a capital inside it also shows.
+        case insideWord
+    }
+
+    /// The most distinct words with an inside-word sign that are kept to count them apart.
+    private static let maxDistinctInsideWords = 5_000
+
+    /// The EBAE sign the word `word` (cells, none of them blank) shows, if any.
+    private static func sign(of word: ArraySlice<UInt8>) -> Sign? {
+        guard word.count >= 2, let first = word.first else { return nil }
         let second = word[word.startIndex + 1]
-        // "to" or "by" joined to the next word.
         if first == toSign || first == bySign, letters.contains(second) || second == capitalSign {
-            return true
+            return .joined
         }
         // "ation" or "ally" in the middle of a word: a capital sign directly
         // after a letter, then n or y.
         for index in word.indices.dropFirst() where word[index] == capitalSign {
             let next = index + 1
             if letters.contains(word[index - 1]), next < word.endIndex, word[next] == letterN || word[next] == letterY {
-                return true
+                return .insideWord
             }
         }
-        return false
+        return nil
     }
 
     /// The count of the whole book `file` holds, row by row, in one pass
@@ -80,10 +96,22 @@ enum BrailleCodeDetector {
     static func count(of file: BrailleFilePages) -> Count {
         var count = Count()
         let cells = file.cells
+        // The words with an inside-word sign seen so far, counted once each.
+        var insideWords: Set<[UInt8]> = []
         for rowIndex in 0..<file.rowCount {
             for word in cells[file.cellRange(ofRow: rowIndex)].split(separator: 0x00, omittingEmptySubsequences: true) {
                 count.words += 1
-                if showsEBAESign(word) { count.hits += 1 }
+                switch sign(of: word) {
+                case .joined:
+                    count.hits += 1
+                case .insideWord:
+                    // A new distinct word counts; a name repeated does not.
+                    if insideWords.count < maxDistinctInsideWords, insideWords.insert(Array(word)).inserted {
+                        count.hits += 1
+                    }
+                case nil:
+                    break
+                }
             }
         }
         return count
