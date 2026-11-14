@@ -411,8 +411,12 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
     }
 
     /// A tick in a million characters of non-ASCII text, at its far end,
-    /// takes about the time of the word, not of the text: the lookup table
-    /// is made once, and the tick afterwards walks no text.
+    /// takes about the time of the word, not of the text, once the string's
+    /// lookup table exists. This is a cost check of the tick only: the test
+    /// makes the table itself, so it does not prove that
+    /// `startPositionTracking` calls `warmPositionLookup(in:)`. Losing that
+    /// call would move the table's one walk over the text onto the main
+    /// thread at the first tick, which this test cannot see.
     func testATickInAMillionCharactersOfNonASCIITextStaysFast() {
         let unit = "Śródziemie é 日本語 "
         let text = String(repeating: unit, count: 1_000_000 / unit.count)

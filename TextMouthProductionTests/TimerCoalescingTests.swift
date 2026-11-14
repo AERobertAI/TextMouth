@@ -64,7 +64,10 @@ final class TimerCoalescingTests: XCTestCase {
     // MARK: - The Sleep Countdown
 
     /// The countdown's own timer keeps its interval exact: it has no
-    /// tolerance, since its announcements and its expiry are heard.
+    /// tolerance, since its announcements and its expiry are heard. The
+    /// countdown was exact before November 13, 2026 too, so this pins the
+    /// behaviour against a later change that loosens it; it is not a proof
+    /// of that day's fix (the next test is).
     func testTheSleepCountdownKeepsAnExactInterval() throws {
         let service = SleepTimerService(
             userDefaults: makeSandboxedPreferences("coalescing-sleep"),
