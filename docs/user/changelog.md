@@ -4,6 +4,26 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.9 (November 14, 2026)
+
+### Braille
+- A BRF's running heads that differ only by a part or volume number, as "Life of Pi. Part 1" and "Life of Pi. Part 2" do, are left out of the text too.
+- Book Information says the suggestion to choose English Braille, American Edition aloud once, when it appears.
+- Every braille book is read again once more at the first launch of this version, and your place follows its words.
+
+### The Reading List in a cloud library
+- Books whose size the cloud doesn't report download one at a time, and TextMouth checks the free space again before each.
+- Books still waiting stop downloading if you clear Keep these books on this Mac, stop keeping a book, or take it off the list.
+- When the rest of the list turns out not to fit, VoiceOver says once how many reading list books there isn't room for, and the debug log names each book left out.
+- The Remove books when finished hint now says a finished book leaves the list once its reader window moves on or closes, and the notice for one book names the list: "Downloading Moby-Dick, a reading list book".
+
+### Speech
+- Preparing the next chapter's speech ahead of time no longer sets up a second audio engine.
+- Play after Stop on the same text, in the same voice, keeps the speech already prepared instead of preparing it again. What you hear, and where it starts, are unchanged.
+
+### Not changed
+- How any book other than a braille book reads, sounds, or is laid out.
+
 ## 0.4.8 (November 14, 2026)
 
 ### Braille books in English Braille, American Edition
