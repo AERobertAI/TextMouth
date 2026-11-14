@@ -70,6 +70,15 @@ enum BraillePageAnalyzer {
     /// The most rows a heading that stands alone may have, to count toward
     /// the implied width of a book (see `Book.measure()`).
     private static let maxStandAloneRows = 12
+    /// The most rows of text (rules left out) a centered heading may have when
+    /// it runs straight on into an indented row with no blank row between.
+    private static let maxRunOnHeadingRows = 3
+    /// The fewest cells a rule is drawn with, and the cells it is drawn
+    /// with: dots 5, 2-5, 3-6, 4-5-6, and all six, which a transcriber
+    /// repeats across a line to set a chapter off (not letters, so that a row of
+    /// letters is never one).
+    private static let minRuleCells = 4
+    private static let ruleCells: Set<UInt8> = [0x10, 0x12, 0x24, 0x38, 0x3F]
     /// The fewest pages a head's text must repeat on to be a running head.
     private static let minHeadRepeats = 3
     /// The fewest dots-3-6 cells a print page change line starts with.
@@ -716,6 +725,15 @@ enum BraillePageAnalyzer {
         return left >= minGap && right >= minGap && abs(left - right) <= 1
     }
 
+    /// Whether `row` is only a rule: at least `minRuleCells` of one cell that
+    /// a rule is drawn with, and nothing else. A rule sets a heading off and
+    /// is never part of its text.
+    private static func isRule(_ row: Row, in cells: [UInt8]) -> Bool {
+        guard row.content.count >= minRuleCells, let first = cells[row.content.range].first,
+              ruleCells.contains(first) else { return false }
+        return cells[row.content.range].allSatisfy { $0 == first }
+    }
+
     /// Whether `row` starts where a cell-5 or a cell-7 heading does.
     private static func isCellFiveOrSeven(_ row: Row) -> Bool {
         row.indent == cellFiveIndent || row.indent == cellSevenIndent
@@ -867,9 +885,20 @@ enum BraillePageAnalyzer {
                 var end = start
                 while end < rows.count, !rows[end].isBlank, isCentered(rows[end], width: width) { end += 1 }
                 guard end > start else { return nil }
-                if endsRun(before: end) { return end }
+                if endsRun(before: end) || runsOnIntoIndentedText(start..<end) { return end }
                 noRunBefore = end
                 return nil
+            }
+
+            /// Whether the centered rows `run`, which no blank row follows, are
+            /// a heading that goes straight on into the first row of a
+            /// paragraph: a few rows of text (rules apart) followed by a row
+            /// that starts in cell 3, as a transcriber who sets "Chapter 1"
+            /// on the line above its text writes it.
+            func runsOnIntoIndentedText(_ run: Range<Int>) -> Bool {
+                guard run.upperBound < rows.count, rows[run.upperBound].indent == 2 else { return false }
+                let textRows = rows[run].filter { !BraillePageAnalyzer.isRule($0, in: book.cells) }.count
+                return textRows >= 1 && textRows <= BraillePageAnalyzer.maxRunOnHeadingRows
             }
 
             var index = 0
@@ -915,9 +944,17 @@ enum BraillePageAnalyzer {
                     if let end = centeredRun(from: index),
                        !(isCellFiveOrSeven(row) && rows[index..<end].allSatisfy({ $0.indent == row.indent })) {
                         closeOpenBlock()
+                        // A rule is no part of the heading's text; a run of rules
+                        // alone makes no heading.
+                        let textRows = rows[index..<end].filter { !BraillePageAnalyzer.isRule($0, in: book.cells) }
+                        guard !textRows.isEmpty else {
+                            previousWasHeading = false
+                            index = end
+                            continue
+                        }
                         noteRow(onPage: page, atCell: 0)
                         var text = newText()
-                        for line in rows[index..<end] { text.append(row: book.cells[line.content.range]) }
+                        for line in textRows { text.append(row: book.cells[line.content.range]) }
                         blocks.append(.heading(level: 1, text: finish(&text)))
                         previousWasHeading = true
                         index = end

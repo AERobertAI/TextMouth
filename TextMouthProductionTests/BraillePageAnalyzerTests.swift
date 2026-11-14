@@ -1177,3 +1177,56 @@ extension BraillePageAnalyzerTests {
         }
     }
 }
+
+// MARK: - Chapter rows that run straight into text (Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// "Chapter 1" centered under a rule and followed directly by the
+    /// paragraph's indented first row, with no blank row between, is a
+    /// heading; the rule is no part of its text.
+    func testACenteredChapterRowRunningIntoAnIndentedRowIsAHeadingWithoutItsRule() {
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", centered("333333333333"), centered(",*APT] #A"),
+            row(2, "THE FIRST ROW"), row(0, "RUNS ON"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            paragraph("BEFORE"), .heading(level: 1, text: cells(",*APT] #A")), paragraph("THE FIRST ROW RUNS ON"),
+        ])
+    }
+
+    /// A part title above the rule is part of the same heading, rule left out.
+    func testAPartTitleAndAChapterRowAreOneHeading() {
+        let structure = formattedStructure([
+            centered(",PART ONE"), centered("333333333333"), centered(",*APT] #A"), row(2, "TEXT"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [.heading(level: 1, text: cells(",PART ONE ,*APT] #A")), paragraph("TEXT")])
+    }
+
+    /// A rule row alone, between blank rows, is no heading and no text.
+    func testARuleRowAloneMakesNoHeading() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("333333333333"), "", row(2, "AFTER"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AFTER")])
+    }
+
+    /// Letters repeated are not a rule: a centered row of them stays text.
+    func testARowOfLettersIsNotARule() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("AAAA"), "", rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), .heading(level: 1, text: cells("AAAA"))])
+    }
+
+    /// More than three centered rows of text running into an indented row
+    /// are not a heading: they are as likely to be a centered verse.
+    func testFourCenteredRowsRunningIntoTextAreNotAHeading() {
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", centered("ONE"), centered("TWO"), centered("THREE"), centered("FOUR"),
+            row(2, "TEXT"), rightAligned("#A"),
+        ])
+        XCTAssertFalse(structure.blocks.contains { if case .heading(level: 1, text: _) = $0 { return true } else { return false } })
+    }
+
+    /// A centered row that runs into a row at cell 1, not cell 3, is not a heading, as before.
+    func testACenteredRowRunningIntoACellOneRowIsStillNotAHeading() {
+        let structure = formattedStructure([row(2, "BEFORE"), "", centered("AAAA"), row(0, "RUNS ON"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AAAA RUNS ON")])
+    }
+}
