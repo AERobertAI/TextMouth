@@ -13,7 +13,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Replace Existing keeps what Book Information says about a book's braille code: a guess you kept stays yours, and a guess stays marked as guessed.
 
 ### Smaller
-- The app is about 0.4 MB smaller, because its lists are sorted by one shared helper. Every list keeps the order it had.
+- The app is about 1.3 MB smaller: its lists are sorted by one shared helper, and each book's details are kept once in memory and shared until one copy changes. Every list keeps its order, and your library's files are written exactly as before.
 
 ### Not changed
 - How any book already in your library reads, sounds, or is laid out.
