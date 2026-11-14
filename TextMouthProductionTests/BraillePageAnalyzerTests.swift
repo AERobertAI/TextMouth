@@ -1437,3 +1437,36 @@ extension BraillePageAnalyzerTests {
         XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("A#AJ"), cells("#ABCD"), cells("P#B")])
     }
 }
+
+// MARK: - The launch refresh never replaces what the user typed (review of Life of Pi, November 13)
+
+extension BrailleTitlePageImportTests {
+    /// What a BRF's title page names, as the refresh reads it.
+    private var named: MetadataReading {
+        MetadataReading(bookID: UUID(), named: [.title: "Life of Pi", .author: "Yann Martel"])
+    }
+
+    /// A braille book listed under the file's name, with `handEdits` as its record.
+    private func brfBook(handEdits: Book.HandEdits?, author: String = Book.unknownAuthor) -> Book {
+        var book = Book(title: "000058499", author: author, format: .braille, filePath: "/nowhere/000058499.brf", md5Hash: "x")
+        book.handEdits = handEdits
+        return book
+    }
+
+    /// A title or author the user edited stays; the field they did not edit takes the title page's.
+    func testTheRefreshKeepsAHandEditedTitleAndAuthor() {
+        let edited = brfBook(handEdits: Book.HandEdits(fields: [.title, .author], sinceImport: true), author: "My Author")
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: edited, from: named), [:])
+        let titleOnly = brfBook(handEdits: Book.HandEdits(fields: [.title], sinceImport: true))
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: titleOnly, from: named), [.author: "Yann Martel"])
+    }
+
+    /// A row with no record of its edits (from before records) gives up only
+    /// a placeholder author: a title or an author it holds may be typed, so it stays.
+    func testTheRefreshOfARowWithNoRecordKeepsATypedTitleAndAuthor() {
+        let typed = brfBook(handEdits: nil, author: "Someone Typed")
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: typed, from: named), [:])
+        let placeholder = brfBook(handEdits: nil)
+        XCTAssertEqual(LibraryViewModel.refreshedValues(of: placeholder, from: named), [.author: "Yann Martel"])
+    }
+}
