@@ -68,6 +68,29 @@ final class BrailleEbaeFixesTests: XCTestCase {
         }
     }
 
+    // MARK: - Wordsigns written together
+
+    /// EBAE writes "of the", "and the", "of a", "with a", "for the", and
+    /// "with the" as one unit of cells; the table read "ofthe". A run of
+    /// those cells alone is spaced into words, also after an opening quotation
+    /// mark, before a comma, and after a capital sign.
+    func testRunTogetherWordsignsReadAsWords() throws {
+        try assertFixed([
+            ("(!", "of the"), ("&!", "and the"), (")A", "with a"), ("=!", "for the"), (")!", "with the"), ("(A", "of a"),
+            ("8(!0", "\"of the\""), ("(!1", "of the,"), (",(!", "Of the"), ("(!(A", "of the of a"),
+        ])
+    }
+
+    /// A lone wordsign, a run of "a" cells, and every table that is not
+    /// contracted EBAE read as liblouis reads them.
+    func testWordsignsAloneAndOtherTablesAreLeftAlone() throws {
+        try assertUnchanged([("(", "of"), ("!", "the"), ("A", "a"), ("AA", "aa")])
+        for table in [uncontracted, ueb] {
+            XCTAssertEqual(
+                try read("(!", table).text, try read("(!", table, liblouisAlone: true).text, table
+            )
+        }
+    }
 
 
 

@@ -227,6 +227,11 @@ typedef struct {
 	   liblouis, reading as `back` read before the EBAE pass, writes nothing
 	   for the sign before that cell (`find_strippable_signs`). */
 	unsigned char strippable[4][64];
+	/* For a table that writes EBAE's signs: whether it is contracted EBAE,
+	   which reads the six word signs ⠯ ⠿ ⠷ ⠮ ⠾ ⠁ alone as "and", "for", "of",
+	   "the", "with", and "a" (`reads_word_signs`), and so is given the
+	   fixes of `fix_ebae_cells`. */
+	int contracted;
 } table_emphasis;
 
 /* The EBAE signs, as indexes of `table_emphasis.strippable`: italic's word
@@ -814,6 +819,32 @@ reads_cell_as_punctuation(const char *table, widechar cell) {
 	return punctuation;
 }
 
+/*
+ * Whether `table` reads each of the six cells that stand for the words "and"
+ * ⠯, "for" ⠿, "of" ⠷, "the" ⠮, "with" ⠾, and "a" ⠁, alone, as that word:
+ * the table is contracted (grade 2) braille, whose wordsigns EBAE writes
+ * together, "ofthe" as ⠷⠮, with no space (`fix_ebae_cells`).
+ */
+static int
+reads_word_signs(const char *table) {
+	static const struct {
+		widechar cell;
+		const char *word;
+	} signs[] = {{CELL_AND, "and"}, {CELL_FOR, "for"}, {CELL_OF, "of"}, {CELL_THE, "the"},
+			{CELL_WITH, "with"}, {CELL_A, "a"}};
+	for (size_t k = 0; k < sizeof signs / sizeof signs[0]; k++) {
+		widechar cell = signs[k].cell;
+		translation print;
+		size_t length = strlen(signs[k].word);
+		int same;
+		if (!translate(table, 0, &cell, NULL, 1, 0, &print)) return 0;
+		same = (size_t)print.length == length;
+		for (size_t c = 0; same && c < length; c++) same = print.chars[c] == (widechar)signs[k].word[c];
+		free_translation(&print);
+		if (!same) return 0;
+	}
+	return 1;
+}
 
 /*
  * Fills `emphasis->strippable`: for each EBAE sign and each six-dot cell X,
@@ -892,6 +923,7 @@ detect_codes(const char *table, table_emphasis *emphasis) {
 			if (emphasis->code[k] == CODE_EBAE) emphasis->code[k] = CODE_NONE;
 	if (uses_code(emphasis, CODE_EBAE)) {
 		find_strippable_signs(table, emphasis);
+		emphasis->contracted = reads_word_signs(table);
 	}
 }
 
@@ -1408,6 +1440,152 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 	return count;
 }
 
+/* MARK: - Fixing EBAE's known misreadings */
+
+/*
+ * What contracted EBAE's table (liblouis's en-us-g2.ctb) misreads in a book
+ * set in it, as the Life of Pi braille showed on November 13, 2026 (a 2003
+ * transcription in the old code, 4 volumes, read with the default UEB table
+ * and then with EBAE): each is fixed here, in TextMouth's own pass over the
+ * cells before liblouis reads them, so that it holds for any table that
+ * reads EBAE, the bundled or this Mac's, which TextMouth never edits. The
+ * pass only rewrites the cells into cells that liblouis reads right: spaced
+ * apart, or spelled out in letters (which liblouis reads exactly as it reads
+ * the contraction's letters in print), so the emphasis pass and its safety
+ * net (`read_ebae`) read the very same cells.
+ * - Wordsigns written together, ⠷⠮ "of the", ⠯⠮ "and the", ⠷⠁ "of a", ⠾⠁
+ *   "with a", ⠿⠮ "for the", ⠾⠮ "with the": EBAE joins them into one unit,
+ *   and the table has no rule for it, so they came back "ofthe". A run of
+ *   two or more of these cells, with nothing else, is spaced into words.
+ */
+
+/* The cells `cells_to_write` is writing (`fix_ebae_cells`), with room for all of them. */
+typedef struct {
+	widechar *cells;
+	int count;
+} cell_list;
+
+/* Appends `cell` to `out`. */
+static void
+put_cell(cell_list *out, widechar cell) {
+	out->cells[out->count++] = cell;
+}
+
+/* Appends the cells `cells[from..to)` to `out`. */
+static void
+put_cells(cell_list *out, const widechar *cells, int from, int to) {
+	for (int k = from; k < to; k++) put_cell(out, cells[k]);
+}
+
+/* Appends the letters of `letters`, lowercase a to z, as cells. */
+static void
+put_letters(cell_list *out, const char *letters) {
+	for (; *letters != '\0'; letters++) put_cell(out, letter_cell(*letters));
+}
+
+/*
+ * Reads the word signs in `cells[i..end)`, each with the capital sign it may
+ * have, into `*after`, the cell after the last of them, and returns how
+ * many there are. `*not_a` counts those that are not "a".
+ */
+static int
+scan_word_signs(const widechar *cells, int i, int end, int *after, int *not_a) {
+	int count = 0;
+	*not_a = 0;
+	for (;;) {
+		int at = i;
+		if (at < end && cells[at] == CELL_6) at++;
+		if (at >= end || !is_word_sign_cell(cells[at])) break;
+		if (cells[at] != CELL_A) (*not_a)++;
+		count++;
+		i = at + 1;
+	}
+	*after = i;
+	return count;
+}
+
+/*
+ * Writes the word signs run in `cells[lead..end)` as words, each parted
+ * from the next by a blank, with the word's leading marks and the marks
+ * after the run (`fix_ebae_cells`), when the whole of it is two or more
+ * word signs, one of them not "a", and the marks that may end a word. Returns 1
+ * when it wrote the word, 0 when it did not.
+ */
+static int
+split_word_signs(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int after;
+	int not_a;
+	int count = scan_word_signs(cells, lead, end, &after, &not_a);
+	if (count < 2 || not_a == 0 || !only_trailing_marks(cells, after, end)) return 0;
+	put_cells(out, cells, start, lead);
+	for (int i = lead; i < after;) {
+		int sign = cells[i] == CELL_6 ? i + 2 : i + 1;
+		put_cells(out, cells, i, sign);
+		if (sign < after) put_cell(out, CELL_BLANK);
+		i = sign;
+	}
+	put_cells(out, cells, after, end);
+	return 1;
+}
+
+
+
+
+/*
+ * Writes `cells[lead..end)`, a word that no other fix took, with the rest of
+ * the fixes: "before" ⠆⠋ at its start, with a capital sign or without, when
+ * more of the word follows and is no compound of it, spelled "bef"; and each
+ * "ing" ⠬ after the word's first cell and before a hyphen ⠤, spelled out.
+ */
+static void
+spell_inside_word(const widechar *cells, int start, int lead, int end, cell_list *out) {
+	int i = lead;
+	put_cells(out, cells, start, lead);
+	if (i < end && cells[i] == CELL_6) put_cell(out, cells[i++]);
+	for (; i < end; i++) {
+			put_cell(out, cells[i]);
+	}
+}
+
+/*
+ * Rewrites the cells of one word, `cells[start..end)` of `cells[0..n)`, with
+ * the first fix that fits it (the header comment above).
+ */
+static void
+fix_ebae_word(const widechar *cells, int start, int end, int n, cell_list *out) {
+	int lead = start;
+	while (lead < end && is_leading_mark(cells[lead])) lead++;
+	if (split_word_signs(cells, start, lead, end, out)) return;
+	spell_inside_word(cells, start, lead, end, out);
+}
+
+/*
+ * Fixes what contracted EBAE's table misreads (the comment above) in
+ * `cells[0..n)`: returns the new cells, which the caller frees, and sets
+ * `*count` to how many there are. Words are the cells between blanks. The
+ * most a word grows is five times (a lone "still" sign and its period
+ * become seven cells from two), so `6 * n + 16` cells is room for any
+ * input. Returns NULL when there is no memory, and the caller reads the
+ * cells unfixed.
+ */
+static widechar *
+fix_ebae_cells(const widechar *cells, int n, int *count) {
+	cell_list out = {malloc(((size_t)n * 6 + 16) * sizeof(widechar)), 0};
+	int i = 0;
+	if (out.cells == NULL) return NULL;
+	while (i < n) {
+		int end = i;
+		if (cells[i] == CELL_BLANK) {
+			put_cell(&out, cells[i++]);
+			continue;
+		}
+		while (end < n && cells[end] != CELL_BLANK) end++;
+		fix_ebae_word(cells, i, end, n, &out);
+		i = end;
+	}
+	*count = out.count;
+	return out.cells;
+}
 
 /*
  * The EBAE pass's safety net (`read_ebae`): reads `cells[0..n)` by liblouis
@@ -1589,7 +1767,14 @@ static int
 read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
 		translation *result) {
 	if (uses_code(emphasis, CODE_EBAE)) {
-		return read_ebae(table, emphasis, cells, n, result);
+		/* Contracted EBAE's known misreadings are fixed in the cells first
+		   (`fix_ebae_cells`); with no memory they are read unfixed. */
+		int count = 0;
+		widechar *fixed = emphasis->contracted ? fix_ebae_cells(cells, n, &count) : NULL;
+		int ok = fixed != NULL ? read_ebae(table, emphasis, fixed, count, result)
+							   : read_ebae(table, emphasis, cells, n, result);
+		free(fixed);
+		return ok;
 	}
 	if (uses_code(emphasis, CODE_UEB)) return read_ueb(table, emphasis, cells, n, result);
 	return translate(table, 0, cells, NULL, n, 1, result);
