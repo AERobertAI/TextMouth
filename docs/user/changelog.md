@@ -4,6 +4,32 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.4.8 (November 14, 2026)
+
+### Braille books in English Braille, American Edition
+- A book in English Braille, American Edition, read with that Braille Code, now reads "of the", "and the", "for the", and "with a" as separate words, and reads "moving-in", initials such as "p. b. u. h.", St. and Still, and "befuddled" correctly.
+- Initials now read with spaces, so "e.g." reads "e. g.", and a search for "e.g." won't find it.
+- A micro sign before a unit, as in "5 µm" or "µg/mL", stays µ. In contracted English Braille, American Edition, an italic word that begins with m is read as italic.
+- Book Information says "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." under Braille Code when a book read as Unified English Braille shows that older code's signs. TextMouth never changes the code by itself.
+
+### BRF and BRL books
+- A BRF's running heads, the line at the top of each page with the book's title and a page number, are left out of the text, and so are print page change lines, Roman ones such as ix among them.
+- A centered chapter line that runs straight into an indented paragraph is now a heading, so a book's chapters can be reached with the headings rotor and Go to Heading.
+- A BRF's title and author are read from its braille title page, so a Bookshare file named with a number shows its real title and author. A title or author you have typed in Book Information is never replaced.
+- Every braille book is read again once at the first launch of this version, and your place follows its words.
+
+### The reader window
+- The reader window redraws only when something it shows changes, where before it redrew several times a second while a book played.
+- Each sleep timer countdown, in the reader's status row and its playback bar, is drawn by a label of its own, and still changes every second, playing or paused.
+
+### Using less of the Mac
+- The Library's time remaining is added up once for each change, not again for every book each second.
+- Timers that nobody hears may fire a little late, so macOS can combine their wake-ups. The sleep timer's countdown stays exact.
+- While speech plays, the spoken position is updated only when it moves.
+
+### Not changed
+- How any book other than a braille book reads, sounds, or is laid out.
+
 ## 0.4.7 (November 13, 2026)
 
 ### The sleep timer
