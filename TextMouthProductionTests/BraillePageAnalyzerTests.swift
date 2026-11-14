@@ -1406,3 +1406,25 @@ extension BraillePageAnalyzerTests {
         XCTAssertFalse(detectorCount(rows).looksLikeEBAE, "ten of 1,810 words is under one in a hundred")
     }
 }
+
+// MARK: - What a left-hand page number is (review of Life of Pi, November 13)
+
+extension BraillePageAnalyzerTests {
+    /// A list item's "1." (number sign, digit, period) at the start of a
+    /// first row is no page number, however often its row repeats.
+    func testAListItemNumberAtTheLeftOfARepeatedFirstRowIsNoHead() {
+        let pages = (0..<4).map { _ in [row(0, "#A4 ,ITEM TEXT"), row(2, "BODY")] }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [nil, nil, nil, nil])
+        XCTAssertEqual(structure.blocks.map(\.text).joined().components(separatedBy: cells("#A4")).count - 1, 4)
+    }
+
+    /// A letter and up to four digits are a page number: "a10" and "#ABCD".
+    func testALetterAndUpToFourDigitsAreALeftPageNumber() {
+        let pages = ["A#AJ", "#ABCD", "P#B"].map { left in
+            headedPage(left: left, right: "#CA", head: ",HEAD", body: [row(2, "BODY")])
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), [cells("A#AJ"), cells("#ABCD"), cells("P#B")])
+    }
+}

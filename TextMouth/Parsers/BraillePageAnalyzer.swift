@@ -547,6 +547,19 @@ enum BraillePageAnalyzer {
             let text: Span
         }
 
+        /// Whether `word` can be a braille page number at the left of a row:
+        /// at most one letter cell (the "a" of "a10", a front matter page),
+        /// then the number sign and one to four digit cells, and nothing
+        /// after them. A list item's "1." (number sign, digit, period) is
+        /// none, and neither is a number with a trailing sign.
+        private func isLeftPageNumber(_ word: Span) -> Bool {
+            var slice = cells[word.range]
+            if let first = slice.first, first != numberSign { slice = slice.dropFirst() }
+            guard slice.first == numberSign else { return false }
+            let digitCells = slice.dropFirst()
+            return (1...4).contains(digitCells.count) && digitCells.allSatisfy { digits.contains($0) }
+        }
+
         /// Splits a number word off the left of `row`: the word, which must
         /// start in the row's first cell and be followed by a blank cell, and
         /// what is left of the row after the blanks that follow it.
@@ -560,7 +573,7 @@ enum BraillePageAnalyzer {
                 wordEnd += 1
             }
             let word = Span(rowStart..<wordEnd)
-            guard isNumberWord(word), wordEnd < row.range.upperBound else { return nil }
+            guard isLeftPageNumber(word), wordEnd < row.range.upperBound else { return nil }
             var restStart = wordEnd
             while restStart < row.range.upperBound, cells[restStart] == blank { restStart += 1 }
             return (word, Span(restStart..<row.range.upperBound))
