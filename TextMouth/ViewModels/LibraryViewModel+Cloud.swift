@@ -762,7 +762,14 @@ final class LibraryCloudCommands {
         return Task { [self] in
             var pending = candidates
             var isFirstPass = true
-            while !pending.isEmpty {
+            while !pending.isEmpty, !Task.isCancelled {
+                // Books put off waited through a whole download: the listener
+                // may have cleared the choice, stopped keeping a book, or
+                // taken it off the list meanwhile. The first pass is checked
+                // already, by the command that started it.
+                if !isFirstPass {
+                    pending = pending.filter { isStillWanted($0, in: library, origin: origin) }
+                }
                 let plan = await planDownloads(of: pending)
                 // The states may have moved on while the plan was read.
                 let starting = plan.fits.filter(canStartDownload)
@@ -781,6 +788,21 @@ final class LibraryCloudCommands {
                 isFirstPass = false
             }
             booksBeingPlanned.subtract(candidateIDs)
+        }
+    }
+
+    /// Whether the download of `book`, begun for `origin`, is still wanted:
+    /// Download Now's books always; a refresh's and a keep's while the book
+    /// is kept on this Mac for either reason; the reading list's add while
+    /// the book is on the list and this Mac keeps the list's books.
+    private func isStillWanted(_ book: Book, in library: LibraryViewModel, origin: DownloadOrigin) -> Bool {
+        switch origin {
+        case .downloadNow:
+            return true
+        case .keepOnThisMac, .keptBookRefresh:
+            return kept.isKept(book.id)
+        case .readingListAdd:
+            return kept.keepsReadingListBooks && library.readingList.contains(book.id)
         }
     }
 

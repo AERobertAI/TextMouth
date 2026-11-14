@@ -951,6 +951,52 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(said, [VoiceOverAnnouncement(message: "Downloading 3 reading list books", priority: .medium)])
     }
 
+    /// Waits until the fake has started the download of `bookID`, failing the
+    /// test after ten seconds; a held download may then be finished.
+    private func waitUntilDownloadStarts(_ bookID: UUID, in fixture: CommandFixture) async {
+        let deadline = Date().addingTimeInterval(10)
+        while !fixture.fake.downloadsStarted.contains(bookID) {
+            guard Date() < deadline else { return XCTFail("The download never started") }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    /// The books put off behind the first of unknown size are asked again
+    /// before their turn: clear Keep these books on this Mac while the first
+    /// downloads, and the others never download.
+    func testClearingTheChoiceDuringTheFirstDownloadStopsTheBooksPutOff() async {
+        let books = (1...3).map { cloudTestBook("Waiting \($0)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.fake.scriptDownload(of: books[0].id, steps: [], holdsOpen: true)
+        fixture.kept.setReadingListBooks(Set(books.map(\.id)))
+        let refresher = makeRefresher(for: fixture)
+
+        await refresher.waitForRefreshes()
+        await waitUntilDownloadStarts(books[0].id, in: fixture)
+        fixture.kept.setKeepsReadingListBooks(false)
+        fixture.fake.finishHeldDownload(of: books[0].id)
+        await waitForPlanning(of: fixture.commands)
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id], "a book downloaded after the choice was cleared")
+    }
+
+    /// A book taken off the list while the first downloads is not downloaded
+    /// when its turn comes, though the others still are.
+    func testABookTakenOffTheListDuringTheFirstDownloadIsNotDownloadedAfterwards() async {
+        let books = (1...3).map { cloudTestBook("Leaving \($0)") }
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map { ($0.id, .inCloud) }))
+        fixture.model.cloudCommands = fixture.commands
+        fixture.fake.scriptDownload(of: books[0].id, steps: [], holdsOpen: true)
+
+        fixture.model.addToReadingList(books, announcingFrom: nil)
+        await waitUntilDownloadStarts(books[0].id, in: fixture)
+        _ = fixture.model.removeFromReadingList([books[1].id])
+        fixture.fake.finishHeldDownload(of: books[0].id)
+        await waitForPlanning(of: fixture.commands)
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[2].id])
+    }
+
     /// A book left out for want of room is logged though it is the
     /// listener's own kept book, which VoiceOver is told nothing of, and once
     /// only while it stays short.
