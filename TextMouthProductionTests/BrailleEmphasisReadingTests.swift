@@ -267,7 +267,9 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             // (November 13, 2026, `is_sign_before_m_word`). So "µ" is "m" in
             // both readings.
             let micro = { (text: String) in text.replacingOccurrences(of: "\u{B5}", with: "m") }
-            let changed = zip(read, alone).filter { micro($0.text) != micro($1.text) }
+            // liblouis alone also reads "ing" before a hyphen as "±" ("someth±-aunt"),
+            // which the helper's own fix reads as "ing" (November 13, 2026).
+            let changed = zip(read, alone).filter { micro($0.text) != micro($1.text) && !$1.text.contains("\u{B1}") }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
