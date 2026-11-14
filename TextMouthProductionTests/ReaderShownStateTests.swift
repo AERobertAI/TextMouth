@@ -113,13 +113,14 @@ final class ReaderShownStateTests: XCTestCase {
     }
 
     /// The spoken labels of the status row are made from the same whole
-    /// seconds and tenths of a percent as its shown ones, so the state changes
-    /// whenever either does: two places that differ in a spoken label differ
-    /// in the state.
-    func testPlacesWhoseSpokenLabelsDifferHaveDifferentStates() {
+    /// seconds and tenths of a percent as its shown ones: whenever a step of
+    /// a walk changes what the status row says, it changes the state, so the
+    /// reader announces it.
+    func testAStepThatChangesASpokenLabelChangesTheState() {
         let (reader, _) = makeReader()
         defer { reader.close() }
-        var seen: [String: ReaderShownState] = [:]
+        var previous: (spoken: String, state: ReaderShownState)?
+        var changes = 0
         for offset in stride(from: 0, to: Self.chapterLength, by: 7) {
             reader.refreshPlaybackUI(chapterIndex: 0, offset: offset)
             let spoken = [
@@ -128,12 +129,13 @@ final class ReaderShownStateTests: XCTestCase {
                 reader.displayPagePosition.label,
             ].joined(separator: "|")
             let state = ReaderShownState(of: reader)
-            if let before = seen[spoken] {
-                XCTAssertEqual(before, state, "\(spoken) had two states, at offset \(offset)")
+            if let previous, previous.spoken != spoken {
+                changes += 1
+                XCTAssertNotEqual(previous.state, state, "\(spoken) changed with no change of state, at offset \(offset)")
             }
-            seen[spoken] = state
+            previous = (spoken, state)
         }
-        XCTAssertGreaterThan(seen.count, 100, "the walk saw too few different labels to prove anything")
+        XCTAssertGreaterThan(changes, 100, "the walk saw too few changes to prove anything")
     }
 
     // MARK: - What Is Announced
