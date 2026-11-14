@@ -177,7 +177,7 @@ final class BrailleSettingsViewTests: XCTestCase {
     func testTheBrailleFileCharactersFollowTheCodesCaption() {
         XCTAssertEqual(
             BrailleSettingsView.trailingRows(for: .choices),
-            [.caption, .fileCodePopUp, .fileCodeCaption]
+            [.caption, .fileCodePopUp, .fileCodeCaption, .guessSwitch, .guessCaption]
         )
         XCTAssertEqual(BrailleSettingsView.trailingRows(for: .noTables(BrailleSettingsWording.noTables)), [.caption])
     }

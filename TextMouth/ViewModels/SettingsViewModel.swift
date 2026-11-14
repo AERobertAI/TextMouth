@@ -960,6 +960,22 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    /// Whether an import of a BRF or BRL read with a contracted Unified
+    /// English Braille table may read a book clearly written in English
+    /// Braille, American Edition with that code's table instead (brfguess),
+    /// in the Braille tab. On by default; imports read it
+    /// (`BraillePreferences.importGuessesTable()`). It changes only books not
+    /// yet imported, and is not mirrored in config.json: a book's own table
+    /// is what config.json cannot hold either.
+    var guessesBrailleTable: Bool {
+        get { BraillePreferences.guessesTable.read(from: preferences) }
+        set {
+            guard newValue != guessesBrailleTable else { return }
+            objectWillChange.send()
+            BraillePreferences.guessesTable.write(newValue, to: preferences)
+        }
+    }
+
     /// Whether TextMouth offers to transcribe each audiobook just imported
     /// (FR05), in Playback settings' Transcription group. Imports read it
     /// (`TranscriptionPreferences.offerAfterImport`), and config.json

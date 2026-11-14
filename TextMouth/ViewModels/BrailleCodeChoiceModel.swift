@@ -43,6 +43,9 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     /// table: the row's at once, then, after a re-read, the row's again
     /// (`reload()`).
     @Published private(set) var storedTable: String?
+    /// Who chose the stored table (`Book.brailleTableOrigin`): `.guessed`
+    /// says so in the selected item's name. Taken with the table.
+    @Published private(set) var storedOrigin: BrailleTableOrigin?
     /// The tables offered, in the catalog's order, once listed (`load()`).
     @Published private(set) var offered: [BrailleTable] = []
     /// The words each offered table is listed by, by its stored value, made
@@ -68,6 +71,7 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     init(book: Book, library: LibraryViewModel, access: MaintenanceFileAccess = .live) {
         flow = RereadChoiceFlow(bookID: book.id, library: library, access: access)
         storedTable = book.brailleTable
+        storedOrigin = book.brailleTableOrigin
         flowChanges = flow.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -145,9 +149,13 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     func name(of item: Item) -> String {
         switch item {
         case .table(let id):
-            return names[id] ?? BrailleTableCatalog.description(ofTableID: id)
+            let name = names[id] ?? BrailleTableCatalog.description(ofTableID: id)
+            // The book's own table says who chose it, when that was a guess.
+            return BrailleCodeWording.describe(name, origin: id == currentTableID ? storedOrigin : nil)
         case .unavailable(let id):
-            return BrailleTableCatalog.description(ofTableID: id)
+            return BrailleCodeWording.describe(
+                BrailleTableCatalog.description(ofTableID: id), origin: id == currentTableID ? storedOrigin : nil
+            )
         }
     }
 
@@ -203,6 +211,7 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
             ))
         }
         storedTable = book.brailleTable
+        storedOrigin = book.brailleTableOrigin
         offered = listing.tables
         names = listing.names
         showsEBAESigns = await looksLikeEBAE(book)
@@ -229,6 +238,7 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
     private func reload() {
         guard let book = flow.library.bookByID(bookID) else { return }
         storedTable = book.brailleTable
+        storedOrigin = book.brailleTableOrigin
     }
 
     // MARK: Choosing
