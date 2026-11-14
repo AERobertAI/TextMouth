@@ -121,8 +121,8 @@ final class SpeechEngineCreationTests: XCTestCase {
         _ = lookAhead.outputVolume
         _ = lookAhead.discardRenderedAudio()
 
-        XCTAssertEqual(lookAhead.engineBuildCount, 0)
-        XCTAssertEqual(taker.engineBuildCount, 0)
+        XCTAssertEqual(lookAhead._engineBuildCountForTesting, 0)
+        XCTAssertEqual(taker._engineBuildCountForTesting, 0)
         XCTAssertTrue(taker.hasRenderedAudio, "the audio was adopted all the same")
     }
 
@@ -141,7 +141,7 @@ final class SpeechEngineCreationTests: XCTestCase {
         service.play()
         service.play()
 
-        XCTAssertEqual(service.engineBuildCount, 1)
+        XCTAssertEqual(service._engineBuildCountForTesting, 1)
         XCTAssertEqual(service.playbackRate, rate)
         XCTAssertEqual(service.playbackPitchCents, pitch)
         XCTAssertEqual(service.outputVolume, 0.4, accuracy: 0.001)
@@ -161,7 +161,7 @@ final class SpeechEngineCreationTests: XCTestCase {
         speech.usePreRenderedEngine(rendered, text: text)
         speech.stop()
 
-        XCTAssertEqual(rendered.engineBuildCount, 0)
+        XCTAssertEqual(rendered._engineBuildCountForTesting, 0)
     }
 
     // MARK: - Play after Stop (audit C9)

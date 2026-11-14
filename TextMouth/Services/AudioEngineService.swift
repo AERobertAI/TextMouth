@@ -843,7 +843,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var builtEngine: AVAudioEngine?
     /// How many engine graphs this service has built: 0 or 1. Lets a test
     /// show that a service which only rendered, or lent its audio, built none.
-    private(set) var engineBuildCount = 0
+    private(set) var _engineBuildCountForTesting = 0
     private let playerNode: AVAudioPlayerNode
     private var timePitch = AVAudioUnitTimePitch()
     /// Feeds each play to `playerNode` a few slices at a time.
@@ -961,7 +961,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         if let builtEngine { return builtEngine }
         let engine = AVAudioEngine()
         builtEngine = engine
-        engineBuildCount += 1
+        _engineBuildCountForTesting += 1
         setupEngine(engine)
         #if os(iOS)
         observeConfigurationChanges(of: engine)
