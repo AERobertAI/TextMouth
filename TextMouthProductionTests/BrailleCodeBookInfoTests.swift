@@ -97,6 +97,24 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         XCTAssertEqual(model.selection, .table(Self.grade2), "the table is never changed by itself")
     }
 
+    /// The suggestion is announced once, when the sheet's load finishes and
+    /// shows it; a second load says nothing more, and a book with no
+    /// suggestion announces nothing.
+    func testTheSuggestionIsAnnouncedOnceWhenItAppears() async throws {
+        let book = try makeBrailleBook("Ledger", table: Self.grade2, content: Self.oldCodeLines)
+        let model = BrailleCodeChoiceModel(book: book, library: makeModel(with: [book]))
+        let announced = await announcements {
+            await model.load()
+            await model.load()
+        }
+        XCTAssertEqual(announced, [BrailleCodeWording.suggestsEnglishBrailleAmericanEdition])
+
+        let plain = try makeBrailleBook("Almanac", table: Self.grade2, content: Self.uebLines)
+        let plainModel = BrailleCodeChoiceModel(book: plain, library: makeModel(with: [plain]))
+        let none = await announcements { await plainModel.load() }
+        XCTAssertEqual(none, [])
+    }
+
     /// UEB braille, a book already read with the old code's table, and a
     /// file that cannot be looked at get no suggestion.
     func testNoSuggestionForUEBBrailleForTheOldCodesOwnTableOrForNoFile() async throws {

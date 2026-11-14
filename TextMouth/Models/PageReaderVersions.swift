@@ -149,8 +149,12 @@ enum PageReaderVersions {
             // runs straight into an indented row as a heading, so every
             // braille book is read again once; a book with none of those
             // reads byte for byte as before. (The braille helper's own
-            // fixes, `brfdecode`'s, ride on this bump.)
-            return "1.1.0"
+            // fixes, `brfdecode`'s, ride on this bump.) At "1.1.1" a running
+            // head that differs only by a part or volume number from the
+            // repeating one is left out too ("life of pi. part2" among
+            // "part1" pages); 1.1.0 shipped in 0.4.8, so books stamped
+            // 1.1.0 are read again once more.
+            return "1.1.1"
         case .txt:
             // Plain text's form feeds begin pages (PG13), and its own case
             // reads again only plain text books (V07). Most hold no form

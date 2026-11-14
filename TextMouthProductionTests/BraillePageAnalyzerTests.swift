@@ -1143,6 +1143,68 @@ extension BraillePageAnalyzerTests {
         XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",HEAD")) })
     }
 
+    /// A head that differs only by its part number ("part2" among "part1"
+    /// pages), even on a single page, is the same running head and is dropped.
+    func testAHeadWhoseOnlyDifferenceIsAPartNumberIsDropped() {
+        let part1 = ",LIFE ( ,PI4 ,\"P#A"
+        let part2 = ",LIFE ( ,PI4 ,\"P#B"
+        let pages = [
+            headedPage(left: "A#AJ", right: "#CA", head: part1, body: [row(2, "FIRST PAGE TEXT")]),
+            headedPage(left: "A#AA", right: "#CB", head: part1, body: [row(0, "SECOND PAGE TEXT")]),
+            headedPage(left: "A#AB", right: "#CC", head: part1, body: [row(0, "THIRD PAGE TEXT")]),
+            headedPage(left: "A#AC", right: "#CD", head: part2, body: [row(0, "FOURTH PAGE TEXT")]),
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("FIRST PAGE TEXT SECOND PAGE TEXT THIRD PAGE TEXT FOURTH PAGE TEXT")])
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber).last, cells("A#AC"))
+    }
+
+    /// A head with a part number inside it and a print page number at its
+    /// right end, and no left word, is the same head across the parts.
+    func testAHeadWithAPartNumberAndOnlyAPrintPageNumberIsDroppedAcrossParts() {
+        func page(_ part: String, _ right: String, _ text: String) -> [String] {
+            [rightAligned(right, text: ",\"P#" + part), row(2, text)]
+        }
+        let pages = [page("A", "#CA", "ONE"), page("A", "#CB", "TWO"), page("A", "#CC", "THREE"), page("B", "#CD", "FOUR")]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertFalse(structure.blocks.contains { $0.text.contains(cells(",\"P")) })
+        XCTAssertEqual(structure.pages.count, 4)
+    }
+
+    /// A title page whose centered title has the running head's text, with no
+    /// number word at either end, is text: it stays.
+    func testATitlePageWhoseCenteredTitleEqualsTheRunningHeadStays() {
+        var pages = [[centered(",LIFE ( ,PI4"), row(0, "BY AN AUTHOR")]]
+        for (left, right) in [("A#AA", "#CA"), ("A#AB", "#CB"), ("A#AC", "#CC")] {
+            pages.append(headedPage(left: left, right: right, head: ",LIFE ( ,PI4", body: [row(2, "BODY TEXT")]))
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertTrue(structure.blocks.contains { $0.text.contains(cells(",LIFE")) }, "the title page's row stays")
+    }
+
+    /// With heads "Chapter 1", "Chapter 2", "Chapter 3" on three pages, a
+    /// later page that opens with a plain "Chapter 7" row (no number word at
+    /// its ends) keeps it: it is text.
+    func testAChapterSevenOpeningRowStaysWhenTheHeadsAreChapterOneTwoThree() {
+        var pages: [[String]] = []
+        for (left, right, number) in [("A#AA", "#CA", "#A"), ("A#AB", "#CB", "#B"), ("A#AC", "#CC", "#C")] {
+            pages.append(headedPage(left: left, right: right, head: ",CHAPTER " + number, body: [row(2, "BODY TEXT")]))
+        }
+        pages.append([row(0, ",CHAPTER #G"), row(2, "SEVENTH BODY")])
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertTrue(structure.blocks.contains { $0.text.contains(cells("#G")) }, "the Chapter 7 row stays")
+    }
+
+    /// A head whose text is only numbers has an empty key and names no head:
+    /// it repeats on three pages and still stays.
+    func testAHeadOfNumbersAloneNamesNothing() {
+        let pages = [("A#AA", "#CA"), ("A#AB", "#CB"), ("A#AC", "#CC")].map { left, right in
+            headedPage(left: left, right: right, head: "#B", body: [row(2, "BODY TEXT")])
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertTrue(structure.blocks.contains { $0.text.contains(cells("#B")) })
+    }
+
     /// A first row of real text that has no number word is never a head,
     /// however often it repeats.
     func testARepeatedFirstRowWithNoNumberWordIsKept() {

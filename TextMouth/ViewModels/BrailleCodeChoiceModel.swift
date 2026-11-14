@@ -207,6 +207,21 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
         names = listing.names
         showsEBAESigns = await looksLikeEBAE(book)
         isLoaded = true
+        announceSuggestionOnce()
+    }
+
+    /// Whether the suggestion has been announced already, so a second `load()`
+    /// (or a redraw of the sheet) never says it again.
+    private var hasAnnouncedSuggestion = false
+
+    /// Says the suggestion to VoiceOver, once, as it appears: the sheet
+    /// shows it late, after the file is looked at, and a listener who has
+    /// already read the sheet would never find it. Says nothing when there
+    /// is no suggestion.
+    private func announceSuggestionOnce() {
+        guard !hasAnnouncedSuggestion, let suggestion else { return }
+        hasAnnouncedSuggestion = true
+        VoiceOverAnnouncer.announce(suggestion)
     }
 
     /// Takes the table the book's row stores now, after a re-read changed it.
