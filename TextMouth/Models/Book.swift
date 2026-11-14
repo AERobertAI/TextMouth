@@ -405,6 +405,18 @@ struct Book: Identifiable, Codable, Hashable {
     /// and the removal marker.
     var brailleTableVersion: String?
 
+    /// Who chose `brailleTable` when it was not the listener (brfguess):
+    /// `.guessed` for a BRF or BRL whose import found it clearly written in
+    /// English Braille, American Edition, and read it with that code's table
+    /// in place of the Braille setting's contracted Unified English table
+    /// (`BrailleTableGuess`). Nil for every other book, every book imported
+    /// before guesses were recorded, and one whose table the listener
+    /// chose; choosing a table in Book Information sets it nil for good. A
+    /// value that cannot be read, as a later TextMouth's might be, is nil.
+    /// Kept in the row, the record, and the removal marker, and read with
+    /// the table (`BrailleTableOrigin`).
+    var brailleTableOrigin: BrailleTableOrigin?
+
     /// The braille file characters this BRF or BRL book's file writes its
     /// cells in (braillecodes), by the code's id (`BrailleFileCode`), such
     /// as "ascii-na" for North American Braille ASCII, "ascii-eurobraille"
@@ -526,7 +538,8 @@ struct Book: Identifiable, Codable, Hashable {
         brailleTableVersion: String? = nil,
         brailleFileCode: String? = nil,
         textEncoding: String? = nil,
-        textEncodingSource: TextEncodingSource? = nil
+        textEncodingSource: TextEncodingSource? = nil,
+        brailleTableOrigin: BrailleTableOrigin? = nil
     ) {
         self.id = id
         self.title = title
@@ -578,6 +591,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.brailleFileCode = brailleFileCode
         self.textEncoding = textEncoding
         self.textEncodingSource = textEncodingSource
+        self.brailleTableOrigin = brailleTableOrigin
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -676,6 +690,10 @@ struct Book: Identifiable, Codable, Hashable {
         // Who decided it, when it cannot be read (a later TextMouth's value),
         // counts as the import: the encoding then reads as a guess.
         textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
+        // Who chose the braille table, when it cannot be read (a later
+        // TextMouth's value), counts as nobody: the table then reads as the
+        // listener's own, with no "guessed" said of it.
+        brailleTableOrigin = fields.optionalValue(.brailleTableOrigin) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -960,6 +978,7 @@ struct Book: Identifiable, Codable, Hashable {
         var brailleFileCode: String?
         var brailleTable: String?
         var brailleTableVersion: String?
+        var brailleTableOrigin: BrailleTableOrigin?
     }
 
     /// This book's library fields. Setting them changes exactly those
@@ -973,7 +992,8 @@ struct Book: Identifiable, Codable, Hashable {
                 textEncoding: textEncodingRecord,
                 brailleFileCode: brailleFileCode,
                 brailleTable: brailleTable,
-                brailleTableVersion: brailleTableVersion
+                brailleTableVersion: brailleTableVersion,
+                brailleTableOrigin: brailleTableOrigin
             )
         }
         set {
@@ -984,6 +1004,7 @@ struct Book: Identifiable, Codable, Hashable {
             brailleFileCode = newValue.brailleFileCode
             brailleTable = newValue.brailleTable
             brailleTableVersion = newValue.brailleTableVersion
+            brailleTableOrigin = newValue.brailleTableOrigin
         }
     }
 
@@ -1297,6 +1318,14 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.brailleTable = brailleTable ?? storedTable
         info.metadata.brailleTableVersion = brailleTableVersion
             ?? (info.metadata.brailleTable == storedTable ? stored?.info.metadata.brailleTableVersion : nil)
+        // Who chose that table (brfguess) goes with it, as the version does:
+        // the row's own when the row holds a table, so a choice in Book
+        // Information (which sets the table and clears the guess) replaces a
+        // guess the record holds; the stored record's only when the row
+        // holds no table at all and the record's is the one used.
+        info.metadata.brailleTableOrigin = brailleTable != nil
+            ? brailleTableOrigin
+            : stored?.info.metadata.brailleTableOrigin
         // The braille file code (braillecodes): this write's own when it
         // decides anew, and otherwise the one that stands between the row
         // and the stored record, the record's whenever it names one.
@@ -1372,6 +1401,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion
+        info.metadata.brailleTableOrigin = brailleTableOrigin
         info.metadata.brailleFileCode = brailleFileCode
         info.metadata.textEncodingRecord = textEncodingRecord
         return info
@@ -1437,7 +1467,8 @@ struct Book: Identifiable, Codable, Hashable {
             brailleTableVersion: metadata.brailleTableVersion,
             brailleFileCode: metadata.brailleFileCode,
             textEncoding: metadata.textEncoding,
-            textEncodingSource: metadata.textEncodingSource
+            textEncodingSource: metadata.textEncodingSource,
+            brailleTableOrigin: metadata.brailleTableOrigin
         )
     }
 

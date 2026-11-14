@@ -59,6 +59,9 @@ struct ContentAnalysisSummary: Sendable {
     let brailleTable: String?
     /// The version that goes with `brailleTable` (`Book.brailleTableVersion`).
     let brailleTableVersion: String?
+    /// Who chose `brailleTable` (`Book.brailleTableOrigin`, brfguess), taken
+    /// with it.
+    let brailleTableOrigin: BrailleTableOrigin?
 
     /// The record's encoding and who decided it, as one.
     var textEncodingRecord: TextEncodingRecord {
@@ -80,6 +83,7 @@ struct ContentAnalysisSummary: Sendable {
         brailleFileCode = committed.brailleFileCode
         brailleTable = committed.brailleTable
         brailleTableVersion = committed.brailleTableVersion
+        brailleTableOrigin = committed.brailleTableOrigin
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -115,6 +119,7 @@ struct ContentAnalysisSummary: Sendable {
         let takesTable = isOwnRecord && recovered.format == .braille
         brailleTable = takesTable ? record.brailleTable : nil
         brailleTableVersion = takesTable ? record.brailleTableVersion : nil
+        brailleTableOrigin = takesTable ? record.brailleTableOrigin : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -204,6 +209,7 @@ struct ContentAnalysisSummary: Sendable {
         if let brailleTable {
             book.brailleTable = brailleTable
             book.brailleTableVersion = brailleTableVersion
+            book.brailleTableOrigin = brailleTableOrigin
         }
     }
 }

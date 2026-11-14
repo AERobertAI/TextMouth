@@ -491,7 +491,9 @@ extension FileImportService {
             // record held as well. Without it the book would be read by the
             // fallback, and its text would change.
             textEncoding: format.usesTextFileDecoder ? marker.textEncoding : nil,
-            textEncodingSource: format.usesTextFileDecoder ? marker.textEncodingSource : nil
+            textEncodingSource: format.usesTextFileDecoder ? marker.textEncodingSource : nil,
+            // Who chose the braille table goes with it (brfguess).
+            brailleTableOrigin: format == .braille ? marker.brailleTableOrigin : nil
         )
     }
 
