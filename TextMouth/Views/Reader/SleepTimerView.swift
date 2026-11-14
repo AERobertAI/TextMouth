@@ -41,7 +41,7 @@ struct SleepTimerView: View {
 
     /// The reader the timer pauses, whose methods start and stop it. Not
     /// observed: the sheet shows nothing of the reader, only the timer, so
-    /// the reader's publishes, eight a second while it plays, never redraw
+    /// the reader's publishes, about one a second while it plays, never redraw
     /// it (PERF30).
     let viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
