@@ -1707,6 +1707,27 @@ spell_inside_word(const widechar *cells, int start, int lead, int end, cell_list
 }
 
 /*
+ * Whether the word `cells[start..end)` has any cell in computer braille,
+ * which EBAE brackets with ⠸⠬ (begin) and ⠸⠱ (end): it begins inside it, or
+ * holds an indicator. Updates `*in_computer` to the state after the word.
+ */
+static int
+touches_computer_braille(const widechar *cells, int start, int end, int *in_computer) {
+	int touched = *in_computer;
+	for (int k = start; k + 1 < end; k++) {
+		if (cells[k] != CELL_456) continue;
+		if (cells[k + 1] == CELL_346) {
+			*in_computer = 1;
+			touched = 1;
+		} else if (cells[k + 1] == CELL_156) {
+			*in_computer = 0;
+			touched = 1;
+		}
+	}
+	return touched;
+}
+
+/*
  * Rewrites the cells of one word, `cells[start..end)` of `cells[0..n)`, with
  * the first fix that fits it (the header comment above).
  */
@@ -1733,6 +1754,9 @@ static widechar *
 fix_ebae_cells(const widechar *cells, int n, int *count) {
 	cell_list out = {malloc(((size_t)n * 6 + 16) * sizeof(widechar)), 0};
 	int i = 0;
+	/* Whether the cells are in computer braille, between ⠸⠬ and ⠸⠱, where
+	   no cell is a contraction and nothing is fixed. */
+	int in_computer = 0;
 	if (out.cells == NULL) return NULL;
 	while (i < n) {
 		int end = i;
@@ -1741,7 +1765,10 @@ fix_ebae_cells(const widechar *cells, int n, int *count) {
 			continue;
 		}
 		while (end < n && cells[end] != CELL_BLANK) end++;
-		fix_ebae_word(cells, i, end, n, &out);
+		if (touches_computer_braille(cells, i, end, &in_computer))
+			put_cells(&out, cells, i, end);
+		else
+			fix_ebae_word(cells, i, end, n, &out);
 		i = end;
 	}
 	*count = out.count;

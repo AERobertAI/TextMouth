@@ -101,6 +101,19 @@ final class BrailleEbaeFixesTests: XCTestCase {
 
     // MARK: - "ing" before a hyphen
 
+    /// Computer braille, between ⠸⠬ and ⠸⠱, holds no contraction: nothing in it
+    /// is fixed, so "+-" there reads as liblouis alone reads it, before and
+    /// after a blank.
+    func testComputerBrailleKeepsPlusAndHyphen() throws {
+        for inside in ["_+a+-b_:", "_+a+-b _+x+-y_:"] {
+            XCTAssertEqual(
+                try read(inside, contracted).text, try read(inside, contracted, liblouisAlone: true).text, inside
+            )
+            // A word after the computer braille is fixed again.
+            XCTAssertTrue(try read(inside + " MOV+-IN", contracted).text.hasSuffix("moving-in"), inside)
+        }
+    }
+
     /// "ing" (⠬) before a hyphen (⠤) read "±" with the table; it reads "ing".
     func testIngBeforeAHyphenIsNotPlusMinus() throws {
         try assertFixed([("MOV+-IN", "moving-in"), ("SMIL+-", "smiling-")])
