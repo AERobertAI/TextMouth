@@ -707,3 +707,10 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - Packages and originals (isBookPackage, the package handling of importFiles and importZip) dates from October 31, 2026.
 - Limits of what a file claims (EPUBParser.readingXML, withNCX) dates from October 31, 2026.
 - The Word documents joined formatsRefusedWhenBlank on November 13, 2026.
+
+## From Known duplication
+
+- TimeRemainingTally's duplicate, the Library bar's own computeTimeRemaining, went in the audit's C7 on November 13, 2026.
+- The performance tests' frozen oracles are the code that the changes of October 3, 2026 replaced.
+- The feed, OPML, and SSML code began to use XMLEscaping on November 13, 2026.
+- BrailleFileWriter.escaped, the one copy left, came from team export on October 19, 2026, and the PEF writer of October 20, 2026 joined it.
