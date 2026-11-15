@@ -1089,7 +1089,7 @@ extension TypedValue: Hashable {
     }
 }
 
-public func == (lhs: TypedValue, rhs: TypedValue) -> Bool {
+func == (lhs: TypedValue, rhs: TypedValue) -> Bool {
     if(lhs === rhs) {return true}
     return lhs.value == rhs.value
 }
