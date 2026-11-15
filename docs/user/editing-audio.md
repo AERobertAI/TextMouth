@@ -1,12 +1,12 @@
 # Editing audio
-<!-- id: editing-audio; keys: ; src: -->
+<!-- id: editing-audio; keys: audio editor, Edit Audio, no waveform, VoiceOver editing; src: TextMouth/Views/AudioEditor/AudioEditorView.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 TextMouth edits an audiobook's audio, a recording's or an imported one's, in an editor window made for the keyboard, VoiceOver, and a braille display; nothing in it needs a waveform.
 
 ## Opening the editor
-<!-- id: opening-editor; keys: ; src: -->
+<!-- id: audio-editor-opening; keys: Edit Audio…, Book menu, context menu, one editor per book, several tracks, DAISY; src: TextMouth/Views/AudioEditor/AudioEditorWording.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorLauncher.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift -->
 
 Opening the editor:
 
@@ -18,7 +18,7 @@ Opening the editor:
   When the book's edit history can't be read, a copy of it is kept in the book's package, and the editor asks whether to start over with no edits.
 
 ## The editor window
-<!-- id: editing-audio-editor-window; keys: ; src: -->
+<!-- id: audio-editor-window; keys: Position, Status, Last message, button groups, Shortcuts tab, Audio Editor shortcuts; src: TextMouth/Views/AudioEditor/AudioEditorView.swift, TextMouth/Views/AudioEditor/AudioEditorCommandViews.swift, TextMouth/Views/AudioEditor/AudioEditorCommands.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 The window:
 
@@ -32,7 +32,7 @@ The window:
   The keys below are the defaults.
 
 ## Listening and moving
-<!-- id: listening-moving; keys: ; src: -->
+<!-- id: audio-editor-listening; keys: play, pause, skip, jump, Go to Time, chapter marker, next pause; src: TextMouth/ViewModels/AudioEditorModel+Listening.swift, TextMouth/Services/AudioEditing/AudioEditorPlayer.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 Listening and moving:
 
@@ -45,7 +45,7 @@ Listening and moving:
   The small steps say nothing, since Position and the half second tell where they went; every jump says where it landed.
 
 ## Selecting and marking
-<!-- id: selecting-marking; keys: ; src: -->
+<!-- id: audio-editor-selecting; keys: selection, markers, pauses, silence detection, Markers sheet, Rename marker; src: TextMouth/ViewModels/AudioEditorModel+Selecting.swift, TextMouth/Services/AudioEditing/AudioEditorLevels.swift, TextMouth/Views/AudioEditor/AudioEditorMarkersSheet.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 Selecting and marking:
 
@@ -61,7 +61,7 @@ Selecting and marking:
   Revert to Original deletes them, saying so before and after, and Redo doesn't bring them back.
 
 ## Editing
-<!-- id: editing; keys: ; src: -->
+<!-- id: audio-editor-editing; keys: cut, copy, paste, trim, insert silence, punch in, filter preset, undo; src: TextMouth/ViewModels/AudioEditorModel+Editing.swift, TextMouth/ViewModels/AudioEditorModel+PunchIn.swift, TextMouth/ViewModels/AudioEditorModel+Filters.swift, TextMouth/Views/AudioEditor/AudioEditorFilterSheet.swift, TextMouth/Platform/macOS/Views/AudioEditor/AudioEditorEditMenu.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 Editing:
 
@@ -83,7 +83,7 @@ Editing:
 - The main Edit menu's Undo, Redo, Cut, Copy, Paste, and Select All are the editor's own while its window is in front, Undo and Redo named as their buttons are, and each available when its button is; in a sheet over the editor, and in every other window, they keep their usual meaning.
 
 ## Saving and exporting
-<!-- id: saving-exporting; keys: ; src: -->
+<!-- id: audio-editor-saving; keys: save, revert to original, Audio Info, bookmarks move, close window, quit with unsaved edits; src: TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Views/AudioEditor/AudioEditorFileSheets.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift, TextMouth/Views/AudioEditor/AudioEditorWording.swift -->
 
 Saving and exporting:
 
@@ -102,19 +102,19 @@ Saving and exporting:
   Cancel, or a save that fails, keeps TextMouth open, and an editor still working, or recording a punch-in, keeps it open and says so.
 
 ## The waveform
-<!-- id: waveform; keys: ; src: -->
+<!-- id: audio-editor-waveform; keys: sighted helpers, drawing; src: TextMouth/Views/AudioEditor/AudioEditorWaveform.swift -->
 
 A waveform of the audio, with the cursor, the selection, the chapter markers, and the markers, is drawn for sighted helpers; VoiceOver never meets it, and no command needs it.
 
 ## Kinds of edit
-<!-- id: kinds-edit; keys: ; src: -->
+<!-- id: audio-editor-edit-kinds; keys: edit list, chapter markers follow, refused edit; src: TextMouth/Models/AudioEdit.swift, TextMouth/Models/AudioEditTimeline.swift, TextMouth/Models/AudioEditWording.swift -->
 
 Edits: trimming either end, cutting, moving a stretch, inserting silence or audio (a paste, or a recording at the cursor), replacing a stretch with a new take (punch-in), adding, renaming, and removing chapter markers, filters, and volume changes.
 Every edit lands on the same sample however often it is applied, and an edit that doesn't fit the audio is refused with a sentence saying why.
 Chapter markers follow the sound: a marker where sound is inserted, replaced, or filtered stays at the stretch's start, markers inside a cut move to where it was, and markers inside a replaced or filtered stretch move in proportion.
 
 ## Podcast chapters when edits are saved
-<!-- id: podcast-chapters-when-edits-are; keys: ; src: -->
+<!-- id: audio-editor-podcast-chapters; keys: podcast, episode chapters, Start Over, feed episode; src: TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift, TextMouth/Parsers/PodcastChapters.swift -->
 
 A podcast episode's own chapters are set aside when edits are saved (0.4.3).
 Its chapters were timed to the audio as it was downloaded, and an edited file no longer fits them, so they are kept out of sight in the book's package and the episode has none while it holds edits.
@@ -127,7 +127,7 @@ Its chapters were timed to the audio as it was downloaded, and an edited file no
 - A book of several files has no podcast chapters to set aside.
 
 ## Undo, redo, and saving
-<!-- id: undo-redo-saving; keys: ; src: -->
+<!-- id: audio-editor-undo-redo; keys: edit history, save formats, FLAC, AAC, Apple Lossless, m4b; src: TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/AudioEditing/AudioEditRenderer.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift -->
 
 Undo and redo go back through every edit of a file, across launches and Macs, since the edits are kept in the book's package.
 Saving writes the edits into the book's file, in its own format where TextMouth can write it: AAC in .m4a or .m4b, MP3, which TextMouth writes itself (below), Apple Lossless, WAVE, AIFF, or uncompressed CAF.
@@ -136,7 +136,7 @@ Its chapters, length, and index are measured afresh.
 A book open in a reader can't be saved; close it there first.
 
 ## The original audio
-<!-- id: original-audio; keys: ; src: -->
+<!-- id: audio-editor-original-audio; keys: Keep, Don't keep, Keep for days, Storage settings, retention, Audio Info policy; src: TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Services/AudioEditing/AudioEditingPreferences.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift -->
 
 The original audio: unless the policy below keeps none, the first save keeps a copy of the audio the edits started from, and a recording keeps its original take, so every edit can be undone while the original is kept.
 Original audio, in the Storage tab's Audio Editing group, decides how long: Keep; Don't keep, which edits the book's file in place, so undo then stops at the audio as last saved; or Keep for a number of days (1 to 365, 1 by default) after the last edit, or, for a recording never edited, after it was saved.
@@ -145,7 +145,7 @@ A book can also have a policy of its own, set in the editor's Audio Info, which 
 Originals whose time is up are deleted when TextMouth starts, after a recording or an edit is saved, and when a book's own policy changes, never while the book is open in a reader or being edited, nor while undone edits or edits not yet saved need them, and nothing is downloaded to do it.
 
 ## Filters and ffmpeg
-<!-- id: filters-ffmpeg; keys: ; src: -->
+<!-- id: audio-editor-filters; keys: highpass, equalizer, loudnorm, Use ffmpeg for filters, Remove Rumble, Audiobook Loudness; src: TextMouth/Services/AudioEditing/AudioFilterProcessor.swift, TextMouth/Services/AudioEditing/AudioFilterRunner.swift, TextMouth/Services/AudioEditing/FFmpeg.swift, TextMouth/Services/AudioEditing/AudioFilterPresets.swift -->
 
 Filters are written as ffmpeg writes them, such as highpass=f=80,equalizer=f=3000:t=q:w=1:g=3.
 Without ffmpeg, TextMouth runs volume, highpass, lowpass, equalizer, afade, atempo, loudnorm, silenceremove, acompressor, and areverse itself, as ffmpeg does, though its loudnorm applies one gain, as ffmpeg's two-pass normalization does, where ffmpeg in one pass changes its gain as it goes; it says which filters it runs when a chain asks for another.
@@ -156,25 +156,25 @@ TextMouth bundles nothing of ffmpeg.
 Twelve premade presets, such as Remove Rumble, Audiobook Loudness, and Shorten Long Pauses, can be edited, reordered, removed, added to, and reset, in Filter Presets… (below), and work with or without ffmpeg.
 
 ## MP3 without ffmpeg
-<!-- id: mp3-without-ffmpeg; keys: ; src: -->
+<!-- id: audio-editor-mp3; keys: LAME, ID3 chapters, gapless, bit rate; src: TextMouth/Services/AudioEditing/AudioEditRenderer+MP3.swift, TextMouth/Services/MP3/MP3Encoder.swift, TextMouth/Services/MP3/MP3Tag.swift -->
 
 MP3 needs no ffmpeg: TextMouth writes it with the LAME encoder built into the app (see [Third-party code](../developer/third-party-code.md)), at a constant bit rate, an MP3 book's own or 64 kilobits a second a channel for speech, tagged with the title and author, the chapter markers as ID3 chapter frames (at most 255, the most one table of contents lists; past that, the 255th runs to the end), a chapter's title with a Windows line break in it, a carriage return and a line feed, is written whole, where it was cut short at the break, and the iTunes gapless numbers, so TextMouth and Apple's players measure it exactly as long as its sound.
 Export lists it as MP3.
 Should that encoder ever fail to start, an installed ffmpeg the switch allows writes MP3 instead.
 
 ## Export
-<!-- id: export; keys: ; src: -->
+<!-- id: audio-editor-export; keys: Shift-Command-E, export to a file, save a copy; src: TextMouth/ViewModels/AudioEditorModel+Saving.swift, TextMouth/Services/AudioEditing/AudioExportFormat.swift -->
 
 Export writes the edits as they stand, saved or not, to a new file in any of those formats, with its chapter markers where the format holds them, leaving the book's file alone.
 
 ## Audio editor settings
-<!-- id: audio-editor-settings; keys: ; src: -->
+<!-- id: audio-editor-settings; keys: Storage tab, Audio Editing group, Filter Presets, config.json, audioEditorPreviewsFilters, audioEditorPlaysAfterMoves; src: TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Views/Settings/AudioFilterPresetsView.swift, TextMouth/Services/AudioEditing/AudioEditorPreferences.swift -->
 
 Settings: "Preview filters before applying" and "Play half a second after each move", in the Audio Editing group of Storage settings, are on by default, and config.json keeps them as audioEditorPreviewsFilters and audioEditorPlaysAfterMoves.
 Filter Presets…, in the same group, lists the presets, to edit, add, reorder, delete, or reset them, each command a button of the preset's row and, when it can act, one of the row's VoiceOver actions and context menu items.
 
 ## Tracks and the manifest
-<!-- id: tracks-manifest; keys: ; src: -->
+<!-- id: audio-editor-tracks; keys: manifest order, renamed track, Ogg to m4a; src: TextMouth/Services/AudioEditing/AudioEditBookRender.swift -->
 
 The audio editor lists a book's tracks in its manifest's order, with its titles.
 A track saved under a new name, as an Ogg track saved as .m4a, is renamed in the manifest too, so it keeps its place, title, and group.
