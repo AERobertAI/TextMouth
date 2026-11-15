@@ -10,7 +10,8 @@ Part of [TextMouth's documentation](../../README.md).
 - On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
 - VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed".
 - When the window lists no books and has no Continue button, VoiceOver's focus starts on it, where it started on the Import button before.
-- The sheet has a heading, "Add to Library", a button for each way to add, and Cancel, which Escape presses. VoiceOver starts on the first button.
+- The sheet has a heading, "Add to Library", a button for each way to add, and Cancel, which Escape presses.
+  VoiceOver starts on the first button.
 - The buttons come in the order below, with what each does written under it, which VoiceOver speaks as the button's hint:
   - Open Book…: "Opens a file picker to import books in any format TextMouth reads."
   - Import Folder…: "Chooses a folder that holds a DAISY book or audio tracks and imports it as one book."
@@ -20,7 +21,8 @@ Part of [TextMouth's documentation](../../README.md).
 - Each button is named by its menu command, and VoiceOver adds the command's key in words when it has one, as in "Open Book…, Command + O".
 - Choosing a button closes the sheet and then does what its menu command does, each described below.
 - Cancel, or Escape, closes the sheet and does nothing.
-- A button is dimmed when you have set its action to work only in reader windows, which you can for Open Book…, New from Text…, and New Recording…, under Works in in the Shortcuts tab of Settings. Its hint then ends "Not available in this window."
+- A button is dimmed when you have set its action to work only in reader windows, which you can for Open Book…, New from Text…, and New Recording…, under Works in in the Shortcuts tab of Settings.
+  Its hint then ends "Not available in this window."
 
 ## Open Book… and Finder
 <!-- id: open-book-finder; keys: ; src: -->
@@ -45,19 +47,25 @@ Part of [TextMouth's documentation](../../README.md).
 
 - File menu, New from Text… makes a book from text you type or paste.
 - Its key, Shift-Command-T, works in Library windows, and with no window open, when it opens New from Text… in a new Library window.
-- In a reader window the same key opens or closes the Sleep Timer sheet (Show Sleep Timer). There, and in Settings, the New Recording window, and an audio editor's window, File > New from Text… is dimmed and shows no key, so choose it from a Library window.
+- In a reader window the same key opens or closes the Sleep Timer sheet (Show Sleep Timer).
+  There, and in Settings, the New Recording window, and an audio editor's window, File > New from Text… is dimmed and shows no key, so choose it from a Library window.
 - Either action can have another key, or work in another kind of window, from the Shortcuts tab of Settings (see Works in, under the Shortcuts tab).
 - The New Book from Text window has a Title and an Author field, a text area, Paste from Clipboard, Open in Editor (on the Mac), Reload from Editor once an editor has the text, Cancel, and Add to Library.
 - A book whose title holds only spaces, or nothing, is called Untitled, and so is its file.
 - When something in that window does not work, a sentence beside the buttons says so, which VoiceOver also says once, and it goes when you change the text:
-  - Paste from Clipboard with no text on the clipboard changes nothing: "The clipboard has no text to paste, so the text is unchanged. Copy some text, then paste again."
+  - Paste from Clipboard with no text on the clipboard changes nothing: "The clipboard has no text to paste, so the text is unchanged.
+    Copy some text, then paste again."
   - Open in Editor writes the text to a file in the Mac's temporary folder and opens it in the app this Mac opens plain text with.
-    - If the file can't be written: "Could not open the text in an editor, because its file could not be written. Paste or type the text here instead, or try again."
-    - If no app opens it: "Could not open the text in an editor, because no app opened its file. Paste or type the text here instead, or try again."
+    - If the file can't be written: "Could not open the text in an editor, because its file could not be written.
+      Paste or type the text here instead, or try again."
+    - If no app opens it: "Could not open the text in an editor, because no app opened its file.
+      Paste or type the text here instead, or try again."
   - Reload from Editor reads the file back as an import reads a file: as UTF-8, in the encoding a byte-order mark names, or in the encoding its bytes look like, such as Windows-1251 Russian or Shift JIS Japanese, and as Windows-1252 only when nothing can be trusted.
     - Line endings become line feeds.
-    - If the file can't be read, the text is left as it was: "Could not read the text back from the editor's file, so the text here is unchanged. Save the file in the editor, then choose Reload from Editor again, or choose Open in Editor to start again."
-    - If it was read as Windows-1252 only for want of a better guess and holds characters beyond ASCII: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong. Check the text, or save the file in the editor as UTF-8 and choose Reload from Editor again."
+    - If the file can't be read, the text is left as it was: "Could not read the text back from the editor's file, so the text here is unchanged.
+      Save the file in the editor, then choose Reload from Editor again, or choose Open in Editor to start again."
+    - If it was read as Windows-1252 only for want of a better guess and holds characters beyond ASCII: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong.
+      Check the text, or save the file in the editor as UTF-8 and choose Reload from Editor again."
     - That note stays only while the text is as it was reloaded.
 
 ## New Recording…
@@ -79,7 +87,8 @@ Part of [TextMouth's documentation](../../README.md).
 - A folder that is a link (a symbolic link, such as `ln -s` makes) is read as the folder it points to, since you named it, and is imported as choosing that folder would be.
   - The book takes the name of the folder the link leads to, not the link's name, and that folder is what the book records as its source.
   - Links inside the folder are listed but not followed, so a link inside a folder cannot lead the import elsewhere.
-  - A link to nothing is still an error. A link to a file is left as it is.
+  - A link to nothing is still an error.
+    A link to a file is left as it is.
   - A link to a folder of DAISY books in folders is refused, as choosing the folder itself is.
 - A folder holding DAISY books in folders inside it is not a book itself and is refused: choose the book folders instead, several at once.
   - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
@@ -87,10 +96,15 @@ Part of [TextMouth's documentation](../../README.md).
 ## A transcript chosen with its audio
 <!-- id: transcript-chosen-audio; keys: ; src: -->
 
-- A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported. It is not imported as a book of its own, and nothing is refused.
+- A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported.
+  It is not imported as a book of its own, and nothing is refused.
 - It works with Open Book… and when you open the files from Finder or drop them on the Dock icon.
-- The file must be the one the audio finds as its transcript: named as the track is, with its extension changed (01.vtt beside 01.mp3), and, when both are beside the audio, the .vtt (see [Transcribing an audiobook](transcribing.md)). A .srt chosen beside an audio file that has a .vtt of its own is not that audio's transcript.
-- A transcript file chosen without its audio, or with audio that does not find it, is refused as a book: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." For a .srt file it says ".srt".
+- The file must be the one the audio finds as its transcript: named as the track is, with its extension changed (01.vtt beside 01.mp3), and, when both are beside the audio, the .vtt (see [Transcribing an audiobook](transcribing.md)).
+  A .srt chosen beside an audio file that has a .vtt of its own is not that audio's transcript.
+- A transcript file chosen without its audio, or with audio that does not find it, is refused as a book: "Unsupported file format: .vtt.
+  A .vtt file is a transcript, not a book.
+  To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu."
+  For a .srt file it says ".srt".
 - If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is dropped too, silently.
 
 ## M3U and M3U8 playlists
@@ -133,16 +147,20 @@ Part of [TextMouth's documentation](../../README.md).
 - The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
 - The archive, folder, or file you import from is never changed.
 - A track that can't be converted stops the import, and nothing is added.
-- The alert says which track and why, as in "Could not import “My Tracks.zip”. Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
-- That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes. [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
+- The alert says which track and why, as in "Could not import “My Tracks.zip”.
+  Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
+- That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes.
+  [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
 - Cancel kills the conversions at once, and the import ends as a cancelled one.
 - The reasons, with X the track's file name:
-  - "The audio file X could not be read for converting." The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
+  - "The audio file X could not be read for converting."
+    The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
   - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
   - "The audio converted from X could not be given its name."
   - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
   - "Converting X failed (the converter ended with code N)."
-  - "There is not enough free disk space to convert X: it needs N GB free." This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
+  - "There is not enough free disk space to convert X: it needs N GB free."
+    This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
 ## The original file after an import
@@ -158,7 +176,9 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: zip-holding-daisy-book-audio; keys: ; src: -->
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
-- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above). TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion. Before 0.4.3 it could.
+- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above).
+  TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion.
+  Before 0.4.3 it could.
 - For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
