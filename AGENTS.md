@@ -88,4 +88,9 @@ The agent:
   - the doc-library skill, and the docs reworked into marked sections (`make lint-docs` gates at 0 violations).
 - Waiting for the user (`humanQuestions/2026-11-14.md`): the audit's C11 and C12, Markdown from cmark's tree, PDFs read by two workers, the local-first store's drive, ffmpeg, and V04.
   Their hand checks: Remove Download on one Google Drive and one Dropbox book, and the new cloud alerts and Compare Libraries with VoiceOver.
-- Open: the iPhone app bundles no Licenses folder though LAME is linked; `AudioExportTests.testAnMP3BookIsSavedAsMP3` failed once in a full suite and passed alone; the heavy-work lock serves its waiters in no order (FIFO tickets wanted).
+- Open:
+  - the iPhone app bundles no Licenses folder, though LAME is linked;
+  - `AudioExportTests.testAnMP3BookIsSavedAsMP3` failed once in a full suite and passed alone;
+  - `LibraryFeedMoveToFolderTests.testAMixedSelectionMovesTheBooksAndSaysWhatItLeft` fails now and then on GitHub's runner only;
+  - the iPhone jobs are a full run's longest part (33 and 27.5 of its 34 minutes);
+  - the heavy-work lock serves its waiters in no order (FIFO tickets wanted).
