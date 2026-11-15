@@ -617,6 +617,7 @@ targets:
       - TextMouthProductionTests/LibraryViewDefinitionTests.swift
       - TextMouthProductionTests/LibraryViewFilterEvaluatorTests.swift
       - TextMouthProductionTests/ListNeighborsTests.swift
+      - TextMouthProductionTests/ListeningDayKeyMigrationTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
@@ -645,6 +646,7 @@ targets:
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
       - TextMouthProductionTests/PreferenceStoreTests.swift
+      - TextMouthProductionTests/ReadingStatsDayAttributionTests.swift
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
