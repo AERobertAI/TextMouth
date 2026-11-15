@@ -26,7 +26,15 @@ For a text book, loading writes content.md if it is missing; otherwise it checks
 For an audiobook, loading uses a validated saved index, or else reads the audio through AudioBookParser, waiting for it through AsyncBridge, into chapters whose placeholder text stands for time at ten characters a second.
 A transcribed audiobook then has its transcript text laid over those chapters, for the text area to show while the audio plays (TranscriptTextLoader.load: transcripts, above); when a book that has a transcript shows none of its text, the load says why (Load.withheld, kept as ReaderViewModel.transcriptWithheld) for Search in Book to say.
 An audiobook's tags are read as well, but not an EPUB's package metadata: showEPUBMetadata() shows it from the book's row (Book.keptEPUBMetadata) when the row keeps every field, and otherwise reads it off the main thread once the book shows, through LibraryBookInfoReader.system's read, which never downloads, laying the book's edits over it as the book is when the read ends, and keeps it on the row and in the book's record (Book.keepEPUBMetadata(readFromFile:)), giving only the fields the row lacks the file's values, so an edit stands and later opens read nothing.
-Back on the main actor, the reader publishes the content and its headings, lays the book's own metadata edits over what the files hold, taking them from its copy of the book as it is by then, brings the saved position into range, commits a new or changed index through LibraryViewModel.updateContentIndex, saves the position, takes over a sleep timer held for the book (claimSleepTimerHandOver(), in [Timers and statistics](state/timers-and-statistics.md)), and claims a waiting autoplay request, if one is there.
+Back on the main actor, the reader:
+- publishes the content and its headings;
+- lays the book's own metadata edits over what the files hold, taking them from its copy of the book as it is by then;
+- brings the saved position into range;
+- commits a new or changed index through LibraryViewModel.updateContentIndex;
+- saves the position;
+- takes over a sleep timer held for the book (claimSleepTimerHandOver(), in [Timers and statistics](state/timers-and-statistics.md));
+- and claims a waiting autoplay request, if one is there.
+
 If the library moves the book's package while it loads, the load waits for the move or starts again from where the book is then (a reader's copy of its book, in [The reader](state/reader.md)).
 After claiming a waiting autoplay request, the reader prepares the opened chapter's speech off the main thread (prepareOpenedChapterSpeech).
 
@@ -35,7 +43,12 @@ After claiming a waiting autoplay request, the reader prepares the opened chapte
 
 Play starts nothing while the book is loading or while Where Am I? is speaking.
 For a text book, the reader first prepares what it will say, or takes what it prepared before from the same inputs (prepared speech, above).
-The chapter's text goes through the playback pipeline (ChapterSpeechInputs.prepare()): skipped sections are removed, runs of a repeated symbol are rewritten (RepeatedSymbolRule, which runs before the pauses because their periods and commas would lengthen runs of those symbols), punctuation pauses are added, and the substitution rules are applied, while a ComposedOffsetMap keeps track of where every spoken character came from.
+The chapter's text goes through the playback pipeline (ChapterSpeechInputs.prepare()):
+- skipped sections are removed;
+- runs of a repeated symbol are rewritten (RepeatedSymbolRule, which runs before the pauses because their periods and commas would lengthen runs of those symbols);
+- punctuation pauses are added;
+- and the substitution rules are applied, while a ComposedOffsetMap keeps track of where every spoken character came from.
+
 A position anywhere inside a rewritten run maps into the words that replaced it, and back.
 When nothing speakable remains, the book ends at once through its end-of-book behavior.
 Otherwise the reader claims the media controls through its NowPlayingSession, plays the play sound, records when playback started (for rewind on resume), starts a listening session in ReadingStatsService, resumes the sleep timer's countdown if this reader owns a paused one, and starts speaking.
