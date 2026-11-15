@@ -6,10 +6,19 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## The DOCX reader's reading policy
 <!-- id: docx-reader-reading-policy; keys: .docx, Word 2007, hidden text, Wingdings, footnotes, track changes, text box, list numbering; src: TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/DOCXParser+Styles.swift, TextMouth/Parsers/DOCXParser+Numbering.swift, TextMouth/Parsers/DOCXParser+SAXParser.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
-The DOCX reader's reading policy (0.4.0; DOCXParser and its extensions, which turn a Word document into Markdown directly, not through the HTML of OwnDocumentReaders): the converter holds a paragraph's state in one struct (ParagraphState) and gathers a paragraph's runs as raw text with a style for each scalar, a stretch at a time (StyledLine), writing emphasis through MarkdownEmphasis so that no mark is spoken; a page break, a line break, or a link ends a stretch, and strikethrough is written plain.
+The DOCX reader's reading policy (0.4.0; DOCXParser and its extensions, which turn a Word document into Markdown directly, not through the HTML of OwnDocumentReaders).
+The converter holds a paragraph's state in one struct (ParagraphState) and gathers a paragraph's runs as raw text with a style for each scalar, a stretch at a time (StyledLine), writing emphasis through MarkdownEmphasis so that no mark is spoken.
+A page break, a line break, or a link ends a stretch, and strikethrough is written plain.
 
-- Hidden text: w:vanish is resolved by DOCXHiding.isHidden(documentDefaults:table:paragraph:character:direct:) (0.4.1; DOCXParser+Styles) from five levels, each keeping its stated value (true, or false for a w:val of 0): the document defaults (w:docDefaults), the table's style (a w:tblStyle, or the default table style, w:default="1", for a table that names none; a nested table takes its own style, not the outer one's; a w:tblStyle inside w:tblPrChange is ignored), the paragraph style, the run's w:rStyle (each through w:basedOn, the nearest winning; a style based on a style of another kind takes nothing from it), and the run's own w:vanish, which decides alone.
-  When the defaults say true, a level with no value takes true, and the text is hidden if and only if an even number of the table, paragraph, and character levels are false (MS-OI29500 17.7.3(a) and (b)); otherwise the state starts false and a table style, then a paragraph style, reset it to what they state (MS-OI29500 17.7.6(b) and 17.7.8(a)), and a character style that says true toggles it.
+- Hidden text: w:vanish is resolved by DOCXHiding.isHidden(documentDefaults:table:paragraph:character:direct:) (0.4.1; DOCXParser+Styles) from five levels, each keeping its stated value (true, or false for a w:val of 0):
+  - the document defaults (w:docDefaults),
+  - the table's style (a w:tblStyle, or the default table style, w:default="1", for a table that names none; a nested table takes its own style, not the outer one's; a w:tblStyle inside w:tblPrChange is ignored),
+  - the paragraph style,
+  - the run's w:rStyle (each through w:basedOn, the nearest winning; a style based on a style of another kind takes nothing from it), and
+  - the run's own w:vanish, which decides alone.
+
+  When the defaults say true, a level with no value takes true, and the text is hidden if and only if an even number of the table, paragraph, and character levels are false (MS-OI29500 17.7.3(a) and (b)).
+  Otherwise the state starts false and a table style, then a paragraph style, reset it to what they state (MS-OI29500 17.7.6(b) and 17.7.8(a)), and a character style that says true toggles it.
   The 243 combinations were checked against a table built from the clauses by a separate script.
   A row marked w:trPr/w:hidden hides nothing of its own (the hidden row rule of DOCXHiding, citing §17.4.20, not checked in Word).
   The default paragraph style is used for a paragraph naming none.
@@ -24,7 +33,8 @@ The DOCX reader's reading policy (0.4.0; DOCXParser and its extensions, which tu
 - Notes: footnotes.xml then endnotes.xml go through the same converter (readsNotes) after the body, skipping the separator, continuationSeparator, and continuationNotice entries, and only the notes that DOCXNoteReferences records for a reference the converter read, in the file's order; w:customMarkFollows and a note's first run in a reference style are the mark and are not read.
   A damaged, empty, or oversized notes part is reported through reportIncompleteContent and the body is read; one damaged before any text throws malformedXML naming the part.
   A hyperlink in a note keeps its label only.
-- Text boxes: an mc:AlternateContent reads the first mc:Choice whose Requires prefixes are all wps, wpg, or wpc, else the next, else the Fallback, so a box is read once; the outer paragraph, run, and link are set aside while w:txbxContent is read, and the box's words wait in a side buffer to be written right after the paragraph that holds the anchor.
+- Text boxes: an mc:AlternateContent reads the first mc:Choice whose Requires prefixes are all wps, wpg, or wpc, else the next, else the Fallback, so a box is read once.
+  The outer paragraph, run, and link are set aside while w:txbxContent is read, and the box's words wait in a side buffer to be written right after the paragraph that holds the anchor.
   A box in an unread run is not read.
 - Cancellation: before each part and every 1,024 elements (elementsBetweenCancellationChecks, lowered from 4,096 so that Cancel waits under half a second at the worst case the guard allows, 62 MB of tags of 1,024 attributes each), ending the parse with abortParsing.
   Every part is parsed through DOCXSAXParser, which first takes the value out of every o:gfxdata attribute (DOCXPictureAttribute), since XMLParser stops at an attribute of more than 10 MB.
@@ -40,16 +50,22 @@ They share a base and a writer, and reuse the rich text reader's RTFBlockBuilder
   XMLEscaping is one linear pass.
   OfficeStyleChain walks a style's based-on chain, cut at 64 styles, and a part with more than 100,000 styles is refused (checked where a style ends).
 - The writer: OfficeBlockWriter and OfficeParagraph gather the words, pages, tables, and lists in reading order.
-  A paragraph is held until it ends, so a hidden one is dropped whole; what is anchored in it (a text box's or shape's paragraphs and tables, a picture's description) and the notes whose references it holds wait with it, and are written right after it in file order, and not at all if the paragraph is hidden.
+  A paragraph is held until it ends, so a hidden one is dropped whole.
+  What is anchored in it (a text box's or shape's paragraphs and tables, a picture's description) and the notes whose references it holds wait with it, and are written right after it in file order, and not at all if the paragraph is hidden.
   OfficeFlow keeps the main text and each note apart.
   A repeated cell is read up to OfficeBlockWriter.mostRepeatedCells (16) times; lists are capped at 40 levels (their words still read); a table in a text box is written after its paragraph.
   A page cannot begin in a table or text box.
-- ODTDocumentReader reads the ZIP with ZIPFoundation (each part held to DocumentByteLimit as it inflates and to the size the archive records; a part whose checksum is not the archive's is refused) and the parts content.xml (ODTContentReader), styles.xml (ODTStyles, for styles alone: headers and footers live there and are not read), and meta.xml (the title and the author, dc:creator).
+- ODTDocumentReader reads the ZIP with ZIPFoundation (each part held to DocumentByteLimit as it inflates and to the size the archive records; a part whose checksum is not the archive's is refused) and the parts
+  - content.xml (ODTContentReader),
+  - styles.xml (ODTStyles, for styles alone: headers and footers live there and are not read), and
+  - meta.xml (the title and the author, dc:creator).
+
   A mimetype entry that is damaged, long, or junk is ignored; only the media type of another kind of document refuses.
   A damaged, cut, or oversized styles.xml or meta.xml is reported to a closure (the console and the debug log, tag ODT_DAMAGED_PART) and the body is read; only content.xml or the ZIP refuses.
   A password-protected package is refused earlier (TextutilSourceCheck.isEncryptedOpenDocument).
   An empty file is noTextToRead, and a file, content.xml, or text past DocumentByteLimit is DocumentTooLargeError.
-- ODT headings are text:h with text:outline-level, a paragraph whose style has style:default-outline-level, and the styles Title (1), Subtitle (2), and Heading (the base of Writer's headings) when the style names no outline level; the size guess (RTFSizeHeadings) runs only when the document names none.
+- ODT headings are text:h with text:outline-level, a paragraph whose style has style:default-outline-level, and the styles Title (1), Subtitle (2), and Heading (the base of Writer's headings) when the style names no outline level.
+  The size guess (RTFSizeHeadings) runs only when the document names none.
   Text under text:tracked-changes is skipped, as are text:display="none", text:hidden-paragraph, text:hidden-text, a hidden text:section, comments, ruby text, and text:script. text:note bodies follow in file order if their paragraph is read.
   A picture, formula, or chart (draw:frame, draw:object) is its svg:desc, else svg:title, as a paragraph after the anchor's paragraph.
   Automatic numbers (text:number) are not words.
