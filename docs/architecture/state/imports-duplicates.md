@@ -17,7 +17,6 @@ Unanswered duplicates (October 31, 2026): a duplicate's question lives only in m
 - How others observe it: one alert after the repair, DuplicateCopyWording.unansweredTrashedTitle, "Duplicate Copies Moved to the Trash", names the titles moved (up to three; more are counted), appended to an alert already showing.
   Keep Both and Replace Existing say why they cannot keep a copy through DuplicateCopyWording: libraryUnreachable(bookTitle:) while the data directory is unavailable, checked first, and copyGone(bookTitle:) when the package is gone, so the original is never deleted by then; a marker that stays is logged as DUPLICATE_KEEP_FAILED with the system's reason.
   Tests: ImportDecisionFlowTests.
-- Files: Services/DuplicateReplacement.swift, ViewModels/LibraryViewModel+Duplicates.swift, Services/FileImportService+Packages.swift, Models/ImportDecision.swift.
 
 ## Replacing a duplicate
 <!-- id: replacing-duplicate; keys: duplicate dialog, swap copies, same ID, reimport, duplicate book; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Models/ImportDecision.swift -->
@@ -78,5 +77,3 @@ ReadingList.replace(_:with:) is no longer called by the app, since the new row k
 The old package's record names a listed book, so the launch's repair that adopts packages missing from the index (FileImportService.adoptOrphanedTMBPackages(library:libraryDirectory:access:skips:)) leaves it as it is, unadopted and unwritten, with one ORPHAN_ID_LISTED line, whether Finder put it back from the Trash, a stop left it beside its replacement, or a failed removal kept it: no two rows share an ID, no index recovery rewrites a record, and in a cloud library whose library.json arrives after its packages no new ID is written over the index's.
 Of two such packages that no row listed before the walk, as an index rebuilt from the packages finds an old copy put back beside its replacement, the one whose record was written later becomes the book, whichever the folder lists first: the replacement, whose record Replace Existing wrote after the old copy's last one.
 Folder-path fixes wait for the walk's end, so the other package is never written.
-
-- Files: Services/DuplicateReplacement.swift, ViewModels/LibraryViewModel+Duplicates.swift, ViewModels/ContentAnalysisSummaryBuffer.swift, Models/TrackPlaces.swift, Models/ImportDecision.swift, Views/Library/ImportDecisionSheet.swift, Views/Library/ImportDecisionPresenter.swift, Platform/iOS/Services/PhoneImportCopier.swift, Models/FeedBookUse.swift, Models/BookTextEditWording.swift, Platform/macOS/Services/BookTextEditor.swift, Services/ImportStaging.swift, Services/FileImportService.swift.
