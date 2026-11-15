@@ -21,6 +21,10 @@ packages:
   swift-markdown:
     url: https://github.com/swiftlang/swift-markdown.git
     exactVersion: "0.9.0"
+  # cmark-gfm, the Markdown parser: the app reads its tree itself (MarkdownTree).
+  swift-cmark:
+    url: https://github.com/swiftlang/swift-cmark.git
+    exactVersion: "0.9.0"
 
 # Every target compiles in the Swift 6 language mode and checks Swift
 # concurrency completely, so Xcode, make build, make test, make check, and CI
@@ -271,6 +275,11 @@ targets:
       - target: SwiftSoup
       - package: swift-markdown
         product: Markdown
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
       # The MP3 encoder, linked into the app (MP3Encoder).
       - target: LAME
       # The Objective-C exception catcher (ObjCException).
@@ -446,6 +455,11 @@ targets:
       - target: SwiftSoup_iOS
       - package: swift-markdown
         product: Markdown
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
     # The iPhone app's scheme, committed, so that `xcodebuild test -scheme

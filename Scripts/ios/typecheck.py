@@ -274,6 +274,8 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
                 "ZIPFoundation",
                 "SwiftSoup",
                 .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "cmark"),
+                .product(name: "cmark-gfm-extensions", package: "cmark"),
             ],
             path: "{target}",
             exclude: [{skipped}],
@@ -290,6 +292,7 @@ let package = Package(
     dependencies: [
         .package(path: "{pkgs / 'ZIPFoundation'}"),
         .package(path: "{pkgs / 'swift-markdown'}"),
+        .package(path: "{pkgs / 'cmark'}"),
     ],
     targets: [
         // LAME's encoder, as project.yml's LAME target builds it.
@@ -329,6 +332,8 @@ let package = Package(
                 "ZIPFoundation",
                 "SwiftSoup",
                 .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "cmark"),
+                .product(name: "cmark-gfm-extensions", package: "cmark"),
             ],
             path: "TextMouth",
             exclude: [{excludes}],
