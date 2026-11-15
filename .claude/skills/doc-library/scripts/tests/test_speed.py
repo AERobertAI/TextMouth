@@ -17,6 +17,7 @@ from doclib_case import DocLibCase  # first: it puts the scripts folder on sys.p
 
 import lintrules  # noqa: E402
 import sentences  # noqa: E402
+import swiftindex  # noqa: E402
 
 
 class SalesGateTests(DocLibCase):
@@ -151,3 +152,65 @@ class SentenceGateTests(DocLibCase):
         for _ in range(5000):
             text = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 14)))
             self.assertEqual(sentences.split_sentences(text), self.reference(text), repr(text))
+
+
+# The first version of the Swift scan: one pattern for each declaring keyword, tried at every position.
+_OLD_PATTERNS = tuple(
+    (keyword, re.compile(keyword.encode("ascii") + rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))"))
+    for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension")
+)
+
+
+def old_scan_keywords(data: bytes) -> list:
+    """What ``scan_keywords`` returned when it ran a pattern for each keyword."""
+    found = []
+    for keyword, pattern in _OLD_PATTERNS:
+        for match in pattern.finditer(data):
+            start = match.start()
+            if start == 0 or data[start - 1] not in swiftindex._WORD_BYTES:
+                found.append((start, keyword, match.group(1)))
+    found.sort()
+    return found
+
+
+class SwiftScanTests(DocLibCase):
+    """scan_keywords finds exactly what a pattern for each keyword found."""
+
+    def test_fixed_cases(self) -> None:
+        for text in (
+            "", "class", "class A", "class\tA {}", "final class Foo: Bar {}", "subclass Foo", "_class Foo", "class _x",
+            "class func make() {}", "extension Book.Storage {", "enum E { case func }", "func\n\nf()", "classclass A",
+            "struct S\nstruct T", "actor protocol typealias X = Y", "x.func y", "class Café", "éclass A",
+            "class 1", "class A.B.C {}", "class A. B", "extension    X",
+        ):
+            data = text.encode("utf-8")
+            self.assertEqual(swiftindex.scan_keywords(data), old_scan_keywords(data), repr(text))
+
+    def test_random_texts(self) -> None:
+        pieces = ["class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension", " ", "\n", "\t",
+                  "A", "foo", "_", ".", "1", "{", "(", "é", "x", "Foo.Bar", "sub", "class "]
+        rng = random.Random(5)
+        for _ in range(4000):
+            data = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 14))).encode("utf-8")
+            self.assertEqual(swiftindex.scan_keywords(data), old_scan_keywords(data), repr(data))
+
+
+class ReadWithoutFollowingLinksTests(DocLibCase):
+    """read_without_following_links: the bytes of a plain file, and None for anything else."""
+
+    def test_reads_a_file_whole(self) -> None:
+        self.write_tree({"a.swift": "class A {}\n", "empty.swift": ""})
+        self.assertEqual(swiftindex.read_without_following_links(str(self.root / "a.swift")), b"class A {}\n")
+        self.assertEqual(swiftindex.read_without_following_links(str(self.root / "empty.swift")), b"")
+
+    def test_reads_a_file_bigger_than_a_chunk(self) -> None:
+        text = ("func f() {}\n" * 200_000).encode("ascii")
+        (self.root / "big.swift").write_bytes(text)
+        self.assertEqual(swiftindex.read_without_following_links(str(self.root / "big.swift")), text)
+
+    def test_a_missing_file_a_folder_and_a_link_are_none(self) -> None:
+        self.write_tree({"a.swift": "class A {}\n"})
+        (self.root / "folder").mkdir()
+        (self.root / "link.swift").symlink_to(self.root / "a.swift")
+        for name in ("missing.swift", "folder", "link.swift"):
+            self.assertIsNone(swiftindex.read_without_following_links(str(self.root / name)), name)

@@ -1,7 +1,7 @@
 """An index of the Swift declarations in the repository, and the names a section's prose mentions.
 
-``SwiftIndex.load`` scans every Swift file once, with one regular expression, and
-remembers each ``class``, ``struct``, ``enum``, ``protocol``, ``actor``, ``typealias``,
+``SwiftIndex.load`` scans every Swift file once, finding each declaring keyword with
+``bytes.find``, and remembers each ``class``, ``struct``, ``enum``, ``protocol``, ``actor``, ``typealias``,
 ``func`` and ``extension`` it finds, by name. It only answers whether a name exists
 and where: it matches inside comments and strings too, which is accepted.
 
@@ -33,13 +33,13 @@ VENDOR_FOLDER = "Vendor/"
 
 # What follows a declaring keyword: white space and then (in a look-ahead, so that
 # ``class func foo`` still finds ``func foo``) the name, dotted for ``extension Book.Storage``.
-_AFTER_KEYWORD = rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))"
-# One expression for each declaring keyword, all of the one shape ``KEYWORD\s+NAME``. One
-# alternation over all of them reads 30 MB in 0.3 s; each starting on a literal word lets
-# the matcher skip ahead, which halves that. The word boundary before the keyword is
-# checked by ``_scan``, since a pattern starting on ``\b`` has no literal to skip by.
-_DECLARATIONS = tuple(
-    (keyword, re.compile(keyword.encode("ascii") + _AFTER_KEYWORD))
+_AFTER_KEYWORD = re.compile(rb"\s+(?=([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*))")
+# The declaring keywords, as the bytes ``scan_keywords`` looks for. Each is found with
+# ``bytes.find``, which skips along at memory speed; a pattern per keyword read 30 MB in
+# 0.16 s, and one pattern for all of them in 0.5 s. The word boundary before the keyword,
+# and the white space and name after it, are checked by hand and by ``_AFTER_KEYWORD``.
+_KEYWORDS = tuple(
+    (keyword, keyword.encode("ascii"))
     for keyword in ("class", "struct", "enum", "protocol", "actor", "typealias", "func", "extension")
 )
 # The bytes that are word characters (letters, digits, underscore, and every non-ASCII byte).
@@ -136,6 +136,57 @@ def is_call(written: str) -> bool:
     return "(" in written
 
 
+def read_without_following_links(full: str) -> Optional[bytes]:
+    """The bytes of the file at ``full``, or None when it cannot be read or is a symbolic link.
+
+    One ``open`` that refuses a link (``O_NOFOLLOW``) and one ``read`` of the file's size,
+    which is quicker than a link test and Python's buffered reader; a link is never
+    followed, so nothing outside the repository is read.
+    """
+    try:
+        descriptor = os.open(full, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return None
+    try:
+        size = os.fstat(descriptor).st_size
+        # A file comes back whole in one read of one byte more than its size; read on in case it did not.
+        data = os.read(descriptor, size + 1)
+        if len(data) <= size:
+            chunks = [data]
+            while True:
+                chunk = os.read(descriptor, 1 << 20)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            data = b"".join(chunks)
+        return data
+    except OSError:
+        return None
+    finally:
+        os.close(descriptor)
+
+
+def scan_keywords(data: bytes) -> List[Tuple[int, str, bytes]]:
+    """Every declaring keyword of ``data`` that starts a word and is followed by a name.
+
+    The result is ``(offset, keyword, name as written)``, in the order written (and for
+    one offset in keyword order). A keyword is found where it starts a word: the byte
+    before it, if any, is no letter, digit, underscore, or non-ASCII byte.
+    """
+    found: List[Tuple[int, str, bytes]] = []
+    word_bytes = _WORD_BYTES
+    for keyword, literal in _KEYWORDS:
+        position = data.find(literal)
+        while position != -1:
+            if position == 0 or data[position - 1] not in word_bytes:
+                match = _AFTER_KEYWORD.match(data, position + len(literal))
+                if match:
+                    found.append((position, keyword, match.group(1)))
+            position = data.find(literal, position + 1)
+    found.sort()
+    return found
+
+
 class SwiftIndex:
     """Where each name is declared in the repository's Swift files."""
 
@@ -150,7 +201,8 @@ class SwiftIndex:
         """Scan every ``*.swift`` file of ``repo`` outside ``Vendor/``, once.
 
         Files are read as bytes and matched as bytes, which is quicker than decoding
-        them; a symbolic link is never followed, so nothing outside the repository is read.
+        them; a symbolic link is never followed (``read_without_following_links``), so
+        nothing outside the repository is read.
         """
         index = cls()
         for path in sorted(repo.files):
@@ -163,25 +215,12 @@ class SwiftIndex:
         relative = docmodel.name_inside(repo.root, path)
         if relative is None:
             return
-        full = os.path.join(repo.root, relative)
-        try:
-            if os.path.islink(full):
-                return
-            with open(full, "rb") as handle:
-                data = handle.read()
-        except OSError:
+        data = read_without_following_links(os.path.join(repo.root, relative))
+        if data is None:
             return
-        # Every match of every keyword that starts a word, in the order written.
-        found = []
-        for keyword, pattern in _DECLARATIONS:
-            for match in pattern.finditer(data):
-                start = match.start()
-                if start == 0 or data[start - 1] not in _WORD_BYTES:
-                    found.append((start, keyword, match.group(1)))
-        found.sort()
         line = 1
         last = 0
-        for position, keyword, raw in found:
+        for position, keyword, raw in scan_keywords(data):
             written = raw.decode("ascii")
             # For ``extension Book.Storage`` the extended type is the last part.
             name = written.rpartition(".")[2] if keyword == KIND_EXTENSION else written.split(".")[0]
