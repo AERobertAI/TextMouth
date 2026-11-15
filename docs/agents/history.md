@@ -759,3 +759,44 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   First runs, November 9, 2026, seed 1 and 2,000 rounds each: The Time Machine 1,736 read and 264 refused, the Quay Almanac hybrid 1,863 and 137, Yellow Wallpaper in KF8 1,830 and 170.
   Seed 2, 2,000 rounds over four books: 1,820 and 180.
   No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
+## From The library index
+
+- **Formats an older build cannot read:** A build from before October 18, 2026 that meets rtf, rtfd, doc, odt, wordml, webarchive, or ssml in an index, or one from before October 20, 2026 that meets braille, fails to decode it.
+## From The reading list and feed items
+
+- **The list overrides a book's own end rule:** A reader that reads its book from the list holds it at its end, and the list overrides the book's own end rule (the user, October 7, 2026).
+- **The In reading list note:** Until October 17, 2026 "In reading list" was a book row's accessibility value, the empty string for a book not in the list.
+## From Timers and statistics
+
+- **One sleep timer for each reader window:** Owner: each reader window's own SleepTimerService (November 13, 2026, the user: "I want each sleep timer to be refactored to be per book view window not global").
+- **End of chapter folded into End of the heading:** endOfHeading has been the one place-based timer for any document since October 6, 2026, when End of chapter folded into it.
+## From Text caches and content indexes
+
+- **Markdown refused for nesting:** The section on Markdown parsed from content.md and Markdown refused for nesting (November 13, 2026): MarkdownCacheService has two parses of a cached Markdown file, with the nesting refusal and the MARKDOWN_NESTING_KEPT_RAW line.
+- **The DAISY page reader version:** "1.0.1" for DAISY since November 13, 2026 ("1.0.0" shared with PDF before).
+- **The braille page reader version:** Braille's page reader was at "1.0.0" until November 13, 2026, "1.1.0" from then, and "1.1.1" since November 14, 2026.
+- **The launch re-read's review:** The October 21, 2026 review that kept the re-read off until PG16 is restated in the comment on launchRereadIsOn.
+- **The text pipeline goldens:** TextPipelineGoldenTests hold the digests of what the text pipeline produced on main before the performance work of October 3.
+## From Kept texts, re-reads, and edited text
+
+- **Search Library's search texts:** Search Library's search texts (libsearch, November 13, 2026).
+- **A refusal that names the work under way:** A refusal for a book in booksBeingReadAgain, or, with no ID, for any, has, since November 13, 2026, named the work under way.
+- **One wait for every entry point of a re-read:** Four entry points ask it, so each waits in the same words and none leaves a content.md from one run beside the record of another (review of October 24, finding 3).
+- **A transcript stays when its download goes:** A transcribed episode's transcript is the listener's own work and stays in the episode's package when its download goes (October 23, 2026).
+## From Package records
+
+- **The record's encoding and source on every save:** Any other save, a reading checkpoint among them, writes the stored record's encoding and source back as they are, and never the old encoding beside the new text (review of October 24, finding 5).
+- **When hand edits began to be recorded:** Since October 7, 2026, FileImportService.importFileWithReport begins such a record on every book it makes (hand edits, below); nil means nothing was recorded: every row saved before October 7, 2026, and every book since that the file import did not make.
+## From Package records: places, transcripts, origin, manifests
+
+- **The transcript index version:** BookContentTranscriptIndex.currentVersion, "1.1.0", was raised from "1.0.0" on October 23, 2026 with that escaping, so each transcribed book's text is written again once as it opens.
+## From Preferences
+
+- **The Leading articles setting:** LeadingArticles (Models/LeadingArticles.swift) is saved under leadingArticles (November 13, 2026).
+## From Preferences: keyboard shortcuts
+
+- **The former default shortcuts:** Move Book Up and Move Book Down had Control-Option arrows before March 22, 2026 (1ec35f02), and Next Bookmark had Shift-Command-B before March 24 (ffb538b1), when Show Bookmarks took Shift-Command-B (the comment on ShortcutAction.formerDefaultBindings).
+## From Logs
+
+- **The feed log keys are pinned:** Feeds, every one pinned since the feed review of October 10, 2026.
+- **BRAILLE_TABLE_CHANGED:** A braille book read again with another braille code has written BRAILLE_TABLE_CHANGED since November 13, 2026.
