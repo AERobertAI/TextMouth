@@ -114,6 +114,43 @@ Part of [TextMouth's documentation](../../README.md).
 - A TextMouth package inside a ZIP, as one mailed or compressed in Finder, imports as one book, with its places, bookmarks, and settings, not as its book file and its text cache apart.
 - A package whose book the library lists is skipped as a duplicate, and one that cannot be identified is a failure, so the archive is kept.
 
+## Importing audio that TextMouth converts
+
+- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
+- The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
+- The archive, folder, or file you import from is never changed.
+- A track that can't be converted stops the import, and nothing is added.
+- The alert says which track and why, as in "Could not import “My Tracks.zip”. Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
+- That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes. [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
+- Cancel kills the conversions at once, and the import ends as a cancelled one.
+- The reasons, with X the track's file name:
+  - "The audio file X could not be read for converting." The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
+  - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
+  - "The audio converted from X could not be given its name."
+  - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
+  - "Converting X failed (the converter ended with code N)."
+  - "There is not enough free disk space to convert X: it needs N GB free." This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
+  - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
+
+## The original file after an import
+
+- Storage settings decide what happens to the original file after an import: keep it (the default), delete it, or ask each time.
+- A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
+- When After Importing a Book is set to Delete After Import or Ask Each Time, an alert titled "Book Imported" says "The original file was kept: it is a folder, and an import never deletes a folder.", and the book is added without opening, even if it came from Finder.
+- A file inside a book's package, a folder ending in .tmb, or inside TextMouth's data directory is never deleted or offered for deletion, whatever After Importing a Book says: such a file, opened with Show Package Contents and Open With, is a copy of part of a book that is still in the library.
+- It is kept with nothing said, and the debug log notes it.
+
+## A ZIP holding a DAISY book with audio
+
+- A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
+- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above). TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion. Before 0.4.3 it could.
+- For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
+- A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
+
+## A Markdown book named content.md
+
+- A Markdown book whose file is named content.md keeps its own file: the package stages it as "content (book).md", beside the text cache, which is a different file, so Redo Text Extraction still has the original.
+
 ## The import overlay
 
 - While books import, the import overlay in the Library window shows how far the import has got, and VoiceOver reads all of it there.
@@ -450,25 +487,6 @@ Part of [TextMouth's documentation](../../README.md).
 - If the replaced book was open in Edit Text, VoiceOver says, once, "Edit Text has stopped for X, since a new copy replaced it. Choose Edit Text again to edit the new copy's text.", with X the book's title, so that you are not left saving into an editor nothing listens to (see [Editing a book's text](editing-book-text.md)).
 - An Edit Manifest session for the replaced book ends without a word.
 
-## The original file after an import
-
-- Storage settings decide what happens to the original file after an import: keep it (the default), delete it, or ask each time.
-- A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
-- When After Importing a Book is set to Delete After Import or Ask Each Time, an alert titled "Book Imported" says "The original file was kept: it is a folder, and an import never deletes a folder.", and the book is added without opening, even if it came from Finder.
-- A file inside a book's package, a folder ending in .tmb, or inside TextMouth's data directory is never deleted or offered for deletion, whatever After Importing a Book says: such a file, opened with Show Package Contents and Open With, is a copy of part of a book that is still in the library.
-- It is kept with nothing said, and the debug log notes it.
-
-## A ZIP holding a DAISY book with audio
-
-- A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
-- The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above). TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion. Before 0.4.3 it could.
-- For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
-- A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
-
-## A Markdown book named content.md
-
-- A Markdown book whose file is named content.md keeps its own file: the package stages it as "content (book).md", beside the text cache, which is a different file, so Redo Text Extraction still has the original.
-
 ## Offer to transcribe after importing
 
 - With Offer to transcribe after importing an audiobook on, in the Playback tab of Settings, TextMouth asks after each audiobook it imports, on a Mac that can transcribe, whether to transcribe it, after that import's other questions (see [Transcribing an audiobook](transcribing.md)).
@@ -508,21 +526,3 @@ Part of [TextMouth's documentation](../../README.md).
   - An original file is kept.
   - A ZIP's books stay where they are.
   - An offer to transcribe is dropped.
-
-## Importing audio that TextMouth converts
-
-- Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
-- The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
-- The archive, folder, or file you import from is never changed.
-- A track that can't be converted stops the import, and nothing is added.
-- The alert says which track and why, as in "Could not import “My Tracks.zip”. Converting its audio failed: Converting 01.ogg was stopped because it used more than 960 seconds of processor time."
-- That number is four times the converter's time limit, a minute plus a tenth of the track's length, here for a track of 30 minutes. [Where TextMouth keeps your library](where-your-library-lives.md) lists what else stops the converter.
-- Cancel kills the conversions at once, and the import ends as a cancelled one.
-- The reasons, with X the track's file name:
-  - "The audio file X could not be read for converting." The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
-  - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
-  - "The audio converted from X could not be given its name."
-  - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
-  - "Converting X failed (the converter ended with code N)."
-  - "There is not enough free disk space to convert X: it needs N GB free." This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
-  - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
