@@ -9,10 +9,24 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 The catalog: BrailleTableCatalog reads the tables' own metadata, from two sources (BrailleTableSource).
 Adding a bundled table is adding a resource to its folder.
 
-- The sources: the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded. mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error; it holds the folder's liblouis version, read from the property list beside it.
-- Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none, with a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated; a system is kept when it names one. tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language. merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
-- Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread: AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once. storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
-- Codes and languages: codes(of:) groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words), lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and keeps the first of tables with the same words. languages(of:) lists English first, then the others by their names in the user's language (languageName: Locale, else the first part of a table's index-name, else its display-name before "braille").
+- The sources:
+  - the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and
+  - this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded.
+  BrailleTableCatalog.mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error.
+  It holds the folder's liblouis version, read from the property list beside it.
+- Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none.
+  It has a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated.
+  A system is kept when it names one.
+  BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
+  BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
+- Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
+  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
+  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
+- Codes and languages: BrailleTableCatalog.codes(of:)
+  - groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words),
+  - lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and
+  - keeps the first of tables with the same words.
+  BrailleTableCatalog.languages(of:) lists English first, then the others by their names in the user's language (languageName: Locale, else the first part of a table's index-name, else its display-name before "braille").
 - In words: description(ofTableID:) says a table for Book Information and Speak Info (Book.brailleCodeDescription), such as "Unified English Braille, contracted (Grade 2)", with ", in French" after a Mac table's, and the stored value itself when no offered table has it.
 
 ## The translator and the helper
@@ -59,10 +73,17 @@ A check that refuses a table logs BRAILLE_MAC_TABLE_REFUSED, an import event bes
 ### The helper's three modes
 <!-- id: helper-three-modes; keys: check mode, forward translation, back-translation, typeform, emphasis classes, sandbox folder; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthProductionTests/BrailleTranslatorTests.swift -->
 
-The helper has three modes: `check` compiles a table with every table it includes (the tests and MacBrailleTableCheck call BrailleTranslator.check), and `forward` (print to braille) and `back` (braille to print) translate a file of records, one for each paragraph (the protocol, above), into a file of records of the same kind, in Unicode braille patterns, with a blank cell and never a space between words. forward reads each print paragraph's emphasis codes and writes braille whose cells hold the table's emphasis indicators, with an empty code line; back reads braille with an empty code line and writes the print with the codes of the emphasis read from its cells (read_braille, below).
+The helper has three modes:
+- `check` compiles a table with every table it includes (the tests and MacBrailleTableCheck call BrailleTranslator.check), and
+- `forward` (print to braille) and `back` (braille to print) translate a file of records, one for each paragraph (the protocol, above), into a file of records of the same kind, in Unicode braille patterns, with a blank cell and never a space between words.
+
+`forward` reads each print paragraph's emphasis codes and writes braille whose cells hold the table's emphasis indicators, with an empty code line.
+`back` reads braille with an empty code line and writes the print with the codes of the emphasis read from its cells (read_braille, below).
 Both carry only the classes that read back exactly with the table (italic, bold, underline, script, and trans1 to trans5 as one flag), which the helper measures on each run, never by the table's name.
 (check_readable: a sample of plain words is translated forward with each class the table has on marked stretches, then back by liblouis alone, and the class passes when the words come back exactly and the class lies on exactly the marked letters).
-UEB's pass, and so does liblouis's own EBAE underline, which is written and read as liblouis has it; EBAE's italic and bold, which liblouis misreads, and the classes of most of this Mac's tables do not, so those write plain braille, and an EBAE export is byte for byte what it was before the reading passes. back reports the readable classes and the classes the EBAE pass reads (flags_for_typeform), so an EBAE book read in TextMouth has the italic and bold the pass found, while an export writes none.
+UEB's classes pass, and so does liblouis's own EBAE underline, which is written and read as liblouis has it.
+EBAE's italic and bold, which liblouis misreads, and the classes of most of this Mac's tables do not, so those write plain braille, and an EBAE export is byte for byte what it was before the reading passes.
+`back` reports the readable classes and the classes the EBAE pass reads (flags_for_typeform), so an EBAE book read in TextMouth has the italic and bold the pass found, while an export writes none.
 It
 - changes into the tables folder it is given, the bundle's or, for a "mac:" table, the Mac's own (a run reads one folder, never both, so a Mac table's includes come from the Mac's own liblouis),
 - sets LOUIS_TABLEPATH to ".",
@@ -88,14 +109,29 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
   - drops bold's ⠸⠨ with its emphasis,
   - writes ">" for the sign it writes again after a passage, and
   - lets a passage run to the end of the paragraph.
-  Its own EBAE writes a period before a word, "=", ">", and "µ" with those same cells, so the braille cannot tell them from a sign. strip_ebae_signs finds the signs as BANA writes them (the NLS Instruction Manual for Braille Transcribing, lesson 15): ⠨ before a word, ⠨⠨ before a passage with ⠨ before its last word, bold's ⠸⠨ and ⠸⠨⠨, the signs after opening punctuation, a dash, a slash, or a joined "to", "into", or "by", the termination sign ⠠⠄, and liblouis's own end signs. may_strip leaves a sign out only where liblouis drops it anyway (find_strippable_signs: liblouis reads the sign and the cell after it, standing alone, exactly as it reads that cell alone), so the words stay those liblouis read before the pass and only emphasis is added: a sign before a to j, k, or m is left, and is the period, the "=", or the "µ" it always was, though a passage's last sign there still ends the passage.
+  Its own EBAE writes a period before a word, "=", ">", and "µ" with those same cells, so the braille cannot tell them from a sign.
+  Then strip_ebae_signs finds the signs as BANA writes them (the NLS Instruction Manual for Braille Transcribing, lesson 15):
+  - ⠨ before a word,
+  - ⠨⠨ before a passage with ⠨ before its last word,
+  - bold's ⠸⠨ and ⠸⠨⠨,
+  - the signs after opening punctuation, a dash, a slash, or a joined "to", "into", or "by",
+  - the termination sign ⠠⠄, and
+  - liblouis's own end signs.
+  Next, may_strip leaves a sign out only where liblouis drops it anyway (find_strippable_signs: liblouis reads the sign and the cell after it, standing alone, exactly as it reads that cell alone).
+  So the words stay those liblouis read before the pass and only emphasis is added.
+  A sign before a to j, k, or m is left, and is the period, the "=", or the "µ" it always was, though a passage's last sign there still ends the passage.
   BANA's EBAE has no sign for bold italic, and liblouis's, bold's sign before italic's, is not read: more ⠨ after a word's sign than a passage's is left to liblouis.
   A bold passage is counted in print's words, since contracted EBAE joins "to", "into", and "by" to the word after them (joined_word in TextMouthBraille/main.c), and "and", "for", "of", "the", "with", and "a" to one another.
-  It leaves to liblouis a ⠨ inside a number (the decimal point) or a contraction, ⠨⠅ or ⠨⠂ standing alone (liblouis's "=" and ">"; but in contracted EBAE ⠨⠅ ends an open italic passage as its last word, "knowledge"), and computer braille between ⠸⠬ and ⠸⠱ (a web or mail address, whose ⠨ is a period).
+  It leaves to liblouis a ⠨ inside a number (the decimal point) or a contraction, ⠨⠅ or ⠨⠂ standing alone (liblouis's "=" and ">"; but in contracted EBAE ⠨⠅ ends an open italic passage as its last word, "knowledge").
+  It also leaves to liblouis computer braille between ⠸⠬ and ⠸⠱ (a web or mail address, whose ⠨ is a period).
   It runs only for a table that reads ⠨ alone as punctuation (reads_cell_as_punctuation, in detect_codes): the Bharati tables, which also write italic as ⠨ before a word but read it as a letter, are read as before.
 - The safety net (keep_liblouis_words): leaving a sign out can still change how liblouis reads the cells around it, as "(" ⠶ and "be" ⠆ read together as "}" once the sign between them was gone ("(before" came back "}from").
   A record the pass left a cell out of is therefore also read by liblouis alone, and wherever the two readings differ in any character, liblouis's is the record's, with only its own emphasis: the words are liblouis's by construction, and a paragraph where the net fires has no emphasis from the pass.
   Double capitals are found anywhere in a word, and the termination sign is kept for liblouis, which reads it as nothing and keeps a word's parts apart.
+
+### The UEB reading pass
+<!-- id: braille-ueb-reading-pass; keys: read_ueb, terminator, whole-word contraction, emphasis terminator, review E1; src: TextMouthBraille/main.c, TextMouthProductionTests/BrailleEmphasisReadingTests.swift -->
+
 - read_ueb: liblouis reads UEB's indicators and their emphasis, but reads the cells just before a terminator (an indicator's prefix and ⠄, as ⠨⠄ for italic, after a cell that is not blank) as if they could not end a word.
   So a whole-word contraction there came back as the letter or sign its cell also is: "people" (⠏) as "p", "Knowledge" as "K", "can" as "c", "his" (⠦) as a double quotation mark, "were" as a prime, and "enough" as "en" (review E1).
   Braille that holds a terminator is read twice.
@@ -110,13 +146,15 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
   So that it holds for any table that reads EBAE, the bundled or this Mac's, which TextMouth never edits.
   The pass only rewrites cells into cells that liblouis reads right, spaced apart or spelled in letters (which liblouis reads as it reads the contraction's letters in print), so the emphasis pass and its safety net read the very same cells.
   Measured on the Life of Pi's text through en_US.tbl, piped, the words that did not match the print fell from 2,266 (2.21 percent) to 703 (0.68 percent): "ofthe" from 613 to 0, "andthe" from 201 to 2, "ofa" from 192 to 1, "witha" from 148 to 3, "forthe" from 114 to 0, "withthe" from 89 to 0.
-  - The gate: read_braille runs it, as its first step, only when uses_code(emphasis, CODE_EBAE) holds, the table writes EBAE's emphasis signs (found by translating a probe, never by the table's name), and table_emphasis.contracted does, which reads_word_signs sets when the table reads each of the six cells ⠯ ⠿ ⠷ ⠮ ⠾ ⠁ alone as "and", "for", "of", "the", "with", and "a".
+  - The gate: read_braille runs it, as its first step, only when uses_code(emphasis, CODE_EBAE) holds, the table writes EBAE's emphasis signs (found by translating a probe, never by the table's name), and table_emphasis.contracted does.
+    It is set by reads_word_signs when the table reads each of the six cells ⠯ ⠿ ⠷ ⠮ ⠾ ⠁ alone as "and", "for", "of", "the", "with", and "a".
     So uncontracted EBAE, UEB, and every other table are read as before; with no memory the cells are read unfixed.
     The result goes to read_ebae and its safety net (keep_liblouis_words), which read it as given.
   - How it goes: words are the cells between blanks, and fix_ebae_word gives each the first fix that fits it, in this order, through the marks that open it (is_leading_mark) and before the marks that may end it.
     A word that begins inside computer braille, holds its indicators ⠸⠬ and ⠸⠱, or lies between them is left as it is (touches_computer_braille), since no cell there is a contraction.
     A word grows at most five times (a lone ⠌⠲ is spelled in seven cells from two), so the output buffer's 6 * n + 16 cells is room for any input.
-  - split_word_signs: a run of two or more of the word signs ⠯ ⠿ ⠷ ⠮ ⠾ ⠁, each with the capital sign it may have, at least one of them not "a", and nothing but the marks that may end a word, is spaced into words: ⠷⠮ "of the", ⠯⠮ "and the", ⠷⠁ "of a", ⠾⠁ "with a", ⠿⠮ "for the", ⠾⠮ "with the" read as words, where the table read the unit as "ofthe".
+  - split_word_signs: a run of two or more of the word signs ⠯ ⠿ ⠷ ⠮ ⠾ ⠁, each with the capital sign it may have, at least one of them not "a", and nothing but the marks that may end a word, is spaced into words.
+    The pairs are ⠷⠮ "of the", ⠯⠮ "and the", ⠷⠁ "of a", ⠾⠁ "with a", ⠿⠮ "for the", and ⠾⠮ "with the", read as words where the table read the unit as "ofthe".
     A capitalized "the" and "a", ⠠⠮⠁, is the name Thea and is not split.
   - split_initials: a word of single letters each with its period, at least two periods (the last letter's period may be left out), as ⠏⠲⠃⠲⠥⠲⠓⠲ for "p.b.u.h.", becomes one word for each letter, each with a letter sign first so that ⠏ is "p" and not "people", and the period.
     The table read the period between letters as "dd", and the print reads "p. b. u. h." with spaces, so "e.g." reads "e. g.".
@@ -145,7 +183,8 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
   - read italic and bold in 79 percent (uncontracted) and 81 percent (contracted) of its seeded BANA-style sentences, where liblouis alone reads none.
   The net fired in 13 of 9,000.
 - Limits:
-  - an emphasized word that starts with a to j or k keeps liblouis's period or "=" and loses its emphasis, and one that starts with m does as well in uncontracted EBAE (in contracted EBAE it is read as emphasis, except where it follows a number or is a unit written with a sign, the micro sign above);
+  - an emphasized word that starts with a to j or k keeps liblouis's period or "=" and loses its emphasis, and one that starts with m does as well in uncontracted EBAE.
+    (in contracted EBAE it is read as emphasis, except where it follows a number or is a unit written with a sign, the micro sign above);
   - liblouis writes a period before a word as ⠨ wherever the word begins and reads it back as nothing before a capital or a letter past j, as it reads a sign there, so such a period is read as a sign (".NET" is italic "NET", the words being liblouis's, which lose the period too);
   - liblouis's own readings of EBAE that are no emphasis sign are kept with their faults, such as "3.e" for 3.5; and
   - a passage that crosses the 4,000-scalar cut still comes back plain after it (above).
@@ -160,7 +199,14 @@ It runs when BrailleTablePickers takes a choice (verdictOffTheMainThread, in a T
   - loading the table,
   - printing timingLines (120) lines of sample, which holds capitals, lowercase letters, digits, and punctuation, typographic punctuation included, and
   - reading the braille back.
-- Refusal: gone (the catalog no longer offers it), doesNotLoad (status 2), writesEightDots (only for a table with no dots line, when the sample's cells are not all six-dot), needsTooMuchMemory (over memoryCeilingBytes, 64 MB), and tooSlow (over secondsPerMBCeiling, 20 seconds for each MB either way, judged by rate only when a timed run takes at least minimumTimedSeconds, 0.25 seconds, and a run the watchdog stops for its time is too slow as well); couldNotCheck(why:) is a check that could not be made. reason is the words of each, and BrailleSettingsWording.refusal(ofTableNamed:because:) makes the sentence the pop-ups announce.
+- Refusal:
+  - gone (the catalog no longer offers it),
+  - doesNotLoad (status 2),
+  - writesEightDots (only for a table with no dots line, when the sample's cells are not all six-dot),
+  - needsTooMuchMemory (over memoryCeilingBytes, 64 MB), and
+  - tooSlow (over secondsPerMBCeiling, 20 seconds for each MB either way, judged by rate only when a timed run takes at least minimumTimedSeconds, 0.25 seconds, and a run the watchdog stops for its time is too slow as well).
+  A refusal can also be couldNotCheck(why:), a check that could not be made.
+  Its reason is the words of each, and BrailleSettingsWording.refusal(ofTableNamed:because:) makes the sentence the pop-ups announce.
 - Limits: a usable table's TableNeeds raise the limits of its runs to at least twice the memory and four times the time its check measured, and never lower one.
 - Verdicts: Verdicts keeps each for the session (the task-local verdicts, which tests bind to their own), except couldNotCheck and tooSlow, which the next choice or import measures again.
 - Each book is decided at its export: an eight-dot cell a table makes from an ordinary character fails that book's export (see [Exports](exports.md)).
@@ -173,7 +219,8 @@ It runs when BrailleTablePickers takes a choice (verdictOffTheMainThread, in a T
 The guess of English Braille, American Edition (brfguess).
 At an import, a BRF or BRL book whose braille is clearly EBAE is read with the bundled contracted EBAE table, "en_US.tbl" (BrailleTableGuess.ebaeTableID), in place of the Braille setting's contracted UEB table, and the book is marked as guessed.
 
-- Where it runs: FileImportService.brailleReading(ofImported:) decides once, before the title page is read, the file characters (brailleFileCode(ofImported:)) and the table, through BrailleTableGuess.table(forImportedFileAt:fileCode:settingTable:guessing:), which returns the setting's table and no origin unless every one of these holds:
+- Where it runs: FileImportService.brailleReading(ofImported:) decides once, before the title page is read, the file characters (brailleFileCode(ofImported:)) and the table, through BrailleTableGuess.table(forImportedFileAt:fileCode:settingTable:guessing:).
+  It returns the setting's table and no origin unless every one of these holds:
   - the guess is on (BraillePreferences.guessesTable, "brailleGuessesTable", a StoredPreference flag on by default; importGuessesTable() reads it, or the task-local guessesTableForImports a hosted test binds),
   - the file is not a PEF (BrailleBookReader.kind(of:)),
   - the setting's table is a contracted UEB table (isContractedUEB: catalog system "ueb" and contraction .full, which a Mac's UEB table can be),
@@ -189,9 +236,18 @@ At an import, a BRF or BRL book whose braille is clearly EBAE is read with the b
   Invented EBAE prose shows a sign in about one word in eighteen.
   236,000 dictionary words, 20,000 words in 20 punctuation forms, 4,000 camel-case identifiers, and 100 names with a capital inside them, all in en-ueb-g2.ctb, show no joined "by" at all.
   When unsure the setting's table stands.
+
+### What the guess records and what the listener sees
+<!-- id: guess-record-listener; keys: brailleTableOrigin, guessed, Keep This Code, Replace Existing, removal marker, guess switch; src: TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift, TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouthProductionTests/BrailleGuessReplaceTests.swift -->
+
 - The record: Book.brailleTableOrigin, an optional BrailleTableOrigin (Models/BrailleTableOrigin.swift), a String enum with one case, guessed.
   Nil is every other book: every book added before the field, every book whose table the listener chose, and a value this TextMouth cannot read.
-  It is kept in the row, in BookMetadata.brailleTableOrigin (@LenientOptional, so an unreadable value decodes as none without failing the record), and in RemovedFromLibraryMarker.brailleTableOrigin (@LenientOptional), and it travels with brailleTable everywhere the table does: Book.bookInfo(replacing:) takes the row's origin when the row holds a table and the stored record's only when it holds none, so a choice in Book Information, which clears it, replaces a guess the record holds; Book.LibraryFields, ContentAnalysisSummary (taken with the table and applied with it, an own record's only), and LibraryPersistenceService's re-read result (its BrailleTableDecision.origin, nil, since a re-read with a table is the listener's choice).
+  It is kept in the row, in BookMetadata.brailleTableOrigin (@LenientOptional, so an unreadable value decodes as none without failing the record), and in RemovedFromLibraryMarker.brailleTableOrigin (@LenientOptional).
+  It travels with brailleTable everywhere the table does:
+  - Book.bookInfo(replacing:) takes the row's origin when the row holds a table and the stored record's only when it holds none, so a choice in Book Information, which clears it, replaces a guess the record holds;
+  - Book.LibraryFields,
+  - ContentAnalysisSummary (taken with the table and applied with it, an own record's only), and
+  - LibraryPersistenceService's re-read result (its BrailleTableDecision.origin, nil, since a re-read with a table is the listener's choice).
   A nil origin is left out of every file, so every existing book's row, record, and marker are byte for byte as before (OnDiskContractTests pins the key in all three; an older TextMouth drops it at its next save, and the table then reads as the listener's own).
 - Replace Existing: DuplicateReplacement.carriedBook(replacing:with:places:location:) gives the new copy brailleTableOrigin(replacing:with:).
   When both are braille books of the same bytes (the same md5Hash) and the table the copy ends with, after any re-read in the old copy's table, is the old copy's, the copy takes the old copy's origin, nil included.
@@ -202,7 +258,9 @@ At an import, a BRF or BRL book whose braille is clearly EBAE is read with the b
   - runs no fresh guess, and
   - gives the book the marker's origin, for a braille book only.
 - The listener's side: BrailleCodeWording.describe(_:origin:) adds ", guessed" (TextEncodingWording.guessNote) to the code's name, which Book.brailleCodeDescription (so Book Info's row and Speak Info) and BrailleCodeChoiceModel.name(of:) (the selected item's, through storedOrigin) both use.
-  BrailleCodeChoiceModel.guessNote, BrailleCodeWording.guessedRecovery, is the plain Text the Book Information sheet draws after the pop-up, with a Button, keepGuessLabel, "Keep This Code" (hint keepGuessHint), for the one choice a menu pop-up cannot offer, the item already selected: choose(_:) of the selected item calls keepGuessedTable() when the origin is .guessed, which clears the origin on the row (LibraryViewModel.updateBook), reloads storedOrigin, announces keptGuess(bookTitle:codeName:), and re-reads nothing.
+  BrailleCodeChoiceModel.guessNote, BrailleCodeWording.guessedRecovery, is the plain Text the Book Information sheet draws after the pop-up, with a Button, keepGuessLabel, "Keep This Code" (hint keepGuessHint), for the one choice a menu pop-up cannot offer, the item already selected.
+  BrailleCodeChoiceModel.choose(_:) of the selected item calls keepGuessedTable() when the origin is .guessed.
+  It clears the origin on the row (LibraryViewModel.updateBook), reloads storedOrigin, announces keptGuess(bookTitle:codeName:), and re-reads nothing.
   A choice of another table goes through the flow as before, and LibraryViewModel.settingBrailleTable clears the origin for any table chosen.
   The Braille tab's switch is BrailleSettingsView's guessSwitch row (label guessLabel, "Guess the braille code of new books", hint guessHint), bound through SettingsViewModel.guessesBrailleTable, which is not mirrored in config.json.
 - Tests: BrailleTableGuessTests, BrailleTableGuessImportTests and BrailleTableOriginRecordTests (TextMouthProductionTests/BrailleTableGuessTests.swift, with BrailleGuessFixtures), BrailleSettingsViewTests, and the key's pin in OnDiskContractTests.
