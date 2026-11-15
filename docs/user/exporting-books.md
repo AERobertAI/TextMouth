@@ -7,7 +7,18 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: what-export-dialog-lists; keys: ; src: -->
 
 The Export dialog lists what the books hold: a checkbox for each kind, labelled with its size and with its number of files when there are several, or, for several books, with how many of them hold it, as in "Original file, 1.2 MB", "Audio, 12 files, 340 MB", or "Audio, 2 books, 680 MB".
-The kinds are Audio, an audiobook's file or its tracks; Original file, a text book's own file (an .rtfd, which is a folder, is copied whole, and its size is that of the files inside it) or, for an audiobook whose import kept the originals of the audio it converted (Keep originals of converted audio, under [Settings](settings.md)), those files as they were before: one file under its own name, or, for a book of tracks, a folder named like "Moby-Dick - Original Files", each original under its path inside the book's folder of tracks; Text as Markdown, the book's text with its headings, lists, and emphasis (the Convert to menu, below, can make it HTML, RTF, a Word document, or braille instead); Text as plain text, each chapter's words under its title, before any substitution rules; Original recording, a recording as it was made, before any edits; Original audio (before edits), an edited audiobook's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does: one file named after the book, as in "Moby-Dick - Original Audio.mp3", or, for a book of tracks, the edited tracks' originals in a folder of that name; and Transcript, its transcript.json, copied as it is, and, for an audiobook, the transcript's text as Markdown, written as Text as Markdown is (below).
+The kinds are
+- Audio, an audiobook's file or its tracks;
+- Original file, a text book's own file (an .rtfd, which is a folder, is copied whole, and its size is that of the files inside it) or,
+  - for an audiobook whose import kept the originals of the audio it converted (Keep originals of converted audio, under [Settings](settings.md)), those files as they were before:
+    - one file under its own name, or, for a book of tracks, a folder named like "Moby-Dick - Original Files", each original under its path inside the book's folder of tracks;
+- Text as Markdown, the book's text with its headings, lists, and emphasis (the Convert to menu, below, can make it HTML, RTF, a Word document, or braille instead);
+- Text as plain text, each chapter's words under its title, before any substitution rules;
+- Original recording, a recording as it was made, before any edits;
+- Original audio (before edits), an edited audiobook's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does:
+  - one file named after the book, as in "Moby-Dick - Original Audio.mp3", or, for a book of tracks, the edited tracks' originals in a folder of that name;
+- and Transcript, its transcript.json, copied as it is, and, for an audiobook, the transcript's text as Markdown, written as Text as Markdown is (below).
+
 Kinds that none of the books hold aren't listed.
 VoiceOver starts on the first checkbox, and the first kind that can be exported is checked.
 
@@ -75,7 +86,14 @@ Its hint is "The book's text as HTML, made from the Markdown TextMouth reads it 
 ### File names of converted text
 <!-- id: file-names-converted-text; keys: ; src: -->
 
-Each book gets its own file, named like the Markdown's but with the format's ending, as in "Moby-Dick - Text.html", "Moby-Dick - Text.rtf", "Moby-Dick - Text.doc", "Moby-Dick - Text.epub", "Moby-Dick - Text.brf", or "Moby-Dick - Text.pef", and numbered when the name is in use, as in "Moby-Dick - Text 2.html".
+Each book gets its own file, named like the Markdown's but with the format's ending, as in
+- "Moby-Dick - Text.html",
+- "Moby-Dick - Text.rtf",
+- "Moby-Dick - Text.doc",
+- "Moby-Dick - Text.epub",
+- "Moby-Dick - Text.brf",
+- or "Moby-Dick - Text.pef",
+- and numbered when the name is in use, as in "Moby-Dick - Text 2.html".
 
 ### Converting several books
 <!-- id: converting-several-books; keys: ; src: -->
@@ -118,7 +136,11 @@ An EPUB writes the address so that an EPUB checker accepts it (a character outsi
 <!-- id: how-markdown-written; keys: ; src: -->
 
 Markdown is written from the walk of content.md, not copied from it: headings, paragraphs, lists, quotes, code, tables, and web and mail links, with emphasis and strong emphasis kept.
-It has a backslash only where Markdown needs one: before `*`, `` ` ``, `[`, `]`, `|`, `~`, and `<`, before an underscore outside a word, an ampersand that would begin a character reference, a number sign that would close a heading, and a backslash that precedes punctuation or ends a line, and before the first character of a line that would begin a heading, a list, a quote, or a numbered item.
+It has a backslash only where Markdown needs one:
+- before `*`, `` ` ``, `[`, `]`, `|`, `~`, and `<`,
+- before an underscore outside a word, an ampersand that would begin a character reference, a number sign that would close a heading, and a backslash that precedes punctuation or ends a line,
+- and before the first character of a line that would begin a heading, a list, a quote, or a numbered item.
+
 A comma, period, colon, question mark, quotation mark, or apostrophe has none, so a sentence stands in the file as it reads, where content.md may put a backslash before each of them.
 The Transcript's Markdown is written the same way.
 
@@ -162,25 +184,41 @@ A chapter that passes about 256,000 bytes goes on in another file, which begins 
 ### The navigation document
 <!-- id: navigation-document; keys: ; src: -->
 
-The navigation document has a contents list (a navigation landmark named "Contents") nested by the headings' levels, which links every heading, every chapter, and every place the book's own contents point at, and, for a book with pages, a page list (named "Pages", hidden from the page as EPUB intends) that links every page and is read by the reading system's page navigation.
+The navigation document has a contents list (a navigation landmark named "Contents") nested by the headings' levels, which links
+- every heading, every chapter, and every place the book's own contents point at,
+- and, for a book with pages, a page list (named "Pages", hidden from the page as EPUB intends) that links every page and is read by the reading system's page navigation.
+
 A page whose label would be empty is named by its number.
 
 ### Headings in an EPUB
 <!-- id: headings-epub; keys: ; src: -->
 
 A heading is a real heading at its level.
-A chapter that begins with words before any heading gets a contents entry named for the chapter, or the book, and no heading added; a chapter with a title and no blocks leaves the contents, and a heading made only of characters XML forbids, or of zero-width ones, is written as a target with no heading and listed as "Untitled".
+A chapter that begins with words before any heading gets a contents entry named for the chapter, or the book, and no heading added;
+- a chapter with a title and no blocks leaves the contents,
+- and a heading made only of characters XML forbids, or of zero-width ones, is written as a target with no heading and listed as "Untitled".
+
 An empty book is one empty chapter, which is valid, though TextMouth's own reader says it has nothing to read.
 
 ### The package document
 <!-- id: package-document; keys: ; src: -->
 
-The package document names the book's identifier (its library identity, so exporting a book twice gives one identifier), title, and author, its language where the book has one ("und", undetermined, where it does not, and then the chapters carry no language and each block takes its direction from its words), and the date of the export.
+The package document names
+- the book's identifier (its library identity, so exporting a book twice gives one identifier), title, and author,
+- its language where the book has one ("und", undetermined, where it does not, and then the chapters carry no language and each block takes its direction from its words),
+- and the date of the export.
+
 A book in a right-to-left language or script, such as Hebrew, Arabic, Persian, Urdu, or a language written in Arabic letters, gets right-to-left text and page progression.
-The accessibility metadata says textual, sufficient as text, no hazards, a table of contents and a reading order always, structural navigation only when the book has headings of its own, and page navigation and page break markers only when it has pages, with a summary in plain words, as in "This book was exported from TextMouth as text only.
-Its headings are real headings, and the contents list links them.
-It has a page list, and the start of each page is marked in the text.
-It has no pictures, sound, or video, and the text of a picture's description is kept as text."
+The accessibility metadata says
+- textual, sufficient as text, no hazards,
+- a table of contents and a reading order always,
+- structural navigation only when the book has headings of its own,
+- and page navigation and page break markers only when it has pages,
+- with a summary in plain words, as in "This book was exported from TextMouth as text only.
+  Its headings are real headings, and the contents list links them.
+  It has a page list, and the start of each page is marked in the text.
+  It has no pictures, sound, or video, and the text of a picture's description is kept as text."
+
 It claims conformance to no standard.
 
 ### What an EPUB leaves out
@@ -199,7 +237,11 @@ A failed write says "The EPUB file could not be written, because the disk may be
 <!-- id: what-epub-reads-back-as; keys: ; src: -->
 
 What an EPUB reads back as, when TextMouth imports its own export: the words, the pages with the same word before each, and the headings at the same levels are the same.
-These differ: a contents place that is not a heading reads back as a heading row at its depth in the contents, not at its level; one in a table cell reads back a few words early; of several chapters that hold only page markers, only the first title is kept; and a chapter that begins with words, or a long book with no headings that was split into files, gains heading rows (named for the chapter or the book, then "Chapter 2", "Chapter 3", and so on).
+These differ:
+- a contents place that is not a heading reads back as a heading row at its depth in the contents, not at its level;
+- one in a table cell reads back a few words early;
+- of several chapters that hold only page markers, only the first title is kept;
+- and a chapter that begins with words, or a long book with no headings that was split into files, gains heading rows (named for the chapter or the book, then "Chapter 2", "Chapter 3", and so on).
 
 ## Braille files
 <!-- id: exporting-books-braille-files; keys: ; src: -->
@@ -235,7 +277,10 @@ Each is read as its label, its value, and its hint:
 - "Line ends", for BRF only, a pop-up with "CR LF" and "LF".
   Its hint is "CR LF suits most braille displays and embossers."
   A PEF always ends a row with a line feed.
-- "Braille file characters", for BRF only, after "Line ends", a pop-up that chooses how the file writes each braille cell as a character: "North American Braille ASCII", "Eurobraille, six-dot (German-speaking countries)", or "Unicode braille patterns", starting from the Braille tab's choice (Unicode braille patterns is never that choice).
+- "Braille file characters", for BRF only, after "Line ends", a pop-up that chooses how the file writes each braille cell as a character:
+  - "North American Braille ASCII",
+  - "Eurobraille, six-dot (German-speaking countries)",
+  - or "Unicode braille patterns", starting from the Braille tab's choice (Unicode braille patterns is never that choice).
   Its hint is "How the BRF file writes each braille cell.
   Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille.
   To share braille with a reader elsewhere, export a PEF."
@@ -250,7 +295,9 @@ The three pop-ups are the Braille tab's own, so they offer this Mac's tables too
 ### When the Settings table can't be used
 <!-- id: when-settings-table-cant-be; keys: ; src: -->
 
-When the table chosen in Settings cannot be used here, the options start from Unified English Braille, contracted (Grade 2), and say so under the pop-ups until you choose another table: "TextMouth can't use the braille table chosen in Settings, “French braille”, so this export starts from Unified English Braille, contracted (Grade 2)."
+When the table chosen in Settings cannot be used here, the options start from Unified English Braille, contracted (Grade 2), and say so under the pop-ups until you choose another table:
+
+"TextMouth can't use the braille table chosen in Settings, “French braille”, so this export starts from Unified English Braille, contracted (Grade 2)."
 The table cannot be used when this Mac no longer has it, when it is this Mac's copy of one of TextMouth's own four tables, or when a check earlier in the session refused it, but not as too slow, or because it could not run, which the next check measures again.
 The sentence names the table by its display name, or by its file name when this Mac does not offer it.
 
