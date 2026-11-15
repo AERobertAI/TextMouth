@@ -109,7 +109,8 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **A spent usage window:** nothing re-invokes you when it comes back, and once the limit is reached you cannot start a watcher.
   At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking you, when a window it saw spent has headroom again.
 - A login expiry or an API 403 ("Please run /login") stops every agent and watcher silently, and the usage monitor exits with "AUTH PROBLEM".
-  After the user logs in, a SendMessage to each agent's id resumes it with its uncommitted work; take over the last steps of a lead near a million tokens instead of resuming it.
+  After the user logs in, a SendMessage to each agent's id resumes it with its uncommitted work; a 403 that passes by itself needs only that resume.
+  Take over the last steps of a lead near a million tokens instead of resuming it: it met the 403 again on resume.
 - After a weekly reset, resume few agents at first: a resumed long-context agent is costly (3% of a week in 10 minutes).
 - **Stalled agents:** an agent can stall with "no progress for 600s": a message to its id resumes it with its context intact, and its branch keeps its commits.
   A background suite stopped at its time limit must be rerun.
