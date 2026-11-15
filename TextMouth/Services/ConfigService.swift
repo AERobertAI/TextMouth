@@ -1002,11 +1002,14 @@ final class ConfigService: ObservableObject {
             log("could not save \(fileURL.path): \(error)")
             // The settings in use are not on disk: the user is told, not only
             // the log (TODO S09). A retry saves the settings as they are then,
-            // the same ones unless a later change has saved them itself.
+            // the same ones unless a later change has saved them itself; it
+            // writes on the main thread, so it waits while an operation holds
+            // the storage work, such as a move copying this file.
             PersistenceFailureCenter.shared.recordFailure(
                 .configuration,
                 path: fileURL.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak self] _ in
                 self?.saveToDisk()
             }
