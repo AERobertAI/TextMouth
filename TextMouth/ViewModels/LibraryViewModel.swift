@@ -414,6 +414,12 @@ final class LibraryViewModel: ObservableObject {
     /// that a reader holds, which leave the list when the last hold is
     /// released (`releaseFinishedBookFromReadingList(_:)`).
     var finishedBooksAwaitingRelease: Set<UUID> = []
+    /// Tells the readers that the book it carries was just marked played by
+    /// hand (a feed item's Mark Played or Mark All Played) while the list
+    /// drops finished books: a reader that reads it from the list then rests
+    /// on it, as at a book's end (`holdFinishedBookOnReadingList()`). Sent
+    /// synchronously, so the holds are made before the list decides.
+    let bookMarkedPlayedByHand = PassthroughSubject<UUID, Never>()
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()

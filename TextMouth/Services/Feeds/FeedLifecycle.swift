@@ -113,12 +113,21 @@ extension FeedCenter {
         store.updateItem(itemID, of: feedID) { $0.playedDate = environment.now() }
         requestSweep()
         requestItemPolicyPass(for: [feedID])
+        // A played episode leaves the reading list that drops finished books.
+        if let bookID = store.record(of: feedID)?.item(itemID)?.state.linkedBookID {
+            library?.feedBooksMarkedPlayed([bookID])
+        }
     }
 
     /// Marks the item `itemID` of the feed `feedID` unplayed, as Mark as
     /// Unplayed does: its download is kept from then on.
     func markUnplayed(_ itemID: FeedItem.ID, of feedID: UUID) {
         store.updateItem(itemID, of: feedID) { $0.playedDate = nil }
+        // Unplayed again, it is not put back on the reading list, but one
+        // waiting to leave as played no longer does.
+        if let bookID = store.record(of: feedID)?.item(itemID)?.state.linkedBookID {
+            library?.feedBooksMarkedUnplayed([bookID])
+        }
     }
 
     /// Marks every item of the feed `feedID` the listener has not deleted
@@ -133,16 +142,20 @@ extension FeedCenter {
     func markAllPlayed(of feedID: UUID) -> Int {
         let now = environment.now()
         var marked = 0
+        // The books of the items marked, for the reading list to drop.
+        var markedBookIDs: [UUID] = []
         store.update(feedID) { record in
             for index in record.items.indices
             where record.items[index].deletedDate == nil && record.items[index].playedDate == nil {
                 record.items[index].playedDate = now
                 marked += 1
+                if let bookID = record.items[index].state.linkedBookID { markedBookIDs.append(bookID) }
             }
         }
         if marked > 0 {
             requestSweep()
             requestItemPolicyPass(for: [feedID])
+            library?.feedBooksMarkedPlayed(markedBookIDs)
         }
         return marked
     }

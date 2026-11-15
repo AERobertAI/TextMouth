@@ -735,6 +735,39 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertEqual(world.library.readingList.bookIDs, [second.id])
     }
 
+    /// A book marked played by hand (a feed item's Mark Played) while its
+    /// reader reads it from the list, mid-book, stays on the list as long as
+    /// that reader rests on it, and leaves once the reader closes; a reader
+    /// that reads it from the library holds nothing, so the book leaves at
+    /// once; and with the option off nothing leaves.
+    func testABookMarkedPlayedByHandStaysWhileItsListReaderRestsOnIt() throws {
+        let world = try makeIntegrationWorld("ReadingListMarkedPlayedByHand")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world, removesFinished: true)
+        let fromList = makeReaderFromList(for: first, in: world, requests: requests)
+        // Read from the library, though the book is on the list.
+        let fromLibrary = makeReader(for: second, in: world, requests: requests)
+        XCTAssertTrue(fromList.isOpenedFromReadingList)
+        XCTAssertFalse(fromLibrary.isOpenedFromReadingList)
+
+        world.library.booksMarkedPlayedByHand([first.id, second.id])
+
+        XCTAssertTrue(world.library.readingList.contains(first.id), "left while its list reader rests on it")
+        XCTAssertFalse(world.library.readingList.contains(second.id), "stayed for a reader of the library")
+        fromList.close()
+        XCTAssertFalse(world.library.readingList.contains(first.id), "stayed after its reader closed")
+        XCTAssertEqual(world.library.readingList.bookIDs, [third.id])
+
+        // With the option off, nothing leaves and no reader rests.
+        list([third], in: world, removesFinished: false)
+        world.library.booksMarkedPlayedByHand([third.id])
+        XCTAssertTrue(world.library.readingList.contains(third.id))
+        XCTAssertTrue(world.library.readingListHoldCounts.isEmpty)
+    }
+
     /// A reader gone before the end is told, or no reader at all (a book
     /// finished elsewhere, as a feed item marked played), leaves nothing
     /// holding the book: it leaves the list at once, one turn after the end.

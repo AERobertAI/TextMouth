@@ -982,6 +982,13 @@ final class ReaderViewModel: ObservableObject {
         libraryViewModel.$library
             .sink { [weak self] library in self?.followReadingList(in: library) }
             .store(in: &cancellables)
+        // The book marked played by hand (a feed item) while it is read from
+        // the list: this reader rests on it, so it stays until this reader
+        // moves on or closes (`restOnBookMarkedPlayedByHand()`).
+        libraryViewModel.bookMarkedPlayedByHand
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.restOnBookMarkedPlayedByHand() }
+            .store(in: &cancellables)
         claimReadingListRequest()
     }
 

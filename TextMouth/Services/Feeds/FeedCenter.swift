@@ -144,6 +144,12 @@ protocol FeedLibraryHost: AnyObject {
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool
+    /// Feed items' books `bookIDs` were just marked played by hand (Mark
+    /// Played, Mark All Played): the reading list that drops finished books
+    /// takes them off.
+    func feedBooksMarkedPlayed(_ bookIDs: [UUID])
+    /// Feed items' books `bookIDs` were just marked unplayed by hand.
+    func feedBooksMarkedUnplayed(_ bookIDs: [UUID])
     /// Publishes the books open in readers whenever they change.
     var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> { get }
     /// Whether the library lists every book it holds: not while its index

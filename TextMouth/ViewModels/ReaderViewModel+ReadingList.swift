@@ -252,6 +252,17 @@ extension ReaderViewModel {
         libraryViewModel.holdFinishedBookOnReadingList(book.id)
     }
 
+    /// Rests on this book, marked played by hand while the list drops
+    /// finished books, when this reader reads it from the list: the book
+    /// stays the list's until this reader moves on or closes, as a book
+    /// finished at its end does (`holdFinishedBookOnReadingList()`). A
+    /// reader that does not read it from the list, or has closed, holds
+    /// nothing, so the book leaves at once.
+    func restOnBookMarkedPlayedByHand() {
+        guard !hasClosed, isOpenedFromReadingList else { return }
+        holdFinishedBookOnReadingList()
+    }
+
     /// Lets go of what `holdFinishedBookOnReadingList()` holds, if this
     /// reader holds it: a finished book the list is to drop leaves the list
     /// then, if no other reader of it holds it.

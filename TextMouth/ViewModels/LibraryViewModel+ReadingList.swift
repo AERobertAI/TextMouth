@@ -301,6 +301,32 @@ extension LibraryViewModel {
         }
     }
 
+    /// Acts on the books `bookIDs` just marked played by hand (a feed
+    /// item's Mark Played, or Mark All Played), as on a book's end
+    /// (`bookFinished(_:)`) but at once, since no reader asks the list what
+    /// follows: with the list dropping finished books, each leaves the list
+    /// now, or, while a reader reads it from the list, when that reader
+    /// moves on or closes. The readers are told first
+    /// (`bookMarkedPlayedByHand`) so those reading the book from the list
+    /// hold it. Marking unplayed again puts nothing back
+    /// (`booksMarkedUnplayedByHand(_:)`). Silent, as a finished book's
+    /// removal is; with the option off, nothing happens.
+    func booksMarkedPlayedByHand(_ bookIDs: [UUID]) {
+        guard readingList.removesFinished else { return }
+        for bookID in bookIDs where readingList.contains(bookID) {
+            bookMarkedPlayedByHand.send(bookID)
+            bookFinished(bookID)
+        }
+    }
+
+    /// Acts on the books `bookIDs` just marked unplayed by hand: a book
+    /// waiting for its reader to move on before leaving the list, as played,
+    /// no longer leaves, since it is not played now. A book already off the
+    /// list is not put back.
+    func booksMarkedUnplayedByHand(_ bookIDs: [UUID]) {
+        finishedBooksAwaitingRelease.subtract(bookIDs)
+    }
+
     /// A reader that reads the book `bookID` from the reading list rests on
     /// it at its end: until the reader releases the book, the book is not
     /// dropped from the list for being finished. Every hold is released
