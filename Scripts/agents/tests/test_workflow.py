@@ -166,6 +166,35 @@ class JobsTests(unittest.TestCase):
         self.assertIn("needs: plan", test)
         self.assertIn("matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}", test)
 
+    def test_the_iphone_work_is_a_matrix_of_jobs_the_plan_counts_and_one_failing_does_not_cancel_the_others(self):
+        ios = self.job("ios")
+        self.assertIn("fail-fast: false", ios)
+        self.assertIn("matrix: ${{ fromJSON(needs.plan.outputs.ios_matrix) }}", ios)
+        plan = self.job("plan")
+        for output in ("ios_shards", "ios_matrix"):
+            self.assertIn(f"{output}: ${{{{ steps.plan.outputs.{output} }}}}", plan)
+
+    def test_each_iphone_job_runs_its_own_slice_of_the_classes(self):
+        ios = self.job("ios")
+        step = ios[ios.index("Run the iPhone interface tests"):]
+        command = re.search(r"run: (python3 .*run-ios-ui-tests\.py.*)", step).group(1)
+        self.assertIn("--shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.ios_shards }}", command)
+
+    def test_the_iphone_jobs_artifacts_have_names_of_their_own_and_the_join_reads_them_all(self):
+        ios = self.job("ios")
+        self.assertEqual(re.findall(r"name: (ios-[a-z-]+)-\$\{\{ matrix.shard \}\}", ios),
+                         ["ios-results", "ios-results", "ios-ui-result-bundle"])
+        self.assertNotRegex(ios, r"name: ios-[a-z-]+\n", "no job may upload under a name another job uses")
+        collect = self.job("collect")
+        self.assertIn("pattern: ios-results-*", collect)
+        self.assertRegex(collect, r"merge_shards\.py build/shards build/remote \$\{\{ needs\.plan\.outputs\.shards \}\} "
+                                  r"build/ios \$\{\{ needs\.plan\.outputs\.ios_shards \}\}")
+
+    def test_only_the_first_iphone_job_saves_the_build_products(self):
+        ios = self.job("ios")
+        save = ios[ios.index("Save the build products"):]
+        self.assertIn("matrix.shard == 1 &&", save.split("uses:")[0])
+
     def test_the_join_waits_for_the_shards_and_the_iphone_build_and_runs_whether_they_passed_failed_or_were_stopped(self):
         collect = self.job("collect")
         self.assertIn("needs: [plan, test, ios]", collect)

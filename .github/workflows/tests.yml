@@ -23,13 +23,16 @@
 #                               command with Scripts/agents/test_command.py, the one place the train, the full suite,
 #                               and this workflow take it from. The app is signed ad hoc (CODE_SIGNING_ALLOWED=NO,
 #                               as on the Mac), since a runner has no identity.
-#   ios      (macOS)            beside the shards, builds the iPhone app (TextMouthiOS) and its UI-test bundle for
+#   ios      (macOS, a matrix)  beside the shards, one job for each slice of the iPhone tests (the plan counts them, 1 to 3, so that
+#                               the shards and these stay within the 5 macOS jobs a free account runs at once); each builds the iPhone app (TextMouthiOS) and its UI-test bundle for
 #                               the iOS Simulator through Scripts/agents/run-ios-build.py (no signing), then runs the
 #                               interface tests in an iPhone 17 simulator through Scripts/agents/run-ios-ui-tests.py
 #                               when the request asks for them (every full suite, the phone area, or a UI-test class).
 #                               They press Play and type, which only this job may do: that script alone lets them. Its
 #                               build errors and its failed interface tests are a result for the Mac to show; a failed
 #                               interface test fails this job, and never the Mac tests' verdict.
+#                               Each job takes its slice of the classes (run-ios-ui-tests.py --shard I --of N) and uploads ios-results-I;
+#                               the join (merge_ios_shards.py) writes the one result of them all.
 #   collect  (Linux, seconds)  joins the shards' results, and the iPhone build's, into the one result the Mac downloads
 #                               (artifact test-build-results: the log, the short summary the train reads, the request,
 #                               the iPhone build's summary and errors, and a page for the run's summary), kept a few days.
@@ -59,6 +62,8 @@ jobs:
       request: ${{ steps.plan.outputs.request }}
       ios: ${{ steps.plan.outputs.ios }}
       cold: ${{ steps.plan.outputs.cold }}
+      ios_shards: ${{ steps.plan.outputs.ios_shards }}
+      ios_matrix: ${{ steps.plan.outputs.ios_matrix }}
     steps:
       - name: Check out the commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -214,11 +219,16 @@ jobs:
           retention-days: 3
 
   ios:
-    name: build the iPhone app
+    name: build the iPhone app (job ${{ matrix.shard }} of ${{ needs.plan.outputs.ios_shards }})
     needs: plan
     # A request that says "ios": false leaves the iPhone build out.
     if: ${{ needs.plan.outputs.ios == 'true' }}
     runs-on: macos-26
+    strategy:
+      # A job that fails must not cancel the others: the results of all are wanted. The plan says how many there are (one for
+      # each 8 minutes of interface tests, at most 3), and keeps these and the test shards within the 5 macOS jobs run at once.
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.ios_matrix) }}
     # The limits of its steps added (test_workflow.py adds them up): the platform download (15 at most, 3 to 4 in practice),
     # the build (20 and a minute's grace), and the interface tests' step (45, which holds the simulator's set-up and the
     # tests). Every run so far took 25 to 37 minutes.
@@ -303,7 +313,7 @@ jobs:
         if: ${{ !cancelled() }}
         # The script keeps to this: its tests' limit is cut by what the simulator's set-up used (STEP_BUDGET_MINUTES).
         timeout-minutes: 45
-        run: python3 -I -B Scripts/agents/run-ios-ui-tests.py --out build/remote-ios
+        run: python3 -I -B Scripts/agents/run-ios-ui-tests.py --out build/remote-ios --shard ${{ matrix.shard }} --of ${{ needs.plan.outputs.ios_shards }}
 
       # Only products of a build that finished are worth keeping for the day: the cache is one for each day and is not
       # saved again once it exists, so a build that stopped early (the first probe run, which lacked the platform) must
@@ -317,7 +327,7 @@ jobs:
           fi
 
       - name: Save the build products
-        if: ${{ !cancelled() && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' && steps.built.outputs.finished == 'true' }}
+        if: ${{ !cancelled() && matrix.shard == 1 && needs.plan.outputs.cold != 'true' && steps.cache.outputs.cache-hit != 'true' && steps.built.outputs.finished == 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -335,7 +345,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ios-results
+          name: ios-results-${{ matrix.shard }}
           path: |
             build/remote-ios/ios-summary.txt
             build/remote-ios/ios-errors.txt
@@ -350,7 +360,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ios-results
+          name: ios-results-${{ matrix.shard }}
           path: |
             build/remote-ios/ios-summary.txt
             build/remote-ios/ios-errors.txt
@@ -366,7 +376,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ios-ui-result-bundle
+          name: ios-ui-result-bundle-${{ matrix.shard }}
           path: build/remote-ios/ios-ui-result.xcresult
           if-no-files-found: ignore
           retention-days: 3
@@ -398,7 +408,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: ios-results
+          pattern: ios-results-*
           path: build/ios
 
       - name: Join the results
@@ -407,7 +417,7 @@ jobs:
         run: |
           mkdir -p build/shards build/ios
           if [ "$IOS" = "true" ]; then
-            python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }} build/ios
+            python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }} build/ios ${{ needs.plan.outputs.ios_shards }}
           else
             python3 -I -B Scripts/agents/merge_shards.py build/shards build/remote ${{ needs.plan.outputs.shards }}
           fi
