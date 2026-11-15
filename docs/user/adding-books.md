@@ -1,8 +1,10 @@
 # Adding books
+<!-- id: adding-books; keys: ; src: -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The Add to Library sheet
+<!-- id: add-library-sheet; keys: ; src: -->
 
 - Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library.
 - On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
@@ -21,6 +23,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A button is dimmed when you have set its action to work only in reader windows, which you can for Open Book…, New from Text…, and New Recording…, under Works in in the Shortcuts tab of Settings. Its hint then ends "Not available in this window."
 
 ## Open Book… and Finder
+<!-- id: open-book-finder; keys: ; src: -->
 
 - File menu, Open Book… (Command-O) imports the files you choose.
 - Opening a supported file from Finder imports it and opens it.
@@ -30,6 +33,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A photo is refused with the sentence for a PEF that cannot be read (below).
 
 ## TextMouth packages
+<!-- id: textmouth-packages; keys: ; src: -->
 
 - A TextMouth package, a folder ending in .tmb, chosen in Open Book… opens as the book it holds, as it does from Finder, instead of being refused as an unsupported format.
 - A package for a book the library does not list lands in the folder the window shows and, when the window shows the Reading List, goes onto the Reading List there, as any file imported there does, with the announcement naming the folder.
@@ -37,6 +41,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A package for a book the library lists opens that book, and a copy of the package, such as a Finder duplicate, or the old copy that Replace Existing left in the Trash and you put back, opens the listed book and never takes its place.
 
 ## New from Text…
+<!-- id: new-from-text; keys: ; src: -->
 
 - File menu, New from Text… makes a book from text you type or paste.
 - Its key, Shift-Command-T, works in Library windows, and with no window open, when it opens New from Text… in a new Library window.
@@ -56,10 +61,12 @@ Part of [TextMouth's documentation](../../README.md).
     - That note stays only while the text is as it was reloaded.
 
 ## New Recording…
+<!-- id: new-recording; keys: ; src: -->
 
 - File menu, New Recording… (Option-Command-N), also in the Library menu, records from a microphone into a new audiobook (see [Recording from a microphone](recording.md)).
 
 ## Import Folder…
+<!-- id: import-folder; keys: ; src: -->
 
 - Library menu, Import Folder… (Shift-Command-O, in a Library window) imports a DAISY book kept as loose files, by its folder, one folder per book, or a folder of audio tracks as one audiobook, as a ZIP of the same tracks imports.
 - It was called Import DAISY Folder… before October 14, 2026, and a key you gave it keeps working.
@@ -78,6 +85,7 @@ Part of [TextMouth's documentation](../../README.md).
   - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
 
 ## A transcript chosen with its audio
+<!-- id: transcript-chosen-audio; keys: ; src: -->
 
 - A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported. It is not imported as a book of its own, and nothing is refused.
 - It works with Open Book… and when you open the files from Finder or drop them on the Dock icon.
@@ -86,6 +94,7 @@ Part of [TextMouth's documentation](../../README.md).
 - If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is dropped too, silently.
 
 ## M3U and M3U8 playlists
+<!-- id: m3u-m3u8-playlists; keys: ; src: -->
 
 - An M3U or M3U8 playlist (.m3u, .m3u8), chosen with Open Book…, imports as one audiobook of the files it lists, as a folder of the same tracks imports.
 - The book is named by the playlist's #PLAYLIST line, else by the playlist's file name without its extension, and has a heading for each entry, in the playlist's order, titled by its #EXTINF line, else by the file's name.
@@ -99,10 +108,12 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
 
 ## Add Feed…
+<!-- id: add-feed; keys: ; src: -->
 
 - Library menu, Add Feed… (Shift-Command-F, in a Library window), or the Add Feed… button of the Add to Library sheet (above), subscribes to a podcast or article feed (see [Podcasts and article feeds](feeds.md)).
 
 ## ZIP archives
+<!-- id: zip-archives; keys: ; src: -->
 
 - A ZIP of several books imports each of them (an .rtfd folder inside is one book, not its separate files), and TextMouth offers to create a folder for them.
 - The progress overlay's Cancel button stops a ZIP import after the book in progress, or at once when that book is, on the Mac, a Word document older than Word 6 that textutil is converting, or a braille file that the braille helper is translating.
@@ -110,11 +121,13 @@ Part of [TextMouth's documentation](../../README.md).
 - A single file's import that Cancel stops that way ends with no alert.
 
 ## A TextMouth package inside a ZIP
+<!-- id: textmouth-package-inside-zip; keys: ; src: -->
 
 - A TextMouth package inside a ZIP, as one mailed or compressed in Finder, imports as one book, with its places, bookmarks, and settings, not as its book file and its text cache apart.
 - A package whose book the library lists is skipped as a duplicate, and one that cannot be identified is a failure, so the archive is kept.
 
 ## Importing audio that TextMouth converts
+<!-- id: importing-audio-that-textmouth-converts; keys: ; src: -->
 
 - Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
 - The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
@@ -133,6 +146,7 @@ Part of [TextMouth's documentation](../../README.md).
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
 ## The original file after an import
+<!-- id: original-file-after-import; keys: ; src: -->
 
 - Storage settings decide what happens to the original file after an import: keep it (the default), delete it, or ask each time.
 - A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
@@ -141,6 +155,7 @@ Part of [TextMouth's documentation](../../README.md).
 - It is kept with nothing said, and the debug log notes it.
 
 ## A ZIP holding a DAISY book with audio
+<!-- id: zip-holding-daisy-book-audio; keys: ; src: -->
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
 - The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above). TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion. Before 0.4.3 it could.
@@ -148,14 +163,17 @@ Part of [TextMouth's documentation](../../README.md).
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
 ## A Markdown book named content.md
+<!-- id: markdown-book-named-content-md; keys: ; src: -->
 
 - A Markdown book whose file is named content.md keeps its own file: the package stages it as "content (book).md", beside the text cache, which is a different file, so Redo Text Extraction still has the original.
 
 ## The import overlay
+<!-- id: import-overlay; keys: ; src: -->
 
 - While books import, the import overlay in the Library window shows how far the import has got, and VoiceOver reads all of it there.
 
 ### What the overlay says
+<!-- id: what-overlay-says; keys: ; src: -->
 
 - For a ZIP archive the overlay first counts the items and bytes extracted, as in "Extracting “Library Export.zip”: 120 of 300 items, 1.2 GB of 3.4 GB...".
 - It then counts the books processed, as in "2 of 100 books processed", with the book under way, by its name in the archive, and the step it is at, as in "Book 3 of 100: “Moby Dick.epub”, reading its text".
@@ -166,6 +184,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB".
 
 ### Time and waiting imports
+<!-- id: time-waiting-imports; keys: ; src: -->
 
 - Once a book of several is done, the overlay gives the time left, as in "About 4 minutes left" or "Less than a minute left".
 - It weighs each book still to come by its size where that tells its time, as an EPUB's, PDF's, Word document's, or text file's does, so a large book still to come counts for more, while an audiobook's file, a DAISY book, or an .rtfd folder counts at the average time such books took.
@@ -173,10 +192,12 @@ Part of [TextMouth's documentation](../../README.md).
 - Once a book has taken 10 seconds, the overlay says for how long, as in "1 minute, 5 seconds on this book", in steps of 5 seconds, so a stuck book shows as a time growing on one step.
 
 ### What VoiceOver hears
+<!-- id: what-voiceover-hears; keys: ; src: -->
 
 - For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left.", and how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
 
 ### The Nothing Imported alert
+<!-- id: nothing-imported-alert; keys: ; src: -->
 
 - A ZIP import that brings no new book, and in which nothing failed, says what it found in the Library window's alert, titled Nothing Imported, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library." ("both" for two, and "its one book" for one).
 - For an archive holding no book TextMouth reads, the alert says what the archive holds instead, most files first, as in "No books were found in “Radio.zip”. It holds 176 .wma files, which TextMouth does not import."
@@ -185,6 +206,7 @@ Part of [TextMouth's documentation](../../README.md).
 - One with a failure says so in its alert instead.
 
 ### Cancel and speaking the overlay
+<!-- id: cancel-speaking-overlay; keys: ; src: -->
 
 - Cancel says at once "Cancelling after this book...", or "Cancelling..." before the first book.
 - The alert of a cancelled import says where it stopped.
@@ -192,6 +214,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Give it a key in the Shortcuts tab of Settings, under Information, to use it in every window but an audio editor's, a reader's included (see Works in, under the Shortcuts tab).
 
 ## When an import fails
+<!-- id: when-import-fails; keys: ; src: -->
 
 - When an import fails, an alert names the file, the step that failed, and why, as in "Could not import “notes.md”. Reading its text failed: This file has no text to read."
 - Nothing is added to the library, and the original file stays where it was, whatever Storage settings say about originals.
@@ -199,6 +222,7 @@ Part of [TextMouth's documentation](../../README.md).
 - These reasons have plain words of their own:
 
 ### A file with no text to read
+<!-- id: adding-books-file-no-text-read; keys: ; src: -->
 
 - A plain text, Markdown, HTML, web archive, SSML, rich text, Word (.docx, and its templates and macro documents), Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
 - That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
@@ -207,12 +231,14 @@ Part of [TextMouth's documentation](../../README.md).
 - Open Book…, Finder, and the files inside a ZIP are checked. New from Text… and the rebuilding of a book already in the library are not.
 
 ### A disk without room
+<!-- id: disk-without-room; keys: ; src: -->
 
 - A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”. Copying it into the library failed: There isn’t enough free space on the disk."
 - The words never name the hidden package the import was building.
 - A folder of tracks or a playlist is checked before the first track is copied: TextMouth adds up the tracks' sizes and refuses the import unless the disk would keep its reserve of 1 GB free (the one the archives use) once they were copied, with the same sentence and nothing written. A track on the same APFS disk as the library counts as nothing, since the copy shares its bytes with the original, so a big folder on the library's own disk is not refused for room its copy will not take.
 
 ### Documents TextMouth's own readers can't read
+<!-- id: documents-textmouth-own-readers-cant; keys: ; src: -->
 
 - A rich text, rich text with attachments, Word 97-2003, OpenDocument, or Word 2003 XML document that TextMouth's own reader can't read, and, on the Mac, a Word document older than Word 6 that textutil can't read, is refused with a sentence that names its kind, as in "Could not import “Letter.doc”. Reading its text failed: This file could not be read as a Word 97-2003 document. It may be damaged, or another kind of file."
 - The kind is "a rich text document", "a rich text document with attachments", "a Word 97-2003 document", "an OpenDocument text document", or "a Word 2003 XML document".
@@ -234,6 +260,7 @@ Part of [TextMouth's documentation](../../README.md).
   - On the Mac, a Word document older than Word 6 is unreadable when textutil exits on it, or writes nothing for it, which is what it does when it cannot read a file.
 
 ### Documents on iOS
+<!-- id: documents-ios; keys: ; src: -->
 
 - On iOS, which runs no helper program, a Word document older than Word 6 is refused with "Converting this kind of file is not available on iPhone yet."
 - Rich text, rich text with attachments, Word 6 to Word 2003 documents, OpenDocument text, and Word 2003 XML are read there, as on the Mac.
@@ -241,12 +268,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A Word 6 or Word 95 document is told from a Word 97-2003 one by its own bytes.
 
 ### An OpenDocument text document's title and author
+<!-- id: opendocument-text-document-title-author; keys: ; src: -->
 
 - An OpenDocument text document's title and author come from the document's own information.
 - Apple's textutil lost an .odt's author, so a book of that kind added before version 0.4.0 shows the author Unknown.
 - The library does not change an author it has, but importing the file again with Replace Existing gives the book the author the file names, where you edited neither (see below).
 
 ### A document older than Word 6 that textutil was stopped on
+<!-- id: document-older-than-word-6; keys: ; src: -->
 
 - On the Mac, a Word document older than Word 6 that textutil was stopped on, for passing one of its limits (see [Where TextMouth keeps your library](where-your-library-lives.md)), says why: "TextMouth stopped reading this document because it ran longer than 31 seconds."
 - The reason can instead be "it held more than 1024 MB of memory" or "it used more than 121 seconds of processor time".
@@ -254,17 +283,20 @@ Part of [TextMouth's documentation](../../README.md).
 - Every other kind of document, Word 6 and Word 95 since version 0.4.1 among them, is read inside TextMouth, never by textutil, and is not stopped this way.
 
 ### Documents protected by a password
+<!-- id: documents-protected-password; keys: ; src: -->
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password. Save a copy without the password, then import that copy."
 - A PDF locked by a password is refused with "This PDF needs a password to open.", before any page is read, so it is not mistaken for a scan that text recognition could not read. A PDF that only restricts copying or printing is not locked and imports as usual.
 
 ### A Word document's title and author
+<!-- id: word-document-title-author; keys: ; src: -->
 
 - A Word document's (.docx) title and author come from the document's core properties, its title and its creator.
 - A title that the properties leave empty, or hold only spaces, is not a name: the book takes the file's name, as a document with no properties does.
 - A creator left empty is not a name either: the author is "Unknown", as for a document with no creator at all.
 
 ### XML parts TextMouth can't safely read
+<!-- id: xml-parts-textmouth-cant-safely; keys: ; src: -->
 
 - A Word document, an EPUB, a DAISY book, or an SSML file with a part TextMouth can't safely read is refused, naming the part, in one of three sentences.
 - Before TextMouth reads a part, it checks the part's raw bytes, which no real file in its collection fails.
@@ -289,6 +321,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A Word 2003 XML or OpenDocument document that declares a document type at all is refused too, as before.
 
 ### Markup TextMouth can't safely read
+<!-- id: markup-textmouth-cant-safely-read; keys: ; src: -->
 
 - Before TextMouth reads the markup of an EPUB chapter, an HTML file, a DAISY book, a Kindle book, or a web archive's page, it looks through it once. A Word, rich text, or OpenDocument document passes through the same look, in the HTML its reader writes. Markup that would crash TextMouth or fill the Mac's memory is refused, with one of four sentences that never call the file damaged, since it may not be.
 - Markup nested thousands of levels deep, a document of millions of tags, and a broken declaration used to be able to stop TextMouth. No real book tried is refused for any of them.
@@ -303,26 +336,31 @@ Part of [TextMouth's documentation](../../README.md).
 - A feed gives no sentence. A page that a feed address was looked for in, an article's web page, and a title or summary in a feed are passed over when they pass a limit: no feed is found on that page, an article's book holds the feed's own text, a title is kept as it was written, and the markup of an item that passes a limit reads as no text. Feed discovery reads a page nested up to 512 levels deep, deeper than a book, since it converts nothing.
 
 ### Documents past the 64 MB limit
+<!-- id: documents-past-64-mb-limit; keys: ; src: -->
 
 - A document, web archive, SSML file, DTBook, or Kindle book past the limit of 64 MB (see [What TextMouth reads](what-textmouth-reads.md)) is refused with "This document holds more than 64 MB, the most TextMouth reads from one document."
 - For a rich text document the 64 MB counts the rich text file, or an .rtfd's TXT.rtf alone, whatever its attachments hold.
 - For a Word 97-2003 document it counts the Word file.
 
 ### Web archives that can't be read
+<!-- id: web-archives-that-cant-be; keys: ; src: -->
 
 - A web archive that can't be read as one is refused with "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file."
 - One whose main file is not a page or text says "This web archive holds a file of the type “image/png”, not a web page or text, so it has nothing to read.", naming the type the archive gives.
 
 ### SSML files that can't be read
+<!-- id: ssml-files-that-cant-be; keys: ; src: -->
 
 - An SSML file that begins with another element is refused with "This file is not SSML: it begins with the element “html”, not “speak”.", naming that element.
 - One whose markup is broken is refused with "This SSML file is damaged or incomplete: " and how and where, as in "its markup breaks off early or has extra content after the end (line 1, column 27)."
 
 ### XML files of no known kind
+<!-- id: xml-files-no-known-kind; keys: ; src: -->
 
 - An .xml file that is not a DTBook, Word 2003 XML, or a PEF braille file is refused before anything is copied, at the step "Checking its format", as in "Could not import “catalog.xml”. Checking its format failed: This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
 
 ### Kindle books that can't be read
+<!-- id: kindle-books-that-cant-be; keys: ; src: -->
 
 - A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”. Reading its text failed: This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
 - The sentences are:
@@ -335,6 +373,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A file that holds both MOBI 6 and KF8 whose KF8 half is damaged is read from its MOBI 6 half and imports. Only a copy-protected book is refused for it.
 
 ### KFX Kindle books that can't be read
+<!-- id: kfx-kindle-books-that-cant; keys: ; src: -->
 
 - A KFX Kindle book that can't be read is refused with a sentence that says why.
 - A copy-protected book, a damaged one, and a file named as a Kindle book that is not one get the sentences above.
@@ -345,6 +384,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A KFX book is told copy-protected if its file, a license file beside it, or any part of a book of several is protected, and TextMouth never tries to remove the protection.
 
 ### Braille files that can't be read
+<!-- id: braille-files-that-cant-be; keys: ; src: -->
 
 - A braille file that can't be read is refused with a sentence that says what is wrong, as in "Could not import “Emma.brf”. Reading its text failed: Line 12 holds “é”, which is not braille ASCII."
 - The sentences are:
@@ -374,6 +414,7 @@ Part of [TextMouth's documentation](../../README.md).
   - For a translation that failed any other way, because the helper is missing, could not start, ended with an error, or wrote output that does not match what it was given: "TextMouth could not translate this braille."
 
 ### Playlists that can't be imported
+<!-- id: playlists-that-cant-be-imported; keys: ; src: -->
 
 - A playlist that can't be imported is refused at the step "Reading the file", as in "Could not import “radio.m3u8”. Reading the file failed: It is a streaming playlist for audio on the web, which TextMouth does not import."
 - The other reasons are:
@@ -382,6 +423,7 @@ Part of [TextMouth's documentation](../../README.md).
   - "The playlist “mix.m3u” is too large to read." for a playlist file of more than 4 MiB.
 
 ## The Book Imported alert
+<!-- id: book-imported-alert; keys: ; src: -->
 
 - An import that adds its book but has something to tell ends with an alert titled "Book Imported", where a failure's alert is titled "Error": the entries a playlist skipped, the original of an .rtfd that was kept, or chapters or pages that were left out.
 - The book is in the library, but it is not opened, so the alert is not left behind a reader window.
@@ -392,6 +434,7 @@ Part of [TextMouth's documentation](../../README.md).
   - "Book Imported", for one book, or "Books Imported", for several, when every book came in and only some lack chapters or pages.
 
 ## A book that is already in the library
+<!-- id: book-that-already-library; keys: ; src: -->
 
 - When a book's content is already in the library, TextMouth asks whether to keep both, replace the existing book, or cancel.
 - A feed's episode or article holding the same file doesn't count.
@@ -407,6 +450,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
 
 ## What Replace Existing keeps
+<!-- id: what-replace-existing-keeps; keys: ; src: -->
 
 - Which transcript an audiobook keeps (0.4.2), when both copies have one and the new copy's came from a file beside its audio:
   - The existing copy's transcript stays when recognition made it, when you edited it or cleaned it up, or when this TextMouth can't tell, as for one made by a later version or one only in the cloud. It stays only when the audio is the same, as below.
@@ -444,6 +488,7 @@ Part of [TextMouth's documentation](../../README.md).
     - An old copy left beside the new one, or put back from the Trash with Finder, is never added to the library as a second book: its package names the book the new copy now is, and the debug log records an ORPHAN_ID_LISTED line for it at the launch that finds it.
 
 ## While Replace Existing works
+<!-- id: while-replace-existing-works; keys: ; src: -->
 
 - Replace Existing makes the new copy ready off the main thread, so TextMouth's windows and VoiceOver stay responsive while a long braille book is read again in the code its old copy was read in.
 - The question's sheet dims its buttons, shows "Replacing “X”. This can take a moment." with a spinner, and, if the work is still going after a second, VoiceOver hears the same words once.
@@ -452,6 +497,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Quitting waits for the work, as it waits for a text that is read again.
 
 ## When Replace Existing waits
+<!-- id: when-replace-existing-waits; keys: ; src: -->
 
 - Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
@@ -470,6 +516,7 @@ Part of [TextMouth's documentation](../../README.md).
   - The data directory being rebuilt: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose Replace Existing again."
 
 ## When a replacement fails
+<!-- id: when-replacement-fails; keys: ; src: -->
 
 - A replacement that fails leaves the question open with "Could not replace duplicate: " and the reason, and both copies as they were, the new copy as it was imported.
 - Two reasons are TextMouth's own words:
@@ -478,20 +525,24 @@ Part of [TextMouth's documentation](../../README.md).
 - Any other failure gives the system's own reason.
 
 ## When the replaced copy's files can't be removed
+<!-- id: when-replaced-copy-files-cant; keys: ; src: -->
 
 - When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands, and the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason, with "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
 - With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
 
 ## A replaced book open in Edit Text
+<!-- id: replaced-book-open-edit-text; keys: ; src: -->
 
 - If the replaced book was open in Edit Text, VoiceOver says, once, "Edit Text has stopped for X, since a new copy replaced it. Choose Edit Text again to edit the new copy's text.", with X the book's title, so that you are not left saving into an editor nothing listens to (see [Editing a book's text](editing-book-text.md)).
 - An Edit Manifest session for the replaced book ends without a word.
 
 ## Offer to transcribe after importing
+<!-- id: offer-transcribe-after-importing; keys: ; src: -->
 
 - With Offer to transcribe after importing an audiobook on, in the Playback tab of Settings, TextMouth asks after each audiobook it imports, on a Mac that can transcribe, whether to transcribe it, after that import's other questions (see [Transcribing an audiobook](transcribing.md)).
 
 ## Questions about imports wait their turn
+<!-- id: questions-about-imports-wait-their; keys: ; src: -->
 
 - These questions wait their turn.
 - They are asked one at a time, in the order they arose, in the Library window where the import started, or in another Library window if that one has closed.
@@ -501,6 +552,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A question that appears while you are working in another window, such as a reader, waits in its Library window without taking focus or speaking.
 
 ### A duplicate's new copy waits in the library
+<!-- id: duplicate-new-copy-waits-library; keys: ; src: -->
 
 - A duplicate's new copy waits in the library, in a package marked with a hidden file, .awaitingDuplicateAnswer, until you answer.
 - When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash", as in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back."
@@ -509,6 +561,7 @@ Part of [TextMouth's documentation](../../README.md).
 - The file the copy came from is never deleted.
 
 ### When Keep Both and Replace Existing keep the question
+<!-- id: when-keep-both-replace-existing; keys: ; src: -->
 
 - Keep Both and Replace Existing keep the question, and say why, when they cannot keep the new copy, each sentence naming the book:
   - While the library can't be reached, as when its drive dropped off: "The library can't be reached right now, so TextMouth can't keep the new copy of “Moby-Dick”. Answer again once the library is back." The copy is intact, so there is nothing to cancel.
@@ -516,10 +569,12 @@ Part of [TextMouth's documentation](../../README.md).
   - When Keep Both cannot take the waiting mark off the copy: "TextMouth could not keep the new copy of “Moby-Dick”. Choose Cancel to discard the copy, then import the file again."
 
 ### A book opened from Finder
+<!-- id: book-opened-from-finder; keys: ; src: -->
 
 - A book opened from Finder opens once it is in the library and its questions are answered.
 
 ### Cancel and the questions
+<!-- id: cancel-questions; keys: ; src: -->
 
 - The progress overlay's Cancel button also withdraws the questions of the imports started before it was pressed, those waiting and any still to come:
   - A duplicate's new copy is discarded.
