@@ -50,7 +50,7 @@
     "docs/architecture/state/timers-and-statistics.md": {"date": 1, "line-length": 37},
     "docs/architecture/state/transcription.md": {"date": 2, "line-length": 22},
     "docs/architecture/state/windows-sheets.md": {"line-length": 34},
-    "docs/architecture/state/windows.md": {"line-length": 39},
+    "docs/architecture/state/windows.md": {"line-length": 13},
     "docs/developer/building-ios.md": {"line-length": 8},
     "docs/developer/building.md": {"line-length": 12},
     "docs/developer/testing-formats.md": {"line-length": 17},
