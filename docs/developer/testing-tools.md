@@ -24,7 +24,8 @@ The tests in the first five bullets are not load-sensitive, each made to wait fo
 <!-- id: build-train; keys: train, queue, TestBuild, train/base, hung test, request, GitHub Actions, wait-for-result; src: Scripts/agents/build-train.py, Scripts/agents/wait-for-result.py, Scripts/agents/heavy_lock.py, Scripts/agents/github_run.py, Scripts/test/run-area.py, TextMouthProductionTests/ContentIndexValidationTests.swift -->
 
 The build train, `Scripts/agents/build-train.py`, is how agents build.
-Agents do not build on their own, since their builds froze the Mac: an agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
+Agents do not build on their own, since their builds froze the Mac.
+An agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
 A test that hangs doesn't hold the train: when a run writes nothing to its log for 15 minutes, the train kills its test host, which fails that test as a crash, and the run goes on with the tests after it.
 That watches only the train's own copy of the app.
 
@@ -48,7 +49,8 @@ That watches only the train's own copy of the app.
 - A train pools every waiting branch, so a branch that is broken on purpose, to prove that a new test notices the break, breaks every other agent's result too: never queue one.
   Prove a test on a scratch copy of the committed sources instead (a SwiftPM copy run under the heavy-work lock with the real home patched out), one deliberate break at a time, and expect each test to fail with its break and pass without it.
 - A test of a directory walk must not trust the order a volume lists a folder in.
-  A symbolic link hid the folder listed right after it, and a fixture that assumed the listing put a link before a folder passed against the old code on one volume, so the fixture grows, folder by folder or link by link, until a link really is listed right before a folder, and fails loudly if it never is (`ContentIndexValidationTests`).
+  A symbolic link hid the folder listed right after it, and a fixture that assumed the listing put a link before a folder passed against the old code on one volume.
+  So the fixture grows, folder by folder or link by link, until a link really is listed right before a folder, and fails loudly if it never is (`ContentIndexValidationTests`).
 
 ## Portable XML differential tests
 <!-- id: portable-xml-differential-tests; keys: XMLDocument, PortableXMLDocument, differential, EPUB, OPML, iOS XML, knownDifferences; src: TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift, TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift -->
@@ -84,10 +86,22 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
   One `xcodebuild` runs them all, through the build-slot wrapper, so no registration on the agents' message board is needed (an agent sets `BBS_AGENT=<name>` to report to the board).
   Each launch of the test host leaves about 23 MB in a system cache only you can purge, so never run the areas one after another.
 - While it runs nothing is printed.
-  Afterwards it prints one fact per line: the last `Executed N tests` line, each failed test with its file and line, each compile error (20 at most), each Swift warning inside the repository, a CRASH line when the test host crashed or restarted, the log's path, and PASSED or FAILED with the time taken.
+  Afterwards it prints one fact per line.
+  The last `Executed N tests` line, each failed test with its file and line, each compile error (20 at most), each Swift warning inside the repository, a CRASH line when the test host crashed or restarted, the log's path, and PASSED or FAILED with the time taken.
   The exit status is 0 for PASSED, 1 for FAILED, 2 for a usage or setup error, and 130 when you interrupt it with Control-C, which keeps the log.
-- Options: `--classes A,B` adds classes; `--env NAME=VALUE` passes `TEST_RUNNER_NAME=VALUE` to the test host; `--dry-run` prints the command without running it; `--summarize LOG` prints the summary of an existing log; `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them, with `--explain` naming the matching types, `--limit N` keeping the first N classes, and `--list` printing the picks without running them (it is a heuristic, so run the area or `all` before a merge); `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test; `--clean` unregisters the build folder's app and deletes the folder; and `--selftest` checks the script against canned logs.
-  `-h` lists the rest.
+- Options:
+  - `--classes A,B` adds classes;
+  - `--env NAME=VALUE` passes `TEST_RUNNER_NAME=VALUE` to the test host;
+  - `--dry-run` prints the command without running it;
+  - `--summarize LOG` prints the summary of an existing log;
+  - `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them, with
+    - `--explain` naming the matching types,
+    - `--limit N` keeping the first N classes, and
+    - `--list` printing the picks without running them (it is a heuristic, so run the area or `all` before a merge);
+  - `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test;
+  - `--clean` unregisters the build folder's app and deletes the folder; and
+  - `--selftest` checks the script against canned logs.
+- `-h` lists the rest.
 - A small area takes a few seconds of tests.
   The whole suite, `all`, took about 16 minutes of test time when it was last measured.
 
@@ -97,7 +111,9 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
 Check the lines a branch adds, without building, in seconds.
 They compare against `main`; `LINT_BASE=REF` on the `make` line compares against another branch point.
 
-- `make lint-tests` runs `trap-lint.py`, which flags test lines that can crash the test host (a `try!`, a force unwrap, a literal subscript, a `.wait()`), play sound, record, or touch the real library, and `test-diff.py`, which lists what the branch did to tests that already existed: removed, renamed, or moved a test, removed or changed an assertion, added a skip or an expected failure, raised a timeout, commented out test code, or changed a fixture.
+- `make lint-tests` runs
+  - `trap-lint.py`, which flags test lines that can crash the test host (a `try!`, a force unwrap, a literal subscript, a `.wait()`), play sound, record, or touch the real library, and
+  - `test-diff.py`, which lists what the branch did to tests that already existed: removed, renamed, or moved a test, removed or changed an assertion, added a skip or an expected failure, raised a timeout, commented out test code, or changed a fixture.
 - `make lint-a11y` runs `a11y-lint.py`, which flags SwiftUI lines that VoiceOver or the keyboard cannot use: a control with no VoiceOver label or action, a tap with no VoiceOver action, a drag with no keyboard alternative, and the like.
 - `make lint-ogg` runs `ogg-lint.py`, which flags new calls that open audio with an Apple reader (`AVURLAsset`, `AVAssetReader`, `AVAudioFile`, an `AVPlayer`, or `AudioFileOpenURL`).
   Each must refuse every format the import converts first (`ImportAudioConverter.isNeverDecodedInApp`; see A note on Ogg audio, in README.md), and a new call of `isOgg(` is flagged too, since a guard of that name refuses Ogg alone.
@@ -109,9 +125,13 @@ They compare against `main`; `LINT_BASE=REF` on the `make` line compares against
 ## Read test logs
 <!-- id: read-test-logs; keys: slowest, compare, flaky, xcodebuild log, test log, run.log; src: Scripts/test/test-logs.py -->
 
-Read logs: `python3 Scripts/test/test-logs.py slowest LOG` lists the slowest tests of a log (`-n N` sets how many, 20 by default, and `--classes` adds the 10 slowest classes), `compare OLD NEW` lists what changed between two logs (a test now failing, new, gone, or slower, meaning it takes more than `--slower` seconds, 2 by default, and more than 1.5 times its old time), and `flaky LOG LOG...` lists the tests that differ in outcome or time across two or more logs.
-`compare` exits 1 when a test is now failing, is new and failing, or is gone.
-A 22 MB log takes under a second.
+Read logs:
+
+- `python3 Scripts/test/test-logs.py slowest LOG` lists the slowest tests of a log (`-n N` sets how many, 20 by default, and `--classes` adds the 10 slowest classes),
+- `compare OLD NEW` lists what changed between two logs (a test now failing, new, gone, or slower, meaning it takes more than `--slower` seconds, 2 by default, and more than 1.5 times its old time), and
+- `flaky LOG LOG...` lists the tests that differ in outcome or time across two or more logs.
+- `compare` exits 1 when a test is now failing, is new and failing, or is gone.
+- A 22 MB log takes under a second.
 
 ## Quitting while work is held
 <!-- id: quitting-while-work-held; keys: terminate, terminateLater, kAEQuitReason, Quit Anyway, log out, Command-Q, probe, AppKit; src: TextMouth/App/QuitReason.swift, TextMouth/App/QuitRequest.swift, TextMouth/App/QuitHold.swift, TextMouth/App/QuitFinisher.swift, TextMouth/App/UnsavedChangesTermination.swift, Scripts/test/quit-while-held.py, Scripts/test/quit-while-held/main.swift, Scripts/test/quit-while-held/Stubs.swift, TextMouthProductionTests/QuitWhileHeldTests.swift, Scripts/agents/run_locked.py, Scripts/test/areas.conf -->
@@ -139,12 +159,28 @@ Quitting while work is held (0.4.4): what the hosted suite cannot do, because no
 - Run it under the heavy-work lock: `python3 -I Scripts/agents/run_locked.py NAME python3 -I Scripts/test/quit-while-held.py`.
   Names after the script run those cases only, `--log` prints each probe's log, and `--overlay DIR` builds with the files of DIR in place of the sources of the same names, which proves on a scratch copy that a case fails with its fix undone.
   Exit 0 means every case showed what it should, 1 one did not, and 2 a compile problem.
-- Breaks proved on scratch overlays: a direct `terminate` instead of the helper fails `ask-queue` and `ask-task`; a quit left pending fails `second-timer`, `second-key`, `second-dock`, and `logout-during-quit`; a repeated request that stays silent fails the three `second-*` cases; a log out cancelled like any quit fails `logout` and `logout-param`; and the keyword `'why '` in place of the SDK's `'why?'` fails `logout`, `logout-param`, and `logout-during-quit`.
+
+### Proof and the hosted side
+<!-- id: quit-while-held-proof; keys: scratch overlay, flake, QuitWhileHeldTests, not tested; src: Scripts/test/quit-while-held.py, TextMouthProductionTests/QuitWhileHeldTests.swift -->
+
+- Breaks proved on scratch overlays:
+  - a direct `terminate` instead of the helper fails `ask-queue` and `ask-task`;
+  - a quit left pending fails `second-timer`, `second-key`, `second-dock`, and `logout-during-quit`;
+  - a repeated request that stays silent fails the three `second-*` cases;
+  - a log out cancelled like any quit fails `logout` and `logout-param`; and
+  - the keyword `'why '` in place of the SDK's `'why?'` fails `logout`, `logout-param`, and `logout-during-quit`.
 - One known flake: in one full run the control `old-second` printed "NOT REPRODUCED ... the work never ran" and the script ended with one case not showing what it should.
   Run alone, it reproduced.
   The real cases and the scan passed in every run.
-- The hosted side is `QuitWhileHeldTests` (24 tests, in the windows and storage areas of `Scripts/test/areas.conf`), which pins the decisions: every ask goes through the helper; the words; the finisher cancelling, saying the words again, giving up after the longest wait, and keeping Quit Anyway; the session end answered later, also during a held quit; work that began during the wait; counted phrases; and the reason keyword, the reasons, and the 120-second power-off window.
-  Nothing in it quits, shows a panel, or speaks.
+- The hosted side is `QuitWhileHeldTests` (24 tests, in the windows and storage areas of `Scripts/test/areas.conf`), which pins the decisions:
+  - every ask goes through the helper;
+  - the words;
+  - the finisher cancelling, saying the words again, giving up after the longest wait, and keeping Quit Anyway;
+  - the session end answered later, also during a held quit;
+  - work that began during the wait;
+  - counted phrases; and
+  - the reason keyword, the reasons, and the 120-second power-off window.
+- Nothing in it quits, shows a panel, or speaks.
 - Not tested: a real log out or shut down from loginwindow, which sends the reason as an attribute or a parameter that the SDK header does not settle, and whether VoiceOver speaks the panel's announcement when TextMouth is not the front app.
 
 ## Documents to try
@@ -171,16 +207,26 @@ Documents to try:
 
 Matrices, always on, each with its table in its file's header comment:
 
-- `EndBehaviorMatrixTests` pins what a book does when it ends, for each of 4 end-of-book behaviors, 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it): 100 cells, each with a test, 80 of them in this class and 20 in other classes that the table names.
+- `EndBehaviorMatrixTests` pins what a book does when it ends, for each of 4 end-of-book behaviors, 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it).
+  100 cells, each with a test, 80 of them in this class and 20 in other classes that the table names.
   It takes about 52 seconds in a full run.
-  Its audio cells still play a book out in real time, but the book is saved 0.3 seconds short of its end (`offsetBeforeTheEnd(ofChapterOf:)`), `waitForTheEndToSettle(of:reports:)` waits only for the player's reports that follow an end, and `nextBookAsked(for:…)` waits for the ask of the next book only in a cell that expects one.
+  Its audio cells still play a book out in real time, but
+  - the book is saved 0.3 seconds short of its end (`offsetBeforeTheEnd(ofChapterOf:)`),
+  - `waitForTheEndToSettle(of:reports:)` waits only for the player's reports that follow an end, and
+  - `nextBookAsked(for:…)` waits for the ask of the next book only in a cell that expects one.
 - `WindowsMatrixTests` pins what Book A keeps doing while Book B is edited, moved, closed, or timed, and while the Library windows close: 117 of the 120 cells (12 states of Book A by 10 things that happen to Book B or to the library), the other 3 being covered by older tests that its table names.
   It takes about 8 seconds.
 
 ## Keyboard reachability
 <!-- id: keyboard-reachability; keys: shortcuts, default key, unboundActions, menu item, key collision, reachability; src: TextMouthProductionTests/KeyboardReachabilityTests.swift -->
 
-Keyboard: `KeyboardReachabilityTests`, which takes under a second, checks that every action has a way in (a default key or a menu item, or an entry in its `unboundActions` list with the reason), that no two default keys collide where both act, that every menu item is an action or is accounted for, that every default key can be spoken, and that no default key is one the shortcut rules refuse.
+Keyboard: `KeyboardReachabilityTests`, which takes under a second, checks
+
+- that every action has a way in (a default key or a menu item, or an entry in its `unboundActions` list with the reason),
+- that no two default keys collide where both act,
+- that every menu item is an action or is accounted for,
+- that every default key can be spoken, and
+- that no default key is one the shortcut rules refuse.
 
 ## Playback fuzz
 <!-- id: playback-fuzz; keys: fuzz, random operations, seed, P09, silent reader, TEXTMOUTH_PLAYBACK_FUZZ_SEED; src: TextMouthProductionTests/PlaybackFuzzTests.swift, TextMouthProductionTests/PlaybackFuzzOperations.swift, Scripts/test/run-area.py -->
@@ -201,11 +247,13 @@ Opt-in sweeps: each skips unless its script sets its environment variable, and e
   `VOICE_SWEEP_LANGUAGE=en` keeps the voices whose language starts with it.
   On the development Mac, 181 voices took 73 seconds of tests, and the English ones 25.
 - `Scripts/test/import-fuzz.sh [--seed N] [--docs a,b] [--pdf]` damages each book in TestData under 300 KB in seeded ways (truncated, emptied, bytes flipped, a window zeroed, removed, or doubled, random bytes added, a ZIP's ends corrupted, NULs or invalid UTF-8 put into text, a megabyte line, deeply nested HTML) and imports every copy as the library does: 103 copies of 6 books, in 3 seconds of tests.
-  It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs; a damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`.
+  It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs.
+  A damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`.
   It checks that each import finishes, refuses cleanly, or gives a book that loads, that a refused import leaves nothing behind, and that the damaged file is left alone.
   `--pdf` adds the two small PDFs.
   A crash of the test host is a finding, not a script failure; the script exits 1 when a case breaks one of those checks and 3 when the test host crashed or the sweep did not finish.
-- `Scripts/test/storage-drill.sh` unplugs or fills a small disk image part-way through an import, a library save, and a data-directory move, checks by checksum that the original files and the previous library survive every reported failure, and says whether any image is left attached: about 20 seconds of tests.
+- `Scripts/test/storage-drill.sh` unplugs or fills a small disk image part-way through an import, a library save, and a data-directory move, checks by checksum that the original files and the previous library survive every reported failure, and says whether any image is left attached.
+  About 20 seconds of tests.
   Each test makes a disk image of 3 to 16 MB in the test host's sandbox, in the temporary folder, and deletes it when the test ends.
   It never touches `~/.TextMouth`, the preferences, or any volume but its own images: the fill that makes a disk full writes only to an image's own mounted volume, and throws when the image is not attached.
   Its last line is the verdict.
