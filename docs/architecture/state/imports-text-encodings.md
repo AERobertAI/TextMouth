@@ -1,17 +1,17 @@
 # Imports: text in other encodings
-<!-- id: imports-text-other-encodings; keys: ; src: -->
+<!-- id: imports-text-other-encodings; keys: charset, code page, mojibake, garbled text, TextFileDecoder, TextEncodingGuesser, plain text; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Text files in other encodings
-<!-- id: text-files-other-encodings; keys: ; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Views/Library/LibrarySheetViews.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouthProductionTests/TextEncodingImportTests.swift, TextMouthProductionTests/TextFileDecoderTests.swift, TextMouthProductionTests/TextPlausibilityTests.swift, TextMouthProductionTests/TextEncodingBookInfoTests.swift -->
+<!-- id: text-files-other-encodings; keys: charset, code page, mojibake, garbled text, wrong letters, Text Encoding pop-up; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/Book.swift -->
 
 Text files in other encodings (FMT16): a plain text, Markdown, or HTML book whose bytes name no encoding is read in the one TextMouth guesses when the file is imported, and in that one ever after, where every such file was read as Windows-1252 before.
 Book.textEncoding names the guess; a book with none is read as it always was.
 The listener can choose the encoding instead (encodingchoice, Choosing the encoding, below): Book.textEncoding then names the choice, and Book.textEncodingSource says it was chosen.
 
 ### The steps
-<!-- id: steps; keys: ; src: TextMouth/Parsers/TextFileDecoder.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouthProductionTests/TextFileDecoderTests.swift, TextMouth/Parsers/TextEncodingGuesser.swift -->
+<!-- id: steps; keys: BOM, UTF-16LE, UTF-16BE, UTF-32, meta charset, DecodedText, NUL bytes, decode order; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouthProductionTests/TextFileDecoderTests.swift -->
 
 The steps: TextFileDecoder.decode(_:fileName:format:policy:) finds the encoding of a file's bytes in this order (decodeBytes), and finishes the text the same way whatever the encoding: a leading U+FEFF is removed, and every line ending becomes a line feed.
 
@@ -44,14 +44,14 @@ The steps: TextFileDecoder.decode(_:fileName:format:policy:) finds the encoding 
 7. The Windows-1252 fallback (fallbackText(_:)), which gives every byte a character (windows1252Text(_:)).
 
 ### The policy
-<!-- id: policy; keys: ; src: TextMouth/Parsers/TextFileDecoder.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
+<!-- id: policy; keys: Evidence, legacy reader, Basis, strict read, .m3u, .webarchive, .doc; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 The policy: TextFileDecoder.EncodingPolicy is what a read does with bytes that name no encoding, and it keeps a book's text from changing under its reader. .fallback is the policy of a book with no recorded encoding and of every reader of a file that is no book (M3UPlaylist.read, WebArchiveReader, and the web page TextutilDocumentReader reads for a .doc that is really one). .guess is the policy of the import of a file the user chose. .recorded(identifier) is the policy of a book with a recorded encoding, and EncodingPolicy.forBook(recording:) chooses between it and .fallback. .chosen(identifier) is the policy of a book whose encoding the listener chose (TextEncodingRecord.policy gives it, from the record's source, in place of forBook(recording:)): not an answer to bytes that name no encoding, as the three before it are, but a reading that overrules whatever the bytes name, and that is strict.
 A recorded identifier that the catalog does not know, or an encoding that the bytes are not valid in (a file changed since, or a record a later TextMouth wrote), leaves the bytes to the fallback, and a recorded 7-bit encoding is checked against the bytes again (TextEncodingGuesser.guessSevenBit(_:)), since Foundation's reader lets a changed file through.
 DecodedText says what decided: its basis is chosen, byteOrderMark, unmarkedUnicode, validUTF8, declaration(label:), recorded, guess, or fallback, and guessedEncodingIdentifier is the catalog's identifier for a guess alone.
 
 ### Who guesses
-<!-- id: who-guesses; keys: ; src: TextMouth/Services/MarkdownCacheService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/TextEncodingRecord.swift -->
+<!-- id: who-guesses; keys: decidingEncoding, import, Import File, guess policy, Text Encoding pop-up, automatic re-read; src: TextMouth/Services/FileImportService.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouthProductionTests/TextEncodingImportTests.swift -->
 
 Who guesses: FileImportService.importFileWithReport, which sets guessingEncoding for publishReadableBook(_:from:run:...) and so for readableContent(of:run:...) and MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for:...), and the listener's re-read as Automatic (LibraryViewModel.readTextAgain, in [Text caches](text-caches.md)), which sets it on generateReportedCacheAnalyzeAndStamp itself.
 No one else does.
@@ -59,7 +59,7 @@ MarkdownCacheService.encodingPolicy(of:guessingEncoding:) gives .guess when it i
 So Open Book, Finder, the members of a ZIP, and a re-read as Automatic guess, and a TextMouth package, a feed's episode or article, a recording, text typed in with New from Text, a book added back, and every rebuild and migration of a book already in the library, a re-read in an encoding the listener chose included, do not (TextEncodingImportTests pins the members of a ZIP, text typed in, and a book added back).
 
 ### The guess
-<!-- id: guess; keys: ; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift -->
+<!-- id: guess; keys: Guess, heuristic, NSString, Foundation hint, mojibake, ranking, tie; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Parsers/TextPlausibility.swift, TextMouthProductionTests/TextEncodingGuesserTests.swift -->
 
 The guess: TextEncodingGuesser.guess(_:) returns a Guess, the catalog's entry and the whole file read in it, or nil, which leaves the Windows-1252 reading.
 A missed guess costs less than a wrong one: the default is today's reading, while a guess that is wrong turns text that was right into text that is not, which the book keeps.
@@ -83,13 +83,13 @@ A missed guess costs less than a wrong one: the default is today's reading, whil
      A reading that fails is passed over.
 
 ### ISO-2022-JP
-<!-- id: iso-2022-jp; keys: ; src: TextMouth/Parsers/TextEncodingByteGrammar.swift -->
+<!-- id: iso-2022-jp; keys: ISO 2022-JP, 7-bit, Japanese mail, email, escape sequence, isSevenBit; src: TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextEncodingGuesser.swift -->
 
 ISO-2022-JP: guess(_:) cannot find it, since every byte is ASCII and the file is valid UTF-8, so guessSevenBit(_:) finds it by its structure, which TextEncodingByteGrammar.isWellFormedISO2022JP(_:requiringAShift:) checks as RFC 1468 defines it: only the escape sequences for ASCII, JIS Roman, JIS X 0201's half-width katakana, which Windows writes in mail, and JIS X 0208 (ESC ( B, ESC ( J, ESC ( I, ESC $ @, ESC $ B), pairs of bytes from 0x21 to 0x7E while in JIS X 0208, bytes up to 0x5F while in the katakana, a return to ASCII or JIS Roman before the end, and, for the guess (requiringAShift), at least one shift into JIS X 0208, since plain ASCII reads alike in every encoding; a file chosen to be read in ISO-2022-JP needs no shift.
 Foundation's reader lets a truncated escape or a byte above ASCII through, so it does not decide.
 
 ### The judgment
-<!-- id: judgment; keys: ; src: TextMouth/Parsers/TextPlausibility.swift, TextMouthProductionTests/TextPlausibilityTests.swift -->
+<!-- id: judgment; keys: plausibility, garbled, mojibake, Script, language fit, Judging, heuristic; src: TextMouth/Parsers/TextPlausibility.swift, TextMouthProductionTests/TextPlausibilityTests.swift -->
 
 The judgment: TextPlausibility(reading:judging:) counts three kinds of surprise over a reading's characters outside ASCII (the ASCII ones read alike in every encoding).
 
@@ -105,7 +105,7 @@ The judgment: TextPlausibility(reading:judging:) counts three kinds of surprise 
 - The same text is always judged alike: the commonest script decides how letters are judged (dominantScript(in:)), and of scripts with as many letters the first in Script.allCases wins, Latin first, where a dictionary's own order differs from one launch to the next (TextPlausibilityTests calls it with dictionaries of 1 to 64 capacities).
 
 ### The encoding catalog
-<!-- id: encoding-catalog; keys: ; src: TextMouth/Parsers/TextEncodingCatalog.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextFileDecoder.swift -->
+<!-- id: encoding-catalog; keys: Entry, IANA, charset, code page, cp1251, CP437, CP850, pop-up list; src: TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/TextEncodingCatalogTests.swift -->
 
 The catalog: TextEncodingCatalog.entries lists every encoding the guess can name, in the order that settles a tie, each with its identifier (the lowercase IANA name as Core Foundation spells it, such as windows-1251, koi8-r, macintosh, or cp932, which a book records and looks up again on every reading, so it never changes), its String.Encoding, the name a listener hears (listed in [What TextMouth reads](../../user/what-textmouth-reads.md)), isAlwaysTried, and isSevenBit. row(_:_:tried:sevenBit:) makes an entry through TextFileDecoder.encoding(forLabel:) and leaves out one that this Mac's Core Foundation does not know.
 Windows-1252 is in it, to be named, but is never tried or guessed: it is the default.
@@ -115,7 +115,7 @@ Where two encodings read a file alike the first is named (KOI8-R before KOI8-U, 
 The Text Encoding pop-up offers these entries too, with Windows-1252 among them (Choosing the encoding, below).
 
 ### The record
-<!-- id: record; keys: ; src: TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/LenientFields.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/BookInfo.swift -->
+<!-- id: record; keys: LenientOptional, on-disk format, persistence, StoredBookRecord, Add Back, migration; src: TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/BookTextEncodingTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
 The record: Book.textEncoding holds the identifier of the guess or of the listener's choice, for a plain text, Markdown, or HTML book (BookFormat.usesTextFileDecoder), and Book.textEncodingSource (TextEncodingSource, Models/TextEncodingRecord.swift) who decided it: nil for the import, which is every book from before the listener could choose, chosen for an encoding the listener chose, and automatic for a re-read as Automatic, whose textEncoding is that reading's guess, or nil when it made none, a nil that is the listener's and never a row that lost its encoding.
 TextEncodingRecord is the two as one value (identifier, source, isEmpty, isChosen, and policy, which is .chosen(identifier) for a choice and otherwise EncodingPolicy.forBook(recording:)), read and written through Book.textEncodingRecord and BookMetadata.textEncodingRecord, so a row that holds either is never given half of a record's.
@@ -129,20 +129,20 @@ Both are kept in three files, each under keys named textEncoding and textEncodin
   The marker keeps no source path, so a book added back from a marker that recorded neither has no Text Encoding pop-up (Book.offersTextEncodingChoice).
 
 ### Reading the record
-<!-- id: reading-record; keys: ; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift -->
+<!-- id: reading-record; keys: standing, ownStoredMetadata, dataless, iCloud, StoredBookRecord, analysis summary, library row; src: TextMouth/Models/Book.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift -->
 
 Book.recordedTextEncodingRecord() is what every reading asks: the row's record, else, for a book of a format that reads text files with a package, the stored record's (read without downloading, DatalessFiles.withoutDownloading), but only when that record names this book (metadata.bookID == id); TextEncodingRecord.unrecorded when it names another book (as an old shared package's may), cannot be read, or is only in the cloud.
 A row that lost the encoding, as a damaged value in library.json or an older TextMouth's save does, is so read in the record's, and takes it back: ContentAnalysisSummary carries the committed book's encoding and source to the row (init(committed:movedPlaces:)), a recovered summary takes them only from its own record and a text format (init(recovered:record:)), and apply(to:) gives them to a row that has no encoding and no decision, and to a row whose record holds the listener's own decision (a re-read writes it into the record with its new text before the row takes it), and otherwise never replaces an encoding the row holds (the rule is in [Package records](package-records.md)).
 
 ### Older builds
-<!-- id: older-builds; keys: ; src: -->
+<!-- id: older-builds; keys: downgrade, older version, backward compatibility, data loss, TextMouth 0.2.2, unknown keys; src: -->
 
 Older builds: a TextMouth from before the encoding's field (FMT16) drops it from the row, the record, and the marker whenever it saves them, and nothing in any can bring it back, so the next rebuild of that book's text reads Windows-1252, as before FMT16.
 TextMouth 0.2.2 knows the encoding but not textEncodingSource, and drops the source in the same way, so a choice becomes a guess of the same encoding: the book is read as before, unless the choice overruled valid UTF-8, a byte-order mark, or an HTML declaration, and Book Information says "guessed".
 A copy outside these files, such as a note in the package, would hold them; none is kept.
 
 ### The words
-<!-- id: words; keys: ; src: TextMouth/Models/LibraryInfoWording.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Views/Library/LibraryInfoRow.swift -->
+<!-- id: words; keys: VoiceOver, accessibility, label, wording, BookInfoFacts, Book Information row; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouthProductionTests/TextEncodingBookInfoTests.swift, TextMouthProductionTests/TextEncodingChoiceTests.swift -->
 
 The words: Book.textEncodingDescription says the name of the recorded encoding (TextFileDecoder.chosenEncodingName(forIdentifier:): the catalog's name, "UTF-8", or the identifier itself for one the catalog does not know), then what decided it, ", guessed" or ", chosen" (TextEncodingReading(record:).description, through TextEncodingWording.describe(name:basis:)), and is nil for a book that records no encoding and for a format that does not read text files.
 Speak Info says it from the row alone and never reads the file: BookInfoFacts.textEncoding takes the description (Views/Library/LibraryInfoRow.swift), and LibraryInfoWording.fullParts(of:now:calendar:locale:) adds TextEncodingWording.speakInfoPart(_:), "Text encoding: Windows-1251 (Cyrillic), guessed", after the bookmarks and a braille book's code and before the file size; the brief summary never says it.
@@ -151,13 +151,13 @@ The label, TextEncodingWording.bookInfoLabel, is "Text Encoding", not "Read As",
 TextEncodingBookInfoTests pins the words of Speak Info, and TextEncodingChoiceTests those of the pop-up.
 
 ### Logs
-<!-- id: logs; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouthProductionTests/LogContentPolicyTests.swift -->
+<!-- id: logs; keys: DiagnosticLog, debug log, console, log tag, import event; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/LogContentPolicyTests.swift -->
 
 Logs: TextFileDecoder.readDecodedText logs one import event for a read that guessed, `TEXT_ENCODING_GUESS: <file name>: read as windows-1251` (guessLogTag), once, since only the import guesses and a recorded read logs nothing, and one for a read by the fallback, `TEXT_ENCODING_FALLBACK: <file name>: decoded as Windows-1252` (fallbackLogTag), on every such read.
 Neither holds any of the book's text, and LogContentPolicyTests pins both tags (see [Logs](logs.md)); a re-read in another encoding writes TEXT_ENCODING_CHANGED, pinned there too (Reading a book again in another encoding, in [Text caches](text-caches.md)).
 
 ### Limits of the guess
-<!-- id: limits-guess; keys: ; src: TextMouthProductionTests/TextEncodingFixtures.swift, TextMouth/Services/DuplicateReplacement.swift -->
+<!-- id: limits-guess; keys: accuracy, false positive, measured, known limits, TextEncodingFixtures; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouthProductionTests/TextEncodingFixtures.swift -->
 
 Limits, as the reviewers measured them on thousands of windows of real prose in 30 languages converted to the encodings each is written in, and on tens of thousands of Windows-1252 texts built to look odd:
 
@@ -175,9 +175,8 @@ Limits, as the reviewers measured them on thousands of windows of real prose in 
 - A wrong or lost guess is mended by choosing the encoding (Choosing the encoding, below).
   Replace Existing carries a chosen encoding over to the new copy under rules (DuplicateReplacement.textEncodingToReadAgain(replacing:with:), in Replacing a duplicate, below); not done: an encoding an HTML file declares is still read by Foundation's lenient readers, since reading it strictly would change how old books read; and the place mover could keep an offset where a changed stretch is as long in both readings (T06).
 
-### Files and tests of the decoder
-<!-- id: files-tests-decoder; keys: ; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouthProductionTests/TextEncodingImportTests.swift, TextMouthProductionTests/TextEncodingGuesserTests.swift, TextMouthProductionTests/TextEncodingFixtures.swift, TextMouthProductionTests/SyntheticWesternText.swift, TextMouthProductionTests/SyntheticAccentedText.swift -->
+### Tests of the decoder
+<!-- id: files-tests-decoder; keys: tests, areas.conf, run-area.py, reader-text, TestData, txt-encodings, fixtures; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Views/Library/LibrarySheetViews.swift, Scripts/test/areas.conf, TextMouthProductionTests/TextEncodingGuesserTests.swift, TextMouthProductionTests/TextEncodingFixtures.swift, TextMouthProductionTests/SyntheticWesternText.swift, TextMouthProductionTests/SyntheticAccentedText.swift, TextMouthProductionTests/TextPlausibilityTests.swift, TextMouthProductionTests/TextEncodingCatalogTests.swift, TextMouthProductionTests/TextFileDecoderTests.swift, TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift, TextMouthProductionTests/TextEncodingImportTests.swift, TextMouthProductionTests/BookTextEncodingTests.swift, TextMouthProductionTests/TextEncodingBookInfoTests.swift, TextMouthProductionTests/TextEncodingChoiceTests.swift, TextMouthProductionTests/TextEncodingRereadTests.swift, TextMouthProductionTests/TextEncodingPopUpTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
-- Files: Parsers/TextFileDecoder.swift, Parsers/TextEncodingGuesser.swift, Parsers/TextEncodingByteGrammar.swift, Parsers/TextPlausibility.swift, Parsers/TextEncodingCatalog.swift, Models/TextEncodingRecord.swift, Models/TextEncodingChoice.swift, Parsers/BookParser.swift, Services/MarkdownCacheService.swift, Services/BookContentAnalysisService.swift, Services/FileImportService.swift, Services/FileImportService+Packages.swift, ViewModels/ContentAnalysisSummaryBuffer.swift, Models/Book.swift, Models/BookInfo.swift, Models/LenientFields.swift, Models/RemovedFromLibraryMarker.swift, Models/LibraryInfoWording.swift, Views/Library/LibraryInfoRow.swift, Views/Library/LibrarySheetViews.swift.
 - Tests: the reader-text, import, and library areas of Scripts/test/areas.conf (`python3 Scripts/test/run-area.py reader-text`, and so on).
   TextEncodingGuesserTests reads every fixture paragraph (TextEncodingFixtures) back in each encoding it is saved in, reads the 13 files of TestData/format-samples/txt-encodings (nine are guessed, and TextEncodingImportTests imports them all), and checks that 1,500 seeded Western texts (SyntheticWesternText) and 1,500 seeded texts with accented capitals in names and headings (SyntheticAccentedText) are never guessed away; TextPlausibilityTests, TextEncodingCatalogTests, TextFileDecoderTests (the policies and the log), and TextEncodingChoiceDecoderTests (a choice read strictly, the byte grammar, and the limits) are in reader-text; TextEncodingImportTests is in import; BookTextEncodingTests (the row, the record, the marker) and TextEncodingBookInfoTests (the words) are in library, with TextEncodingChoiceTests (the options, the readings, and the pop-up's words) and TextEncodingRereadTests (the re-read); TextEncodingPopUpTests (the hosted pop-up) is in sheets; and OnDiskContractTests pins the keys in the row and the record.
