@@ -49,7 +49,7 @@ Before the metadata refresh, it takes the edits of audiobooks' manifests made wh
 ## Search Library preparation
 <!-- id: search-library-preparation; keys: search index, Low Power Mode, background priority, text search; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/TextSearch/LibrarySearchPreparer.swift -->
 
-When every pass that rebuilds books' texts has ended, LibraryViewModel.startupMaintenanceDidEnd() starts Search Library's background preparation (LibrarySearchPreparation.shared.libraryIsReady(books:moves:); see [Text caches](state/text-caches.md)): a pass that makes the search text of each book that has none or whose text changed, two books at a time at background priority, held back while the data directory moves, and not run in Low Power Mode or in a process hosting tests.
+When every pass that rebuilds books' texts has ended, LibraryViewModel.startupMaintenanceDidEnd() starts Search Library's background preparation (LibrarySearchPreparation.shared.libraryIsReady(books:moves:); see [Text caches](state/text-caches-rereads-edits.md)): a pass that makes the search text of each book that has none or whose text changed, two books at a time at background priority, held back while the data directory moves, and not run in Low Power Mode or in a process hosting tests.
 
 ## Starting the feed engine
 <!-- id: starting-feed-engine; keys: podcast, RSS, feed refresh, downloads, Trash, Removal Behavior; src: TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Models/Feed.swift -->

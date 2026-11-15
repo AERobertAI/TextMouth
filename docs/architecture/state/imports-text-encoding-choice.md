@@ -6,7 +6,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## Choosing the encoding
 <!-- id: choosing-encoding; keys: mojibake, charset, code page, re-read, TextEncodingOption, Shift JIS, Big5, strict decoding; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift, TextMouthProductionTests/TextEncodingChoiceTests.swift -->
 
-Choosing the encoding (encodingchoice): the listener's way to mend a wrong or missed guess, from Book Information's Text Encoding pop-up (the sheet and its model, in [Windows](windows.md); the re-read, in [Text caches](text-caches.md)).
+Choosing the encoding (encodingchoice): the listener's way to mend a wrong or missed guess, from Book Information's Text Encoding pop-up (the sheet and its model, in [Windows](windows-sheets.md); the re-read, in [Text caches](text-caches-rereads-edits.md)).
 What is here is what the options and the decoder do with a choice.
 
 - The options: TextEncodingChoices (Models/TextEncodingChoice.swift) lists them as TextEncodingOption values: .automatic (automaticName, "Automatic"), then .encoding("utf-8") (TextFileDecoder.utf8Identifier; UTF-8 is not in the catalog, which holds what a guess can name), then each name of TextEncodingCatalog.entries once, in the catalog's order, by the identifier of the first entry that has the name and named exactly as the catalog names it, Windows-1252 first.

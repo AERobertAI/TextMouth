@@ -44,7 +44,7 @@ Library search requests (libsearch, November 13, 2026): the move to a match that
 
 What a finished book is followed by (FR19): the rule that weighs the settings, and the wait for a feed's next episode.
 
-- Owner: EndOfBookRule (Models/EndOfBookRule.swift), a value that ReaderViewModel.endOfBookRule resolves each time it is asked, from the book's own end behavior (Book.localEndOfBookBehavior; a raw value that names no EndOfBookBehavior is ignored), the options of its feed or plain folder (LibraryViewModel.listeningOptions(of:), in [Feeds](feeds.md)), and the global setting (SettingsViewModel.endOfBookBehavior).
+- Owner: EndOfBookRule (Models/EndOfBookRule.swift), a value that ReaderViewModel.endOfBookRule resolves each time it is asked, from the book's own end behavior (Book.localEndOfBookBehavior; a raw value that names no EndOfBookBehavior is ignored), the options of its feed or plain folder (LibraryViewModel.listeningOptions(of:), in [Feeds](feeds-interface.md)), and the global setting (SettingsViewModel.endOfBookBehavior).
   It holds the behavior, the direction (ReadingList.Direction), skipsFinished, and predownloadsNext.
   EndOfBookRule.resolve is the one place the order is written: the book's own choice, which always goes down; else the options' choice (play the book below is Continue to Next Book going down, play the book above is Continue to Next Book going up, and stop is Stop); else the global setting, which goes down.
   The reading list, for a book opened from it, is asked first by the callers, and is no input. skipsFinished and predownloadsNext come from the options whichever layer decides, and are true when there are none.
