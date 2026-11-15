@@ -52,6 +52,7 @@ CountWording (Models/CountWording.swift): a count with the right singular or plu
 - a time kept in tenths of a second (secondsToTheTenth(_:), "0.5 seconds" or "2 seconds", for the gesture time window and the double-press time);
 - how far a batch has got, as in "3 of 10 books processed" and "0 of 1 book processed" (part(_:of:_:), with the CountWording.Noun a progress overlay counts by, ProgressOverlay.itemNoun: ImportProgressWording.itemNoun and TextExtractionProgress.itemNoun, REV13);
 - and the library's books with its feeds beside them, as in "743 books, 2 feeds" (booksAndFeeds(books:feeds:), FR11), which every count of the library's books uses.
+
 Where episodes and articles are listed beside books, as in Recently Opened and the Reading List, each kind is counted apart, "9 books, 1 article" (listItems(books:episodes:articles:feeds:) and listItems(of:feeds:), of which booksAndFeeds is the case without feed items).
 A section is headed the same way, "Books (9), Articles (1)" (booksHeader(of:)).
 CountWording.list(_:) is the one "a, b, and c" joiner, which the cloud, removal, feed, shortcut, and filter wording use.
@@ -135,6 +136,7 @@ TextEncodingWording (Models/LibraryInfoWording.swift, beside LibraryInfoWording)
 - the confirmation's title and message;
 - the announcement when a book is read again;
 - and the refusals, among them notValid(in:subject:), which the decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say, and readingAgainRefusal(bookTitle:), which every entry point that waits for a re-read says.
+
 TextEncodingChoiceTests pins the words.
 
 ## Text TextMouth did not write
