@@ -11,8 +11,11 @@ from typing import Dict, List, Tuple
 
 from doclib_case import DocLibCase  # first: it puts the scripts folder on sys.path
 
+import docmodel  # noqa: E402
 import lintrules  # noqa: E402
 import output  # noqa: E402
+import pagewrite  # noqa: E402
+from cmd_reflow import reflow_text  # noqa: E402
 from lintrules import Violation  # noqa: E402
 
 # A page that satisfies the marker rules, around the text a test cares about.
@@ -63,6 +66,125 @@ class LineLengthTests(RuleCase):
         files = {"docs/user/changelog.md": long, "README.md": long, "AGENTS.md": long, "research/R.md": long}
         found = self.found(files, "line-length")
         self.assertEqual(sorted(v.page for v in found), ["AGENTS.md", "README.md", "docs/user/changelog.md"])
+
+
+def sentence(length: int, first: str = "S") -> str:
+    """One sentence of exactly ``length`` characters: a capital, lowercase letters, and a full stop."""
+    return first + "x" * (length - 2) + "."
+
+
+def words_of(length: int) -> str:
+    """A capitalised run of nine-letter words, ``length`` characters long, ending in a full stop."""
+    text = " ".join(["Wwwwwwwww"] + ["wwwwwwwww"] * ((length - 9) // 10))
+    # Pad the last word until the text (plus its full stop) is exactly ``length`` long.
+    return text + "w" * (length - 1 - len(text)) + "."
+
+
+def wrapped(long: str, indent: str = "") -> str:
+    """``long`` cut at a space near its middle into two lines, each starting with ``indent``."""
+    cut = long.rindex(" ", 0, len(long) // 2)
+    return f"{indent}{long[:cut]}\n{indent}{long[cut + 1:]}\n"
+
+
+class LineLengthReflowTests(RuleCase):
+    """line-length: a prose block counts the larger of its long lines as written and as reflow writes them."""
+
+    def lines_of(self, text: str) -> List[Tuple[int, str]]:
+        """The ``(line, detail)`` of each line-length violation of ``text``, as a page of docs/user."""
+        found = self.found({"docs/user/a.md": text}, "line-length")
+        return [(v.start, v.detail) for v in found]
+
+    @staticmethod
+    def old_rule_count(text: str) -> int:
+        """What the rule counted before it looked at reflow: the lines over the limit outside code and markers."""
+        page = docmodel.parse("page.md", text)
+        skipped = lintrules.unchecked_lines(page)
+        return sum(1 for number, line in enumerate(page.lines, start=1)
+                   if len(line) > lintrules.LINE_LIMIT and number not in skipped)
+
+    def test_a_line_of_three_long_sentences_counts_three(self) -> None:
+        text = " ".join([sentence(310), sentence(320), sentence(330)]) + "\n"
+        # All three start on line 1, and each says that it shares the line.
+        self.assertEqual(self.lines_of(text), [
+            (1, "sentence of 310 characters on a line of 3 sentences, limit 300"),
+            (1, "sentence of 320 characters on a line of 3 sentences, limit 300"),
+            (1, "sentence of 330 characters on a line of 3 sentences, limit 300")])
+
+    def test_a_long_line_of_short_sentences_counts_once(self) -> None:
+        found = self.lines_of("Short one. " * 91 + "\n")
+        self.assertEqual(len(found), 1)
+        # The line as written is the larger count, so it keeps today's wording.
+        self.assertTrue(found[0][1].endswith("characters, limit 300"))
+        self.assertFalse(found[0][1].startswith("sentence"))
+
+    def test_a_violation_is_at_the_line_its_sentence_starts(self) -> None:
+        # Two lines are over the limit as written, three sentences are as reflow writes them.
+        # The second and third start on line 2, a line of three sentences.
+        text = f"{sentence(305)}\nTiny one. {sentence(306)} {sentence(307)}\n"
+        self.assertEqual(self.lines_of(text), [
+            (1, "sentence of 305 characters, limit 300"),
+            (2, "sentence of 306 characters on a line of 3 sentences, limit 300"),
+            (2, "sentence of 307 characters on a line of 3 sentences, limit 300")])
+
+    def test_a_tie_keeps_the_line_as_written(self) -> None:
+        # Two long lines as written, two long sentences reflowed: the counts tie, so today's report stands.
+        text = f"{sentence(305)}\nTiny one. {sentence(306)}\n"
+        self.assertEqual(self.lines_of(text), [(1, "305 characters, limit 300"), (2, "316 characters, limit 300")])
+
+    def test_a_sentence_wrapped_over_lines_counts_at_its_first_line(self) -> None:
+        # No line is over the limit as written, but the sentence on one line is.
+        text = "Short one.\n" + wrapped(words_of(310))
+        self.assertEqual(self.lines_of(text), [(2, "sentence of 310 characters, limit 300")])
+
+    def test_a_list_items_later_sentences_have_the_items_indent(self) -> None:
+        # A bullet's text starts at column 2, a numbered item's at column 3, and reflow
+        # indents later sentences to it: 299 characters become 301, 298 become 301, 297 stay 300.
+        for marker, length, counted in (("-", 299, 1), ("-", 298, 0), ("1.", 298, 1), ("1.", 297, 0)):
+            with self.subTest(marker=marker, length=length):
+                text = f"{marker} Short one.\n" + wrapped(words_of(length), "  ")
+                self.assertEqual(len(self.lines_of(text)), counted)
+
+    def test_a_paragraph_sentence_has_no_indent_to_add(self) -> None:
+        text = "Short one.\n" + wrapped(words_of(300))
+        self.assertEqual(self.lines_of(text), [])
+
+    def test_a_list_paragraph_keeps_the_indent_of_its_first_line(self) -> None:
+        # Each of the two sentences is 299 characters, and on its own line gets the two spaces: 301.
+        text = f"- Item.\n\n  {sentence(299)} {sentence(299)}\n"
+        self.assertEqual(len(self.lines_of(text)), 2)
+
+    def test_a_block_reflow_leaves_alone_keeps_todays_rule(self) -> None:
+        # A hard line break (two trailing spaces) keeps the block, so its one long line counts once.
+        text = f"Short one.  \n{sentence(310)} {sentence(320)}\n"
+        self.assertEqual(self.lines_of(text), [(2, "631 characters, limit 300")])
+
+    def test_quotes_and_tables_keep_todays_rule(self) -> None:
+        text = f"# T\n\n> {sentence(310)} {sentence(320)}\n\n| a | b |\n|---|---|\n| {sentence(310)} {sentence(320)} | x |\n"
+        found = self.lines_of(text)
+        self.assertEqual([line for line, _ in found], [3, 7])
+        self.assertFalse(any(detail.startswith("sentence") for _, detail in found))
+
+    def test_a_reflowed_page_counts_as_the_old_rule_did(self) -> None:
+        text = (f"# T\n\n<!-- id: t; src: {'x' * 400} -->\n{sentence(310)}\n{sentence(250)}\n{sentence(301)}\n\n"
+                f"- {sentence(300)}\n  {sentence(299)}\n\n```\n{'y' * 400}\n```\n")
+        # Four lines are over 300 (the marker and the code are exempt), and reflow changes nothing.
+        self.assertEqual(len(self.lines_of(text)), self.old_rule_count(text))
+        self.assertEqual(reflow_text(text), text)
+
+    def test_reflow_never_raises_the_count_of_any_page_of_the_repository(self) -> None:
+        """For every page the lint covers (read only), the count after ``reflow_text`` is at most the page's own."""
+        root = lintrules.SKILL_DIR.parents[2]
+        if not (root / "docs").is_dir():
+            self.skipTest("the repository's docs folder is not here")
+        for path in docmodel.lint_pages(root):
+            with self.subTest(page=path):
+                text = pagewrite.read_page_text(root, path)
+                before = len(lintrules.line_length_violations(docmodel.parse(path, text)))
+                after_text = reflow_text(text)
+                after = len(lintrules.line_length_violations(docmodel.parse(path, after_text)))
+                self.assertLessEqual(after, before)
+                # And a reflowed page counts as the old rule did: each long line once.
+                self.assertEqual(after, self.old_rule_count(after_text))
 
 
 class SectionLengthTests(RuleCase):
