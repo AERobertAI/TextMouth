@@ -54,7 +54,6 @@
     "docs/developer/building-ios.md": {"line-length": 8},
     "docs/developer/building.md": {"line-length": 12},
     "docs/developer/testing-goldens.md": {"line-length": 19},
-    "docs/developer/testing-iphone-audit.md": {"line-length": 6},
     "docs/developer/testing-tools.md": {"line-length": 19},
     "docs/developer/testing.md": {"line-length": 19},
     "docs/developer/third-party-code.md": {"line-length": 8},
