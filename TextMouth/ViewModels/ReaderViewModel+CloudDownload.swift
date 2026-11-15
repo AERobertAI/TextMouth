@@ -930,6 +930,8 @@ extension ReaderViewModel {
             return "the sync service said: \(message)"
         case .notUploaded:
             return "changes not uploaded"
+        case .cloudCopyNotProven(let doubt):
+            return BookCloudWording.logReason(doubt)
         case .bookIsOpen:
             return "the book is open"
         case .keptOnThisMac:

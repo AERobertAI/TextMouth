@@ -209,6 +209,25 @@ final class CloudStorageContractTests: XCTestCase {
                 + "so its download can't be removed. Try again in a moment."
         )
         XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.uploadNotReported).explanation(in: drive),
+            "Google Drive hasn't said that every file of this book is uploaded, so its download can't be removed: "
+                + "the only copy might be on this Mac. Try again in a moment."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.uploadFailed("The disk is full.")).explanation(in: drive),
+            "Google Drive couldn't upload this book: The disk is full. Its download can't be removed until it has uploaded."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.inConflict).explanation(in: drive),
+            "Google Drive holds two versions of a file of this book, so its download can't be removed. "
+                + "Settle the conflict in Google Drive first."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.notCurrent).explanation(in: nil),
+            "The cloud service hasn't said that the copy of this book on this Mac is the latest, "
+                + "so its download can't be removed. Try again in a moment."
+        )
+        XCTAssertEqual(
             BookCloudError.bookIsOpen.explanation(in: drive),
             "The book is open, so its download can't be removed. Close it first."
         )

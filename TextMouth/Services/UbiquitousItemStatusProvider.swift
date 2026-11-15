@@ -65,6 +65,10 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         var isDownloading: Bool?
         /// Whether every local change of the item has uploaded.
         var isUploaded: Bool?
+        /// Whether the sync service is uploading the item now.
+        var isUploading: Bool?
+        /// The sync service's last upload error, in words.
+        var uploadError: String?
         /// Whether the sync service holds conflicting versions of the item.
         var hasUnresolvedConflicts: Bool?
         /// The sync service's last download error, in words.
@@ -95,6 +99,8 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         .ubiquitousItemDownloadingStatusKey,
         .ubiquitousItemIsDownloadingKey,
         .ubiquitousItemIsUploadedKey,
+        .ubiquitousItemIsUploadingKey,
+        .ubiquitousItemUploadingErrorKey,
         .ubiquitousItemHasUnresolvedConflictsKey,
         .ubiquitousItemDownloadingErrorKey,
         .fileSizeKey,
@@ -143,6 +149,8 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
             downloadingStatus: values.ubiquitousItemDownloadingStatus,
             isDownloading: values.ubiquitousItemIsDownloading,
             isUploaded: values.ubiquitousItemIsUploaded,
+            isUploading: values.ubiquitousItemIsUploading,
+            uploadError: values.ubiquitousItemUploadingError?.localizedDescription,
             hasUnresolvedConflicts: values.ubiquitousItemHasUnresolvedConflicts,
             downloadError: values.ubiquitousItemDownloadingError?.localizedDescription,
             byteCount: values.fileSize.map(Int64.init),
@@ -300,8 +308,13 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
     }
 
     /// The status `metadata` describes. An item no sync service manages is
-    /// local; a managed one is described by `state(from:)`. A missing upload
-    /// flag counts as uploaded and a missing conflict flag as no conflict.
+    /// local; a managed one is described by `state(from:)`. A missing
+    /// conflict flag counts as no conflict. A missing upload flag counts as
+    /// not uploaded (Phase 0 of the local-first design): the sync service
+    /// has said nothing to prove the cloud holds the file, which the status
+    /// records (`isUploadReported`), so Remove Download refuses it and says
+    /// so. A file whose content is only in the cloud is the one exception:
+    /// it is there by being uploaded, whatever flags it carries.
     /// A file inside a package iCloud Drive syncs as one item carries no
     /// flags at all, so the package's own flags speak for it: the book
     /// storage reads them (`carriesSyncFlags(_:)`, `flaggedStatus(of:)`).
@@ -311,12 +324,21 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         guard metadata.isUbiquitousItem == true || metadata.isDataless else {
             return .local(byteCount: metadata.byteCount)
         }
+        // Only the sync service knows whether the cloud holds the file: no
+        // answer is not an answer of yes, unless nothing is on this Mac.
+        let isReported = metadata.isUploaded != nil || metadata.isUploading != nil || metadata.isDataless
+        let hasUploaded = metadata.isUploaded ?? metadata.isDataless
         return CloudItemStatus(
             state: state(from: metadata),
-            isUploaded: metadata.isUploaded ?? true,
+            isUploaded: hasUploaded && metadata.isUploading != true,
             byteCount: metadata.byteCount,
             hasUnresolvedConflicts: metadata.hasUnresolvedConflicts ?? false,
-            downloadError: metadata.downloadError
+            downloadError: metadata.downloadError,
+            isUploadReported: isReported,
+            uploadError: metadata.uploadError,
+            // The service's own word that the copy here is its current
+            // version; any other status, or none, is not that word.
+            isCurrent: metadata.isDataless || metadata.downloadingStatus == .current
         )
     }
 

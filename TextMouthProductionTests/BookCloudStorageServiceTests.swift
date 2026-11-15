@@ -1045,6 +1045,64 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(items.removalRequests.count, 2, "nothing more was removed")
     }
 
+    // MARK: Removing Only What the Cloud Proves (Phase 0 of the local-first design)
+
+    /// A file whose sync service gave no upload state is not proven to be in
+    /// the cloud, so Remove Download refuses before removing anything, and
+    /// says why, in the words VoiceOver reads.
+    func testRemovingADownloadIsRefusedWhenNoUploadStateWasGiven() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded))
+        items.setStatus(managed(.downloaded, uploadReported: false), of: book["content.md"])
+
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .cloudCopyNotProven(.uploadNotReported))
+            XCTAssertEqual(
+                (error as? BookCloudError)?.explanation(in: .googleDrive),
+                "Google Drive hasn't said that every file of this book is uploaded, so its download can't be "
+                    + "removed: the only copy might be on this Mac. Try again in a moment."
+            )
+        }
+        XCTAssertEqual(items.removalRequests, [], "nothing was removed")
+        XCTAssertEqual(events.tags, ["CLOUD_DOWNLOAD_REMOVAL_FAILED"])
+    }
+
+    /// An upload that failed, a conflict, and a copy here that is not said
+    /// to be current each refuse the removal, with a reason of its own.
+    func testRemovingADownloadIsRefusedForAnUploadErrorAConflictAndAStaleCopy() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let cases: [(String, CloudItemStatus, CloudCopyDoubt)] = [
+            ("an upload error", managed(.downloaded, uploadError: "No space left in the drive."), .uploadFailed("No space left in the drive.")),
+            ("a conflict", managed(.downloaded, conflicts: true), .inConflict),
+            ("a copy not current", managed(.downloaded, current: false), .notCurrent),
+        ]
+        for (name, status, doubt) in cases {
+            syncFileByFile(book, files: managed(.downloaded))
+            items.setStatus(status, of: book["content.md"])
+            XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package), name) { error in
+                XCTAssertEqual(error as? BookCloudError, .cloudCopyNotProven(doubt), name)
+            }
+        }
+        XCTAssertEqual(items.removalRequests, [], "nothing was removed")
+    }
+
+    /// Changes waiting to upload are still the plain "not uploaded yet",
+    /// ahead of any other doubt, and a file the service has not downloaded
+    /// is not asked about its current copy: nothing of it is removed.
+    func testRemovalOnlyAsksTheFilesItWouldRemoveAboutTheirCurrentCopy() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded))
+        items.setStatus(managed(.downloaded, uploaded: false, uploadReported: false, current: false), of: book["content.md"])
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .notUploaded)
+        }
+
+        // Only in the cloud, with no flag and not current: not removed, so not asked.
+        items.setStatus(managed(.notDownloaded, uploadReported: false, current: false), of: book["content.md"])
+        try makeStorage().removeDownload(of: book.package)
+        XCTAssertEqual(paths(items.removalRequests), paths([book["bookInfo.json"]]))
+    }
+
     /// A package synced as one item is asked for whole, never file by file,
     /// which the sync service would refuse: here its folder is on this Mac
     /// while its files are only in the cloud.
@@ -1417,9 +1475,22 @@ private func managed(
     _ state: CloudItemState,
     bytes: Int64? = 100,
     uploaded: Bool = true,
-    error: String? = nil
+    error: String? = nil,
+    uploadReported: Bool = true,
+    uploadError: String? = nil,
+    conflicts: Bool = false,
+    current: Bool = true
 ) -> CloudItemStatus {
-    CloudItemStatus(state: state, isUploaded: uploaded, byteCount: bytes, hasUnresolvedConflicts: false, downloadError: error)
+    CloudItemStatus(
+        state: state,
+        isUploaded: uploaded,
+        byteCount: bytes,
+        hasUnresolvedConflicts: conflicts,
+        downloadError: error,
+        isUploadReported: uploadReported,
+        uploadError: uploadError,
+        isCurrent: current
+    )
 }
 
 /// Whether two URLs name the same item, however their folders are spelled.
