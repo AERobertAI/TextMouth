@@ -55,7 +55,10 @@ Selecting and marking:
 - Shift-W says where the selection starts and ends, and how long it is; P plays it.
 - A pause is at least 0.4 seconds, longer than a breath between words, quieter than a level 15 decibels above the recording's background (the level of its quietest tenth), that level kept between minus 60 and minus 30 decibels.
 - M drops a marker at the cursor, even while playing.
-  Shift-M lists the markers, the chapter markers, and the pauses, each row read whole, once, as in "Marker 3, Intro, at 1 minute, 4 seconds", then its buttons, which name the row, as in "Delete Marker 3": Go To, Rename, and Delete for a marker, Go To, Rename, and Remove for a chapter marker, and Go To and Select for a pause, as buttons and among its VoiceOver actions.
+  Shift-M lists the markers, the chapter markers, and the pauses, each row read whole, once, as in "Marker 3, Intro, at 1 minute, 4 seconds".
+  Each row then has buttons, which name the row, as in "Delete Marker 3".
+  A marker's buttons are Go To, Rename, and Delete, a chapter marker's are Go To, Rename, and Remove, and a pause's are Go To and Select.
+  They are buttons, and also the row's VoiceOver actions.
   Rename opens a field in the row, with Save Name, which Return presses, and Cancel; while a name is being typed, Escape presses that Cancel, once the keyboard has left the field, and Close takes Escape only while no name is being typed.
   Markers follow the sound through edits and are kept with the edits of the file they are in, so the next window on that file, the book's or one of its tracks, shows them again, in its list too.
   Revert to Original deletes them, saying so before and after, and Redo doesn't bring them back.
@@ -139,7 +142,12 @@ A book open in a reader can't be saved; close it there first.
 <!-- id: audio-editor-original-audio; keys: Keep, Don't keep, Keep for days, Storage settings, retention, Audio Info policy; src: TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Services/AudioEditing/AudioEditingPreferences.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift -->
 
 The original audio: unless the policy below keeps none, the first save keeps a copy of the audio the edits started from, and a recording keeps its original take, so every edit can be undone while the original is kept.
-Original audio, in the Storage tab's Audio Editing group, decides how long: Keep; Don't keep, which edits the book's file in place, so undo then stops at the audio as last saved; or Keep for a number of days (1 to 365, 1 by default) after the last edit, or, for a recording never edited, after it was saved.
+Original audio, in the Storage tab's Audio Editing group, decides how long:
+
+- Keep.
+- Don't keep, which edits the book's file in place, so undo then stops at the audio as last saved.
+- Keep for a number of days (1 to 365, 1 by default) after the last edit, or, for a recording never edited, after it was saved.
+
 A change applies to the originals already kept, too.
 A book can also have a policy of its own, set in the editor's Audio Info, which wins.
 Originals whose time is up are deleted when TextMouth starts, after a recording or an edit is saved, and when a book's own policy changes, never while the book is open in a reader or being edited, nor while undone edits or edits not yet saved need them, and nothing is downloaded to do it.
@@ -151,7 +159,7 @@ Filters are written as ffmpeg writes them, such as highpass=f=80,equalizer=f=300
 Without ffmpeg, TextMouth runs volume, highpass, lowpass, equalizer, afade, atempo, loudnorm, silenceremove, acompressor, and areverse itself, as ffmpeg does, though its loudnorm applies one gain, as ffmpeg's two-pass normalization does, where ffmpeg in one pass changes its gain as it goes.
 It says which filters it runs when a chain asks for another.
 A filter given no value for an option it needs is refused, with the filter and the option named and what to give, as in "The equalizer filter needs its frequency: give a number from 0.0001 to 999999."
-A width that makes no usable filter at its frequency is refused too, as in "The equalizer filter's width can't be “5000”: give a narrower width, since this one makes no usable filter at 3000 Hz.", where it used to ruin the audio it was applied to.
+A width that makes no usable filter at its frequency is refused too, as in "The equalizer filter's width can't be “5000”: give a narrower width, since this one makes no usable filter at 3000 Hz.".
 With ffmpeg installed (Homebrew's, MacPorts', or one on PATH), Use ffmpeg for filters, in the Audio Editing group and on by default, runs every filter ffmpeg has; the switch's help names where TextMouth found ffmpeg, and without one, a line says that it isn't installed.
 TextMouth bundles nothing of ffmpeg.
 Twelve premade presets, such as Remove Rumble, Audiobook Loudness, and Shorten Long Pauses, can be edited, reordered, removed, added to, and reset, in Filter Presets… (below), and work with or without ffmpeg.
@@ -159,7 +167,11 @@ Twelve premade presets, such as Remove Rumble, Audiobook Loudness, and Shorten L
 ## MP3 without ffmpeg
 <!-- id: audio-editor-mp3; keys: LAME, ID3 chapters, gapless, bit rate; src: TextMouth/Services/AudioEditing/AudioEditRenderer+MP3.swift, TextMouth/Services/MP3/MP3Encoder.swift, TextMouth/Services/MP3/MP3Tag.swift -->
 
-MP3 needs no ffmpeg: TextMouth writes it with the LAME encoder built into the app (see [Third-party code](../developer/third-party-code.md)), at a constant bit rate, an MP3 book's own or 64 kilobits a second a channel for speech, tagged with the title and author, the chapter markers as ID3 chapter frames (at most 255, the most one table of contents lists; past that, the 255th runs to the end), a chapter's title with a Windows line break in it, a carriage return and a line feed, is written whole, where it was cut short at the break, and the iTunes gapless numbers, so TextMouth and Apple's players measure it exactly as long as its sound.
+MP3 needs no ffmpeg: TextMouth writes it with the LAME encoder built into the app (see [Third-party code](../developer/third-party-code.md)).
+It writes a constant bit rate, an MP3 book's own or 64 kilobits a second a channel for speech.
+It tags the file with the title and author, and writes the chapter markers as ID3 chapter frames (at most 255, the most one table of contents lists; past that, the 255th runs to the end).
+A chapter's title with a Windows line break in it, a carriage return and a line feed, is written whole.
+It writes the iTunes gapless numbers too, so TextMouth and Apple's players measure the file exactly as long as its sound.
 Export lists it as MP3.
 Should that encoder ever fail to start, an installed ffmpeg the switch allows writes MP3 instead.
 
