@@ -637,6 +637,7 @@ targets:
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/SourceScanSymlinkTests.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
       - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
