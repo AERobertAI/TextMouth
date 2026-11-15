@@ -150,7 +150,7 @@ The page reader's version (PG09): which page reader wrote a book's content.md.
   A format that gains pages later adds a case of its own, which reads again only its own books (V07), as braille did (PG12) and plain text did for its form feeds (PG13).
   A braille book with no pages (a BRL's) and a plain text book with no form feed between words, most of them, are read again once, their content.md byte for byte as before, and stamped.
   A web archive's text page writes no pages (WebArchiveReader.MainPage.markdown() asks PlainTextParser for none).
-  A web archive has no page reader line of its own (PageReaderVersions.current(for:) is nil for it) and no book of it is read again for pages, so its books would differ by when they were read.
+  That is because a web archive has no page reader line of its own (PageReaderVersions.current(for:) is nil for it) and no book of it is read again for pages, so its books would differ by when they were read.
 - Who may write it: every generation records its format's current version (MarkdownCacheService.GeneratedCache.pageReaderVersion, committed with the analysis through LibraryPersistenceService.saveContentAnalysis(…pageReaderVersion:)), since every generation writes pages.
   When textutil's run for the pages failed or timed out, the generation records a note after the version instead (PageReaderVersions.stamp(for:pageRunFailed:previous:), PG16): "1.0.0+failed-once", which the next launch reads again, then "1.0.0+failed", which no launch reads again.
   Only a compound-file Word document older than Word 6, the one thing textutil still reads since 0.4.1, has such a run; an own reading makes no second run, so its book is never noted this way.
