@@ -30,7 +30,8 @@ Part of [TextMouth's documentation](../../README.md).
 ### What VoiceOver hears
 <!-- id: what-voiceover-hears; keys: announcement, quarter, Finished importing, spoken progress; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/ImportProgress.swift -->
 
-- For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left.", and how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
+- For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left."
+  And how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
 
 ### The Nothing Imported alert
 <!-- id: nothing-imported-alert; keys: Already in Library, No books were found, archive holds, alert title; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
@@ -64,7 +65,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: adding-books-file-no-text-read; keys: empty file, blank book, no text, silent book, whitespace only, Checking its format; src: TextMouth/Services/FileImportService.swift -->
 
 - A plain text, Markdown, HTML, web archive, SSML, rich text, Word (.docx, and its templates and macro documents), Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
-- That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
+- That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space.
+  So no silent, empty book is added.
 - A Markdown file that is only a heading still imports.
 - An .xml file of no bytes or only white space is refused the same way, but at the step "Checking its format", as in "Could not import “empty.xml”.
   Checking its format failed: This file has no text to read."
@@ -168,7 +170,8 @@ Part of [TextMouth's documentation](../../README.md).
     - An SSML file says "TextMouth can't safely read this SSML file, because it defines entities of its own.
       Open it in a text editor, take the entity definitions out, save it, then import it again."
     - A document type that only names an external one, as DAISY and NCX files do, is read.
-  - A part written in an encoding other than UTF-8, UTF-16, UTF-32, US-ASCII, ISO-8859, Windows-1250 to 1258, KOI8-R, KOI8-U, Macintosh, Shift_JIS, EUC-JP, EUC-KR, GB2312, GBK, GB18030, or Big5 (or an alias of them) is refused: "TextMouth can't safely read the file “word/document.xml” in this document, because it is written in the UTF-7 encoding.
+  - A part written in an encoding other than UTF-8, UTF-16, UTF-32, US-ASCII, ISO-8859, Windows-1250 to 1258, KOI8-R, KOI8-U, Macintosh, Shift_JIS, EUC-JP, EUC-KR, GB2312, GBK, GB18030, or Big5 (or an alias of them) is refused.
+    "TextMouth can't safely read the file “word/document.xml” in this document, because it is written in the UTF-7 encoding.
     Save it as UTF-8, then import it again."
     - An SSML file says "TextMouth can't safely read this SSML file, because it is written in the UTF-7 encoding.
       Save it as UTF-8, then import it again."
@@ -187,7 +190,8 @@ Part of [TextMouth's documentation](../../README.md).
   No real book tried is refused for any of them.
 - The four sentences, as an alert gives them after "Could not import “x”.
   Reading its text failed: ":
-  - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since 0.4.7: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library): "This file's markup nests more than 128 levels deep, which TextMouth can't read safely.
+  - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since 0.4.7: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library).
+    "This file's markup nests more than 128 levels deep, which TextMouth can't read safely.
     Get another copy of the file, or save it in another format, then import it again."
   - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file holds too much markup for TextMouth to read without running out of memory.
     Divide the document into smaller files, then import them."
@@ -202,7 +206,8 @@ Part of [TextMouth's documentation](../../README.md).
   If it is the only chapter, the EPUB's own sentence about a chapter that could not be read says so, not one of the four.
 - A broken declaration in the markup, such as `<?a>` or a torn `<?xml version="1.0"`, is read as nothing, with the words around it, and no sentence is spoken.
 - A feed gives no sentence.
-  A page that a feed address was looked for in, an article's web page, and a title or summary in a feed are passed over when they pass a limit: no feed is found on that page, an article's book holds the feed's own text, a title is kept as it was written, and the markup of an item that passes a limit reads as no text.
+  A page that a feed address was looked for in, an article's web page, and a title or summary in a feed are passed over when they pass a limit.
+  No feed is found on that page, an article's book holds the feed's own text, a title is kept as it was written, and the markup of an item that passes a limit reads as no text.
   Feed discovery reads a page nested up to 512 levels deep, deeper than a book, since it converts nothing.
 
 ### Documents past the 64 MB limit
@@ -241,7 +246,8 @@ Part of [TextMouth's documentation](../../README.md).
     This is checked first, so no part of such a book's text is read.
     A file that holds both MOBI 6 and KF8 is checked in both halves.
   - For a book whose text is compressed in a way TextMouth does not know: "This Kindle book is compressed in a way TextMouth can't read yet."
-  - For a book that stops short or contradicts itself, as one whose download broke off does: "This Kindle book is damaged or incomplete: ", what is wrong, and "Get a fresh copy of the book, then import it again.", as in "This Kindle book is damaged or incomplete: its text records hold 4096 bytes of the 68150 it says the text has.
+  - For a book that stops short or contradicts itself, as one whose download broke off does.
+    "This Kindle book is damaged or incomplete: ", what is wrong, and "Get a fresh copy of the book, then import it again.", as in "This Kindle book is damaged or incomplete: its text records hold 4096 bytes of the 68150 it says the text has.
     Get a fresh copy of the book, then import it again."
   - For a file named as a Kindle book that is not one: "This file is not a Kindle book that TextMouth can read."
   - For a book with no words in it: "This file has no text to read."
@@ -284,7 +290,8 @@ Part of [TextMouth's documentation](../../README.md).
   - For a PEF file that is not well-formed XML, is not a PEF document, or has a row that is not braille, which is also what a Pentax photo named .pef gets: "This file could not be read as a PEF braille file.
     It may be damaged, or another kind of file."
   - For a PEF file in eight-dot braille, or a BRF or BRL file of Unicode braille patterns that uses dot 7 or 8: "This file is eight-dot braille, which TextMouth does not read."
-  - For a file past a limit (see [What TextMouth reads](what-textmouth-reads.md)): "This braille file holds more than 32 MB, the most TextMouth reads from one braille file.", "This file has more than 100,000 braille pages, the most TextMouth reads.", or "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
+  - For a file past a limit (see [What TextMouth reads](what-textmouth-reads.md)).
+    "This braille file holds more than 32 MB, the most TextMouth reads from one braille file.", "This file has more than 100,000 braille pages, the most TextMouth reads.", or "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
   - For a book that names a braille table this TextMouth does not have, as a library written by a newer TextMouth with more tables can: "TextMouth has no braille table named “en-xx.ctb”."
     - The same sentence refuses one of this Mac's tables that this Mac no longer has or that its check refused (see [Settings](settings.md)), named with "mac:" before its file name, as in "TextMouth has no braille table named “mac:el.ctb”."
     - A TextMouth from before it offered this Mac's tables reads every "mac:" name so.

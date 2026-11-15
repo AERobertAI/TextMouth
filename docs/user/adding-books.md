@@ -172,7 +172,8 @@ Part of [TextMouth's documentation](../../README.md).
     The Mac's tool could not read the file as audio, or the file's header claims a length that its size cannot hold, or more than a year.
   - "The audio converted from X failed its check: ..." and why: the converted file would not play, or lasts a different time from its source, as in "it lasts 12.0 seconds, not 600.0".
   - "The audio converted from X could not be given its name."
-  - "Converting X was stopped because ..." and the watchdog's reason: "it ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
+  - "Converting X was stopped because ..." and the watchdog's reason.
+    "It ran longer than N seconds", "it held more than N MB of memory", "its output did not grow for N seconds", "it used more than N seconds of processor time", or "its output passed N MB", which is more than four times what the track should come to, and 16 MB more.
   - "Converting X failed (the converter ended with code N)."
   - "There is not enough free disk space to convert X: it needs N GB free."
     This is said before anything is converted, for audio of more than two channels, which is mixed to stereo through a hidden file of uncompressed sound that must fit on the disk.
@@ -190,10 +191,12 @@ Part of [TextMouth's documentation](../../README.md).
 ## A ZIP holding a DAISY book with audio
 <!-- id: zip-holding-daisy-book-audio; keys: DAISY ZIP, talking book, SMIL, archive kept, audio only; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/ImportDecision.swift -->
 
-- A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
+- A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says.
+  And an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
 - The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above).
   TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion.
-- For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
+- For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”."
+  And, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
 ## A Markdown book named content.md

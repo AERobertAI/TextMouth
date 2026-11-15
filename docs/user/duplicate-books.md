@@ -20,10 +20,13 @@ Part of [TextMouth's documentation](../../README.md).
     - Replaced: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list.
       The transcript file found beside the new copy's audio replaces the existing copy's transcript.
       Edits of its audio or of its manifest are not kept."
-  - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
-  - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
+  - When one copy is played from a recording and the other is read aloud from its text, as a DAISY book is.
+    "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+  - Then one more sentence, by Move to Trash instead of deleting, under Removal Behavior in the Storage tab of Settings.
+    "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." while it is on, and "The existing copy's files are deleted permanently and cannot be recovered." while it is off.
   - A copy that is missing chapters adds "The copy just imported is incomplete." and what it lacks.
-- The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
+- The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings."
+  And, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
 
 ## What Replace Existing keeps
 <!-- id: what-replace-existing-keeps; keys: same ID, carried over, new copy, replaced book; src: TextMouth/Services/DuplicateReplacement.swift -->
@@ -38,7 +41,8 @@ Which transcript an audiobook keeps (0.4.2), when both copies have one and the n
 - The question tells you which of the two will happen before you answer.
 - After the answer, when a file was not used, VoiceOver hears "“lecture.vtt” was beside the audio but wasn't attached as the book's transcript: Replacing kept the existing copy's transcript.
   To use the file instead, open the book and choose Attach Transcript… from the Book menu."
-- When each of several tracks brought a file, one sentence names them together and gives no Attach Transcript… advice, since that command takes one file for the whole book: "The transcript files beside the audio weren't attached as the book's transcript: Replacing kept the existing copy's transcript."
+- When each of several tracks brought a file, one sentence names them together and gives no Attach Transcript… advice, since that command takes one file for the whole book.
+  "The transcript files beside the audio weren't attached as the book's transcript: Replacing kept the existing copy's transcript."
 
 ### What else the new copy keeps
 <!-- id: replace-keeps-details; keys: date added, manual order, last opened, Book Info edits, voice, speed, pitch; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/Book+OwnSettings.swift -->
@@ -64,7 +68,8 @@ Replace Existing makes the new copy the same book as the existing one, under the
 ### Copies of edited text
 <!-- id: replace-keeps-edited-text; keys: content.md.edited, Edit Text, saved edit, kept copy; src: TextMouth/Services/DuplicateReplacement.swift -->
 
-- The copies of edited text that Edit Text kept for the existing copy go with it into the new copy's package, and so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- The copies of edited text that Edit Text kept for the existing copy go with it into the new copy's package.
+  And so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](where-your-library-lives.md)).
   - When such a copy is kept, VoiceOver says, after the answer, "Replaced “X”.
     Its earlier text was kept as content.md.edited-…, in the book's package.", with X the book's title and the dots standing for the date and time in the copy's name.
 
@@ -92,8 +97,10 @@ Replace Existing makes the new copy the same book as the existing one, under the
 
 - A braille book keeps the braille code its existing copy is read with: when the new copy is the very same file and was translated with another code, TextMouth reads it again with the existing copy's.
   A BRF or BRL book whose characters and code both differ is read again once, with both.
-  A book's code does not record whether you chose it in Book Information's Braille Code pop-up or it was only the Braille setting when the book was added, so after changing the setting, importing the same file again and choosing Replace Existing keeps the old code; choose the new one in Book Information afterwards.
-  A code this Mac no longer offers, as one of VoiceOver's tables a macOS update removed, stops the replacement by name, so the code is never lost without a word: nothing is replaced and the question stays, and choosing another code for the existing copy in Book Information, or Keep Both, is the way on.
+  A book's code does not record whether you chose it in Book Information's Braille Code pop-up or it was only the Braille setting when the book was added, so after changing the setting, importing the same file again and choosing Replace Existing keeps the old code.
+  Choose the new one in Book Information afterwards.
+  A code this Mac no longer offers, as one of VoiceOver's tables a macOS update removed, stops the replacement by name, so the code is never lost without a word.
+  Nothing is replaced and the question stays, and choosing another code for the existing copy in Book Information, or Keep Both, is the way on.
   A copy with other bytes, such as a second edition, is translated with the Braille setting's code.
 
 ### Text encoding
@@ -173,7 +180,9 @@ Replace Existing makes the new copy the same book as the existing one, under the
 ## When the replaced copy's files can't be removed
 <!-- id: when-replaced-copy-files-cant; keys: could not be moved to the Trash, Move to Trash instead of deleting, hidden name; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/RemovalWording.swift -->
 
-- When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands, and the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason, with "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
+- When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands.
+  And the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason.
+  With "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
 - With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
 
 ## A replaced book open in Edit Text
@@ -202,7 +211,8 @@ Replace Existing makes the new copy the same book as the existing one, under the
 <!-- id: duplicate-new-copy-waits-library; keys: .awaitingDuplicateAnswer, Duplicate Copies Moved to the Trash, Put Back, unanswered; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/ImportDecision.swift -->
 
 - A duplicate's new copy waits in the library, in a package marked with a hidden file, .awaitingDuplicateAnswer, until you answer.
-- When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash", as in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed.
+- When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash".
+  As in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed.
   To get it back, open the Trash and choose Put Back."
 - For two or three copies it says "TextMouth moved the new copies of “A”, “B”, and “C” to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed.
   To get them back, open the Trash and choose Put Back.", and for more, "TextMouth moved 4 new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed.
