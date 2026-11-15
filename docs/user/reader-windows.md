@@ -119,12 +119,14 @@ Copy Reading Position adds the place's time, as in "at 2:13:05 of 9:41:07 in the
 A book's own settings open from the reader's toolbar.
 For a text book the button is Voice, which VoiceOver calls Change voice for this book, and its sheet, Voice & Speed for This Book, holds the book's voice, speed, and pitch and what happens when the book ends.
 There Save to Global Settings, which the playback bar offers too, makes the book's voice, speed, and pitch the defaults, and Reset to Global Settings removes all three from the book, saying "Using global voice, speed, and pitch settings".
-For an audiobook the button is Audio Settings, named the same on screen and by VoiceOver, and its sheet, Audio Settings for This Book, holds the book's speed, one slider VoiceOver reads as "Audio speed, 1.25 times speed", which moves by 0.05 times; what happens when the book ends; and Reset to Normal Speed while the book has a speed of its own.
+For an audiobook the button is Audio Settings, named the same on screen and by VoiceOver.
+Its sheet, Audio Settings for This Book, holds the book's speed, one slider VoiceOver reads as "Audio speed, 1.25 times speed", which moves by 0.05 times; what happens when the book ends; and Reset to Normal Speed while the book has a speed of its own.
 
 ## Search in Book
 <!-- id: reader-windows-search-book; keys: find in book, BookSearchModel, regular expression, Match Case, Command-F, Search Results rotor; src: TextMouth/Views/Reader/BookSearchView.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/Views/Reader/ReaderView.swift -->
 
-Search in Book, in the Playback menu (Command-F) and as the toolbar's Search button, which VoiceOver calls "Search in book", opens a sheet with a search field, "Search text", a Match Case checkbox, unchecked unless you check it, and a regular-expression switch, and lists the matches as you type: the first 500, saying so when it finds more, in a list that keeps every row, so VoiceOver's cursor stays put in a long list.
+Search in Book, in the Playback menu (Command-F) and as the toolbar's Search button, which VoiceOver calls "Search in book", opens a sheet with a search field, "Search text", a Match Case checkbox, unchecked unless you check it, and a regular-expression switch, and lists the matches as you type.
+It lists the first 500, saying so when it finds more, in a list that keeps every row, so VoiceOver's cursor stays put in a long list.
 For a text book each result gives its words in context, the heading it is under, and an estimate of where it is, as a percentage or a time as the Display picker chooses, as in "a drowned harbour, The Battle, at 12.5 percent of book".
 For an audiobook that has a transcript, Search in Book searches the transcript's text, and every result is timed exactly: the field's hint is "Type to search the book's transcript", the sheet has no Display picker, and a result's row shows when it is heard, as 1:03:45 or, under an hour, 3:45.
 VoiceOver reads the row, and the Search Results rotor lists it, as "a drowned harbour, The Battle, at 1 hour, 3 minutes, 45 seconds", the chapter named only when it has a title of its own that is not the book's title.
@@ -145,7 +147,8 @@ Return chooses a focused result in a text book's list too.
 ## Go Back
 <!-- id: reader-go-back; keys: Command-[, Return button, last jump, previous position, undo jump; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Reader/BookSearchView.swift -->
 
-Go Back (Command-[), in the Navigate menu, and the toolbar's Return button, which VoiceOver calls "Return to previous reading position" and which is there only while there is a place to return to, take a reader back to where its last jump began, whether the jump was to a search result, a heading, a bookmark, a page, a percent, or a time.
+Go Back (Command-[), in the Navigate menu, and the toolbar's Return button, which VoiceOver calls "Return to previous reading position" and which is there only while there is a place to return to, take a reader back to where its last jump began.
+The jump may have been to a search result, a heading, a bookmark, a page, a percent, or a time.
 VoiceOver says "Returned to previous position."
 Only the last jump is remembered, and Go Back with no place to return to says "No previous position to return to."
 

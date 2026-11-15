@@ -36,11 +36,9 @@ A feed's episodes and articles say the same words.
 
 For a feed's episode or article, the next one is the next one its feed lists that way, newest first, downloaded or not (see Listening on to the next episode, in [Podcasts and article feeds](feeds.md)).
 One that is not on this Mac is downloaded first, and that download goes first in the queue.
-VoiceOver says "Finished: Ep. 368.
-Downloading the next episode: Ep.
-367."
-("the next article" for an article), and "Starting: Ep.
-367" when the file arrives.
+VoiceOver says "Finished: Episode 368.
+Downloading the next episode: Episode 367."
+("the next article" for an article), and "Starting: Episode 367" when the file arrives.
 Until it arrives, the episode rests finished at its end, as a book that stops does (above).
 If the download fails, VoiceOver says "The next episode could not be downloaded, so playback stopped." followed by the download's own sentence, as the episode's row says it; if TextMouth will not start the download, as while it quits, that sentence is "TextMouth is not downloading right now."
 If you close the window before the file arrives, nothing starts when it does, and a sleep timer the window owns stops, as closing the window a timer belongs to stops it.
@@ -62,7 +60,8 @@ A timer counting minutes does not: it goes on with the next book (see The sleep 
 ## Where the next book opens
 <!-- id: reader-where-next-book-opens; keys: NextBookWindow, This Window, A New Window, same window, new window, next book window; src: TextMouth/Models/NextBookWindow.swift, TextMouth/ViewModels/ReaderViewModel+NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift -->
 
-Where the next book opens, whenever listening goes on from one book to another, is the Playback tab's "Open the next book in" (see [Settings](settings.md)) and, for a feed or a plain folder, its own choice in Feed Info and Folder Settings (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)):
+Where the next book opens, whenever listening goes on from one book to another, is the Playback tab's "Open the next book in" (see [Settings](settings.md)).
+For a feed or a plain folder, it is that feed's or folder's own choice in Feed Info and Folder Settings (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)):
 
 - This Window, the default, shows the next book in this window in place of the book here.
   No new window opens, and the window, which keeps its place and size on the screen, becomes the next book's.
@@ -210,7 +209,9 @@ Nothing is spoken or shown; an audiobook's places count time and need none.
 <!-- id: reader-places-follow-their-words; keys: Redo Text Extraction, Replace Existing, re-read, text changed, bookmarks move, skipped sections; src: TextMouth/ViewModels/LibraryViewModel+TextAnchors.swift, TextMouth/ViewModels/LibraryViewModel+PlaceSnapshots.swift, TextMouth/ViewModels/ReaderViewModel+SavedPlaces.swift -->
 
 Your places follow their words when a book's text changes.
-When TextMouth reads a book's text again, after an update changes how it reads books, as one that gives books pages does at the next launch (see [Where TextMouth keeps your library](where-your-library-lives.md)), or after Redo Text Extraction, your reading position, bookmarks, and skipped sections stay with their words.
+When TextMouth reads a book's text again, after an update changes how it reads books, your reading position, bookmarks, and skipped sections stay with their words.
+An update that gives books pages makes it read them again at the next launch (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+They stay with their words after Redo Text Extraction too.
 When a book's text changes in any other way, they still do: each time you open a book, TextMouth checks every saved place, and finds one whose words have moved.
 When you edit a book's text with Edit Text, your places follow each edit too, and an open reader's cursor stays on the words it was at.
 When Replace Existing puts a new copy in a text book's place, your reading position, bookmarks, and skipped sections follow their words into it as well (see [Adding books](adding-books.md)).

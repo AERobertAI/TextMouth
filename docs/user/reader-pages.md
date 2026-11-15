@@ -27,7 +27,8 @@ Neither has a book of only one page, which has no other page to go to: there the
 ## Navigation unit pickers in a book without pages
 <!-- id: reader-navigation-unit-pickers-book-without; keys: navigationUnitChoices, skip unit pickers, Playback tab, playback bar; src: TextMouth/ViewModels/ReaderViewModel+Pages.swift, TextMouth/Views/Reader/PlaybackControlsView.swift -->
 
-For a book without pages, the playback bar's navigation unit pickers, the one VoiceOver calls Navigation unit or the two called Forward navigation unit and Backward navigation unit, leave Page out of their lists, unless Page is the unit in force, which stays in the list so that the picker shows its value.
+For a book without pages, the playback bar's navigation unit pickers, the one VoiceOver calls Navigation unit or the two called Forward navigation unit and Backward navigation unit, leave Page out of their lists.
+The exception is Page when it is the unit in force: it stays in the list so that the picker shows its value.
 The four skip unit pickers in the Playback tab of Settings (see [Settings](settings.md)) list Page for every book.
 
 ## Skip by page
