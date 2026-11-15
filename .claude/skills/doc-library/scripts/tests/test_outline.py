@@ -11,7 +11,7 @@ Intro text before any heading.
 
 # Feeds
 
-<!-- id: feeds-top; keys: RSS -->
+<!-- id: feeds-top; keys: RSS; src: TextMouth/Feeds.swift -->
 The top.
 
 ## Subscribing
@@ -46,10 +46,10 @@ class OutlineTests(DocLibCase):
         lines = out.splitlines()
         self.assertEqual(len(lines), 4)
         # Commas separate the fields, so they survive the collapse of white space in a hit's text.
-        self.assertEqual(lines[0], f"docs/user/feeds.md:1-1  (top)  no id, 1 lines, {size(FEEDS_LINES[0])} bytes")
-        self.assertEqual(lines[1], f"docs/user/feeds.md:3-6  # Feeds  feeds-top, 4 lines, {size(*FEEDS_LINES[2:6])} bytes")
-        self.assertEqual(lines[2], f"docs/user/feeds.md:8-11  ## Subscribing  feeds-subscribe, 4 lines, {size(*FEEDS_LINES[7:11])} bytes")
-        self.assertEqual(lines[3], f"docs/user/feeds.md:13-15  ### Details  no id, 3 lines, {size(*FEEDS_LINES[12:15])} bytes")
+        self.assertEqual(lines[0], f"docs/user/feeds.md:1-1  (top)  no id, 1 lines, {size(FEEDS_LINES[0])} bytes, 0 paths")
+        self.assertEqual(lines[1], f"docs/user/feeds.md:3-6  # Feeds  feeds-top, 4 lines, {size(*FEEDS_LINES[2:6])} bytes, 1 paths")
+        self.assertEqual(lines[2], f"docs/user/feeds.md:8-11  ## Subscribing  feeds-subscribe, 4 lines, {size(*FEEDS_LINES[7:11])} bytes, 0 paths")
+        self.assertEqual(lines[3], f"docs/user/feeds.md:13-15  ### Details  no id, 3 lines, {size(*FEEDS_LINES[12:15])} bytes, 0 paths")
 
     def test_sizes_count_utf8_bytes_of_the_lines_with_their_line_ends(self) -> None:
         _status, out, _err = self.run_cli("outline", "docs/user/feeds.md", "--json")
@@ -73,8 +73,23 @@ class OutlineTests(DocLibCase):
         self.assertEqual((details["level"], details["id"], details["path_titles"]),
                          (3, None, ["Feeds", "Subscribing", "Details"]))
         for item in sections:
-            for key in ("path", "start", "end", "heading", "text", "id", "level", "title", "lines", "bytes", "path_titles"):
+            for key in ("path", "start", "end", "heading", "text", "id", "level", "title", "lines", "bytes", "paths", "path_titles"):
                 self.assertIn(key, item)
+
+    def test_paths_counts_distinct_tokens_from_src_and_prose_whether_or_not_they_exist(self) -> None:
+        self.write_tree({
+            "TextMouth/Feeds.swift": "// code\n",
+            "docs/paths.md": (
+                "# P\n\n<!-- id: p; src: TextMouth/Feeds.swift, TextMouth/Gone.swift -->\n"
+                "See `TextMouth/Feeds.swift` and `TextMouth/Feeds.swift` again, and `docs/paths.md`.\n\n"
+                "## Q\n\nNo paths: `Book` and `x`.\n"),
+        })
+        _status, out, _err = self.run_cli("outline", "docs/paths.md", "--json")
+        first, second = [json.loads(line) for line in out.splitlines()]
+        # The src entries (the second names no file) and one prose token not in src; the repeat counts once.
+        self.assertEqual(first["paths"], 3)
+        self.assertEqual(second["paths"], 0)
+        self.assertTrue(first["text"].endswith(", 3 paths"))
 
     def test_a_page_named_by_its_unique_end(self) -> None:
         self.write_tree({"docs/user/only.md": "# Only\n"})

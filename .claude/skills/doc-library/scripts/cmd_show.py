@@ -6,19 +6,23 @@
 
 The first line is a hit for the section (its place, heading, and id), then the
 section's lines. A section longer than 12,000 characters is cut at a line end, with
-a last line that says which lines are missing; ``--all`` prints every line.
+a last line that says which lines are missing; ``--all`` prints every line. The
+last lines are the marker's ``src`` paths, ``src: PATH``, with ``(missing)`` after one
+that names no file.
 A target that names nothing is a usage error (exit status 2); otherwise exit 0.
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any, List, Tuple
 
 import output
 import targets
 from docmodel import Page, Section
 from output import Hit
+from repofiles import RepoFiles
 
 # The most characters of a section printed unless --all is given.
 CHAR_LIMIT = 12000
@@ -56,7 +60,16 @@ def section_summary(section: Section) -> str:
     return "no marker"
 
 
-def json_object(page: Page, section: Section, show_all: bool) -> dict:
+def src_entries(root: Path, section: Section) -> List[Tuple[str, bool]]:
+    """The marker's ``src`` paths, each with whether it names a file of the repository."""
+    sources = section.marker.src if section.marker else []
+    if not sources:
+        return []  # nothing to check, so skip listing the repository's files
+    repo = RepoFiles.load(root)
+    return [(path, bool(repo.resolve(path))) for path in sources]
+
+
+def json_object(page: Page, section: Section, show_all: bool, sources: List[Tuple[str, bool]]) -> dict:
     """The ``--json`` form: the section's place, marker fields, and printed lines."""
     marker = section.marker
     lines, last = shown_lines(page, section, False, show_all)
@@ -64,15 +77,16 @@ def json_object(page: Page, section: Section, show_all: bool) -> dict:
         "path": page.path, "start": section.start, "end": section.end, "span_end": section.span_end,
         "heading": section.heading, "title": section.title, "level": section.level,
         "id": marker.id if marker else None, "keys": marker.keys if marker else [],
-        "src": marker.src if marker else [], "lines": lines, "truncated": last < section.end,
+        "src": [{"path": path, "exists": exists} for path, exists in sources], "lines": lines, "truncated": last < section.end,
     }
 
 
 def run(args: Any) -> int:
     """Print the section that ``args.target`` names."""
     page, section = targets.resolve_target(args.root, args.target)
+    sources = src_entries(args.root, section)
     if args.json:
-        print(json.dumps(json_object(page, section, args.all), ensure_ascii=False))
+        print(json.dumps(json_object(page, section, args.all, sources), ensure_ascii=False))
         return output.EXIT_OK
     printed, last = shown_lines(page, section, args.numbers, args.all)
     print(output.format_hit(Hit(page.path, section.start, section.end, section.heading,
@@ -81,6 +95,8 @@ def run(args: Any) -> int:
         print(line)
     if last < section.end:
         print(f"{output.ELLIPSIS} lines {last + 1}-{section.end} not shown; --all shows them")
+    for path, exists in sources:
+        print(f"src: {path}" + ("" if exists else " (missing)"))
     return output.EXIT_OK
 
 

@@ -43,7 +43,8 @@ class ShowTests(DocLibCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.write_tree({"docs/user/feeds.md": FEEDS, "docs/architecture/state/feeds.md": "# State\n\ntext\n"})
+        self.write_tree({"docs/user/feeds.md": FEEDS, "docs/architecture/state/feeds.md": "# State\n\ntext\n",
+                         "TextMouth/Feeds.swift": "// feeds\n"})
 
     def show(self, *args: str):
         """Run ``show`` with ``args`` and return (status, standard output lines, standard error)."""
@@ -54,7 +55,9 @@ class ShowTests(DocLibCase):
         status, lines, err = self.show("docs/user/feeds.md#Subscribing")
         self.assertEqual((status, err), (0, ""))
         self.assertEqual(lines[0], "docs/user/feeds.md:6-9  Subscribing  id: feeds-subscribe")
-        self.assertEqual(lines[1:], FEEDS.splitlines()[5:9])
+        self.assertEqual(lines[1:5], FEEDS.splitlines()[5:9])
+        # The marker's source paths end the output; one that names no file says so.
+        self.assertEqual(lines[5:], ["src: TextMouth/Feeds.swift", "src: gone.swift (missing)"])
 
     def test_a_line_target_finds_the_section_holding_the_line(self) -> None:
         for line in (6, 7, 9, 10):
@@ -145,8 +148,8 @@ class ShowTests(DocLibCase):
     def test_numbers_start_each_line_with_its_number_and_a_tab(self) -> None:
         _status, lines, _err = self.show("docs/user/feeds.md#Subscribing", "--numbers")
         self.assertEqual(lines[0], "docs/user/feeds.md:6-9  Subscribing  id: feeds-subscribe")
-        self.assertEqual(lines[1:], [f"{n}\t{text}" for n, text in
-                                     zip(range(6, 10), FEEDS.splitlines()[5:9])])
+        self.assertEqual(lines[1:5], [f"{n}\t{text}" for n, text in
+                                      zip(range(6, 10), FEEDS.splitlines()[5:9])])
 
     def test_the_twelve_thousand_character_cap_and_all(self) -> None:
         body = "".join(f"{n:04d} " + "x" * 94 + "\n" for n in range(200))  # 100 characters a line
@@ -183,7 +186,7 @@ class ShowTests(DocLibCase):
         self.assertEqual(data, {
             "path": "docs/user/feeds.md", "start": 6, "end": 9, "span_end": 10,
             "heading": "Subscribing", "title": "Subscribing", "level": 2, "id": "feeds-subscribe",
-            "keys": ["Add Feed", "subscribe"], "src": ["TextMouth/Feeds.swift", "gone.swift"],
+            "keys": ["Add Feed", "subscribe"], "src": [{"path": "TextMouth/Feeds.swift", "exists": True}, {"path": "gone.swift", "exists": False}],
             "lines": FEEDS.splitlines()[5:9], "truncated": False,
         })
 
