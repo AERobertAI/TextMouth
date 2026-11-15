@@ -562,6 +562,7 @@ targets:
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
+      - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
       - TextMouthProductionTests/DOCXMalformedXMLTests.swift
@@ -623,6 +624,7 @@ targets:
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
       - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
+      - TextMouthProductionTests/NetworkReachabilityTests.swift
       - TextMouthProductionTests/PackageNavigationAuditTests.swift
       - TextMouthProductionTests/PageModelTests.swift
       - TextMouthProductionTests/ParserContentFidelityTests.swift
@@ -670,6 +672,7 @@ targets:
       - TextMouthProductionTests/TimedTextModelTests.swift
       - TextMouthProductionTests/TitleTypingTests.swift
       - TextMouthProductionTests/UnicodeCoordinateTests.swift
+      - TextMouthProductionTests/ViewsAndWindowsCloudStatesTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
     settings:

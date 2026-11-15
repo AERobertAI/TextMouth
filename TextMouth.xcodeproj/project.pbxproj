@@ -325,6 +325,7 @@
 		1D925E7B343B34BEBBE7B1FE /* PortableXMLCorpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61AF6FA6C53CEE1429E75880 /* PortableXMLCorpus.swift */; };
 		1DC649DEC8532CD0DE1D458E /* ReaderViewModel+BookMoves.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D27AC4FC783125E5CE84BBB /* ReaderViewModel+BookMoves.swift */; };
 		1DE8836C3AB99A52870F4633 /* NSAccessibilityPriorityLevel+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE2E24A36B41467A8AC5916 /* NSAccessibilityPriorityLevel+iOS.swift */; };
+		1DF5B6E368E3F8BAD454E37D /* CloudStorageContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FC76819D89B075A446DF7C /* CloudStorageContractTests.swift */; };
 		1DF92BEA46FE1C2709CC1570 /* TextEncodingChoiceDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D204A2A453D0603FD648C7B3 /* TextEncodingChoiceDecoderTests.swift */; };
 		1DFF338B412F98105243BE9B /* FeedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94559A41D8F0BE56561F9BA7 /* FeedSettingsView.swift */; };
 		1E32DC7456D070BE071CB6E8 /* PhoneSettingsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8A988C2AAF4FE47964D7C5 /* PhoneSettingsModelTests.swift */; };
@@ -779,6 +780,7 @@
 		48D38A5F9BC365D9D938290E /* BookRereadFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A188016664F254730E2F5889 /* BookRereadFlowTests.swift */; };
 		49151C296A4D07F858648283 /* PhoneAudioErrorCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DC5D80D26C790CD68B862F /* PhoneAudioErrorCodeTests.swift */; };
 		492FA98D1F34C7DB8E75454B /* LibrarySearchPrefilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD2E6728732B78ECCFBF839 /* LibrarySearchPrefilterTests.swift */; };
+		495FD3BEF132A26E7528EFA2 /* ViewsAndWindowsCloudStatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4776C9B0EAD6B661C0F7E05 /* ViewsAndWindowsCloudStatesTests.swift */; };
 		499879005B40C5314C5533F1 /* MarkdownNestingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838003FFA2F984C25B18F442 /* MarkdownNestingTests.swift */; };
 		49C94FE35C07B21493B2F446 /* libObjCExceptionCatcher_iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F77D23A4E6EA7FF64513B3A /* libObjCExceptionCatcher_iOS.a */; };
 		49D22CE6E29D98855200CC81 /* PhoneMoveFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B733CAF65C8D9534BDE0FCF /* PhoneMoveFeedback.swift */; };
@@ -2439,6 +2441,7 @@
 		E778C5F98CA1288BEDC1A57B /* LibraryViewModel+Feeds.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6B1B7FB41719E130C84969 /* LibraryViewModel+Feeds.swift */; };
 		E7944FBBBEF1D281B13574D6 /* KFXView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220D73C76BA73C6F9B424C4F /* KFXView.swift */; };
 		E7C3963CD29968768019C2E5 /* XMLTree+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B02BF8854544C66BBE6299 /* XMLTree+iOS.swift */; };
+		E7C39B5D6D90F09723149C28 /* NetworkReachabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B5C58B28926F893C3A835F /* NetworkReachabilityTests.swift */; };
 		E7C5910324472C741294439E /* TranscriptCleanupRuleFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93581DF09202F50E6492C7C2 /* TranscriptCleanupRuleFile.swift */; };
 		E7CA765ADC56F38FF0D5E7EB /* AudioEditPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4ED68412FAA48EB90AA0A5 /* AudioEditPackage.swift */; };
 		E7FE980AAB694BA9BD67B1F8 /* LibraryIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B08A2979883FED885AED37 /* LibraryIdentityTests.swift */; };
@@ -7436,6 +7439,7 @@
 				6C0ED4591C6AD90D26D033D3 /* BookMetadataUpdateTests.swift in Sources */,
 				F52C0D1ACC88C0E1D55ABE27 /* BookSearchModelTests.swift in Sources */,
 				5C1A349AF42F0EEC6A7308E1 /* BookTextEncodingTests.swift in Sources */,
+				1DF5B6E368E3F8BAD454E37D /* CloudStorageContractTests.swift in Sources */,
 				B5FFAD269F00FE6653A3A69D /* CloudTestDoubles.swift in Sources */,
 				B1B44B90EDB852B915CBE04E /* CollectionTestSupport.swift in Sources */,
 				FECD3535843D6C9409821927 /* DOCXMalformedXMLTests.swift in Sources */,
@@ -7498,6 +7502,7 @@
 				E1E41F329E4ADB6A14BF5729 /* MarkupFuzzGenerator.swift in Sources */,
 				EA2619E01A10277352D300FA /* MarkupGuardTests.swift in Sources */,
 				DB45F2FBDD582DBFBD0B01B9 /* MediaGestureDetectorTests.swift in Sources */,
+				E7C39B5D6D90F09723149C28 /* NetworkReachabilityTests.swift in Sources */,
 				2365B534E39387073FB4A8BD /* PackageNavigationAuditTests.swift in Sources */,
 				0EB67EB9AA8C6E88BA1020A2 /* PageModelTests.swift in Sources */,
 				766B97F906BBFEF04D658A10 /* ParserContentFidelityTests.swift in Sources */,
@@ -7547,6 +7552,7 @@
 				75A44D9D431A38B1ED0FCD51 /* TimedTextModelTests.swift in Sources */,
 				8FEA80CFCAA6018E87DCB387 /* TitleTypingTests.swift in Sources */,
 				5AC82DC95B7A6924C31D2825 /* UnicodeCoordinateTests.swift in Sources */,
+				495FD3BEF132A26E7528EFA2 /* ViewsAndWindowsCloudStatesTests.swift in Sources */,
 				F7FA65998F598510CEE4B2AA /* ZIPTestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
