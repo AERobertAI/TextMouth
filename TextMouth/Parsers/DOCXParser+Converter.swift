@@ -1157,7 +1157,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var style = MarkdownEmphasis.Style()
         if paragraph.runIsBold { style.insert(.strong) }
         if paragraph.runIsItalic { style.insert(.emphasis) }
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        // The run's lines (almost always one: splitting every run at its
+        // line feeds read each Character of the book, 19% of a DOCX import
+        // before the November 14, 2026 speed-up, H2).
+        let lines = text.splitAtLineFeeds()
         for (index, words) in lines.enumerated() {
             if index > 0 { appendFixed("\n") }
             if !words.isEmpty { appendStyled(String(words), style) }
