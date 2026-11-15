@@ -70,6 +70,59 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
     The reports do not mention it, and the commit it ran is not recorded there.
   - Nothing here was run with VoiceOver.
 
+## In the simulator, sound tests run on GitHub only
+<!-- id: simulator-sound-tests-run-github; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/tests/test_run_ios_ui_tests.py -->
+
+The old rule, "never press Play and never type in the simulator", was the orchestrator's, not the user's, and the user withdrew it on November 10, 2026 ("I definitely think those should be tested on the IOS").
+The rule now:
+
+- The interface tests press Play and type, as a person does.
+  That makes sound, since the simulator plays through the Mac's speakers and the keyboard clicks, so such a test runs only where nobody listens: on a GitHub runner.
+- A test that makes sound runs only when the environment variable `TEXTMOUTH_UI_SOUND` is 1.
+  `Scripts/agents/run-ios-ui-tests.py` is the one place that sets it (as `TEST_RUNNER_TEXTMOUTH_UI_SOUND`, which `xcodebuild` hands to the test runner without the prefix), and it runs only on the runner: anywhere `GITHUB_ACTIONS` is not `true`, it stops at once with exit status 2, before it reads a request, writes a file, or starts a simulator.
+  Never run it on this Mac; to run the interface tests, ask a GitHub run for them.
+  The workflow, the other scripts, and the Mac never set it: `test_run_ios_ui_tests.py` fails if another tracked file names it, if the workflow sets it, or if a test file presses Play or types by hand.
+- `TextMouthUITestCase` decides in one place.
+  `requireSound(_:)` skips the test, saying why, unless the variable is 1.
+  The helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`, `type`) call it first themselves, so a test that forgot still makes no sound on this Mac.
+  A test that makes sound calls `requireSound` before it launches anything, so a skip is quick.
+- On this Mac those tests skip.
+  Do not set the variable in a shell here.
+  Nothing records audio anywhere.
+- The unit tests (`TextMouthiOSTests`) make no sound and have no sound variable.
+  They run in the same xcodebuild run as the interface tests, on GitHub; no agent runs a simulator on this Mac.
+- A test that needs a book is sent one at launch (`TEXTMOUTH_OPEN_AT_LAUNCH`) and finds Play unpressed.
+- Never play Ogg through Apple's frameworks, here or on the runner; the tests use the EPUB `TestData/alice.epub`.
+- No test may trap, hang, or use a microphone, and every wait has a limit.
+- VoiceOver does not run in the simulator.
+  XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type.
+  Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
+
+## Type-checks and tests
+<!-- id: type-checks-tests; keys: ; src: TextMouthProductionTests/PhoneSettingsVoicePreviewTests.swift, TextMouthProductionTests/PhoneVoiceModelTests.swift, project.yml, Scripts/agents/run_locked.py -->
+
+- `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own.
+  They compile no test file.
+- `make typecheck-tests` compiles the Mac's hosted tests too.
+  It builds the app and `TextMouthProductionTests` (the folder of that name and the files of `TextMouthTests/Sources/Tests` that `project.yml` lists for it) with SwiftPM and `swift build --target TextMouthProductionTests`.
+  It links no test bundle and runs nothing.
+  Run it, once for a batch and after committing, before asking the build train for a build.
+  `make typecheck-tests REF=<commit>` checks that commit from any worktree.
+  It takes the heavy-work lock itself, so never wrap it in `run_locked.py`.
+  A run takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
+  Its errors read as the train's do (file, line, message), and its summary is in `build/typecheck/results/` of the main checkout.
+- `TextMouthiOSUITests` can be type-checked on this Mac without the iOS runtime, because Xcode's iPhone Simulator SDK and its XCTest are enough (`xcrun --sdk iphonesimulator --show-sdk-path`).
+  It touches nothing and builds no app; run it under the heavy-work lock: `python3 -I Scripts/agents/run_locked.py NAME xcrun swiftc -typecheck -sdk $P/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios26.0-simulator -F $P/Library/Frameworks -I $P/usr/lib -swift-version 5 TextMouthiOSUITests/*.swift`, with `P=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer`.
+  It would have found the unterminated string of run 42947183810 in seconds.
+  `make typecheck-ios` does not cover these files, nor `TextMouthiOSTests`: it builds the app's sources alone.
+- So, apart from `make typecheck-tests` and that command, a compile error in a test file is found only by a build that builds the tests.
+  - For `TextMouthProductionTests`, `make typecheck-tests` finds it before a train does, and the build train finds it otherwise.
+  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
+- This happened.
+  On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+- After changing a test file, run `make typecheck-tests` before requesting a train for it.
+  Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
+
 ## The audit and its accepted findings
 <!-- id: audit-accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
 
@@ -291,56 +344,3 @@ The last passes of November 9, 2026 fail on none of them.
 - **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)).
   That follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`, which the user has not answered.
   Undoing it is one line.
-
-## In the simulator, sound tests run on GitHub only
-<!-- id: simulator-sound-tests-run-github; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/tests/test_run_ios_ui_tests.py -->
-
-The old rule, "never press Play and never type in the simulator", was the orchestrator's, not the user's, and the user withdrew it on November 10, 2026 ("I definitely think those should be tested on the IOS").
-The rule now:
-
-- The interface tests press Play and type, as a person does.
-  That makes sound, since the simulator plays through the Mac's speakers and the keyboard clicks, so such a test runs only where nobody listens: on a GitHub runner.
-- A test that makes sound runs only when the environment variable `TEXTMOUTH_UI_SOUND` is 1.
-  `Scripts/agents/run-ios-ui-tests.py` is the one place that sets it (as `TEST_RUNNER_TEXTMOUTH_UI_SOUND`, which `xcodebuild` hands to the test runner without the prefix), and it runs only on the runner: anywhere `GITHUB_ACTIONS` is not `true`, it stops at once with exit status 2, before it reads a request, writes a file, or starts a simulator.
-  Never run it on this Mac; to run the interface tests, ask a GitHub run for them.
-  The workflow, the other scripts, and the Mac never set it: `test_run_ios_ui_tests.py` fails if another tracked file names it, if the workflow sets it, or if a test file presses Play or types by hand.
-- `TextMouthUITestCase` decides in one place.
-  `requireSound(_:)` skips the test, saying why, unless the variable is 1.
-  The helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`, `type`) call it first themselves, so a test that forgot still makes no sound on this Mac.
-  A test that makes sound calls `requireSound` before it launches anything, so a skip is quick.
-- On this Mac those tests skip.
-  Do not set the variable in a shell here.
-  Nothing records audio anywhere.
-- The unit tests (`TextMouthiOSTests`) make no sound and have no sound variable.
-  They run in the same xcodebuild run as the interface tests, on GitHub; no agent runs a simulator on this Mac.
-- A test that needs a book is sent one at launch (`TEXTMOUTH_OPEN_AT_LAUNCH`) and finds Play unpressed.
-- Never play Ogg through Apple's frameworks, here or on the runner; the tests use the EPUB `TestData/alice.epub`.
-- No test may trap, hang, or use a microphone, and every wait has a limit.
-- VoiceOver does not run in the simulator.
-  XCUITest's element queries stand in for it for labels, values, traits, and order, and the audit for missing labels, hit areas, and Dynamic Type.
-  Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
-
-## Type-checks and tests
-<!-- id: type-checks-tests; keys: ; src: TextMouthProductionTests/PhoneSettingsVoicePreviewTests.swift, TextMouthProductionTests/PhoneVoiceModelTests.swift, project.yml, Scripts/agents/run_locked.py -->
-
-- `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own.
-  They compile no test file.
-- `make typecheck-tests` compiles the Mac's hosted tests too.
-  It builds the app and `TextMouthProductionTests` (the folder of that name and the files of `TextMouthTests/Sources/Tests` that `project.yml` lists for it) with SwiftPM and `swift build --target TextMouthProductionTests`.
-  It links no test bundle and runs nothing.
-  Run it, once for a batch and after committing, before asking the build train for a build.
-  `make typecheck-tests REF=<commit>` checks that commit from any worktree.
-  It takes the heavy-work lock itself, so never wrap it in `run_locked.py`.
-  A run takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
-  Its errors read as the train's do (file, line, message), and its summary is in `build/typecheck/results/` of the main checkout.
-- `TextMouthiOSUITests` can be type-checked on this Mac without the iOS runtime, because Xcode's iPhone Simulator SDK and its XCTest are enough (`xcrun --sdk iphonesimulator --show-sdk-path`).
-  It touches nothing and builds no app; run it under the heavy-work lock: `python3 -I Scripts/agents/run_locked.py NAME xcrun swiftc -typecheck -sdk $P/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios26.0-simulator -F $P/Library/Frameworks -I $P/usr/lib -swift-version 5 TextMouthiOSUITests/*.swift`, with `P=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer`.
-  It would have found the unterminated string of run 42947183810 in seconds.
-  `make typecheck-ios` does not cover these files, nor `TextMouthiOSTests`: it builds the app's sources alone.
-- So, apart from `make typecheck-tests` and that command, a compile error in a test file is found only by a build that builds the tests.
-  - For `TextMouthProductionTests`, `make typecheck-tests` finds it before a train does, and the build train finds it otherwise.
-  - For `TextMouthiOSTests` and `TextMouthiOSUITests`, that is a simulator build (`build-for-testing`).
-- This happened.
-  On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
-- After changing a test file, run `make typecheck-tests` before requesting a train for it.
-  Do not take a clean `make typecheck-mac` or `make typecheck-ios` as a sign that its tests compile.
