@@ -1015,3 +1015,10 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Third-party code
 
 - **The mobi.js that was read:** Four of the Kindle reader's files follow mobi.js closely, as read on November 4, 2026 (mobi.js last changed in commit 9a676796, April 3, 2026).
+
+## From Exports
+
+- **The marker decoder:** The decoding of a marker line is MarkdownMarker (Parsers/MarkdownMarker.swift), moved out of the reader unchanged and shared with the exporters; one effect reaches every writer: the walk no longer drops the words that follow a marker on the same line.
+- **The HTML writer's contents lists:** HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once, and their contents lists through ExportContentsList (the same file):
+  - one list for each item,
+  - a heading that rises out of a skipped level joining its sibling's list and an entry above the outermost level lowering it, where the HTML writer used to put two lists in one item.
