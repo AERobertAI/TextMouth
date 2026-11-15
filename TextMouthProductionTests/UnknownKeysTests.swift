@@ -778,6 +778,27 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(library.books.first?.readingPosition?.anchor?.unknownKeys, UnknownKeys())
     }
 
+    /// A skipped heading that follows its heading to another chapter, when
+    /// the book's text is read again, is the same skip, and keeps its
+    /// unknown keys, as a moved position and bookmark keep theirs (review6,
+    /// nit).
+    func testASkippedHeadingThatFollowsItsHeadingKeepsItsUnknownKeys() throws {
+        let old = MillBook.chapters
+        let new = [MillBook.granary] + MillBook.chapters
+        var skip = try SavedPlace.skip(of: try MillBook.heading(ofChapter: 1, in: old), in: old)
+        skip.unknownKeys = UnknownKeys(["reason": .string("spoilers")])
+
+        let outcome = PlaceRelocator(
+            oldTexts: old, newTexts: new,
+            oldHeadings: MillBook.headings(of: old), newHeadings: MillBook.headings(of: new)
+        ).relocate(PlaceRelocator.Places(skippedHeadings: [skip]), movedAt: SavedPlace.moveDate)
+
+        let moved = try XCTUnwrap(outcome.places.skippedHeadings.first)
+        XCTAssertEqual(moved.chapterIndex, 2)
+        XCTAssertEqual(moved.label, skip.label)
+        XCTAssertEqual(moved.unknownKeys, skip.unknownKeys)
+    }
+
     // MARK: - config.json's Saves and Merges
 
     /// A setting changed and saved keeps config.json's unknown keys, and
