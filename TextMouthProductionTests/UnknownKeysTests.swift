@@ -1127,6 +1127,31 @@ final class UnknownKeysTests: XCTestCase {
         }
     }
 
+    /// The same of a feed's index, whose rows hold a feed link, which
+    /// library.json's never do: an unknown key in any one object of a row,
+    /// the link among them, is found by the scan and kept by the index's
+    /// decoder. Without the link's entry in the row's schema, a key a later
+    /// TextMouth keeps in a link would be read as none (review6, finding 5).
+    func testAnUnknownKeyInAnyOneObjectOfAFeedsIndexIsFoundAndKept() throws {
+        let book = Self.plainBook()
+        let feedIndex = FeedIndex(feedID: try XCTUnwrap(book.feedLink).feedID, books: [book])
+        let tree = try Self.tree(FeedIndexFiles.encoded(feedIndex))
+        var objects = 0
+        _ = Self.addingUnknownMember(to: tree, atObject: -1, counter: &objects)
+        // The index, and the row with its fourteen records, the link one.
+        XCTAssertEqual(objects, 1 + 15, "the fixture's objects")
+
+        // Object 0 is the index's own top level, which keeps none.
+        for target in 1..<objects {
+            var counter = 0
+            let read = Self.addingUnknownMember(to: tree, atObject: target, counter: &counter)
+            let data = try Self.data(read)
+            XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(data, schema: FeedIndex.keySchema), "object \(target)")
+            let written = try Self.tree(FeedIndexFiles.encoded(FeedIndexFiles.decoded(data)))
+            XCTAssertEqual(written, try XCTUnwrap(read as? NSObject), "object \(target)")
+        }
+    }
+
     /// A feed's index keeps the unknown keys of its rows through its own
     /// decoder and encoder.
     func testAFeedsIndexKeepsItsRowsUnknownKeys() throws {
