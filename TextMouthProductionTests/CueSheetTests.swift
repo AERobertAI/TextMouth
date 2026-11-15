@@ -24,7 +24,7 @@ final class CueSheetTests: XCTestCase {
             CueSheet.Track(number: 3, title: "Three: 880 Hz", performer: nil, fileIndex: 0, startFrame: 187),
         ])
         XCTAssertEqual(sheet.tracks.map(\.startTime), [0, 1, 187.0 / 75])
-        XCTAssertEqual(sheet.tracks[2].startTime, 2.4933, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(sheet.tracks.last).startTime, 2.4933, accuracy: 0.0001)
     }
 
     /// two-files.cue (Latin 1, LF) gives its title with its accent and two
