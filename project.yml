@@ -566,9 +566,14 @@ targets:
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
       - TextMouthProductionTests/CountWordingTests.swift
+      - TextMouthProductionTests/DOCXEmphasisTests.swift
+      - TextMouthProductionTests/DOCXHiddenTextTests.swift
       - TextMouthProductionTests/DOCXMalformedXMLTests.swift
+      - TextMouthProductionTests/DOCXNotesTests.swift
+      - TextMouthProductionTests/DOCXPictureAttributeTests.swift
       - TextMouthProductionTests/DOCXStructureTests.swift
       - TextMouthProductionTests/DOCXTestPackages.swift
+      - TextMouthProductionTests/DOCXTextBoxTests.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
       - TextMouthProductionTests/DataDirectoryAvailabilityTests.swift
       - TextMouthProductionTests/DataDirectoryCopyTests.swift
@@ -594,8 +599,13 @@ targets:
       - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
       - TextMouthProductionTests/KF8Fixture.swift
+      - TextMouthProductionTests/KF8LayoutTests.swift
+      - TextMouthProductionTests/KF8ReviewFixTests.swift
       - TextMouthProductionTests/KFXFixture.swift
+      - TextMouthProductionTests/KFXIonTests.swift
+      - TextMouthProductionTests/KFXPrivateBooksTests.swift
       - TextMouthProductionTests/KFXTestBook.swift
+      - TextMouthProductionTests/KFXWalkTests.swift
       - TextMouthProductionTests/LeadingArticlesSortTests.swift
       - TextMouthProductionTests/LeadingArticlesTests.swift
       - TextMouthProductionTests/LegacyDocumentAndAccessibilityTests.swift
@@ -620,6 +630,7 @@ targets:
       - TextMouthProductionTests/ListeningDayKeyMigrationTests.swift
       - TextMouthProductionTests/LogLocationTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
+      - TextMouthProductionTests/MOBIBookStructureTests.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
       - TextMouthProductionTests/MarkdownNestingTests.swift
@@ -653,6 +664,7 @@ targets:
       - TextMouthProductionTests/RemovalWordingTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
       - TextMouthProductionTests/SharedPackageMigrationTests.swift
+      - TextMouthProductionTests/SoftHyphenEffectTests.swift
       - TextMouthProductionTests/SourceScanSymlinkTests.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
@@ -680,6 +692,9 @@ targets:
       - TextMouthProductionTests/TitleTypingTests.swift
       - TextMouthProductionTests/UnicodeCoordinateTests.swift
       - TextMouthProductionTests/ViewsAndWindowsCloudStatesTests.swift
+      - TextMouthProductionTests/WordDocumentComparisonTests.swift
+      - TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift
+      - TextMouthProductionTests/XMLInputGuardTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
     settings:
