@@ -570,6 +570,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ## 0.2.0 (October 21, 2026)
 ### Going back to 0.1.1
 - 0.1.1 cannot read the index of a library that holds a book in any of eight kinds that 0.2.0 added: braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML. It leaves library.json as it is, keeps a copy of it beside it, and offers Try Again and Rebuild Library Index under Recovery Options…, but it still writes each book's record, and those records lose what 0.2.0 added to them: the record of an edit of the book's text and of the page reader that wrote it. Back in 0.2.0, a book whose text you edited is read from its file again, and your edit is kept beside it as a copy.
+- 0.1.1 was built on October 17, 2026. A build made before October 18, 2026 does not know the seven kinds added that day: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML.
+- A build made before October 20, 2026 does not know braille. Each such build finds the index unreadable when it holds a book in a kind it does not know.
 - Never choose Rebuild Library Index in 0.1.1. It makes an index without the books in those eight kinds, and without the folders and the manual order that only the index held, which the copy of library.json that it keeps still has.
 
 ### Reading
