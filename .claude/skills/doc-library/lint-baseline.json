@@ -14,7 +14,6 @@
     "docs/architecture/shared-helpers-values.md": {"line-length": 18},
     "docs/architecture/shared-helpers.md": {"line-length": 22},
     "docs/architecture/state/audio-edits.md": {"line-length": 26},
-    "docs/architecture/state/data-directory.md": {"line-length": 11},
     "docs/architecture/state/exports.md": {"line-length": 26},
     "docs/architecture/state/feeds-interface.md": {"line-length": 46},
     "docs/architecture/state/feeds.md": {"line-length": 41},

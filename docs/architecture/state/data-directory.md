@@ -29,17 +29,20 @@ Its location, and moving it.
 ### Choosing a folder
 <!-- id: choosing-folder; keys: folder picker, NSOpenPanel, destination check, hidden folders, confirmation wording; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
-- Choosing: a folder chosen in Storage settings (StorageSettingsView.makeLibraryFolderPanel, a chooser that shows hidden folders and can make one) is judged off the main thread, from metadata alone, by StorageDestinationAssessment: a move for a missing or empty folder, Use This Library for one holding a library (an identity marker, or library.json beside a Library folder), the library in use, a new library in the default location while the library is unavailable, or a refusal with its reason.
+- Choosing: a folder chosen in Storage settings (StorageSettingsView.makeLibraryFolderPanel, a chooser that shows hidden folders and can make one) is judged off the main thread, from metadata alone, by StorageDestinationAssessment.
+  It answers a move for a missing or empty folder, Use This Library for one holding a library (an identity marker, or library.json beside a Library folder), the library in use, a new library in the default location while the library is unavailable, or a refusal with its reason.
   StorageChoice and StorageWording word the confirmation or the status line.
 
 ### Holding storage work
 <!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift -->
 
-- Holding: withStorageWorkHeld(moving:waiting:_:) holds new storage work back (StorageBoundary.holdWork(for:)), waits for the import, text extraction, and book analysis under way (StorageWorkHold.waitForWorkUnderWay), flushes the queued saves and logs, runs the move, and then lets the held work go on under the new generation.
+- Holding: withStorageWorkHeld(moving:waiting:_:) holds new storage work back (StorageBoundary.holdWork(for:)).
+  It waits for the import, text extraction, and book analysis under way (StorageWorkHold.waitForWorkUnderWay), flushes the queued saves and logs, runs the move, and then lets the held work go on under the new generation.
   Work that captured paths before the publication moves them under the new root first (rebasedToCurrent and rebaseToCurrent), so nothing is written under the old one.
   Rebuild Directory holds storage work the same way, with no move, while it relocates and adopts packages, so an import that has published its package but not yet added its book finishes first and is never adopted as an orphan too; Storage settings show what the rebuild waits for.
   It reconciles the library's own books with the Library folder, a feed's items waiting aside meanwhile (Library.withFeedItemsSetAside(_:), FR11).
-  So do the folder edits made from the library's sheets (performLibraryTransition: moving books to a folder, and moving, renaming, or deleting a folder while keeping its contents), which then move their packages and rewrite their records off the main actor (OffMainWork.runThrowing), VoiceOver hearing what they wait for.
+  So do the folder edits made from the library's sheets (performLibraryTransition: moving books to a folder, and moving, renaming, or deleting a folder while keeping its contents).
+  They then move their packages and rewrite their records off the main actor (OffMainWork.runThrowing), VoiceOver hearing what they wait for.
   Each hold says what it is for (StorageHoldReason: moving the data directory, rebuilding it, or moving books between folders), and only one is in place at a time.
   While one is, holdWork(for:) refuses another with a StorageBusyError naming the operation under way, so a refused move, rebuild, or folder edit says what is actually running, as in "TextMouth is moving books between folders.
   Try again when that finishes."
@@ -50,7 +53,8 @@ Its location, and moving it.
 - Copying: copyAndPublish runs TextMouthPaths.moveDataDirectory on a background queue (OffMainWork) with the task-local DataDirectoryMigrator.copyObserver bound, which hears each DataDirectoryCopyProgress and answers Cancel.
   DataDirectoryMigrator takes each location as the real folder its links lead to (DataDirectoryLocation): a data directory that is a link is copied from its folder, and a new location that is a link to an empty folder receives the data in that folder, the link staying as it is.
   Before copying, it refuses overlapping real folders, naming both, a link that leads nowhere, a file at the new location, and a folder that is not empty.
-  It copies into a hidden staging folder (.TextMouth-migration- followed by a UUID) beside the new location's real folder, one item at a time in the order DataDirectoryCopyPlan gives: each package whole, which clones it on one APFS volume, the books first and the small files at the top last, and each folder it makes given its original's metadata with copyfile.
+  It copies into a hidden staging folder (.TextMouth-migration- followed by a UUID) beside the new location's real folder, one item at a time in the order DataDirectoryCopyPlan gives.
+  It copies each package whole, which clones it on one APFS volume, the books first and the small files at the top last, and gives each folder it makes its original's metadata with copyfile.
   Cancel stops the copy between items, or after the last, with DataDirectoryMigrationError.cancelled, and the staged copy is deleted.
   The migrator points the copy's package records, each feed's index (stageFeedIndexes, a feed item's package staged in its feed's folder of the copy, FR11), and library.json at the new location and checks them, then looks again.
   The name must still lead to the same folder, and that folder must still be empty or missing.
@@ -65,7 +69,8 @@ Its location, and moving it.
   DataDirectoryMigrator.prepareMigration notes the folder in MigrationStagingLeftovers (note) before anything is created, and defers discard(_:fileManager:), which removes the folder however the move ends and forgets the note once it has.
   A removal that fails leaves the note, and logs MIGRATION_STAGING_LEFT only if the folder can still be seen, since a folder on an unplugged volume can be neither seen nor removed and "not there" cannot be told from "gone".
   A published copy is forgotten (forget), since the rename left nothing to remove.
-  The journal is Move Leftovers.json at MachineLocalPaths.moveLeftovers, this Mac's own and never in the data directory, which the folders' volume may not be: a list of Entry values, a folder's path and the date it was noted, the newest journalLimit (20) kept, written atomically and removed when no entry is left, read and written under a lock that also holds the folders this process is using.
+  The journal is Move Leftovers.json at MachineLocalPaths.moveLeftovers, this Mac's own and never in the data directory, which the folders' volume may not be.
+  It is a list of Entry values, a folder's path and the date it was noted, the newest journalLimit (20) kept, written atomically and removed when no entry is left, read and written under a lock that also holds the folders this process is using.
   AppDelegate.applicationDidFinishLaunching calls MigrationStagingLeftovers.sweepInBackground(), once on a utility queue and never in a hosted test. sweep(fileManager:now:) takes the entries in order:
   - it drops one whose last component is not exactly stagingNamePrefix and a UUID (isStagingName), so a hand-edited journal can never make it delete another folder;
   - leaves one this process is using;
@@ -112,9 +117,12 @@ Its availability: whether the data directory can be used.
   When its path is missing, its bookmark may find the library under another path, never in a Trash, which then becomes the data directory.
   The library index, the identity marker, the Feeds folder, and each feed's folder and index (DataDirectoryCheck.assessLibrary(in:itemStatus:), through feedIndexFiles(in:), FR11), when only in the cloud, are asked of the sync service.
   And the library stays unavailable (notDownloaded, whose explanation names the library index whichever it was) until a later check finds them on this Mac.
-- The fetch from the cloud: when the check, through runNamingPending, names files only in the cloud, LibraryViewModel+LibraryFetch reads them off the main thread with downloads allowed (LibraryFileFetcher, to each file's end, at most eight at once, a folder listed one level) and checks again, up to six passes. .gettingFromCloud is the reason meanwhile, and .cloudFetchFailed when a pass makes no progress after retries at 5, 15, and 30 seconds, or a read gives no answer for BookCloudStorageService.defaultStallLimit (60 s).
+- The fetch from the cloud: when the check, through runNamingPending, names files only in the cloud, LibraryViewModel+LibraryFetch reads them off the main thread with downloads allowed (LibraryFileFetcher, to each file's end, at most eight at once, a folder listed one level).
+  It then checks again, up to six passes.
+  Meanwhile the reason is .gettingFromCloud, and .cloudFetchFailed when a pass makes no progress after retries at 5, 15, and 30 seconds, or a read gives no answer for BookCloudStorageService.defaultStallLimit (60 s).
   A stuck path stays in libraryFilesBeingRead, so Try Again never reads it twice, and its late return checks again and opens the library, unless another library was chosen.
-  LibraryViewModel+LaunchFiles does the same for config.json, reading_stats.json, substitutions.json, and the feed records once a cloud library opens, without holding it back, and tells the service that owns each (ConfigService.fileMayHaveArrived, ReadingStatsService.fileMayHaveArrived, the substitutions' re-read, FeedStore.loadRecordsInCloud).
+  LibraryViewModel+LaunchFiles does the same for config.json, reading_stats.json, substitutions.json, and the feed records once a cloud library opens, without holding it back.
+  It also tells the service that owns each (ConfigService.fileMayHaveArrived, ReadingStatsService.fileMayHaveArrived, the substitutions' re-read, FeedStore.loadRecordsInCloud).
   Reads go through the library's own files only, never a book or an episode.
 - How others observe it: every Library window:
   - shows DataDirectoryUnavailableView in place of the library, with the reason and, read right after it, where to choose another folder (DataDirectoryUnavailableText.anotherFolderPointer, which names Storage settings' two buttons by their titles in StorageLocationWording, so it follows any rename),
@@ -127,7 +135,7 @@ Its availability: whether the data directory can be used.
   Library index writes are skipped, not counted as failures.
   Record writes that fail stay listed for a retry.
   ConfigService neither reads, writes, nor watches config.json.
-  The log writer writes to ~/Library/Logs/TextMouth instead (the diagnostic logs, below).
+  The log writer writes to ~/Library/Logs/TextMouth instead (see [The diagnostic logs](logs.md)).
   And ReadingStatsService and TextSubstitutionService use stand-ins that they never save over their files, as they do while a file is only in the cloud (files several Macs write, below).
   A check that finds the library again posts dataDirectoryDidBecomeAvailable, and those services read their files.
   After a loss while TextMouth ran, reloadLibraryAfterDataDirectoryReturned reads library.json afresh, carrying the session's newer reading positions and moved packages into it.
@@ -149,7 +157,8 @@ The session lease: this Mac's note, in a library another Mac can open, that it h
 
 - Owner: LibrarySessionLease.shared, which keeps this Mac's file, Sessions/<Mac ID>.json (the computer's name, when TextMouth was last active, and the app's version), in a data directory in a cloud location or on another volume, asking the cloud services' provider where the directory is.
   One on the startup disk gets none.
-  Its disk work, writing and refreshing the file, reading the other Macs' files, and removing stale ones, runs on its own serial queue (diskQueue) with dataless files left in the cloud, so a Sessions folder that hasn't synced never stalls the main thread; refresh() is awaited, and ending the lease at quit waits at most two seconds (removalWait) for the file's removal.
+  Its disk work, writing and refreshing the file, reading the other Macs' files, and removing stale ones, runs on its own serial queue (diskQueue) with dataless files left in the cloud, so a Sessions folder that hasn't synced never stalls the main thread.
+  Its refresh() is awaited, and ending the lease at quit waits at most two seconds (removalWait) for the file's removal.
 - Who may write it: the library model begins the lease when the library starts, and again after Try Again, writing the file and refreshing it every minute, and pauses it when the library is lost; AppDelegate ends it at quit, removing the file.
   A refresh removes leases untouched for 30 days, and the file a move left in the old data directory.
 - How others observe it: each Mac's refresh reads the other files with dataless files left in the cloud, judging one only in the cloud by its modification date.
@@ -175,7 +184,15 @@ Files several Macs write: reading_stats.json and substitutions.json, which TextM
   And fresh statistics or the standard rules stand in until the next save replaces it.
 - How others observe it: the Stats tab, the Text tab, and the reader's substitution pass use the stand-ins until the file is read, and READING_STATS_FILE and SUBSTITUTIONS_FILE lines record each wait, arrival, and preserved copy.
   A sync service's conflict copy of library.json, a package record, the identity marker, config.json, or one of these two files is never read in place of the file it copies, nor removed; a package copied under another name is never adopted as a second book; and nothing merges what two Macs wrote.
-  MultiMacCrashSafetyTests feeds library.json, the packages and their records, the identity marker, the leases, config.json, these two files, and the checkpoint journal what another Mac can leave (conflict copies, files cut short, files only in the cloud, packages that disappeared, another Mac's lease, an index listing packages not here yet), and checks that the code reading each may log a line, warn of another Mac, show the recovery sheet or the Library Not Available screen, or leave a row as it is, but never crashes, hangs the main thread, or deletes anything.
+  MultiMacCrashSafetyTests feeds library.json, the packages and their records, the identity marker, the leases, config.json, these two files, and the checkpoint journal what another Mac can leave:
+  - conflict copies,
+  - files cut short,
+  - files only in the cloud,
+  - packages that disappeared,
+  - another Mac's lease,
+  - an index listing packages not here yet.
+
+  It checks that the code reading each may log a line, warn of another Mac, show the recovery sheet or the Library Not Available screen, or leave a row as it is, but never crashes, hangs the main thread, or deletes anything.
 
 ## This Mac's own folders
 <!-- id: this-mac-own-folders; keys: Application Support, Caches, machine-local, scratch folders, not synced; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/ImportScratchSpace.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Services/KeptBooks.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/RecordingService.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/Feeds/FeedStore.swift -->
@@ -183,10 +200,9 @@ Files several Macs write: reading_stats.json and substitutions.json, which TextM
 This Mac's own folders.
 
 - Owner: MachineLocalPaths:
-  - ~/Library/Logs/TextMouth, where the logs go when Storage settings choose this Mac and while the data directory can't take them (the diagnostic logs, below),
+  - ~/Library/Logs/TextMouth, where the logs go when Storage settings choose this Mac and while the data directory can't take them (see [The diagnostic logs](logs.md)),
   - and, in ~/Library/Application Support/com.textmouth.TextMouth:
-    - Working Copies, Import Staging, Archive Extraction,
-    - Recordings (MachineLocalPaths.recordings), and Feed Downloads (MachineLocalPaths.feedDownloads),
+    - Working Copies, Import Staging, Archive Extraction, Recordings (MachineLocalPaths.recordings), and Feed Downloads (MachineLocalPaths.feedDownloads),
     - beside two files, Kept Books.json (MachineLocalPaths.keptBooks) and Move Leftovers.json (MachineLocalPaths.moveLeftovers),
   - and, in ~/Library/Caches/com.textmouth.TextMouth:
     - Reading Text (MachineLocalPaths.readingTextCache),
@@ -197,22 +213,24 @@ This Mac's own folders.
 
   They never sync, and stay usable while the data directory is unavailable; under hosted tests they are in the sandbox.
 - Who may write it:
-  - the log writer (the diagnostic logs, below);
-  - ReaderWorkingCopies (the working copy, below);
-  - KeptBooks, Kept Books.json and Keep Reading List Books.json (books kept on this Mac and the choice to keep the reading list's books, below);
+  - the log writer (see [The diagnostic logs](logs.md));
+  - ReaderWorkingCopies (see [The cloud working copy](reader.md));
+  - KeptBooks, Kept Books.json and Keep Reading List Books.json (see [Books kept on this Mac](cloud-state.md) and, for the choice to keep the reading list's books, [Books the reading list keeps](cloud-state.md));
   - MigrationStagingLeftovers, Move Leftovers.json (the leftovers of moves, above);
-  - ReadingTextCache (kept reading text, above);
-  - RecordingService, whose takes stay in Recordings until they are saved as books, or until a punch-in's edit holds them (a take being recorded, below), and the Record window, which saves or discards a take left there (takes left behind, below);
-  - the feed engine, whose finished downloads wait in Feed Downloads and whose fetch details, resume data, and list of the downloads TextMouth quit during are in its Caches folder (feeds, below);
-  - audio editing, whose filtered stretches and silence wait in Audio Edits, a folder for each book, until the book's edits are saved or its editing session ends (AudioEditScratch, audio edits, above);
-  - the audio editor window, whose audio kept for Paste waits in Audio Editor Clips, a folder for each window, removed as the window closes (the editor window, above).
-    And what a crash, or a quit with editors open, left in either folder is removed at the next launch, off the main thread, never a folder in use (AudioEditCaches.removeStale, from startLibrary, logged as AUDIO_EDIT_CACHES_SWEPT: a book's while it is being edited or saved, looked at and set aside under the lock its folder is made under, and a window's while the window is open);
-  - and imports, through ImportScratchSpace, which stages packages and extracts archives here while the data directory is on this folder's volume (the startup disk, where iCloud Drive's and File Provider's folders are too), and otherwise beside each package's destination and in the data directory's Archive Extraction folder, so publishing stays one rename on one volume.
+  - ReadingTextCache (see [Kept reading text](text-caches-rereads-edits.md));
+  - RecordingService, whose takes stay in Recordings until they are saved as books, or until a punch-in's edit holds them (see [A take being recorded](recordings.md)), and the Record window, which saves or discards a take left there (see [Takes left behind](recordings.md));
+  - the feed engine, whose finished downloads wait in Feed Downloads and whose fetch details, resume data, and list of the downloads TextMouth quit during are in its Caches folder (see [Feeds](feeds.md));
+  - audio editing, whose filtered stretches and silence wait in Audio Edits, a folder for each book, until the book's edits are saved or its editing session ends (AudioEditScratch, in [Rendering the edited audio](audio-edits.md));
+  - the audio editor window, whose audio kept for Paste waits in Audio Editor Clips, a folder for each window, removed as the window closes (see [The editor window](audio-edits.md)).
+    And what a crash, or a quit with editors open, left in either folder is removed at the next launch, off the main thread, never a folder in use (AudioEditCaches.removeStale, from startLibrary, logged as AUDIO_EDIT_CACHES_SWEPT).
+    A folder in use is a book's while it is being edited or saved, looked at and set aside under the lock its folder is made under, and a window's while the window is open;
+  - and imports, through ImportScratchSpace, which stages packages and extracts archives here while the data directory is on this folder's volume (the startup disk, where iCloud Drive's and File Provider's folders are too).
+    Otherwise it stages beside each package's destination and extracts in the data directory's Archive Extraction folder, so publishing stays one rename on one volume.
 
   ImportScratchSpace never creates a folder inside a data directory that vanished.
 - How others observe it: at launch, ArchiveExtractionDirectory.removeLeftovers sweeps both Archive Extraction folders, listing the data directory's with dataless files left in the cloud, and removes the data directory's once it is empty while this Mac's is in use.
   An extraction folder is named for the process that made it (extract- followed by its process number and a UUID).
-  The sweep removes one of this process's own that no import of it uses, and one whose maker has ended, by the rule the test sandbox sweep follows (TextMouthRuntime.isFolderMakerRunning, below), so a later process that took the number keeps no leftover.
+  The sweep removes one of this process's own that no import of it uses, and one whose maker has ended, by the rule the test sandbox sweep follows (TextMouthRuntime.isFolderMakerRunning, in [Sandboxes left behind](hosted-test-sandbox.md)), so a later process that took the number keeps no leftover.
   Only plain folders go.
   Each import sweeps the folder it stages in, and, when that is this Mac's, the destination folder that earlier versions staged in.
   While an import stages a book, the book's tmbDirectory is the staged package, wherever it is (ImportStaging.directory(ofStagedPackage:)).
