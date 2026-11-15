@@ -188,6 +188,51 @@ final class AudioEditRenderingTests: XCTestCase {
         XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .frame(.book, 132_299), "the book's last frame")
     }
 
+    // MARK: - Memory
+
+    /// An MP3 render of 400 stretches keeps its memory flat: what
+    /// AVFoundation autoreleases making each piece's reader and copying its
+    /// buffers goes with each piece. Kept until the render's task paused,
+    /// which an MP3 render with TextMouth's own LAME never does, some 250 KB
+    /// stayed for each piece: 150 MB for 600 in mp3render's probe, 680 MB
+    /// for an MP3 book of 3,000 stretches in review5's.
+    func testAnMP3RenderOfManyStretchesKeepsItsMemoryFlat() async throws {
+        let folder = try makeFolder()
+        let book = folder.appendingPathComponent("Canal Survey.mp3")
+        try AudioTestFixtures.writeToneMP3(to: book, frames: 480_000)
+        let base = try await AudioEditBase.load(book, name: "Canal Survey.mp3")
+        let sources = AudioEditComposition.Sources(base: base, package: folder, scratch: folder)
+        let metadata = AudioRenderMetadata(title: "Canal Survey", author: nil)
+        var timeline = base.timeline
+        // 400 stretches of 50 ms, cutting the 100 ms after each, from the end
+        // back, so each cut's times are the book's own.
+        for index in (0..<400).reversed() {
+            let start = Double(index) * 0.15
+            try timeline.applyRearranging(.cut(AudioTimeRange(start: start + 0.05, end: start + 0.15)))
+        }
+        XCTAssertEqual(timeline.segments.count, 400)
+        // A render of one cut first loads the decoder and the encoder, which
+        // stay loaded, so only what the measured render keeps counts.
+        var once = base.timeline
+        try once.applyRearranging(.cut(AudioTimeRange(start: 1, end: 2)))
+        _ = try await AudioEditRenderer.render(once, sources: sources, to: folder.appendingPathComponent("once.mp3"), format: .mp3, metadata: metadata)
+        let before = Double(try XCTUnwrap(MemoryFootprint.current()))
+        // The footprint at each report of the render's progress.
+        let footprints = ProgressReports()
+
+        _ = try await AudioEditRenderer.render(
+            timeline,
+            sources: sources,
+            to: folder.appendingPathComponent("many.mp3"),
+            format: .mp3,
+            metadata: metadata,
+            progress: { _ in footprints.add(Double(MemoryFootprint.current() ?? 0)) }
+        )
+
+        let grown = ((footprints.values.max() ?? before) - before) / 1_048_576
+        XCTAssertLessThan(grown, 40, "the render's footprint grew \(grown) MB over its 400 stretches")
+    }
+
     // MARK: - Chapters
 
     /// Chapter markers written into an M4A file read back through the app's

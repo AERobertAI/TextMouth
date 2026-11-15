@@ -799,7 +799,9 @@ enum AudioEditRenderer {
     /// `settings.readerSettings`, cut to the piece's own frames, and handed
     /// to `consume` buffer by buffer, timed at its place in the edits;
     /// telling `progress` how far it is. Every source is opened, and every
-    /// stretch checked against it, before any sound is read.
+    /// stretch checked against it, before any sound is read; memory stays
+    /// flat however many pieces there are (`read`'s autorelease pools, and a
+    /// pause after each piece).
     ///
     /// Every render that decodes reads so, not through the timeline's
     /// composition (`AudioEditComposition`): AVFoundation decodes an MP3
@@ -855,6 +857,9 @@ enum AudioEditRenderer {
                 consume: consume
             )
             written = end
+            // A pause after each piece lets go of whatever else was
+            // autoreleased while it was read (`read`'s pools).
+            await Task.yield()
         }
     }
 
@@ -903,23 +908,19 @@ enum AudioEditRenderer {
         // (`AudioEditStretchSound.pieces(of:)`), so the read ends after it
         // starts; the bound only keeps the range well formed.
         let readEnd = CMTimeMaximum(CMTimeMinimum(runPastEnd, piece.sourceEnd), piece.range.start)
-        let reader: AVAssetReader
-        do {
-            reader = try AVAssetReader(asset: piece.asset)
-        } catch {
-            throw failure(error)
+        // The reader is made, and each buffer copied, in an autorelease pool
+        // of its own, so what AVFoundation autoreleases for them goes with
+        // them rather than when the render's task next pauses, which an MP3
+        // render with TextMouth's own LAME never does: some 250 KB stayed
+        // for each piece, 150 MB for 600 in mp3render's probe.
+        let (reader, output) = try autoreleasepool {
+            try startedReader(of: piece, over: CMTimeRange(start: readStart, end: readEnd), settings: settings)
         }
-        reader.timeRange = CMTimeRange(start: readStart, end: readEnd)
-        let output = AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
-        output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
-        reader.add(output)
-        guard reader.startReading() else { throw failure(reader.error) }
         // The run-up's frames dropped so far, and the piece's handed over.
         var dropped = 0
         var handed = 0
         do {
-            while let buffer = output.copyNextSampleBuffer() {
+            while let buffer = autoreleasepool(invoking: { output.copyNextSampleBuffer() }) {
                 try Task.checkCancellation()
                 // The run-up is dropped and the run-past cut off; the
                 // run-past is still read to its end, so the reader ends as
@@ -927,8 +928,13 @@ enum AudioEditRenderer {
                 let drop = min(Int(runUp) - dropped, CMSampleBufferGetNumSamples(buffer))
                 dropped += drop
                 format = CMSampleBufferGetFormatDescription(buffer) ?? format
-                guard let sample = try slice(of: buffer, from: drop, atMost: frames - handed) else { continue }
-                try await consume(try timed(sample, at: start + handed, rate: settings.sampleRate))
+                let placed = try autoreleasepool {
+                    try slice(of: buffer, from: drop, atMost: frames - handed).map {
+                        try timed($0, at: start + handed, rate: settings.sampleRate)
+                    }
+                }
+                guard let sample = placed else { continue }
+                try await consume(sample)
                 handed += CMSampleBufferGetNumSamples(sample)
                 progress?(total > 0 ? min(1, Double(start + handed) / Double(total)) : 1)
             }
@@ -950,6 +956,30 @@ enum AudioEditRenderer {
         }
         try await consume(try silence(missing, in: silentFormat, at: start + handed, rate: settings.sampleRate))
         progress?(total > 0 ? min(1, Double(start + frames) / Double(total)) : 1)
+    }
+
+    /// A started reader of `range` of `piece`'s file, in that file's own
+    /// time, and its output, decoded to `settings.readerSettings`.
+    /// - Throws: `AudioEditError.renderFailed` when AVFoundation refuses the
+    ///   reader or fails to start it.
+    private static func startedReader(
+        of piece: AudioEditStretchSound.Piece,
+        over range: CMTimeRange,
+        settings: AudioRenderSettings
+    ) throws -> (reader: AVAssetReader, output: AVAssetReaderAudioMixOutput) {
+        let reader: AVAssetReader
+        do {
+            reader = try AVAssetReader(asset: piece.asset)
+        } catch {
+            throw failure(error)
+        }
+        reader.timeRange = range
+        let output = AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        reader.add(output)
+        guard reader.startReading() else { throw failure(reader.error) }
+        return (reader, output)
     }
 
     /// `frames` frames of silence in `format`, decoded audio as a reader
