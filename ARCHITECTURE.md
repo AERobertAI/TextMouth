@@ -10,6 +10,7 @@ Each part below is a page of its own under docs/architecture, so an agent can re
 
 - [The parts of the app](docs/architecture/parts-of-the-app.md)
 - [The two apps and the platform folders](docs/architecture/platforms.md)
+  - [The iPhone interface: announcements, text, sheets, and search](docs/architecture/platforms-phone-interface.md)
 - [Launch](docs/architecture/launch.md)
 
 ## Who owns each kind of state
