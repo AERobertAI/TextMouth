@@ -142,7 +142,7 @@ struct CueSheet: Equatable, Sendable {
         }
     }
 
-    /// The sheet in `text`.
+    /// The sheet whose text is `contents`.
     ///
     /// Lines end at CR, LF, or CRLF; a leading byte-order mark is dropped,
     /// each line is trimmed, and blank lines are skipped. A line's first word
@@ -150,7 +150,7 @@ struct CueSheet: Equatable, Sendable {
     /// `INDEX 01` before any `FILE` line, or with a time that is not one
     /// (seconds of 60 or more, frames of 75 or more), is passed over, and so
     /// is every `INDEX 01` after a track's first.
-    static func parse(_ text: String) -> CueSheet {
+    static func parse(_ contents: String) -> CueSheet {
         var sheet = CueSheet(title: nil, performer: nil, files: [], tracks: [])
         var pending: PendingTrack?
 
@@ -162,7 +162,7 @@ struct CueSheet: Equatable, Sendable {
             pending = nil
         }
 
-        let withoutMark = text.hasPrefix("\u{FEFF}") ? String(text.dropFirst()) : text
+        let withoutMark = contents.hasPrefix("\u{FEFF}") ? String(contents.dropFirst()) : contents
         // Swift reads CRLF as one Character, so one test per kind of break
         // is enough.
         let lines = withoutMark.split { $0 == "\n" || $0 == "\r" || $0 == "\r\n" }
