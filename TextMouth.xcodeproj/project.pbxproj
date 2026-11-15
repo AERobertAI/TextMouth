@@ -1633,6 +1633,7 @@
 		9AC8D0DF578C57712B72EA19 /* AudioExportFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = E941A7270535D8DBACD66070 /* AudioExportFormat.swift */; };
 		9AD631F93403520568120C66 /* AudioContentSniffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B86B0AFC7027DB60787624B /* AudioContentSniffer.swift */; };
 		9B05D5D35A5AF9B7B3BBED07 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55EF58DDC79521F64D0083D /* String.swift */; };
+		9B08A55D7794A9F3052132AE /* PDFExtractionDiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC5A5197D877D626FA7F5D98 /* PDFExtractionDiagnosticsTests.swift */; };
 		9B357DA0E5AC966558B16133 /* lou_backTranslateString.c in Sources */ = {isa = PBXBuildFile; fileRef = B14660DC6960F2C8B25397B7 /* lou_backTranslateString.c */; };
 		9B4A6DDB051A2F1DD85C9209 /* libSwiftSoup.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E16EF1EB841033447EB97133 /* libSwiftSoup.a */; };
 		9B5C73F4F39CF77011F19A06 /* BookTextSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 628F596BA1DDA58A2CFBAC5A /* BookTextSearch.swift */; };
@@ -7512,6 +7513,7 @@
 				EA2619E01A10277352D300FA /* MarkupGuardTests.swift in Sources */,
 				DB45F2FBDD582DBFBD0B01B9 /* MediaGestureDetectorTests.swift in Sources */,
 				E7C39B5D6D90F09723149C28 /* NetworkReachabilityTests.swift in Sources */,
+				9B08A55D7794A9F3052132AE /* PDFExtractionDiagnosticsTests.swift in Sources */,
 				2365B534E39387073FB4A8BD /* PackageNavigationAuditTests.swift in Sources */,
 				0EB67EB9AA8C6E88BA1020A2 /* PageModelTests.swift in Sources */,
 				766B97F906BBFEF04D658A10 /* ParserContentFidelityTests.swift in Sources */,

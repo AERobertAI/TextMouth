@@ -628,6 +628,7 @@ targets:
       - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
       - TextMouthProductionTests/NetworkReachabilityTests.swift
+      - TextMouthProductionTests/PDFExtractionDiagnosticsTests.swift
       - TextMouthProductionTests/PackageNavigationAuditTests.swift
       - TextMouthProductionTests/PageModelTests.swift
       - TextMouthProductionTests/ParserContentFidelityTests.swift
