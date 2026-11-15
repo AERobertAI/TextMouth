@@ -6,14 +6,17 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 ## A manifest's title and author
 <!-- id: manifest-title-author; keys: manifest.json, book title, book author, blank title, ZIP name, audiobook folder; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Parsers/AudioManifest.swift, TextMouth/Services/FileImportService.swift -->
 
-A manifest's title and author (FR17): publishTracks and AudioBookParser take them through AudioManifest.bookTitle and bookAuthor, which read one that is empty or only whitespace as none, so the name of the ZIP or folder, or Unknown, stands as for a missing one; the manifest's stored title and author keep every byte.
+A manifest's title and author (FR17): publishTracks and AudioBookParser take them through AudioManifest.bookTitle and bookAuthor, which read one that is empty or only whitespace as none, so the name of the ZIP or folder, or Unknown, stands as for a missing one.
+The manifest's stored title and author keep every byte.
 
 ## Audio the import converts
 <!-- id: audio-import-converts; keys: convert audio, Ogg, MP2, AC-3, afinfo codec, sniffer, ZIP of tracks, feed episode; src: TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/ImportFailure.swift, TextMouth/Services/AudioFileInfo.swift, TextMouth/Parsers/AudioContentSniffer.swift -->
 
 Audio the import converts (B06, FMT09): FileImportService.publishReadableBook converts a staged book's audio first (convertImportedAudio(of:in:keepingOriginals:run:), in FileImportService+AudioConversion.swift; step .convertingImportedAudio(done:of:)), before anything reads it as a book, so a ZIP of tracks, a folder, a single file, a playlist, and a feed's episode are converted in one place, each converted file renamed in the manifest through BookManifestFile.change.
 ImportAudioConverter.tracksNeedingConversion(in:) (a folder) and needsConversion(among:) (files) choose the tracks, by what each holds: verdict(for:) takes the extension (convertedExtensions: oggExtensions and coreAudioExtensions) and then AudioContentSniffer.kind(of:), which reads a file's first 64 KB by hand with no Apple audio API.
-Ogg, AC-3 and E-AC-3, CAF, AIFC, AU, Wave64, AMR, 3GPP audio, and MPEG layers I and II convert; WAVE (RIFF, RF64, BW64), AIFF, FLAC, MP3, and ADTS AAC are left; MPEG-4, QuickTime, and anything unrecognized go to afinfo, whose codec decides (playsAsIs(formatID:fileType:): AAC, Apple Lossless, and MP3 in them stay).
+Ogg, AC-3 and E-AC-3, CAF, AIFC, AU, Wave64, AMR, 3GPP audio, and MPEG layers I and II convert.
+WAVE (RIFF, RF64, BW64), AIFF, FLAC, MP3, and ADTS AAC are left.
+MPEG-4, QuickTime, and anything unrecognized go to afinfo, whose codec decides (playsAsIs(formatID:fileType:): AAC, Apple Lossless, and MP3 in them stay).
 So an Ogg file named .m4a, or an MP2 feed episode named .mp3, is converted.
 
 ## Reading a source's audio facts
@@ -21,7 +24,8 @@ So an Ogg file named .m4a, or an MP2 feed episode named .mp3, is converted.
 
 ImportAudioConverter reads a source's facts from OggHeaderReader for Ogg (Vorbis, Opus, or FLAC), and from AudioFileInfo for the rest: afinfo -x -r, run by WatchedProcess.runCapturingOutput, gives the container, codec, channels, sample rate, bit depth, length, and whether it names a channel layout.
 No Apple audio API opens the source in TextMouth's process. plan(for:info:) is leaveAsItIs, convertToAAC, or convertToAppleLossless when the codec keeps every bit (SourceInfo.isLossless: lpcm, alac, flac). target(for:bytes:) gives AAC the source's average bit rate (bytes × 8 ÷ duration) rounded up to the next standard rate (bitRate(averaging:channels:accepted:), 64 to 192 kbit/s for stereo, half for mono) at its own sample rate where AAC takes it (sampleRate(for:)), and Apple Lossless the smallest of 16, 20, 24, or 32 bits that holds the source's samples (24 when the depth is unknown or the samples are floating-point). afconvertArguments(from:to:info:target:) never passes -c, since afconvert refuses it for AAC above stereo.
-AudioMediaProbe, AudioEditBase.load, and the transcriber refuse every format the import converts by ImportAudioConverter.isNeverDecodedInApp(_:), a converted extension other than TextMouth's own CAF or a file that begins with OggS (AudioContentSniffer.isOgg(at:)); AudioPlaybackService.metadataAsset(for:) asks isConvertedAtImport, by extension alone, since an import reads a source before it converts it.
+AudioMediaProbe, AudioEditBase.load, and the transcriber refuse every format the import converts by ImportAudioConverter.isNeverDecodedInApp(_:), a converted extension other than TextMouth's own CAF or a file that begins with OggS (AudioContentSniffer.isOgg(at:)).
+AudioPlaybackService.metadataAsset(for:) asks isConvertedAtImport, by extension alone, since an import reads a source before it converts it.
 OggConversionProgress.markFailed keeps a failed book from being tried again before the next launch (B09).
 
 ## Probing an audio file's duration
@@ -35,7 +39,10 @@ The deadline holds the check's job weakly, so a check that answers frees the fil
 ## Audio of more than two channels
 <!-- id: audio-more-than-two-channels; keys: surround, 5.1, downmix, stereo, channel layout, centre channel, afconvert --mix, disk space; src: TextMouth/Services/ImportAudioConverter.swift -->
 
-Audio of more than two channels (maximumChannels is 2) takes two steps (write(_:to:info:target:using:)): downmixArguments writes a hidden stereo CAF (".<UUID>.audio-downmix.caf", linear PCM, 16 bits for AAC and the lossless depth, 24 for 20, with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and afconvertArguments encodes that file, which is removed as soon as the second step ends.
+Audio of more than two channels (maximumChannels is 2) takes two steps (write(_:to:info:target:using:)):
+- downmixArguments writes a hidden stereo CAF (".<UUID>.audio-downmix.caf", linear PCM, 16 bits for AAC and the lossless depth, 24 for 20, with -c 2 --mix, because without --mix afconvert drops channels by position and a PCM source's centre came out silent), and
+- afconvertArguments encodes that file, which is removed as soon as the second step ends.
+
 Before the first step the volume's free space must hold the PCM file and a 512 MB reserve (downmixBytesNeeded(duration:target:), Failure.notEnoughSpace), and a source of more than two channels that names no layout is refused (Failure.unlabelledChannels).
 Apple's normalized mix puts the centre in both channels about 10.7 dB down for PCM and 13.7 dB down for AC-3, measured on macOS 26.3.1.
 
