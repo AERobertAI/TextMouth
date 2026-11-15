@@ -61,7 +61,7 @@
     "docs/developer/testing-iphone.md": {"date": 6, "line-length": 7, "stale": 1, "user-quote": 2},
     "docs/developer/testing-tools.md": {"date": 8, "line-length": 20, "user-quote": 1},
     "docs/developer/testing.md": {"date": 8, "line-length": 20},
-    "docs/developer/third-party-code.md": {"date": 2, "line-length": 15, "marker-missing": 1, "sentences-per-line": 14},
+    "docs/developer/third-party-code.md": {"date": 2, "line-length": 14, "sentences-per-line": 14},
     "docs/user/adding-books.md": {"date": 3, "line-length": 39, "marker-missing": 55, "page-size": 1, "sentences-per-line": 95},
     "docs/user/audiobook-manifest.md": {"date": 3, "line-length": 13, "marker-missing": 13, "sentences-per-line": 36},
     "docs/user/changelog.md": {"line-length": 68},
