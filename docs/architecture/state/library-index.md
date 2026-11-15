@@ -1,15 +1,15 @@
 # The library index
-<!-- id: library-index; keys: ; src: -->
+<!-- id: library-index; keys: library.json, library model, folders, sort order, persistence, recovery, Book row; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The library
-<!-- id: library; keys: ; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift, TextMouth/Models/BookFolder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryLoadResult.swift, TextMouth/Services/SavedFile.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/BookBoxTests.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
+<!-- id: library; keys: library model, saved index, sort settings, autosave, debounce, ObservableObject; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift, TextMouth/Models/BookFolder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryLoadResult.swift -->
 
 The library: every book's row, the folders, each location's sort, and the reading list (below).
 
 ### Who owns the library and its sort keys
-<!-- id: who-owns-library-sort-keys; keys: ; src: TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/BookFolder.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift -->
+<!-- id: who-owns-library-sort-keys; keys: sort settings key, reserved folder names, folder name, view sort, FolderSortSetting, sortSettingsKey; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/BookFolder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift -->
 
 Owner: LibraryViewModel.library, published on the main actor.
 It is the live copy; library.json, with each feed's own index (feed items, below), is its saved form.
@@ -19,7 +19,7 @@ The Library tab's commands write them through LibraryViewsSettingsActions: Dupli
 An older TextMouth keeps these keys, reading every key of folderSortSettings and writing them back.
 
 ### Who may write the library
-<!-- id: who-may-write-library; keys: ; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: who-may-write-library; keys: save queue, debounce, atomic write, library index, checkpoint journal, flush, autosave, OnDiskMemory; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/SavedFile.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 Who may write it: LibraryViewModel and its extensions, on the main actor.
 Each change is followed by save(), which hands a snapshot to LibraryPersistenceService.save(_:).
@@ -34,7 +34,7 @@ A write of library.json that throws, as a write of a feed's index does, forgets 
 Reading library.json notes its bytes (rememberLibraryIndex(_:readFrom:)), so the first save after launch writes nothing when it changes nothing; a library.json that cannot be read or decoded is forgotten, so the next save writes it whatever it would encode to.
 
 ### How others observe the library
-<!-- id: how-others-observe-library; keys: ; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift, TextMouth/Models/BookFolder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryLoadResult.swift -->
+<!-- id: how-others-observe-library; keys: ObservableObject, Published, sort setting, sort order, FolderSortSetting, Sort menu, manual order; src: TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryBookUpdates.swift, TextMouth/ViewModels/LibraryListCache.swift -->
 
 How others observe it: SwiftUI views observe LibraryViewModel.
 A reader takes a copy of its book when it opens and reports back through LibraryViewModel: updateLiveReadingPosition (live reading positions, below, which change nothing in the library), persistReadingPosition (the row and the package record at once, library.json within five minutes), and updateContentIndex.
@@ -49,7 +49,7 @@ Outside the Reading List, userChangedSort(_:at:) saves only a sort that LibraryS
 - Files: Models/Library.swift, Models/LibrarySortState.swift, Models/LibraryViewDefinition.swift, ViewModels/LibraryViewsSettingsActions.swift, Models/BookFolder.swift, ViewModels/LibraryViewModel.swift and its extensions, Services/LibraryPersistenceService.swift, Services/LibraryLoadResult.swift.
 
 ### A book's row in memory
-<!-- id: book-row-memory; keys: ; src: TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/BookBoxTests.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
+<!-- id: book-row-memory; keys: copy-on-write, add a field, new field, Book fields, Mirror, memory size; src: TextMouth/Models/Book.swift, TextMouthProductionTests/BookBoxTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
 
 A book's row in memory (audit C13, November 14, 2026): struct Book keeps its whole API, but its stored fields live in one private final class, Book.Storage.
 Every copy of a Book shares that box until one copy is written.
@@ -65,7 +65,7 @@ Storage is `@unchecked Sendable` because a shared box is never written (Unchecke
   The tests read the fields through Book.reflectedFields (in BookBoxTests.swift), which looks inside the box.
 
 ## Live reading positions
-<!-- id: live-reading-positions; keys: ; src: TextMouth/ViewModels/LiveReadingPositions.swift, TextMouth/ViewModels/TimeRemainingTally.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Models/Book.swift -->
+<!-- id: live-reading-positions; keys: playback position, time remaining, summary bar, LiveReadingPosition, ObservableObject, checkpoint; src: TextMouth/ViewModels/LiveReadingPositions.swift, TextMouth/ViewModels/TimeRemainingTally.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Views/Library/LibrarySubviews.swift -->
 
 Live reading positions: where readers are in their books between checkpoints, for the rows and the summary bar.
 
@@ -82,7 +82,7 @@ Live reading positions: where readers are in their books between checkpoints, fo
 - Files: ViewModels/LiveReadingPositions.swift, ViewModels/TimeRemainingTally.swift, ViewModels/LibraryViewModel.swift, ViewModels/LibraryViewModel+BookOperations.swift, Views/Library/LibrarySubviews.swift.
 
 ## Lists Library windows show
-<!-- id: lists-library-windows-show; keys: ; src: TextMouth/ViewModels/LibraryListCache.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/BookInfo.swift, TextMouth/Views/Library/LibraryView.swift -->
+<!-- id: lists-library-windows-show; keys: list cache, sorted list, search results, derived list, Recently Opened, Unopened, Move Book Up, drag to reorder; src: TextMouth/ViewModels/LibraryListCache.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/Library.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 The lists Library windows show: each location's books in its sort, narrowed by a search, and the book counts of folder trees.
 
@@ -105,7 +105,7 @@ The lists Library windows show: each location's books in its sort, narrowed by a
 - Files: ViewModels/LibraryListCache.swift, ViewModels/LibraryViewModel+FolderManagement.swift, ViewModels/LibraryViewModel+SortAndOrder.swift, Models/LibraryBookSorter.swift, Models/LibrarySortState.swift.
 
 ## Titles as the lists read them
-<!-- id: titles-as-lists-read-them; keys: ; src: TextMouth/Models/LeadingArticles.swift, TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/ViewModels/LibraryListCache.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
+<!-- id: titles-as-lists-read-them; keys: leading articles, articles setting, title sort, MARC 21, nonfiling, letter navigation, rotor, inverted title; src: TextMouth/Models/LeadingArticles.swift, TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/ViewModels/LibraryListCache.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift -->
 
 Titles as the lists read them (the Leading articles setting, November 13, 2026): what a leading article does to a list's sort, rows, search, and letter navigation.
 
@@ -124,7 +124,7 @@ Titles as the lists read them (the Leading articles setting, November 13, 2026):
 - Files: Models/LeadingArticles.swift, Models/LeadingArticleWording.swift, Models/TitleTyping.swift, Models/LibraryBookSorter.swift, Models/LibrarySortState.swift, Models/LibraryViewFilterEvaluator.swift, ViewModels/LibraryListCache.swift, ViewModels/LibraryViewModel+SortAndOrder.swift, ViewModels/LibraryViewModel+FolderManagement.swift.
 
 ## Index-write suspension
-<!-- id: index-write-suspension; keys: ; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Views/Library/LibraryIndexRecoveryViews.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift -->
+<!-- id: index-write-suspension; keys: unreadable library.json, quarantine, recovery banner, Try Again, Rebuild Library Index, Recovery Options, damaged index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Views/Library/LibraryIndexRecoveryViews.swift -->
 
 Index-write suspension: what protects an index that cannot be read.
 
@@ -146,7 +146,7 @@ Index-write suspension: what protects an index that cannot be read.
 - Files: Services/LibraryPersistenceService.swift, Services/LibraryIndexQuarantine.swift, ViewModels/LibraryViewModel+IndexRecovery.swift, Views/Library/LibraryIndexRecoveryViews.swift.
 
 ## Rows this TextMouth cannot read
-<!-- id: rows-this-textmouth-cannot-read; keys: ; src: TextMouth/Models/Library.swift, TextMouth/Models/JSONValue.swift, TextMouth/Models/LibraryFeedShelf.swift, TextMouth/Services/Feeds/FeedIndex.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Settings/StorageSettingsView.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/StorageGeneration.swift -->
+<!-- id: rows-this-textmouth-cannot-read; keys: downgrade, forward compatibility, newer TextMouth, unknown book format, preserved rows, V03; src: TextMouth/Models/Library.swift, TextMouth/Models/JSONValue.swift, TextMouth/Models/LibraryFeedShelf.swift, TextMouth/Services/Feeds/FeedIndex.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 Rows this TextMouth cannot read: the books a later TextMouth wrote, kept as they are (V03).
 
@@ -166,7 +166,7 @@ Rows this TextMouth cannot read: the books a later TextMouth wrote, kept as they
 - Files: Models/Library.swift, Models/JSONValue.swift, Models/LibraryFeedShelf.swift, Services/Feeds/FeedIndex.swift, Services/LibraryPersistenceService.swift, ViewModels/LibraryViewModel+IndexRecovery.swift, Services/FileImportService.swift, ViewModels/LibraryViewModel.swift, Views/Settings/StorageSettingsView.swift.
 
 ## The on-disk contract
-<!-- id: disk-contract; keys: ; src: TextMouthProductionTests/OnDiskContractTests.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/Book.swift, TextMouth/ViewModels/SettingsViewModel.swift -->
+<!-- id: disk-contract; keys: raw values, compatibility, config.json, library row keys, older build, pinned, schema version; src: TextMouthProductionTests/OnDiskContractTests.swift, Scripts/test/areas.conf -->
 
 The on-disk contract (V02): what 0.2.0 writes, pinned so that a change is a deliberate step.
 
@@ -177,7 +177,7 @@ The on-disk contract (V02): what 0.2.0 writes, pinned so that a change is a deli
   What other tests pin already, as the text cache format and the metadata reader's version, is not pinned again.
 
 ## Retirement markers
-<!-- id: retirement-markers; keys: ; src: TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Models/LenientFields.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
+<!-- id: retirement-markers; keys: tombstone, retired package, orphan adoption, reinstate, braille table, text encoding; src: TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/LenientFields.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift -->
 
 Retirement markers: books removed with Remove from Library Only.
 
@@ -191,7 +191,7 @@ Retirement markers: books removed with Remove from Library Only.
 - Files: Models/RemovedFromLibraryMarker.swift, Services/LibraryPersistenceService.swift, Services/FileImportService.swift, Services/FileImportService+Packages.swift.
 
 ## Duplicate books
-<!-- id: duplicate-books; keys: ; src: TextMouth/Views/Settings/DuplicateFinderView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/CountWording.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/RemovalWording.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
+<!-- id: duplicate-books; keys: duplicate finder, Scan for Duplicates, Storage settings pane, pagination, VoiceOver announcement, Trash; src: TextMouth/Views/Settings/DuplicateFinderView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/CountWording.swift, TextMouth/Models/RemovalWording.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
 
 Duplicate books: what Find Duplicate Books, in Storage settings, groups and removes.
 
@@ -206,7 +206,7 @@ Duplicate books: what Find Duplicate Books, in Storage settings, groups and remo
 - Files: Views/Settings/DuplicateFinderView.swift, Views/Settings/StorageSettingsView.swift, Models/CountWording.swift.
 
 ## Quit and recovery saves
-<!-- id: quit-recovery-saves; keys: ; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/Library.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/FileImportService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/LibraryLoadResult.swift -->
+<!-- id: quit-recovery-saves; keys: quit, terminate, flush, shared library, iCloud, Rebuild Library Index, merge, save on exit; src: TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PlaybackMemoryGuard.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/Library.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/LibraryLoadResult.swift -->
 
 Quit and recovery saves (October 31, 2026): what is saved at a quit, and what a recovery keeps.
 
