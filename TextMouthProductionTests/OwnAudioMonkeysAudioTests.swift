@@ -251,8 +251,15 @@ final class OwnAudioMonkeysAudioTests: XCTestCase {
     // MARK: - Hostile Files
 
     /// Damaged copies of every sample, from a fixed seed, each decode to
-    /// samples or an error within a few seconds.
+    /// samples or an error within a few seconds: every sample at least
+    /// once, the multichannel, 24-bit stereo, pseudo-stereo, and two-frame
+    /// files among them.
     func testDamagedFilesNeverTrap() throws {
-        XCTAssertGreaterThan(try fuzzEverySample(in: "ape", seed: 20_261_117, seconds: 6, mostSamples: 9_000), 0)
+        let samples = try ownAudioSamples(in: "ape")
+        for name in ["eight16-high.ape", "stereo24-normal.ape", "pseudostereo16-normal.ape", "twoframes16-fast.ape"] {
+            XCTAssertTrue(samples.contains { $0.fileName == name }, name)
+        }
+        let tried = try fuzzEverySample(in: "ape", seed: 20_261_117, seconds: 6)
+        XCTAssertTrue(tried >= samples.count, "\(tried) damaged copies of \(samples.count) samples")
     }
 }

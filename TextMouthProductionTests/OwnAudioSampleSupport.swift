@@ -175,20 +175,16 @@ extension XCTestCase {
     /// round the companion is the one damaged. Every decode must end in
     /// samples or in an `OwnAudioError`; a trap would end the test host. It
     /// stops after `seconds`, having tried at least one damaged copy of
-    /// every sample it takes.
-    /// - Parameter mostSamples: only samples of at most this many samples
-    ///   (frames times channels) are taken, since a damaged frame is
-    ///   decoded whole before its checksum fails, and the hosted tests are
-    ///   not optimized.
+    /// every sample of the folder, the longest and the multichannel ones
+    /// included (review10, finding 4), so the samples are kept short.
     /// - Returns: how many damaged copies were decoded.
     @discardableResult
     func fuzzEverySample(
         in folder: String,
         seed: UInt64,
-        seconds: TimeInterval = 4,
-        mostSamples: Int = .max
+        seconds: TimeInterval = 4
     ) throws -> Int {
-        let taken = try ownAudioSamples(in: folder).filter { $0.frames * $0.channels <= mostSamples }
+        let taken = try ownAudioSamples(in: folder)
         let originals = try taken.map { sample -> (file: [UInt8], companion: [UInt8]?) in
             (try ownAudioSampleBytes(sample.path), try ownAudioCompanionPath(of: sample.path).map { try ownAudioSampleBytes($0) })
         }
