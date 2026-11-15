@@ -37,7 +37,7 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
 - A book with no headings has no From and To.
   The options say "This book has no headings, so all of it is exported."
 - The options have no group of their own.
-  VoiceOver reaches them one after another, right after the checkbox, as it does the braille options.
+  VoiceOver reaches them one after another, right after the checkbox, as it does the braille options (see [Exporting braille files](exporting-braille.md)).
 - The voice, speed, and pitch start from what the book is read with.
 
 ## MP3 and chapters

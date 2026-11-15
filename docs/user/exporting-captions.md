@@ -8,7 +8,7 @@ Part of version 0.4.2.
 ## The Convert transcript to pop-up
 <!-- id: export-convert-transcript-pop-up; keys: Convert transcript to, Transcript checkbox; src: TextMouth/Models/BookExportWording.swift, TextMouth/Views/Export/BookExportSheet.swift -->
 
-The Transcript checkbox has its own pop-up, "Convert transcript to", so it never sounds like the "Convert to" pop-up of the text.
+The Transcript checkbox has its own pop-up, "Convert transcript to", so it never sounds like the "Convert to" pop-up of the text (see [Exporting books](exporting-books.md)).
 VoiceOver reaches it right after the checkbox.
 
 ## The transcript's choices

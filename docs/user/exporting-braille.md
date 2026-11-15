@@ -14,7 +14,7 @@ A PEF is XML that holds the same pages as Unicode braille, for embossers; its he
 ## The braille options
 <!-- id: export-braille-options; keys: Cells per line, Lines per page, Line ends, Braille file characters, CR LF, stepper; src: TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Models/BookExportWording.swift -->
 
-While BRF or PEF is chosen, options sit under the Convert to pop-up, in the order below.
+While BRF or PEF is chosen, options sit under the Convert to pop-up (see [Exporting books](exporting-books.md)), in the order below.
 They start from the Braille setting (see [Settings](settings.md)), at 40 cells by 25 lines with page numbers on and, for a BRF, CR LF line ends and the braille file characters of the Braille tab.
 The dialog keeps them until it closes, and they are dimmed while an export runs.
 Each is read as its label, its value, and its hint:
@@ -94,7 +94,7 @@ The layout:
 A quote is written as the text of its blocks, a code block as a paragraph for each of its lines that has text, and a table as a paragraph for each row, its cells apart by semicolons.
 A thematic break writes nothing.
 The address of a link is not written, only its text.
-Italic and bold are written as emphasis, as the next bullet says, except in a table's cells, a code block, a numbered item's number, and the book's title, which are plain.
+Italic and bold are written as emphasis, as the next section says, except in a table's cells, a code block, a numbered item's number, and the book's title, which are plain.
 
 ## Italic and bold in braille
 <!-- id: export-braille-emphasis; keys: emphasis signs, UEB, EBAE, sample test, byte for byte; src: TextMouth/Services/Export/BrailleExportWriters.swift -->
