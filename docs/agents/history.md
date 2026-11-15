@@ -731,3 +731,31 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **Compile errors in tests that every type-check had passed:**
   This happened.
   On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+
+## From Reusable test tools
+
+- **Load-sensitive tests made to wait:**
+  The load-sensitive tests of the October 30, 2026 audit are no longer load-sensitive.
+- **The build train, why agents stopped building and the hourly schedule:**
+  On October 31, 2026 the Mac froze under the agents' builds, so agents no longer build on their own.
+  Trains left every 30 minutes until November 8, 2026, when the user, finding that the builds took a lot of CPU, asked for "the builds every hour and putting them one after the other".
+- **Run only some tests, the size of areas.conf and the suite's time:**
+  On November 14, 2026 the file has 34 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `readers`, `playback-end`, and `shortcuts`, which between them place all 814 hosted test classes.
+  The testkit team's lead measured the whole suite, `all`, at about 16 minutes of test time on October 17, 2026.
+- **Quitting while work is held, the probe's first version:**
+  The earlier version of the probe sent the keyword it was testing, and passed with the wrong one.
+- **Test matrices, the time of the end-of-book matrix:**
+  It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
+- **Opt-in sweeps, the textfmt team's run of the import fuzz:**
+  The textfmt team's run over those 21 made 351 damaged copies, and no check broke.
+
+## From Tests of the markup guard, Kindle, and MOBI readers
+
+- **The markup guard tests, the policy test of the big stack:**
+  Its first form let a depth walk move out of the closure; the November 8 check found that.
+- **The KF8 fuzz kit, its first build:**
+  It was built and run in 0.4.3: the builder lacked five parser files and looked for packages in a build folder a worktree does not have, and now builds.
+- **The KF8 fuzz kit, its first runs:**
+  First runs, November 9, 2026, seed 1 and 2,000 rounds each: The Time Machine 1,736 read and 264 refused, the Quay Almanac hybrid 1,863 and 137, Yellow Wallpaper in KF8 1,830 and 170.
+  Seed 2, 2,000 rounds over four books: 1,820 and 180.
+  No trap, no slow or large round, and no SwiftSoup, `MarkupGuard`, or converter failure.
