@@ -96,7 +96,7 @@ SwiftUI's checkboxes and steppers in a hosted test.
 A hosted view whose width outgrows the width it is offered.
 
 - Owner: the test.
-  A hosting view sets its window's smallest and largest sizes from its content's, so content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (twice on October 10, 2026, in exploratory runs no committed test makes).
+  A hosting view sets its window's smallest and largest sizes from its content's, so content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (in exploratory runs no committed test makes).
   Host such a view inside a frame of a fixed size, as SettingsTabFitTests hosts each Settings tab at the window's size, or measure it with NSHostingController.sizeThatFits(in:) and no window.
   The hosting helpers, withHostedView (TextMouthProductionTests/AccessibilityTestSupport.swift) and hostOffscreen (TextMouthProductionTests/ViewsAndWindowsTestSupport.swift), say so in their documentation.
 
