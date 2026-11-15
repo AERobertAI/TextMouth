@@ -5,7 +5,7 @@ Part of [TextMouth's documentation](../../README.md).
 
 Task agents run in git worktrees of their own, each launched with an explicit model: Sonnet by default, Opus for a large design (see "Every launch names its model" in [Orchestrating TextMouth's agents](orchestrator.md)).
 The orchestrating session, which may run on a larger model, writes their briefs, reviews their reports and diffs, merges after a green suite, and records the merge.
-The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scripts/agents/probes/` holds the offline speech-engine probes behind the October 7 speech guard and the refusal fixes that followed it, and the October 10 probe of control characters, which found the null character's dropped words.
+The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scripts/agents/probes/` holds the offline speech-engine probes behind the speech guard and the refusal fixes that followed it, and the probe of control characters, which found the null character's dropped words.
 
 Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/.
 Its SKILL.md is the full reference.
@@ -68,9 +68,8 @@ An agent finds, checks, and lints doc sections with the doc-library skill (`.cla
 ## Making each train count
 <!-- id: making-each-train-count; keys: hourly train, wasted train, request, wait time; src: Scripts/agents/build-train.py -->
 
-**Making each train count** (since November 8, 2026).
+**Making each train count.**
 A train leaves once an hour, and heavy jobs run one after the other, so a train that is missed, or spent on a mistake a careful reading would have caught, costs an hour.
-The user asked for the agents "to like use there cycles wisely and to use the wait time to review there patches and fix any obvius issues so its less likely a hour cycle would be waisted, or to improve tests so each indiviusal build would give more information".
 So an agent:
 
 ### Review before asking
@@ -118,7 +117,7 @@ It fixes every failure in one round, reviews that round's diff, and asks once.
 ### Where the train runs
 <!-- id: where-train-runs; keys: remote train, TestBuild, run.log, run-summary.txt, not run on GitHub, --soon; src: Scripts/agents/wait-for-result.py, Scripts/agents/build-train.py, Scripts/agents/github_run.py, Scripts/agents/runner-skips.conf -->
 
-**Knows where its train runs** (since November 9, 2026).
+**Knows where its train runs.**
 When the orchestrator starts the loop with `--remote`, the train merges on the Mac but builds and tests on GitHub's macOS runners, so the Mac stays free and a train costs the Mac no heavy-work lock.
 The agent's part is the same: one request, one background `wait-for-result.py`.
 What differs is the result.

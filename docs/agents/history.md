@@ -664,3 +664,11 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   - **Type-checks between trains** (since November 3, 2026).
 - **Team leads in place of task agents:**
   - The user asked for it on October 12 ("a sub sub orcistrater pattern where tasks are broken down even smaller... the subsubagents could be high Sonnet agents to see if that can save some cost").
+
+## From Working on TextMouth with coding agents
+
+- **Making each train count:**
+  - **Making each train count** (since November 8, 2026).
+  - The user asked for the agents "to like use there cycles wisely and to use the wait time to review there patches and fix any obvius issues so its less likely a hour cycle would be waisted, or to improve tests so each indiviusal build would give more information".
+- **Knowing where the train runs:**
+  - **Knows where its train runs** (since November 9, 2026).
