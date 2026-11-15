@@ -1,7 +1,7 @@
 {
   "version": 1,
   "pages": {
-    "AGENTS.md": {"date": 19, "line-length": 23, "page-size": 1, "sentences-per-line": 33, "user-quote": 3},
+    "AGENTS.md": {"date": 19, "line-length": 13, "page-size": 1, "user-quote": 3},
     "ARCHITECTURE.md": {"date": 1, "index-line": 1, "line-length": 2, "sentences-per-line": 2},
     "CLAUDE.md": {"date": 1, "line-length": 2, "page-size": 1, "sentences-per-line": 4},
     "README.md": {"date": 1, "index-line": 16, "line-length": 6, "sentences-per-line": 6},
