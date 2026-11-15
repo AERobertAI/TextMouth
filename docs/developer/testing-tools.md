@@ -207,7 +207,11 @@ Documents to try:
 
 Matrices, always on, each with its table in its file's header comment:
 
-- `EndBehaviorMatrixTests` pins what a book does when it ends, for each of 4 end-of-book behaviors, 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it).
+- `EndBehaviorMatrixTests` pins what a book does when it ends, for each of
+  - 4 end-of-book behaviors,
+  - 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and
+  - 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it).
+
   100 cells, each with a test, 80 of them in this class and 20 in other classes that the table names.
   It takes about 52 seconds in a full run.
   Its audio cells still play a book out in real time, but
