@@ -69,7 +69,7 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 ### The chapter rules
 <!-- id: chapter-rules; keys: openingContainer, calibre pieces, header rule, footer exemption, Modest Proposal, Pride and Prejudice, licence; src: TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/KF8Fixture.swift, TextMouth/Parsers/KF8Book.swift, TestData/format-samples/mobi/pg1080-modest-proposal-kf8.mobi, TestData/format-samples/azw3/pg1080-modest-proposal.epub -->
 
-- The chapter rules of 0.4.3 (see the continuation rule in [Imports](../architecture/state/imports.md)) are pinned in three places:
+- The chapter rules of 0.4.3 (see the continuation rule in [Imports](../architecture/state/imports-kindle.md)) are pinned in three places:
   - `KF8RealBookTests.testAModestProposalReadsAsItsEPUBsThreeChaptersWithTheLicensesOpeningInTheLicense` reads the real pair: 3 chapters of 169, 3,386, and 2,906 words, with the titles, word counts, words, and headings of the EPUB.
     The samples are `mobi/pg1080-modest-proposal-kf8.mobi` (422,746 bytes) and `azw3/pg1080-modest-proposal.epub` (263,753 bytes), each under 500 KB and in `samples.tsv`.
     The Yellow Wallpaper's test now expects a start entry before the licence's heading.
