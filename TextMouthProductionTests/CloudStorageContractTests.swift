@@ -227,12 +227,31 @@ final class CloudStorageContractTests: XCTestCase {
             "The cloud service hasn't said that the copy of this book on this Mac is the latest, "
                 + "so its download can't be removed. Try again in a moment."
         )
+        // Each drive's own command, and where the book is; nothing is ever deleted.
+        let lasting = "doesn't say whether the copy of this book on this Mac is the latest, so its download can't "
+            + "be removed, and waiting won't change that. To free the space anyway, choose Show in Finder, then "
+        let keeps = ". That keeps the book's copy in the cloud."
         XCTAssertEqual(
             BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: drive),
-            "Google Drive doesn't say whether the copy of this book on this Mac is the latest, so its download can't "
-                + "be removed, and waiting won't change that. To free the space anyway, have Google Drive itself make the book "
-                + "online-only in the Finder, which keeps its copy in the cloud."
+            "Google Drive " + lasting + "use Google Drive's Offline Access menu" + keeps
         )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .dropbox),
+            "Dropbox " + lasting + "choose Make online-only" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .iCloudDrive),
+            "iCloud Drive " + lasting + "choose Remove Download" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .other("OneDrive")),
+            "OneDrive " + lasting + "use the drive's own command to keep the book only online" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: nil),
+            "The cloud service " + lasting + "use the drive's own command to keep the book only online" + keeps
+        )
+        XCTAssertFalse(BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: drive).lowercased().contains("delete"))
         XCTAssertEqual(
             BookCloudError.bookIsOpen.explanation(in: drive),
             "The book is open, so its download can't be removed. Close it first."

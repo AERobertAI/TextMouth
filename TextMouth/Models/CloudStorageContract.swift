@@ -372,7 +372,12 @@ enum BookCloudError: Error, Equatable, Sendable {
             return "Some changes to this book haven't been uploaded to \(service) yet, "
                 + "so its download can't be removed. Try again in a moment."
         case .cloudCopyNotProven(let doubt):
-            return BookCloudWording.removalRefusal(doubt, service: service, serviceStartingSentence: serviceStartingSentence)
+            return BookCloudWording.removalRefusal(
+                doubt,
+                service: service,
+                serviceStartingSentence: serviceStartingSentence,
+                provider: provider
+            )
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
         case .keptOnThisMac:
@@ -400,7 +405,12 @@ enum BookCloudWording {
     /// (`service`, and `serviceStartingSentence` where it begins a
     /// sentence). Each says what to do next, since the only copy of the
     /// book may be the one on this Mac.
-    static func removalRefusal(_ doubt: CloudCopyDoubt, service: String, serviceStartingSentence: String) -> String {
+    static func removalRefusal(
+        _ doubt: CloudCopyDoubt,
+        service: String,
+        serviceStartingSentence: String,
+        provider: CloudProvider? = nil
+    ) -> String {
         switch doubt {
         case .uploadNotReported:
             return "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, "
@@ -419,8 +429,20 @@ enum BookCloudWording {
         case .currentNotReported:
             return "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, "
                 + "so its download can't be removed, and waiting won't change that. "
-                + "To free the space anyway, have \(service) itself make the book online-only in the Finder, "
-                + "which keeps its copy in the cloud."
+                + "To free the space anyway, choose Show in Finder, then \(onlineOnlyCommand(of: provider)). "
+                + "That keeps the book's copy in the cloud."
+        }
+    }
+
+    /// The drive's own command that keeps a book only online, in a clause
+    /// that follows "then": each drive names it differently, and one that
+    /// is not known is told in general words. It never deletes anything.
+    static func onlineOnlyCommand(of provider: CloudProvider?) -> String {
+        switch provider {
+        case .googleDrive: return "use Google Drive's Offline Access menu"
+        case .dropbox: return "choose Make online-only"
+        case .iCloudDrive: return "choose Remove Download"
+        case .other, nil: return "use the drive's own command to keep the book only online"
         }
     }
 
