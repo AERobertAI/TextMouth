@@ -30,7 +30,10 @@ Run these from the repository root:
   - and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
 
   The Release build is compiled for size.
-  The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) and the vendored SwiftSoup library take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages (the SwiftSoupLibrary template in project.yml leaves it to the Makefile); the build does not ask for whole-module mode, which would make the app 1.15 MB larger.
+  The app's own code takes `-Osize` from project.yml's Release settings.
+  The three Swift packages (ZIPFoundation, swift-markdown, and the swift-cmark it builds on) take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages.
+  So does the vendored SwiftSoup library, whose template in project.yml leaves it to the Makefile.
+  The build asks for whole-module mode only for SwiftSoup; for the rest it would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
   A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either.
   `make check` and `make install` build through `make build`, so both get it.
@@ -61,7 +64,8 @@ Run these from the repository root:
 - `make test` runs the hosted test suite (see [The hosted test suite](testing.md)).
   `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Reusable test tools](testing-tools.md) describes them.
 - `make lint-docs` checks that no doc page has more violations of the rules in docs/agents/writing-docs.md than `.claude/skills/doc-library/lint-baseline.json` records for it, without building; `.claude/skills/doc-library/SKILL.md` describes the tool.
-- `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md)).
+- `make check` runs the reproducibility gate, which also reports the Release app's size.
+  `make check-selftest` tests the gate and the scripts around it in seconds, without building; The make check gate, below, lists what it covers.
 - `make release-goldens` runs the golden tests against a Release build (see The Release golden tests, below), once before a release.
 - `make perf-baselines` records new performance baselines after a deliberate change, as [The performance baselines](testing.md) describes.
 
@@ -226,7 +230,8 @@ Run `make check` before merging.
 - builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac;
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
 
-It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
+It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 20 MB limit".
+It fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
@@ -234,7 +239,18 @@ Both builds start from scratch: the gate first removes `build/DerivedData/Build`
 It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`.
 A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests).
 To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files.
-`make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` also tests the baseline-recording script, the storage drill script's verdicts (see [Reusable test tools](testing-tools.md)), the version script (see Versions, above), that `make build` builds without code coverage and with `-Osize` while `make debug` does not, that `make release-goldens` names its settings and golden classes, that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications; and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
+`make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds.
+`make check-selftest` also tests:
+- the baseline-recording script;
+- the storage drill script's verdicts (see [Reusable test tools](testing-tools.md));
+- the version script (see Versions, above);
+- the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md));
+- the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`;
+- that `make build` builds without code coverage and with `-Osize` while `make debug` does not;
+- that `make release-goldens` names its settings and golden classes;
+- that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications;
+- and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
+
 GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request).
 The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size).
 The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards.
