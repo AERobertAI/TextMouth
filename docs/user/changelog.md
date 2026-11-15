@@ -579,6 +579,11 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Listening
 - Audio in more formats, such as AC-3, AMR, and MP2, is converted as it is added and lossless audio stays lossless; M3U playlists and Nero chapter lists are read, and a manifest.json can arrange a ZIP of tracks, which Edit Manifest changes later.
+- Builds of main made before 0.2.0 read less of a manifest.json.
+  Builds from October 13, 2026 arranged a ZIP's tracks by a tracks list.
+  Builds from October 14, 2026 also edited an imported audiobook's manifest where it is, and imported a plain folder of tracks.
+  The oldest builds read only title, author, order, and chapters, and did not import Ogg tracks.
+- A title or author you changed in Book Info before October 14, 2026, and that was recorded as yours, was written into the book's manifest the first time 0.2.0 opened your library, so it stays the book's.
 - New Recording records from a microphone, Edit Audio… edits an audiobook's audio from the keyboard, and Transcribe Audio… turns an audiobook into text on macOS 26 and later.
 - Ogg audio is no longer played as it is, since on October 14, 2026 macOS's own Vorbis decoder locked up while TextMouth played an Ogg audiobook, TextMouth's memory grew until the Mac ran out, and the Mac had to be restarted.
 - Every Ogg file is converted to .m4a as it is added, and the Ogg books already in the library were converted once, a book at a time, at the first launch of this version.

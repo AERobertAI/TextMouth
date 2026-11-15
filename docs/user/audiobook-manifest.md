@@ -13,10 +13,10 @@ It is written so you can also hand it to an assistant, with your list of file na
 ## What works in which version
 <!-- id: what-works-which-version; keys: ; src: -->
 
-- **In a build of main from October 14, 2026 or later:** everything this document describes, including editing an imported audiobook's manifest where it is, and importing a plain folder of tracks.
+- **In version 0.2.0 or later:** everything this document describes, including editing an imported audiobook's manifest where it is, and importing a plain folder of tracks.
 - **In an older build:** TextMouth reads only title, author, order, and chapters.
   It takes a manifest's title and author, passes over tracks and the pauses, so the book imports in name order, and doesn't look inside the ZIP's one folder.
-  Before October 13, 2026, Ogg tracks don't import at all.
+  The oldest builds don't import Ogg tracks at all.
 
 ## Where the manifest goes
 <!-- id: where-manifest-goes; keys: ; src: -->
@@ -93,8 +93,8 @@ An entry is one of:
 ### pauseBetweenTracksMs
 <!-- id: pausebetweentracksms; keys: ; src: -->
 The silence between one track's end and the next track's start, in milliseconds, while the book plays on.
-- The default is 250, a quarter of a second, for every book whose ZIP has a manifest, whether it uses tracks or the older order and chapters, and for books imported earlier with a manifest too, from this update on.
-  A ZIP without a manifest plays straight from one track into the next, as before, since many audiobooks split a sentence across two tracks.
+- The default is 250, a quarter of a second, for every book whose ZIP has a manifest, whether it uses tracks or the older order and chapters, and for books imported earlier with a manifest too.
+  A ZIP without a manifest plays straight from one track into the next, since many audiobooks split a sentence across two tracks.
 - Any number from 0 (no pause) to 60000 (one minute).
 - A pause lasts the same real time at every playback speed.
 - There is no pause after the last track, and none when you jump: a pause comes only as one track plays on into the next.
@@ -173,7 +173,8 @@ The import checks:
   Until then the manifest's older value never replaces yours.
   A field waiting like this wins over the same field edited in the manifest meanwhile.
   Only this Mac remembers it, so another Mac opening the same library does not know it is waiting.
-- The first time this version opens a library, a title or author you changed in Book Info before October 14, 2026, and that is recorded as yours, is written into the book's manifest, so it stays the book's; after that, a title or author changed in the manifest outside TextMouth becomes the book's.
+- A title or author changed in the manifest outside TextMouth becomes the book's.
+  The exception is a title or author you changed in Book Info before 0.2.0, and that is recorded as yours: the first time 0.2.0 opened the library, it was written into the book's manifest, so it stays the book's.
 - A manifest can't add or remove tracks, and can't give segments.
 - You can also edit manifest.json yourself, in any editor, without the command.
   In Finder, choose Go to Folder… (Command-Shift-G) and go to the data directory, ~/.TextMouth unless you moved it, since a folder whose name starts with a dot is hidden.
