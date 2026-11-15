@@ -690,3 +690,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Imports: choosing the encoding
 
 - The measurement of Foundation's readers of several encodings, on macOS 26.3, was made on October 24, 2026.
+
+## From Imports: text in other encodings
+
+- CP437, CP850, and Mac Central European joined the catalog on November 13, 2026.
