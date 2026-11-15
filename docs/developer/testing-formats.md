@@ -15,11 +15,16 @@ Its documents are made so that a failure is a failed assertion and not a trapped
 - The repeated-unit test, `testRepeatedUnitsAreCountedAsDeepAsTheParserBuildsThem`, takes 15 units of one to three tags that walked past the first count (`<frameset><table>`, `<marquee><table><tfoot>`, `<form><div></form>`, and the like) in three heads, 30 times over, and requires the count to be at least the real tree's depth.
   The harness holds every unit of one to three of 108 tags, in three contexts and in a body fragment (5,085,936 units), to the same at 40 and at 2,000 repeats.
 - The second-layer test, `testTheParsedTreeIsHeldToTheLimitToo`, calls `MarkupGuard.requireDepth(of:atMost:)` on a tree of 32 levels and requires it to read at 32 and to throw `nestedTooDeeply(limit: 31)` at 31.
-- To test a limit a test lifts or lowers it for one operation: `try MarkupGuard.$limits.withValue(MarkupGuard.Limits(deepestNesting: 32, mostMemoryUnits: .max, mostAttributesOnATag: .max, mostWork: .max)) { … }` binds a task-local, so the limits change only the reading that closure does on its own thread.
+- To test a limit a test lifts or lowers it for one operation: `try MarkupGuard.$limits.withValue(MarkupGuard.Limits(deepestNesting: 32, mostMemoryUnits: .max, mostAttributesOnATag: .max, mostWork: .max)) { … }` binds a task-local.
+  So the limits change only the reading that closure does on its own thread.
   `testTheStandardLimitsArePinned` pins 128, 1,000,000, 1,000, and 30,000,000,000; `testTheRefusalsSpeakPlainly` pins the four sentences; `testTheLimitsInForceReachTheRealPath` binds small limits and requires the converter, `HTMLParser`, and the guard's three parses to refuse.
 - The reading paths are held through each format's own code: an EPUB reads around a refused chapter, a Kindle book, a DAISY navigation file, a web archive's page, feed discovery, and a feed's title and text meet the guard (`testAnEPUBReadsAroundWhatItsChaptersHold` and its neighbours).
 - `testEveryParseGoesThroughTheGuard` reads the app's sources and fails on any SwiftSoup parse outside MarkupGuard.swift.
-- The big stack (0.4.2) has its own tests: `testTheBigStackHoldsTheDeepestTreeThePassLetsThrough` (its size, a whole number of megabytes, from the measured cost of a level), `testTheBodyRunsOnAThreadWithTheBigStackAndItsResultComesBack`, a parse from a 512 KiB worker thread that gives the same tree as SwiftSoup alone in each of the three parsers, and `testTheSecondLayerHasALimitOfItsOwnWhenOneIsSet`, which sets `Limits.deepestTree` apart from `deepestNesting` on a tree of 60 levels.
+- The big stack (0.4.2) has its own tests:
+  - `testTheBigStackHoldsTheDeepestTreeThePassLetsThrough` (its size, a whole number of megabytes, from the measured cost of a level),
+  - `testTheBodyRunsOnAThreadWithTheBigStackAndItsResultComesBack`,
+  - a parse from a 512 KiB worker thread that gives the same tree as SwiftSoup alone in each of the three parsers, and
+  - `testTheSecondLayerHasALimitOfItsOwnWhenOneIsSet`, which sets `Limits.deepestTree` apart from `deepestNesting` on a tree of 60 levels.
 - The policy test of the stack is `testEverySwiftSoupParseInTheGuardRunsOnTheBigStack`.
   It reads MarkupGuard.swift without its line comments and requires 3 `SwiftSoup.parse` calls, each the argument of `requireDepth(of:atMost:)` inside an `onLargeStack` closure, so that neither a parse nor a depth walk can leave the big stack, and a refused tree is released there.
   It does not strip block comments, and `testEveryParseGoesThroughTheGuard` matches fixed names only, so a typealias would evade it.
@@ -35,7 +40,8 @@ Its documents are made so that a failure is a failed assertion and not a trapped
 - A debug build converts only about 108 levels of lists and 117 of divisions on an import's 512 KiB stack, so no in-process test converts more than 40 levels.
   The tests of other readers that need a tree thousands of levels deep (deep navigation files in `EPUBHeadingRecoveryTests`, `EPUBPageListTests`, and `DAISYMalformedXMLTests`, 5,000 levels in two of them) lift only the depth, with `MarkupGuard.Limits.withoutDepthLimit` (defined at the top of MarkupGuardTests.swift) under `MarkupGuard.$limits.withValue`, on `onWorkerSizedStack`, to hold the reader's own walk to itself, since the guard would refuse such a file first.
 - Proof that a document cannot crash is never made in the test host.
-  A document whose count or parse is in doubt is first run in a harness in a child process with a stack of 512 KiB and memory and time limits, and only then written into a test; the runs over millions of units are made the same way (in the last round, 5,085,936 units at 40 repeats, and 2,154,267 read with 2,931,669 refused at 2,000, in Release, with 0 faults).
+  A document whose count or parse is in doubt is first run in a harness in a child process with a stack of 512 KiB and memory and time limits, and only then written into a test.
+  The runs over millions of units are made the same way (in the last round, 5,085,936 units at 40 repeats, and 2,154,267 read with 2,931,669 refused at 2,000, in Release, with 0 faults).
   `MarkupGuardTests` is in no area of Scripts/test/areas.conf yet, so run it by name.
 
 ## KFX tests
@@ -50,7 +56,9 @@ The reader was written from the format notes and the public Ion specification, n
 <!-- id: kindle-samples-without-goldens; keys: MOBI 6, Gutenberg, calibre, ebook-convert, encrypted, ferry-notes-ncx, Kindle samples; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, Scripts/make-mobi-ncx-sample.py, TestData/format-samples/mobi/, TestData/format-samples/samples.tsv -->
 
 The Kindle samples in `TestData/format-samples/mobi` have no goldens.
-MOBIReaderTests reads two of them: Project Gutenberg's MOBI 6 book, and `ferry-notes-ncx.mobi`, a small book with a table of contents that `Scripts/make-mobi-ncx-sample.py` makes with calibre's `ebook-convert` (calibre writes a new identifier into every conversion, so the script's output never matches the sample byte for byte).
+MOBIReaderTests reads two of them:
+- Project Gutenberg's MOBI 6 book, and
+- `ferry-notes-ncx.mobi`, a small book with a table of contents that `Scripts/make-mobi-ncx-sample.py` makes with calibre's `ebook-convert` (calibre writes a new identifier into every conversion, so the script's output never matches the sample byte for byte).
 It checks that a copy of the MOBI 6 book marked as encrypted, which is not really encrypted, is refused.
 Gutenberg's KF8 book is no longer refused: `KF8RealBookTests`, below, reads it.
 
@@ -64,7 +72,15 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 
 - `KF8LayoutTests` pin the tables, the end-to-end layout check, and the join.
   `KF8BookTests` pin the sections, titles, headings, pages, and metadata.
-- `KF8ReviewFixTests` pin what the review asked for: the generated contents page and the real last page it must not take, fragments that go backward or leave a gap, the 1 KB label cap, the fallback from a hybrid's KF8 half to its MOBI 6 half in every way short of protection and a cancel, SVG words, navigation lists, the continuation rule, and a damaged contents or guide.
+- `KF8ReviewFixTests` pin what the review asked for:
+  - the generated contents page and the real last page it must not take,
+  - fragments that go backward or leave a gap,
+  - the 1 KB label cap,
+  - the fallback from a hybrid's KF8 half to its MOBI 6 half in every way short of protection and a cancel,
+  - SVG words,
+  - navigation lists,
+  - the continuation rule, and
+  - a damaged contents or guide.
 
 ### The chapter rules
 <!-- id: chapter-rules; keys: openingContainer, calibre pieces, header rule, footer exemption, Modest Proposal, Pride and Prejudice, licence; src: TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouthProductionTests/KF8RealBookTests.swift, TextMouthProductionTests/KF8Fixture.swift, TextMouth/Parsers/KF8Book.swift, TestData/format-samples/mobi/pg1080-modest-proposal-kf8.mobi, TestData/format-samples/azw3/pg1080-modest-proposal.epub -->
@@ -75,14 +91,21 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
     The Yellow Wallpaper's test now expects a start entry before the licence's heading.
   - `KF8ReviewFixTests.testAnEssayAfterAWholeHeaderIsItsOwnChapterAndALicenseKeepsItsOpeningWords` builds the same shape with `KF8Fixture`.
   - `KF8ReviewFixTests.testPiecesInTheSameSectionOrAfterAFooterOrBeforeAHeadingInAnotherSectionStillGoOn` holds what the rules leave alone: the review's two sections cut inside the second (one chapter ending "Second half."), a piece after a footer, and a plain `div` after a section (two chapters).
-  - Breaking each rule in a scratch copy moved the real numbers: without the header rule Modest Proposal is 2 chapters; without the shared-container rule the licence's opening lands in the essay (3,599 and 2,693 words); without the continuation it is 4 chapters; without the footer exemption Pride and Prejudice is 67 chapters, not 66.
+  - Breaking each rule in a scratch copy moved the real numbers:
+    - without the header rule Modest Proposal is 2 chapters;
+    - without the shared-container rule the licence's opening lands in the essay (3,599 and 2,693 words);
+    - without the continuation it is 4 chapters;
+    - without the footer exemption Pride and Prejudice is 67 chapters, not 66.
     The two-section cut was proven with a throwaway program, not an XCTest run.
     The `<a>` skip in `openingContainer` has no test.
 
 ### Soft hyphens and the portable XML differences
 <!-- id: soft-hyphens-portable-xml-differences; keys: soft hyphen, SHY, removingSoftHyphens, toc.xhtml, toc.ncx, page reader version, knownDifferences; src: TextMouthProductionTests/SoftHyphenEffectTests.swift, TextMouthProductionTests/KF8ReviewFixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift -->
 
-- The soft hyphens (0.4.3) are pinned by `SoftHyphenEffectTests` (the measured effects on search and braille, see Shared helpers in [Architecture](../../ARCHITECTURE.md)), by `KF8ReviewFixTests.testEverySpellingOfASoftHyphenIsLeftOut` (every spelling `ParserUtilities.removingSoftHyphens` catches, and the ones it leaves alone: `&SHY;`, `&Shy;`, `&shy1`, `&shyx`, other numbers, and a huge one), and by `MOBIBookStructureTests` for a MOBI 6 book's words, labels, Windows-1252 text, and plain PalmDOC text.
+- The soft hyphens (0.4.3) are pinned
+  - by `SoftHyphenEffectTests` (the measured effects on search and braille, see Shared helpers in [Architecture](../../ARCHITECTURE.md)),
+  - by `KF8ReviewFixTests.testEverySpellingOfASoftHyphenIsLeftOut` (every spelling `ParserUtilities.removingSoftHyphens` catches, and the ones it leaves alone: `&SHY;`, `&Shy;`, `&shy1`, `&shyx`, other numbers, and a huge one), and
+  - by `MOBIBookStructureTests` for a MOBI 6 book's words, labels, Windows-1252 text, and plain PalmDOC text.
   `MOBIReaderTests`, `PagesUpgradeTests`, and `OnDiskContractTests` expect the `.mobi` page reader line "1.1.0".
 - `PortableXMLDifferentialTests` lists two known differences for the new EPUB, its `toc.xhtml` and `toc.ncx`: they write the title across two lines with `&#13;`, which Foundation's tidy reading keeps and the portable tree collapses.
   The strict reading, which the EPUB reader uses on both platforms, agrees.
@@ -95,7 +118,13 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
   They now import through `MOBIParser.prepareBook`, so a section's markup meets the markup guard and the nesting and declaration inputs end in `MarkupRefusal.nestedTooDeeply` or a normal read.
   The flip and truncation tests import every fourth or eighth copy that opens.
 - `KF8RealBookTests` read the samples in `TestData/format-samples/azw3` and `mobi` as an import does and compare each with the same book as an EPUB through the EPUB reader: the same words in the same order, the same headings, and the same pages, with the differences named in the test.
-  The samples are Standard Ebooks' The Time Machine (`se-the-time-machine.azw3`), `quay-almanac` (an EPUB, an .azw3 and a calibre hybrid, made by `Scripts/make-kf8-samples.py`), Gutenberg's Yellow Wallpaper in KF8, Gutenberg's A Modest Proposal in KF8 with its EPUB (0.4.3), Gutenberg's Ghosts as kindlegen made it (a hybrid), and the edge books.
+  The samples are
+    - Standard Ebooks' The Time Machine (`se-the-time-machine.azw3`),
+    - `quay-almanac` (an EPUB, an .azw3 and a calibre hybrid, made by `Scripts/make-kf8-samples.py`),
+    - Gutenberg's Yellow Wallpaper in KF8,
+    - Gutenberg's A Modest Proposal in KF8 with its EPUB (0.4.3),
+    - Gutenberg's Ghosts as kindlegen made it (a hybrid), and
+    - the edge books.
 
 ### Edge samples and changed tests
 <!-- id: edge-samples-changed-tests; keys: edge samples, kindlegen, calibre, toc-last, page-list, svg-words, samples.tsv, hybrid; src: TextMouthProductionTests/MOBIReaderTests.swift, TextMouthProductionTests/MOBIBookStructureTests.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift, Scripts/make-kf8-edge-samples.py, Scripts/make-kf8-edge-samples-2.py, TestData/format-samples/azw3/edge/, TestData/format-samples/mobi/edge/ -->
@@ -134,7 +163,11 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 `TextFileDecoderTests` pin how text without a byte-order mark is read (0.4.3; see `unmarkedUnicode(in:)` under Imports in [Architecture](../../ARCHITECTURE.md)).
 
 - `testUnmarkedUnicodeInEveryScriptIsRecognizedByItsBytes` and `testTheShortestUnmarkedTextsThatAreRecognized` pin what is found and how short it may be.
-- Four tests pin what must not be taken for UTF-16 or UTF-32: `testBytesThatAreNotUnmarkedUnicodeAreNotReadAsIt`, `testTextInOtherEncodingsIsNeverTakenForUnmarkedUnicode` (the same sentences in more than 20 encodings), `testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode` (89 samples, about 124,000 windows), and the two sweeps with one to four NULs put in at random, `testTheTextSamplesInTestDataWithStrayNULsAreNeverTakenForUnmarkedUnicode` and `testStrayNULsDoNotTurnTextIntoUnmarkedUnicode`.
+- Four tests pin what must not be taken for UTF-16 or UTF-32:
+  - `testBytesThatAreNotUnmarkedUnicodeAreNotReadAsIt`,
+  - `testTextInOtherEncodingsIsNeverTakenForUnmarkedUnicode` (the same sentences in more than 20 encodings),
+  - `testTheTextSamplesInTestDataAreNeverTakenForUnmarkedUnicode` (89 samples, about 124,000 windows), and
+  - the two sweeps with one to four NULs put in at random, `testTheTextSamplesInTestDataWithStrayNULsAreNeverTakenForUnmarkedUnicode` and `testStrayNULsDoNotTurnTextIntoUnmarkedUnicode`.
   The NUL sweeps are the ones that can fail: without a zero byte the rules for other scripts cannot fire, and the review found the first sweeps could not fail.
 - `testARecordedEncodingAndTheLegacyEvidenceAskOnlyTheOldRule` pins that a book's recorded encoding, and the web archive and web-page .doc readers, ask for Latin UTF-16 alone.
   `testAUTF16ColumnOfSingleCharactersIsNotTakenForUTF32` pins a column of one character to a line.
@@ -146,7 +179,10 @@ The KF8 tests (FMT48, 0.4.2) read Kindle books in KF8 and are `KF8LayoutTests`, 
 <!-- id: mobi-tests-real-books; keys: libmobi, HUFF/CDIC, Mobipocket, PalmDOC, mobi.js, SHA-256, Gutenberg, Afrikaans; src: TextMouthProductionTests/MOBIRealBookTests.swift, TestData/format-samples/mobi/, TestData/format-samples/samples.tsv -->
 
 MOBIRealBookTests reads five real books from other makers, each pinned by the SHA-256 of its decoded text, which a decoder written apart from TextMouth's (a Python port of mobi.js) computed, and by its names and some of its words.
-Three are libmobi's test samples, under libmobi's LGPL-3.0, whose text and the GPL-3.0 it builds on are beside them as `libmobi-COPYING.LESSER` and `libmobi-COPYING`: a kindlegen book compressed with HUFF/CDIC, whose digest is also that of the same book stored uncompressed, so it proves the HUFF reading; a Windows-1252 book with a short header; and an early Mobipocket book whose PalmDOC text is HTML.
+Three are libmobi's test samples, under libmobi's LGPL-3.0, whose text and the GPL-3.0 it builds on are beside them as `libmobi-COPYING.LESSER` and `libmobi-COPYING`:
+- a kindlegen book compressed with HUFF/CDIC, whose digest is also that of the same book stored uncompressed, so it proves the HUFF reading;
+- a Windows-1252 book with a short header; and
+- an early Mobipocket book whose PalmDOC text is HTML.
 The other two are Gutenberg's Ghosts as kindlegen made it, a book holding both MOBI 6 and KF8, and a book in Afrikaans in the older Mobipocket style, whose records carry two trailing entries.
 Of more than 40 real books checked when these were chosen, none decoded to less text than it declared, and two dictionaries decoded to 166 bytes more, which the reader cuts off.
 `samples.tsv` gives each one's source.
