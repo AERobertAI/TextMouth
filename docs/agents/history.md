@@ -727,3 +727,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - The two remaining contrast findings were proven to be false positives from the screenshots on November 9, 2026.
 - The probe test that put the sheet buttons back in `.cancellationAction` and read the sheet's tree was run on November 8, 2026.
+
+## From Shared helpers
+
+- The soft hyphen's effects (Search in Book, braille, speech) were measured on November 9, 2026.
+- XMLEscaping.markup(_:) dates from November 13, 2026.
+- MarkdownNesting, the first layer of the guard on Markdown's nesting, dates from November 13, 2026.
