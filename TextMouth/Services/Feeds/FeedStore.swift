@@ -426,8 +426,32 @@ final class FeedStore: ObservableObject {
     /// has settled that failure meanwhile, the feed is gone, or the data
     /// directory can't be written now, which keeps the feed unsaved for its
     /// return.
+    ///
+    /// While an operation holds the storage work (a data-directory move,
+    /// Rebuild Directory, a folder edit, Move to Library, a switch of
+    /// libraries), the retry waits for it as every write does: the failure
+    /// now gives that operation as its reason, in the words its refusals use
+    /// (`StorageBusyError`), and the record is written as `write(_:)` writes
+    /// it, once the hold ends, in the data directory in use then, which
+    /// settles the failure. Waiting here instead held the main thread for
+    /// good behind a write already waiting for the hold, which only the main
+    /// actor releases; and writing here, on the main thread, ran unrecorded
+    /// across the hold (`StorageBoundary.perform`), into a data directory a
+    /// move was copying, and called the change saved. With no hold, none can
+    /// begin until the write below ends: every hold is taken on the main
+    /// actor, which waits for it.
     private func retryWrite(of feedID: UUID, failureID: PersistenceFailure.ID) {
         guard let record = records[feedID]?.durable, !location.isUnavailable() else { return }
+        if let operation = location.boundary.heldFor {
+            let file = FeedPaths.recordFile(of: feedID, in: location.currentFolder())
+            noteWrite(
+                of: feedID,
+                title: record.feed.title,
+                failure: WriteFailure(error: StorageBusyError(reason: operation), path: file.path)
+            )
+            write(feedID)
+            return
+        }
         let location = location
         let failureCenter = failureCenter
         let attempt: (wrote: Bool, failure: WriteFailure?) = writeQueue.sync {

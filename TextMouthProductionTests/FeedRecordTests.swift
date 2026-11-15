@@ -281,13 +281,7 @@ final class FeedRecordTests: XCTestCase {
         let oldRoot = try makeSandboxDirectory("FeedMoveOld")
         let newRoot = try makeSandboxDirectory("FeedMoveNew")
         let boundary = StorageBoundary(root: oldRoot)
-        let location = FeedStore.Location(
-            currentFolder: { FeedPaths.recordsFolder(in: boundary.current.root) },
-            folder: { FeedPaths.recordsFolder(in: $0.root) },
-            boundary: boundary,
-            isUnavailable: { false }
-        )
-        let store = FeedStore(location: location)
+        let store = FeedStore(location: Self.location(movingWith: boundary))
         let record = Self.record(itemCount: 1)
 
         let hold = try boundary.holdWork(for: .movingDataDirectory)
@@ -386,6 +380,83 @@ final class FeedRecordTests: XCTestCase {
         again.clear()
     }
 
+    // MARK: - A Retry While Storage Work Is Held
+
+    /// A retry pressed while an operation holds the storage work, as a
+    /// folder edit moving books does, never holds the main thread, which
+    /// that operation needs to end: a change made meanwhile already waits
+    /// for the hold, and the retry used to wait behind it on the main thread
+    /// for good. The retry says the save waits for that operation, nothing
+    /// is written while the hold lasts, and the record is written as it is
+    /// now once the hold ends, which settles the failure.
+    func testARetryWhileStorageWorkIsHeldNeverHoldsTheMainThread() async throws {
+        let folder = try makeSandboxDirectory("FeedRetryHeld").appendingPathComponent("Feeds", isDirectory: true)
+        let boundary = StorageBoundary(root: folder.deletingLastPathComponent())
+        let failed = try await Self.storeWithAFailedWrite(at: .folder(folder, boundary: boundary))
+        let hold = try boundary.holdWork(for: .movingBooksBetweenFolders)
+        // Let go however the test ends, so no write waits for good.
+        defer { hold.release() }
+        let replayed = Date(timeIntervalSince1970: 1_790_200_000)
+        failed.store.updateItem(failed.itemID, of: failed.feedID) { $0.playedDate = replayed }
+
+        // A retry that waits on the main thread is freed by the watchdog
+        // letting the hold go, so the test fails instead of hanging.
+        let watchdog = HoldWatchdog(releasing: hold, after: .seconds(10))
+        let retried = recordingAnnouncements { failed.center.retry(.feedRecords) }
+        XCTAssertFalse(watchdog.standDown(), "the retry held the main thread until the hold was let go")
+
+        XCTAssertEqual(retried.announcements.map(\.message), [
+            "Retry did not succeed. Changes to the feed “The Tactile Atlas” could not be saved: "
+                + "TextMouth is moving books between folders. Try again when that finishes.",
+        ])
+        XCTAssertNil(try Self.playedDateOnDisk(failed.file), "the record was written while the hold lasted")
+        XCTAssertEqual(failed.store.unsavedFeedIDs, [failed.feedID])
+
+        hold.release()
+        await failed.store.flush()
+
+        XCTAssertEqual(try Self.playedDateOnDisk(failed.file), replayed)
+        XCTAssertEqual(failed.center.outstandingFailures().map(\.subject), [], "the write once the hold ended settled nothing")
+        XCTAssertEqual(failed.store.unsavedFeedIDs, [])
+    }
+
+    /// A retry pressed while a data-directory move holds the storage work
+    /// writes nothing into the data directory being copied, and the change
+    /// stays unsaved until it lands in the data directory the move
+    /// published. It used to write the old one at once, from the main
+    /// thread, and call the change saved, which the moved library never had.
+    func testARetryDuringAMoveLandsInTheDataDirectoryTheMovePublished() async throws {
+        let oldRoot = try makeSandboxDirectory("FeedRetryMoveOld")
+        let newRoot = try makeSandboxDirectory("FeedRetryMoveNew")
+        let boundary = StorageBoundary(root: oldRoot)
+        let failed = try await Self.storeWithAFailedWrite(at: Self.location(movingWith: boundary))
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        // Let go however the test ends, so no write waits for good.
+        defer { hold.release() }
+
+        let retried = recordingAnnouncements { failed.center.retry(.feedRecords) }
+
+        XCTAssertNil(try Self.playedDateOnDisk(failed.file), "the retry wrote into the data directory being moved")
+        XCTAssertEqual(
+            failed.center.outstandingFailures().map(\.subject),
+            [.feedRecord(feedID: failed.feedID, title: "The Tactile Atlas")],
+            "the change was called saved"
+        )
+        XCTAssertEqual(retried.announcements.map(\.message), [
+            "Retry did not succeed. Changes to the feed “The Tactile Atlas” could not be saved: "
+                + "TextMouth is already moving its data directory. Try again once that move is done.",
+        ])
+
+        boundary.publish(root: newRoot)
+        hold.release()
+        await failed.store.flush()
+
+        let moved = FeedPaths.recordFile(of: failed.feedID, in: FeedPaths.recordsFolder(in: newRoot))
+        XCTAssertEqual(try Self.playedDateOnDisk(moved), failed.played)
+        XCTAssertNil(try Self.playedDateOnDisk(failed.file), "the old data directory was written after the move")
+        XCTAssertEqual(failed.center.outstandingFailures().map(\.subject), [], "the write in the new data directory settled nothing")
+    }
+
     // MARK: - This Mac's Fetch Details
 
     /// Fetch details round-trip through this Mac's folder, one file per
@@ -451,5 +522,97 @@ final class FeedRecordTests: XCTestCase {
             )
         }
         return FeedRecord(feed: feed, items: items)
+    }
+
+    /// A store's location in whichever data directory `boundary` holds now,
+    /// as the app's follows a data-directory move.
+    private static func location(movingWith boundary: StorageBoundary) -> FeedStore.Location {
+        FeedStore.Location(
+            currentFolder: { FeedPaths.recordsFolder(in: boundary.current.root) },
+            folder: { FeedPaths.recordsFolder(in: $0.root) },
+            boundary: boundary,
+            isUnavailable: { false }
+        )
+    }
+
+    /// A store whose last write of a feed's record failed, outstanding with
+    /// its retry: the record as first written is on disk, and the change
+    /// that failed, an episode played at `played`, is only in memory.
+    private struct FailedWrite {
+        /// The store, reporting to `center`.
+        let store: FeedStore
+        /// Where the failure is outstanding.
+        let center: PersistenceFailureCenter
+        /// The feed whose record failed.
+        let feedID: UUID
+        /// Its one episode.
+        let itemID: FeedItem.ID
+        /// The record's file, which the store last wrote.
+        let file: URL
+        /// When the episode was played, in the change that failed.
+        let played: Date
+    }
+
+    /// A store at `location` with one feed's record written, then a change
+    /// of it that failed, its file obstructed while it was written and put
+    /// back as it was.
+    private static func storeWithAFailedWrite(at location: FeedStore.Location) async throws -> FailedWrite {
+        let center = PersistenceFailureCenter()
+        let store = FeedStore(location: location, failureCenter: center)
+        let record = Self.record(itemCount: 1)
+        let feedID = record.feed.id
+        let itemID = try XCTUnwrap(record.items.first?.id)
+        let file = FeedPaths.recordFile(of: feedID, in: location.currentFolder())
+        store.add(record)
+        await store.flush()
+        let obstruction = try WriteObstruction.place(at: file)
+        let played = Date(timeIntervalSince1970: 1_790_100_000)
+        store.updateItem(itemID, of: feedID) { $0.playedDate = played }
+        await store.flush()
+        obstruction.clear()
+        XCTAssertEqual(
+            center.outstandingFailures().map(\.subject),
+            [.feedRecord(feedID: feedID, title: "The Tactile Atlas")],
+            "the obstructed write did not fail"
+        )
+        return FailedWrite(store: store, center: center, feedID: feedID, itemID: itemID, file: file, played: played)
+    }
+
+    /// When the one episode of the record in `file` was played, as the file
+    /// holds it now; throws for a file that is not there or holds no episode.
+    private static func playedDateOnDisk(_ file: URL) throws -> Date? {
+        let record = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: Data(contentsOf: file))
+        return try XCTUnwrap(record.items.first, "the record on disk has no episode").playedDate
+    }
+}
+
+// MARK: - Holding Work Without Hanging
+
+/// Lets a hold on storage work go from another thread once `limit` has
+/// passed without the test standing the watchdog down, so a test whose main
+/// thread waits for the held work fails instead of hanging: only the main
+/// actor would let it go otherwise.
+private final class HoldWatchdog: Sendable {
+    /// Signalled when the test stands the watchdog down.
+    private let stoodDown = DispatchSemaphore(value: 0)
+    /// Whether the watchdog let the hold go.
+    private let letTheHoldGo = LockedValue(false)
+
+    /// A watchdog that lets `hold` go after `limit`, unless stood down first.
+    init(releasing hold: StorageWorkHold, after limit: DispatchTimeInterval) {
+        let stoodDown = stoodDown
+        let letTheHoldGo = letTheHoldGo
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard stoodDown.wait(timeout: .now() + limit) == .timedOut else { return }
+            // Noted before the hold goes, so the main thread it frees reads it.
+            letTheHoldGo.value = true
+            hold.release()
+        }
+    }
+
+    /// Stands the watchdog down, and returns whether it had let the hold go.
+    func standDown() -> Bool {
+        stoodDown.signal()
+        return letTheHoldGo.value
     }
 }
