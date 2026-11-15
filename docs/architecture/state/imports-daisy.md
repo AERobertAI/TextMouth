@@ -1,10 +1,10 @@
 # Imports: DAISY 3 books
-<!-- id: imports-daisy-3-books; keys: ; src: -->
+<!-- id: imports-daisy-3-books; keys: DAISY, DTBook, talking book, OPF, SMIL; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## DAISY 3 books of several DTBook files
-<!-- id: daisy-3-books-several-dtbook; keys: ; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Parsers/DAISYParser+SMILParser.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Models/PageReaderVersions.swift -->
+<!-- id: daisy-3-books-several-dtbook; keys: talking book, NCX, wordless page, reading order, audio clip, WebArchiveReader, SSMLReader, page markers; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Parsers/DAISYParser+SMILParser.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Parsers/DAISYParser+Audio.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Parsers/WebArchiveReader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/SSMLReader.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/Feeds/FeedTextConverter.swift -->
 
 DAISY 3 books of several DTBook files, and SMIL clocks (November 13, 2026): DAISYParser reads the package's DTBook files in one fixed order, orderedDTBookPaths(of:opfPath:in:), the same on every launch since pages are numbered through that order: (1) the spine's own DTBook items, in spine order, when the spine lists any; else (2) the order the spine's SMIL files point at them, by the src of their text elements (DAISYSMILParser.parseTextReferences(), a conformant DAISY 3 spine lists SMIL files), then any DTBook no SMIL file points at, in the manifest's order (a SMIL file that is missing or damaged orders nothing, so the files it would have pointed at come last, and a single file has no order to find, so no SMIL file is read); else (3) the manifest's document order, DAISYOPFResult.manifestOrder, which keeps the order the OPF lists the items in (an ID listed twice where it first appears), never the manifest dictionary's, whose order changed from one launch to the next.
 DTBookToMarkdownConverter(pagesBefore:) takes the number of pages the files before it read, and DTBookConversion.pagesRead hands it on, so a page that holds no words is numbered by its place in the whole book (1, 2, then 3, 4, not 1, 2, 1, 2).
