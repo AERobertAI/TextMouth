@@ -321,11 +321,26 @@ extension LibraryViewModel {
         case .identity:
             guard let expected = DataDirectoryPreferences.expectedIdentity.read(from: dataDirectoryEnvironment.preferences) else { return }
             do {
-                let restored = try LibraryIdentity.adopt(in: root, identifiedAs: expected)
+                // This runs on the main actor, so it never waits for a
+                // download: an identity file that arrived as a placeholder
+                // after the choice appeared is refused at once (reading the
+                // marker would otherwise download it, without a limit).
+                let restored = try DatalessFiles.withoutDownloading {
+                    try libraryIdentityAdopter(root, expected)
+                }
                 DiagnosticLog.event(
                     .storage,
                     "LIBRARY_IDENTITY: the listener chose to restore the identity of the library in \(name), "
-                        + "whose identity file did not arrive: \(restored.identity.id.uuidString)"
+                        + "whose identity file did not arrive: \(restored.id.uuidString)"
+                )
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                // The file is on its way after all: the check that follows
+                // names it as only in the cloud, and the fetch, which has a
+                // limit, brings it.
+                DiagnosticLog.event(
+                    .storage,
+                    "LIBRARY_IDENTITY: the identity file of the library in \(name) arrived as a placeholder; "
+                        + "checking again so it is fetched, not restoring it"
                 )
             } catch {
                 DiagnosticLog.event(

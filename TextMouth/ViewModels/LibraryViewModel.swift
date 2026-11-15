@@ -344,6 +344,14 @@ final class LibraryViewModel: ObservableObject {
     /// `openLibraryWithoutTheAwaitedFile()`), for the rest of this session;
     /// nil until then. The check of any other folder still waits.
     var libraryIndexWaitWaivedFor: String?
+    /// Writes the identity file the listener chose to restore, with the
+    /// identity this Mac expects, into the data directory at the first
+    /// argument, and returns the identity it holds then
+    /// (`openLibraryWithoutTheAwaitedFile()`). `LibraryIdentity.adopt` unless
+    /// a test stands for a file that is only a placeholder.
+    var libraryIdentityAdopter: (URL, UUID) throws -> LibraryIdentity = { root, id in
+        try LibraryIdentity.adopt(in: root, identifiedAs: id).identity
+    }
     /// The fetch of those files while one runs (LibraryViewModel+LibraryFetch);
     /// nil otherwise, so a second never starts beside it.
     var libraryFetchTask: Task<Void, Never>?

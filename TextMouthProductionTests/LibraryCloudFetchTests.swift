@@ -73,6 +73,40 @@ final class LibraryCloudFetchTests: XCTestCase {
         XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
     }
 
+    /// An identity file that arrived as a placeholder after the choice
+    /// appeared is never waited for on the main thread: reading it is
+    /// refused at once, as it is inside `DatalessFiles.withoutDownloading`,
+    /// and the choice goes straight to checking again, whose fetch (which
+    /// has a limit) brings it. The library then opens with the identity the
+    /// file holds, and no other was made.
+    func testAnIdentityThatArrivedAsAPlaceholderGoesStraightToTheFetch() throws {
+        let world = try CloudWorld(test: self, label: "IdentityPlaceholder")
+        let root = world.fixture.root
+        let marker = LibraryIdentity.markerURL(in: root)
+        let expected = try XCTUnwrap(DataDirectoryPreferences.expectedIdentity.read(from: world.fixture.preferences))
+        let saved = try Data(contentsOf: marker)
+        try FileManager.default.removeItem(at: marker)
+        let model = world.launch()
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .identity }, "the wait never ended in the choice")
+
+        // The file shows up as a placeholder: reading it is refused, as a
+        // read of a dataless file is where downloads are off. It is then
+        // only in the cloud, and the fetch brings it.
+        var adoptions = 0
+        model.libraryIdentityAdopter = { _, _ in
+            adoptions += 1
+            throw POSIXError(.EDEADLK)
+        }
+        world.keepInCloud(marker)
+        world.whenFetched(marker) { try saved.write(to: marker) }
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertEqual(adoptions, 1, "the restore was not tried inside the guard")
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertEqual(world.fetched.names(in: root), ["library-identity.json"], "the choice did not go to the fetch")
+        XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
+    }
+
     /// The words of the choice: the reason names the file that did not come,
     /// what to check, and the button, whose title says it asks first; the
     /// question says what opening does.
