@@ -105,6 +105,94 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertNil(world.center.store.record(of: feed.id)?.item("guid:ep-1")?.playedDate)
     }
 
+    // MARK: - Played by Hand and the Reading List
+
+    /// Puts `books` and a book of the library's own on the reading list, in
+    /// that order after the library's own, with the option to take finished
+    /// books off set as `removesFinished`; returns the library's own book,
+    /// which no marking touches.
+    private func listBooks(_ books: [Book], in world: FeedTestWorld, removesFinished: Bool) -> Book {
+        let ownBook = Book(title: "Ferry Songs", format: .audio, filePath: "/Ferry Songs.m4a", md5Hash: "")
+        world.library.library.books.append(ownBook)
+        world.library.library.readingList = ReadingList(
+            bookIDs: [ownBook.id] + books.map(\.id),
+            removesFinished: removesFinished
+        )
+        return ownBook
+    }
+
+    /// Mark Played takes the episode off the reading list when the list
+    /// drops finished books, at once, and leaves the other books and the
+    /// other episodes on it.
+    func testMarkingAnEpisodePlayedTakesItOffTheListWhenTheOptionIsOn() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMarkPlayedLeavesList")
+        let (feed, books) = try await feedWithDownloads(episodes: 2, downloading: 2, in: world)
+        let ownBook = listBooks(books, in: world, removesFinished: true)
+
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+
+        XCTAssertEqual(world.library.library.readingList.bookIDs, [ownBook.id, books[1].id])
+    }
+
+    /// With the option off, Mark Played and Mark All Played change nothing
+    /// on the list.
+    func testMarkingAnEpisodePlayedKeepsItOnTheListWhenTheOptionIsOff() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMarkPlayedKeepsList")
+        let (feed, books) = try await feedWithDownloads(episodes: 2, downloading: 2, in: world)
+        let ownBook = listBooks(books, in: world, removesFinished: false)
+
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        world.center.markAllPlayed(of: feed.id)
+
+        XCTAssertEqual(world.library.library.readingList.bookIDs, [ownBook.id] + books.map(\.id))
+    }
+
+    /// Mark All Played takes every episode it marks off the list at once,
+    /// and only those: the library's own book stays, and so does a book
+    /// that is no episode of the feed.
+    func testMarkingAllPlayedTakesTheFeedsEpisodesOffTheList() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMarkAllLeavesList")
+        let (feed, books) = try await feedWithDownloads(episodes: 2, downloading: 2, in: world)
+        let ownBook = listBooks(books, in: world, removesFinished: true)
+        let other = Book(title: "Harbour Lights", format: .epub, filePath: "/Harbour Lights.epub", md5Hash: "")
+        world.library.library.books.append(other)
+        world.library.library.readingList = ReadingList(
+            bookIDs: world.library.library.readingList.bookIDs + [other.id],
+            removesFinished: true
+        )
+
+        XCTAssertEqual(world.center.markAllPlayed(of: feed.id), 2)
+
+        XCTAssertEqual(world.library.library.readingList.bookIDs, [ownBook.id, other.id])
+    }
+
+    /// An episode marked played while a reader rests on it from the list
+    /// stays until that reader lets go, then leaves; marking it unplayed
+    /// before then keeps it, and marking unplayed puts nothing back.
+    func testAnEpisodeMarkedPlayedStaysWhileAReaderRestsOnItAndUnplayedKeepsIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMarkPlayedHeld")
+        let (feed, books) = try await feedWithDownloads(episodes: 2, downloading: 2, in: world)
+        _ = listBooks(books, in: world, removesFinished: true)
+        // A reader rests on each episode, as one read from the list does.
+        world.library.holdFinishedBookOnReadingList(books[0].id)
+        world.library.holdFinishedBookOnReadingList(books[1].id)
+
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        world.center.markPlayed("guid:ep-2", of: feed.id)
+        XCTAssertTrue(world.library.library.readingList.contains(books[0].id), "left with a reader resting on it")
+        XCTAssertTrue(world.library.library.readingList.contains(books[1].id), "left with a reader resting on it")
+
+        world.center.markUnplayed("guid:ep-2", of: feed.id)
+        world.library.releaseFinishedBookFromReadingList(books[0].id)
+        world.library.releaseFinishedBookFromReadingList(books[1].id)
+        XCTAssertFalse(world.library.library.readingList.contains(books[0].id), "stayed after its reader moved on")
+        XCTAssertTrue(world.library.library.readingList.contains(books[1].id), "left though it is unplayed again")
+
+        // Unplayed again, a book already off the list is not put back.
+        world.center.markUnplayed("guid:ep-1", of: feed.id)
+        XCTAssertFalse(world.library.library.readingList.contains(books[0].id))
+    }
+
     // MARK: - Deleted After Playing
 
     /// A played download is deleted once the set number of days has passed,

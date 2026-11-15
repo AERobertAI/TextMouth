@@ -298,6 +298,19 @@ extension LibraryViewModel: FeedLibraryHost {
         library.readingList.contains(bookID)
     }
 
+    /// Takes the books `bookIDs`, feed items just marked played by hand,
+    /// off the reading list when it drops finished books
+    /// (`booksMarkedPlayedByHand(_:)`).
+    func feedBooksMarkedPlayed(_ bookIDs: [UUID]) {
+        booksMarkedPlayedByHand(bookIDs)
+    }
+
+    /// Lets the books `bookIDs`, feed items just marked unplayed by hand,
+    /// stay on the reading list (`booksMarkedUnplayedByHand(_:)`).
+    func feedBooksMarkedUnplayed(_ bookIDs: [UUID]) {
+        booksMarkedUnplayedByHand(bookIDs)
+    }
+
     /// Publishes the books open in readers whenever they change.
     var feedBooksOpenInReadersChanges: AnyPublisher<Set<UUID>, Never> {
         $openBookIDs.eraseToAnyPublisher()
