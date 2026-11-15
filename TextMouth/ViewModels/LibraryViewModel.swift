@@ -460,7 +460,10 @@ final class LibraryViewModel: ObservableObject {
 
         // Ensure directory structure exists on first launch
         try? TextMouthPaths.ensureDirectoryStructure()
-        recordLibraryIdentity()
+        // Whether the library had an index before this startup gave it an
+        // identity: one that had none is new (`saveIndexOfNewLibrary(...)`).
+        let hadIndex = FileManager.default.fileExists(atPath: TextMouthPaths.libraryIndexFile.path)
+        let madeIdentity = recordLibraryIdentity()
         // Clear what ZIP imports interrupted by a crash left extracted.
         removeLeftoverArchiveExtractions()
         // Clear the reading texts this Mac kept that went unused for a day,
@@ -470,6 +473,7 @@ final class LibraryViewModel: ObservableObject {
         // Load the index and run the startup repair; an unreadable index
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
+        saveIndexOfNewLibrary(madeIdentity: madeIdentity, hadIndex: hadIndex)
         setupDataDirectoryChangeHandler()
         // Delete the originals of recordings and edited audiobooks whose
         // time is up, off the main thread, downloading nothing (FR04).
@@ -703,11 +707,16 @@ extension LibraryViewModel {
     /// directory without a bookmark, chosen before bookmarks came in, gets
     /// one. A failure is logged and changes nothing: the next opening tries
     /// again.
-    func recordLibraryIdentity() {
+    ///
+    /// - Returns: Whether the library was given a new identity now.
+    @discardableResult
+    func recordLibraryIdentity() -> Bool {
         let root = TextMouthPaths.root
         let preferences = dataDirectoryEnvironment.preferences
+        var madeIdentity = false
         do {
             let adopted = try LibraryIdentity.adopt(in: root)
+            madeIdentity = adopted.isNew
             if adopted.isNew {
                 DiagnosticLog.event(
                     .storage,
@@ -726,6 +735,24 @@ extension LibraryViewModel {
         if !TextMouthPaths.isDefaultLocation(root), DataDirectoryPreferences.bookmark.read(from: preferences) == nil {
             DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: root), to: preferences)
         }
+        return madeIdentity
+    }
+
+    /// Saves the index of a library that has just been made, once it is
+    /// loaded, so that library.json is beside the identity file from the
+    /// start (risk 5 of the local-first research). An empty library writes
+    /// no index until something changes, so its next launch, in a cloud
+    /// folder, would wait about 50 seconds for an index that was never
+    /// written and then say it hadn't arrived. A library that had an index
+    /// before it was given an identity, as one from before identities has,
+    /// or whose index is being recovered, is left as it is.
+    ///
+    /// - Parameters:
+    ///   - madeIdentity: Whether this startup gave the library its identity.
+    ///   - hadIndex: Whether library.json was there before this startup.
+    func saveIndexOfNewLibrary(madeIdentity: Bool, hadIndex: Bool) {
+        guard madeIdentity, !hadIndex, indexRecovery == nil else { return }
+        LibraryPersistenceService.saveAndWait(library)
     }
 
     // MARK: Try Again
