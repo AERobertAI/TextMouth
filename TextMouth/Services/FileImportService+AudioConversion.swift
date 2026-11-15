@@ -145,7 +145,9 @@ extension FileImportService {
     /// telling the run, and so the overlay, how many are done after each:
     /// "converting its audio: 12 of 176 tracks". `directory` is the staged
     /// package the run reports its steps in; `tool` is what converts (a
-    /// stand-in in tests).
+    /// stand-in in tests). Each source's chapters, an Ogg file's CHAPTER
+    /// comments or another format's markers, are kept in the .m4a's chapter
+    /// track (FMT17, `ImportAudioConverter.convert(_:naming:using:keepingChapters:)`).
     ///
     /// An import's Cancel (`ImportCancellation.current`, read here on the
     /// import's own thread, since the task the wait runs in does not inherit
@@ -166,7 +168,7 @@ extension FileImportService {
             for start in stride(from: 0, to: sources.count, by: size) {
                 let group = Array(sources[start..<min(start + size, sources.count)])
                 conversions += try AsyncBridge.waitForResult(cancelledBy: cancellation) {
-                    try await ImportAudioConverter.convertEach(group, naming: false, using: tool)
+                    try await ImportAudioConverter.convertEach(group, naming: false, using: tool, keepingChapters: true)
                 }
                 try run.begin(.convertingImportedAudio(done: conversions.count, of: sources.count), in: directory)
             }

@@ -1,0 +1,123 @@
+import AVFoundation
+
+/// Writes chapters into an MPEG-4 audio file the import has just converted
+/// (FMT17): an Ogg file's CHAPTERnnn comments, or another format's markers,
+/// which `afconvert` does not carry, as the chapter track AVFoundation reads
+/// back (`AudioPlaybackService.extractChapters`): the audio editor's own
+/// (`AudioChapterTrack`), laid out ahead of the audio as the editor lays it.
+///
+/// The file's samples are copied exactly as they are stored, never decoded
+/// and encoded again, so a chapter list costs no second lossy generation;
+/// its tags are kept. The new file is written under a hidden name beside the
+/// old, which a leftover sweep knows (`ImportAudioConverter.temporarySuffix`),
+/// and takes its place only once whole; any failure leaves the old file as
+/// it was.
+///
+/// Only a file of TextMouth's own converting is opened: an .m4a whose bytes
+/// are no Ogg (`ImportAudioConverter.isNeverDecodedInApp`), the one file kind
+/// the import's conversion writes.
+enum ChapterTrackWriter {
+    /// Gives the .m4a at `file`, which lasts `duration` seconds, the chapters
+    /// `chapters` lists, made into a book's chapters as every list read by
+    /// hand is (`NeroChapterReader.bookChapters(from:fileDuration:)`: sorted,
+    /// each lasting until the next, the first from the start). A list that
+    /// makes no chapter changes nothing.
+    /// - Throws: `AudioEditError.unreadableAudio` for a file this writer
+    ///   never opens or that has no audio track, `AudioEditError.renderFailed`
+    ///   when AVFoundation refuses the copy, `CancellationError`, or the file
+    ///   system's error taking the file's place; `file` is as it was.
+    static func write(_ chapters: [NeroChapterReader.Chapter], into file: URL, lasting duration: TimeInterval) async throws {
+        let list = NeroChapterReader.bookChapters(from: chapters, fileDuration: duration)
+        guard !list.isEmpty else { return }
+        guard !ImportAudioConverter.isNeverDecodedInApp(file) else { throw AudioEditError.unreadableAudio }
+
+        let asset = AVURLAsset(url: file) // lint-ok: the import's own .m4a, refused above when it is of a converted format or Ogg
+        guard let track = try await asset.loadTracks(withMediaType: .audio).first else {
+            throw AudioEditError.unreadableAudio
+        }
+        let hint = try await track.load(.formatDescriptions).first
+        let tags = (try? await asset.load(.metadata)) ?? []
+
+        let staged = file.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)")
+        do {
+            try await copy(track, of: asset, hint: hint, tags: tags, chapters: list, to: staged)
+            // The whole new file takes the old one's place in one step.
+            _ = try FileManager.default.replaceItemAt(file, withItemAt: staged)
+        } catch {
+            try? FileManager.default.removeItem(at: staged)
+            throw error
+        }
+    }
+
+    /// Writes `track` of `asset`, its samples as they are stored (their
+    /// format `hint`), with `tags` and the chapter track of `chapters`, to a
+    /// new .m4a at `destination`.
+    private static func copy(
+        _ track: AVAssetTrack,
+        of asset: AVURLAsset,
+        hint: CMFormatDescription?,
+        tags: [AVMetadataItem],
+        chapters: [(title: String, startTime: TimeInterval, duration: TimeInterval)],
+        to destination: URL
+    ) async throws {
+        let reader: AVAssetReader
+        do {
+            reader = try AVAssetReader(asset: asset) // lint-ok: the same own .m4a, its samples copied, never decoded
+        } catch {
+            throw AudioEditRenderer.failure(error)
+        }
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        reader.add(output)
+
+        let writer: AVAssetWriter
+        do {
+            writer = try AVAssetWriter(outputURL: destination, fileType: .m4a)
+        } catch {
+            throw AudioEditRenderer.failure(error)
+        }
+        let audio = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: hint)
+        audio.expectsMediaDataInRealTime = false
+        guard writer.canAdd(audio) else { throw AudioEditError.renderFailed("the writer refused the audio") }
+        writer.add(audio)
+
+        // The chapter list, as the audio editor writes one: a disabled text
+        // track the audio names as its chapters, ahead of the audio.
+        let format = try AudioChapterTrack.formatDescription()
+        let titles = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: format)
+        titles.marksOutputTrackAsEnabled = false
+        titles.mediaDataLocation = .beforeMainMediaDataNotInterleaved
+        guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") }
+        writer.add(titles)
+        audio.addTrackAssociation(withTrackOf: titles, type: AVAssetTrack.AssociationType.chapterList.rawValue)
+        writer.metadata = tags
+
+        guard reader.startReading() else { throw AudioEditRenderer.failure(reader.error) }
+        guard writer.startWriting() else {
+            reader.cancelReading()
+            throw AudioEditRenderer.failure(writer.error)
+        }
+        writer.startSession(atSourceTime: .zero)
+        do {
+            for chapter in chapters {
+                let marker = AudioRenderChapter(start: chapter.startTime, duration: chapter.duration, title: chapter.title)
+                try await AudioEditRenderer.append(try AudioChapterTrack.sample(marker, format: format), to: titles, of: writer)
+            }
+            titles.markAsFinished()
+            while let buffer = output.copyNextSampleBuffer() {
+                try Task.checkCancellation()
+                try await AudioEditRenderer.append(buffer, to: audio, of: writer)
+            }
+            guard reader.status == .completed else { throw AudioEditRenderer.failure(reader.error) }
+        } catch {
+            reader.cancelReading()
+            writer.cancelWriting()
+            throw error
+        }
+        audio.markAsFinished()
+        await writer.finishWriting()
+        guard writer.status == .completed else { throw AudioEditRenderer.failure(writer.error) }
+    }
+}

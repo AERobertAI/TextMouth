@@ -1053,8 +1053,9 @@ enum AudioEditRenderer {
         return placed
     }
 
-    /// Appends `sample` to `input` once it is ready for more.
-    private static func append(_ sample: CMSampleBuffer, to input: AVAssetWriterInput, of writer: AVAssetWriter) async throws {
+    /// Appends `sample` to `input` once it is ready for more. Internal so the
+    /// import's chapter track writer appends the same way (`ChapterTrackWriter`).
+    static func append(_ sample: CMSampleBuffer, to input: AVAssetWriterInput, of writer: AVAssetWriter) async throws {
         while !input.isReadyForMoreMediaData {
             try Task.checkCancellation()
             guard writer.status == .writing else { throw failure(writer.error) }
