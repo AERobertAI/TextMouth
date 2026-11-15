@@ -246,8 +246,7 @@ The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-p
 - The session reads and clears it in its initializer, which runs at launch, before any reader exists.
   - It keeps what it read in `openingBookAtLastEnd`.
   - `takeReopeningAtLaunch(fileOpened:)` acts on it at the first activation.
-- It used to be read at the first activation.
-  A Play from the lock screen that wakes a killed app opens a book first and writes its own mark, and the first activation then read that mark as a crash.
+- It is not read at the first activation: a Play from the lock screen that wakes a killed app opens a book first and writes its own mark, which the first activation would take for a crash.
 - The reopen keys are cleared with the guard (0.4.3), in the same step, as the session is made.
   - The three keys are `reopenBookKey`, `reopenShowsReaderKey`, and `reopenFromReadingListKey`.
     `PhoneSession.init` removes them when it finds a guard, with `forgetReopening(in:)`, the one place that lists them.
@@ -256,9 +255,8 @@ The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-p
     Now it reopens nothing.
   - Without a guard, `init` leaves the keys for the first activation, which reopens the book as before.
 - The verdict branch of `takeReopeningAtLaunch(fileOpened:)` keeps the keys of a book opened since.
-  - It used to clear the keys too.
-    A Play from the lock screen that opened a book before the first activation had written keys of its own, and the verdict wiped them.
-  - Now the verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
+  - It does not clear the keys either: a Play from the lock screen that opens a book before the first activation writes keys of its own.
+  - The verdict only says "TextMouth closed while opening <title>, so it wasn't reopened." and forgets the guard.
     The keys of the book opened since stand.
   - The tests: `testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound` in `PhoneSessionTests`, and `PhoneLifeCycleReopeningTests`, whose crash test writes the keys beside the guard, before the session, and asserts the keys are gone after `reopenAtLaunch`.
   - Still open, and older than this change: `registerOpenBook` saves the book being opened as the last opened.
@@ -278,8 +276,7 @@ The Search in Book of branch `ios/search-1109` (see [Search in Book](platforms-p
 - The keeper tells its `apply` closure whether the screen should stay awake, once per change.
   The screen should stay awake while any hold is in force.
 - `UIApplication.isIdleTimerDisabled` is one app-wide flag.
-  - The import copier and Book content each used to set it and clear it.
-  - Whichever let go first let the screen lock for the other.
+  - Two owners that each set it and then cleared it would let whichever let go first lock the screen for the other.
 - `PhoneScreenSleep`, in `Platform/iOS/Services`, holds the one keeper, whose `apply` sets the flag.
   Nothing else sets the flag.
 - The keeper imports no UIKit, so the Mac's tests decide every case.
