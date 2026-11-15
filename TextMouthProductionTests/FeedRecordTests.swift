@@ -501,7 +501,9 @@ final class FeedRecordTests: XCTestCase {
     /// switch of libraries, which begins only with nothing unsaved and ends
     /// with TextMouth opening again elsewhere, that they stay unsaved here.
     func testAWaitingRetrySaysWhenTheChangesAreSaved() {
-        let said = StorageHoldReason.allCases.map { FeedRecordWaitsForStorageWork(operation: $0).localizedDescription }
+        let said = StorageHoldReason.allCases.map {
+            RetryWaitsForStorageWork(operation: $0, action: .save).localizedDescription
+        }
 
         XCTAssertEqual(said, [
             "TextMouth saves them once the move of its data directory ends.",
@@ -509,6 +511,38 @@ final class FeedRecordTests: XCTestCase {
             "TextMouth saves them once it has finished moving books between folders.",
             "TextMouth is opening again on another library, so they stay unsaved in this one.",
         ])
+    }
+
+    /// A retry pressed while an operation holds the failure center's own
+    /// boundary, which in the app the store shares, is kept by the center:
+    /// nothing is written while the hold lasts and the row says when the
+    /// changes are saved; once the hold ends the center runs the retry,
+    /// which writes the record as it is then, and the save is heard once.
+    func testTheFailureCenterKeepsAFeedRetryWhileItsBoundaryIsHeld() async throws {
+        let folder = try makeSandboxDirectory("FeedRetryKept").appendingPathComponent("Feeds", isDirectory: true)
+        let boundary = StorageBoundary(root: folder.deletingLastPathComponent())
+        let failed = try await Self.storeWithAFailedWrite(at: .folder(folder, boundary: boundary), sharingTheBoundary: true)
+        let hold = try boundary.holdWork(for: .movingBooksBetweenFolders)
+        // Let go however the test ends, so no write waits for good.
+        defer { hold.release() }
+
+        let retried = recordingAnnouncements { failed.center.retry(.feedRecords) }
+
+        XCTAssertEqual(retried.announcements.map(\.message), [
+            "Retry did not succeed. Changes to the feed “The Tactile Atlas” could not be saved: "
+                + "TextMouth saves them once it has finished moving books between folders.",
+        ])
+        XCTAssertNil(try Self.playedDateOnDisk(failed.file), "the record was written while the hold lasted")
+        XCTAssertTrue(failed.center.hasUnsavedChanges)
+
+        hold.release()
+        let ran = recordingAnnouncements { failed.center.runRetriesKeptForStorageWork() }
+        await failed.center.waitForRetriesKeptForStorageWork()
+        await failed.store.flush()
+
+        XCTAssertEqual(ran.announcements.map(\.message), ["Feed subscriptions saved."], "the kept retry's save was not heard once")
+        XCTAssertEqual(try Self.playedDateOnDisk(failed.file), failed.played)
+        XCTAssertEqual(failed.center.outstandingFailures().map(\.subject), [], "the kept retry settled nothing")
     }
 
     // MARK: - This Mac's Fetch Details
@@ -609,9 +643,13 @@ final class FeedRecordTests: XCTestCase {
 
     /// A store at `location` with one feed's record written, then a change
     /// of it that failed, its file obstructed while it was written and put
-    /// back as it was.
-    private static func storeWithAFailedWrite(at location: FeedStore.Location) async throws -> FailedWrite {
-        let center = PersistenceFailureCenter()
+    /// back as it was. With `sharingTheBoundary`, the failure center waits
+    /// for the store's own boundary, as the app's center and store share one.
+    private static func storeWithAFailedWrite(
+        at location: FeedStore.Location,
+        sharingTheBoundary: Bool = false
+    ) async throws -> FailedWrite {
+        let center = sharingTheBoundary ? PersistenceFailureCenter(boundary: location.boundary) : PersistenceFailureCenter()
         let store = FeedStore(location: location, failureCenter: center)
         let record = Self.record(itemCount: 1)
         let feedID = record.feed.id

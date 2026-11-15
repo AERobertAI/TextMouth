@@ -289,9 +289,8 @@ struct RetryWaitsForStorageWork: LocalizedError, Equatable {
 
 /// The words for a retry that waits while an operation holds the storage
 /// work: what TextMouth does once the operation ends, as the reason that
-/// ends a failure's sentence. They are a feed record's words for the same
-/// wait (`FeedWording.recordWaits(for:)`, fix/feed-save-race), with the
-/// verb of what the retry does.
+/// ends a failure's sentence, for every subsystem's retry, a feed record's
+/// included (`FeedStore.retryWrite`), with the verb of what the retry does.
 enum StorageWorkWaitWording {
     /// What a waiting retry does once the operation ends.
     enum Action: Equatable, Sendable {
@@ -663,14 +662,21 @@ final class PersistenceFailureCenter: ObservableObject {
     }
 
     /// Tells VoiceOver how a retry of `subsystem` went once the writes it
-    /// had to wait for have ended, as `retry(_:)` tells of one that ran at
-    /// once: "Feed subscriptions saved.", or "Retry did not succeed." and the
-    /// row. A feed's record waits while an operation holds the storage work,
-    /// and its store calls this once the last such write has ended
-    /// (`FeedStore`), so the save it promised is never a silent one.
+    /// had to wait for have ended (`announceOutcomeOfWaitingRetries(of:)`):
+    /// a feed store whose boundary is not the center's calls this once the
+    /// last such write has ended (`FeedStore`).
     func announceOutcomeOfWaitingRetry(of subsystem: PersistenceSubsystem) {
+        announceOutcomeOfWaitingRetries(of: [subsystem])
+    }
+
+    /// Tells VoiceOver how the retries of `subsystems` went once the writes
+    /// they had to wait for have ended, as `retry(_:)` tells of one that ran
+    /// at once, in one announcement: "Feed subscriptions saved. Settings
+    /// saved.", or "Retry did not succeed." and the rows still failing. So
+    /// the save a waiting retry promised is never a silent one.
+    func announceOutcomeOfWaitingRetries(of subsystems: Set<PersistenceSubsystem>) {
         publish()
-        announceRetryOutcome(for: [subsystem])
+        announceRetryOutcome(for: subsystems)
     }
 
     /// Hides `subsystem`'s banner row until the subsystem has no failure
@@ -731,8 +737,7 @@ final class PersistenceFailureCenter: ObservableObject {
         let kept = retriesKeptForStorageWork
         retriesKeptForStorageWork = [:]
         rerun(outstandingFailures().filter { kept[$0.key] != nil })
-        publish()
-        announceRetryOutcome(for: Set(kept.values))
+        announceOutcomeOfWaitingRetries(of: Set(kept.values))
     }
 
     /// Returns once no retry is kept for an operation holding the storage

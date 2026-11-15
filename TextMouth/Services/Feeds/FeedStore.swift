@@ -80,20 +80,6 @@ enum FeedRecordCoding {
     }
 }
 
-/// Why a retry has not written a feed's record yet: `operation` holds the
-/// storage work, and the record is written once the hold ends
-/// (`FeedStore.retryWrite(of:failureID:)`). Its description is the reason the
-/// banner and VoiceOver give, which says when the changes are saved
-/// (`FeedWording.recordWaits(for:)`).
-struct FeedRecordWaitsForStorageWork: LocalizedError, Equatable {
-    /// The operation holding the storage work.
-    let operation: StorageHoldReason
-
-    var errorDescription: String? {
-        FeedWording.recordWaits(for: operation)
-    }
-}
-
 // MARK: - The Store
 
 /// Every subscription's record, on the main actor (FR03).
@@ -467,10 +453,13 @@ final class FeedStore: ObservableObject {
         }
         guard records[feedID] != nil else { return }
         unsavedFeedIDs.insert(feedID)
+        // The failure center keeps the retry while an operation holds the
+        // storage work, and runs it once that ends (`retryWrite`).
         failureCenter.recordFailure(
             .feedRecord(feedID: feedID, title: title),
             path: failure.path,
-            error: failure.error
+            error: failure.error,
+            waitsForStorageWork: true
         ) { [weak self] failureID in
             self?.retryWrite(of: feedID, failureID: failureID)
         }
@@ -487,9 +476,13 @@ final class FeedStore: ObservableObject {
     ///
     /// While an operation holds the storage work (a data-directory move,
     /// Rebuild Directory, a folder edit, Move to Library, a switch of
-    /// libraries), the retry waits for it as every write does: the failure
+    /// libraries), the failure center keeps the retry and runs it once the
+    /// operation ends (`PersistenceFailure.waitsForStorageWork`), so this
+    /// runs during a hold only for a store whose boundary is not the
+    /// center's, as a test's may be: it is the guard for that case. Then the
+    /// retry waits for it as every write does: the failure
     /// now says it waits, and when the changes are saved
-    /// (`FeedRecordWaitsForStorageWork`), and the record is written as
+    /// (`RetryWaitsForStorageWork`), and the record is written as
     /// `write(_:)` writes it, once the hold ends, in the data directory in
     /// use then, which settles the failure; VoiceOver then hears how it went
     /// (`noteEndOfWaitingRetry(of:)`). Waiting here instead held the main
@@ -509,7 +502,7 @@ final class FeedStore: ObservableObject {
             recordOutcome(
                 of: feedID,
                 title: record.feed.title,
-                failure: WriteFailure(error: FeedRecordWaitsForStorageWork(operation: operation), path: file.path)
+                failure: WriteFailure(error: RetryWaitsForStorageWork(operation: operation, action: .save), path: file.path)
             )
             retriesWaiting.insert(feedID)
             write(feedID)
