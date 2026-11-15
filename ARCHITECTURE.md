@@ -23,6 +23,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [The data directory](docs/architecture/state/data-directory.md)
 - [Cloud state](docs/architecture/state/cloud-state.md)
 - [Preferences](docs/architecture/state/preferences.md)
+  - [Preferences: keyboard shortcuts](docs/architecture/state/preferences-shortcuts.md)
 - [The reader](docs/architecture/state/reader.md)
 - [Media playback](docs/architecture/state/media-playback.md)
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
