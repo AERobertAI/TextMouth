@@ -7,6 +7,18 @@ TextMouth keeps everything in one data directory: .TextMouth in your home folder
 Any folder can hold it, hidden or not: on this Mac, on an external or network drive, or in a cloud folder such as iCloud Drive, Dropbox, or Google Drive (see [Keeping your library in the cloud](cloud-library.md)).
 That choice itself is kept in TextMouth's preferences, with a bookmark of the folder and the identity of the library in it, because config.json lives inside the directory it names.
 
+## What the library's folders hold
+<!-- id: library-folders-other-pages; keys: data directory contents, library files, logs, caches, helper programs, book package; src: TextMouth/Services/TextMouthPaths.swift -->
+
+This page covers choosing the location, moving the library, and a library that is not available.
+The rest is on these pages.
+
+- [What the data directory holds](data-directory-files.md): library.json, settings files, feeds, and sessions.
+- [A book's package](book-packages.md): the files inside each book's folder.
+- [The diagnostic logs](library-logs.md): the log files and where they go.
+- [Folders of this Mac's own](this-macs-folders.md): working copies, staging, recordings, and caches.
+- [Helper programs TextMouth watches](helper-programs.md): the converters, textutil, and the braille helper.
+
 ## Choosing a location
 <!-- id: choosing-location; keys: Storage tab, Settings, storage location, move the library; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
 
