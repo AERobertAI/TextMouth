@@ -286,17 +286,28 @@ The feed, OPML, SSML, and export writers use it (see [Known duplication](known-d
 ## MarkdownNesting
 <!-- id: markdownnesting; keys: block quote depth, list depth, stack overflow, nested lists; src: TextMouth/Parsers/MarkdownNesting.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/Export/ExportDocumentWalker.swift -->
 
-MarkdownNesting (Parsers/MarkdownNesting.swift) is the first layer of the guard on Markdown's nesting: one linear pass over a Markdown text's bytes that finds how deep its block quotes and lists can nest (a `>` opens a quote, a list marker a list item, a marker after another on the line a list inside it, each two columns of white space before a quote or marker one more level, a tab four; the white space after a `>` or a marker is not counted; a thematic break such as `* * *` opens nothing; lines in code fences count like any other).
+MarkdownNesting (Parsers/MarkdownNesting.swift) is the first layer of the guard on Markdown's nesting: one linear pass over a Markdown text's bytes that finds how deep its block quotes and lists can nest:
+- a `>` opens a quote, a list marker a list item, a marker after another on the line a list inside it, each two columns of white space before a quote or marker one more level, a tab four;
+- the white space after a `>` or a marker is not counted;
+- a thematic break such as `* * *` opens nothing;
+- lines in code fences count like any other.
 The count is never less than the tree's real depth in block containers and stops as soon as it passes the limit.
-MarkdownDocParser.parseChapter refuses past MarkupGuard.limits.deepestNesting (128) with MarkupRefusal.nestedTooDeeply, the sentence the HTML guard gives, before anything is built, and then parses, walks, and releases the tree on MarkupGuard.onLargeStack, the walk stopping at the limit on the tree (PlainTextExtractor.deepestTree: Limits.deepestTree when set, else twice deepestNesting and 16, 272 levels).
+MarkdownDocParser.parseChapter:
+- refuses past MarkupGuard.limits.deepestNesting (128) with MarkupRefusal.nestedTooDeeply, the sentence the HTML guard gives, before anything is built;
+- and then parses, walks, and releases the tree on MarkupGuard.onLargeStack, the walk stopping at the limit on the tree (PlainTextExtractor.deepestTree: Limits.deepestTree when set, else twice deepestNesting and 16, 272 levels).
 A marker line's rest, which is parsed again, is counted first.
 Every caller goes through parseChapter: BookParser's .md and .txt, EPUB, MOBI, DOCX, DAISY, and content.md.
-Inline emphasis nesting is still bounded only by the file's size (a known follow-up: parse with cmark-gfm directly and measure the tree with cmark_iter before swift-markdown converts, which would close a leading U+FEFF and lazy paragraph continuation too); ExportDocumentWalker parses Markdown with no guard (board finding #5512).
+Inline emphasis nesting is still bounded only by the file's size (a known follow-up: parse with cmark-gfm directly and measure the tree with cmark_iter before swift-markdown converts, which would close a leading U+FEFF and lazy paragraph continuation too).
+ExportDocumentWalker parses Markdown with no guard (board finding #5512).
 
 ## AsyncBridge
 <!-- id: asyncbridge; keys: semaphore, timeout, synchronous wait, Task.detached, priority inversion, audio tags; src: TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/BookContentAnalysisService.swift -->
 
 AsyncBridge (Services/AsyncBridge.swift): lets synchronous parsing and analysis wait for async work, such as reading audio through AVFoundation.
-The work runs at the waiter's priority or .medium, whichever is higher (waitPriority(for:)), so no thread waits on work of lower priority (#1581). waitForResult(timeLimit:cancelledBy:of:) ends the wait after a limit (ST07): the detached task is cancelled, so work that follows cancellation ends, and work that ignores it finishes on its own and stores its late result where nobody reads it; TimeLimitExceeded is thrown ("Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it."), and ASYNC_TIME_LIMIT is logged, naming no file or title.
+The work runs at the waiter's priority or .medium, whichever is higher (waitPriority(for:)), so no thread waits on work of lower priority (#1581).
+waitForResult(timeLimit:cancelledBy:of:) ends the wait after a limit (ST07):
+- the detached task is cancelled, so work that follows cancellation ends, and work that ignores it finishes on its own and stores its late result where nobody reads it;
+- TimeLimitExceeded is thrown ("Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it.");
+- and ASYNC_TIME_LIMIT is logged, naming no file or title.
 Reading an audio file's tags has AsyncBridge.audioTagsTimeLimit (30 seconds; the import's and the reader's try? fall back to empty tags, and Book Info's LibraryBookInfoReader falls back to the metadata the library keeps), and analyzing or parsing an audiobook's audio AsyncBridge.audioAnalysisTimeLimit (5 minutes: BookParser and BookContentAnalysisService).
 Every other user (audio-edit renders, conversions, textutil) keeps no limit, since each can honestly run for an hour and has its own cancel or watchdog.
