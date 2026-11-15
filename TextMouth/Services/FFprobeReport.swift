@@ -26,8 +26,9 @@ struct FFprobeReport: Equatable, Sendable {
         /// How long it lasts in seconds: ffprobe's, else Matroska's
         /// `DURATION` tag; nil when unknown or implausible.
         let duration: TimeInterval?
-        /// The bits of each sample its codec keeps, for a lossless one;
-        /// nil when unknown.
+        /// The bits of each sample its codec keeps, for a lossless one:
+        /// ffprobe's count, else what its decoder's sample format holds
+        /// (`bits(ofSampleFormat:)`); nil when unknown.
         let bitsPerSample: Int?
         /// Whether the file marks it as the stream to play.
         let isDefault: Bool
@@ -93,7 +94,12 @@ struct FFprobeReport: Equatable, Sendable {
     private static func stream(from object: [String: Any], position: Int) -> Stream {
         let tags = lowercasedTags(object["tags"])
         let disposition = object["disposition"] as? [String: Any] ?? [:]
-        let rawBits = number(object["bits_per_raw_sample"]) ?? number(object["bits_per_sample"])
+        // The first count of bits ffprobe gives that is one (it writes 0 or
+        // "N/A" for none), else what the decoder's sample format holds.
+        let counted = [number(object["bits_per_raw_sample"]), number(object["bits_per_sample"])]
+            .compactMap { $0 }
+            .first { $0 >= 1 && $0 <= 64 }
+            .map { Int($0) }
         // mkvmerge names its statistics "BPS" and "DURATION", or, in its
         // older versions, with "-eng" after them.
         let taggedBitRate = number(tags["bps"] ?? tags["bps-eng"])
@@ -107,7 +113,7 @@ struct FFprobeReport: Equatable, Sendable {
             channels: number(object["channels"]).flatMap { $0 >= 1 && $0 <= Double(maximumChannels) ? Int($0) : nil },
             bitRate: plausibleBitRate(number(object["bit_rate"]) ?? taggedBitRate),
             duration: plausibleDuration(number(object["duration"]) ?? taggedDuration),
-            bitsPerSample: rawBits.flatMap { $0 >= 1 && $0 <= 64 ? Int($0) : nil },
+            bitsPerSample: counted ?? bits(ofSampleFormat: object["sample_fmt"] as? String),
             isDefault: number(disposition["default"]) == 1,
             isAttachedPicture: number(disposition["attached_pic"]) == 1,
             tags: tags
@@ -136,6 +142,19 @@ struct FFprobeReport: Equatable, Sendable {
     /// A bit rate that is believed: above zero and at most `maximumBitRate`.
     private static func plausibleBitRate(_ bits: Double?) -> Int? {
         bits.flatMap { $0 > 0 && $0 <= Double(maximumBitRate) ? Int($0) : nil }
+    }
+
+    /// The bits of a sample that a decoder's whole-number sample format
+    /// holds, planar or not: 8 for "u8", 16 for "s16". WMA Lossless and
+    /// RealAudio Lossless say their depth only this way. Nil for any other
+    /// format, whose depth it does not tell ("s32" may hold 24 bits, and
+    /// floating point holds none).
+    static func bits(ofSampleFormat format: String?) -> Int? {
+        switch format {
+        case "u8", "u8p": return 8
+        case "s16", "s16p": return 16
+        default: return nil
+        }
     }
 
     /// The seconds of a Matroska `DURATION` tag, "HH:MM:SS.fraction" (as

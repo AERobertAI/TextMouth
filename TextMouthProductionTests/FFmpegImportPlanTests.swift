@@ -232,6 +232,9 @@ final class FFmpegImportPlanTests: XCTestCase {
             (#""codec_name": "flac", "sample_rate": "22050", "channels": 1, "bits_per_raw_sample": "16""#, 16),
             (#""codec_name": "flac", "sample_rate": "48000", "channels": 2, "bits_per_raw_sample": "24""#, 24),
             (#""codec_name": "wmalossless", "sample_rate": "44100", "channels": 2"#, 24),
+            // WMA Lossless and RealAudio Lossless give their depth only by their decoders' sample format.
+            (#""codec_name": "wmalossless", "sample_rate": "44100", "channels": 2, "sample_fmt": "s16p", "bits_per_sample": 0, "bits_per_raw_sample": "N/A""#, 16),
+            (#""codec_name": "ralf", "sample_rate": "44100", "channels": 2, "sample_fmt": "s16p""#, 16),
             (#""codec_name": "pcm_f32le", "sample_rate": "48000", "channels": 2, "bits_per_sample": 32"#, 24),
             (#""codec_name": "pcm_s32le", "sample_rate": "48000", "channels": 2, "bits_per_sample": 32"#, 32),
         ] {
@@ -256,6 +259,18 @@ final class FFmpegImportPlanTests: XCTestCase {
             container: .matroska, fileName: "a.webm", aacEncoder: "aac_at"
         )
         XCTAssertEqual(noRateAtAll.target, ImportAudioConverter.target(for: opusInfo, averageBitRate: Double(AudioRenderSettings.bitRatePerChannel)))
+    }
+
+    /// A decoder's whole-number sample formats tell their depth (8 or 16
+    /// bits, planar or not); the others do not: 32 bits may hold 24, and
+    /// floating point holds no count of bits.
+    func testTheSampleFormatsThatTellADepth() {
+        let depths = ["u8", "u8p", "s16", "s16p", "s32", "s32p", "flt", "fltp", "dbl", "s64", ""].map {
+            "\($0): \(FFprobeReport.bits(ofSampleFormat: $0).map(String.init) ?? "none")"
+        }
+        XCTAssertEqual(depths, ["u8: 8", "u8p: 8", "s16: 16", "s16p: 16", "s32: none", "s32p: none", "flt: none", "fltp: none",
+                                "dbl: none", "s64: none", ": none"])
+        XCTAssertNil(FFprobeReport.bits(ofSampleFormat: nil))
     }
 
     /// The codecs that keep every bit of their source become Apple
