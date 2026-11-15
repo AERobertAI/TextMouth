@@ -219,7 +219,7 @@ final class FFmpegImportSnifferTests: XCTestCase {
     /// header, ends the walk, so a protection object after it goes unseen;
     /// before it, it is seen. Nothing traps, whatever the sizes say.
     func testADamagedHeaderEndsTheWalk() throws {
-        let protection = asfObject(ASFHeader.protectionObjectIDs[0], body: [])
+        let protection = asfObject(try XCTUnwrap(ASFHeader.protectionObjectIDs.first), body: [])
         let tooSmall = Array(repeating: UInt8(0xAB), count: 16) + asfLittleEndian(UInt64(8), count: 8)
         let tooLarge = Array(repeating: UInt8(0xCD), count: 16) + asfLittleEndian(UInt64.max, count: 8)
         for broken in [tooSmall, tooLarge] {
@@ -291,7 +291,9 @@ extension XCTestCase {
     /// added to its header (`asfFile(_:adding:)`). The ffmpeg import's tests
     /// refuse such a file (FMT31).
     func copyProtectedASF(from url: URL) throws -> Data {
-        let object = asfObject(ASFHeader.protectionObjectIDs[1], body: [0, 0, 0, 0])
+        // The second identifier is Extended Content Encryption's.
+        let extended = try XCTUnwrap(ASFHeader.protectionObjectIDs.dropFirst().first, "No Extended Content Encryption identifier")
+        let object = asfObject(extended, body: [0, 0, 0, 0])
         return try asfFile([UInt8](try Data(contentsOf: url)), adding: object).file
     }
 }
