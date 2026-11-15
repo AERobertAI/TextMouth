@@ -10,6 +10,12 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 
 - [Changelog](docs/user/changelog.md): every version, newest first, and what changed.
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
+  - [Kindle books](docs/user/reads-kindle-books.md): MOBI, KF8, KFX, PalmDOC, and Kindle Create.
+  - [DAISY and braille books](docs/user/reads-daisy-and-braille.md): DAISY, XML, BRF, BRL, and PEF.
+  - [Text, HTML, and PDF files](docs/user/reads-text-files.md): encodings, web archives, and SSML.
+  - [Pages, tables, and limits](docs/user/reads-pages-and-limits.md): page numbering, and the 64 MB limit.
+  - [Audiobooks](docs/user/reads-audiobooks.md): audio formats, conversion, playlists, and ZIPs of tracks.
+  - [Transcripts, feeds, and packages](docs/user/reads-transcripts-and-feeds.md): transcribing, subscribing, and TextMouth packages.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, and Edit Manifest.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder…, New from Text.
 - [The Library window](docs/user/library-window.md): views, folders, sorting, searching, and commands on books.
