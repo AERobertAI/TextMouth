@@ -1,42 +1,101 @@
 # Building TextMouth
+<!-- id: building-textmouth; keys: Makefile, make, xcodebuild, XcodeGen; src: Makefile, project.yml -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## What you need
+<!-- id: what-you-need; keys: prerequisites, requirements, jq, iOS platform download, downloadPlatform, signing identity; src: project.yml, Makefile, Scripts/check.sh, Scripts/make-signing-identity.sh, .github/actions/setup-xcode/action.yml -->
 
-- A Mac with macOS 14 or later runs TextMouth. Development uses macOS 26 and Xcode 26.0.1, the version the continuous-integration job selects.
-- XcodeGen generates TextMouth.xcodeproj from project.yml. Install it with `brew install xcodegen`; the development Mac and CI use version 2.45.3.
+- A Mac with macOS 14 or later runs TextMouth.
+  Development uses macOS 26 and Xcode 26.0.1, the version the continuous-integration job selects.
+- XcodeGen generates TextMouth.xcodeproj from project.yml.
+  Install it with `brew install xcodegen`; the development Mac and CI use version 2.45.3.
 - `make check` reads the package pins with jq, which macOS 15 and later include as /usr/bin/jq.
-- Xcode builds the iOS app, TextMouthiOS, only once its iOS platform is downloaded: about 10 GB, from Xcode > Settings > Components, or with `xcodebuild -downloadPlatform iOS`. Until then `make typecheck-ios` compiles and links the iOS app without it (see The iOS app, below). Nothing else on this page needs the iOS platform.
+- Xcode builds the iOS app, TextMouthiOS, only once its iOS platform is downloaded: about 10 GB, from Xcode > Settings > Components, or with `xcodebuild -downloadPlatform iOS`.
+  Until then `make typecheck-ios` compiles and links the iOS app without it (see The iOS app, below).
+  Nothing else on this page needs the iOS platform.
 - Recording needs macOS's microphone permission, which macOS keeps from one build to the next only while the builds are signed with the same certificate: run `make signing-identity` once on each Mac you build on (see Make targets).
 
 ## Make targets
+<!-- id: make-targets; keys: Makefile, make help, targets, .PHONY; src: Makefile -->
 
 Run these from the repository root:
 
-- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 19 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces. The Release build is compiled for size. The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages; the build does not ask for whole-module mode, which would make the app 1.15 MB larger. The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app. A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either. `make check` and `make install` build through `make build`, so both get it. The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)). It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links. The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB. Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths. The full build log is build/xcodebuild-Release.log. It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so. The build products in build/DerivedData stay as Xcode made them.
+### Building, installing, and signing
+<!-- id: building-installing-signing; keys: make build, make install, make uninstall, SMALL_CODE, Release, dSYM, atos, codesign; src: Makefile, project.yml, Scripts/keep-installed-dsym.sh, Scripts/make-signing-identity.sh, TextMouthBraille/main.c -->
+
+- `make build` regenerates the project and builds the Release app as build/TextMouth.app, about 19 MB (see The Mac app's size, below): without the code coverage Xcode's scheme gathers for tests, with code nothing reaches left out, and with its symbols stripped into build/DerivedData/Build/Products/Release/TextMouth.app.dSYM, which the next Release build replaces.
+  The Release build is compiled for size.
+  The app's own code takes `-Osize` from project.yml's Release settings, and the three Swift packages take it from the Makefile's command line (the `SMALL_CODE` variable, Release only, so `make debug` keeps Debug's level), since project.yml cannot reach the packages; the build does not ask for whole-module mode, which would make the app 1.15 MB larger.
+  The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
+  A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either.
+  `make check` and `make install` build through `make build`, so both get it.
+  The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)).
+  It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links.
+  The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB.
+  Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths.
+  The full build log is build/xcodebuild-Release.log.
+  It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement; without one, the app keeps the ad hoc signature Xcode gave it, and a note says so.
+  The build products in build/DerivedData stay as Xcode made them.
 - `make debug` builds the Debug configuration instead.
 - `make run` and `make open` build the app and open it.
-- `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only. `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
-- A crash report from the installed app gives TextMouth's own frames as offsets, such as TextMouth + 0x372e00, because the Release app's symbols are stripped. The build number (CFBundleVersion) and TextMouth's UUID in the report name the dSYM `make install` kept for that build in build/installed-dSYMs, which turns the offsets back into functions, files, and lines: `atos -o build/installed-dSYMs/TextMouth-<build number>-<UUID>.app.dSYM/Contents/Resources/DWARF/TextMouth -arch arm64 -l <TextMouth's load address in the report> <address>`.
-- `make signing-identity`, once on each Mac, makes that identity: a self-signed code-signing certificate named TextMouth Developer, valid for 20 years, with its key in the login keychain, where codesign may use it without asking. Run again, it says the identity is there and changes nothing. It asks for no password and sets no trust, so Keychain Access lists the certificate as not trusted, which signing doesn't need. Keep the certificate: a new one changes the app's designated requirement, and macOS asks for the microphone once more. When codesign can't use the key, as over SSH with the login keychain locked, `make build` fails and says so; run `security unlock-keychain ~/Library/Keychains/login.keychain-db`, then build again.
-- `make test` runs the hosted test suite, described below. `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Testing TextMouth](testing.md) describes them under Reusable test tools.
-- `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see Reusable test tools in [Testing TextMouth](testing.md)).
+- `make install` builds the app, copies it to /Applications, registers it so it appears in Open With menus, and keeps the build's dSYM in build/installed-dSYMs as TextMouth-<build number>-<UUID>.app.dSYM, keeping those of the last five installs only.
+  `make uninstall` removes the app and leaves the dSYMs; `make clean` removes them with the rest of build/.
+- A crash report from the installed app gives TextMouth's own frames as offsets, such as TextMouth + 0x372e00, because the Release app's symbols are stripped.
+  The build number (CFBundleVersion) and TextMouth's UUID in the report name the dSYM `make install` kept for that build in build/installed-dSYMs, which turns the offsets back into functions, files, and lines: `atos -o build/installed-dSYMs/TextMouth-<build number>-<UUID>.app.dSYM/Contents/Resources/DWARF/TextMouth -arch arm64 -l <TextMouth's load address in the report> <address>`.
+- `make signing-identity`, once on each Mac, makes that identity: a self-signed code-signing certificate named TextMouth Developer, valid for 20 years, with its key in the login keychain, where codesign may use it without asking.
+  Run again, it says the identity is there and changes nothing.
+  It asks for no password and sets no trust, so Keychain Access lists the certificate as not trusted, which signing doesn't need.
+  Keep the certificate: a new one changes the app's designated requirement, and macOS asks for the microphone once more.
+  When codesign can't use the key, as over SSH with the login keychain locked, `make build` fails and says so; run `security unlock-keychain ~/Library/Keychains/login.keychain-db`, then build again.
+
+### Tests, lints, and the gate
+<!-- id: tests-lints-gate; keys: make test, make test-area, lint-tests, lint-a11y, lint-ogg, make check, check-selftest, perf-baselines; src: Makefile, Scripts/test/run-area.py, Scripts/test/trap-lint.py, Scripts/test/test-diff.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/check.sh, Scripts/check-selftest.sh, Scripts/perf-baselines.sh, Scripts/test/release-goldens.sh, .claude/skills/doc-library/scripts/doclib.py -->
+
+- `make test` runs the hosted test suite, described below.
+  `make test-area AREAS="feeds bookmarks"` runs only the hosted tests of some areas or classes, in one build, and `make lint-tests`, `make lint-a11y`, and `make lint-ogg` check the lines a branch adds, without building; [Testing TextMouth](testing-tools.md) describes them under Reusable test tools.
+- `make lint-docs` checks that no doc page has more violations of the rules in docs/agents/writing-docs.md than `.claude/skills/doc-library/lint-baseline.json` records for it, without building; `.claude/skills/doc-library/SKILL.md` describes the tool.
+- `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see Reusable test tools in [Testing TextMouth](testing-tools.md)).
 - `make release-goldens` runs the golden tests against a Release build (see The Release golden tests, below), once before a release.
 - `make perf-baselines` records new performance baselines after a deliberate change, as The performance baselines describes below.
-- `make generate` regenerates TextMouth.xcodeproj from project.yml. Run it after adding or removing a source or test file, and commit the changed project file with that file. XcodeGen 2.45.3 writes the app target's three copy-files phases (liblouis's tables and the two folders of licence files) in a different order on each run, though the order changes nothing in the build. So `make generate` runs `Scripts/agents/regenerate-project.py`, which runs xcodegen and then puts the phases back in the order the git index has, when they mean the same thing. Only real changes stay: files added, moved, or removed. If the phases changed in meaning, or git has no copy of the project to compare with (as in a source archive), it keeps xcodegen's whole project and says so on the console. `make build`, `make install`, `make set-version`, and the two bumps all regenerate this way.
+
+### The project, versions, and packages
+<!-- id: project-versions-packages; keys: make generate, xcodegen, project.pbxproj, copy-files phases, bump-patch, bump-minor, Package.resolved, update-packages; src: Makefile, project.yml, Scripts/agents/regenerate-project.py, Scripts/agents/copy_phases.py, Scripts/set-version.sh -->
+
+- `make generate` regenerates TextMouth.xcodeproj from project.yml.
+  Run it after adding or removing a source or test file, and commit the changed project file with that file.
+  XcodeGen 2.45.3 writes the app target's three copy-files phases (liblouis's tables and the two folders of licence files) in a different order on each run, though the order changes nothing in the build.
+  So `make generate` runs `Scripts/agents/regenerate-project.py`, which runs xcodegen and then puts the phases back in the order the git index has, when they mean the same thing.
+  Only real changes stay: files added, moved, or removed.
+  If the phases changed in meaning, or git has no copy of the project to compare with (as in a source archive), it keeps xcodegen's whole project and says so on the console.
+  `make build`, `make install`, `make set-version`, and the two bumps all regenerate this way.
+  A rebase conflict in `project.pbxproj` is settled by running `make generate` again and committing its result.
 - `make bump-patch` raises the app's PATCH version by one (0.2.0 to 0.2.1), and `make bump-minor` raises its MINOR version by one and sets PATCH to 0 (0.2.3 to 0.3.0); each changes the version in project.yml, regenerates the project, and commits nothing (see Versions, below).
 - `make set-version VERSION=0.2.0` sets a version you name, in the same way (see Versions, below).
 - `make resolve-packages` resolves the Swift packages exactly as Package.resolved pins them, and `make update-packages` resolves them again after a deliberate version change.
-- `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them. `make typecheck-mac` does the same for the Mac, and `make typecheck-tests` adds the Mac's hosted tests. `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes. Each is described under The iOS app, below.
+
+### Type-checks and the other targets
+<!-- id: type-checks-other-targets; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, check-ios-plist, make xcode, make clean; src: Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, Scripts/ios/sync-info-plist.py -->
+
+- `make typecheck-ios` compiles and links the app's committed sources for iOS, as the iOS app compiles them, with SwiftPM and the iOS SDK Xcode includes, and `make typecheck-ios CENSUS=1` counts every AppKit use left in them.
+  `make typecheck-mac` does the same for the Mac, and `make typecheck-tests` adds the Mac's hosted tests.
+  `make mac-projection BASE=main` shows what a branch changes in the code the Mac compiles, and with `DIFF=1` prints every line it changes.
+  Each is described under The iOS app, below.
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`: run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.
 
 ## The Mac app's size
+<!-- id: mac-app-size; keys: app size, 20 MB limit, Osize, linker map, LD_GENERATE_MAP_FILE, SwiftSoup; src: Scripts/check.sh, project.yml, Makefile, Scripts/agents/run_locked.py, TextMouth/Views/Library/LibraryView.swift -->
 
-The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing they use. `make check` fails the app above its hard limit of 20 MB (see The make check gate, below). On November 13, 2026 compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`. The price is slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since SwiftSoup parses 43% slower; ten benchmarks (HTML to Markdown, Markdown parsing, speech preparation, sorting, JSON, the offset map, and an EPUB read) gave identical results with `-O` and `-Osize` and ran 2% to 10% slower. Under 15 MB is out of reach of build settings; the size audit of that day names the code changes that remain. Two more settings would save 82,736 bytes (mergeable traps, which would make crash reports lose line detail within a function) and 95,472 bytes (`-no_function_starts`, which would make `sample` and Activity Monitor lose function boundaries without the dSYM); both wait for the user's yes. The pieces below are what a measurement of the Release build showed on November 9, 2026, at commit e0ea3b9d, before that work.
+The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing they use.
+`make check` fails the app above its hard limit of 20 MB (see The make check gate, below).
+Compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
+The price is slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since SwiftSoup parses 43% slower; ten benchmarks (HTML to Markdown, Markdown parsing, speech preparation, sorting, JSON, the offset map, and an EPUB read) gave identical results with `-O` and `-Osize` and ran 2% to 10% slower.
+Under 15 MB is out of reach of build settings; the size audit names the code changes that remain.
+Two more settings would save 82,736 bytes (mergeable traps, which would make crash reports lose line detail within a function) and 95,472 bytes (`-no_function_starts`, which would make `sample` and Activity Monitor lose function boundaries without the dSYM); both wait for the user's yes.
+The pieces below are what a measurement of the Release build showed at commit e0ea3b9d, before that work.
 
 - **The totals.**
   - The Release executable, `TextMouth.app/Contents/MacOS/TextMouth`, was 22.7 MB (22,737,216 bytes), and the whole bundle about 23 MB.
@@ -46,103 +105,52 @@ The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing th
   - swift-markdown is 0.6 MB.
   - Of the app's own files, `LibraryView` is the largest at 0.36 MB.
 - **The iPhone's code costs little.**
-  - `TextMouth/Phone/` is compiled into the Mac app too. The linker strips what the Mac never reaches, and 59 KB stays, 0.27% of the executable.
-  - Leaving `Phone/` out would save at most that, and would give up the Mac's tests of it in a Release build. So it is not left out.
+  - `TextMouth/Phone/` is compiled into the Mac app too.
+    The linker strips what the Mac never reaches, and 59 KB stays, 0.27% of the executable.
+  - Leaving `Phone/` out would save at most that, and would give up the Mac's tests of it in a Release build.
+    So it is not left out.
 - **How the sizes were found.**
-  - The linker's own map lists every object and its bytes. Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see Building TextMouthiOS for the simulator, below).
-  - Do not set `LD_MAP_FILE_PATH` on the command line. Every target's link shares that one path, and Xcode stops with "Multiple commands produce" the one map file. With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
+  - The linker's own map lists every object and its bytes.
+    Ask for it with `LD_GENERATE_MAP_FILE=YES` alone, with `xcodebuild` and its own derived-data folder, under `run_locked.py` (see Building TextMouthiOS for the simulator, below).
+  - Do not set `LD_MAP_FILE_PATH` on the command line.
+    Every target's link shares that one path, and Xcode stops with "Multiple commands produce" the one map file.
+    With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
   - The measurement used `Scripts/agents/run_locked.py`, since a Release build is heavy work.
 
 ## The Release golden tests
+<!-- id: release-golden-tests; keys: release-goldens, Osize, optimizer miscompile, ENABLE_TESTABILITY, GOLDEN_ARGS, lsregister; src: Scripts/test/release-goldens.sh, Scripts/test/run-area.py, Scripts/agents/run_locked.py, Makefile, project.yml, TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift -->
 
-The ordinary suite tests a Debug build, and the Release app is compiled with `-Osize`, so an optimizer miscompile could change what a reader makes of a book without any test noticing. `make release-goldens` (`Scripts/test/release-goldens.sh`) closes that gap. Run it once before a release, and after any change to the build settings in project.yml or the Makefile's build rule.
+The ordinary suite tests a Debug build, and the Release app is compiled with `-Osize`, so an optimizer miscompile could change what a reader makes of a book without any test noticing.
+`make release-goldens` (`Scripts/test/release-goldens.sh`) closes that gap.
+Run it once before a release, and after any change to the build settings in project.yml or the Makefile's build rule.
 
-- **What it runs.** Five classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, and `ParserContentFidelityTests`.
-- **What it builds.** The shipped configuration, Release with `-Osize` for the app and the packages, with only what a test host needs changed: `ENABLE_TESTABILITY=YES`, `LD_EXPORT_SYMBOLS=YES` (the shipped app has no export trie, and the test bundle links against the app's exports), and `DEAD_CODE_STRIPPING=NO`, `DEPLOYMENT_POSTPROCESSING=NO`, and `STRIP_INSTALLED_PRODUCT=NO` (so the symbols the tests call stay). The compiled Swift code is the shipped code. What the tested binary lacks is the export trie, dead stripping, and stripping, which change no code.
-- **What it costs.** The first run, on November 13, 2026, took 14 minutes 4 seconds, ran 129 tests with 0 failures and 0 skips, and its build folder took 1.5 GB. It plays no sound. When other agents work, run it through `Scripts/agents/run_locked.py`. Afterwards unregister the app it built with `lsregister -u` on `Build/Products/Release/TextMouth.app` in its derived-data folder.
-- **Options.** `GOLDEN_ARGS` passes options to `run-area.py`: `make release-goldens GOLDEN_ARGS=--dry-run`. `make check-selftest` checks the dry-run command.
-
-## The iOS app
-
-project.yml defines two apps over one source folder. `TextMouth` is the Mac app, which every other target and command on this page builds. `TextMouthiOS` is the iOS app, added in phase 0 of the iOS port (see [The two apps and the platform folders](../architecture/platforms.md)):
-
-- It compiles the TextMouth source folder less `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`, so it compiles the files both apps share and `TextMouth/Platform/iOS/`.
-- It is the product TextMouth, with the module name TextMouth, for iOS 26.0, and has the Mac app's bundle identifier. It takes the same three Swift packages (ZIPFoundation, SwiftSoup, and swift-markdown's Markdown) and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`. project.yml defines each library once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
-- It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
-- It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)). It first ran in the iOS simulator on November 8, 2026. Nothing has run on a phone.
-- Its scheme, `TextMouthiOS`, is committed. The Mac's schemes are still Xcode's own, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
-- Xcode builds it only once its iOS platform is downloaded (see What you need, above). Until then, `make typecheck-ios` is how its code is checked.
-- Building it for the simulator is the next section.
-
-The three make targets run the scripts in `Scripts/ios`. They read a commit, so run them on committed work.
-
-- **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking the two C libraries. It never changes the repository. A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings. It takes about two minutes once it has the lock. `CENSUS=1` reads each `import AppKit` as `import UIKit` in the copy, so that a file does not stop at "no such module 'AppKit'" and every AppKit name left in it is reported; it counts what is left, and is not what the app must pass. The run without it is the strict one.
-- **`make typecheck-mac`** does the same for the Mac: the sources the Mac app compiles, built and linked in about two minutes, without xcodebuild or the hosted tests. It ends BUILD SUCCEEDED when the Mac app's code compiles and links.
-- **`make typecheck-tests`** is `make typecheck-mac` with the Mac's hosted test target in the package: the folder `TextMouthProductionTests` and the files `project.yml` lists for that target from `TextMouthTests/Sources/Tests`, copied into one target of the probe package and built with `swift build --target TextMouthProductionTests`. It compiles the app and the tests, links no test bundle, and runs no test (SwiftPM link step for a test bundle fails with this Xcode toolchain, with unexpected input file plugins/testing, after every file has compiled, and that is not a test file error). An error in a listed file is reported under the file's repository path. `REF=<commit>` checks that commit (default HEAD) from any worktree, so an agent can check its branch before asking for a train. It has its own work folder (`build/typecheck/macos-tests/`), takes the heavy-work lock itself, and takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock. Never wrap it in `run_locked.py`.
-- **`make mac-projection BASE=main`** compares, for each Swift file the Mac compiles that HEAD changes since BASE (`HEAD=` names another ref), what the Mac compiles of the old text and of the new. A file moved into `Platform/macOS`, Mac code wrapped in `#if os(macOS)`, and a platform alias or helper that is exactly the old type or expression on the Mac all count as unchanged. It prints the number of files changed, the number unchanged for the Mac, and the number with a real change, and with `DIFF=1` the lines that remain in each of those. It changes nothing and writes no file. It is for a change that must leave the Mac's behavior as it was: the aim is no real change, or only lines a reviewer can defend one by one.
-
-The two type-checks print their result and write it to `build/typecheck/results/` in the main checkout, which git ignores, in a folder for each run, named by who ran it, the platform, the mode, the commit, and the time. The folder holds `summary.md` (the result, the errors and warnings in the app, the link, the errors by file, and the kinds of error), `errors.txt`, `warnings.txt`, and `build.log`, and the last line of the output names it. A run exits with status 0 when the build succeeded, 1 when it found errors, 2 when it could not set up, and 3 when the lock stayed busy for the whole wait.
-
-**The heavy-work lock.** The Mac has 8 GB of memory, and on October 31, 2026 it froze under several builds at once, so one heavy job runs on it at a time. The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time. A job that finds it held says whom it waits for and since when, and waits, a type-check by default up to three hours. A lock whose owner has ended, from a crash or a killed agent, is taken over. So a type-check started while the train builds waits for the train, and the reverse. The build train waits first in line: while it waits, no other job takes the lock, even a free one, so the train goes next, and it never runs without the lock. Until November 8, 2026 a train that had waited 20 minutes went on beside the job holding the lock; that day the user, finding that the builds took a lot of CPU, asked for them "one after the other". `Scripts/agents/tests` holds the tests of the lock, the train, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py`: `python3 -I -B -m unittest discover -s Scripts/agents/tests`. They use temporary locks and folders, a fake command for the suite, and a stand-in for xcodegen, so none runs xcodebuild or touches the real lock. The tests of the GitHub runs add a fake `gh`, a bare throwaway repository as the push target, and a pretend clock, so none reaches GitHub or waits.
-
-**Builds on GitHub Actions** (since November 9, 2026). The user, finding that the builds were hard on this Mac's CPU, asked to move the compiling and testing to GitHub Actions. The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted runners are used.
-  - **What runs there.** `.github/workflows/test-build.yml` runs for a push to the branch `TestBuild`, and for nothing else: not a pull request, not a fork. It only calls `.github/workflows/tests.yml`, which holds the jobs and which `check.yml` calls too (so the repository has one way to run its suite on GitHub), and the local action `.github/actions/setup-xcode` holds the toolchain pins once. A job selects Xcode 26.0.1 on the `macos-26` image, installs XcodeGen 2.45.3 (checked against its published digest), runs `make generate`, and then `Scripts/agents/run-on-runner.py`, which reads the request file `.github/test-request.json` in the pushed tree and runs what it names: areas and classes through `Scripts/test/run-area.py`, or the full suite. Both commands come from `Scripts/agents/test_command.py`, the one place the local train, `run_suite.py`, and the runner take them from. The app is not signed (`CODE_SIGNING_ALLOWED=NO`), as in every test run, since a runner has no signing identity. The job has a token that may only read, no secrets, GitHub's own actions pinned to full commit hashes, a limit of 100 minutes for each job (the runner script stops the tests at 80, so their results are still written), and one run at a time: a newer push cancels the older run. The shared workflow has four jobs: a Linux job that plans the shards, one macOS job per shard, a macOS job that builds the iPhone app and runs its interface tests, and a Linux job that joins the results. The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing and without running a test; it writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed. A request that says `"ios": false` leaves it out. Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime, when the request asks for them (every full suite, the phone area, or a class of either bundle). The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: since November 11, 2026 no iPhone test of either bundle needs a simulator on this Mac. It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`. A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Testing TextMouth](testing.md)).
-  - **What the Mac does.** `build-train.py run --remote` (and `loop --remote`) merges the requests here, pushes the merged tree plus the request to `TestBuild` with `--force`, waits for that commit's run, and reads the result; `run_suite.py --remote COMMIT NAME LOG` does it for the full suite. `Scripts/agents/github_run.py` is the Mac's side: it makes the commit with git's plumbing in a temporary index (no checkout is touched), refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`, waits (up to 125 minutes, asking GitHub every 30 seconds) while a run is queued or going on `TestBuild`, because a newer push cancels the run before it, and fails with a sentence naming that run, having pushed nothing, if it is still there then (the train puts its requests back, like any failed push), pushes only `<commit>:refs/heads/TestBuild`, finds the run by its SHA, and downloads the artifact `test-build-results`. Nothing but `TestBuild` is ever pushed, and the commit holds only what git tracks.
-  - **Why a run is quick.** Three things keep it short. The build products are kept between runs with `actions/cache`: each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every file unchanged since that build (by its git blob hash, from a manifest saved beside the products) one fixed old time, because a fresh checkout would otherwise make Xcode compile everything again; a warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it). A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads). And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`). Testing TextMouth (Tests on GitHub Actions) has the details and the times.
-  - **What the user must keep.** Actions stays enabled for the repository; the workflow's token needs no setting. The workflow lives on `TestBuild` as pushed, so it works before it is merged into main; `gh run list --workflow` looks a file up on the default branch, which is why `github_run.py` finds the run by workflow name and commit instead.
-
-### Building TextMouthiOS for the simulator
-
-The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xcode 26.0.1 installs. This is how the iPhone team builds and runs the app there.
-
-- **The scheme.**
-  - `TextMouthiOS` is committed at `TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme`. XcodeGen writes it from the `scheme:` block of the `TextMouthiOS` target in project.yml.
-  - It runs both iOS test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests` (see [Testing TextMouth](testing.md)), and gathers no code coverage.
-  - The scheme Xcode made by itself held only the UI tests, which is why this one is committed.
-- **One build folder.**
-  - Every simulator build puts its products in `build/DerivedData-ios.noindex`, with `-derivedDataPath build/DerivedData-ios.noindex`. The folder is in `build/`, which git ignores.
-  - The name ends in `.noindex` so that Spotlight does not index it.
-  - It was 792 MB after the first build and run.
-  - It is not the Mac's `build/DerivedData`. The two never share a folder.
-- **iPhone 17 only.**
-  - Every run uses the iPhone 17 simulator, as in `-destination 'platform=iOS Simulator,name=iPhone 17'`. Make no new simulator devices.
-  - The first boot of a device adds about 2.1 GB of disk. The iPhone 17's data is 2.5 GB in all.
-  - The disk is tight, so these two costs count against the free space before a run.
-- **The heavy-work lock.**
-  - Every simulator build or test run goes through `Scripts/agents/run_locked.py`. It takes the heavy-work lock (see The heavy-work lock, above), runs one command, and exits with the command's status: `python3 -I Scripts/agents/run_locked.py NAME COMMAND...`. NAME says who holds the lock.
-  - It waits up to three hours for the lock, and exits with status 3 if it never gets it.
-  - Run it with `python3 -I`, which leaves its folder out of the import path. It finds `heavy_lock.py` beside itself, so it works from any checkout or worktree, and every one shares the one lock in the main checkout.
-  - `Scripts/agents/run_suite.py NAME LOG` does the same for the full hosted suite (`xcodebuild test` on the macOS destination), writing the log to LOG. It ends an xcodebuild that stays silent for three minutes after its last test, prints the log's Executed line, and exits 0 only when the log says every test passed. Run it from the checkout to test, as a background task.
-  - `Scripts/agents/run_suite.py --remote COMMIT NAME LOG` runs that suite on GitHub's macOS runners instead (since November 9, 2026; see Builds on GitHub Actions, above). It takes no heavy-work lock, since it loads this Mac with a push only. It writes the run's log to LOG and judges it the same way; status 4 means the push or the run failed, which says nothing about the tests. It also prints what the run's iPhone build made: its verdict, its error count, and the files the errors are in with how many each holds (the details are in `ios-errors.txt` in the folder `LOG.remote-N`); that never changes the exit status. It waits its turn twice: for a train of this Mac's to end (the train's lock), and then, in `github_run.py`, for any run still on `TestBuild`.
-  - Never wrap `make typecheck-ios`, `make typecheck-mac`, or `make typecheck-tests` in it. They take the same lock themselves, and would wait on their own parent.
-- **No clean builds.**
-  - Never run `xcodebuild clean`, and never delete the build folder. The build is incremental, and a clean one compiles every file again, under the lock, on a Mac with 8 GB of memory.
-  - Nobody deletes anything during an agent run, so the next build overwrites a stale build and does not clear it.
-- **A build.**
-  - `build-for-testing` compiles the app and both test bundles without running them. Its command has this shape, run under `run_locked.py`: `xcodebuild build-for-testing -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`.
-  - The repository does not record the command line the iPhone team used, so check this shape against `xcodebuild -help` before relying on it.
-- **A test pass and its result bundle.**
-  - A pass of the iPhone team's last round ran `xcodebuild test-without-building` after a `build-for-testing`, with the `TextMouthiOS` scheme, the one build folder, `-parallel-testing-enabled NO`, and `-resultBundlePath` naming a `.xcresult` bundle for the pass. The destination was the iPhone 17 simulator, named by its id.
-  - **Give each pass a new result-bundle name** (`pass4.xcresult`, then `pass5.xcresult`). The round's report says `xcodebuild` wants a new name for each pass, and nobody deletes anything during a run, so an old bundle stays where it is. The exact message of a repeated name was not recorded.
-  - The bundle holds each test's results, the screenshots, and the notes the audits keep (see [Testing TextMouth](testing.md)).
-- **Installing and launching.**
-  - The app's bundle identifier is `com.textmouth.TextMouth.iOS`, and the product is TextMouth.app.
-  - `xcrun simctl install` puts the built app on the booted device, and `xcrun simctl launch` starts it. `xcrun simctl io booted screenshot FILE` takes a screenshot, and the app's log is the other way to see what it did.
-  - Afterward run `xcrun simctl shutdown all`, since the Mac has 8 GB of memory.
-- **The `SIMCTL_CHILD_` launch variables.**
-  - `xcrun simctl launch` passes an environment variable to the app when its name starts with `SIMCTL_CHILD_`, and drops that prefix.
-  - The app reads two variables, `TEXTMOUTH_UI_TEST` and `TEXTMOUTH_OPEN_AT_LAUNCH`, in Debug builds only. Both are described in PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md). A Release build does not hold the type or the variable names, so no environment variable can steer it.
-  - The placement probe's variable, `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, is gone, with the probe test. Setting it now does nothing.
-  - `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1` gives the launch a library of its own, in a sandbox. Without it, a run uses the simulator app's real container.
-  - `SIMCTL_CHILD_TEXTMOUTH_OPEN_AT_LAUNCH=/absolute/path/to/book.epub` sends the app that file at launch, as another app would. The path must be absolute. The app copies the file and never moves or deletes the original.
-  - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
-- **Do not press Play or type by hand, and run no sound test here.** The simulator plays through the Mac's speakers, which the user could hear at any hour, and the keyboard's clicks are sounds too. The interface tests that press Play or type run on GitHub's runners, where nobody listens, and so do the unit tests, which make no sound and so never skip; on this Mac the interface tests that make sound skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it, which refuses to run anywhere but on a GitHub runner (see [Testing TextMouth](testing.md)). Nothing records audio anywhere.
+- **What it runs.**
+  Five classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, and `ParserContentFidelityTests`.
+- **What it builds.**
+  The shipped configuration, Release with `-Osize` for the app and the packages, with only what a test host needs changed: `ENABLE_TESTABILITY=YES`, `LD_EXPORT_SYMBOLS=YES` (the shipped app has no export trie, and the test bundle links against the app's exports), and `DEAD_CODE_STRIPPING=NO`, `DEPLOYMENT_POSTPROCESSING=NO`, and `STRIP_INSTALLED_PRODUCT=NO` (so the symbols the tests call stay).
+  The compiled Swift code is the shipped code.
+  What the tested binary lacks is the export trie, dead stripping, and stripping, which change no code.
+- **What it costs.**
+  The first run took 14 minutes 4 seconds, ran 129 tests with 0 failures and 0 skips, and its build folder took 1.5 GB.
+  It plays no sound.
+  When other agents work, run it through `Scripts/agents/run_locked.py`.
+  Afterwards unregister the app it built with `lsregister -u` on `Build/Products/Release/TextMouth.app` in its derived-data folder.
+- **Options.**
+  `GOLDEN_ARGS` passes options to `run-area.py`: `make release-goldens GOLDEN_ARGS=--dry-run`.
+  `make check-selftest` checks the dry-run command.
 
 ## Versions
+<!-- id: versions; keys: MARKETING_VERSION, semantic version, beta, release tag, changelog; src: Scripts/set-version.sh, project.yml, Makefile -->
 
-TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PATCH`. MAJOR stays 0 until the user calls TextMouth released (1.0). The rules for raising the version are the user's, from October 23, 2026:
+TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PATCH`.
+MAJOR stays 0 until the user calls TextMouth released (1.0).
+The rules for raising the version are the user's:
 
-- **PATCH** goes up by 1 for each day on which main gains bug fixes or small backward-compatible features. That is one bump per day, made after the day's last merge, before the user's next install.
+### The rules for raising the version
+<!-- id: rules-raising-version; keys: bump, PATCH, MINOR, git tag, backward compatible, changelog entry; src: Scripts/set-version.sh, Makefile -->
+
+- **PATCH** goes up by 1 for each day on which main gains bug fixes or small backward-compatible features.
+  That is one bump per day, made after the day's last merge, before the user's next install.
 - **MINOR** goes up by 1, with PATCH back to 0, for any change that is not backward compatible:
   - a TextMouth one version older cannot open the library;
   - every book is read again (a cache-format change);
@@ -150,31 +158,80 @@ TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PA
   - a setting, shortcut, or file is removed or renamed.
 
   A day that has such a change bumps MINOR instead of PATCH.
-- **Each bump** adds a dated section to the top of the [Changelog](../user/changelog.md), with one plain sentence per change. A MINOR section says first what an older TextMouth can no longer do with the library.
+- **Each bump** adds a dated section to the top of the [Changelog](../user/changelog.md), with one plain sentence per change.
+  A MINOR section says first what an older TextMouth can no longer do with the library.
 - **The orchestrator** makes the bump, with the script below: `make bump-patch` or `make bump-minor`, committed on its own and recorded in the TODO.
-- **Each version is tagged** `vX.Y.Z`, with an annotated tag on the commit the user is to install: `git tag -a v0.4.3 <commit> -m "TextMouth 0.4.3 (November 9, 2026)"`. The orchestrator makes it with the bump.
-  - A merge that joins the version afterwards, as in the second open case below, moves the tag to that merge, but only while the tag is unpushed. A pushed tag stays, and the merge waits for the next version.
-  - Pushing tags is the user's: `git push origin --tags`.
-  - The tags v0.2.0 to v0.4.2 were added on November 9, 2026, each at its version's bump commit. The exception is v0.4.2, at e0ea3b9d, the build the user installed, since 0.4.2 took in the KF8 merge after its bump. The numbers before 0.2.0 ("1.0", then "0.1.1") came before the beta's rules and have no tags.
-- **Two cases the rules leave open.** A day with neither bug fixes nor small features gets no bump. A change that merges after its day's bump, on the same day, joins that day's section and leaves the version as it is, unless it is not backward compatible: then bump MINOR from the day's version (0.2.1 to 0.3.0), in a section of its own.
+- **Each version is tagged** `vX.Y.Z`, with an annotated tag on the commit the user is to install: `git tag -a v0.4.3 <commit> -m "TextMouth 0.4.3 (November 9, 2026)"`.
+  The orchestrator makes it with the bump.
+  - A merge that joins the version afterwards, as in the second open case below, moves the tag to that merge, but only while the tag is unpushed.
+    A pushed tag stays, and the merge waits for the next version.
+  - The orchestrator pushes the tags with main, only at a version bump it judges a fairly stable release (`AGENTS.md`, The user's standing rules): `git push origin --tags`.
+  - The tags v0.2.0 to v0.4.2 are each at its version's bump commit.
+    The exception is v0.4.2, at e0ea3b9d, the build the user installed, since 0.4.2 took in the KF8 merge after its bump.
+    The numbers before 0.2.0 ("1.0", then "0.1.1") came before the beta's rules and have no tags.
+- **Two cases the rules leave open.**
+  A day with neither bug fixes nor small features gets no bump.
+  A change that merges after its day's bump, on the same day, joins that day's section and leaves the version as it is, unless it is not backward compatible: then bump MINOR from the day's version (0.2.1 to 0.3.0), in a section of its own.
+
+### The version script
+<!-- id: version-script; keys: set-version.sh, --selftest, CFBundleShortVersionString, CURRENT_PROJECT_VERSION, CFBundleVersion, build number; src: Scripts/set-version.sh, project.yml, Makefile, Scripts/check-selftest.sh -->
 
 The script, Scripts/set-version.sh:
 
-- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`. It sits, with `CURRENT_PROJECT_VERSION`, in the `appVersion` setting group, which the Mac app and the iOS app both take, so one number versions both apps; it is still one line, and the script changes that line. Change it with the script, never by hand.
-- `make bump-patch` (`Scripts/set-version.sh --patch`) raises PATCH by one, 0.2.0 to 0.2.1. `make bump-minor` (`Scripts/set-version.sh --minor`) raises MINOR by one and sets PATCH to 0, 0.2.3 to 0.3.0. Each works the new version out of project.yml, adding one to a number digit by digit so that none can overflow, and neither changes MAJOR.
-- `make set-version VERSION=0.2.0` (`Scripts/set-version.sh 0.2.0`) sets a version you give, for a deliberate jump such as 1.0.0 when the user calls TextMouth released. The script accepts only MAJOR.MINOR.PATCH, three whole numbers without leading zeros, and refuses a version that is not later than the current one, comparing each number as a number, so 0.10.0 is later than 0.9.0. A bump goes the same way once its version is worked out, so it meets the same checks.
-- It changes nothing in project.yml but the value of that one setting, regenerates the project the way `make generate` does, so that TextMouth.xcodeproj follows and shows only the version's lines, and prints the old and new versions. If the regeneration fails, it puts project.yml back as it was. It commits nothing: commit project.yml with the regenerated project, in a commit that does nothing else. It ends by reminding you to add the dated section to the changelog, which it does not write.
-- The build number, `CFBundleVersion`, is not set by hand or by that script. `make build` stamps each build with the UTC time as YYYYMMDDHHMMSS, which is unique and increasing, and `make install` names the dSYM it keeps for the build by it (see Make targets, above). The `CURRENT_PROJECT_VERSION` of 1 in project.yml is only what a build gets when it does not come from the Makefile, such as the hosted tests' build.
-- `Scripts/set-version.sh --selftest` tests the script in seconds, on a copy of project.yml in a temporary folder and with stand-ins for xcodegen and for the regeneration script, without building; `make check-selftest` runs it. Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
+- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`.
+  It sits, with `CURRENT_PROJECT_VERSION`, in the `appVersion` setting group, which the Mac app and the iOS app both take, so one number versions both apps; it is still one line, and the script changes that line.
+  Change it with the script, never by hand.
+- `make bump-patch` (`Scripts/set-version.sh --patch`) raises PATCH by one, 0.2.0 to 0.2.1.
+  `make bump-minor` (`Scripts/set-version.sh --minor`) raises MINOR by one and sets PATCH to 0, 0.2.3 to 0.3.0.
+  Each works the new version out of project.yml, adding one to a number digit by digit so that none can overflow, and neither changes MAJOR.
+- `make set-version VERSION=0.2.0` (`Scripts/set-version.sh 0.2.0`) sets a version you give, for a deliberate jump such as 1.0.0 when the user calls TextMouth released.
+  The script accepts only MAJOR.MINOR.PATCH, three whole numbers without leading zeros, and refuses a version that is not later than the current one, comparing each number as a number, so 0.10.0 is later than 0.9.0.
+  A bump goes the same way once its version is worked out, so it meets the same checks.
+- It changes nothing in project.yml but the value of that one setting, regenerates the project the way `make generate` does, so that TextMouth.xcodeproj follows and shows only the version's lines, and prints the old and new versions.
+  If the regeneration fails, it puts project.yml back as it was.
+  It commits nothing: commit project.yml with the regenerated project, in a commit that does nothing else.
+  It ends by reminding you to add the dated section to the changelog, which it does not write.
+  After a bump, check with `git diff --stat` that only `project.yml` and the `MARKETING_VERSION` lines of the project changed.
+- The build number, `CFBundleVersion`, is not set by hand or by that script.
+  `make build` stamps each build with the UTC time as YYYYMMDDHHMMSS, which is unique and increasing, and `make install` names the dSYM it keeps for the build by it (see Make targets, above).
+  The `CURRENT_PROJECT_VERSION` of 1 in project.yml is only what a build gets when it does not come from the Makefile, such as the hosted tests' build.
+- `Scripts/set-version.sh --selftest` tests the script in seconds, on a copy of project.yml in a temporary folder and with stand-ins for xcodegen and for the regeneration script, without building; `make check-selftest` runs it.
+  Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
 
 ## The make check gate
+<!-- id: make-check-gate; keys: check.sh, reproducible build, APP_SIZE_LIMIT_MB, SIGN_APP, check-selftest, --without-tests, dry run; src: Scripts/check.sh, Scripts/check-selftest.sh, Scripts/make-signing-identity.sh, Scripts/agents/run-on-runner.py, .github/workflows/check.yml, .github/workflows/tests.yml, project.yml, Makefile -->
 
-**Reproducible builds and `make check`.** TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark. Run `make check` before merging. It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five. It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 19.0 MB (18,983,332 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh (it was 50 MB until November 13, 2026). Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hung for 27 minutes in codesign on November 13, 2026. In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always). It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test. Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file. It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`. A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests). To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files. `make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` also tests the baseline-recording script, the storage drill script's verdicts (see Reusable test tools in [Testing TextMouth](testing.md)), the version script (see Versions, above), that `make build` builds without code coverage and with `-Osize` while `make debug` does not, that `make release-goldens` names its settings and golden classes, that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications; and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain. GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request). The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size). The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards. It runs only for a push and for a pull request from this repository, not from a fork, because it starts 5 macOS jobs and GitHub runs 5 at once. It asks for a build from nothing (`"cold": true`, since xcodebuild prints a file's warnings only when it compiles that file) and no Swift warning in it (`"no_warnings": true`, which `run-on-runner.py` checks with the same pattern as `check.sh`). One machine could not finish the whole suite in the old job's 60-minute limit (run 42765562754 was cancelled at it); the shards finish it in about 20 minutes cold.
+**Reproducible builds and `make check`.**
+TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
+Run `make check` before merging.
+It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
+It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 19.0 MB (18,983,332 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
+Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
+In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
+It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
+Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file.
+It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`.
+A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests).
+To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files.
+`make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` also tests the baseline-recording script, the storage drill script's verdicts (see Reusable test tools in [Testing TextMouth](testing-tools.md)), the version script (see Versions, above), that `make build` builds without code coverage and with `-Osize` while `make debug` does not, that `make release-goldens` names its settings and golden classes, that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications; and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
+GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request).
+The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size).
+The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards.
+It runs only for a push and for a pull request from this repository, not from a fork, because it starts 5 macOS jobs and GitHub runs 5 at once.
+It asks for a build from nothing (`"cold": true`, since xcodebuild prints a file's warnings only when it compiles that file) and no Swift warning in it (`"no_warnings": true`, which `run-on-runner.py` checks with the same pattern as `check.sh`).
+One machine could not finish the whole suite in the old job's 60-minute limit (run 42765562754 was cancelled at it); the shards finish it in about 20 minutes cold.
 
-**What the suite on GitHub is not, compared with step 4 of `make check` on this Mac.** It is weaker in four ways, and only `make check` here is the full gate:
+## What the GitHub suite is not
+<!-- id: what-github-suite-not; keys: runner-skips.conf, TestMachine.timeScale, strict_performance, PerformanceBaselineSupport, hostile file tests; src: Scripts/agents/runner-skips.conf, Scripts/agents/run-on-runner.py, TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/MOBIHostileFileTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/PerformanceBaselineSupport.swift -->
+
+**What the suite on GitHub is not, compared with step 4 of `make check` on this Mac.**
+It is weaker in four ways, and only `make check` here is the full gate:
 - The 103 tests of `Scripts/agents/runner-skips.conf` are left out, as on `TestBuild`, so no job on GitHub runs them.
 - The limits of `KF8HostileFileTests` and `MOBIHostileFileTests` are multiplied by 2.5 (`TestMachine.timeScale`, which only `run-on-runner.py` sets).
-- The performance baselines run on no GitHub machine. The request says `"strict_performance": true`, which hands `TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1` to the test host as `make test PERFORMANCE_STRICT=1` does, but the baselines tests run only on the Mac model they were recorded on (`PerformanceBaselineSupport`) and skip on any other, so on a runner they check nothing. The old single job behaved the same way.
+- The performance baselines run on no GitHub machine.
+  The request says `"strict_performance": true`, which hands `TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1` to the test host as `make test PERFORMANCE_STRICT=1` does, but the baselines tests run only on the Mac model they were recorded on (`PerformanceBaselineSupport`) and skip on any other, so on a runner they check nothing.
+  The old single job behaved the same way.
 - xcodebuild in the shards is not given `-onlyUsePackageVersionsFromResolvedFile` (only `make test` is), so the pin check at the end of the gate covers the gate's machine only.
 
-A plain `make check` on this Mac still runs all four steps in one go. `make check-selftest` covers `--without-tests`.
+A plain `make check` on this Mac still runs all four steps in one go.
+`make check-selftest` covers `--without-tests`.

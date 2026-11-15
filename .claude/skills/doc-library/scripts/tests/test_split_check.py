@@ -169,6 +169,126 @@ class SplitCheckTests(DocLibCase):
         self.assertLess(time.monotonic() - started, 1.0)
 
 
+class LooseTests(DocLibCase):
+    """--loose: a re-punctuation passes, any other change fails, and code stays exact."""
+
+    def loose(self, old: str, new: str, *extra: str):
+        """Write ``old`` and ``new`` as pages; return ((loose status, its lines), the exact check's status)."""
+        self.write_tree({"old.md": "# P\n\n" + old, "new.md": "# P\n\n" + new})
+        status, out, _ = self.run_cli("split-check", "old.md", "new.md", "--loose", *extra)
+        exact, _, _ = self.run_cli("split-check", "old.md", "new.md", *extra)
+        return (status, out.splitlines()), exact
+
+    def assert_loose_only(self, old: str, new: str) -> None:
+        """The loose check passes and the exact one fails."""
+        (status, lines), exact = self.loose(old, new)
+        self.assertEqual((status, exact), (0, 1), lines)
+
+    def assert_both_fail(self, old: str, new: str) -> None:
+        """The loose check and the exact one both fail."""
+        (status, lines), exact = self.loose(old, new)
+        self.assertEqual((status, exact), (1, 1), lines)
+
+    def test_a_semicolon_made_a_full_stop_passes_loosely_only(self) -> None:
+        self.assert_loose_only("Open the book; press Play.\n", "Open the book. Press Play.\n")
+
+    def test_a_capital_after_a_new_full_stop_passes_loosely_only(self) -> None:
+        self.assert_loose_only("The reader opens it, and then it plays.\n", "The reader opens it.\nAnd then it plays.\n")
+
+    def test_a_clause_run_made_a_markdown_list_passes_loosely_only(self) -> None:
+        self.assert_loose_only("It opens a book; it reads a page; it saves a place.\n",
+                               "- It opens a book.\n- It reads a page.\n- It saves a place.\n")
+
+    def test_a_parenthesis_made_a_sentence_passes_loosely_only(self) -> None:
+        self.assert_loose_only("Press Play (the button is at the left) to start.\n",
+                               "Press Play. The button is at the left. To start.\n")
+
+    def test_quotes_and_a_lone_dash_are_ignored(self) -> None:
+        self.assert_loose_only("He said “stop” - then \"left\".\n", "He said stop then left.\n")
+        self.assert_loose_only("It is a word — well.\n", "It is a word well.\n")
+
+    def test_inner_punctuation_keeps_a_word_whole(self) -> None:
+        self.assert_both_fail("Open file.swift now.\n", "Open fileswift now.\n")
+        self.assert_both_fail("It's here.\n", "Its here.\n")
+        self.assert_both_fail("A well-known fact.\n", "A wellknown fact.\n")
+
+    def test_an_added_or_removed_word_fails_both(self) -> None:
+        self.assert_both_fail("Open the book; press Play.\n", "Open the book. Then press Play.\n")
+        self.assert_both_fail("Open the book; press Play.\n", "Open the book. Play.\n")
+        # Dropping the word "and" from a clause list is a removed word too.
+        self.assert_both_fail("A one; a two; and a three.\n", "- A one.\n- A two.\n- A three.\n")
+
+    def test_a_reordered_word_fails_both(self) -> None:
+        self.assert_both_fail("Open the book.\n", "Open book the.\n")
+
+    def test_a_changed_backticked_name_fails_both_even_in_case_or_punctuation(self) -> None:
+        self.assert_both_fail("Call `foo(bar:)` now.\n", "Call `foo(baz:)` now.\n")
+        self.assert_both_fail("Call `foo(bar:)` now.\n", "Call `Foo(bar:)` now.\n")
+        self.assert_both_fail("Call `foo(bar:)` now.\n", "Call `foo(bar)` now.\n")
+        # A span of several words is exact through its middle and at its two ends.
+        self.assert_both_fail("Run `make Install now` here.\n", "Run `make install now` here.\n")
+        self.assert_both_fail("Run `make install.` here.\n", "Run `make install` here.\n")
+        self.assert_both_fail("Run `(make install` here.\n", "Run `make install` here.\n")
+
+    def test_punctuation_around_a_backticked_name_may_change(self) -> None:
+        self.assert_loose_only("See `foo(bar:)`; then stop.\n", "See `foo(bar:)`. Then stop.\n")
+        self.assert_loose_only("See (`Foo.swift`), then stop.\n", "See `Foo.swift` then stop.\n")
+
+    def test_a_changed_code_line_fails_both(self) -> None:
+        self.assert_both_fail("```\nlet X = foo(1)\n```\n", "```\nlet x = foo(1)\n```\n")
+        self.assert_both_fail("```\nlet x = foo(1);\n```\n", "```\nlet x = foo(1)\n```\n")
+        # A lone dash in a code block is a word and counts.
+        self.assert_both_fail("```\na\n-\nb\n```\n", "```\na\nb\n```\n")
+
+    def test_a_table_stays_exact(self) -> None:
+        table = "| Key | Does |\n| --- | --- |\n| Space | Plays. |\n"
+        self.assert_both_fail(table, table.replace("Space", "space"))
+        self.assert_both_fail(table, table.replace("Plays.", "Plays"))
+
+    def test_the_output_names_the_loose_mode_and_the_exact_one_does_not(self) -> None:
+        (status, lines), _ = self.loose("Open it; press Play.\n", "Open it. Press Play.\n")
+        self.assertEqual((status, lines), (0, ["split-check: same words, loosely (4 words)"]))
+        self.write_tree({"new.md": "# P\n\nOpen it; press Play.\n"})
+        _, out, _ = self.run_cli("split-check", "old.md", "new.md")
+        self.assertEqual(out.splitlines(), ["split-check: same words (4 words)"])
+
+    def test_a_failure_shows_the_words_as_written(self) -> None:
+        (status, lines), _ = self.loose("Open it; press Play.\n", "Open it. Then Press Play.\n")
+        self.assertEqual(status, 1)
+        self.assertIn("[Then]", lines[2])
+
+    def test_loose_works_with_files_to_src(self) -> None:
+        self.write_tree({"TextMouth/Importer.swift": ""})
+        old = "Imports read a file; then stop.\n\nFiles: TextMouth/Importer.swift\n"
+        new = "<!-- id: imports; src: TextMouth/Importer.swift -->\nImports read a file. Then stop.\n"
+        (status, lines), exact = self.loose(old, new, "--files-to-src")
+        self.assertEqual((status, lines), (0, ["split-check: same words, loosely (6 words)"]))
+        self.assertEqual(exact, 1)
+
+    def test_loose_works_with_update_baseline(self) -> None:
+        self.git_repo({"README.md": "# Index\n\n- [Old](docs/old.md) old\n- [New](docs/new.md) new\n",
+                       "docs/old.md": page("Old", "On March 3, 2026 it changed; go now."), "docs/new.md": page("New")})
+        baseline.write_baseline(self.root, {"docs/old.md": {"date": 1}})
+        self.write_tree({"docs/new.md": page("New", DATED, "Go now.")})
+        (self.root / "docs/old.md").unlink()
+        status, out, _ = self.run_cli("split-check", "HEAD:docs/old.md", "docs/new.md", "--loose", "--update-baseline")
+        self.assertEqual(status, 0, out)
+        self.assertIn("split-check: same words, loosely (8 words)", out)
+        self.assertEqual(baseline.load_baseline(self.root), {"docs/new.md": {"date": 1}})
+
+    def test_loose_words_of_a_page_carry_their_keys(self) -> None:
+        found = splitcheck.words("# H\n\n- Hello, (`Foo`) — World.\n", "a.md", loose=True)
+        self.assertEqual([(w.text, w.same_as) for w in found], [("Hello,", "hello"), ("(`Foo`)", "`Foo`"), ("World.", "world")])
+
+    def test_a_long_page_is_checked_loosely_in_well_under_a_second(self) -> None:
+        text = "# Long\n\n" + "\n".join("Word%d; " % i * 10 for i in range(4000)) + "\n"
+        self.write_tree({"old.md": text, "new.md": text.replace(";", ".")})
+        started = time.monotonic()
+        status, _, _ = self.run_cli("split-check", "old.md", "new.md", "--loose")
+        self.assertEqual(status, 0)
+        self.assertLess(time.monotonic() - started, 1.0)
+
+
 FILES_OLD = """\
 # Imports
 

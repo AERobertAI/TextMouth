@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import posixpath
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple, Optional, Sequence, Tuple
@@ -39,6 +40,7 @@ import swiftindex
 import targets
 from citations import KIND_SRC
 from docmodel import Block, Page
+from reflowblocks import PROSE_KINDS, reflow_pieces
 from repofiles import RepoFiles
 # The one finder of a link's ``](destination)`` spans, which the sentence splitter
 # also protects; the lint reads the destination out of each span.
@@ -298,14 +300,73 @@ def unchecked_lines(page: Page) -> set:
     return lines
 
 
+def physical_long_lines(page: Page, first: int, last: int, skipped: set) -> List[Violation]:
+    """The lines ``first..last`` of ``page`` over ``LINE_LIMIT`` characters, bar the ``skipped`` ones."""
+    return [violation(page, "line-length", number, number,
+                      f"{len(page.lines[number - 1]):,} characters, limit {LINE_LIMIT}")
+            for number in range(first, last + 1)
+            if len(page.lines[number - 1]) > LINE_LIMIT and number not in skipped]
+
+
+def prose_long_lines(page: Page, block: Block) -> List[Violation]:
+    """The ``line-length`` violations of one paragraph, list item, or list paragraph.
+
+    The block counts the larger of two numbers: its lines over the limit as written,
+    and its lines over the limit as ``reflow`` would write them (``reflowblocks``,
+    the code ``reflow`` runs, with the indentation it gives each sentence). So a
+    page ``reflow`` has already done counts exactly as before, and ``reflow`` can
+    only lower a count: a line of several long sentences counts once for each.
+    When the reflowed count is the larger, each violation is at the line where its
+    sentence starts, and says how many sentences start on that line.
+    """
+    old = page.lines[block.start - 1:block.end]
+    written = physical_long_lines(page, block.start, block.end, set())
+    pieces = reflow_pieces(block, old)
+    # A block that reflow leaves alone (a hard line break, say) has only its own lines.
+    if pieces is None:
+        return written
+    long_pieces = [(source, text) for source, text in pieces if len(text) > LINE_LIMIT]
+    if len(long_pieces) <= len(written):
+        return written
+    # The sentences starting on each old line, to say which long ones share their line.
+    starts_on = Counter(source for source, _ in pieces)
+    found = []
+    for source, text in long_pieces:
+        sentences = starts_on[source]
+        shared = f" on a line of {sentences} sentences" if sentences > 1 else ""
+        number = block.start + source
+        found.append(violation(page, "line-length", number, number,
+                               f"sentence of {len(text):,} characters{shared}, limit {LINE_LIMIT}"))
+    return found
+
+
+def line_length_violations(page: Page) -> List[Violation]:
+    """Every ``line-length`` violation of ``page``, in line order.
+
+    Prose blocks (``reflowblocks.PROSE_KINDS``) follow ``prose_long_lines``. Every
+    other line, headings, quotes, tables, and HTML comments among them, counts when
+    it is over the limit as written; code, front matter, and markers are exempt.
+    """
+    skipped = unchecked_lines(page)
+    found: List[Violation] = []
+    prose_lines: set = set()
+    for block in page.blocks:
+        if block.kind in PROSE_KINDS:
+            prose_lines.update(range(block.start, block.end + 1))
+            found += prose_long_lines(page, block)
+    # The lines outside the prose blocks, as written.
+    found += physical_long_lines(page, 1, len(page.lines), skipped | prose_lines)
+    return sorted(found, key=lambda v: (v.start, v.end))
+
+
 def rule_line_length(context: LintContext) -> Iterator[Violation]:
-    """``line-length``: lines over ``LINE_LIMIT`` characters, outside code, front matter, and markers."""
+    """``line-length``: lines over ``LINE_LIMIT`` characters, outside code, front matter, and markers.
+
+    A prose block counts the larger of its long lines as written and as ``reflow`` would
+    write them (see ``prose_long_lines``), so ``reflow`` never raises the count.
+    """
     for page in context.selected():
-        skipped = unchecked_lines(page)
-        for number, line in enumerate(page.lines, start=1):
-            if len(line) > LINE_LIMIT and number not in skipped:
-                yield violation(page, "line-length", number, number,
-                                f"{len(line):,} characters, limit {LINE_LIMIT}")
+        yield from line_length_violations(page)
 
 
 def rule_section_length(context: LintContext) -> Iterator[Violation]:

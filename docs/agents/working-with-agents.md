@@ -1,25 +1,141 @@
 # Working on TextMouth with coding agents
+<!-- id: working-textmouth-coding-agents; keys: agent-bbs, worktree, orchestrating session, briefs, speech probes; src: .claude/skills/agent-bbs/SKILL.md, AGENTS.md -->
 
 Part of [TextMouth's documentation](../../README.md).
 
-Task agents run on Claude Opus, launched with an explicit `model: "opus"`, in git worktrees of their own; the orchestrating session, which may run on a larger model, writes their briefs, reviews their reports and diffs, merges after a green suite, and records the merge. An agent launched without a model override inherits the orchestrator's model, which spent a weekly usage window on October 6 and 7, 2026; AGENTS.md carries the rule. The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scripts/agents/probes/` holds the offline speech-engine probes behind the October 7 speech guard and the refusal fixes that followed it, and the October 10 probe of control characters, which found the null character's dropped words.
+Task agents run in git worktrees of their own, each launched with an explicit model: Sonnet by default, Opus for a large design (see "Every launch names its model" in [Orchestrating TextMouth's agents](orchestrator.md)).
+The orchestrating session, which may run on a larger model, writes their briefs, reviews their reports and diffs, merges after a green suite, and records the merge.
+The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scripts/agents/probes/` holds the offline speech-engine probes behind the speech guard and the refusal fixes that followed it, and the probe of control characters, which found the null character's dropped words.
 
-Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/. Its SKILL.md is the full reference. AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md; AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
+Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/.
+Its SKILL.md is the full reference.
+AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md; AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
 
-- The board is one SQLite file, .claude/agent-bbs/board.sqlite in the repository's main working tree, which git ignores. A standard-library Python script drives it, with no server: `python3 .claude/skills/agent-bbs/scripts/bbs.py`.
-- Each agent registers its role, branch, and the files it expects to edit, claims files as it takes them on, and sees any overlap with another agent's claims.
-- Agents post short messages about builds, commits, findings, and questions. A message tied to a file reaches whoever has claimed it.
-- The board has teams: a lead, members, a channel addressed `team:NAME`, and a task list (`team create`, `team add`, `team remove`, `teams`, `task add`, `task assign`, `task move`, `tasks`, and `--team` on `register`, `read`, `inbox`, and `watch`). The tables for teams are additions to the board's file that leave its layout version at 1, so copies of the script from before teams keep working on the shared board. A lead can add a worker to its team before the worker registers; the worker joins when it does, and a mistyped name waits with a "did you mean" hint.
-- The board refuses an unmerged copy of its script on the shared board: a copy opens it only when it matches the script at some commit main has had, so a worker tries a changed script on a scratch board, in a folder named by TEXTMOUTH_BBS_DIR, instead. When git cannot tell, the script goes ahead, and TEXTMOUTH_BBS_ALLOW_UNMERGED=1 overrides the check.
-- `bbs.py protocol` prints the rules for an agent's brief: register on start, read the inbox before each build and commit, post each commit, and release claims when done.
-- `.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh` runs a build while holding one of three machine-wide build slots, so that at most three wrapped builds share the development Mac's memory at once, and shows the agent as building meanwhile. `make check` uses such a wrapper when the TEXTMOUTH_BUILD_SLOT variable names one.
-- An agent checks its code in three ways, none of which builds with Xcode. It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`, all under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for; and, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`. It tests through the build train (see the build train in [Testing TextMouth](../developer/testing.md)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written. What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.
-- **Making each train count** (since November 8, 2026). A train leaves once an hour, and heavy jobs run one after the other, so a train that is missed, or spent on a mistake a careful reading would have caught, costs an hour. The user asked for the agents "to like use there cycles wisely and to use the wait time to review there patches and fix any obvius issues so its less likely a hour cycle would be waisted, or to improve tests so each indiviusal build would give more information". So an agent:
-  - **Reviews before it asks.** It reads its whole diff against its base (`git diff main...HEAD`) as an outside reviewer would, for a bug in plain sight, a missed edge case, a test that would still pass with the change undone, a comment that no longer says what the code does, or a repeated block, and fixes what it finds. It then commits and runs `make typecheck-tests` (the app and the Mac's hosted tests; `REF=<commit>` names another commit), and `make typecheck-ios` when the change reaches code the iPhone app shares, once for the whole batch rather than after each edit, so no train is spent on a compile error. It makes this its last step before the train request: a test file that does not compile costs the whole train, and the type-checks without `--tests` compile no test file.
-  - **Asks once, for everything.** It sends one request for a batch of work, not one per commit, naming every class and area the change could break, not only those it edited: a class left out costs a second train.
-  - **Makes each test tell as much as it can.** An assertion's message gives what was expected and what came instead (the values, the list of chapters, the words around a mismatch), so one failure shows the fix. A test of a table checks every row and reports each mismatch, rather than stopping at the first. When it is torn between two explanations, it adds a test for each, so one train settles both.
-  - **Works while it waits.** It waits with one background `wait-for-result.py` and no polling, since each wake costs usage, and meanwhile reviews the patch again, writes the next step's tests, checks its list of documentation, and drafts its report. A fix committed meanwhile goes with the train only if the agent asks again before the train leaves, since the train tests the commit each request names, and the newest request for a branch wins.
-  - **Reads the whole result before changing anything.** It fixes every failure in one round, reviews that round's diff, and asks once.
-  - **Knows where its train runs** (since November 9, 2026). When the orchestrator starts the loop with `--remote`, the train merges on the Mac but builds and tests on GitHub's macOS runners, so the Mac stays free and a train costs the Mac no heavy-work lock. The agent's part is the same: one request, one background `wait-for-result.py`. What differs is the result. Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads), and the train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead, and your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests). A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's. If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again. A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for: they have no verdict, so say so in your report and ask the orchestrator to run them in a local train. A timing failure on the runner that passes on the Mac is flaky there; do not raise the test's limit. A remote loop started with `--soon N` leaves N minutes after a request instead of on the hour, so a fix may get its result sooner; the rules above hold either way. How to read a run: Tests on GitHub Actions in [Testing TextMouth](../developer/testing.md).
-  - **Batches its own heavy jobs.** A simulator run, or a deliberate break proven on a scratch copy, takes the same lock through `Scripts/agents/run_locked.py` and waits its turn behind the train, so the agent gathers them into as few runs as it can.
-- The board's tests run with `python3 -m unittest discover -s .claude/skills/agent-bbs/tests`, and those of the build train, the heavy-work lock, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py` with `python3 -I -B -m unittest discover -s Scripts/agents/tests`.
+## The board is one SQLite file
+<!-- id: board-one-sqlite-file; keys: board.sqlite, bbs.py, message board, no server; src: .claude/skills/agent-bbs/scripts/bbs.py -->
+
+The board is one SQLite file, .claude/agent-bbs/board.sqlite in the repository's main working tree, which git ignores.
+A standard-library Python script drives it, with no server: `python3 .claude/skills/agent-bbs/scripts/bbs.py`.
+
+## Registering and claiming files
+<!-- id: registering-claiming-files; keys: register, claim, claims overlap, bbs claims; src: .claude/skills/agent-bbs/scripts/bbs.py -->
+
+Each agent registers its role, branch, and the files it expects to edit, claims files as it takes them on, and sees any overlap with another agent's claims.
+
+## Posting messages
+<!-- id: posting-messages; keys: post, tag, inbox, message tied to a file; src: .claude/skills/agent-bbs/scripts/bbs.py -->
+
+Agents post short messages about builds, commits, findings, and questions.
+A message tied to a file reaches whoever has claimed it.
+
+## Teams on the board
+<!-- id: teams-board; keys: team create, team:NAME, task list, lead, layout version, did you mean; src: .claude/skills/agent-bbs/scripts/bbs.py, .claude/skills/agent-bbs/SKILL.md -->
+
+The board has teams: a lead, members, a channel addressed `team:NAME`, and a task list (`team create`, `team add`, `team remove`, `teams`, `task add`, `task assign`, `task move`, `tasks`, and `--team` on `register`, `read`, `inbox`, and `watch`).
+The tables for teams are additions to the board's file that leave its layout version at 1, so copies of the script from before teams keep working on the shared board.
+A lead can add a worker to its team before the worker registers; the worker joins when it does, and a mistyped name waits with a "did you mean" hint.
+
+## The board refuses an unmerged script
+<!-- id: board-refuses-unmerged-script; keys: TEXTMOUTH_BBS_DIR, TEXTMOUTH_BBS_ALLOW_UNMERGED, scratch board, changed script; src: .claude/skills/agent-bbs/scripts/bbs.py -->
+
+The board refuses an unmerged copy of its script on the shared board: a copy opens it only when it matches the script at some commit main has had, so a worker tries a changed script on a scratch board, in a folder named by TEXTMOUTH_BBS_DIR, instead.
+When git cannot tell, the script goes ahead, and TEXTMOUTH_BBS_ALLOW_UNMERGED=1 overrides the check.
+
+## The protocol for an agent's brief
+<!-- id: protocol-agent-brief; keys: protocol, brief rules, release claims, bbs.py protocol; src: .claude/skills/agent-bbs/scripts/bbs.py -->
+
+`bbs.py protocol` prints the rules for an agent's brief: register on start, read the inbox before each build and commit, post each commit, and release claims when done.
+
+## Build slots
+<!-- id: working-with-agents-build-slots; keys: build slot, TEXTMOUTH_BUILD_SLOT, make check, three builds at once; src: .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh, Scripts/check.sh -->
+
+`.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh` runs a build while holding one of three machine-wide build slots, so that at most three wrapped builds share the development Mac's memory at once, and shows the agent as building meanwhile.
+`make check` uses such a wrapper when the TEXTMOUTH_BUILD_SLOT variable names one.
+
+## How an agent checks its code
+<!-- id: how-agent-checks-code; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, heavy-work lock, train request; src: Makefile, Scripts/ios/mac-projection.py, Scripts/agents/heavy_lock.py, Scripts/agents/wait-for-result.py -->
+
+An agent checks its code in three ways, none of which builds with Xcode.
+It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`, all under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for; and, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
+It tests through the build train (see the build train in [Testing TextMouth](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
+What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.
+
+## Finding and checking doc sections
+<!-- id: finding-checking-doc-sections; keys: doclib, find, lint, outline; src: .claude/skills/doc-library/SKILL.md -->
+
+An agent finds, checks, and lints doc sections with the doc-library skill (`.claude/skills/doc-library/SKILL.md`).
+
+## Making each train count
+<!-- id: making-each-train-count; keys: hourly train, wasted train, request, wait time; src: Scripts/agents/build-train.py -->
+
+**Making each train count.**
+A train leaves once an hour, and heavy jobs run one after the other, so a train that is missed, or spent on a mistake a careful reading would have caught, costs an hour.
+So an agent:
+
+### Review before asking
+<!-- id: review-before-asking; keys: git diff main...HEAD, typecheck-tests, outside reviewer, compile error; src: Makefile -->
+
+**Reviews before it asks.**
+It reads its whole diff against its base (`git diff main...HEAD`) as an outside reviewer would, for a bug in plain sight, a missed edge case, a test that would still pass with the change undone, a comment that no longer says what the code does, or a repeated block, and fixes what it finds.
+It then commits and runs `make typecheck-tests` (the app and the Mac's hosted tests; `REF=<commit>` names another commit), and `make typecheck-ios` when the change reaches code the iPhone app shares, once for the whole batch rather than after each edit, so no train is spent on a compile error.
+It makes this its last step before the train request: a test file that does not compile costs the whole train, and the type-checks without `--tests` compile no test file.
+
+### Ask once, for everything
+<!-- id: ask-once-everything; keys: classes, areas, full suite, policy tests, golden classes, TestBuild lane; src: Scripts/agents/build-train.py, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, TextMouthProductionTests/LogContentPolicyTests.swift, TextMouthProductionTests/KeyboardReachabilityTests.swift, TextMouthProductionTests/ContentAnalysisMergeTests.swift, TextMouthProductionTests/BookBoxTests.swift -->
+
+**Asks once, for everything.**
+It sends one request for a batch of work, not one per commit, naming every class and area the change could break, not only those it edited: a class left out costs a second train.
+Ask for a train naming your classes and areas, not for a full suite: each full suite on GitHub holds the one `TestBuild` lane 30 to 40 minutes (the iPhone job) and every train waits behind it.
+The orchestrator's Mac suite at the merge is the full check.
+A fix to a shared writer needs the golden and heading-annotation classes in its request: one marker change passed 388 tests and failed three at the merge.
+Name the policy tests your change calls for.
+A new `@unchecked Sendable` type or `nonisolated(unsafe)` variable needs `UncheckedConcurrencyPolicyTests`, and a new log tag `LogContentPolicyTests`.
+A new shortcut action needs `KeyboardReachabilityTests` and the legacy shortcut scenarios, and a new field on `Book` needs `ContentAnalysisMergeTests`, `BookBoxTests`, and `OnDiskContractTests`.
+
+### Make each test informative
+<!-- id: make-each-test-informative; keys: assertion message, table test, failure message, two explanations; src: -->
+
+**Makes each test tell as much as it can.**
+An assertion's message gives what was expected and what came instead (the values, the list of chapters, the words around a mismatch), so one failure shows the fix.
+A test of a table checks every row and reports each mismatch, rather than stopping at the first.
+When it is torn between two explanations, it adds a test for each, so one train settles both.
+
+### Work while waiting
+<!-- id: work-while-waiting; keys: polling, gh run watch, API rate limit, background wait, newest request wins; src: Scripts/agents/wait-for-result.py, Scripts/agents/github_run.py -->
+
+**Works while it waits.**
+It waits with one background `wait-for-result.py` and no polling, since each wake costs usage, and meanwhile reviews the patch again, writes the next step's tests, checks its list of documentation, and drafts its report.
+A fix committed meanwhile goes with the train only if the agent asks again before the train leaves, since the train tests the commit each request names, and the newest request for a branch wins.
+Never run `gh run watch` beside a train or a remote suite: `github_run.py` already polls the run, and the API allows 5,000 calls an hour for the whole account, shared by every agent and tool, so a second watcher only costs calls; wait with a local check.
+
+### Read the whole result first
+<!-- id: read-whole-result-first; keys: result file, one round, fix every failure; src: -->
+
+**Reads the whole result before changing anything.**
+It fixes every failure in one round, reviews that round's diff, and asks once.
+
+### Where the train runs
+<!-- id: where-train-runs; keys: remote train, TestBuild, run.log, run-summary.txt, not run on GitHub, --soon; src: Scripts/agents/wait-for-result.py, Scripts/agents/build-train.py, Scripts/agents/github_run.py, Scripts/agents/runner-skips.conf -->
+
+**Knows where its train runs.**
+When the orchestrator starts the loop with `--remote`, the train merges on the Mac but builds and tests on GitHub's macOS runners, so the Mac stays free and a train costs the Mac no heavy-work lock.
+The agent's part is the same: one request, one background `wait-for-result.py`.
+What differs is the result.
+Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads), and the train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead, and your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
+A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's.
+If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again.
+A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for: they have no verdict, so say so in your report and ask the orchestrator to run them in a local train.
+A timing failure on the runner that passes on the Mac is flaky there; do not raise the test's limit.
+A remote loop started with `--soon N` leaves N minutes after a request instead of on the hour, so a fix may get its result sooner; the rules above hold either way.
+How to read a run: Tests on GitHub Actions in [Testing TextMouth](../developer/testing-github.md).
+
+### Batch heavy jobs
+<!-- id: batch-heavy-jobs; keys: simulator run, scratch copy, heavy-work lock, run_locked; src: Scripts/agents/run_locked.py -->
+
+**Batches its own heavy jobs.**
+A simulator run, or a deliberate break proven on a scratch copy, takes the same lock through `Scripts/agents/run_locked.py` and waits its turn behind the train, so the agent gathers them into as few runs as it can.
+
+## The tests of the board and the build train
+<!-- id: tests-board-build-train; keys: unittest, discover, board tests, train tests; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py, .claude/skills/agent-bbs/tests/test_bbs.py, Scripts/agents/tests/test_build_train.py, Scripts/agents/tests/test_heavy_lock.py, Scripts/agents/tests/test_run_locked.py, Scripts/agents/tests/test_copy_phases.py, Scripts/agents/tests/test_regenerate_project.py, Scripts/agents/tests/test_run_suite_remote.py -->
+
+The board's tests run with `python3 -m unittest discover -s .claude/skills/agent-bbs/tests`, and those of the build train, the heavy-work lock, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py` with `python3 -I -B -m unittest discover -s Scripts/agents/tests`.

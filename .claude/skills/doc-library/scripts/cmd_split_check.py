@@ -14,12 +14,19 @@ quote markers, front matter, and white space do not count (see ``splitcheck.word
 block counts as words on either side, and every repository path OLD's blocks name must
 be named by a NEW marker's ``src`` or a NEW ``Files:`` block.
 
+``--loose`` compares each prose word lowercased and without the punctuation at its two
+ends (``.,;:!?()[]"'`` and the curly quotes), and leaves out a word that is only
+punctuation (a lone ``-``). Code stays exact: code blocks, tables, and inline code keep
+their case and punctuation. It proves that a re-punctuation (a semicolon made a full
+stop and a capital, a clause list made a list) changed no word; see ``splitcheck.loose_key``.
+
 ``--update-baseline``, when the check passes, moves the lint baseline's counts with the
 words: the OLD pages' counts become the NEW pages' (see ``update_baseline``).
 
-Prints ``split-check: same words (N words)`` and exits 0, or the first difference
-(both places, up to eight words around it, both counts) and exits 1. A path outside
-the repository or a ref git does not know is a usage error (exit status 2).
+Prints ``split-check: same words (N words)`` (``same words, loosely (N words)`` under
+``--loose``) and exits 0, or the first difference (both places, up to eight words
+around it, both counts) and exits 1. A path outside the repository or a ref git does
+not know is a usage error (exit status 2).
 """
 
 from __future__ import annotations
@@ -47,11 +54,14 @@ def read_pages(root: Path, specs: List[str]) -> List[Page]:
     return pages
 
 
-def words_of(pages: List[Page], files_to_src: bool) -> List[Word]:
-    """The words of the pages one after another, each labelled with its page's source."""
+def words_of(pages: List[Page], files_to_src: bool, loose: bool = False) -> List[Word]:
+    """The words of the pages one after another, each labelled with its page's source.
+
+    ``loose`` reads each prose word by its lowercase, end-punctuation-free key.
+    """
     found: List[Word] = []
     for page in pages:
-        found.extend(splitcheck.page_words(page, page.path, files_to_src))
+        found.extend(splitcheck.page_words(page, page.path, files_to_src, loose))
     return found
 
 
@@ -95,8 +105,8 @@ def run(args: Any) -> int:
     old_pages = read_pages(args.root, args.old.split(","))
     new_pages = read_pages(args.root, args.new)
 
-    old_words = words_of(old_pages, args.files_to_src)
-    new_words = words_of(new_pages, args.files_to_src)
+    old_words = words_of(old_pages, args.files_to_src, args.loose)
+    new_words = words_of(new_pages, args.files_to_src, args.loose)
 
     failed = False
     difference = splitcheck.compare(old_words, new_words)
@@ -113,7 +123,9 @@ def run(args: Any) -> int:
                 print(f"  {token}")
     if failed:
         return output.EXIT_NONE
-    print(f"split-check: same words ({len(old_words)} words)")
+    # A loose pass says so, so a commit message quoting it cannot pass for an exact check.
+    mode = ", loosely" if args.loose else ""
+    print(f"split-check: same words{mode} ({len(old_words)} words)")
     if args.update_baseline:
         return update_baseline(args.root, args.old.split(","), args.new)
     return output.EXIT_OK
@@ -130,6 +142,8 @@ def register(subparsers: Any, common: Any) -> None:
     parser.add_argument("new", nargs="+", help="the page(s) after, in reading order: a file, or REF:PATH")
     parser.add_argument("--files-to-src", action="store_true",
                         help="leave Files: blocks out, and require each path OLD's name to be named in NEW")
+    parser.add_argument("--loose", action="store_true",
+                        help="compare words without their case and end punctuation, outside code")
     parser.add_argument("--update-baseline", action="store_true",
                         help="when the words match, hand the OLD pages' lint baseline counts to the NEW pages "
                              "(never raising a rule's total)")
