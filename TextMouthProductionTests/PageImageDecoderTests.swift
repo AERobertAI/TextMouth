@@ -61,7 +61,7 @@ final class PageImageDecoderTests: XCTestCase {
         XCTAssertLessThan(vast.count, 100, "the fixture is a small file")
         let source = try PageImageSource(data: vast)
 
-        XCTAssertThrowsError(try source.decodedPage(at: source.pageIndexes[0])) { error in
+        XCTAssertThrowsError(try source.decodedPage(at: XCTUnwrap(source.pageIndexes.first))) { error in
             XCTAssertEqual(error as? PageImageError, .tooLarge(width: 20_000, height: 20_000))
         }
     }
@@ -206,7 +206,7 @@ final class PageImageDecoderTests: XCTestCase {
             let source = try PageImageSource(url: copyOfFormatSample(sample.path))
             XCTAssertEqual(source.typeIdentifier, sample.type, sample.path)
             XCTAssertEqual(source.pageIndexes.count, sample.pages, sample.path)
-            let page = try source.decodedPage(at: source.pageIndexes[0])
+            let page = try source.decodedPage(at: XCTUnwrap(source.pageIndexes.first, sample.path))
             XCTAssertEqual(page.image.width, 1_224, sample.path)
             XCTAssertEqual(page.image.height, 1_584, sample.path)
             if let alpha = sample.alpha {

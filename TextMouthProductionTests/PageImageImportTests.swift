@@ -91,8 +91,10 @@ final class PageImageImportTests: XCTestCase {
         XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2"])
         XCTAssertEqual(content.pages.breaks.map(\.chapterIndex), [0, 1])
         XCTAssertTrue(report.isComplete)
-        XCTAssertTrue(normalized(content.chapters[0].text).contains("half past nine"), content.chapters[0].text)
-        XCTAssertTrue(normalized(content.chapters[1].text).contains("thirty days"), content.chapters[1].text)
+        let first = try XCTUnwrap(content.chapters.first)
+        let last = try XCTUnwrap(content.chapters.last)
+        XCTAssertTrue(normalized(first.text).contains("half past nine"), first.text)
+        XCTAssertTrue(normalized(last.text).contains("thirty days"), last.text)
     }
 
     /// The comic book archive is a book of its two pictures, named by its

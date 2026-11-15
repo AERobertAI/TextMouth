@@ -113,7 +113,9 @@ struct PageImageArchive: PageImageBook {
             throw PageImageError.damagedPage(file: entry.path, reason: reason)
         }
         let source = try PageImageSource(data: data)
-        return try source.decodedPage(at: source.pageIndexes[0])
+        // A source always has a page; the guard keeps that from being assumed.
+        guard let main = source.pageIndexes.first else { throw PageImageError.notAPicture }
+        return try source.decodedPage(at: main)
     }
 
     // MARK: - What the Archive Holds
