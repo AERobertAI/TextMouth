@@ -1,15 +1,15 @@
 # Import progress and errors
-<!-- id: import-progress-errors; keys: ; src: -->
+<!-- id: import-progress-errors; keys: import overlay, refusals, errors, alert wording; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/Services/ImportFailure.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The import overlay
-<!-- id: import-overlay; keys: ; src: -->
+<!-- id: import-overlay; keys: progress overlay, Importing Books, ImportProgress, VoiceOver reads; src: TextMouth/ViewModels/ImportProgress.swift, TextMouth/Models/ImportProgressWording.swift -->
 
 - While books import, the import overlay in the Library window shows how far the import has got, and VoiceOver reads all of it there.
 
 ### What the overlay says
-<!-- id: what-overlay-says; keys: ; src: -->
+<!-- id: what-overlay-says; keys: Extracting, items and bytes, books processed, step, checking the package; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/ImportProgress.swift -->
 
 - For a ZIP archive the overlay first counts the items and bytes extracted, as in "Extracting “Library Export.zip”: 120 of 300 items, 1.2 GB of 3.4 GB...".
 - It then counts the books processed, as in "2 of 100 books processed", with the book under way, by its name in the archive, and the step it is at, as in "Book 3 of 100: “Moby Dick.epub”, reading its text".
@@ -20,7 +20,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A ZIP holding one audiobook also counts the items and bytes extracted while it extracts, as in "“Harbor Talks.zip”, extracting the archive: 12 of 30 items, 120 MB of 340 MB".
 
 ### Time and waiting imports
-<!-- id: time-waiting-imports; keys: ; src: -->
+<!-- id: time-waiting-imports; keys: time left, estimate, TimeLeftEstimate, more imports waiting, stuck book; src: TextMouth/Models/TimeLeftEstimate.swift, TextMouth/Models/ImportProgressWording.swift -->
 
 - Once a book of several is done, the overlay gives the time left, as in "About 4 minutes left" or "Less than a minute left".
 - It weighs each book still to come by its size where that tells its time, as an EPUB's, PDF's, Word document's, or text file's does, so a large book still to come counts for more, while an audiobook's file, a DAISY book, or an .rtfd folder counts at the average time such books took.
@@ -28,12 +28,12 @@ Part of [TextMouth's documentation](../../README.md).
 - Once a book has taken 10 seconds, the overlay says for how long, as in "1 minute, 5 seconds on this book", in steps of 5 seconds, so a stuck book shows as a time growing on one step.
 
 ### What VoiceOver hears
-<!-- id: what-voiceover-hears; keys: ; src: -->
+<!-- id: what-voiceover-hears; keys: announcement, quarter, Finished importing, spoken progress; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/ImportProgress.swift -->
 
 - For an import that runs 10 seconds or more, VoiceOver also hears, wherever you are, each quarter of a ZIP's books, as in "Importing “Library Export.zip”: 25 of 100 books processed, about 4 minutes left.", and how it ended, as in "Finished importing “Library Export.zip”: 97 books imported, 2 skipped as duplicates, 1 failed."
 
 ### The Nothing Imported alert
-<!-- id: nothing-imported-alert; keys: ; src: -->
+<!-- id: nothing-imported-alert; keys: Already in Library, No books were found, archive holds, alert title; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - A ZIP import that brings no new book, and in which nothing failed, says what it found in the Library window's alert, titled Nothing Imported, however quickly it ends: "No new books in “Library Export.zip”: all 24 were already in your library."
   ("both" for two, and "its one book" for one).
@@ -44,7 +44,7 @@ Part of [TextMouth's documentation](../../README.md).
 - One with a failure says so in its alert instead.
 
 ### Cancel and speaking the overlay
-<!-- id: cancel-speaking-overlay; keys: ; src: -->
+<!-- id: cancel-speaking-overlay; keys: Cancelling, Speak Import Progress, No import is under way, Information shortcut; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/ImportProgress.swift -->
 
 - Cancel says at once "Cancelling after this book...", or "Cancelling..." before the first book.
 - The alert of a cancelled import says where it stopped.
@@ -52,7 +52,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Give it a key in the Shortcuts tab of Settings, under Information, to use it in every window but an audio editor's, a reader's included (see Works in, under the Shortcuts tab).
 
 ## When an import fails
-<!-- id: when-import-fails; keys: ; src: -->
+<!-- id: when-import-fails; keys: Could not import, IMPORT_FAILED, step that failed, error alert, ImportFailure; src: TextMouth/Services/ImportFailure.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - When an import fails, an alert names the file, the step that failed, and why, as in "Could not import “notes.md”.
   Reading its text failed: This file has no text to read."
@@ -61,7 +61,7 @@ Part of [TextMouth's documentation](../../README.md).
 - These reasons have plain words of their own:
 
 ### A file with no text to read
-<!-- id: adding-books-file-no-text-read; keys: ; src: -->
+<!-- id: adding-books-file-no-text-read; keys: empty file, blank book, no text, silent book, whitespace only, Checking its format; src: TextMouth/Services/FileImportService.swift -->
 
 - A plain text, Markdown, HTML, web archive, SSML, rich text, Word (.docx, and its templates and macro documents), Word 97-2003, OpenDocument, Word 2003 XML, Kindle, or braille file, or a DTBook on its own, with no text in it is refused with "This file has no text to read."
 - That covers a file of no bytes, a file of only white space or only a byte-order mark, an HTML file or a web archive of only markup, a document of only empty paragraphs, an SSML file of only markup, and a braille file of only blank lines or one that translates to nothing but white space, so no silent, empty book is added.
@@ -72,7 +72,7 @@ Part of [TextMouth's documentation](../../README.md).
   New from Text… and the rebuilding of a book already in the library are not.
 
 ### A disk without room
-<!-- id: disk-without-room; keys: ; src: -->
+<!-- id: disk-without-room; keys: free space, disk full, ENOSPC, reserve 1 GB, APFS clone, folder of tracks; src: TextMouth/Services/ImportFailure.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Services/FileImportService.swift -->
 
 - A disk without room for the book is reported as "There isn’t enough free space on the disk.", as in "Could not import “Middlemarch.epub”.
   Copying it into the library failed: There isn’t enough free space on the disk."
@@ -81,7 +81,7 @@ Part of [TextMouth's documentation](../../README.md).
   A track on the same APFS disk as the library counts as nothing, since the copy shares its bytes with the original, so a big folder on the library's own disk is not refused for room its copy will not take.
 
 ### Documents TextMouth's own readers can't read
-<!-- id: documents-textmouth-own-readers-cant; keys: ; src: -->
+<!-- id: documents-textmouth-own-readers-cant; keys: rtf, rtfd, Word 97-2003, OpenDocument, Word 2003 XML, textutil, damaged, unreadable; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
 
 - A rich text, rich text with attachments, Word 97-2003, OpenDocument, or Word 2003 XML document that TextMouth's own reader can't read, and, on the Mac, a Word document older than Word 6 that textutil can't read, is refused with a sentence that names its kind, as in "Could not import “Letter.doc”.
   Reading its text failed: This file could not be read as a Word 97-2003 document.
@@ -105,7 +105,7 @@ Part of [TextMouth's documentation](../../README.md).
   - On the Mac, a Word document older than Word 6 is unreadable when textutil exits on it, or writes nothing for it, which is what it does when it cannot read a file.
 
 ### Documents on iOS
-<!-- id: documents-ios; keys: ; src: -->
+<!-- id: documents-ios; keys: iPhone, iOS, helper program, Word 6, Word 95, not available on iPhone; src: TextMouth/Platform/iOS/IOSUnavailable.swift, TextMouth/Platform/iOS/Services/WatchedProcess+iOS.swift, TextMouth/Parsers/WordDocumentReader.swift -->
 
 - On iOS, which runs no helper program, a Word document older than Word 6 is refused with "Converting this kind of file is not available on iPhone yet."
 - Rich text, rich text with attachments, Word 6 to Word 2003 documents, OpenDocument text, and Word 2003 XML are read there, as on the Mac.
@@ -114,14 +114,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A Word 6 or Word 95 document is told from a Word 97-2003 one by its own bytes.
 
 ### An OpenDocument text document's title and author
-<!-- id: opendocument-text-document-title-author; keys: ; src: -->
+<!-- id: opendocument-text-document-title-author; keys: .odt, .ott, author Unknown, dc:creator, textutil lost author; src: TextMouth/Parsers/ODTDocumentReader.swift -->
 
 - An OpenDocument text document's title and author come from the document's own information.
 - Apple's textutil lost an .odt's author, so a book of that kind added before version 0.4.0 shows the author Unknown.
 - The library does not change an author it has, but importing the file again with Replace Existing gives the book the author the file names, where you edited neither (see below).
 
 ### A document older than Word 6 that textutil was stopped on
-<!-- id: document-older-than-word-6; keys: ; src: -->
+<!-- id: document-older-than-word-6; keys: textutil limit, watchdog, 31 seconds, 1024 MB, 121 seconds, Word 1, Word 2; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
 - On the Mac, a Word document older than Word 6 that textutil was stopped on, for passing one of its limits (see [Where TextMouth keeps your library](where-your-library-lives.md)), says why: "TextMouth stopped reading this document because it ran longer than 31 seconds."
 - The reason can instead be "it held more than 1024 MB of memory" or "it used more than 121 seconds of processor time".
@@ -129,7 +129,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Every other kind of document, Word 6 and Word 95 since version 0.4.1 among them, is read inside TextMouth, never by textutil, and is not stopped this way.
 
 ### Documents protected by a password
-<!-- id: documents-protected-password; keys: ; src: -->
+<!-- id: documents-protected-password; keys: encrypted, password, locked PDF, Save a copy without the password; src: TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/PDFTextParser.swift -->
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password.
   Save a copy without the password, then import that copy."
@@ -137,14 +137,14 @@ Part of [TextMouth's documentation](../../README.md).
   A PDF that only restricts copying or printing is not locked and imports as usual.
 
 ### A Word document's title and author
-<!-- id: word-document-title-author; keys: ; src: -->
+<!-- id: word-document-title-author; keys: .docx, core properties, dc:title, dc:creator, Unknown; src: TextMouth/Parsers/DOCXParser+Metadata.swift -->
 
 - A Word document's (.docx) title and author come from the document's core properties, its title and its creator.
 - A title that the properties leave empty, or hold only spaces, is not a name: the book takes the file's name, as a document with no properties does.
 - A creator left empty is not a name either: the author is "Unknown", as for a document with no creator at all.
 
 ### XML parts TextMouth can't safely read
-<!-- id: xml-parts-textmouth-cant-safely; keys: ; src: -->
+<!-- id: xml-parts-textmouth-cant-safely; keys: XXE, DOCTYPE, entities, UTF-7, too many attributes, DOCX_ZIP_ERROR, EPUB_ZIP_ERROR; src: TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/ArchiveEntryReader.swift -->
 
 - A Word document, an EPUB, a DAISY book, or an SSML file with a part TextMouth can't safely read is refused, naming the part, in one of three sentences.
 - Before TextMouth reads a part, it checks the part's raw bytes, which no real file in its collection fails.
@@ -180,7 +180,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A Word 2003 XML or OpenDocument document that declares a document type at all is refused too, as before.
 
 ### Markup TextMouth can't safely read
-<!-- id: markup-textmouth-cant-safely-read; keys: ; src: -->
+<!-- id: markup-textmouth-cant-safely-read; keys: MarkupGuard, nesting, 128 levels, 1,000 attributes, memory, far too long; src: TextMouth/Parsers/MarkupGuard.swift -->
 
 - Before TextMouth reads the markup of an EPUB chapter, an HTML file, a DAISY book, a Kindle book, or a web archive's page, it looks through it once.
   A Word, rich text, or OpenDocument document passes through the same look, in the HTML its reader writes.
@@ -208,33 +208,33 @@ Part of [TextMouth's documentation](../../README.md).
   Feed discovery reads a page nested up to 512 levels deep, deeper than a book, since it converts nothing.
 
 ### Documents past the 64 MB limit
-<!-- id: documents-past-64-mb-limit; keys: ; src: -->
+<!-- id: documents-past-64-mb-limit; keys: size limit, too large, 64 MB, DocumentByteLimit; src: TextMouth/Parsers/DocumentByteLimit.swift -->
 
 - A document, web archive, SSML file, DTBook, or Kindle book past the limit of 64 MB (see [What TextMouth reads](what-textmouth-reads.md)) is refused with "This document holds more than 64 MB, the most TextMouth reads from one document."
 - For a rich text document the 64 MB counts the rich text file, or an .rtfd's TXT.rtf alone, whatever its attachments hold.
 - For a Word 97-2003 document it counts the Word file.
 
 ### Web archives that can't be read
-<!-- id: web-archives-that-cant-be; keys: ; src: -->
+<!-- id: web-archives-that-cant-be; keys: .webarchive, not a web page, image/png; src: TextMouth/Parsers/WebArchiveReader.swift -->
 
 - A web archive that can't be read as one is refused with "This file is not a web archive TextMouth can read.
   It may be damaged, or another kind of file."
 - One whose main file is not a page or text says "This web archive holds a file of the type “image/png”, not a web page or text, so it has nothing to read.", naming the type the archive gives.
 
 ### SSML files that can't be read
-<!-- id: ssml-files-that-cant-be; keys: ; src: -->
+<!-- id: ssml-files-that-cant-be; keys: SSML, speak element, damaged, line and column; src: TextMouth/Parsers/SSMLReader.swift -->
 
 - An SSML file that begins with another element is refused with "This file is not SSML: it begins with the element “html”, not “speak”.", naming that element.
 - One whose markup is broken is refused with "This SSML file is damaged or incomplete: " and how and where, as in "its markup breaks off early or has extra content after the end (line 1, column 27)."
 
 ### XML files of no known kind
-<!-- id: xml-files-no-known-kind; keys: ; src: -->
+<!-- id: xml-files-no-known-kind; keys: .xml, DTBook, Word 2003 XML, PEF, Checking its format; src: TextMouth/Services/FileImportService.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
 
 - An .xml file that is not a DTBook, Word 2003 XML, or a PEF braille file is refused before anything is copied, at the step "Checking its format", as in "Could not import “catalog.xml”.
   Checking its format failed: This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
 
 ### Kindle books that can't be read
-<!-- id: kindle-books-that-cant-be; keys: ; src: -->
+<!-- id: kindle-books-that-cant-be; keys: MOBI, AZW, AZW3, KF8, DRM, copy-protected, damaged; src: TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 - A Kindle book that can't be read is refused with a sentence that says why, as in "Could not import “Ferry Notes.mobi”.
   Reading its text failed: This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
@@ -253,7 +253,7 @@ Part of [TextMouth's documentation](../../README.md).
   Only a copy-protected book is refused for it.
 
 ### KFX Kindle books that can't be read
-<!-- id: kfx-kindle-books-that-cant; keys: ; src: -->
+<!-- id: kfx-kindle-books-that-cant; keys: KFX, KPF, Kindle Create, fixed layout, print replica, DRM, sidecar; src: TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/KFXPackage.swift -->
 
 - A KFX Kindle book that can't be read is refused with a sentence that says why.
 - A copy-protected book, a damaged one, and a file named as a Kindle book that is not one get the sentences above.
@@ -265,7 +265,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A KFX book is told copy-protected if its file, a license file beside it, or any part of a book of several is protected, and TextMouth never tries to remove the protection.
 
 ### Braille files that can't be read
-<!-- id: braille-files-that-cant-be; keys: ; src: -->
+<!-- id: braille-files-that-cant-be; keys: BRF, BRL, PEF, braille ASCII, Eurobraille, Unicode braille patterns, eight-dot, liblouis; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift -->
 
 - A braille file that can't be read is refused with a sentence that says what is wrong, as in "Could not import “Emma.brf”.
   Reading its text failed: Line 12 holds “é”, which is not braille ASCII."
@@ -301,7 +301,7 @@ Part of [TextMouth's documentation](../../README.md).
   - For a translation that failed any other way, because the helper is missing, could not start, ended with an error, or wrote output that does not match what it was given: "TextMouth could not translate this braille."
 
 ### Playlists that can't be imported
-<!-- id: playlists-that-cant-be-imported; keys: ; src: -->
+<!-- id: playlists-that-cant-be-imported; keys: M3U refused, streaming playlist, HLS, web addresses, 4 MiB; src: TextMouth/Models/PlaylistImportWording.swift, TextMouth/Parsers/M3UPlaylist.swift -->
 
 - A playlist that can't be imported is refused at the step "Reading the file", as in "Could not import “radio.m3u8”.
   Reading the file failed: It is a streaming playlist for audio on the web, which TextMouth does not import."
@@ -311,7 +311,7 @@ Part of [TextMouth's documentation](../../README.md).
   - "The playlist “mix.m3u” is too large to read." for a playlist file of more than 4 MiB.
 
 ## The Book Imported alert
-<!-- id: book-imported-alert; keys: ; src: -->
+<!-- id: book-imported-alert; keys: Book Imported, Books Imported, Some Files Not Imported, alert title, left out chapters; src: TextMouth/Models/ImportProgressWording.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - An import that adds its book but has something to tell ends with an alert titled "Book Imported", where a failure's alert is titled "Error": the entries a playlist skipped, the original of an .rtfd that was kept, or chapters or pages that were left out.
 - The book is in the library, but it is not opened, so the alert is not left behind a reader window.

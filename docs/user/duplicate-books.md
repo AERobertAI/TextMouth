@@ -1,10 +1,10 @@
 # Duplicate books and Replace Existing
-<!-- id: duplicate-books-replace-existing; keys: ; src: -->
+<!-- id: duplicate-books-replace-existing; keys: duplicate, Replace Existing, Keep Both, import question; src: TextMouth/Models/ImportDecision.swift, TextMouth/Services/DuplicateReplacement.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## A book that is already in the library
-<!-- id: book-that-already-library; keys: ; src: -->
+<!-- id: book-that-already-library; keys: Duplicate Book Found, Keep Both, Cancel, same content, hint; src: TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift -->
 
 - When a book's content is already in the library, TextMouth asks whether to keep both, replace the existing book, or cancel.
 - A feed's episode or article holding the same file doesn't count.
@@ -26,10 +26,10 @@ Part of [TextMouth's documentation](../../README.md).
 - The Replace Existing button's hint says "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.", and, for a recording and a text, "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list."
 
 ## What Replace Existing keeps
-<!-- id: what-replace-existing-keeps; keys: ; src: -->
+<!-- id: what-replace-existing-keeps; keys: same ID, carried over, new copy, replaced book; src: TextMouth/Services/DuplicateReplacement.swift -->
 
 ### Which transcript an audiobook keeps
-<!-- id: which-transcript-audiobook-keeps; keys: ; src: -->
+<!-- id: replace-keeps-which-transcript; keys: transcript file, sidecar, Attach Transcript, recognition, TranscriptOutcome; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Services/TranscriptPairing.swift -->
 
 Which transcript an audiobook keeps (0.4.2), when both copies have one and the new copy's came from a file beside its audio:
 - The existing copy's transcript stays when recognition made it, when you edited it or cleaned it up, or when this TextMouth can't tell, as for one made by a later version or one only in the cloud.
@@ -41,35 +41,35 @@ Which transcript an audiobook keeps (0.4.2), when both copies have one and the n
 - When each of several tracks brought a file, one sentence names them together and gives no Attach Transcript… advice, since that command takes one file for the whole book: "The transcript files beside the audio weren't attached as the book's transcript: Replacing kept the existing copy's transcript."
 
 ### What else the new copy keeps
-<!-- id: what-else-new-copy-keeps; keys: ; src: -->
+<!-- id: replace-keeps-details; keys: date added, manual order, last opened, Book Info edits, voice, speed, pitch; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/Book+OwnSettings.swift -->
 
 Replace Existing makes the new copy the same book as the existing one, under the same ID, so it keeps more than the question names:
 - It keeps the existing copy's date added, its place among the books of its folder when you ordered them by hand, when it was last opened and played, the details you edited by hand in Book Info, and its own voice, speed, pitch, end-of-book choice, and skip units.
   - Everything else is the new copy's: its file and text, and its title and author where you edited neither.
 
 ### Places in a text book
-<!-- id: places-text-book; keys: ; src: -->
+<!-- id: replace-keeps-places-text; keys: bookmarks, reading position, skipped headings, PlaceRelocator, words moved; src: TextMouth/Models/PlaceRelocator.swift, TextMouth/Services/DuplicateReplacement.swift -->
 
 - The reading position, the bookmarks with their notes, and the skipped headings of a text book move to their words in the new text, as when a book's text is read again (see [Reader windows](reader-windows.md)), and a place whose words are not found stays where it was saved.
   - They move from the existing copy's text only when that is the text they were saved in.
   - From text saved in an editor without TextMouth's taking the edit, they are found by their words in the new text alone.
 
 ### Places in an audiobook
-<!-- id: places-audiobook; keys: ; src: -->
+<!-- id: replace-keeps-places-audio; keys: tracks, PlaceClock, TrackPlaces, time on recording, skipped headings; src: TextMouth/Models/TrackPlaces.swift, TextMouth/Models/PlaceClock.swift, TextMouth/Services/DuplicateReplacement.swift -->
 
 - An audiobook's places count time in its recording.
   - Where the new copy has other chapters than the existing one, a book of tracks keeps each place at the same time into the same track, and a skipped heading follows its track.
   - Any other audiobook keeps each place at the same time on the recording, never cut short at the old chapter's end, and keeps its skipped headings aside, skipping nothing (see [Reader windows](reader-windows.md)).
 
 ### Copies of edited text
-<!-- id: copies-edited-text; keys: ; src: -->
+<!-- id: replace-keeps-edited-text; keys: content.md.edited, Edit Text, saved edit, kept copy; src: TextMouth/Services/DuplicateReplacement.swift -->
 
 - The copies of edited text that Edit Text kept for the existing copy go with it into the new copy's package, and so does the existing copy's own text, kept as a content.md.edited- copy beside the new text, when it holds an edit you made or a save that no edit took (see [Where TextMouth keeps your library](where-your-library-lives.md)).
   - When such a copy is kept, VoiceOver says, after the answer, "Replaced “X”.
     Its earlier text was kept as content.md.edited-…, in the book's package.", with X the book's title and the dots standing for the date and time in the copy's name.
 
 ### An audiobook's transcript
-<!-- id: audiobook-transcript; keys: ; src: -->
+<!-- id: replace-keeps-audio-transcript; keys: same audio, proven the same, path size date, cloud only, offer to transcribe; src: TextMouth/Services/DuplicateReplacement.swift -->
 
 - An audiobook's transcript comes along only when the new copy's audio is proven to be the same, without reading the audio whole:
   - A book of one audio file that is the very file transcribed, under the same name or another.
@@ -79,7 +79,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
   - A transcript you edited that stays behind, because the audio is not proven the same, leaves its text beside the new copy as a content.md.edited- copy too, and an audiobook that kept its transcript is not offered for transcription afterwards.
 
 ### Braille file characters
-<!-- id: braille-file-characters; keys: ; src: -->
+<!-- id: replace-keeps-braille-characters; keys: BRF, BRL, Eurobraille, six-dot, braille ASCII, Book Information; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Parsers/BrailleFileCode.swift -->
 
 - A BRF or BRL book keeps the braille file characters it is read with (see Book Information, in [The Library window](library-window.md)).
   - When the new copy is the very same file, TextMouth reads it again in those characters if the copy was read in others and its bytes are not certainly Unicode braille patterns.
@@ -88,7 +88,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
   - A copy with other bytes keeps what its import read.
 
 ### Braille code
-<!-- id: braille-code; keys: ; src: -->
+<!-- id: replace-keeps-braille-code; keys: Braille Code pop-up, UEB, liblouis table, Braille setting; src: TextMouth/Services/DuplicateReplacement.swift -->
 
 - A braille book keeps the braille code its existing copy is read with: when the new copy is the very same file and was translated with another code, TextMouth reads it again with the existing copy's.
   A BRF or BRL book whose characters and code both differ is read again once, with both.
@@ -97,7 +97,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
   A copy with other bytes, such as a second edition, is translated with the Braille setting's code.
 
 ### Text encoding
-<!-- id: text-encoding; keys: ; src: -->
+<!-- id: replace-keeps-text-encoding; keys: Text Encoding pop-up, charset, byte order mark, Shift JIS, guessed encoding; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Parsers/TextEncodingGuesser.swift -->
 
 - A plain text, Markdown, or HTML book keeps the encoding you chose in Book Information's Text Encoding pop-up, when both of these hold:
   - The choice was yours.
@@ -108,13 +108,13 @@ Replace Existing makes the new copy the same book as the existing one, under the
     Nothing was changed.
 
 ### When the old copy's files are removed
-<!-- id: when-old-copy-files-are; keys: ; src: -->
+<!-- id: replace-keeps-old-files-removed; keys: ORPHAN_ID_LISTED, put back from Trash, package, old copy left beside; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Services/FileImportService.swift -->
 
 - The existing copy's files are removed only once the library holds the new copy, so a stop at any moment leaves the old book whole, or the new copy with everything carried over.
   - An old copy left beside the new one, or put back from the Trash with Finder, is never added to the library as a second book: its package names the book the new copy now is, and the debug log records an ORPHAN_ID_LISTED line for it at the launch that finds it.
 
 ## While Replace Existing works
-<!-- id: while-replace-existing-works; keys: ; src: -->
+<!-- id: while-replace-existing-works; keys: spinner, Replacing, off the main thread, still carrying out your last answer, changed while being replaced; src: TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Models/ImportDecision.swift -->
 
 - Replace Existing makes the new copy ready off the main thread, so TextMouth's windows and VoiceOver stay responsive while a long braille book is read again in the code its old copy was read in.
 - The question's sheet dims its buttons, shows "Replacing “X”.
@@ -127,7 +127,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 - Quitting waits for the work, as it waits for a text that is read again.
 
 ## When Replace Existing waits
-<!-- id: when-replace-existing-waits; keys: ; src: -->
+<!-- id: when-replace-existing-waits; keys: open in a reader, being transcribed, being exported, audio editor, cloud, Error; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/FeedBookUse.swift -->
 
 - Replace Existing waits while the existing copy is in use, while its text is being read again in another encoding or with another braille code (see [The Library window](library-window.md)), while something it would keep is only in the cloud, where nothing is downloaded for it, and while TextMouth moves books between folders or rebuilds its data directory.
 - The question stays open, nothing has changed, and the reason appears above its buttons, which VoiceOver reads as "Error: " and the sentence, and speaks once as it appears.
@@ -158,7 +158,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
     Wait until that finishes, then choose Replace Existing again."
 
 ## When a replacement fails
-<!-- id: when-replacement-fails; keys: ; src: -->
+<!-- id: when-replacement-fails; keys: Could not replace duplicate, edited text, library index; src: TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Services/DuplicateReplacement.swift -->
 
 - A replacement that fails leaves the question open with "Could not replace duplicate: " and the reason, and both copies as they were, the new copy as it was imported.
 - Two reasons are TextMouth's own words:
@@ -167,25 +167,25 @@ Replace Existing makes the new copy the same book as the existing one, under the
 - Any other failure gives the system's own reason.
 
 ## When the replaced copy's files can't be removed
-<!-- id: when-replaced-copy-files-cant; keys: ; src: -->
+<!-- id: when-replaced-copy-files-cant; keys: could not be moved to the Trash, Move to Trash instead of deleting, hidden name; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/RemovalWording.swift -->
 
 - When the new copy has taken the place of the existing one but the existing copy's files cannot be removed, the replacement stands, and the library's alert says "The new copy took the place of “X”, but the old copy's files could not be moved to the Trash, so they stay in its folder: " and the system's reason, with "deleted" in place of "moved to the Trash" while Move to Trash instead of deleting is off.
 - With the Trash off, TextMouth first renames the old package to a hidden name, then deletes it, and what cannot be deleted stays hidden until the next import into that folder removes it.
 
 ## A replaced book open in Edit Text
-<!-- id: replaced-book-open-edit-text; keys: ; src: -->
+<!-- id: replaced-book-open-edit-text; keys: Edit Text has stopped, Edit Manifest, editor session; src: TextMouth/Models/BookTextEditWording.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift -->
 
 - If the replaced book was open in Edit Text, VoiceOver says, once, "Edit Text has stopped for X, since a new copy replaced it.
   Choose Edit Text again to edit the new copy's text.", with X the book's title, so that you are not left saving into an editor nothing listens to (see [Editing a book's text](editing-book-text.md)).
 - An Edit Manifest session for the replaced book ends without a word.
 
 ## Offer to transcribe after importing
-<!-- id: offer-transcribe-after-importing; keys: ; src: -->
+<!-- id: offer-transcribe-after-importing; keys: Offer to transcribe, Playback tab, No Thanks, Not Now; src: TextMouth/ViewModels/TranscriptionOffers.swift, TextMouth/Models/TranscriptionWording.swift -->
 
 - With Offer to transcribe after importing an audiobook on, in the Playback tab of Settings, TextMouth asks after each audiobook it imports, on a Mac that can transcribe, whether to transcribe it, after that import's other questions (see [Transcribing an audiobook](transcribing.md)).
 
 ## Questions about imports wait their turn
-<!-- id: questions-about-imports-wait-their; keys: ; src: -->
+<!-- id: questions-about-imports-wait-their; keys: queue of questions, ImportDecisionQueue, Return, Escape, Duplicate Book Found 2 of 5; src: TextMouth/Models/ImportDecisionQueue.swift, TextMouth/Models/ImportDecision.swift -->
 
 - These questions wait their turn.
 - They are asked one at a time, in the order they arose, in the Library window where the import started, or in another Library window if that one has closed.
@@ -195,7 +195,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 - A question that appears while you are working in another window, such as a reader, waits in its Library window without taking focus or speaking.
 
 ### A duplicate's new copy waits in the library
-<!-- id: duplicate-new-copy-waits-library; keys: ; src: -->
+<!-- id: duplicate-new-copy-waits-library; keys: .awaitingDuplicateAnswer, Duplicate Copies Moved to the Trash, Put Back, unanswered; src: TextMouth/Services/DuplicateReplacement.swift, TextMouth/Models/ImportDecision.swift -->
 
 - A duplicate's new copy waits in the library, in a package marked with a hidden file, .awaitingDuplicateAnswer, until you answer.
 - When TextMouth closes with the question unanswered, the next launch moves the copy to the Trash, whatever Settings says about the Trash, and says so in an alert titled "Duplicate Copies Moved to the Trash", as in "TextMouth moved the new copy of “Moby-Dick” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed.
@@ -207,7 +207,7 @@ Replace Existing makes the new copy the same book as the existing one, under the
 - The file the copy came from is never deleted.
 
 ### When Keep Both and Replace Existing keep the question
-<!-- id: when-keep-both-replace-existing; keys: ; src: -->
+<!-- id: when-keep-both-replace-existing; keys: library can't be reached, files gone, waiting mark, Choose Cancel; src: TextMouth/Models/ImportDecision.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift -->
 
 - Keep Both and Replace Existing keep the question, and say why, when they cannot keep the new copy, each sentence naming the book:
   - While the library can't be reached, as when its drive dropped off: "The library can't be reached right now, so TextMouth can't keep the new copy of “Moby-Dick”.
@@ -220,12 +220,12 @@ Replace Existing makes the new copy the same book as the existing one, under the
     Choose Cancel to discard the copy, then import the file again."
 
 ### A book opened from Finder
-<!-- id: book-opened-from-finder; keys: ; src: -->
+<!-- id: book-opened-from-finder; keys: Finder, Open With, opens after questions; src: TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - A book opened from Finder opens once it is in the library and its questions are answered.
 
 ### Cancel and the questions
-<!-- id: cancel-questions; keys: ; src: -->
+<!-- id: cancel-questions; keys: withdrawn questions, discard copy, offer dropped, ZIP books stay; src: TextMouth/Models/ImportDecisionQueue.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - The progress overlay's Cancel button also withdraws the questions of the imports started before it was pressed, those waiting and any still to come:
   - A duplicate's new copy is discarded.

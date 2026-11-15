@@ -1,10 +1,10 @@
 # Adding books
-<!-- id: adding-books; keys: ; src: -->
+<!-- id: adding-books; keys: import, add a book, Open Book, FileImportService, menu commands; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/AddToLibraryWording.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The Add to Library sheet
-<!-- id: add-library-sheet; keys: ; src: -->
+<!-- id: add-library-sheet; keys: plus button, toolbar, AddToLibraryChoice, ways to add, hints, Escape; src: TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/AddToLibraryChoice.swift, TextMouth/Views/Library/AddToLibrarySheet.swift -->
 
 - Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library.
 - On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
@@ -25,7 +25,7 @@ Part of [TextMouth's documentation](../../README.md).
   Its hint then ends "Not available in this window."
 
 ## Open Book… and Finder
-<!-- id: open-book-finder; keys: ; src: -->
+<!-- id: open-book-finder; keys: Open With, document types, Info.plist, LSHandlerRank, default app, Pentax raw; src: TextMouth/Resources/Info.plist, TextMouth/Services/FileImportService.swift, TextMouth/App/MenuCommands.swift -->
 
 - File menu, Open Book… (Command-O) imports the files you choose.
 - Opening a supported file from Finder imports it and opens it.
@@ -35,7 +35,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A photo is refused with the sentence for a PEF that cannot be read (below).
 
 ## TextMouth packages
-<!-- id: textmouth-packages; keys: ; src: -->
+<!-- id: textmouth-packages; keys: .tmb, package, Finder duplicate, Reading List, put back from Trash; src: TextMouth/Services/FileImportService+Packages.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - A TextMouth package, a folder ending in .tmb, chosen in Open Book… opens as the book it holds, as it does from Finder, instead of being refused as an unsupported format.
 - A package for a book the library does not list lands in the folder the window shows and, when the window shows the Reading List, goes onto the Reading List there, as any file imported there does, with the announcement naming the folder.
@@ -43,7 +43,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A package for a book the library lists opens that book, and a copy of the package, such as a Finder duplicate, or the old copy that Replace Existing left in the Trash and you put back, opens the listed book and never takes its place.
 
 ## New from Text…
-<!-- id: new-from-text; keys: ; src: -->
+<!-- id: new-from-text; keys: New Book from Text, TextInputView, paste, clipboard, editor, Shift-Command-T, Untitled; src: TextMouth/Views/Library/TextInputView.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
 - File menu, New from Text… makes a book from text you type or paste.
 - Its key, Shift-Command-T, works in Library windows, and with no window open, when it opens New from Text… in a new Library window.
@@ -69,12 +69,12 @@ Part of [TextMouth's documentation](../../README.md).
     - That note stays only while the text is as it was reloaded.
 
 ## New Recording…
-<!-- id: new-recording; keys: ; src: -->
+<!-- id: new-recording; keys: record, microphone, Option-Command-N, audiobook; src: TextMouth/Views/Recording/RecordingWording.swift, TextMouth/App/MenuCommands.swift -->
 
 - File menu, New Recording… (Option-Command-N), also in the Library menu, records from a microphone into a new audiobook (see [Recording from a microphone](recording.md)).
 
 ## Import Folder…
-<!-- id: import-folder; keys: ; src: -->
+<!-- id: import-folder; keys: Import DAISY Folder, importDAISYFolder, folder of tracks, symbolic link, ORIGINAL_KEPT, Shift-Command-O; src: TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - Library menu, Import Folder… (Shift-Command-O, in a Library window) imports a DAISY book kept as loose files, by its folder, one folder per book, or a folder of audio tracks as one audiobook, as a ZIP of the same tracks imports.
 - It was called Import DAISY Folder… before October 14, 2026, and a key you gave it keeps working.
@@ -94,7 +94,7 @@ Part of [TextMouth's documentation](../../README.md).
   - The alert for it says that the folder holds no DAISY book and no audio tracks to import as one book, and lists the files found anywhere inside it, which does not say that the books are in the folders within.
 
 ## A transcript chosen with its audio
-<!-- id: transcript-chosen-audio; keys: ; src: -->
+<!-- id: transcript-chosen-audio; keys: .vtt, .srt, WebVTT, SubRip, Attach Transcript, Dock icon, sidecar; src: TextMouth/Services/TranscriptPairing.swift, TextMouth/Services/FileImportService.swift -->
 
 - A WebVTT (.vtt) or SubRip (.srt) file chosen or opened together with its audio is attached to that audio's book as the audio is imported.
   It is not imported as a book of its own, and nothing is refused.
@@ -108,7 +108,7 @@ Part of [TextMouth's documentation](../../README.md).
 - If the audio's own import is skipped, as a duplicate or a refused file is, a transcript chosen with it is dropped too, silently.
 
 ## M3U and M3U8 playlists
-<!-- id: m3u-m3u8-playlists; keys: ; src: -->
+<!-- id: m3u-m3u8-playlists; keys: M3U, M3U8, #EXTINF, #PLAYLIST, skipped entries, streaming, HLS; src: TextMouth/Parsers/M3UPlaylist.swift, TextMouth/Models/PlaylistImportWording.swift -->
 
 - An M3U or M3U8 playlist (.m3u, .m3u8), chosen with Open Book…, imports as one audiobook of the files it lists, as a folder of the same tracks imports.
 - The book is named by the playlist's #PLAYLIST line, else by the playlist's file name without its extension, and has a heading for each entry, in the playlist's order, titled by its #EXTINF line, else by the file's name.
@@ -122,12 +122,12 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth never fetches an address: a streaming playlist, for audio on the web, is refused, and so is one that lists only web addresses.
 
 ## Add Feed…
-<!-- id: add-feed; keys: ; src: -->
+<!-- id: add-feed; keys: subscribe, podcast, RSS, Shift-Command-F, Add Feed sheet; src: TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Views/Feeds/AddFeedSheet.swift -->
 
 - Library menu, Add Feed… (Shift-Command-F, in a Library window), or the Add Feed… button of the Add to Library sheet (above), subscribes to a podcast or article feed (see [Podcasts and article feeds](feeds.md)).
 
 ## ZIP archives
-<!-- id: zip-archives; keys: ; src: -->
+<!-- id: zip-archives; keys: archive, Create Folder, batch, textutil, braille helper, cancel; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/FileImportService.swift -->
 
 - A ZIP of several books imports each of them (an .rtfd folder inside is one book, not its separate files), and TextMouth offers to create a folder for them.
 - The progress overlay's Cancel button stops a ZIP import after the book in progress, or at once when that book is, on the Mac, a Word document older than Word 6 that textutil is converting, or a braille file that the braille helper is translating.
@@ -135,13 +135,13 @@ Part of [TextMouth's documentation](../../README.md).
 - A single file's import that Cancel stops that way ends with no alert.
 
 ## A TextMouth package inside a ZIP
-<!-- id: textmouth-package-inside-zip; keys: ; src: -->
+<!-- id: textmouth-package-inside-zip; keys: .tmb in a ZIP, mailed package, compressed in Finder, duplicate; src: TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/FileImportService.swift -->
 
 - A TextMouth package inside a ZIP, as one mailed or compressed in Finder, imports as one book, with its places, bookmarks, and settings, not as its book file and its text cache apart.
 - A package whose book the library lists is skipped as a duplicate, and one that cannot be identified is a failure, so the archive is kept.
 
 ## Importing audio that TextMouth converts
-<!-- id: importing-audio-that-textmouth-converts; keys: ; src: -->
+<!-- id: importing-audio-that-textmouth-converts; keys: Ogg, AC-3, afconvert, ImportAudioConverter, watchdog, mix to stereo, Converting its audio; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/FileImportService+AudioConversion.swift, TextMouth/Services/ImportFailure.swift -->
 
 - Importing audio that TextMouth converts (Ogg, AC-3, and the other formats listed in [What TextMouth reads](what-textmouth-reads.md)) adds a step, Converting its audio, after the archive is extracted and its manifest checked.
 - The overlay counts the tracks, as in "converting its audio: 12 of 176 tracks".
@@ -164,7 +164,7 @@ Part of [TextMouth's documentation](../../README.md).
   - "The audio file X has N channels but does not say which is which, so TextMouth cannot mix it to stereo."
 
 ## The original file after an import
-<!-- id: original-file-after-import; keys: ; src: -->
+<!-- id: original-file-after-import; keys: After Importing a Book, Keep Original, Delete After Import, Ask Each Time, .rtfd, Show Package Contents; src: TextMouth/Models/OriginalFileDeletionWording.swift, TextMouth/Services/FileImportService.swift -->
 
 - Storage settings decide what happens to the original file after an import: keep it (the default), delete it, or ask each time.
 - A folder imported with Import Folder… is the exception, as described there, and so is an .rtfd, which is a folder too: it is never deleted or offered for deletion.
@@ -173,7 +173,7 @@ Part of [TextMouth's documentation](../../README.md).
 - It is kept with nothing said, and the debug log notes it.
 
 ## A ZIP holding a DAISY book with audio
-<!-- id: zip-holding-daisy-book-audio; keys: ; src: -->
+<!-- id: zip-holding-daisy-book-audio; keys: DAISY ZIP, talking book, SMIL, archive kept, audio only; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/ImportDecision.swift -->
 
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
 - The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above).
@@ -183,6 +183,6 @@ Part of [TextMouth's documentation](../../README.md).
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
 ## A Markdown book named content.md
-<!-- id: markdown-book-named-content-md; keys: ; src: -->
+<!-- id: markdown-book-named-content-md; keys: content.md, content (book).md, text cache, Redo Text Extraction; src: TextMouth/Services/FileImportService.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
 - A Markdown book whose file is named content.md keeps its own file: the package stages it as "content (book).md", beside the text cache, which is a different file, so Redo Text Extraction still has the original.
