@@ -643,6 +643,7 @@ targets:
       - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
       - TextMouthProductionTests/NetworkReachabilityTests.swift
+      - TextMouthProductionTests/ObjCExceptionTests.swift
       - TextMouthProductionTests/PDFExtractionDiagnosticsTests.swift
       - TextMouthProductionTests/PackageNavigationAuditTests.swift
       - TextMouthProductionTests/PageModelTests.swift
