@@ -9,7 +9,8 @@ The briefs of each day's wave are kept under `Scripts/agents/briefs/`, and `Scri
 
 Several coding agents can work on TextMouth at once, each in its own git worktree on its own branch, coordinated through a shared message board: the agent-bbs skill, in .claude/skills/agent-bbs/.
 Its SKILL.md is the full reference.
-AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md; AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
+AGENTS.md, in the repository root, is the protocol those agents and their orchestrator follow: the user's standing rules, the build wrapper and the crash-proof tests rule, the board routine, the report format, and how a branch is merged with Scripts/agents/merge-chain.sh and recorded in TODO-2026-09-04.md.
+AGENT-NOTES-2026-10-04.md lists what past agents left unverified.
 
 ## The board is one SQLite file
 <!-- id: board-one-sqlite-file; keys: board.sqlite, bbs.py, message board, no server; src: .claude/skills/agent-bbs/scripts/bbs.py -->
@@ -124,7 +125,8 @@ What differs is the result.
 Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads), and the train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead, and your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
 A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's.
 If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again.
-A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for: they have no verdict, so say so in your report and ask the orchestrator to run them in a local train.
+A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf` (audio-playing tests among them), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for.
+They have no verdict, so say so in your report and ask the orchestrator to run them in a local train.
 A timing failure on the runner that passes on the Mac is flaky there; do not raise the test's limit.
 A remote loop started with `--soon N` leaves N minutes after a request instead of on the hour, so a fix may get its result sooner; the rules above hold either way.
 How to read a run: Tests on GitHub Actions in [Testing TextMouth](../developer/testing-github.md).
