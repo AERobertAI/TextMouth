@@ -12,9 +12,9 @@ The library's sheets: the folder edits and the Book Info a Library window asks i
   Views/Library/LibrarySheetViews.swift holds:
   - the folder sheets (NewFolderSheet, MoveFolderSheet, RenameFolderSheet, MoveFolderToParentSheet, and DeleteFolderMoveContentsSheet, for Delete Folder's Move Contents)
   - and LibraryBookInfoSheet, the Book Info of a plain text, Markdown, or HTML book of the library's own,
-    - which a reader shows for such a book too (an article in its feed has the read-only FeedItemBookInfoSheet, as an episode does; hand edits, above),
+    - which a reader shows for such a book too (an article in its feed has the read-only FeedItemBookInfoSheet, as an episode does; [Hand edits](package-records.md)),
     - whose edit(from:title:author:) trims the title and author, refuses a blank title, and pairs them with the title and author the sheet opened with, trimmed the same way, for Save's availability and its action alike,
-    - and whose fields say "edited by hand" for a field the book's record names (hand edits, above),
+    - and whose fields say "edited by hand" for a field the book's record names ([Hand edits](package-records.md)),
     - and which holds the Text Encoding pop-up of a book that offers one (the next entry);
   - what Book Info shows is read by LibraryBookInfoReader (Views/Library/LibraryBookInfoLoader.swift), off the main thread,
     - which for an audiobook reads the tags through AsyncBridge.waitForResult(reading:timeLimit:abandoned:of:) with its audioTagsTimeLimit property (AsyncBridge.audioTagsTimeLimit, 30 seconds, which tests shorten) and its abandonedReads (AsyncBridge.AbandonedReads.session),
@@ -43,10 +43,14 @@ The library's sheets: the folder edits and the Book Info a Library window asks i
   And the New Folder sheet's Create has the window say NewFolderSheet.createdAnnouncement(name:parentPath:) ("Folder Q3 created in Reports.", or "in Library Root.") once the sheet has closed (VoiceOverAnnouncer.announceAfterSheetCloses).
   The Move sheet's, Add Feed's, and Import OPML's own Cancel follow isMakingFolder and stand down meanwhile, so a second Escape closes the sheet.
   Feed Info's Done does the same since the feed follow-ups after FR14 (FeedInfoSheet binds the picker's isMakingFolder, and takes makingFolder: to open with the fields shown, as its test, which hosts Feed Info itself, does), so there a second Escape presses Done.
-  The name field takes the keyboard as the fields appear (focusNameField(), from onAppear, on the next turn of the run loop), so VoiceOver, which follows the keyboard, lands there. createTakesReturn, true unless an owner says otherwise, lets an owner hand Return to a button of its own: Add Feed passes !searchFocused, so while the Search field has the keyboard, Search alone is the default button and Return never makes a folder, as it did on main before.
+  The name field takes the keyboard as the fields appear (focusNameField(), from onAppear, on the next turn of the run loop), so VoiceOver, which follows the keyboard, lands there.
+  The property createTakesReturn, true unless an owner says otherwise, lets an owner hand Return to a button of its own.
+  Add Feed passes !searchFocused, so while the Search field has the keyboard, Search alone is the default button and Return never makes a folder, as it did on main before.
 - How others observe it: a failure is read as text labelled as an error, and the sheet stays open with the input.
   Measured in hosted windows (LibraryFolderPickerTests): a Return offered as a key equivalent (performKeyEquivalent) reaches the default button alone and a focused field's onSubmit stays silent, while the key-down path alone (sendEvent) runs onSubmit, so one press does one thing.
-  The key and typing helpers of these tests (pressKey(_:in:), pressReturnKey(in:), typeReplacingText(_:in:of:), typeNewFolderName(_:in:), newFolderNameFields(in:), editableTextFields(in:), isEditing(_:in:), and settleHostedView(_:)) live in TextMouthProductionTests/AccessibilityTestSupport.swift (#1241), as do handleQueuedCallbacks(), which returns once the main queue has run what was queued before it, and control(labelled:in:), which finds a hosted control by its label and lists the labels there are when it finds none; startTurningTheRunLoop(_:) is in FeedUITestSupport.swift.
+  The key and typing helpers of these tests live in TextMouthProductionTests/AccessibilityTestSupport.swift (#1241).
+  So do handleQueuedCallbacks(), which returns once the main queue has run what was queued before it, and control(labelled:in:), which finds a hosted control by its label and lists the labels there are when it finds none.
+  The helper startTurningTheRunLoop(_:) is in FeedUITestSupport.swift.
   The legacy scenario files (TextMouthProductionTests/LegacyScenarioHarness.swift and the files beside it) have no canImport(TextMouth) conditionals, and the harness's testFileURL(_:) builds the TestData path for them.
 
 ## Book Information's Text Encoding pop-up
@@ -63,10 +67,20 @@ Book Information's Text Encoding pop-up (encodingchoice): what the Book Info she
   - pending (a Confirmation: the option chosen, keepsText, and stopsEditing, until it is answered),
   - isWorking (a re-read is under way),
   - and failureMessage (why the last choice changed nothing).
-- Who may write it: the model alone, from the pop-up's choice and the alert's buttons. init(book:library:access:) shows an encoding the row records at once (state known) and otherwise checking, and the sheet's .task calls load(), which reads the package record or the file off the main actor (OffMainWork.run of TextEncodingReading.current(of:access:)), so the sheet never waits on a large file. choose(_:) ignores the item already selected, the extra "current" item, and a pop-up that is not enabled (while checking or working).
+- Who may write it: the model alone, from the pop-up's choice and the alert's buttons.
+  Its init(book:library:access:) shows an encoding the row records at once (state known) and otherwise checking.
+  The sheet's .task calls load(), which reads the package record or the file off the main actor (OffMainWork.run of TextEncodingReading.current(of:access:)), so the sheet never waits on a large file.
+  Its choose(_:) ignores the item already selected, the extra "current" item, and a pop-up that is not enabled (while checking or working).
   Otherwise it asks the library whether the book can be read again now (textEncodingChangeRefusal(of:)), and a refusal is shown and announced once through OperationFailureNotice.message(after:), with no confirmation.
-  If the book can be, it asks off the main actor whether content.md holds text TextMouth did not write (LibraryViewModel.unwrittenText(of:access:), reading nothing from the cloud), and sets pending, with stopsEditing from library.textEditSessions.isEditing(_:). confirm(_:) clears pending and the failure, sets isWorking, awaits LibraryViewModel.readTextAgain(bookID:choosing:access:) (in [Text caches](text-caches-rereads-edits.md)), called through RereadChoiceFlow, which the Braille File Characters and Braille Code pop-ups share (BookRereadPopUp over BookRereadChoosing models, TextEncodingChoiceModel, BrailleFileCodeChoiceModel, and BrailleCodeChoiceModel, in ViewModels/BookRereadChoosing.swift: a TextRereadChoice is .textEncoding, .brailleFileCode, or .brailleTable, each pop-up carries its own alert, and a stored code becomes words in BrailleFileCodeWording.name(ofStored:) only), shows its failure the same way, loads the reading again, and ends isWorking. cancel() clears pending.
-- How others observe it: LibraryBookInfoSheet draws the row as a BookRereadPopUp (Views/Library/LibrarySheetViews.swift) over the model, a Picker in the menu style whose label and hint are set for VoiceOver (TextEncodingWording.bookInfoLabel and popUpHint), since a pop-up button takes no label from the picker's title and SwiftUI's accessibilityValue never reaches it (TextEncodingPopUpTests measured an empty value).
+  If the book can be, it asks off the main actor whether content.md holds text TextMouth did not write (LibraryViewModel.unwrittenText(of:access:), reading nothing from the cloud), and sets pending, with stopsEditing from library.textEditSessions.isEditing(_:).
+  Its confirm(_:) clears pending and the failure, sets isWorking, awaits LibraryViewModel.readTextAgain(bookID:choosing:access:) (in [Text caches](text-caches-rereads-edits.md)), shows its failure the same way, loads the reading again, and ends isWorking.
+  The re-read is called through RereadChoiceFlow, which the Braille File Characters and Braille Code pop-ups share.
+  BookRereadPopUp is generic over BookRereadChoosing models (TextEncodingChoiceModel, BrailleFileCodeChoiceModel, and BrailleCodeChoiceModel, in ViewModels/BookRereadChoosing.swift).
+  A TextRereadChoice is .textEncoding, .brailleFileCode, or .brailleTable.
+  Each pop-up carries its own alert, and a stored code becomes words in BrailleFileCodeWording.name(ofStored:) only.
+  Its cancel() clears pending.
+- How others observe it: LibraryBookInfoSheet draws the row as a BookRereadPopUp (Views/Library/LibrarySheetViews.swift) over the model, a Picker in the menu style whose label and hint are set for VoiceOver (TextEncodingWording.bookInfoLabel and popUpHint).
+  A pop-up button takes no label from the picker's title, and SwiftUI's accessibilityValue never reaches it (TextEncodingPopUpTests measured an empty value).
   The value VoiceOver speaks, before the label, is the selected item's title, so name(of:) names the selected item with what decided the encoding ("Windows-1251 (Cyrillic), guessed") and every other as the catalog does.
   The items are TextEncodingChoices.options, then one more, last, while no option names the encoding (UTF-16, an HTML declaration the catalog lacks) or the state is not known.
   The confirmation is the .alert that BookRereadPopUp carries, over the sheet: its title and message are TextEncodingWording.confirmTitle(bookTitle:option:) and confirmMessage(option:keepsText:stopsEditing:), its buttons Read Again, which reads the book again, and Cancel.
@@ -80,15 +94,23 @@ Book Information's Braille Code pop-up (FMT21): what the Book Info sheet of a br
 
 - Owner: LibraryBookInfoSheet keeps a BrailleCodeChoiceModel (ViewModels/BrailleCodeChoiceModel.swift, on the main actor) in @StateObject beside the other two models, drawn for a book with Book.offersBrailleTableChoice (a braille book that is not a feed's item, a PEF included).
   A feed's item keeps the plain row (bookInfoBrailleCodeRow).
-  It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables), names, and isLoaded, and holds a RereadChoiceFlow<BrailleTable>, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
-- Who may write it: the model alone. load(), in the sheet's .task, lists the offered tables and the words each is named by (BrailleTableCatalog.description(ofTableID:), the words the book's row and Speak Info use) off the main actor, since reading this Mac's tables' headers is slow; until then the pop-up is dimmed (isEnabled) and shows the book's own table. choose(_:) keeps a guessed table when the table already selected is chosen (keepGuessedTable(), which clears Book.brailleTableOrigin and announces it, with no re-read; the sheet's "Keep This Code" button does the same, under guessNote), and otherwise ignores the table already selected, one this Mac does not offer (an Item.unavailable, listed last only while it is the book's own), and a choice while the pop-up takes none; otherwise it asks the flow, which refuses with the library's reason or sets pending. confirm(_:) awaits flow.confirm(choosing: .brailleTable(table)), through LibraryViewModel.readTextAgain (in [Text caches](text-caches-rereads-edits.md)), then reads the book's table again from the row.
+  It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables), names, and isLoaded.
+  It also holds a RereadChoiceFlow<BrailleTable>, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
+- Who may write it: the model alone.
+  Its load(), in the sheet's .task, lists the offered tables and the words each is named by (BrailleTableCatalog.description(ofTableID:), the words the book's row and Speak Info use) off the main actor, since reading this Mac's tables' headers is slow.
+  Until then the pop-up is dimmed (isEnabled) and shows the book's own table.
+  Its choose(_:) keeps a guessed table when the table already selected is chosen (keepGuessedTable(), which clears Book.brailleTableOrigin and announces it, with no re-read; the sheet's "Keep This Code" button does the same, under guessNote).
+  Otherwise it ignores the table already selected, one this Mac does not offer (an Item.unavailable, listed last only while it is the book's own), and a choice while the pop-up takes none, and otherwise it asks the flow, which refuses with the library's reason or sets pending.
+  Its confirm(_:) awaits flow.confirm(choosing: .brailleTable(table)), through LibraryViewModel.readTextAgain (in [Text caches](text-caches-rereads-edits.md)), then reads the book's table again from the row.
   The words are BrailleCodeWording (Models/LibraryInfoWording.swift):
   - the label "Braille Code",
   - the hint "Choose another braille code to read the book's file again with it.",
   - the alert's title and message (BrailleCodeWording.translatedAgainNote, then TextEncodingWording.replacedNote and BrailleFileCodeWording.placesNote, then the kept-text and Edit Text sentences),
   - and the busy sentence.
 - How others observe it: the sheet draws it with BookRereadPopUp, as the other two.
-  Its failure is shown only when it spoke last: RereadFailureOrder.latest(among:) picks, of the three models' (message, stamp) pairs, the message with the highest stamp, and each flow stamps its message and its clearing, so an older pop-up's refusal never shows over a newer choice. isReadingAgain, true while any of the three works, shows the work indicator and dims the sheet's buttons.
+  Its failure is shown only when it spoke last.
+  RereadFailureOrder.latest(among:) picks, of the three models' (message, stamp) pairs, the message with the highest stamp, and each flow stamps its message and its clearing, so an older pop-up's refusal never shows over a newer choice.
+  The property isReadingAgain, true while any of the three works, shows the work indicator and dims the sheet's buttons.
   An open reader follows the new table through Book.LibraryFields (brailleTable, brailleTableVersion).
 - Tests: BrailleCodeBookInfoTests (the model, the sheet's one refusal, and the hosted label, value, and hint, which skip without an accessibility session), BrailleCodeRereadTests, and BrailleFileCodeBookInfoTests.
 
@@ -107,7 +129,10 @@ The Search Library window (libsearch): the one window that searches the text of 
   The engine decides every match with BookTextSearch.Matcher over whole chapters, after LibrarySearchPrefilter (with LibrarySearchSpecials) has passed over the chapters that cannot hold one.
   An ASCII anchor taken from the query, matched by bytes, or a few non-ASCII characters Foundation matches against ASCII, which a sweep of all 1,111,936 scalars found.
   A regular expression, a query holding a line end, and a query with no ASCII anchor have no prefilter.
-  A chapter the prefilter cannot pass over is searched whole, never line by line, because Foundation's case-insensitive search does not answer a range as it answers the same text inside a longer one. showAllMatches(in:) lists up to 500 of a book's matches (Search in Book's limit) and takes the book's own count only when it saw every match. open(_:) makes the LibrarySearchJumpRequest (below, in [The reader](reader-navigation.md)) and posts .openBookWindow, as opening from the Library does; a book that left the library is told with LibrarySearchWording.bookGone(title:).
+  A chapter the prefilter cannot pass over is searched whole, never line by line, because Foundation's case-insensitive search does not answer a range as it answers the same text inside a longer one.
+  The model's showAllMatches(in:) lists up to 500 of a book's matches (Search in Book's limit) and takes the book's own count only when it saw every match.
+  Its open(_:) makes the LibrarySearchJumpRequest ([Library search requests](reader-navigation.md)) and posts .openBookWindow, as opening from the Library does.
+  A book that left the library is told with LibrarySearchWording.bookGone(title:).
 
 ### The Search Library window's controls and tests
 <!-- id: search-library-controls-tests; keys: LibrarySearchWording, rotors, status line, Edit Find menu, searchLibrary; src: TextMouth/Models/LibrarySearchWording.swift, TextMouth/App/MenuCommands.swift, TextMouth/Platform/macOS/Views/LibrarySearch/LibrarySearchWindowController.swift -->
@@ -137,8 +162,15 @@ The Search Library window (libsearch): the one window that searches the text of 
 
 The Folder Settings sheet and the Add to Library sheet (FR19, FR20): what a Library window's toolbar opens, besides the folder edits.
 
-- Owner: the window's views (Views/Library/LibraryView.swift). folderSettings, a FolderSettingsModel in @State, names the plain folder whose sheet shows, nil while none does; it keeps only the folder's ID, the library, the feed folders, the reading speed, and the preferences, and reads the rest from the library each time it is asked, so a rename or a choice made in another window shows, and the global When book ends and Open the next book in from the preferences (SettingsPolicy.endOfBookBehavior and SettingsPolicy.nextBookWindow, storedValue(in:)). addToLibrary, an AddToLibraryHost in @StateObject, owns an AddToLibraryModel (isPresented, and the choice made while the sheet closes) and a KeyboardShortcutManager of its own, made with installsEventMonitor false so that it reads the preferences store as the app's does and takes no key press: the app's manager, read from the environment, broke existing tests, and the keys the sheet shows may lag a change made in Settings until the next window.
-- Who may write it: the toolbar's Feed Settings or Folder Settings button and the Library menu's Folder or Feed Settings (ShortcutAction.folderOrFeedSettings, no default key, posting showFolderOrFeedSettings, which LibraryFolderSettingsSupport hears for the window that takes commands) call LibraryView.openFolderSettings(_:).
+- Owner: the window's views (Views/Library/LibraryView.swift).
+  Its folderSettings, a FolderSettingsModel in @State, names the plain folder whose sheet shows, nil while none does.
+  It keeps only the folder's ID, the library, the feed folders, the reading speed, and the preferences.
+  It reads the rest from the library each time it is asked, so a rename or a choice made in another window shows.
+  It reads the global When book ends and Open the next book in from the preferences (SettingsPolicy.endOfBookBehavior and SettingsPolicy.nextBookWindow, storedValue(in:)).
+  Its addToLibrary, an AddToLibraryHost in @StateObject, owns an AddToLibraryModel (isPresented, and the choice made while the sheet closes) and a KeyboardShortcutManager of its own, made with installsEventMonitor false so that it reads the preferences store as the app's does and takes no key press.
+  The app's manager, read from the environment, broke existing tests, and the keys the sheet shows may lag a change made in Settings until the next window.
+- Who may write it: the toolbar's Feed Settings or Folder Settings button and the Library menu's Folder or Feed Settings call LibraryView.openFolderSettings(_:).
+  That menu command is ShortcutAction.folderOrFeedSettings, with no default key, posting showFolderOrFeedSettings, which LibraryFolderSettingsSupport hears for the window that takes commands.
   LibraryFolderSettingsTarget.of(category:folderPath:folders:feedID:feedTitle:) gives the folder the window shows:
   - nil unless the category is Folders and the path names a folder, so the top of the library and every other category have none;
   - .feed(feedID:title:) for a folder some feed's downloads go to, which opens Feed Info the way Command-I does;
@@ -168,13 +200,19 @@ Speak Info (FR07): the selected row's information, spoken in a Library window, b
   - the announcement speaking (its summary, brief or full, the row it describes, by LibraryInfoRow.id, and its utterance),
   - and a synthesizer of its own, made at the first press by the factory passed to init(makingSynthesizersWith:) (LibraryInfoSpeaker.makeSynthesizer unless a test passes another, behind LibraryInfoSynthesizing, which tests replace with a recorder that plays nothing).
 
-  It speaks in the voice and at the speed of the global settings, with prefersAssistiveTechnologySettings off, its text guarded by SpeechMarkupGuard, as Where Am I? speaks in a reader, and press(_:about:voice:wordsPerMinute:now:subject:) follows SummaryPress, as Where Am I? does (FR12's branch C): a brief press stops a summary speaking, a full press switches the same row's brief summary to the full one and stops the full one, and a press about another row speaks that row's summary in place of the one speaking; no press depends on when the last came.
+  It speaks in the voice and at the speed of the global settings, with prefersAssistiveTechnologySettings off, its text guarded by SpeechMarkupGuard, as Where Am I? speaks in a reader.
+  Its press(_:about:voice:wordsPerMinute:now:subject:) follows SummaryPress, as Where Am I? does (FR12's branch C).
+  A brief press stops a summary speaking, a full press switches the same row's brief summary to the full one and stops the full one, and a press about another row speaks that row's summary in place of the one speaking.
+  No press depends on when the last came.
   LibraryInfoSpeechDelegate hands each finish and each cancel over with its utterance (ReportedUtterance), at once when the synthesizer calls it on the main thread, as it does, and otherwise on the next turn of the main queue.
   The end of an announcement stopped or replaced since changes nothing, and a cancel of the one speaking that nobody asked for, as the engine's refusal of its text makes, ends it and replaces the synthesizer, which would never speak again (SPEAK_INFO_CANCEL_UNEXPECTED).
   A summary that takes the place of one still speaking speaks on a fresh synthesizer too (replaceSynthesizer()).
-- Who may write it: ShortcutAction.speakInfo (Shift-Command-I) and speakFullInfo (Shift-Command-I twice; a letter alone is the Library list's, below), working by default in every window but an audio editor's (ShortcutScope.app), which the Works in pop-up can change, though only a Library window acts on them, and listed under Information after Where Am I? and Where Am I?
+- Who may write it: ShortcutAction.speakInfo (Shift-Command-I) and speakFullInfo (Shift-Command-I twice; a letter alone is the Library list's, in [Letter navigation in the Library list](windows.md)).
+  They work by default in every window but an audio editor's (ShortcutScope.app), which the Works in pop-up can change, though only a Library window acts on them.
+  They are listed under Information after Where Am I? and Where Am I?
   Full Summary, and Library > Speak Info and Speak Full Info, which post speakInfo and speakFullInfo for the Library window that takes the command (WindowCommandRouting, through LibraryView's takesCommand(_:)).
-  Shift-Command-I holds Command, so KeyboardShortcutManager takes it from a focused text field too, as it takes Command-I, while a plain I is the field's; an action the user gave Shift-Command-I keeps it, Speak Info then having no key until that action lets it go (keyboard shortcuts, above).
+  Shift-Command-I holds Command, so KeyboardShortcutManager takes it from a focused text field too, as it takes Command-I, while a plain I is the field's.
+  An action the user gave Shift-Command-I keeps it, Speak Info then having no key until that action lets it go ([Keyboard shortcuts](preferences-shortcuts.md)).
   Book Info, Command-I, posts showBookInfo, which LibraryView routes by LibraryInfoRow.infoCommand(feedInFolder:): Book Info for a book, Feed Info for a feed's row or a feed's folder, and the speaker's full summary for any other folder, which has no sheet; with nothing selected it does nothing.
   Book Info's menu item, which carries no shortcut, is the Navigate menu's, which a Library window hides; Command-I reaches every window but an audio editor's, where it is the editor's Audio Info, through KeyboardShortcutManager.
 
@@ -182,7 +220,7 @@ Speak Info (FR07): the selected row's information, spoken in a Library window, b
 <!-- id: speak-info-row-wording; keys: LibraryInfoRow.selected, LibraryInfoSubject, BookInfoFacts, FolderInfoFacts, FeedInfoFacts, LibraryInfoWording; src: TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 - How others observe it: LibraryInfoRow.selected (Views/Library/LibraryInfoRow.swift) resolves the row both commands act on.
-  The first selected row in the list's order, a folder's, of the folders the Folders section shows (LibraryFeedFolders.folderRows, the feed reader's interface, below), then a feed's, then a book's, since the List selects a folder's or a feed's row by its ID as it does a book's.
+  The first selected row in the list's order, a folder's, of the folders the Folders section shows (LibraryFeedFolders.folderRows, [The feed reader's interface](feeds-interface.md)), then a feed's, then a book's, since the List selects a folder's or a feed's row by its ID as it does a book's.
   Or else the edit selection's first book.
   LibraryInfoSubject's initializer, in the same file, gathers that row's facts at the press, as the list shows them then:
   - a book's (BookInfoFacts) with
@@ -191,12 +229,12 @@ Speak Info (FR07): the selected row's information, spoken in a Library window, b
     - the encoding its file was guessed to be in, or the listener chose, in words, when its record names one (BookInfoFacts.textEncoding, from Book.textEncodingDescription, which only the full summary says, from the row alone; Text files in other encodings, in [Imports](imports-text-encodings.md)),
     - and its file size, measured as the File Size sort measures it, only for the full summary and never for a book in the cloud;
   - for an episode or article in its feed, its feed's title (BookInfoFacts.feedTitle, from LibraryViewModel.feedTitle(of:)), which LibraryInfoWording.placeNote(of:) says in place of a folder, "In The Digital Antiquarian, a feed";
-  - for a book in the reading list, its place there (BookInfoFacts.readingListPlace, said after the place note: the reading list, above);
+  - for a book in the reading list, its place there (BookInfoFacts.readingListPlace, said after the place note: [The reading list](library-index-reading-feeds.md));
   - a folder's (FolderInfoFacts) with the books and unopened books of its whole tree, the feeds the Feeds section lists inside it, its own subfolders, and the time left in all its books;
   - a feed's (FeedInfoFacts) with its counts and last check as its row shows them, its folder, and its address;
   - and a feed's folder as its feed.
 
-  LibraryInfoWording (Models/LibraryInfoWording.swift) makes every sentence from those facts (shared helpers, below).
+  LibraryInfoWording (Models/LibraryInfoWording.swift) makes every sentence from those facts ([LibraryInfoWording](../shared-helpers-values.md)).
 
 ## Which audiobooks play a folder of tracks
 <!-- id: track-folder-books; keys: manifest.json, track folder cache, Edit Manifest menu, multi-file audiobook, folder of mp3s, cached list; src: TextMouth/ViewModels/TrackFolderBooks.swift, TextMouth/ViewModels/TranscribedBooks.swift, TextMouth/Views/Transcription/TranscriptionPresentation.swift, TextMouth/Services/BookManifestEditing.swift -->
