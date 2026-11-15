@@ -1,6 +1,8 @@
 # The reader's playback and speech
 <!-- id: reader-playback; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## The playback generation
 <!-- id: playback-generation; keys: ; src: TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, Scripts/test/kf8-fuzz/Stubs.swift -->
 

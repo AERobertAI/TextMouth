@@ -1,6 +1,8 @@
 # The reader's moves between books, and search
 <!-- id: reader-navigation; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Autoplay requests
 <!-- id: autoplay-requests; keys: ; src: TextMouth/Services/ReaderRequestStore.swift, TextMouth/Services/ReaderAutoplayRequests.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+Succession.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Views/ContentView.swift, TextMouth/Services/ReadingListOpenRequests.swift, TextMouth/Models/EndOfBookRule.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/ListNeighbors.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
