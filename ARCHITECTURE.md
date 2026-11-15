@@ -16,6 +16,8 @@ Each part below is a page of its own under docs/architecture, so an agent can re
 
 Each entry names a kind of state, then its owner, who may write it, how others observe it, and the files involved.
 
+### The library, its files, and its caches
+
 - [The library index](docs/architecture/state/library-index.md)
   - [The reading list and feed items](docs/architecture/state/library-index-reading-feeds.md)
 - [Package records](docs/architecture/state/package-records.md)
@@ -27,6 +29,9 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Cloud state](docs/architecture/state/cloud-state.md)
 - [Preferences](docs/architecture/state/preferences.md)
   - [Preferences: keyboard shortcuts](docs/architecture/state/preferences-shortcuts.md)
+
+### Reading, playback, and windows
+
 - [The reader](docs/architecture/state/reader.md)
   - [The reader's playback and speech](docs/architecture/state/reader-playback.md)
   - [The reader's moves between books, and search](docs/architecture/state/reader-navigation.md)
@@ -35,6 +40,9 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Windows](docs/architecture/state/windows.md)
   - [Windows: sheets, search, Speak Info](docs/architecture/state/windows-sheets.md)
 - [Saving failures](docs/architecture/state/saving-failures.md)
+
+### Imports
+
 - [Imports](docs/architecture/state/imports.md): the import itself, its progress, questions, and folders.
   - [Duplicates](docs/architecture/state/imports-duplicates.md): unanswered duplicates, and Replace Existing.
   - [DAISY 3 books](docs/architecture/state/imports-daisy.md): several DTBook files, and SMIL clocks.
@@ -47,6 +55,9 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Braille tables](docs/architecture/state/imports-braille-tables.md): the catalog, the translator helper, and the guess.
   - [Text in other encodings](docs/architecture/state/imports-text-encodings.md): finding and guessing the encoding.
   - [Choosing the encoding](docs/architecture/state/imports-text-encoding-choice.md): the listener's way to mend a guess.
+
+### Feeds, recordings, exports, logs, and the test sandbox
+
 - [Feeds](docs/architecture/state/feeds.md)
   - [Feed options, interface, and arrivals](docs/architecture/state/feeds-interface.md)
 - [Recordings](docs/architecture/state/recordings.md)
