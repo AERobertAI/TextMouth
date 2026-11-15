@@ -1,5 +1,9 @@
 # Where things stood, earlier campaigns
 
+Part of [working on TextMouth with coding agents](../../AGENTS.md).
+
+The status sections AGENTS.md carried at the end of earlier campaigns, newest first. AGENTS.md keeps only the latest.
+
 ## Where things stood on November 13, 2026
 
 - Main is version 0.4.7, tagged `v0.4.7` (unpushed), with everything the user asked for at midnight that day: Search Library (Option-Command-F; a plain search under a second on their 737-book library, from a search store in Caches prepared in the background after launch), Leading articles (Settings > Library > Titles, three choices, MARC 21's articles in eleven languages), each reader window's own sleep timer (the cause of the "stuck" timer: a second reader opened beside the first showed the app's one shared timer), the Reading List's Remove books when finished and Keep these books on this Mac, batches A, B, C, and F of the TODO's triage (`build/orchestrator/nov13/triage-report.md`), the iPhone unit tests on GitHub, and a Release app compiled for size: 19.5 MB against 23.55 MB, with `make check` failing above 20 MB and a new `make release-goldens`. Every DAISY book is read again once at the first launch. The user still runs 0.4.2. Records in the TODO; the running log, briefs, and reports in `build/orchestrator/nov13/` and `Scripts/agents/briefs/2026-11-13/`; questions in `humanQuestions/2026-11-13.md`.
@@ -319,10 +323,6 @@
 - Workers build with `python3 Scripts/test/run-area.py`. A rebase conflict in `project.pbxproj` is settled by `make generate`, and new classes are placed in `Scripts/test/areas.conf` (`--unassigned`).
 - Two conflicting team branches are merged in a scratch worktree, and main is fast-forwarded once green.
 - Three teams that build, plus agents that do not, is the ceiling for the build slots.
-
-Part of [working on TextMouth with coding agents](../../AGENTS.md).
-
-The status sections AGENTS.md carried at the end of earlier campaigns, newest first. AGENTS.md keeps only the latest.
 
 ## Where things stood on October 13, 2026
 
