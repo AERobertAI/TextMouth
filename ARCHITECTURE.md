@@ -24,6 +24,8 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Cloud state](docs/architecture/state/cloud-state.md)
 - [Preferences](docs/architecture/state/preferences.md)
 - [The reader](docs/architecture/state/reader.md)
+  - [The reader's playback and speech](docs/architecture/state/reader-playback.md)
+  - [The reader's moves between books, and search](docs/architecture/state/reader-navigation.md)
 - [Media playback](docs/architecture/state/media-playback.md)
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
