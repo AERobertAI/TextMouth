@@ -738,6 +738,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **Compile errors in tests that every type-check had passed:**
   This happened.
   On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
+- **The first iPhone test of End of heading:** The first iPhone test to set End of heading at a book's opening found a bug that the Mac's unit tests never met.
 
 ## From Reusable test tools
 
