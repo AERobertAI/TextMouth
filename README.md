@@ -18,6 +18,8 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Transcripts, feeds, and packages](docs/user/reads-transcripts-and-feeds.md): transcribing, subscribing, and TextMouth packages.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, and Edit Manifest.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder…, New from Text.
+  - [Import progress and errors](docs/user/import-progress-and-errors.md): the import overlay, and every refusal's sentence.
+  - [Duplicate books and Replace Existing](docs/user/duplicate-books.md): the duplicate question, and Replace Existing.
 - [The Library window](docs/user/library-window.md): views, folders, sorting, searching, and commands on books.
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
