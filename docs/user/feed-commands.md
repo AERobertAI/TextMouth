@@ -65,9 +65,9 @@ For an episode or article:
 - Mark Played or Mark Unplayed (Mark Read or Mark Unread for an article);
 - Show Description…;
 - for a downloaded one, Show in Finder and Delete Download;
-- and Delete Episode… (Delete Article…), which asks first, deletes everything kept for it, its download included, and keeps it out of the list for good;
-  when TextMouth keeps anything of yours for the item, such as its place, the question adds "The place, bookmarks, and transcript kept for it are deleted too.",
-  and once the question has closed VoiceOver says, as in "Deleted “Ep.
+- and Delete Episode… (Delete Article…), which asks first, deletes everything kept for it, its download included, and keeps it out of the list for good.
+  When TextMouth keeps anything of yours for the item, such as its place, the question adds "The place, bookmarks, and transcript kept for it are deleted too."
+  And once the question has closed VoiceOver says, as in "Deleted “Ep.
   368”."
 
 Delete Download, the library's Remove of episodes and articles, Delete Episode…, and Delete Feed… refuse a download that is open in a reader, being transcribed, or being exported, so no transcript or export under way is lost, and say why and what to do, as in "“Ep.
