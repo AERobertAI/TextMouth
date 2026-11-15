@@ -53,7 +53,7 @@
     "docs/architecture/state/windows.md": {"date": 5, "line-length": 39},
     "docs/developer/building.md": {"date": 13, "line-length": 46, "marker-missing": 9, "page-size": 1, "section-length": 1, "sentences-per-line": 75, "user-quote": 1},
     "docs/developer/testing-formats.md": {"date": 2, "line-length": 28, "sentences-per-line": 27},
-    "docs/developer/testing-github.md": {"date": 15, "line-length": 49, "sentences-per-line": 40, "stale": 1},
+    "docs/developer/testing-github.md": {"date": 15, "line-length": 37, "stale": 1},
     "docs/developer/testing-goldens.md": {"date": 3, "line-length": 19},
     "docs/developer/testing-iphone.md": {"date": 15, "line-length": 45, "sentences-per-line": 74, "stale": 1, "user-quote": 2},
     "docs/developer/testing-tools.md": {"date": 8, "line-length": 20, "user-quote": 1},
