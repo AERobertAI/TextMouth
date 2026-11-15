@@ -39,8 +39,8 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   - and Move to Library…, which marks an item In Library (feed items, under the library index, above).
   Each durable change is written atomically on the store's serial queue, as storage work (StorageWork.savingFeeds), so a data-directory move waits for it; a download's progress is never written, an item downloading or waiting to being written as not downloaded (FeedRecord.durable).
   While the data directory is unavailable, or after a write fails (FEED_RECORD_SAVE_FAILED), the change waits in memory, written with the feed's next change or once the data directory is back.
-  A failed write is reported to PersistenceFailureCenter under feed subscriptions (feedRecords, keyed by the feed), naming the feed, so the banner offers Retry, which writes the record as it is now on the write queue, after every write asked for before, and waits for it (retryWrite(of:failureID:)).
-  And quitting asks first.
+  A failed write is reported to PersistenceFailureCenter under feed subscriptions (feedRecords, keyed by the feed), naming the feed.
+  So the banner offers Retry, which writes the record as it is now on the write queue, after every write asked for before, and waits for it (retryWrite(of:failureID:)), and quitting asks first.
   The feed's next write that succeeds settles it, and removing the feed's record withdraws it (FeedStore.remove(_:), which Delete Feed… calls).
   The engine's environment names the center (FeedEnvironment.failureCenter), so tests use one of their own.
   Delete Feed… (FeedCenter.deleteFeed(_:), Services/Feeds/FeedCenter+DeleteFeed.swift, FR14) is the one command that deletes a feed, subscribed or not, in an order whose every stopping point is safe.
@@ -55,7 +55,10 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   - and removes the feed's library folder only when nothing else is in it, no book of the library's own, folder, or other feed's items (removeFolderOfDeletedFeed(_:), FEED_DELETE_FOLDER_KEPT when it can't).
   It returns a FeedDeleteOutcome, the downloads and kept packages deleted and the folder's fate (FeedFolderFate), and writes FEED_DELETED.
   A book without the feed's link, as an item moved into the library, stays.
-- How others observe it: FeedCenter republishes every change of the records and the fetch details, publishes the feeds refreshing (refreshingFeedIDs), and sends FeedEvent values (a subscription, a refresh's end, the end of a refresh of every feed, a download's start, end, failure, or cancelling (downloadCancelled(feedID:itemID:)), and a change of the List and download choice taking effect, itemPolicyApplied(global:feedIDs:)), which the interface reads (below).
+- How others observe it: FeedCenter republishes every change of the records and the fetch details, publishes the feeds refreshing (refreshingFeedIDs), and sends FeedEvent values:
+  - a subscription, a refresh's end, the end of a refresh of every feed, a download's start, end, failure, or cancelling (downloadCancelled(feedID:itemID:)),
+  - and a change of the List and download choice taking effect, itemPolicyApplied(global:feedIDs:),
+  - which the interface reads (below).
   A record that can't be read is preserved beside itself (SavedFile.preserveUnusable, FEED_RECORD_UNREADABLE) and its feed left out; one only in the cloud is asked of the sync service and read at the next refresh of every feed (FEED_RECORD_IN_CLOUD).
 
 ## This Mac's fetch details
@@ -111,7 +114,10 @@ A refresh.
 
 Downloads.
 
-- Owner: FeedDownloadManager, inside FeedCenter.shared, which downloads items one at a time, in the order asked, an item the listener opens, or a reader waits to go on to, coming first (download(_:of:origin:opening:startingNext:), which FeedCenter.download(_:of:startingNext:) calls for the reader's wait, opening nothing), though never ahead of the download under way.
+- Owner: FeedDownloadManager, inside FeedCenter.shared, which downloads items one at a time:
+  - in the order asked,
+  - an item the listener opens, or a reader waits to go on to, coming first (download(_:of:origin:opening:startingNext:), which FeedCenter.download(_:of:startingNext:) calls for the reader's wait, opening nothing),
+  - though never ahead of the download under way.
   An item asked for again while it waits keeps its place in the queue, unless the new ask opens it or starts it next, so a listener who asks at every Play does not send it to the back.
 
 ### Who may write downloads
