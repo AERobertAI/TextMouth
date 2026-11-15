@@ -16,9 +16,18 @@ struct PronunciationLexicon: Equatable {
     struct Lexeme: Equatable {
         /// Every `grapheme` of the lexeme, in the file's order.
         var graphemes: [String] = []
-        /// Every `alias` of the lexeme, in the file's order; the first is
-        /// the one used, as the lexicon's first pronunciation is preferred.
+        /// Every `alias` of the lexeme, in the file's order; `usedAlias` is
+        /// the one a rule says.
         var aliases: [String] = []
+        /// The index in `aliases` of the first alias marked `prefer="true"`,
+        /// nil when none is.
+        var preferredAliasIndex: Int?
+
+        /// The alias a rule uses, as PLS 1.0 says: the first alias marked
+        /// `prefer="true"`, else the first alias.
+        var usedAlias: String? {
+            preferredAliasIndex.map { aliases[$0] } ?? aliases.first
+        }
     }
 
     /// The most bytes of a lexicon read; a larger file is refused, so a
@@ -87,7 +96,7 @@ struct PronunciationLexicon: Equatable {
     // MARK: - Rules From a Lexicon
 
     /// The rules the lexicon's alias lexemes make: one per grapheme, the
-    /// grapheme as the pattern and the first alias as the replacement,
+    /// grapheme as the pattern and the lexeme's `usedAlias` as the replacement,
     /// plain text, whole word, ignoring case, and enabled. Lexemes that
     /// make no rule are counted in `setAsideCount`. A grapheme repeated in
     /// the file makes one rule, the first.
@@ -95,7 +104,7 @@ struct PronunciationLexicon: Equatable {
         var seen = Set<String>()
         var rules: [SubstitutionRule] = []
         for lexeme in lexemes {
-            guard let alias = lexeme.aliases.first else { continue }
+            guard let alias = lexeme.usedAlias else { continue }
             for grapheme in lexeme.graphemes where !grapheme.isEmpty {
                 // The same spelling, in any capitals, would make a rule
                 // that can never differ from the first, as matching ignores case.
@@ -211,6 +220,8 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
     private var collecting: String?
     /// The text collected for it so far.
     private var text = ""
+    /// Whether the alias being collected is marked `prefer="true"`.
+    private var collectingPreferred = false
     /// How deep in elements the parser is; the root is at depth 1.
     private var depth = 0
 
@@ -244,6 +255,8 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
             guard current != nil else { return }
             collecting = name
             text = ""
+            // PLS 1.0: the first alias marked prefer="true" is the one used.
+            collectingPreferred = name == "alias" && attributeDict["prefer"]?.lowercased() == "true"
         default:
             break
         }
@@ -273,8 +286,12 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
                 } else {
                     current?.graphemes.append(words)
                 }
-            } else {
-                current?.aliases.append(words)
+            } else if var lexeme = current {
+                if collectingPreferred, lexeme.preferredAliasIndex == nil {
+                    lexeme.preferredAliasIndex = lexeme.aliases.count
+                }
+                lexeme.aliases.append(words)
+                current = lexeme
             }
             collecting = nil
         } else if name == "lexeme", depth == 2, let lexeme = current {

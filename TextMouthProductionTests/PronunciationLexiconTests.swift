@@ -68,6 +68,17 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertEqual(lexicon.substitutionRules.map(\.replacement), ["kuller", "kuller"])
     }
 
+    /// PLS 1.0: the first alias marked prefer="true" is used, else the first
+    /// alias; a later preferred alias does not replace an earlier one.
+    func testThePreferredAliasIsUsed() throws {
+        let lexicon = try PronunciationLexicon.parse(lexiconXML("""
+        <lexeme><grapheme>a</grapheme><alias>first</alias><alias prefer="true">second</alias><alias prefer="true">third</alias></lexeme>
+        <lexeme><grapheme>b</grapheme><alias prefer="false">one</alias><alias>two</alias></lexeme>
+        <lexeme><grapheme>c</grapheme><alias>x</alias><alias prefer="TRUE">y</alias></lexeme>
+        """))
+        XCTAssertEqual(lexicon.substitutionRules.map(\.replacement), ["second", "one", "y"])
+    }
+
     /// A lexeme with only phonemes makes no rule and is counted as set
     /// aside; a lexeme with both makes the rule and is not.
     func testPhonemeOnlyLexemesAreSetAsideAndCounted() throws {
