@@ -1,10 +1,10 @@
 # Building the iOS app
-<!-- id: building-ios-app; keys: ; src: -->
+<!-- id: building-ios-app; keys: TextMouthiOS, iPhone app, simulator, xcodebuild, typecheck; src: project.yml, Makefile -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The iOS app
-<!-- id: ios-app; keys: ; src: -->
+<!-- id: ios-app; keys: TextMouthiOS target, second app target, LAME_iOS, ObjCExceptionCatcher_iOS, Platform/iOS, scheme; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, TextMouth/Platform/iOS/Info.plist -->
 
 project.yml defines two apps over one source folder.
 `TextMouth` is the Mac app, which every other target and command on this page builds.
@@ -24,7 +24,7 @@ project.yml defines two apps over one source folder.
 - Building it for the simulator is the next section.
 
 ## The type-check and projection targets
-<!-- id: type-check-projection-targets; keys: ; src: project.yml, Scripts/agents/run_locked.py -->
+<!-- id: type-check-projection-targets; keys: typecheck-ios, typecheck-mac, typecheck-tests, mac-projection, CENSUS, SwiftPM probe package, build/typecheck; src: Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, Makefile, Scripts/agents/heavy_lock.py -->
 
 The three make targets run the scripts in `Scripts/ios`.
 They read a commit, so run them on committed work.
@@ -55,7 +55,7 @@ The folder holds `summary.md` (the result, the errors and warnings in the app, t
 A run exits with status 0 when the build succeeded, 1 when it found errors, 2 when it could not set up, and 3 when the lock stayed busy for the whole wait.
 
 ## The heavy-work lock
-<!-- id: heavy-work-lock; keys: ; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py -->
+<!-- id: heavy-work-lock; keys: heavy_lock.py, run_locked.py, lock folder, build train, 8 GB memory, run_suite.py; src: Scripts/agents/heavy_lock.py, Scripts/agents/run_locked.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/tests/test_heavy_lock.py, Scripts/agents/tests/test_run_locked.py -->
 
 **The heavy-work lock.**
 The Mac has 8 GB of memory, and on October 31, 2026 it froze under several builds at once, so one heavy job runs on it at a time.
@@ -70,7 +70,7 @@ They use temporary locks and folders, a fake command for the suite, and a stand-
 The tests of the GitHub runs add a fake `gh`, a bare throwaway repository as the push target, and a pretend clock, so none reaches GitHub or waits.
 
 ## Builds on GitHub Actions
-<!-- id: builds-github-actions; keys: ; src: Scripts/agents/run_suite.py, Scripts/agents/build-train.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, Scripts/agents/github_run.py -->
+<!-- id: builds-github-actions; keys: TestBuild, test-build.yml, tests.yml, run-on-runner.py, github_run.py, shards, actions/cache, setup-xcode; src: .github/workflows/test-build.yml, .github/workflows/tests.yml, .github/workflows/check.yml, .github/actions/setup-xcode/action.yml, Scripts/agents/run-on-runner.py, Scripts/agents/test_command.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, Scripts/agents/runner-skips.conf -->
 
 **Builds on GitHub Actions** (since November 9, 2026).
 The user, finding that the builds were hard on this Mac's CPU, asked to move the compiling and testing to GitHub Actions.
@@ -106,13 +106,13 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The workflow lives on `TestBuild` as pushed, so it works before it is merged into main; `gh run list --workflow` looks a file up on the default branch, which is why `github_run.py` finds the run by workflow name and commit instead.
 
 ## Building TextMouthiOS for the simulator
-<!-- id: building-textmouthios-simulator; keys: ; src: TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, Scripts/agents/heavy_lock.py, Scripts/agents/github_run.py, Scripts/agents/run_locked.py -->
+<!-- id: building-textmouthios-simulator; keys: xcodebuild, simctl, iPhone 17, DerivedData-ios.noindex, xcresult; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, Scripts/agents/run_locked.py, Scripts/agents/run-ios-ui-tests.py, TextMouth/Phone/PhoneLaunchRequest.swift -->
 
 The simulator needs the iOS platform and the iPhone 17 simulator runtime that Xcode 26.0.1 installs.
 This is how the iPhone team builds and runs the app there.
 
 ### The scheme, the build folder, and the device
-<!-- id: scheme-build-folder-device; keys: ; src: -->
+<!-- id: scheme-build-folder-device; keys: TextMouthiOS.xcscheme, derivedDataPath, DerivedData-ios.noindex, Spotlight, iPhone 17 simulator; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme -->
 
 - **The scheme.**
   - `TextMouthiOS` is committed at `TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme`.
@@ -134,7 +134,7 @@ This is how the iPhone team builds and runs the app there.
   - The disk is tight, so these two costs count against the free space before a run.
 
 ### Running under the lock, and no clean builds
-<!-- id: running-under-lock-no-clean; keys: ; src: Scripts/agents/heavy_lock.py, Scripts/agents/github_run.py -->
+<!-- id: running-under-lock-no-clean; keys: run_locked.py, run_suite.py --remote, exit status 3, xcodebuild clean, TestBuild, heavy-work lock; src: Scripts/agents/run_locked.py, Scripts/agents/heavy_lock.py, Scripts/agents/run_suite.py, Scripts/agents/github_run.py -->
 
 - **The heavy-work lock.**
   - Every simulator build or test run goes through `Scripts/agents/run_locked.py`.
@@ -159,7 +159,7 @@ This is how the iPhone team builds and runs the app there.
   - Nobody deletes anything during an agent run, so the next build overwrites a stale build and does not clear it.
 
 ### A build and a test pass
-<!-- id: build-test-pass; keys: ; src: Scripts/agents/run_locked.py -->
+<!-- id: build-test-pass; keys: build-for-testing, test-without-building, resultBundlePath, xcresult, parallel-testing-enabled; src: Scripts/agents/run_locked.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py -->
 
 - **A build.**
   - `build-for-testing` compiles the app and both test bundles without running them.
@@ -174,7 +174,7 @@ This is how the iPhone team builds and runs the app there.
   - The bundle holds each test's results, the screenshots, and the notes the audits keep (see [Testing TextMouth](testing.md)).
 
 ### Installing, launching, and the launch variables
-<!-- id: installing-launching-launch-variables; keys: ; src: TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift -->
+<!-- id: installing-launching-launch-variables; keys: simctl install, simctl launch, SIMCTL_CHILD_, TEXTMOUTH_UI_TEST, TEXTMOUTH_OPEN_AT_LAUNCH, screenshot; src: TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, project.yml -->
 
 - **Installing and launching.**
   - The app's bundle identifier is `com.textmouth.TextMouth.iOS`, and the product is TextMouth.app.
@@ -196,7 +196,7 @@ This is how the iPhone team builds and runs the app there.
   - Use a public-domain book from `TestData`, such as `TestData/alice.epub` (Project Gutenberg #11).
 
 ### Play, typing, and sound
-<!-- id: play-typing-sound; keys: ; src: -->
+<!-- id: play-typing-sound; keys: TEXTMOUTH_UI_SOUND, no sound tests, simulator audio, GITHUB_ACTIONS, speakers; src: Scripts/agents/run-ios-ui-tests.py -->
 
 - **Do not press Play or type by hand, and run no sound test here.**
   The simulator plays through the Mac's speakers, which the user could hear at any hour, and the keyboard's clicks are sounds too.
