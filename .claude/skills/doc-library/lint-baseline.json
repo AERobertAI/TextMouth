@@ -18,7 +18,6 @@
     "docs/architecture/state/data-directory.md": {"line-length": 25},
     "docs/architecture/state/exports.md": {"line-length": 26},
     "docs/architecture/state/feeds-interface.md": {"line-length": 46},
-    "docs/architecture/state/feeds.md": {"line-length": 9},
     "docs/architecture/state/hosted-test-sandbox.md": {"line-length": 21, "user-quote": 1},
     "docs/architecture/state/imports-audio.md": {"line-length": 27},
     "docs/architecture/state/imports-braille-tables.md": {"line-length": 34},

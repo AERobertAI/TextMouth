@@ -15,13 +15,13 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   - and, until the move to the choice clears it, a retired kept-entries number,
   - and its items, newest first (FeedItem, each with its download's state, who asked for its download last, when it played, when its download was deleted, and when the item was deleted).
   An item's state may be inLibrary(bookID:), once Move to Library… made its download a book of the library's own: FeedItemState.libraryBookID reads it, linkedBookID either kind, and bookID stays a download's alone.
-  An item In Library is always listed, never new, not counted as a download, and counted among the newest N.
+  An item In Library is always listed, never new, not counted as a download, and counted among the newest N items.
   The size, Feed.entryTotal, a FeedEntryTotal, counts the entries the feed lists, each once, the ones the listener deleted among them, and says whether the feed lists more than the parser reads (listsMore, past FeedParser.maximumItems, 2,000).
   It is optional, so an older record loads without it.
   It is one file in the data directory's Feeds folder, Feeds/<feed ID>.json (FeedPaths), pretty-printed with sorted keys and ISO 8601 dates.
   The file's name decides the feed's ID, so a sync service's conflict copy is never read.
   Beside it, Feeds/<feed ID>/ holds:
-  - the feed's downloaded items' packages and its own index of them, which the library model owns (feed items, under the library index, above),
+  - the feed's downloaded items' packages and its own index of them, which the library model owns ([Feed items](library-index-reading-feeds.md)),
   - and, hidden, a kept package set aside while a download replaces it (.replaced- and the package's name)
   - and, in a library in the cloud, the notes of launches that found the record missing (.record-absent- followed by a Mac's ID and a launch's, FeedRecordAbsence).
 
@@ -31,12 +31,12 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
 - Who may write it:
   - FeedCenter's operations (subscribing, unsubscribing and resubscribing, a feed's folder and its own settings, marking an item played or unplayed, or every item played, deleting a download or an item, and deleting the feed, below),
   - FeedReconciler's merges of a refresh,
-    - each of which records the feed's size before the kept-entries rule, whose number is now the feed's listing (the List and download choice, below),
+    - each of which records the feed's size before the kept-entries rule, whose number is now the feed's listing ([List and download choice, newest-N rule](feeds-interface.md)),
     - chooses the items kept, keeping beside the newest every item downloaded or downloading, every item played (board #1412), and every item whose row the library keeps after its file went (FeedReconciler.kept, keepingRecordsOf:, FR11's branch A2),
   - the download manager,
   - the lifecycle (played downloads, below),
-  - the newest-N rule and the move to the List and download choice (below),
-  - and Move to Library…, which marks an item In Library (feed items, under the library index, above).
+  - the newest-N rule and the move to the List and download choice ([List and download choice, newest-N rule](feeds-interface.md)),
+  - and Move to Library…, which marks an item In Library ([Feed items](library-index-reading-feeds.md)).
   Each durable change is written atomically on the store's serial queue, as storage work (StorageWork.savingFeeds), so a data-directory move waits for it; a download's progress is never written, an item downloading or waiting to being written as not downloaded (FeedRecord.durable).
   While the data directory is unavailable, or after a write fails (FEED_RECORD_SAVE_FAILED), the change waits in memory, written with the feed's next change or once the data directory is back.
   A failed write is reported to PersistenceFailureCenter under feed subscriptions (feedRecords, keyed by the feed), naming the feed.
@@ -58,7 +58,7 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
 - How others observe it: FeedCenter republishes every change of the records and the fetch details, publishes the feeds refreshing (refreshingFeedIDs), and sends FeedEvent values:
   - a subscription, a refresh's end, the end of a refresh of every feed, a download's start, end, failure, or cancelling (downloadCancelled(feedID:itemID:)),
   - and a change of the List and download choice taking effect, itemPolicyApplied(global:feedIDs:),
-  - which the interface reads (below).
+  - which the interface reads ([The feed reader's interface](feeds-interface.md)).
   A record that can't be read is preserved beside itself (SavedFile.preserveUnusable, FEED_RECORD_UNREADABLE) and its feed left out; one only in the cloud is asked of the sync service and read at the next refresh of every feed (FEED_RECORD_IN_CLOUD).
 
 ## This Mac's fetch details
@@ -104,7 +104,7 @@ A refresh.
   The fetch, the parse, and a first merge (FeedReconciler) run off the main actor; a second merge on the main actor folds the result into the record as it is by then, so what the listener did meanwhile is kept.
   A feed that moved for good, by a permanent redirect or itunes:new-feed-url, is fetched from its new address from then on (FEED_MOVED).
   Each refresh ends in a FeedRefreshReport, and a refresh of every feed in a FeedRefreshSummary, which FeedCenter sends as events.
-  Each refresh's end (refreshEnded) then asks for a sweep of played downloads and a pass of the newest-N rule over its feed, which downloads what the feed's List and download choice keeps downloaded (below).
+  Each refresh's end (refreshEnded) then asks for a sweep of played downloads and a pass of the newest-N rule over its feed, which downloads what the feed's List and download choice keeps downloaded ([List and download choice, newest-N rule](feeds-interface.md)).
   The transfers and fetches wait on a FeedOnceContinuation (Services/Feeds/FeedNetwork.swift), resumed once only, by whichever comes first, the task's end or its cancel, since a CheckedContinuation resumed twice traps.
   A transfer or fetch cancelled before it begins throws its cancelled failure before any URLSession task exists (even offline).
   And one cancelled between the check and the delegate is caught by URLSessionTask.resumeUnlessCancelled(otherwise:), so a cancel in the turn a download starts never leaves FeedDownloadManager.run waiting for good.
@@ -151,7 +151,7 @@ Downloads.
   A download that stops partway keeps its resume data in this Mac's Caches folder (Resume Data, a week).
   And the finished file waits in Feed Downloads until FeedEpisodeImporter imports it, as storage work, through the import pipeline (ImportStaging and FileImportService.publishReadableBook),
   - publishing the package in the feed's own folder, Feeds/<feed ID>/ (destinationPackageURL),
-  - and adding the book's row, with its feed link and no library folder, to the library on the main actor before that work ends (addFeedBook(_:); feed items, under the library index, above).
+  - and adding the book's row, with its feed link and no library folder, to the library on the main actor before that work ends (addFeedBook(_:); [Feed items](library-index-reading-feeds.md)).
   A download needs the feed's library folder all the same, which lists it: a feed whose folder is gone downloads nothing.
   An episode, audio or video, becomes an audiobook, a video one playing its sound, and an article an HTML book written from its text, or from its web page's article when its own text runs under 200 words and it links a page.
   The book's row and record name its feed and item (Book.feedLink and BookMetadata.feedLink, a FeedBookLink), which its feed's index holds and library.json never does.
@@ -160,7 +160,7 @@ Downloads.
   A rule download that a network with data limits refused waits (FeedItemState.waiting, FeedDownloadWait.network, with one FEED_DOWNLOAD_WAITING line) and is put off (putOff).
   The next refresh TextMouth makes by itself that wasn't skipped, which shows the network has no data limits now, asks for the downloads put off again (retryPutOffDownloads, from FeedCenter's refreshEnded).
   One that lacks room waits too (FeedDownloadWait.room), for the rule's next pass, which never removes anything to make room; a download the listener asked for still fails for want of room.
-  As TextMouth quits, once the unsaved-changes guard lets it, the downloads are one piece of the quit's work (FeedQuitHold.work, kind "feed downloads"; the quit is in [Launch](../launch.md)), which ends when FeedDownloadManager.stopForQuit() ends or after three seconds (longestWait), whichever comes first:
+  As TextMouth quits, once the unsaved-changes guard lets it, the downloads are one piece of the quit's work (FeedQuitHold.work, kind "feed downloads"; see [Launch](../launch.md)), which ends when FeedDownloadManager.stopForQuit() ends or after three seconds (longestWait), whichever comes first:
   - stopForQuit stops every download (isStoppedForQuit),
   - lists each one asked for, the one under way first and those put off last, in this Mac's resume folder (Downloads at Quit.json, as SavedDownload, each with who asked for it),
   - and then stops the transfer under way, keeping its resume data when its server allows (FeedTransferHandle, through cancelByProducingResumeData).
@@ -223,7 +223,7 @@ The feed downloads' progress (FR10's feed half): what each Library window's feed
   So FeedDownloadProgressWording.comingBack(_:) says only what will happen, in cancelled(stopped:finishing:comingBack:) and cancelButtonHint(_:).
   FeedCenter.cancelButtonHint() feeds FeedDownloadProgressSection's hint.
   A download that begins after Cancel, as one the listener asks for while the one Cancel let finish is being added, ends the cancelling (FeedDownloadProgressState.begin(_:); feed review item 13).
-  downloadArticle checks for cancellation before it writes its book, so an article stopped while its page was fetched is not written from its summary, by Cancel Download either.
+  Before it writes its book, downloadArticle checks for cancellation, so an article stopped while its page was fetched is not written from its summary, by Cancel Download either.
 
 ### How the feed downloads' progress is observed
 <!-- id: progress-observers; keys: FeedDownloadProgressObserver, TimeLeftEstimate; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift -->
@@ -234,14 +234,15 @@ The feed downloads' progress (FR10's feed half): what each Library window's feed
   So a download's bytes never compare a feed's record (#1410) or redraw a list or a feed row (PERF12), and FeedItemState.downloading carries no progress: an item's row says "Downloading" without a percent, and a kept place beside it is spoken as "42 percent read" (FeedKeptProgress).
   The section is a container labelled with all its lines (spokenStatus(at:)), holding its heading, its bar (overallBarLabel), its lines, and Cancel (cancelButtonLabel, "Cancel Feed Downloads", and cancelButtonHint), dimmed once pressed.
   TimeLeftEstimate (Models/TimeLeftEstimate.swift) gives the time left once one download has reached the library (secondsLeft(at:)), and none once Cancel is pressed.
-  FeedDownloadProgressWording (Models/FeedDownloadProgressWording.swift) words every line, announcement, and control, reusing ImportProgressWording's sizes, its time left, its cancellingLine, and spokenStatus(title:lines:).
-  A run the newest-N rule began, which nobody heard begin, is announced once as it has lasted ImportProgress.announcedAfter, at medium priority, with the downloads under way and the time left (FeedDownloadProgressWording.underWay(_:secondsLeft:); announceStartIfDue(at:), the run's first download begun byItself), unless a quarter was heard or Cancel pressed first (feed review item 17).
+  A run the newest-N rule began, which nobody heard begin, is announced once as it has lasted ImportProgress.announcedAfter, at medium priority, with the downloads under way and the time left (FeedDownloadProgressWording.underWay(_:secondsLeft:)).
+  The announcement comes from announceStartIfDue(at:), at the run's first download begun byItself, unless a quarter was heard or Cancel pressed first (feed review item 17).
   A run that has lasted ImportProgress.announcedAfter, 10 seconds, announces each quarter of its downloads once, at medium priority, and its end, naming the download of a run of one, unless Cancel was pressed or nothing downloaded, failed, or waits.
   What Cancel stopped is said by the window it was pressed in, once its focus has moved (above):
   - the downloads stopped,
   - the download that finishes all the same,
   - and when TextMouth downloads again by itself (FeedDownloadProgressWording.retryAfterCancel), which the Cancel button's hint says too.
-  ShortcutAction.speakDownloadProgress, under Information with no default key, working in every window but an audio editor's, and Library > Speak Download Progress post speakDownloadProgress, which the library model hears (observeDownloadProgressRequests()) and answers with FeedDownloadManager.spokenProgress(), which counts the waits anew first, since a wait for room lives only in its item's state.
+  ShortcutAction.speakDownloadProgress, under Information with no default key, working in every window but an audio editor's, and Library > Speak Download Progress post speakDownloadProgress, which the library model hears (observeDownloadProgressRequests()).
+  The library model answers with FeedDownloadManager.spokenProgress(), which counts the waits anew first, since a wait for room lives only in its item's state.
 
 ## Played downloads and their deletion
 <!-- id: played-downloads-their-deletion; keys: playedDate, downloadDeletedDate, Delete Download, delete after, bookDidFinish, Trash; src: TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouthProductionTests/FeedItemRecordTests.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Models/FeedBookUse.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/TranscribedBooks.swift -->
@@ -250,9 +251,18 @@ Played downloads, and their deletion.
 
 - Owner: each item's playedDate and downloadDeletedDate, in its feed's record.
 - Who may write it: ReadingStatsService.markBookFinished posts bookDidFinish, and FeedCenter marks the item whose download finished played (FEED_ITEM_PLAYED), so a finished episode or article counts among Books Finished too.
-  markPlayed(_:of:) and markUnplayed(_:of:) set or clear it for the listener, and markAllPlayed(of:) sets it for every item of a feed not played yet, in one change of its record.
-  A sweep (requestSweep(), at launch, after each refresh, when an item plays to its end or is marked played, and whenever the books open in readers change, as when a reader closes) deletes the file of each download played at least feedDeleteDownloadsDaysAfterPlayed days ago, or the feed's own number (0 at once, -1 never), for good, with dataless files left in the cloud, keeping its package, with an article's content.md in it (FeedItemPackage.staysWithoutTheFile(_:)), while it holds the listener's state, in the order the feed items entry gives (feed items, under the library index, above): never a book in use, which the sweep leaves for its next pass (FeedLibraryHost.feedBooksInUse: one open in a reader, one an export is reading, BookExportModel.booksBeingExported, the one being transcribed, TranscribedBooks.shared.transcribingBookID, and a book whose text is being edited with Edit Text, LibraryViewModel.textEditSessions.bookIDs, which the rules wait for but the listener's own deletions do not, since an editing session ends only when TextMouth quits and a refusal would stand until then; FeedDueRemovalOutcome.inUse and the reports' inUseBookIDs; REV11 F1), never while the library's index is being recovered, never a download made before FR11 that has not moved into its feed's folder, and, in a library in the cloud, only a package this Mac holds whole, as the packages' cloud states, read off the main thread first, say (packagesHeldWhole, FEED_SWEEP_LEFT_IN_CLOUD).
-  The removal goes through removeDue(_:from:by:at:putOffEvent:), which the newest-N rule shares (the List and download choice, below):
+  The listener sets or clears it with markPlayed(_:of:) and markUnplayed(_:of:), and markAllPlayed(of:) sets it for every item of a feed not played yet, in one change of its record.
+  A sweep (requestSweep()) runs at launch, after each refresh, when an item plays to its end or is marked played, and whenever the books open in readers change, as when a reader closes.
+  It deletes the file of each download played at least feedDeleteDownloadsDaysAfterPlayed days ago, or the feed's own number (0 at once, -1 never), for good, with dataless files left in the cloud.
+  It keeps the package, with an article's content.md in it (FeedItemPackage.staysWithoutTheFile(_:)), while it holds the listener's state, in the order the feed items entry gives ([Feed items](library-index-reading-feeds.md)).
+  It deletes:
+  - never a book in use, which the sweep leaves for its next pass (FeedLibraryHost.feedBooksInUse:
+    - one open in a reader, one an export is reading, BookExportModel.booksBeingExported, the one being transcribed, TranscribedBooks.shared.transcribingBookID,
+    - and a book whose text is being edited with Edit Text, LibraryViewModel.textEditSessions.bookIDs, which the rules wait for but the listener's own deletions do not, since an editing session ends only when TextMouth quits and a refusal would stand until then;
+    - FeedDueRemovalOutcome.inUse and the reports' inUseBookIDs; REV11 F1),
+  - never while the library's index is being recovered, never a download made before FR11 that has not moved into its feed's folder,
+  - and, in a library in the cloud, only a package this Mac holds whole, as the packages' cloud states, read off the main thread first, say (packagesHeldWhole, FEED_SWEEP_LEFT_IN_CLOUD).
+  The removal goes through removeDue(_:from:by:at:putOffEvent:), which the newest-N rule shares ([List and download choice, newest-N rule](feeds-interface.md)):
   - the records and the feeds' indexes are written and waited for on the main actor (LibraryViewModel.readyFeedFilesForRemoval(of:keepingPackages:)),
   - the files are removed off the main thread, on the download manager's import queue (FeedDownloadManager.runBesideImports(_:)), inside StorageBoundary.perform as StorageWork.removingFeedDownloads,
   - so a data-directory move waits for a removal under way and a removal waits while a move holds the work (it logs FEED_DOWNLOAD_DELETE_WAITING while held),
@@ -265,7 +275,14 @@ Played downloads, and their deletion.
   A rule's removal notes its item not downloaded only while the item still names the book it removed (FeedCenter.noteDownloadGone(_:of:at:byListener:removing:), REV11 F5).
   So an item asked for again meanwhile, as Open asks for one, says so for its whole transfer, as is an item In Library whose book has left the library (FEED_LIBRARY_BOOK_GONE, FR11's branch D).
   A book In Library is the library's own, which no rule of its feed removes.
-  The listener's Delete Download (deleteDownload(_:of:)) and the library's Remove of a feed item (deleteDownload(ofBook:in:)) remove the file in the same order, keeping the package, but all on the main actor, through removeFeedFiles(of:keepingPackages:remove:), and take an article's content.md with the file, and Delete Episode (deleteItem(_:of:)) removes the package whole, kept or not, each following the removal setting's choice of the Trash and refusing a download in use (the feed follow-ups after FR14, item 1): FeedLibraryHost.feedBookUse(of:) says how one is in use (FeedBookUse, Models/FeedBookUse.swift: open in a reader, being transcribed, or being exported), reading the list (LibraryViewModel's feedBookUses) that feedBooksInUse reads too and adds the books being edited to, and the removal throws FeedDownloadInUseError, whose sentence names the download and what to do (FEED_DOWNLOAD_DELETE_REFUSED).
+
+### The listener's deletions
+<!-- id: listener-deletions; keys: deleteDownload, Delete Episode; src: TextMouth/Services/Feeds/FeedCenter.swift -->
+
+  The listener's Delete Download (deleteDownload(_:of:)) and the library's Remove of a feed item (deleteDownload(ofBook:in:)) remove the file in the same order, keeping the package, but all on the main actor, through removeFeedFiles(of:keepingPackages:remove:).
+  They take an article's content.md with the file.
+  Delete Episode (deleteItem(_:of:)) removes the package whole, kept or not, each following the removal setting's choice of the Trash and refusing a download in use (FeedLibraryHost.feedBookUse(of:), FeedBookUse; the feed follow-ups after FR14, item 1).
+  The removal throws FeedDownloadInUseError, whose sentence names the download and what to do (FEED_DOWNLOAD_DELETE_REFUSED).
   The listener's deletions refuse rather than wait, as the rules do, since a deletion carried out minutes later, unannounced, could take a download the listener had since decided to keep.
   Delete Feed… refuses the same way (FeedDeleteError.downloadInUse(title:use:)), and LibraryFeedsPresenter.refusal(for:) words the alert.
 - How others observe it: the item stays in its feed's record, not downloaded, and a kept package's row on its feed's shelf; and an item deleted (deleteItem(_:of:)) stays in the record too, out of every list, so no refresh brings it back.
@@ -273,4 +290,4 @@ Played downloads, and their deletion.
   When a read lists none of the record's items, every deleted record is kept whatever its age, so one empty or cut-short channel forgets no deletion.
   The retention counts from the deletion, not from when the feed last listed the item, which would need a date in the feed index.
   FeedDownloadManager.cancel(_:of:) returns whether the download stopped or finishes, .finishing for the one whose book is already being added (isAddingToLibrary), and FeedCenter.cancelDownload(_:of:) makes the item the listener's only when it stopped.
-  download(_:of:origin:opening:startingNext:) merges a new ask into the download under way only while its task is not cancelled, and otherwise queues a fresh request, which run's catch leaves alone.
+  Only while its task is not cancelled does download(_:of:origin:opening:startingNext:) merge a new ask into the download under way; otherwise it queues a fresh request, which run's catch leaves alone.
