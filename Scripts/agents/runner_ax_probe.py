@@ -9,6 +9,7 @@ Python 3 standard library only, and importing it leaves no __pycache__ folder.
 """
 import os
 import sys
+import time
 from pathlib import Path
 
 # Importing this module must leave no __pycache__ folder in the repository.
@@ -53,4 +54,9 @@ def probe(scratch):
         return
     say(f"the program is {'there' if os.access(binary, os.X_OK) else 'NOT there or not executable'}: {binary}")
     show("the probe program", [str(binary)])
-    show("the probe program through the audio session's own launchd domain", ["launchctl", "asuser", str(os.getuid()), str(binary)])
+    show("the probe program through the session's own launchd domain", ["launchctl", "asuser", str(os.getuid()), str(binary)])
+    # What the development Mac has that the runner lacks is probably VoiceOver (or another client that keeps accessibility on).
+    show("start VoiceOver", ["open", "-g", "-a", "VoiceOver"])
+    time.sleep(15)
+    show("VoiceOver processes", ["sh", "-c", "ps -axo pid,comm | grep -i voiceover | grep -v grep"])
+    show("the probe program with VoiceOver started", [str(binary)])
