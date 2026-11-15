@@ -93,16 +93,20 @@ Full Summary, which the Playback menu offers too, as does the reader toolbar's W
 ### Play and Pause during the announcement
 <!-- id: play-pause-during-announcement; keys: AirPods, media key, Release Media Controls, resume, announcement paused; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
-Play/Pause pressed while Where Am I? speaks, from the keyboard, the AirPods, or a media key, a Pause from the AirPods or a media key, and the book's sleep timer running out end the announcement without resuming the book, and so do the AirPods disconnecting, a recording starting, and another book starting while the book counts as playing, as it does while the announcement holds it paused or holds a Play for it (below); a book the announcement paused then stays paused as any pause leaves it: no time after it counts as listening, a sleep timer's countdown waits for Play, and an audiobook's Play/Pause button says Play.
+Play/Pause pressed while Where Am I? speaks, from the keyboard, the AirPods, or a media key, a Pause from the AirPods or a media key, and the book's sleep timer running out end the announcement without resuming the book.
+And so do the AirPods disconnecting, a recording starting, and another book starting while the book counts as playing, as it does while the announcement holds it paused or holds a Play for it (below).
+A book the announcement paused then stays paused as any pause leaves it: no time after it counts as listening, a sleep timer's countdown waits for Play, and an audiobook's Play/Pause button says Play.
 A Play from the AirPods, a media key, or Control Center while Where Am I? speaks waits for it: a book the announcement paused plays again as it ends, and a book paused or stopped before it starts once its end sound has played, with the play sound.
-Until the book plays again, it still counts as playing: a sleep timer running out, a Pause from the AirPods or their leaving, a recording or another book starting, or Play/Pause in that moment leaves it paused, and Where Am I? pressed in the moment after the announcement has ended, before the book plays again, keeps it paused until the new announcement ends, while a skip in that moment resumes it at once.
+Until the book plays again, it still counts as playing: a sleep timer running out, a Pause from the AirPods or their leaving, a recording or another book starting, or Play/Pause in that moment leaves it paused.
+And Where Am I? pressed in the moment after the announcement has ended, before the book plays again, keeps it paused until the new announcement ends, while a skip in that moment resumes it at once.
 Over a book paused or stopped before the announcement began, with no Play pressed, the announcement goes on when another book starts.
 Release Media Controls ends the announcement with the book, so the book stays stopped and the AirPods stay released, and so does anything else that stops the book, as a chapter that can't be downloaded or played does.
 
 ### Jumps and the speech engine
 <!-- id: jumps-speech-engine; keys: Next Heading, Previous Heading, Auto-play on navigate, jump, speech cancelled; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel+Jump.swift -->
 
-A jump while Where Am I? speaks, by Next Heading or Previous Heading, a heading, bookmark, or search result picked from its list, Go to a percent or a time, or Return to previous position, ends the announcement as a skip does: a book it paused plays on from where the jump lands, and a book a Play was pressed for starts there.
+A jump while Where Am I? speaks, by Next Heading or Previous Heading, a heading, bookmark, or search result picked from its list, Go to a percent or a time, or Return to previous position, ends the announcement as a skip does.
+A book it paused plays on from where the jump lands, and a book a Play was pressed for starts there.
 With Auto-play on navigate, a heading, bookmark, or search result picked from its list also plays a book paused or stopped before the announcement, from where the jump lands.
 Should the speech engine cancel the announcement before it ends, whatever waited for it starts as the announcement's end would have started it: a book you pressed Play for during the announcement, the one it paused included; a chapter whose files arrived during it; and a book waiting for its chapter's speech, at once or as soon as the speech is ready.
 With no Play pressed, the book the announcement paused stays paused, and Play/Pause resumes it.
@@ -117,7 +121,8 @@ A pause between two chapters of an audiobook that ends during the end sound, or 
 ### Sound output, Edit Text, the sleep timer, and the cloud
 <!-- id: sound-output-edit-text-sleep; keys: AirPods connect, library move, cloud download, Edit Text, sleep timer; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift -->
 
-If the sound output changes while Where Am I? speaks over a book it paused, as when AirPods connect, or the library moves that audiobook's files meanwhile, the book plays on afresh from where it paused once the announcement ends, on the new output or from the files' new place; a text book keeps speaking in the voice.
+If the sound output changes while Where Am I? speaks over a book it paused, as when AirPods connect, or the library moves that audiobook's files meanwhile, the book plays on afresh from where it paused once the announcement ends, on the new output or from the files' new place.
+A text book keeps speaking in the voice.
 Edit Text taken while Where Am I? speaks over a playing book ends the announcement, and the book plays on in the edited text from its place.
 Setting a sleep timer while Where Am I? speaks lets the announcement finish and plays the book as it ends.
 In a library in the cloud, a chapter whose files arrive while Where Am I? speaks plays once the announcement has ended, even if the library moves the book meanwhile, from the book's new place.
