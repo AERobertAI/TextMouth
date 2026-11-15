@@ -39,7 +39,6 @@ The sleep timer.
   VoiceOver hears why nothing follows.
   An audiobook fades out toward a stop at a chapter's end over the timer's fade-out time, its volume following the time left in the chapter at the playback speed (fadeOutBeforeSleepTimerStop(), from AudioPlaybackService.timeLeftToPlay), so a pause holds the volume where it is and cancelling or replacing the timer restores it; speech is not faded toward such a stop.
   An m4b's chapter marker inside one file stops the timer through the heading path, a moment past the marker, at the next refresh after an audio position update, without a fade, since AudioPlaybackService.timeLeftToPlay measures the file, not the chapter. textmouth_timer.log records each timer from start to expiry.
-- Files: Services/SleepTimerService.swift, Services/SleepTimerRegistry.swift, Models/DocumentContent.swift, Views/Reader/SleepTimerView.swift, Views/Reader/BookReaderWindowView.swift, Views/Reader/ReaderView.swift, Services/NowPlayingService.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift, Services/AudioPlaybackService.swift.
 - Tests: WindowSleepTimerTests (two windows each counting, pausing, and running out their own timer; a book opened beside a paused timer; the timer going on in place between text and audio books four ways; the new window taking it; closing a window; the routing of the menu command, the key, and the gesture; two sheets open together), SleepTimerRegistryTests, and the hand-over tests listed in the next entry.
 
 ## The sleep timer held for the next book
@@ -68,7 +67,6 @@ The sleep timer held for the next book (0.2.5): a running timer goes on with lis
   What still ends listening at a book's end is sleepTimerEndsListeningHere (a timer fading out, or one set for the end of a heading or of the book, which this end reaches), asked before the end's own timer ends; one set after the book has ended, such as during an episode's wait, is not spent by that end and goes on.
   The sentences are SleepTimerHandOverWording (noBook, afterTheReason, fadeEndedByTheMove) and "Timer reset." for a restart.
   A move ends a fade of any timer it carries (beginMoveToAnotherBook(), in [The reader](reader.md)), and the log textmouth_timer.log records HELD, RESTART_HELD, FADE_CANCELLED_BY_RESTART, TRANSFERRED, and the stops with their reasons.
-- Files: Services/SleepTimerService.swift, Services/SleepTimerRegistry.swift, Models/SleepTimerHandOverWording.swift, ViewModels/ReaderViewModel+SleepTimerHandOver.swift, ViewModels/ReaderViewModel+BookMoves.swift, ViewModels/ReaderViewModel+NextBookWindow.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+CloudDownload.swift, ViewModels/ReaderViewModel.swift, ViewModels/LibraryViewModel+BookOperations.swift, Services/ReaderRequestStore.swift, Views/Reader/BookReaderWindowView.swift.
 
 ## Listening checkpoints
 <!-- id: listening-checkpoints; keys: reading_stats.json, Stats tab, Books Finished, listening session, streak, Recently Finished, sleep and wake, FinishedBookKind; src: TextMouth/Services/ReadingStatsService.swift, TextMouth/Models/ReadingStatsTile.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouth/Services/Feeds/FeedLifecycle.swift -->
@@ -84,7 +82,6 @@ Listening checkpoints.
   ReadingStatsService hears NSWorkspace's will-sleep and did-wake notices: going to sleep checkpoints the open session and keeps a SleepNote, the moment with the awake clock (ProcessInfo.systemUptime, which stops while the Mac sleeps), and every credit after it, from the checkpoint timer, a session's end, or the wake's notice, begins no earlier than the wake the awake clock finds, so the night is left out of Today, This Week, All Time, the streak, and the book's total in whatever order the wake's events come, and even should the wake's notice never come.
 - How others observe it: the Books Finished figures count ReadingStats.countedFinishes, each book once, by the first entry naming it, so the repeats an earlier version wrote at each end of a book stay in the file and count once (booksFinishedAllTime, booksFinishedThisYear(at:), in the year of that first finish), and Recently Finished lists recentlyFinished(limit:), the last ten of them, newest first, its rows keyed by entry (FinishedBookEntry is Identifiable by its book and date).
   The Stats tab reads every figure at one instant on each tick (ReadingStatsFigures), including the open session's time since its last checkpoint, and the books finished by kind (booksFinishedThisYearByKind(at:) and booksFinishedAllTimeByKind, as FinishedBookCounts), a book finished before kinds were recorded counting by the library's answer while the library holds it, and in no kind after; the two Books Finished tiles show the kinds under the count and speak them with it (ReadingStatsTileWording.books(_:byKind:finished:)).
-- Files: Services/ReadingStatsService.swift, Models/ReadingStatsTile.swift, Views/Settings/ReadingStatsView.swift, Services/Feeds/FeedLifecycle.swift.
 
 ## Day keys
 <!-- id: day-keys; keys: day key, Gregorian calendar, time zone, reading_stats.json, dayKeyVersion, Today, This Week; src: TextMouth/Services/ListeningDays.swift, TextMouth/Services/ListeningDayKeyMigration.swift, TextMouth/Services/ReadingStatsService.swift -->
@@ -95,7 +92,6 @@ Day keys.
   A day key such as "2026-10-02" names one local day, written in the Gregorian calendar, the POSIX locale, and ASCII digits whatever the user's settings, in the time zone current when the time is credited.
   Time already credited never moves.
 - Who may write it: ReadingStatsService credits time under these keys, and ListeningDayKeyMigration converts, once, keys saved under the system's own calendar (ReadingStats.dayKeyVersion).
-- Files: Services/ListeningDays.swift, Services/ListeningDayKeyMigration.swift, Services/ReadingStatsService.swift.
 
 ## How the app's timers wake the Mac
 <!-- id: how-app-timers-wake-mac; keys: timer tolerance, energy, wake-ups, power use, coalescing, watchdog, audit C16; src: TextMouth/Services/TimerCoalescing.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/LibrarySessionLease.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Views/Settings/ReadingStatsView.swift, TextMouthProductionTests/TimerCoalescingTests.swift -->
@@ -109,4 +105,3 @@ How the app's timers wake the Mac (the audit's C16, November 13, 2026).
   The timer's generation is checked first, so a tick of a countdown that was replaced does nothing, and a countdown whose service is gone invalidates its timer.
 - How others observe it: nobody does; a timer fires up to a tenth of its interval late, which macOS can fold into other work.
   TimerCoalescingTests read each timer's tolerance, and read that the countdown's is zero (SleepTimerService._fireCountdownTimerForTesting()).
-- Files: Services/TimerCoalescing.swift, Services/ReadingStatsService.swift, Services/LibrarySessionLease.swift, Services/SpeechService.swift, Services/SleepTimerService.swift, Views/Settings/ReadingStatsView.swift.
