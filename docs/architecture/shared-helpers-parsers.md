@@ -1,10 +1,10 @@
 # Shared helpers: readers and markup guards
-<!-- id: shared-helpers-parsers; keys: ; src: -->
+<!-- id: shared-helpers-parsers; keys: SwiftSoup, XML, Kindle, parser, guard, untrusted markup; src: -->
 
 Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 
 ## ImportCancellation.throwIfCancelled
-<!-- id: importcancellation-throwifcancelled; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/ArchiveExtraction.swift -->
+<!-- id: importcancellation-throwifcancelled; keys: cooperative cancellation, abort import, long loop, cancel check; src: TextMouth/Services/ArchiveExtraction.swift -->
 
 ImportCancellation.throwIfCancelled() (Services/ArchiveExtraction.swift): the one question a reader that starts no helper process asks to hear Cancel in the import overlay.
 It throws ImportCancelled, as a cancelled textutil conversion ends, and does nothing outside an import (a reader window, startup maintenance, Redo Text Extraction).
@@ -12,7 +12,7 @@ Call it in a loop of a reader that can run long.
 The rich text, DOCX, MOBI, KFX, OpenDocument, and Word 2003 XML readers ask it; Word 97-2003 does not.
 
 ## Office XML readers and XMLInputGuard
-<!-- id: office-xml-readers-xmlinputguard; keys: ; src: TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/PackageSAXParser.swift, TextMouth/Parsers/OfficeBlockWriter.swift, TextMouth/Parsers/OfficeStyleChain.swift -->
+<!-- id: office-xml-readers-xmlinputguard; keys: XXE, billion laughs, DTD refusal, entity expansion; src: TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/OfficeXMLReader.swift, TextMouth/Parsers/PackageSAXParser.swift, TextMouth/Parsers/OfficeBlockWriter.swift, TextMouth/Parsers/OfficeStyleChain.swift, TextMouth/Services/FileImportService.swift -->
 
 OfficeXMLReader, XMLInputGuard, OfficeBlockWriter, and OfficeStyleChain (Parsers/): the base and writer of the OpenDocument and Word 2003 XML readers.
 OfficeXMLReader reads names by namespace and refuses a document type declaration and a nesting past 200 elements; XMLInputGuard checks the raw bytes of a part before XMLParser or XMLDocument sees it, each check one linear pass (since 0.4.1 the DOCX, EPUB, DAISY, SSML, and PEF readers, the ODT manifest check, the SMIL source scan, and the feed and OPML readers ask it too; SMILTextSources.scan, which tells whether a DAISY archive holds text beyond its audio, reads the text elements of a file the guard refuses as text, one linear regular-expression pass with no XML parser, so that the archive holding the only copy of that text is still kept): the document type in the prolog, found in any encoding (declaresDocumentType, which OfficeXMLReader refuses whole, and declaresInternalSubset, the definitions of its own that problem(with:) refuses, a name of an external type being read); the encoding the part declares, allowed only for the names the guard can see through (seesThrough(_:width:): UTF-8, UTF-16 and UTF-32 in a part of that shape, US-ASCII, ISO-8859-n, Windows-125n, KOI8-R and KOI8-U, Macintosh, Shift_JIS, EUC-JP, EUC-KR, GB2312, GBK, GB18030, Big5, and their aliases, in any capitals; a list of names to refuse always misses an alias, so EBCDIC and every other name are refused, and any XML white space may stand around the =); and the attributes of any start tag, counted outside the quotes of their values (hasTag(withMoreAttributesThan:in:), at most 1,024 = mostAttributesInATag, 27 times the most in any real tag; XMLParser's time grows with the square of a tag's attributes, and the length of a value costs nothing, so the 1,000,000-byte limit on a start tag is gone).
@@ -21,7 +21,7 @@ The sentences are refusalSentence(for:file:in:original:) for an internal subset 
 Both readers write through the rich text reader's RTFBlockBuilder, RTFHTMLWriter, and RTFSizeHeadings, which they reuse unchanged: a change to those reaches the OpenDocument and Word 2003 XML readers too (see [Imports](state/imports.md)).
 
 ## MarkupGuard, MarkupScanner, and tree models
-<!-- id: markupguard-markupscanner-tree-models; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift -->
+<!-- id: markupguard-markupscanner-tree-models; keys: HTML parser, tokeniser, untrusted markup, crash, tree builder, depth model; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift -->
 
 MarkupGuard (Parsers/MarkupGuard.swift), MarkupScanner (Parsers/MarkupScanner.swift), and XMLOpenElements and HTMLTreeModel (Parsers/MarkupNesting.swift): the one way markup reaches SwiftSoup, since 0.4.1.
 A book's markup is untrusted, and three things in it took the whole app down, or the Mac's memory with it:
@@ -32,14 +32,14 @@ A book's markup is untrusted, and three things in it took the whole app down, or
 - An element takes a kilobyte or two of memory however few bytes its tag has, so a limit on bytes is no limit on memory.
 
 ## MarkupGuard entry points
-<!-- id: markupguard-entry-points; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
+<!-- id: markupguard-entry-points; keys: parser entry, lenient XML, body fragment, policy test, guard bypass; src: TextMouth/Parsers/MarkupGuard.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 MarkupGuard's entry points are `parse(_:baseURI:deepestNesting:)`, which picks SwiftSoup's XML parser when the markup opens with `<?xml` (by `opensAsXML`, SwiftSoup's own idea of whitespace) and its HTML parser otherwise, `parseXML(_:baseURI:deepestNesting:)`, and `parseBodyFragment(_:)`.
 `MarkupGuardTests.testEveryParseGoesThroughTheGuard` fails on any `SwiftSoup.parse`, `Parser.parse`, `Parser.xmlParser`, `Parser.htmlParser`, `.parseInput(`, or `XmlTreeBuilder(` in the app's sources outside MarkupGuard.swift, so a new reader cannot leave the guard behind.
 The readers that ask it are the EPUB, HTML, DAISY, Kindle (through HTMLToMarkdownConverter), and TextutilDocumentReader paths, the portable XML tree's lenient reader, and the feed code's discovery, article, and title reads.
 
 ## MarkupGuard's two layers of depth guard
-<!-- id: markupguard-two-layers-depth-guard; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupNesting.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Parsers/MarkupScanner.swift -->
+<!-- id: markupguard-two-layers-depth-guard; keys: nesting depth, HTML5 tree builder, stack overflow, linear pass; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupNesting.swift, TextMouth/Parsers/MarkupScanner.swift -->
 
 The two layers hold the depth, so that one slip of the first cannot crash the app:
 
@@ -53,7 +53,7 @@ The two layers hold the depth, so that one slip of the first cannot crash the ap
   `parse`, `parseXML`, and `parseBodyFragment` all end with it.
 
 ## MarkupGuard's big stack
-<!-- id: markupguard-big-stack; keys: ; src: TextMouth/Parsers/MarkupGuard.swift -->
+<!-- id: markupguard-big-stack; keys: stack overflow, stack memory, SwiftSoup recursion; src: TextMouth/Parsers/MarkupGuard.swift -->
 
 The big stack (0.4.2): `MarkupGuard.onLargeStack(_:)` runs SwiftSoup's parse, the depth walk after it, and the release of a refused tree on a `pthread` of its own, so that a wrong count in the first layer cannot overflow SwiftSoup's recursion up a tree's parents.
 All three entry points use it.
@@ -81,7 +81,7 @@ All three entry points use it.
 - Not checked: shapes beyond the 12 measured; HTML trees past 50,000 levels, because the lifted first-layer count is quadratic (the stack use of HTML was measured to 20,000 levels, and of XML to about a million, where it showed none); and iOS, below.
 
 ## MarkupGuard's four limits
-<!-- id: markupguard-four-limits; keys: ; src: TextMouth/Parsers/MarkupGuard.swift -->
+<!-- id: markupguard-four-limits; keys: thresholds, hostile markup, memory limit, 128 levels; src: TextMouth/Parsers/MarkupGuard.swift -->
 
 , set on November 7, 2026 from 3,236 documents of 327 real files and from how deep a tree each reading path survives on the 512 KiB stack of an import.
 A test binds others with `MarkupGuard.$limits.withValue(_:operation:)`, a task-local that changes only the reading that operation does:
@@ -98,35 +98,35 @@ A test binds others with `MarkupGuard.$limits.withValue(_:operation:)`, a task-l
   The most in a real document is 1,300.
 
 ## Feed discovery's nesting limit
-<!-- id: feed-discovery-nesting-limit; keys: ; src: TextMouth/Services/Feeds/FeedDiscovery.swift -->
+<!-- id: feed-discovery-nesting-limit; keys: feed autodiscovery, link rel alternate, HTML page, discover feeds, web page; src: TextMouth/Services/Feeds/FeedDiscovery.swift -->
 
 Feed discovery (`FeedDiscovery.deepestNesting`) has a limit of its own, 512, passed as `deepestNesting`, because it walks the page with a stack of its own and converts nothing.
 What still calls itself for each level is SwiftSoup's own recursion, which reads at least 3,002 levels in Release and 2,002 in debug, so at 512 the deepest tree is 1,026.
 
 ## MarkupRefusal cases
-<!-- id: markuprefusal-cases; keys: ; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/XMLInputGuard.swift -->
+<!-- id: markuprefusal-cases; keys: refusal message, damaged file, error sentence, LocalizedError, import error; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/XMLInputGuard.swift -->
 
 MarkupRefusal has four cases, each a sentence a listener can act on that never calls the file damaged: `nestedTooDeeply(limit:)`, `tooMuchMarkup`, `tooManyAttributes(limit:)`, and `tooMuchWork` (the sentences are in [Adding books](../user/adding-books.md)).
 The pass costs 13% of an HTML parse and under 2% of an XML one, and 0.133 seconds on Webster's 32 MB against the parse's 0.944.
 
 ## DOCX list counting and number formats
-<!-- id: docx-list-counting-number-formats; keys: ; src: TextMouth/Parsers/DOCXParser+Numbering.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/DOCXParser+Sections.swift -->
+<!-- id: docx-list-counting-number-formats; keys: Roman numerals, list numbers, Word lists, page number format, lowerLetter; src: TextMouth/Parsers/DOCXParser+Numbering.swift, TextMouth/Parsers/DOCXParser.swift, TextMouth/Parsers/DOCXParser+Sections.swift -->
 
 DOCXListCounter, DOCXNumbering, and DOCXPageNumberFormat (Parsers/DOCXParser+Numbering.swift and DOCXParser+Sections.swift): the one counting of a list's numbers and the one writing of Roman, letter, and decimal formats.
 The Word 97-2003 reader builds a DOCXNumbering from Word's list tables and counts with the DOCX counter, so the two agree; DOCXListCounter.startLevels(moreSignificantThan:numId:) is the one accessor that only the Word 97-2003 reader calls.
 
 ## MarkdownEmphasis
-<!-- id: markdownemphasis; keys: ; src: TextMouth/Parsers/MarkdownEmphasis.swift -->
+<!-- id: markdownemphasis; keys: asterisk, tilde, strikethrough, style runs, emphasis markers; src: TextMouth/Parsers/MarkdownEmphasis.swift -->
 
 MarkdownEmphasis (Parsers/MarkdownEmphasis.swift) is how the DOCX converter, as the braille reader, writes bold and italic, so no `*` or `~` is ever a spoken mark: runs are gathered as raw text with a style for each scalar, and the marks are written around a stretch only where Markdown allows them.
 
 ## KFX and MOBI preparedBook
-<!-- id: kfx-mobi-preparedbook; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/MOBIParser.swift -->
+<!-- id: kfx-mobi-preparedbook; keys: AZW3, shared ending, Amazon, ebook format; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 KFXParser and MOBIParser.preparedBook (Parsers/KFXParser.swift, Parsers/MOBIParser.swift): a KFX book ends in the same function a MOBI book ends in, so a Kindle book of either format is cut into the same chapters, headings, and Markdown.
 
 ## KF8Book and the guard
-<!-- id: kf8book-guard; keys: ; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MOBIParser.swift -->
+<!-- id: kf8book-guard; keys: Kindle KF8, AZW3, fuzz, big stack policy; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 KF8Book and the guard (Parsers/KF8Book.swift, Parsers/KF8Layout.swift): a KF8 book's sections reach SwiftSoup only through HTMLToMarkdownConverter.convert, which calls MarkupGuard.parse, so the guard settles the nesting, declaration, and size inputs of a KF8 part as it does a MOBI 6 section's.
 KF8Book and KF8Layout call no SwiftSoup parse of their own, which the policy test that holds each parse to the big stack needs.
