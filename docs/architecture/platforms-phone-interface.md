@@ -1,6 +1,8 @@
 # The iPhone interface: announcements, text, sheets, and search
 <!-- id: phone-interface; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../ARCHITECTURE.md).
+
 ## The announcement priorities on iOS
 <!-- id: announcement-priorities-ios; keys: ; src: TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Phone/PhoneAnnouncer.swift, TextMouth/Phone/VoiceOverAnnouncer+Collecting.swift, TextMouth/Phone/PhoneMoveFeedback.swift -->
 
