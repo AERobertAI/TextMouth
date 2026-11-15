@@ -9,14 +9,15 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 A take being recorded (FR04).
 
 - Owner: RecordingService, on the main actor, one for each Record window and each audio editor window, recording one take at a time.
-  Its capture backend, CaptureSessionRecordingBackend, owns the AVCaptureSession, the microphone's input, and the AVCaptureAudioFileOutput, which writes the take into a CAF file in this Mac's Recordings folder (MachineLocalPaths.recordings), named for when it started: 16-bit PCM, one channel, at the microphone's own sample rate, or, should capture refuse that, in the microphone's own PCM format (RECORDING_FORMAT_FALLBACK).
+  Its capture backend, CaptureSessionRecordingBackend, owns the AVCaptureSession, the microphone's input, and the AVCaptureAudioFileOutput, which writes the take into a CAF file in this Mac's Recordings folder (MachineLocalPaths.recordings), named for when it started.
+  The file is 16-bit PCM, one channel, at the microphone's own sample rate, or, should capture refuse that, in the microphone's own PCM format (RECORDING_FORMAT_FALLBACK).
   A CAF file stays readable when a crash cuts the recording off.
 - Who may write it: RecordingWindowModel, through start, pause, resume, stop, discard, and reset, and an audio editor's punch-in (AudioEditorModel+PunchIn), which plays a count-in before capture begins and keeps the take as an edit.
   AudioInputPermission.ensureAccess() runs first, so a refusal records nothing.
 - How others observe it: the service publishes its state (idle, starting, recording, paused, stopping, finished with its take, or failed with why and the take, if any), the time recorded, pauses left out, and the levels, read every tenth of a second while a take is under way.
   The window shows them once a second.
   A lost microphone, a disk with less than 512 MB free (minimumFreeDiskSpace), or a failed capture arrives as a RecordingCaptureEvent: the take ends, kept, and the window says why and saves it.
-  RecordingWording words everything the window shows and speaks, its buttons' hints naming their keys in force (keyboard shortcuts, under preferences, above).
+  RecordingWording words everything the window shows and speaks, its buttons' hints naming their keys in force (the keyboard shortcuts, in [Preferences: keyboard shortcuts](preferences-shortcuts.md)).
   A quit asks first: AppDelegate calls RecordingWindowController.holdQuit after the data-directory move and before the audio editors.
   While the window holds a take (recording, paused, starting, or unsaved), the quit is cancelled and the window, brought forward, asks its close question (CloseQuestion, CloseAnswer); carryOut does the answer (stopAndSave or discard) before TextMouth asks to quit again.
   A question already on screen answers the quit too, a save that fails keeps TextMouth open, and a start or save under way is waited out (settle).
@@ -61,8 +62,8 @@ A saved recording.
   Then LibraryViewModel.saveRecording runs FileImportService.importRecording on the import queue, as storage work:
   - the package is staged and published with one rename, holding:
     - the M4A,
-    - original-take.caf when the original policy keeps one (audio edits, above),
-    - and origin.json (a recording's origin record, above),
+    - original-take.caf when the original policy keeps one (see [The originals and the original policy](audio-edits.md)),
+    - and origin.json (a recording's origin record, in [Recording origin record](package-records-places-and-files.md)),
   - and the book, whose author is Unknown, is added as any import's book is.
 - Who may write it: the Record window, on Stop, on Save Again, when a take ends on its own, and on a take left behind's Save as Audiobook (takes left behind, above).
 - How others observe it: the window announces the saved book and offers Open in Reader.
