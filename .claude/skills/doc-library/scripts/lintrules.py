@@ -117,8 +117,8 @@ SENTENCE_KINDS = frozenset({"paragraph", "list-item", "list-para", "quote"})
 
 
 def is_log(path: str) -> bool:
-    """Whether ``path`` is a log page, where dates are allowed."""
-    return path in docmodel.LOG_PAGES
+    """Whether ``path`` is a log page, where dates are allowed (``docmodel.is_log_page``)."""
+    return docmodel.is_log_page(path)
 
 
 def is_reference(path: str) -> bool:
