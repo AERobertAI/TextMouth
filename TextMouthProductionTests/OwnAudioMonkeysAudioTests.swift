@@ -167,6 +167,19 @@ final class OwnAudioMonkeysAudioTests: XCTestCase {
         let huge = try settingHeaderField(at: 6, to: 0x0200, in: bytes)
         XCTAssertEqual(
             failure(decoding: huge, verifiesChecksums: false), .unsupported(reason: OwnAudioWording.monkeysAudioShape))
+        // The SDK's own limits: over a million frames a block is refused below Insane, which may hold ten million.
+        XCTAssertEqual(MonkeysAudioDecoder.mostFramesPerFrame(forLevel: 4_000), 1_000_000)
+        XCTAssertEqual(MonkeysAudioDecoder.mostFramesPerFrame(forLevel: 5_000), 10_000_000)
+        let overAMillion = try settingHeaderField(at: 6, to: 0x0010, in: bytes)
+        XCTAssertEqual(
+            failure(decoding: overAMillion, verifiesChecksums: false), .unsupported(reason: OwnAudioWording.monkeysAudioShape))
+        let insane = try ownAudioSampleBytes("ape/mono32-insane.ape")
+        XCTAssertNotEqual(
+            failure(decoding: try settingHeaderField(at: 6, to: 0x0010, in: insane), verifiesChecksums: false),
+            .unsupported(reason: OwnAudioWording.monkeysAudioShape))
+        XCTAssertEqual(
+            failure(decoding: try settingHeaderField(at: 6, to: 0x0099, in: insane), verifiesChecksums: false),
+            .unsupported(reason: OwnAudioWording.monkeysAudioShape))
         // The two-frame file with its second frame's start set before its first's.
         var disordered = try ownAudioSampleBytes("ape/twoframes16-fast.ape")
         let header = Int(try XCTUnwrap(OwnAudioLittleEndian.uint32(disordered, 8)))

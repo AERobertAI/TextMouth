@@ -38,6 +38,15 @@ struct MonkeysAudioDecoder: OwnAudioDecoder {
     /// than the largest any encoder writes at eight channels, and little
     /// enough to keep a crafted header from asking for gigabytes.
     static let maximumSamplesPerFrame = 24_000_000
+
+    /// The most frames of audio one frame of the file may hold at the
+    /// compression level `level`, as the SDK itself refuses more: a million,
+    /// and ten million at Insane, whose frames are the longest. A silent
+    /// frame takes no bytes, so without this a file of a few thousand bytes
+    /// could declare a year of audio for the import to write out.
+    static func mostFramesPerFrame(forLevel level: Int) -> Int {
+        level >= 5_000 ? 10_000_000 : 1_000_000
+    }
     /// The descriptor's and the header's least lengths in bytes.
     private static let descriptorLength = 52
     private static let headerLength = 24
@@ -107,6 +116,7 @@ struct MonkeysAudioDecoder: OwnAudioDecoder {
         guard (1...Self.maximumChannels).contains(Int(channels)), [8, 16, 24, 32].contains(Int(bits)),
               (1...Self.maximumSampleRate).contains(Int(rate)), !isFloat || bits == 32,
               MonkeysAudioPredictor.filterShapes(forLevel: Int(level)) != nil,
+              Int(framesPerBlock) <= Self.mostFramesPerFrame(forLevel: Int(level)),
               Int(framesPerBlock) * Int(channels) <= Self.maximumSamplesPerFrame else {
             throw OwnAudioError.unsupported(reason: OwnAudioWording.monkeysAudioShape)
         }
