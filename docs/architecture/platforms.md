@@ -162,7 +162,8 @@ So phase 0 added a portable tree that has the part of the interface those reader
 - `Parsers/PortableXMLBuilder.swift` builds the tree with no recursion.
   A strict reader runs on Foundation's `XMLParser`.
   A lenient reader, used only when Tidy is asked for and the strict reading fails, runs on SwiftSoup's XML parser, which it reaches only through `MarkupGuard.parseXML(_:baseURI:deepestNesting:)` with `deepestNesting` set to `PortableXMLDocument.maximumDepth`, 512.
-  The guard counts the depth from the bytes before SwiftSoup builds anything and measures the parsed tree again afterwards, so markup nested deeper never becomes a tree of SwiftSoup's own, whose recursion would overflow the stack of an import (see [Shared helpers](shared-helpers-parsers.md)).
+  The guard counts the depth from the bytes before SwiftSoup builds anything and measures the parsed tree again afterwards, so markup nested deeper never becomes a tree of SwiftSoup's own, whose recursion would overflow the stack of an import.
+  See [Shared helpers: readers and markup guards](shared-helpers-parsers.md).
   Either layer's refusal is `PortableXMLError.tooDeep`, and a document with too many tags or attributes throws `MarkupRefusal`.
   A tree deeper than 512 levels is refused, a document that declares its own entities is refused, and releasing a tree is iterative, so a hostile feed cannot overflow the stack or hang the app.
 - The markup guard asks for a thread with a 490 MiB stack (`MarkupGuard.onLargeStack`, see Shared helpers in [Architecture](../../ARCHITECTURE.md)).

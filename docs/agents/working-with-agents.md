@@ -66,7 +66,7 @@ An agent checks its code in three ways, none of which builds with Xcode.
 It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`.
 All run under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for.
 And, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
-It tests through the build train (see the build train in [Testing TextMouth](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
+It tests through the build train (see [The build train](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
 What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.
 
 ## Finding and checking doc sections
@@ -139,7 +139,7 @@ A remote train's tests skip the 103 entries of `Scripts/agents/runner-skips.conf
 They have no verdict, so say so in your report and ask the orchestrator to run them in a local train.
 A timing failure on the runner that passes on the Mac is flaky there; do not raise the test's limit.
 A remote loop started with `--soon N` leaves N minutes after a request instead of on the hour, so a fix may get its result sooner; the rules above hold either way.
-How to read a run: Tests on GitHub Actions in [Testing TextMouth](../developer/testing-github.md).
+How to read a run: see Reading a run in [Tests on GitHub Actions](../developer/testing-github.md).
 
 ### Batch heavy jobs
 <!-- id: batch-heavy-jobs; keys: simulator run, scratch copy, heavy-work lock, run_locked; src: Scripts/agents/run_locked.py -->

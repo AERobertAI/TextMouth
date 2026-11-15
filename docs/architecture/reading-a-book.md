@@ -94,7 +94,7 @@ A skip, through performSkip, marks that play replaysFinishedEnd, which the end i
 The play() call on a book whose cursor rests at its end calls playFromTheEnd(), which repeats the end's choice without playing the end:
 - Stop says EndOfBookWording.finished(_:notes:sleepTimerExpired:) alone;
 - EndOfBookBehavior.stopAndPlayStartsOver, which stops at the end as Stop does, and loop play the book from its beginning through playFromTheBeginning(announcing:) ("Starting again: Dune", or "Restarting: Dune");
-- and Continue to Next Book and the reading list go on through continueToNextBookInFolder and followReadingListPastThisBook, which both end in goOnPastThisBook (see [The reader](state/reader-navigation.md)).
+- and Continue to Next Book and the reading list go on through continueToNextBookInFolder and followReadingListPastThisBook, which both end in goOnPastThisBook (see [The reader's moves between books, and search](state/reader-navigation.md)).
 
 An audiobook's finished play reports no position (AudioPositionObserverPolicy's hasFinished, from AudioPlaybackService.finishedPlayGeneration), so the player's last tick never moves the cursor off the end.
 

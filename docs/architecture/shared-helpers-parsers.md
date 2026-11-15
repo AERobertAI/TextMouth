@@ -37,7 +37,7 @@ The sentences are refusalSentence(for:file:in:original:) for an internal subset 
 XMLInputGuard.walkStartTags is the one scan that finds the tags, shared with DOCXPictureAttribute, which empties every o:gfxdata value before DOCXSAXParser's parse, since XMLParser stops at an attribute of more than 10 MB and loses the words after it.
 OfficeBlockWriter holds a paragraph until it ends and writes what is anchored in it, a text box's paragraphs, a picture's description, and the notes whose references it holds, right after it.
 OfficeStyleChain walks a style's based-on chain.
-Both readers write through the rich text reader's RTFBlockBuilder, RTFHTMLWriter, and RTFSizeHeadings, which they reuse unchanged: a change to those reaches the OpenDocument and Word 2003 XML readers too (see [Imports](state/imports-office-xml.md)).
+Both readers write through the rich text reader's RTFBlockBuilder, RTFHTMLWriter, and RTFSizeHeadings, which they reuse unchanged: a change to those reaches the OpenDocument and Word 2003 XML readers too (see [Imports: DOCX, OpenDocument, and Word 2003 XML](state/imports-office-xml.md)).
 
 ## MarkupGuard, MarkupScanner, and tree models
 <!-- id: markupguard-markupscanner-tree-models; keys: HTML parser, tokeniser, untrusted markup, crash, tree builder, depth model; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/MarkupScanner.swift, TextMouth/Parsers/MarkupNesting.swift, Vendor/SwiftSoup/README.md -->
@@ -128,7 +128,7 @@ What still calls itself for each level is SwiftSoup's own recursion, which reads
 ## MarkupRefusal cases
 <!-- id: markuprefusal-cases; keys: refusal message, damaged file, error sentence, LocalizedError, import error; src: TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/XMLInputGuard.swift -->
 
-MarkupRefusal has four cases, each a sentence a listener can act on that never calls the file damaged: `nestedTooDeeply(limit:)`, `tooMuchMarkup`, `tooManyAttributes(limit:)`, and `tooMuchWork` (the sentences are in [Adding books](../user/import-progress-and-errors.md)).
+MarkupRefusal has four cases, each a sentence a listener can act on that never calls the file damaged: `nestedTooDeeply(limit:)`, `tooMuchMarkup`, `tooManyAttributes(limit:)`, and `tooMuchWork` (the sentences are in [Import progress and errors](../user/import-progress-and-errors.md)).
 The pass costs 13% of an HTML parse and under 2% of an XML one, and 0.133 seconds on Webster's 32 MB against the parse's 0.944.
 
 ## DOCX list counting and number formats
