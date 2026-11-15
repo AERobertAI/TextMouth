@@ -3,9 +3,14 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
-A data directory in iCloud Drive, Dropbox, Google Drive (streaming), or another cloud drive that macOS keeps in ~/Library/CloudStorage works as any other, and lets the sync service keep books only in the cloud to free space on this Mac: macOS removes the downloads of files it can fetch again when it needs space, and you can remove a book's download yourself.
+A data directory in iCloud Drive, Dropbox, Google Drive (streaming), or another cloud drive that macOS keeps in ~/Library/CloudStorage works as any other, and lets the sync service keep books only in the cloud to free space on this Mac:
+- macOS removes the downloads of files it can fetch again when it needs space,
+- and you can remove a book's download yourself.
 TextMouth recognizes such a folder from its path, tells each book's state from file-system metadata without downloading anything, and downloads a book when you open it.
-To put your library there, choose a folder in the drive with Change Location… and then Move Library Here; on another Mac signed in to the same drive, choose that folder and Use This Library (see [Where TextMouth keeps your library](where-your-library-lives.md)). research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, in the same folder as this file, explain the design.
+To put your library there, choose a folder in the drive with Change Location… and then Move Library Here;
+- on another Mac signed in to the same drive, choose that folder and Use This Library (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+
+research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, in the same folder as this file, explain the design.
 
 ## How each cloud drive keeps a book
 <!-- id: how-each-cloud-drive-keeps; keys: ; src: -->
@@ -41,7 +46,11 @@ While any book downloads, even one Finder started, the downloading books are rea
 ### Commands for a book in the cloud
 <!-- id: commands-book-cloud; keys: ; src: -->
 
-A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), offer Download Now for a book in the cloud or one whose download failed, Remove Download for a downloaded book, Keep on This Mac, or Stop Keeping on This Mac for a book kept already (below), and Show in Finder, which selects the book's package.
+A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), offer
+- Download Now for a book in the cloud or one whose download failed,
+- Remove Download for a downloaded book,
+- Keep on This Mac, or Stop Keeping on This Mac for a book kept already (below),
+- and Show in Finder, which selects the book's package.
 Each cloud service also has its own command for keeping a book on this Mac, in Finder: Keep Downloaded for iCloud Drive, Offline Access for Google Drive, and Make available offline for Dropbox.
 
 ### Commands on several books
@@ -113,7 +122,9 @@ When you add a book with Add to Reading List, VoiceOver hears the add, then, aft
 Books that arrive on the list from another Mac's sync, a first start after an update, and checking the checkbox download with one notice, once, such as "Downloading 7 reading list books".
 TextMouth first checks that the books fit in the free space on this Mac, less the 1 GB it always leaves free, and starts only those that do; if some don't, the notice says so, as in "Downloading 4 reading list books.
 There isn't enough free space for 3 more books", and they download at a later refresh once there is room.
-A book whose size TextMouth cannot learn, such as an iCloud Drive book that syncs as one item and is only in the cloud, takes no room in that check, so books of unknown size download one at a time: TextMouth starts the first, and when it has downloaded, reads the free space again and plans the books after it.
+A book whose size TextMouth cannot learn, such as an iCloud Drive book that syncs as one item and is only in the cloud, takes no room in that check, so books of unknown size download one at a time:
+- TextMouth starts the first,
+- and when it has downloaded, reads the free space again and plans the books after it.
 A book you took off the list, or stopped keeping, while it waited is left out.
 If a later pass finds that the room has gone, it says once, as in "There isn't enough free space to download 3 reading list books", counting only the books it leaves out.
 One huge book of unknown size can still fill the disk once it has started, since nothing can weigh it before it downloads.
@@ -211,7 +222,11 @@ A text book is read into memory when it opens, so it needs no copy.
 <!-- id: background-maintenance; keys: ; src: -->
 
 Background maintenance never downloads a book.
-The startup repair, the metadata refresh, the text cache and statistics passes, and Redo Text Extraction leave a book whose files are in the cloud as it is, decide nothing from what only the cloud knows, and catch the book up once its files are on this Mac; opening a book also rebuilds its text cache when that is out of date.
+The startup repair, the metadata refresh, the text cache and statistics passes, and Redo Text Extraction
+- leave a book whose files are in the cloud as it is,
+- decide nothing from what only the cloud knows,
+- and catch the book up once its files are on this Mac;
+- opening a book also rebuilds its text cache when that is out of date.
 Each pass that skipped books writes one MAINTENANCE_SKIPPED_IN_CLOUD line in the debug log, saying how many, and Redo Text Extraction says so in Storage settings too, as in "Done.
 12 books in the cloud were skipped."
 
@@ -254,7 +269,10 @@ A TextMouth from 0.2.1 to 0.3.2 opens a library that holds a KFX book, a format 
 ### Conflict copies
 <!-- id: conflict-copies; keys: ; src: -->
 
-TextMouth leaves alone the conflict copies a sync service makes of library.json, library-identity.json, config.json, reading_stats.json, substitutions.json, a feed's record, and a book's package and record, such as "library 2.json" or "library (1).json": it never reads one in place of the file it copies, nor adopts a copied package as a second book, and leaves each where it is.
+TextMouth leaves alone the conflict copies a sync service makes of library.json, library-identity.json, config.json, reading_stats.json, substitutions.json, a feed's record, and a book's package and record, such as "library 2.json" or "library (1).json":
+- it never reads one in place of the file it copies,
+- nor adopts a copied package as a second book,
+- and leaves each where it is.
 It doesn't merge what two Macs wrote.
 
 ### Statistics and substitutions only in the cloud
@@ -282,11 +300,15 @@ Either file, when it can't be read, as a write cut short on another Mac can leav
 
 Feeds: their records, and their folders of downloads with their indexes, sync with the library, and each Mac refreshes them on its own.
 A played episode's download is deleted, and a download beyond a feed's newest is removed under its List and download choice, only by a Mac that holds the whole book, as its cloud state says.
-Opening the library waits for every feed's index, as it waits for library.json (see When the library isn't available, under [Where TextMouth keeps your library](where-your-library-lives.md)), and a Mac marks an item downloaded again, after an older version of TextMouth marked it otherwise, only when its file is on that Mac.
-A feed whose record is missing when TextMouth opens, as one an earlier version unsubscribed from on another Mac, keeps its downloads in its folder until a later launch of this Mac finds the record missing again; only this Mac's own launches count (see Commands, under [Podcasts and article feeds](feeds.md)).
+Opening the library waits for every feed's index, as it waits for library.json (see When the library isn't available, under [Where TextMouth keeps your library](where-your-library-lives.md)),
+- and a Mac marks an item downloaded again, after an older version of TextMouth marked it otherwise, only when its file is on that Mac.
+A feed whose record is missing when TextMouth opens, as one an earlier version unsubscribed from on another Mac, keeps its downloads in its folder until a later launch of this Mac finds the record missing again;
+- only this Mac's own launches count (see Commands, under [Podcasts and article feeds](feeds.md)).
 Unsubscribing and Resubscribe live in the feed's record, which another Mac reads as it next opens the library.
 
 ## What was tested
 <!-- id: what-was-tested; keys: ; src: -->
 
-What was tested: the opt-in tests in [Testing on real cloud drives](../developer/testing.md#testing-on-real-cloud-drives), passed against Dropbox, Google Drive, and iCloud Drive, and research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md lists the checks, with VoiceOver steps, still to be made by hand on each drive.
+What was tested:
+- the opt-in tests in [Testing on real cloud drives](../developer/testing.md#testing-on-real-cloud-drives), passed against Dropbox, Google Drive, and iCloud Drive,
+- and research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md lists the checks, with VoiceOver steps, still to be made by hand on each drive.
