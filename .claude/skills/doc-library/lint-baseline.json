@@ -2,11 +2,6 @@
   "version": 1,
   "pages": {
     "docs/agents/history.md": {"line-length": 18},
-    "docs/architecture/state/imports-braille-tables.md": {"line-length": 34},
-    "docs/architecture/state/imports-braille.md": {"line-length": 29},
-    "docs/architecture/state/imports-rtf-and-word.md": {"line-length": 29},
-    "docs/architecture/state/imports-text-encoding-choice.md": {"line-length": 10},
-    "docs/architecture/state/imports-text-encodings.md": {"line-length": 35},
     "docs/architecture/state/transcription.md": {"date": 2},
     "docs/user/library-typing-and-speak-info.md": {"date": 1}
   }
