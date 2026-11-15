@@ -7,13 +7,25 @@ AGENTS.md keeps only the latest status.
 
 ## Where things stood on November 13, 2026
 
-- Main is version 0.4.7, tagged `v0.4.7` (unpushed), with everything the user asked for at midnight that day: Search Library (Option-Command-F; a plain search under a second on their 737-book library, from a search store in Caches prepared in the background after launch), Leading articles (Settings > Library > Titles, three choices, MARC 21's articles in eleven languages), each reader window's own sleep timer (the cause of the "stuck" timer: a second reader opened beside the first showed the app's one shared timer), the Reading List's Remove books when finished and Keep these books on this Mac, batches A, B, C, and F of the TODO's triage (`build/orchestrator/nov13/triage-report.md`), the iPhone unit tests on GitHub, and a Release app compiled for size: 19.5 MB against 23.55 MB, with `make check` failing above 20 MB and a new `make release-goldens`.
+- Main is version 0.4.7, tagged `v0.4.7` (unpushed), with everything the user asked for at midnight that day:
+  - Search Library (Option-Command-F; a plain search under a second on their 737-book library, from a search store in Caches prepared in the background after launch)
+  - Leading articles (Settings > Library > Titles, three choices, MARC 21's articles in eleven languages)
+  - each reader window's own sleep timer (the cause of the "stuck" timer: a second reader opened beside the first showed the app's one shared timer)
+  - the Reading List's Remove books when finished and Keep these books on this Mac
+  - batches A, B, C, and F of the TODO's triage (`build/orchestrator/nov13/triage-report.md`)
+  - the iPhone unit tests on GitHub
+  - and a Release app compiled for size: 19.5 MB against 23.55 MB, with `make check` failing above 20 MB and a new `make release-goldens`.
+
   Every DAISY book is read again once at the first launch.
   The user still runs 0.4.2.
   Records in the TODO; the running log, briefs, and reports in `build/orchestrator/nov13/` and `Scripts/agents/briefs/2026-11-13/`; questions in `humanQuestions/2026-11-13.md`.
 - Every branch went review (Opus for the large and the data-touching, Sonnet for small batches), then a fix round, then a narrow Sonnet check, then a Mac full suite on `integrate/1113`, then a fast-forward of main.
   Every review found real problems, among them a blocker (batch B's nesting refusal swallowed by a `try?`), a random DAISY file order under a launch re-read, and a timer registry that let go too early.
-- Not done: the audit's runtime fixes (`build/orchestrator/optaudit/audit-report.md`, C3, C4, C6 to C9, C11, C12, C16, C17), which waited for the timer merge; `Book` held by reference (821 KB, question 6); the triage's batches D, E, and G to K, and the formats FMT34 and FMT24; the local-first library's Phase 0 (`research/LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md`), which waits for the user.
+- Not done:
+  - the audit's runtime fixes (`build/orchestrator/optaudit/audit-report.md`, C3, C4, C6 to C9, C11, C12, C16, C17), which waited for the timer merge
+  - `Book` held by reference (821 KB, question 6)
+  - the triage's batches D, E, and G to K, and the formats FMT34 and FMT24
+  - the local-first library's Phase 0 (`research/LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md`), which waits for the user.
 - Lessons of that day, which hold for any campaign:
   - Never search from `/` or the home folder: an agent's `find /` walked Downloads, Documents, Music, and the cloud drives and put macOS privacy prompts on the user's screen.
   - GitHub's Mac build cache can go stale (trains failed to link symbols their sources held); deleting the Mac caches (`gh api -X DELETE .../actions/caches?key=...`) fixed it.
@@ -80,7 +92,9 @@ AGENTS.md keeps only the latest status.
   The user withdrew the old rule against both in the simulator; it was the orchestrator's rule, not theirs.
   The new rule: a test that presses Play or types makes sound, so it runs only where `TEXTMOUTH_UI_SOUND` is 1, which `Scripts/agents/run-ios-ui-tests.py` alone sets on the runner; on this Mac those tests skip, saying why.
   A failed interface test fails the iPhone job and never the Mac tests' verdict.
-  In the last three full suites, the 33 tests took 14.3 to 23.6 minutes of xcodebuild, the step (with the simulator's set-up, 3.6 to 7.0 minutes) 19.4 to 27.1 minutes, and the iPhone job 28.7 to 40.1 minutes, so the iPhone job is the longest of a full run (29 to 40 minutes against 14 before; the runners differ by a factor of 1.6); a request for the phone area pays it too.
+  In the last three full suites, the 33 tests took 14.3 to 23.6 minutes of xcodebuild, the step (with the simulator's set-up, 3.6 to 7.0 minutes) 19.4 to 27.1 minutes, and the iPhone job 28.7 to 40.1 minutes.
+  So the iPhone job is the longest of a full run (29 to 40 minutes against 14 before; the runners differ by a factor of 1.6).
+  A request for the phone area pays it too.
   The interface tests' compile errors are found by a GitHub run, or by `swiftc -typecheck` against the iPhone Simulator SDK (see Type-checks and tests in `docs/developer/testing.md`).
 - Lessons of that day, which hold for any campaign:
   - A test that hangs only on a 3-core runner can be the app blocking a thread of Swift's concurrency pool.
@@ -129,10 +143,18 @@ AGENTS.md keeps only the latest status.
 
 ## Where things stood on November 8, 2026
 
-- Main is version 0.4.2: spoken-audio export (M4B, M4A, or MP3 in a chosen voice, a chapter at each heading), transcripts that come with podcasts and audiobooks, symbols in `.docx` and Word 2003 XML documents, the markup guard's large stack, so a book nested however deeply can't crash TextMouth, and KF8 Kindle books (`.azw3`, and the KF8 half of a `.mobi`).
+- Main is version 0.4.2:
+  - spoken-audio export (M4B, M4A, or MP3 in a chosen voice, a chapter at each heading)
+  - transcripts that come with podcasts and audiobooks
+  - symbols in `.docx` and Word 2003 XML documents
+  - the markup guard's large stack, so a book nested however deeply can't crash TextMouth
+  - and KF8 Kindle books (`.azw3`, and the KF8 half of a `.mobi`).
+
   Full suite 11,853 tests, 81 skipped, 0 failures, the iPhone interface's included; `make typecheck-ios` 0 errors, 0 warnings.
   At the first launch, `.docx` and `.wordml` books are read again once (1.3.0), and `.mobi` books once (1.0.0).
-- The iPhone interface (`ios/lead-1108`) is on main too, unshipped: it ran in the simulator for the first time that morning, its Mac tests pass, and after its fix round (`ios/fix-c-1108`: one placement for every sheet's buttons, after the title, and full-contrast text) 17 of its 22 XCUITests pass; the five left are audit findings, three with no known cause.
+- The iPhone interface (`ios/lead-1108`) is on main too, unshipped.
+  It ran in the simulator for the first time that morning, its Mac tests pass, and after its fix round (`ios/fix-c-1108`: one placement for every sheet's buttons, after the title, and full-contrast text) 17 of its 22 XCUITests pass.
+  The five left are audit findings, three with no known cause.
   Since 07:20, at the user's word, a train leaves every hour and heavy jobs run one after the other (see Builds go through the build train).
   The hand checks and the one question 0.4.2 leaves, listening while a spoken-audio export runs, are in `humanQuestions/2026-11-08.md`.
 - Lessons of that day, which hold for any campaign:
@@ -142,14 +164,23 @@ AGENTS.md keeps only the latest status.
     Run `Scripts/agents/regenerate-project.py` after every merge, clean or not.
   - `git merge-tree --write-tree` and `git commit-tree` scout a chain of merges for conflicts without touching the working tree.
   - Told to use a train's wait for reviewing their own diff, agents found before the train what it would have cost an hour to learn from it: two near-identical scans to share and tests that could trap the host (KF8), and a backup file compiled into the test bundle (iPhone).
-  - A narrow check of each branch on Sonnet, from one shared brief (`Scripts/agents/briefs/2026-11-08/verify-common.md`), took 2 to 18 minutes and found what the fix rounds had missed: two guards no test pinned, a policy test too loose to fail, and a measurement that settled less than its report said.
+  - A narrow check of each branch on Sonnet, from one shared brief (`Scripts/agents/briefs/2026-11-08/verify-common.md`), took 2 to 18 minutes and found what the fix rounds had missed:
+    - two guards no test pinned
+    - a policy test too loose to fail
+    - and a measurement that settled less than its report said.
 
 ## Where things stood on November 7, 2026
 
 - Main is version 0.4.1: the follow-up sweep, the reader follow-ups, EPUB 3 export, Word 6 and Word 95 documents with symbols read by their font, and the markup guard, which closes three ways a damaged or crafted book, web page, or feed could crash TextMouth.
   Full suite 10,631 tests, 78 skipped, 0 failures; `make typecheck-ios` 0 errors, 0 warnings.
   At the first launch, `.doc` books are read again once (1.3.0), and `.docx` and `.wordml` books once (1.2.0).
-- Not on main yet, each with a review and a fix round behind it: speech export (`speechexport/finish`), podcast transcripts and chapters (`podcast/finish`, which merges after speech export), DOCX symbols (`readers/docx-symbols`), KF8 Kindle books (`readers/azw3`, which merges main and routes KF8 through the guard next), and the guard's large-stack parse (`fix/markup-guard-stack`).
+- Not on main yet, each with a review and a fix round behind it:
+  - speech export (`speechexport/finish`)
+  - podcast transcripts and chapters (`podcast/finish`, which merges after speech export)
+  - DOCX symbols (`readers/docx-symbols`)
+  - KF8 Kindle books (`readers/azw3`, which merges main and routes KF8 through the guard next)
+  - and the guard's large-stack parse (`fix/markup-guard-stack`).
+
   The iPhone interface (`ios/interface`) has its spec and nine slices; the iOS 26.0.1 simulator is now installed, so it can run for the first time.
   The running log is `build/orchestrator/followups1105/agents.md`; the questions left with the user are in `humanQuestions/2026-11-06.md` and `2026-11-07.md`.
 - Lessons of that day, which hold for any campaign:
@@ -214,7 +245,8 @@ AGENTS.md keeps only the latest status.
 ## Where things stood on November 1, 2026
 
 **November 1, version 0.2.5.**
-On the morning of November 1 the user asked that a reader window go on to the next book in place instead of opening a new window, with Next and Previous for a folder's or feed's items and "a global setting for the behavior of moving from book to book for windows and a local one for feeds and folders".
+On the morning of November 1 the user asked that a reader window go on to the next book in place instead of opening a new window.
+With Next and Previous for a folder's or feed's items and "a global setting for the behavior of moving from book to book for windows and a local one for feeds and folders".
 At about 09:50 they added: "the sleeping timer in particular I would like to move still running to the new book without a new window opening."
 - **How it ran.**
   - One Sonnet agent, `nextbook`, built it (design `research/NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`, briefs `Scripts/agents/briefs/2026-11-01/`).
@@ -230,7 +262,8 @@ At about 09:50 they added: "the sleeping timer in particular I would like to mov
   - **`docs/nextbook` (ff328b9a)** and **version 0.2.5** (4d72a43c).
 
 **October 30 to November 1.**
-On Friday evening, October 30, before the Saturday 08:00 reset, the user lifted the usage limit for the night ("treat it as no limit") and asked: "Please try working through any remaining todos and unfinished work that doesn't require me, improve the tests and look for bugs", with a new feature, customizable Library views.
+On Friday evening, October 30, before the Saturday 08:00 reset, the user lifted the usage limit for the night ("treat it as no limit") and asked: "Please try working through any remaining todos and unfinished work that doesn't require me, improve the tests and look for bugs".
+With a new feature, customizable Library views.
 - **How it ran.**
   - Four teams worked through the night, every agent on Opus (`Scripts/agents/briefs/2026-10-30/`).
   - A triage agent read the TODO and the code for open items (`build/orchestrator/oct30/triage-report.md`, gitignored).
@@ -473,7 +506,8 @@ Merged into main:
 **Lessons of October 21:**
 - **A review of the whole branch is worth its cost for anything that rewrites the live library.**
   The pages review found the launch re-read unsafe (heading-only edits invisible to its check, kept books unprotected afterwards, an interrupted batch turned into false edits), and switching it off let the rest ship.
-- **A fix to a shared writer needs the golden and heading-annotation classes in its targeted run.** pagesfix's marker change passed 388 tests and failed three others at the merge, and merge-chain had already committed the merge. main was reset to its parent (local and unpushed), and the branch was fixed and merged again.
+- **A fix to a shared writer needs the golden and heading-annotation classes in its targeted run.** pagesfix's marker change passed 388 tests and failed three others at the merge, and merge-chain had already committed the merge.
+  Main was reset to its parent (local and unpushed), and the branch was fixed and merged again.
 - **Disk.**
   It hit 0 GB at 04:44, with six workers and two other agents building on about 6 GB, and every shell call failed.
   Run one build at a time when under 10 GB free, and delete build/DerivedData-main right after each merge suite: an idle one blocked the pages team for 45 minutes.
@@ -535,7 +569,8 @@ Main holds the record of the REV16 fixes, then, from the evening:
 
 - FR18, a manifest edited outside TextMouth taken as Edit Manifest takes a save, with a one-time pass keeping earlier hand edits (1744021a, October 14, suite 6230 tests, 67 skipped, 0 failures), by agent `outsideedits`, with its documentation.
 
-- B07, the playback watchdog, memory guard, and sound effects off the main thread (d7f4f527, suite 6259 tests, 67 skipped, 0 failures), by agent `playbackwatch`; and B06, Ogg audio converted to AAC at import and once for the library (70a74208, suite 6284 tests, 64 skipped, 0 failures), by agent `oggtoaac`, after Apple's Vorbis decoder locked up in AVPlayer on October 14 and took the Mac down (see the TODO's B06 and B07).
+- B07, the playback watchdog, memory guard, and sound effects off the main thread (d7f4f527, suite 6259 tests, 67 skipped, 0 failures), by agent `playbackwatch`.
+  And B06, Ogg audio converted to AAC at import and once for the library (70a74208, suite 6284 tests, 64 skipped, 0 failures), by agent `oggtoaac`, after Apple's Vorbis decoder locked up in AVPlayer on October 14 and took the Mac down (see the TODO's B06 and B07).
   Never play Ogg through Apple's players in any test or experiment.
 
 B08, rendered speech's crash when the audio output stops cycling, was fixed the same evening (32dc2036, suite 6293 tests, 67 skipped, 0 failures) by a Sonnet agent the orchestrator reviewed.
@@ -552,14 +587,38 @@ The weekly window stood at 20% left; the user's floor is about 10%.
 
 Main at the docs merge b165940c and its record, suite 4857 tests, 54 skipped, 0 failures, no Swift warnings (after the text-field keys merge; the documentation passes ran no suite).
 The orchestrator ran on Opus 5.5 and every agent on Opus.
-Merged that evening, each recorded in the TODO with its agent's notes in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 7, 2026 (evening)": the afternoon's documentation pass (5d6227cb), a feed's counts and its folder's row (9ae7becc), the reading list (01197eb1) and reading a book from it (9a61278d; FR09 done), four follow-ups (cb134bb1: #1290, #1291, #1308, #1296), the speech refusal follow-ups (6b78bd4c), ZIP import progress (f2b39d7f; FR10's first half), the keys a focused text field keeps (5b137a63; B03), the evening's documentation pass (b165940c), and two design notes, `research/FEED-ITEMS-RESEARCH-2026-10-07.md` (FR11) and `research/KEYBOARD-SHORTCUTS-RESEARCH-2026-10-07.md` (FR12).
+Merged that evening, each recorded in the TODO with its agent's notes in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 7, 2026 (evening)":
+
+- the afternoon's documentation pass (5d6227cb)
+- a feed's counts and its folder's row (9ae7becc)
+- the reading list (01197eb1) and reading a book from it (9a61278d; FR09 done)
+- four follow-ups (cb134bb1: #1290, #1291, #1308, #1296)
+- the speech refusal follow-ups (6b78bd4c)
+- ZIP import progress (f2b39d7f; FR10's first half)
+- the keys a focused text field keeps (5b137a63; B03)
+- the evening's documentation pass (b165940c)
+- and two design notes, `research/FEED-ITEMS-RESEARCH-2026-10-07.md` (FR11) and `research/KEYBOARD-SHORTCUTS-RESEARCH-2026-10-07.md` (FR12).
+
 Two read-only reviewers read every line of the afternoon's five merges first; the TODO's REV07 entry lists each finding and where it went.
-Pending: the user's answers to the ten questions ending each design note (all recommended yes), then FR11's and FR12's builds in the branches the notes plan; the queued briefs `editbaselines.md` and `finishedbook.md` in `Scripts/agents/briefs/2026-10-07/`; an unbriefed bundle of REV07's Speak Info items and cleanups; B04 (the user's Shift-Command-B on two actions; a config.json workaround awaits the user's yes) and the Shift-Command-T clash (#1451); FR10's feed-download half after FR11's second branch.
+Pending:
+
+- the user's answers to the ten questions ending each design note (all recommended yes), then FR11's and FR12's builds in the branches the notes plan
+- the queued briefs `editbaselines.md` and `finishedbook.md` in `Scripts/agents/briefs/2026-10-07/`
+- an unbriefed bundle of REV07's Speak Info items and cleanups
+- B04 (the user's Shift-Command-B on two actions; a config.json workaround awaits the user's yes) and the Shift-Command-T clash (#1451)
+- FR10's feed-download half after FR11's second branch.
+
 The merge chain's one red run that evening was a test host that received an ordinary quit while it was the frontmost app (no crash); xcodebuild restarted the rest and the interrupted class passed alone, which is how such a run is settled.
 The installed app was still the October 5 build until the user pushes and installs.
 
 **Later that night.**
-The user answered every question in `humanQuestions/2026-10-07-evening.md`, and a second batch merged: the editor save baselines (afde34e4), a finished book's controls (377edc97; its merge chain's suite failed four tests under another suite's load, each passing alone or on a quiet Mac), and FR12's branch A, the record of the shortcuts the user edited (094dd885, which ends B04); main's suite counts 4943 tests, 70 skipped, 0 failures.
+The user answered every question in `humanQuestions/2026-10-07-evening.md`, and a second batch merged:
+
+- the editor save baselines (afde34e4)
+- a finished book's controls (377edc97; its merge chain's suite failed four tests under another suite's load, each passing alone or on a quiet Mac)
+- and FR12's branch A, the record of the shortcuts the user edited (094dd885, which ends B04)
+
+Main's suite counts 4943 tests, 70 skipped, 0 failures.
 FR11's design addendum (`research/FEED-ITEMS-ADDENDUM-2026-10-07.md`, 7c78d8af) measured and recommends the user's layout, a package per feed item in a folder of the feed's own with the feed's own index; its six questions wait in `humanQuestions/2026-10-07-late.md`.
 Work stopped there at 30 percent of the weekly all-models window left, the user's line.
 Next: those answers, then FR11's five branches; FR12's branches B, C, D, and E; B05; a documentation pass for the second batch (the wording is in the agent notes); the `FeedUIAddFeedTests` stray-save leak; FR10's feed half after FR11's choice branch.
@@ -567,15 +626,41 @@ Next: those answers, then FR11's five branches; FR12's branches B, C, D, and E; 
 ## Where things stood on October 7, 2026
 
 Main at 1059a8ed, suite 4687 tests, 56 skipped, 0 failures.
-Merged that day: the EPUB author reading and the versioned metadata refresh (3d52c08b), the Unopened category (1790ae21), hand-edited metadata flags (065ec6a0), the speech markup guard (aec5c91b), the AirPods rewind after a finished book (f5273ba2), and Speak Info (33219144), each recorded in the TODO with its FR or B entry ticked.
-Pending for the next session: the documentation pass for those five afternoon branches (every README and ARCHITECTURE sentence is in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 7, 2026"); the reading list, FR09, from `Scripts/agents/briefs/2026-10-07/readinglist-core.md` and then a reader branch; the FR03 follow-ups and FR10 in the TODO's October 7 section; the small follow-ups #1290 (ReaderView passes `handEdits:`), #1291 (an import sets `.noneSinceImport`), #1308 (the reader takes `onSpeechRefused`).
+Merged that day: the EPUB author reading and the versioned metadata refresh (3d52c08b), the Unopened category (1790ae21), hand-edited metadata flags (065ec6a0), the speech markup guard (aec5c91b), the AirPods rewind after a finished book (f5273ba2), and Speak Info (33219144).
+Each recorded in the TODO with its FR or B entry ticked.
+Pending for the next session:
+
+- the documentation pass for those five afternoon branches (every README and ARCHITECTURE sentence is in `AGENT-NOTES-2026-10-04.md` under "Agent notes, October 7, 2026")
+- the reading list, FR09, from `Scripts/agents/briefs/2026-10-07/readinglist-core.md` and then a reader branch
+- the FR03 follow-ups and FR10 in the TODO's October 7 section
+- the small follow-ups #1290 (ReaderView passes `handEdits:`), #1291 (an import sets `.noneSinceImport`), #1308 (the reader takes `onSpeechRefused`).
+
 The usage stop of October 7: the weekly Fable window reached 10% because the task agents ran on Fable; the rule above fixes that.
 The installed app was still the October 5 build (fe84085b) until the user pushed and installed.
 
 ## Where things stood on October 4, 2026
 
-Main held, all with green suites: the cloud data directory (FR02), the performance work (PERF01 to PERF33), Swift 6, the smaller app and its size guard, recording and the audio editor (FR04), transcription with its cleanup command (FR05), the feed reader (FR03), Export and Edit Text, and the AirPods fix.
-The evening's four polish branches are on main too, each merged after a green suite on the merged tree: `fix/reader-polish-october-4` (6308e97b), `fix/audio-editor-polish` (5a9176df), and the two that were in flight when the weekly budget ran out, `feature/feed-search-and-polish` (eeb8a0b5: podcast search, JSON Feed, resume data at quit, video re-import, failures reported, Stats by kind) and `feature/recording-polish-and-mp3` (b5a6dd75: recovered takes, quit asks, readers pause, exported originals, LAME MP3 as a vendored C target), after which the suite on main counted 4535 tests, 50 skipped, 0 failures.
+Main held, all with green suites:
+
+- the cloud data directory (FR02)
+- the performance work (PERF01 to PERF33)
+- Swift 6
+- the smaller app and its size guard
+- recording and the audio editor (FR04)
+- transcription with its cleanup command (FR05)
+- the feed reader (FR03)
+- Export and Edit Text
+- and the AirPods fix.
+
+The evening's four polish branches are on main too, each merged after a green suite on the merged tree:
+
+- `fix/reader-polish-october-4` (6308e97b)
+- `fix/audio-editor-polish` (5a9176df)
+- and the two that were in flight when the weekly budget ran out:
+  - `feature/feed-search-and-polish` (eeb8a0b5: podcast search, JSON Feed, resume data at quit, video re-import, failures reported, Stats by kind)
+  - and `feature/recording-polish-and-mp3` (b5a6dd75: recovered takes, quit asks, readers pause, exported originals, LAME MP3 as a vendored C target)
+
+After which the suite on main counted 4535 tests, 50 skipped, 0 failures.
 No feature branch is in flight; `docs/october-4-wave-4` describes the four in README.md and ARCHITECTURE.md.
 The user's open decisions: P07 (the end-of-book position), P08 (the audiobook jump time convention), and merging what two Macs wrote.
 
