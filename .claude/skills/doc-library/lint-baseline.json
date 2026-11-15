@@ -52,7 +52,7 @@
     "docs/architecture/state/transcription.md": {"date": 3, "line-length": 22},
     "docs/architecture/state/windows-sheets.md": {"date": 4, "line-length": 34},
     "docs/architecture/state/windows.md": {"date": 5, "line-length": 39},
-    "docs/developer/building-ios.md": {"date": 6, "line-length": 8},
+    "docs/developer/building-ios.md": {"line-length": 8},
     "docs/developer/building.md": {"line-length": 12},
     "docs/developer/testing-formats.md": {"date": 2, "line-length": 17},
     "docs/developer/testing-github.md": {"date": 15, "line-length": 37, "stale": 1},

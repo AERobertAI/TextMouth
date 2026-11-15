@@ -647,3 +647,13 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **The release tags:** The tags v0.2.0 to v0.4.2 were added on November 9, 2026, each at its version's bump commit.
 - **The app size limit:** `APP_SIZE_LIMIT_MB` in `Scripts/check.sh` was 50 MB until November 13, 2026.
 - **The gate and the locked keychain:** The gate hung for 27 minutes in codesign on November 13, 2026, because the login keychain was locked and codesign waited for a password nobody could type.
+
+## From Building the iOS app
+
+- **The first run in the simulator:** The iOS app first ran in the iOS simulator on November 8, 2026.
+- **The freeze under several builds:** On October 31, 2026 the Mac, which has 8 GB of memory, froze under several builds at once.
+- **The train that went on beside a lock:** Until November 8, 2026 a train that had waited 20 minutes went on beside the job holding the lock; that day the user, finding that the builds took a lot of CPU, asked for them "one after the other".
+- **Builds on GitHub Actions** (since November 9, 2026).
+  The user, finding that the builds were hard on this Mac's CPU, asked to move the compiling and testing to GitHub Actions.
+  `Scripts/agents/run_suite.py --remote` has run the full suite on GitHub's macOS runners since November 9, 2026.
+- **The iPhone tests off this Mac:** Since November 11, 2026 no iPhone test of either bundle needs a simulator on this Mac.

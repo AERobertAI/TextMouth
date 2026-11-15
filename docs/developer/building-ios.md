@@ -15,7 +15,6 @@ project.yml defines two apps over one source folder.
   It takes the same three Swift packages (ZIPFoundation, SwiftSoup, and swift-markdown's Markdown) and its own builds of the two C libraries it links, `LAME_iOS` and `ObjCExceptionCatcher_iOS`. project.yml defines each library once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, and no braille helper or liblouis.
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
-  It first ran in the iOS simulator on November 8, 2026.
   Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed.
   The Mac's schemes are still Xcode's own, so `-scheme TextMouth`, which `make build` and the tests use, builds the Mac app alone.
@@ -58,13 +57,12 @@ A run exits with status 0 when the build succeeded, 1 when it found errors, 2 wh
 <!-- id: heavy-work-lock; keys: heavy_lock.py, run_locked.py, lock folder, build train, 8 GB memory, run_suite.py; src: Scripts/agents/heavy_lock.py, Scripts/agents/run_locked.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/tests/test_heavy_lock.py, Scripts/agents/tests/test_run_locked.py -->
 
 **The heavy-work lock.**
-The Mac has 8 GB of memory, and on October 31, 2026 it froze under several builds at once, so one heavy job runs on it at a time.
+The Mac has 8 GB of memory, and several builds at once freeze it, so one heavy job runs on it at a time.
 The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time.
 A job that finds it held says whom it waits for and since when, and waits, a type-check by default up to three hours.
 A lock whose owner has ended, from a crash or a killed agent, is taken over.
 So a type-check started while the train builds waits for the train, and the reverse.
 The build train waits first in line: while it waits, no other job takes the lock, even a free one, so the train goes next, and it never runs without the lock.
-Until November 8, 2026 a train that had waited 20 minutes went on beside the job holding the lock; that day the user, finding that the builds took a lot of CPU, asked for them "one after the other".
 `Scripts/agents/tests` holds the tests of the lock, the train, `run_locked.py`, `run_suite.py`, `copy_phases.py`, and `regenerate-project.py`: `python3 -I -B -m unittest discover -s Scripts/agents/tests`.
 They use temporary locks and folders, a fake command for the suite, and a stand-in for xcodegen, so none runs xcodebuild or touches the real lock.
 The tests of the GitHub runs add a fake `gh`, a bare throwaway repository as the push target, and a pretend clock, so none reaches GitHub or waits.
@@ -72,8 +70,8 @@ The tests of the GitHub runs add a fake `gh`, a bare throwaway repository as the
 ## Builds on GitHub Actions
 <!-- id: builds-github-actions; keys: TestBuild, test-build.yml, tests.yml, run-on-runner.py, github_run.py, shards, actions/cache, setup-xcode; src: .github/workflows/test-build.yml, .github/workflows/tests.yml, .github/workflows/check.yml, .github/actions/setup-xcode/action.yml, Scripts/agents/run-on-runner.py, Scripts/agents/test_command.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, Scripts/agents/runner-skips.conf -->
 
-**Builds on GitHub Actions** (since November 9, 2026).
-The user, finding that the builds were hard on this Mac's CPU, asked to move the compiling and testing to GitHub Actions.
+**Builds on GitHub Actions.**
+The compiling and testing run on GitHub Actions, which spares this Mac's CPU.
 The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted runners are used.
 - **What runs there.**
   `.github/workflows/test-build.yml` runs for a push to the branch `TestBuild`, and for nothing else: not a pull request, not a fork.
@@ -86,7 +84,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing and without running a test; it writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
   Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime, when the request asks for them (every full suite, the phone area, or a class of either bundle).
-  The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: since November 11, 2026 no iPhone test of either bundle needs a simulator on this Mac.
+  The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
   A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Testing TextMouth](testing-github.md)).
 - **What the Mac does.**
@@ -146,7 +144,7 @@ This is how the iPhone team builds and runs the app there.
   - `Scripts/agents/run_suite.py NAME LOG` does the same for the full hosted suite (`xcodebuild test` on the macOS destination), writing the log to LOG.
     It ends an xcodebuild that stays silent for three minutes after its last test, prints the log's Executed line, and exits 0 only when the log says every test passed.
     Run it from the checkout to test, as a background task.
-  - `Scripts/agents/run_suite.py --remote COMMIT NAME LOG` runs that suite on GitHub's macOS runners instead (since November 9, 2026; see Builds on GitHub Actions, above).
+  - `Scripts/agents/run_suite.py --remote COMMIT NAME LOG` runs that suite on GitHub's macOS runners instead (see Builds on GitHub Actions, above).
     It takes no heavy-work lock, since it loads this Mac with a push only.
     It writes the run's log to LOG and judges it the same way; status 4 means the push or the run failed, which says nothing about the tests.
     It also prints what the run's iPhone build made: its verdict, its error count, and the files the errors are in with how many each holds (the details are in `ios-errors.txt` in the folder `LOG.remote-N`); that never changes the exit status.
