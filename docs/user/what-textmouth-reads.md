@@ -1,22 +1,22 @@
 # What TextMouth reads: EPUB and word-processor documents
-<!-- id: what-textmouth-reads-epub-word; keys: ; src: -->
+<!-- id: reads-documents; keys: supported formats, file types, own readers, textutil, import; src: TextMouth/Models/Book.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## EPUB files
-<!-- id: epub-files; keys: ; src: -->
+<!-- id: epub-files; keys: ZIP member, letter case, XML entity, external entity, title author headings; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/ArchiveEntryReader.swift, TextMouth/Parsers/XMLInputGuard.swift -->
 
 - A member the book names in another letter case than its ZIP spells it, as a badly made book may, is found all the same: the exact spelling is looked for first.
 - An EPUB never brings in the text of a file on your Mac: an XML entity that names a file, which a crafted book could use to put one into its title, author, or headings, reads as nothing, and the book still reads.
 
 ## Word documents and Word templates
-<!-- id: word-documents-word-templates; keys: ; src: -->
+<!-- id: word-documents-word-templates; keys: .docx, .dotx, .docm, .dotm, macro, vbaProject.bin, Office Open XML; src: TextMouth/Parsers/DOCXParser.swift, TextMouth/Models/Book.swift -->
 
 - This covers Word documents (.docx) and Word templates and macro documents (.dotx, .docm, .dotm), which are read the same way and listed as Word documents.
 - No part of a macro project is read, and no macro ever runs.
 
 ## Rich text, Word 6 to Word 2003, OpenDocument text, and Word 2003 XML
-<!-- id: rich-text-word-6-word; keys: ; src: -->
+<!-- id: rich-text-word-6-word; keys: RTF, RTFD, .doc, .odt, WordML, TXT.rtf, re-read, launch; src: TextMouth/Parsers/OwnDocumentReaders.swift, TextMouth/Parsers/RTFDocumentReader.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/ODTDocumentReader.swift, TextMouth/Parsers/WordMLDocumentReader.swift, TextMouth/Models/PageReaderVersions.swift -->
 
 - Rich text (.rtf), rich text with attachments (.rtfd), Word 6 to Word 2003 documents and templates (.doc, .dot), OpenDocument text and its templates (.odt, .ott), and Word 2003 XML (.xml, below), which TextMouth reads with code of its own, the same on the Mac as on iOS, where Apple's textutil tool does not exist.
 - Word 6 and Word 95 documents, which textutil read on the Mac until version 0.4.1, are described below.
@@ -30,7 +30,7 @@ Part of [TextMouth's documentation](../../README.md).
 - At the first launch of version 0.4.2 every .docx and .wordml book is read again once more, for the symbols they now read (see Other limits of each, below), in the same way.
 
 ### How headings are found
-<!-- id: how-headings-are-found; keys: ; src: -->
+<!-- id: how-headings-are-found; keys: heading style, outline level, outlineLvl, Title, Subtitle, based on; src: TextMouth/Parsers/RTFStyleSheet.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouth/Parsers/ODTStyles.swift, TextMouth/Parsers/WordMLStyles.swift, TextMouth/Parsers/DOCXParser+Styles.swift -->
 
 - Headings are the document's own:
   - In rich text, a paragraph in a style named "heading 1" to "heading 9" (in any capitals), "Title" (level 1), or "Subtitle" (level 2), or with an outline level of 1 to 9, is a heading.
@@ -45,7 +45,7 @@ Part of [TextMouth's documentation](../../README.md).
   A heading that a document gives only by direct formatting, such as a bold line of large letters in the normal style, is a heading only in a document that names none.
 
 ### Headings guessed from font size and bold
-<!-- id: headings-guessed-from-font-size; keys: ; src: -->
+<!-- id: headings-guessed-from-font-size; keys: font size, bold, heading guess, body size, RTFSizeHeadings; src: TextMouth/Parsers/RTFSizeHeadings.swift, TextMouth/Parsers/WordDocumentHeadingGuess.swift, TextMouth/Parsers/OfficeBlockWriter.swift -->
 
 - A document that names no heading by a style or an outline level has its headings guessed from font sizes and bold, in all four of these formats.
 - The body size is the commonest size, counted by characters.
@@ -55,7 +55,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A document that names even one heading keeps exactly the headings it names.
 
 ### Emphasis, lists, tables, pictures, and fields
-<!-- id: emphasis-lists-tables-pictures-fields; keys: ; src: -->
+<!-- id: emphasis-lists-tables-pictures-fields; keys: bold, italic, bullet, numbering, field result, HYPERLINK, TOC; src: TextMouth/Parsers/RTFBlockBuilder.swift, TextMouth/Parsers/RTFListTable.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentHTMLWriter.swift -->
 
 - Bold and italic text keeps its emphasis, as in the other text formats, and the marks that show it are never spoken.
 - A list is a list, and the number or bullet it shows is not read as one of its words.
@@ -70,7 +70,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A field is read for its result, as Word shows it, and never for its instruction: the result of a table of contents or a link is read, and its code (TOC, HYPERLINK, PAGE, MERGEFORMAT) is not.
 
 ### What every document reader reads
-<!-- id: what-every-document-reader-reads; keys: ; src: -->
+<!-- id: what-every-document-reader-reads; keys: hidden text, vanish, tracked changes, footnotes, text box, comments; src: TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/DOCXParser+Styles.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/ODTContentReader.swift, TextMouth/Parsers/WordMLReader.swift -->
 
 Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents follow one policy: TextMouth reads what a person reading the document sees in its ordinary view, in reading order.
 
@@ -98,7 +98,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - The marks that show bold, italic, and strikethrough are never spoken.
 
 ### Other limits of each
-<!-- id: other-limits-each; keys: ; src: -->
+<!-- id: other-limits-each; keys: symbol font, w:sym, Wingdings, Symbol encoding, fontTable, .fodt, .sxw; src: TextMouth/Parsers/WordSymbolFontEncodings.swift, TextMouth/Parsers/AdobeSymbolEncoding.swift, TextMouth/Parsers/WordDocumentFonts.swift, TextMouth/Parsers/DOCXParser+Converter.swift, TextMouth/Parsers/ODTDocumentReader.swift -->
 
 - In rich text, the title and author come from the document's own information group.
 - In Word 97-2003, a document whose main text holds no words at all, such as one whose text is all in a text box or a header, is read from every part of it after the main text, in the order the file keeps them, so it is not an empty book.
@@ -137,7 +137,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
   Only the content part, or the ZIP, makes the document unreadable.
 
 ### Code pages of rich text
-<!-- id: code-pages-rich-text; keys: ; src: -->
+<!-- id: code-pages-rich-text; keys: ansicpg, Mac Roman, code page 437, code page 850, Shift-JIS, double-byte; src: TextMouth/Parsers/RTFEncodings.swift, TextMouth/Parsers/RTFInterpreter.swift, TextMouth/Parsers/RTFDocumentReader.swift -->
 
 - Rich text is read in the code page the file names: Windows-1252 for \ansi, Mac Roman for \mac, code page 437 for \pc and 850 for \pca, any other that \ansicpg gives, and the code page of a font's character set for the text set in that font.
 - A character that takes two bytes, as in Shift-JIS (Japanese), GBK (Simplified Chinese), Big5 (Traditional Chinese), and Korean, is read whole, and Unicode characters written \u are read as themselves.
@@ -145,7 +145,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A file that begins {\rtf with no version number, which textutil refused, is read.
 
 ### The content decides, not the extension
-<!-- id: content-decides-not-extension; keys: ; src: -->
+<!-- id: content-decides-not-extension; keys: sniffing, wrong extension, Save as RTF, .doc is HTML, XMLDocumentSniffer; src: TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
 - A file whose content is rich text is read as rich text whatever its name, so a .doc that Word saved with "Save as RTF" is read as rich text.
 - A .doc that is really a web page is read as what it is, by TextMouth's own HTML reader.
@@ -153,7 +153,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A file named .rtf or .doc that is none of these is refused (see [Adding books](adding-books.md)).
 
 ## Word 6 and Word 95 documents
-<!-- id: word-6-word-95-documents; keys: ; src: -->
+<!-- id: word-6-word-95-documents; keys: .doc, .dot, WinWord 6, compound file, own reader, textutil; src: TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/CompoundFile.swift, TextMouth/Parsers/WordDocumentLegacyText.swift -->
 
 - TextMouth reads Word 6 and Word 95 documents (.doc and .dot) with code of its own since version 0.4.1, the same on the Mac as on iOS, as it reads a Word 97-2003 one.
 - The format has no published description, so the layout was worked out from real files.
@@ -163,14 +163,14 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - No helper process runs.
 
 ### Word 6 and Word 95 headings
-<!-- id: word-6-word-95-headings; keys: ; src: -->
+<!-- id: word-6-word-95-headings; keys: heading styles, outline levels, font size guess; src: TextMouth/Parsers/WordDocumentStyles.swift, TextMouth/Parsers/WordDocumentHeadingGuess.swift -->
 
 - Headings are the document's own heading styles (Heading 1 to 9, Title, Subtitle, and outline levels), and a document that names even one keeps exactly the headings it names.
 - A document that names none gets its headings guessed from font sizes and bold, as in the other Word formats.
 - Text in a table or a list is never a heading, so a few documents have fewer headings than textutil guessed.
 
 ### Word 6 and Word 95 text and code pages
-<!-- id: word-6-word-95-text; keys: ; src: -->
+<!-- id: word-6-word-95-text; keys: code page, Cyrillic, Greek, Central European, double-byte, Far East, Symbol font; src: TextMouth/Parsers/WordDocumentLegacyCodePages.swift, TextMouth/Parsers/WordDocumentLegacyText.swift -->
 
 - The text is read in the code page of each run, in this order:
   - The run's own mark (Macintosh text in a Windows document, and the reverse).
@@ -180,7 +180,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - Text in the Symbol font is read as Greek letters and mathematical signs.
 
 ### Word 6 and Word 95 emphasis, notes, tables, and lists
-<!-- id: word-6-word-95-emphasis; keys: ; src: -->
+<!-- id: word-6-word-95-emphasis; keys: bold, italic, hidden text, tracked deletion, footnote, list numbering; src: TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentLegacyNumbering.swift, TextMouth/Parsers/WordDocumentLists.swift, TextMouth/Parsers/WordDocumentLegacySprm.swift -->
 
 - Bold and italic keep their emphasis and the marks that show it are never spoken.
 - Hidden text and tracked deletions are not read, and a note is read only if its reference is shown.
@@ -191,30 +191,30 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - A field's result is read and its instruction never.
 
 ### What Word 6 and Word 95 reading leaves out
-<!-- id: what-word-6-word-95; keys: ; src: -->
+<!-- id: what-word-6-word-95; keys: headers, footers, comments, pictures, Wingdings, custom note mark; src: TextMouth/Parsers/WordDocumentLegacyText.swift, TextMouth/Parsers/WordDocumentNotes.swift, TextMouth/Parsers/WordDocumentFonts.swift -->
 
 - Headers, footers, comments, and pictures are not read.
 - Text typed in Wingdings reads as the letters of its bytes.
 - A custom note mark (an asterisk, say) is read as typed.
 
 ### Word 1 and Word 2 documents
-<!-- id: word-1-word-2-documents; keys: ; src: -->
+<!-- id: word-1-word-2-documents; keys: WinWord 1, WinWord 2, refused, not a compound file, unreadable; src: TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/OwnDocumentReaders.swift -->
 
 - Word 1 and Word 2 documents are not compound files, and are refused at once with the unreadable sentence of a Word document (see [Adding books](adding-books.md)).
 
 ### Word 6 and Word 95 file type
-<!-- id: word-6-word-95-file; keys: ; src: -->
+<!-- id: word-6-word-95-file; keys: file type, bytes, not the name, Word 97-2003; src: TextMouth/Parsers/WordDocumentStructure.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
 
 - The content decides, not the extension, as for a Word 97-2003 document.
 
 ## Documents that Apple's textutil tool still reads
-<!-- id: documents-that-apple-textutil-tool; keys: ; src: -->
+<!-- id: documents-that-apple-textutil-tool; keys: textutil, older than Word 6, Word 2, Mac only, iOS refusal; src: TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
 
 - On the Mac only, textutil reads a compound-file Word document older than Word 6, which TextMouth's reader does not know the layout of.
 - On iOS such a document is refused, since iOS runs no helper program (see [Adding books](adding-books.md)).
 
 ### How textutil is run
-<!-- id: how-textutil-run; keys: ; src: -->
+<!-- id: how-textutil-run; keys: separate process, WatchedProcess, timeout, cancel, second run, page breaks; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/TextutilPageBreaks.swift -->
 
 - textutil runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in Apple's readers costs that process and never TextMouth or the import.
 - It loads nothing that the document links to and fetches nothing from the network.
@@ -224,7 +224,7 @@ Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents fo
 - [Where TextMouth keeps your library](where-your-library-lives.md) gives the limits of time, memory, and processor time at which TextMouth stops it, where it writes, and what stops one that a crash left behind.
 
 ### Headings in a document textutil reads
-<!-- id: headings-document-textutil-reads; keys: ; src: -->
+<!-- id: headings-document-textutil-reads; keys: font size, bold, heading guess, textutil HTML; src: TextMouth/Parsers/TextutilHTMLStructure.swift, TextMouth/Parsers/TextutilDocumentReader.swift -->
 
 - Headings in such a document are found from font sizes and bold, since textutil writes every heading as an ordinary paragraph.
 - The body size is the commonest size, counted by characters.

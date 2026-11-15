@@ -1,10 +1,10 @@
 # What TextMouth reads: DAISY and braille books
-<!-- id: what-textmouth-reads-daisy-braille; keys: ; src: -->
+<!-- id: reads-daisy-braille; keys: talking book, DTBook, NIMAS, BRF, BRL, PEF, liblouis; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## DAISY books
-<!-- id: daisy-books; keys: ; src: -->
+<!-- id: daisy-books; keys: DAISY 2.02, DAISY 3, ncc.html, OPF, SMIL, clock value, reading order; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/DAISYParser+SMILParser.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift -->
 
 - TextMouth reads DAISY books, versions 2.02 and 3: a book's folder, its navigation or package file (ncc.html or a .opf file), or a ZIP holding the book.
 - A DTBook file on its own (.xml) imports as a book too, and so does a NIMAS package, which is a DTBook with its package file.
@@ -15,7 +15,7 @@ Part of [TextMouth's documentation](../../README.md).
   A book's audio times are measured when it is imported, so a DAISY book gains them when it is imported again.
 
 ## XML files
-<!-- id: xml-files; keys: ; src: -->
+<!-- id: xml-files; keys: DTBook, Word 2003 XML, PEF, root element, sniffing, refused; src: TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Services/FileImportService.swift -->
 
 - TextMouth reads the start of each .xml file and names its kind by the element it begins with:
   - A DTBook goes to the DAISY reader.
@@ -24,7 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Any other XML is refused by name.
 
 ## Braille files
-<!-- id: reads-daisy-and-braille-braille-files; keys: ; src: -->
+<!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 - TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
 - It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
@@ -35,7 +35,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](library-window.md)).
 
 ### Guessing the braille code when a book is added
-<!-- id: guessing-braille-code-when-book; keys: ; src: -->
+<!-- id: guessing-braille-code-when-book; keys: EBAE, UEB, auto-detect, guessed table, guess switch, Braille tab; src: TextMouth/Parsers/BrailleCodeDetector.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Views/Settings/BrailleSettingsView.swift -->
 
 - Many BRF files are old transcriptions in English Braille, American Edition, the code before Unified English Braille.
   Read as Unified English Braille, such a book reads wrongly with no error, as "to the sea" reading "!the sea".
@@ -56,7 +56,7 @@ Part of [TextMouth's documentation](../../README.md).
   A book you chose a code for, in Book Information, is never said to be guessed.
 
 ### Braille file characters
-<!-- id: braille-file-characters; keys: ; src: -->
+<!-- id: braille-file-characters; keys: Braille ASCII, Eurobraille, Unicode braille patterns, U+2800, seven-bit, ascii-na; src: TextMouth/Parsers/BrailleFileCode.swift, TextMouth/Models/BrailleFileCodeRecord.swift, TextMouth/ViewModels/BrailleFileCodeChoiceModel.swift -->
 
 - A BRF or BRL file is read in one of three codes, which the book records:
   - North American Braille ASCII is the default and the code of nearly every file.
@@ -68,14 +68,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A PEF always holds Unicode braille and needs no choice.
 
 ### Books that record no braille code
-<!-- id: books-that-record-no-braille; keys: ; src: -->
+<!-- id: books-that-record-no-braille; keys: eight-dot, dot 7, dot 8, computer braille, UTF-16, refused, old books; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleFileCode.swift -->
 
 - A book that records no code, as every book added before TextMouth recorded them, is read as North American Braille ASCII, unless its first character is a braille pattern, which can only be Unicode braille patterns: such a book is read as them.
 - A BRF or BRL file of Unicode braille patterns that uses dot 7 or 8 is eight-dot braille, which TextMouth refuses.
   So is a file of eight-bit computer braille, and so is a file in UTF-16, each refused by name (see [Adding books](adding-books.md) for the sentences).
 
 ### What a BRF or BRL file holds
-<!-- id: what-brf-brl-file-holds; keys: ; src: -->
+<!-- id: what-brf-brl-file-holds; keys: CR LF, form feed, 25 lines, tab, eight-dot PEF; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleCells.swift, TextMouth/Parsers/BrailleBookReader.swift -->
 
 - A BRF or BRL file holds one character for each braille cell, in the braille file characters above, in upper or lower case for braille ASCII, with each line ended by CR LF, LF, or CR.
 - A tab counts as one blank cell.
@@ -84,7 +84,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A PEF file must be six-dot braille: eight-dot PEF is refused.
 
 ### Braille layout
-<!-- id: braille-layout; keys: ; src: -->
+<!-- id: braille-layout; keys: BANA Braille Formats, centered, cell 5, cell 7, indent, running head, print page; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift -->
 
 - Headings, paragraphs, and list items are found from the layout, as BANA's Braille Formats (2016) lays it out.
 - A centered line, or a centered run of lines, is a level-1 heading.
@@ -102,7 +102,7 @@ Part of [TextMouth's documentation](../../README.md).
   A row of dashes or other rule marks that sets the heading off is never part of its words.
 
 ### Braille emphasis
-<!-- id: braille-emphasis; keys: ; src: -->
+<!-- id: braille-emphasis; keys: typeform, italic, bold, UEB, EBAE, emphasis end sign, TextMouthBraille; src: TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/main.c -->
 
 - Reading Unified English Braille (UEB) keeps what its emphasis signs say, and reading English Braille, American Edition (EBAE) keeps what its signs say where they are certain.
 - In UEB, italic and bold come into the book's text as italic and bold, and both together as both.
@@ -131,7 +131,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Export writes a book's emphasis into braille in UEB, and writes none in EBAE (see [Exporting books](exporting-books.md)).
 
 ### English Braille, American Edition words
-<!-- id: english-braille-american-edition-words; keys: ; src: -->
+<!-- id: english-braille-american-edition-words; keys: EBAE fixes, en_US table, initials, St., still, before, micro sign; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift -->
 
 - A book in contracted (Grade 2) English Braille, American Edition, read with a table that writes it, such as an English EBAE table of this Mac's, is read with fixes for what liblouis's own EBAE table misreads.
   Uncontracted EBAE, Unified English Braille, and every other table are read as they were.
@@ -152,7 +152,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A braille book is read again once for these, with the page and title changes above, at the first launch after the update that added them (0.4.8).
 
 ### Titles and authors of PEF, BRF, and BRL files
-<!-- id: titles-authors-pef-brf-brl; keys: ; src: -->
+<!-- id: titles-authors-pef-brf-brl; keys: title page, by, Unknown author, metadata refresh, first 64 KB; src: TextMouth/Parsers/BrailleTitlePage.swift, TextMouth/Parsers/BrailleFileReader.swift -->
 
 - A PEF names its book's title and author in its head, and the import reads them from the first 64 KB of the file.
 - A BRL names neither, so its book is titled by its file's name without the extension, and its author is Unknown.
@@ -170,18 +170,18 @@ Part of [TextMouth's documentation](../../README.md).
   Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
 
 ### Braille file limits
-<!-- id: braille-file-limits; keys: ; src: -->
+<!-- id: braille-file-limits; keys: 32 MB, page limit, row limit, refusal; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleBookReader.swift -->
 
 - A braille file of more than 32 MB is refused, and so is one of more than 100,000 pages or 4,000,000 lines (see [Adding books](adding-books.md) for the words of each refusal).
 
 ### Braille not read yet
-<!-- id: braille-not-read-yet; keys: ; src: -->
+<!-- id: braille-not-read-yet; keys: hyphenated words, divided words, lists, plain paragraphs; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift -->
 
 - Running heads, Roman-numeral page numbers, and words divided at a line's end are not read yet.
 - A list laid out by another tool may read as plain paragraphs.
 
 ### The braille helper process
-<!-- id: braille-helper-process; keys: ; src: -->
+<!-- id: braille-helper-process; keys: TextMouthBraille, helper, separate process, timeout, hang; src: TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/main.c -->
 
 - liblouis runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in liblouis costs that process and never TextMouth or the import.
 - [Where TextMouth keeps your library](where-your-library-lives.md) gives its limits.

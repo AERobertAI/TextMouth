@@ -1,10 +1,10 @@
 # What TextMouth reads: Kindle books
-<!-- id: what-textmouth-reads-kindle-books; keys: ; src: -->
+<!-- id: reads-kindle; keys: Kindle, MOBI, AZW, AZW3, KF8, KFX, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/KFXParser.swift, TextMouth/Models/Book.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Kindle books in the MOBI format
-<!-- id: kindle-books-mobi-format; keys: ; src: -->
+<!-- id: kindle-books-mobi-format; keys: .mobi, .prc, .azw, MOBI 6, Mobipocket, copy protection, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Models/Book.swift -->
 
 - TextMouth reads Kindle books in the MOBI format (.mobi, .prc, and .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
 - It reads the older format, MOBI 6, which Mobipocket books and the Kindle used before KF8.
@@ -13,7 +13,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A copy-protected book is refused, never read: TextMouth does not try to remove copy protection (see [Adding books](adding-books.md) for the sentences).
 
 ### MOBI chapters
-<!-- id: mobi-chapters; keys: ; src: -->
+<!-- id: mobi-chapters; keys: table of contents, INDX, NCX, page break chapter, Chapter N; src: TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 - Chapters come from the book's own table of contents, and an entry under a chapter's entry is a heading in that chapter, as in an EPUB.
 - Words before the first entry are a chapter of their own.
@@ -21,14 +21,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A chapter that begins with no heading is named by its entry, or "Chapter" and its number when it has none, and the name is never read aloud.
 
 ### MOBI title and author
-<!-- id: mobi-title-author; keys: ; src: -->
+<!-- id: mobi-title-author; keys: EXTH, full name, header title, metadata, publisher; src: TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIBook.swift -->
 
 - The title and author come from the book's own record of them.
 - A book that gives no title is named by the title in its header, or by the file's name.
 - What a book's head says about it, such as the title and publisher in an older book's metadata, is never read aloud: the words start where its body does.
 
 ### MOBI text and emphasis
-<!-- id: mobi-text-emphasis; keys: ; src: -->
+<!-- id: mobi-text-emphasis; keys: Windows-1252, UTF-8, image alt text, calibre, bold italic; src: TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIMarkup.swift -->
 
 - The text is read in the encoding the book names, UTF-8 or Windows-1252 (Western European).
 - Bold and italic text keeps its emphasis, as in the other text formats.
@@ -36,13 +36,13 @@ Part of [TextMouth's documentation](../../README.md).
 - The table of contents that calibre adds at the end of a book it converts is read as text at the end of the last chapter.
 
 ### PalmDOC books
-<!-- id: palmdoc-books; keys: ; src: -->
+<!-- id: palmdoc-books; keys: PalmDOC, .prc, Palm database, plain text, HTML text; src: TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIText.swift -->
 
 - A PalmDOC book (.prc), the plain-text Palm format that MOBI grew from, is read as paragraphs of text in Windows-1252, unless its text is HTML, as an early Mobipocket book's is.
 - A PalmDOC book whose text is HTML is read like any other Kindle book, so its markup is never spoken.
 
 ## Kindle books in the KF8 format
-<!-- id: kindle-books-kf8-format; keys: ; src: -->
+<!-- id: kindle-books-kf8-format; keys: .azw3, KF8, AZW3, skeleton, fragments, headers decide; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 - TextMouth reads Kindle books in the KF8 format (.azw3, and a KF8 book named .mobi or .azw) that are not copy-protected, with code of its own, the same on the Mac as on iOS.
 - The book's own headers decide the format, never its name.
@@ -50,7 +50,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A copy-protected book is refused, never read (see [Adding books](adding-books.md) for the sentences).
 
 ### Hybrid Kindle books
-<!-- id: hybrid-kindle-books; keys: ; src: -->
+<!-- id: hybrid-kindle-books; keys: MOBI 6 half, KF8 half, joint file, BOUNDARY, fallback; src: TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 - Many .mobi files made for the Kindle hold a book twice: in MOBI 6, and in KF8.
 - TextMouth reads such a file from its KF8 half, which keeps the book's structure and the levels its author gave the headings.
@@ -59,7 +59,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Copy protection is checked in both halves, so a book that is protected in either is refused.
 
 ### KF8 chapters
-<!-- id: kf8-chapters; keys: ; src: -->
+<!-- id: kf8-chapters; keys: pieces, calibre split, continuation rule, table of contents page, guide, NCX; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift -->
 
 - Chapters come from the book's own pages: each page that holds words is a chapter.
 - An entry in the book's table of contents that names a whole page titles that chapter.
@@ -75,7 +75,7 @@ Part of [TextMouth's documentation](../../README.md).
 - A contents or a guide that is damaged is left out, and the book is read without it.
 
 ### KF8 text and emphasis
-<!-- id: kf8-text-emphasis; keys: ; src: -->
+<!-- id: kf8-text-emphasis; keys: SVG, soft hyphen, landmarks, page list, no text to read, language; src: TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIError.swift -->
 
 - The title, author, and language come from the book's own record of them, and a hybrid file is named from the half that is read.
 - Bold and italic text keeps its emphasis, and lists and tables are read as in the other text formats.
@@ -87,14 +87,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A book with no text to read, such as one made only of pictures, is refused with "This file has no text to read."
 
 ## Kindle books in the KFX format
-<!-- id: kindle-books-kfx-format; keys: ; src: -->
+<!-- id: kindle-books-kfx-format; keys: .kfx, .kfx-zip, .azw8, Ion, Kindle app, container; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXPackage.swift, TextMouth/Parsers/KFXContainer.swift -->
 
 - TextMouth reads Kindle books in the KFX format (.kfx, .kfx-zip, .azw8, and an .azw file that holds KFX, as Kindle's apps name their KFX books) that are not copy-protected, with code of its own, the same on the Mac as on iOS, and the Library window names the format "Kindle Book (KFX)".
 - A KFX book is read like a MOBI book, and into the same kind of chapters.
 - A .kfx-zip, a ZIP that holds the parts of one book, is read as that one book.
 
 ### KFX chapters and headings
-<!-- id: kfx-chapters-headings; keys: ; src: -->
+<!-- id: kfx-chapters-headings; keys: table of contents, navigation, heading level, nav container; src: TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXBook.swift -->
 
 - Chapters come from the book's own table of contents, and an entry under a chapter's entry is a heading in that chapter, as in a MOBI book.
 - A heading's level is the one the book gives it, from 1 to 6.
@@ -103,14 +103,14 @@ Part of [TextMouth's documentation](../../README.md).
 - A first chapter that nothing names takes the book's title, and no heading is ever made up.
 
 ### KFX pages
-<!-- id: kfx-pages; keys: ; src: -->
+<!-- id: kfx-pages; keys: page list, print pages, APNX, machine pages, approximate pages; src: TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift -->
 
 - Pages are the book's print page list, when it has one, as an EPUB's are, so Page works as it does there (see Pages, below).
 - A page list that a machine made to approximate pages, which the book marks as such, is not read as pages.
 - A KFX book that is an .azw file is read without pages.
 
 ### KFX emphasis, lists, and tables
-<!-- id: kfx-emphasis-lists-tables; keys: ; src: -->
+<!-- id: kfx-emphasis-lists-tables; keys: footnote, picture description, alt text, row at a time, style; src: TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXMetadata.swift -->
 
 - Bold and italic text keeps its emphasis, and lists and tables are lists and tables, a table being read a row at a time.
 - A footnote's text is read at the end of its chapter.
@@ -118,19 +118,19 @@ Part of [TextMouth's documentation](../../README.md).
 - The title and author come from the book's own record of them.
 
 ### KFX copy protection
-<!-- id: kfx-copy-protection; keys: ; src: -->
+<!-- id: kfx-copy-protection; keys: DRM, license file, voucher, refusal, KFXError; src: TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXSidecar.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/KFXPackage.swift -->
 
 - A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
 - This holds whether the protection is in the book's file, in a license file that sits beside it, or in any part of a book made of several.
 
 ### KFX books with no flowing text
-<!-- id: kfx-books-no-flowing-text; keys: ; src: -->
+<!-- id: kfx-books-no-flowing-text; keys: fixed layout, print replica, comic, magazine, textbook, notebook; src: TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXBook.swift -->
 
 - A book with no flowing text to read is refused: a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book whose pages are only pictures.
 - The sentence is "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
 
 ### Kindle Create packages
-<!-- id: kindle-create-packages; keys: ; src: -->
+<!-- id: kindle-create-packages; keys: .kpf, Kindle Create, KPF, author package; src: TextMouth/Parsers/KFXError.swift -->
 
 - A Kindle Create package (.kpf), the file an author makes before a book is published, is refused with its own sentence: "This file is a Kindle Create package, which TextMouth can't read yet."
 - [Adding books](adding-books.md) gives every sentence.

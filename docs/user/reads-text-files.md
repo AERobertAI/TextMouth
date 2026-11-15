@@ -1,20 +1,20 @@
 # What TextMouth reads: text, HTML, PDF, and web archive files
-<!-- id: what-textmouth-reads-text-html; keys: ; src: -->
+<!-- id: reads-text-files; keys: HTML, Markdown, TXT, PDF, Safari, SSML, encoding; src: TextMouth/Parsers/PlainTextParser.swift, TextMouth/Parsers/HTMLParser.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/PDFTextParser.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## PDF files
-<!-- id: pdf-files; keys: ; src: -->
+<!-- id: pdf-files; keys: scanned image, OCR, Vision, text recognition, image-only page; src: TextMouth/Parsers/PDFTextParser.swift, TextMouth/Parsers/PDFTextRecognizer.swift, TextMouth/Parsers/PDFRecognitionPlan.swift, TextMouth/Parsers/PDFPageImageScanner.swift -->
 
 - A page that holds only a scanned image is read with the Mac's own text recognition.
 
 ## HTML, Markdown, and plain text files
-<!-- id: html-markdown-plain-text-files; keys: ; src: -->
+<!-- id: html-markdown-plain-text-files; keys: line endings, TXT, .md, .html, .htm, TextFileDecoder; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/PlainTextParser.swift, TextMouth/Parsers/HTMLParser.swift, TextMouth/Parsers/MarkdownParser.swift -->
 
 - TextMouth reads HTML, Markdown, and plain text files, whatever their text encoding and line endings.
 
 ### Where a file's text encoding comes from
-<!-- id: where-file-text-encoding-comes; keys: ; src: -->
+<!-- id: where-file-text-encoding-comes; keys: BOM, byte-order mark, ISO-2022-JP, meta charset, ISO Latin 1, strict UTF-8; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift -->
 
 - TextMouth takes a file's text encoding from the file where it can, using the first of these that applies:
   - A byte-order mark for UTF-8, UTF-16, or UTF-32.
@@ -24,7 +24,7 @@ Part of [TextMouth's documentation](../../README.md).
   - For an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
 
 ### UTF-16 and UTF-32 without a mark
-<!-- id: utf-16-utf-32-without; keys: ; src: -->
+<!-- id: utf-16-utf-32-without; keys: UTF-16LE, UTF-16BE, NUL bytes, no BOM, CJK, Devanagari; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingByteGrammar.swift, TextMouth/Parsers/TextPlausibility.swift -->
 
 - Since 0.4.3 TextMouth finds these by the pattern of their bytes:
   - UTF-16 in Latin letters, which shows in its zero bytes, as before;
@@ -49,14 +49,14 @@ Part of [TextMouth's documentation](../../README.md).
   A Markdown book is read the new way when it is added, or when its text is built again, as Redo Text Extraction does.
 
 ### A file that none of these settles
-<!-- id: file-that-none-these-settles; keys: ; src: -->
+<!-- id: file-that-none-these-settles; keys: Windows-1252, mojibake, Open Book, Finder, ZIP, feed article; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Services/FileImportService.swift -->
 
 - A file that none of these settles, because it is neither UTF-8, UTF-16, nor UTF-32 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters.
 - Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on.
 - Only a file you add yourself is guessed at: a feed's article is read as it always was.
 
 ### The encodings TextMouth guesses among
-<!-- id: encodings-textmouth-guesses-among; keys: ; src: -->
+<!-- id: encodings-textmouth-guesses-among; keys: code pages, Shift JIS, KOI8-R, TextEncodingCatalog, Mac Roman, Speak Full Info; src: TextMouth/Parsers/TextEncodingCatalog.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 - TextMouth guesses among the encodings below.
 - Book Information and Speak Full Info name the one it chose as written here, then "guessed", and one you chose the same way, then "chosen" (see [The Library window](library-window.md)).
@@ -80,7 +80,7 @@ Part of [TextMouth's documentation](../../README.md).
   - Korean: "EUC-KR (Korean)".
 
 ### When TextMouth guesses
-<!-- id: when-textmouth-guesses; keys: ; src: -->
+<!-- id: when-textmouth-guesses; keys: plausibility, capitals inside words, round trip, macOS guess, false positive; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextPlausibility.swift -->
 
 - TextMouth guesses only when it can trust the guess more than Windows-1252, since a wrong guess turns text that was right into text that is not, which the book keeps, while a missed guess leaves a book as garbled as it was.
 - You can mend either by choosing the book's encoding yourself (see Choosing the encoding, below).
@@ -94,12 +94,12 @@ Part of [TextMouth's documentation](../../README.md).
   - The whole file, not only the lines examined, reads in that encoding with no byte dropped or replaced, and writes back to exactly the same bytes.
 
 ### The same bytes give the same guess
-<!-- id: same-bytes-give-same-guess; keys: ; src: -->
+<!-- id: same-bytes-give-same-guess; keys: deterministic, repeatable, same result; src: TextMouth/Parsers/TextEncodingGuesser.swift -->
 
 - The same bytes always give the same guess.
 
 ### Files that stay Windows-1252
-<!-- id: files-that-stay-windows-1252; keys: ; src: -->
+<!-- id: files-that-stay-windows-1252; keys: short texts, Hungarian, Croatian, Slovenian, Latvian, Hebrew, CP437, CP850; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/TextEncodingCatalog.swift -->
 
 - Some files stay Windows-1252, as they were read before, until you choose their encoding (see Choosing the encoding, below):
   - Short texts, which show too little to guess from.
@@ -111,20 +111,20 @@ Part of [TextMouth's documentation](../../README.md).
   - A file in an encoding that is not listed above, or in CP437, CP850, or Mac Central European when macOS's own guess does not name it, since TextMouth does not try those three itself.
 
 ### A guess can be wrong
-<!-- id: guess-can-be-wrong; keys: ; src: -->
+<!-- id: guess-can-be-wrong; keys: wrong letters, Book Information, Text Encoding pop-up, program code; src: TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/ViewModels/TextEncodingChoiceModel.swift -->
 
 - A guess can still be wrong, most often for a text of only a few lines, and, rarely, for a Windows-1252 file of program code with several accented capitals inside its names, which can be read as Mac Roman.
 - Book Information names the encoding a book was read in, so a book whose letters read oddly can be checked there, and set right there with its Text Encoding pop-up (see Choosing the encoding, below).
 
 ### Books already in your library
-<!-- id: books-already-your-library; keys: ; src: -->
+<!-- id: books-already-your-library; keys: TextEncodingRecord, record, re-read, Redo Text Extraction, no record; src: TextMouth/Models/TextEncodingRecord.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
 - A book already in your library keeps its text.
 - TextMouth records a guess with the book when the book is added, and an encoding you choose when you choose it, and reads the book in it every time its text is built again, after an update or with Redo Text Extraction.
 - A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ### Choosing the encoding
-<!-- id: reads-text-files-choosing-encoding; keys: ; src: -->
+<!-- id: choosing-text-encoding; keys: Text Encoding pop-up, Automatic, strict decoding, JIS X 0212, Big5-HKSCS, GB 18030, refusal; src: TextMouth/Models/TextEncodingChoice.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
 - The Text Encoding pop-up in Book Information reads a book's file again in the encoding you choose, or, with Automatic, as TextMouth reads a file you add.
 - Use it for a book whose letters read oddly, whether the guess was wrong or missed.
@@ -147,14 +147,14 @@ Part of [TextMouth's documentation](../../README.md).
   Choose another in Book Information."
 
 ## Safari web archives
-<!-- id: safari-web-archives; keys: ; src: -->
+<!-- id: safari-web-archives; keys: .webarchive, WebKit, main resource, subresources, property list; src: TextMouth/Parsers/WebArchiveReader.swift -->
 
 - TextMouth reads Safari web archives (.webarchive).
 - Only the archive's main page is read, as an HTML file is read (or a text file, for a text page), so its headings, lists, and tables read as in an HTML book.
 - The archive's pictures, scripts, style sheets, and frames, and every address it names, are never read, decoded, or fetched, and WebKit is not used.
 
 ## SSML files
-<!-- id: ssml-files; keys: ; src: -->
+<!-- id: ssml-files; keys: .ssml, speak, sub alias, break, voice, lexicon, markup; src: TextMouth/Parsers/SSMLReader.swift -->
 
 - TextMouth reads SSML files (.ssml) as text: the markup is removed, and the paragraphs and sentences are kept.
 - A sub element's alias is read in place of its written text: <sub alias="World Wide Web Consortium">W3C</sub> reads "World Wide Web Consortium".
@@ -165,6 +165,6 @@ Part of [TextMouth's documentation](../../README.md).
 - Its words are spoken in your voice at your speed, whatever voice, speed, or pitch the markup asks for.
 
 ## New from Text
-<!-- id: new-from-text; keys: ; src: -->
+<!-- id: new-from-text; keys: paste, type text, clipboard, importText; src: TextMouth/Services/FileImportService.swift, TextMouth/App/MenuCommands.swift -->
 
 - TextMouth reads text you type or paste with New from Text.
