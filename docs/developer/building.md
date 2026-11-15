@@ -155,7 +155,7 @@ TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PA
 - **The orchestrator** makes the bump, with the script below: `make bump-patch` or `make bump-minor`, committed on its own and recorded in the TODO.
 - **Each version is tagged** `vX.Y.Z`, with an annotated tag on the commit the user is to install: `git tag -a v0.4.3 <commit> -m "TextMouth 0.4.3 (November 9, 2026)"`. The orchestrator makes it with the bump.
   - A merge that joins the version afterwards, as in the second open case below, moves the tag to that merge, but only while the tag is unpushed. A pushed tag stays, and the merge waits for the next version.
-  - Pushing tags is the user's: `git push origin --tags`.
+  - The orchestrator pushes the tags with main, only at a version bump it judges a fairly stable release (`AGENTS.md`, The user's standing rules): `git push origin --tags`.
   - The tags v0.2.0 to v0.4.2 were added on November 9, 2026, each at its version's bump commit. The exception is v0.4.2, at e0ea3b9d, the build the user installed, since 0.4.2 took in the KF8 merge after its bump. The numbers before 0.2.0 ("1.0", then "0.1.1") came before the beta's rules and have no tags.
 - **Two cases the rules leave open.** A day with neither bug fixes nor small features gets no bump. A change that merges after its day's bump, on the same day, joins that day's section and leaves the version as it is, unless it is not backward compatible: then bump MINOR from the day's version (0.2.1 to 0.3.0), in a section of its own.
 
