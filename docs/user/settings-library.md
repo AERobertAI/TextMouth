@@ -21,7 +21,9 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
   Hidden leaves it out.
   A window showing a view keeps it until you choose another."
 - The list, which VoiceOver calls "Views", has one row for each view, in order, and each row is one element that VoiceOver reads as its name, "built in" or "custom", its visibility, and its place, as in "Reading List, built in, always, 5 of 6".
-  A row's hint says what the view lists: for Folders, "Shows one folder at a time"; for the Reading List, "Shows the books in the order you arrange"; and for any other view its conditions, as in "Lists books and feeds: reading state is Unopened and has new episodes or articles." or "Lists books, episodes, and articles: reading state is not Unopened; only the latest from each feed; at most 10, opened last."
+  A row's hint says what the view lists: for Folders, "Shows one folder at a time".
+  For the Reading List, "Shows the books in the order you arrange".
+  And for any other view its conditions, as in "Lists books and feeds: reading state is Unopened and has new episodes or articles." or "Lists books, episodes, and articles: reading state is not Unopened; only the latest from each feed; at most 10, opened last."
   The first view is selected when the tab opens, and the arrow keys move the selection.
   Return, or a double-click, is Edit… for a view that can be edited, which is any view but Folders and the Reading List.
 - A row's VoiceOver actions (VO-Command-Space) and its context menu offer the same commands, each only where it applies: Edit…, Move Up, Move Down, Show Always, Show When Applicable, Hide, Duplicate, Delete…, and Restore Default….
@@ -88,11 +90,13 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
     Typing the first letters of a title goes past its leading article ("h" goes to "The Hobbit"), and "the h" goes to it too, but the lists sort and show titles as before.
   - "Ignored When Typing and Sorting" reads "The Hobbit sorts among the H's and shows as Hobbit, The.
     Typing H finds it among the H's."
-    Every Library list sorts by the title from where it files, its leading article left out, and shows each row's title with the article after it, as an encyclopedia's index does; a row's VoiceOver label, the Books rotor, and a search read the shown title (see [The Library window](library-window.md)).
+    Every Library list sorts by the title from where it files, its leading article left out, and shows each row's title with the article after it, as an encyclopedia's index does.
+    A row's VoiceOver label, the Books rotor, and a search read the shown title (see [The Library window](library-window.md)).
   - Under the second and third choices the sentence goes on with a note about languages: "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.
     Any other book passes over The, A, and An.
     Folder names stay as you typed them."
-    So a book whose language is one of those ten, named by a code such as "fr", "fr-CA", "pt_BR", or "fre", or by a name such as "French" or "Deutsch", passes over that language's articles and English's The, but not A or An, which are not articles in those languages: "Die Verwandlung" files under V in a German book, and "The Hobbit" still files under H in a French one.
+    So a book whose language is one of those ten, named by a code such as "fr", "fr-CA", "pt_BR", or "fre", or by a name such as "French" or "Deutsch", passes over that language's articles and English's The, but not A or An, which are not articles in those languages.
+    "Die Verwandlung" files under V in a German book, and "The Hobbit" still files under H in a French one.
     A book with no language, an English one, or one in a language not listed passes over The, A, and An.
     A feed names no language, so a feed's title and the titles of its items not yet downloaded are read with English's articles.
     An article that is elided joins the next word, as in "L'Étranger", which files under É.
@@ -130,7 +134,8 @@ From the top, it has these controls, and Escape presses Cancel and Return presse
 
 - The tests, with the relations each offers and the control it needs, are these.
   "Format": "Is" or "Is Not", and a pop-up of the formats, "Condition 2 format".
-  "Folder": "Is" or "Is Not", a pop-up, "Condition 2 folder", of "Library Root", the top of the library, and the folders by path, and a checkbox "Including Subfolders", "Condition 2 includes subfolders"; a folder removed from the library is shown as "a folder no longer in the library" and matches nothing.
+  "Folder": "Is" or "Is Not", a pop-up, "Condition 2 folder", of "Library Root", the top of the library, and the folders by path, and a checkbox "Including Subfolders", "Condition 2 includes subfolders".
+  A folder removed from the library is shown as "a folder no longer in the library" and matches nothing.
   "Reading State": "Is" or "Is Not", and a pop-up, "Condition 2 reading state", of "Unopened", "In Progress", and "Finished".
   "Reading List": "In the Reading List" or "Not in the Reading List".
   "Date Added" and "Date Opened": "Within the Last" or "Not Within the Last", and a number of days, 1 to 3,650, in a field, "Condition 2 days", followed by the word "days"; one day means today, and a row never opened is not within any days of being opened.
