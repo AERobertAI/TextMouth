@@ -667,19 +667,35 @@ final class FeedTestWorld {
         await center.start(library: library)?.value
     }
 
+    /// A second engine on `environment`, the world's own or a copy a test
+    /// changed (a removal of its own, a data directory that goes away), not
+    /// started. `test` stops it when it ends, and waits for every write it
+    /// asked for (`finish(_:)`), before the world's folders go, as the
+    /// world's teardown does for its own engine.
+    ///
+    /// Every engine a test makes besides the world's comes from here: one
+    /// whose teardown only stops it leaves its last record writes to land
+    /// once the sandbox is gone, where they fail and are announced into a
+    /// later test (`finishFeedWork()`), as a Delete Download's did to
+    /// `LibraryFeedMoveToFolderTests` on GitHub's runner.
+    func engine(_ test: XCTestCase, on environment: FeedEnvironment) -> FeedCenter {
+        let made = FeedCenter(environment: environment)
+        test.addTeardownBlock {
+            await Self.finish(made)
+        }
+        return made
+    }
+
     /// The engine the next launch makes: a new one on the world's folders,
     /// network, clock, and library, working on its own as the app's does,
     /// started, with what its start begins finished. `configure` sees it
     /// before it starts, as a test that hooks into its downloads needs.
     /// `test` stops it when it ends, and waits for its writes, before the
-    /// world's folders go.
+    /// world's folders go (`engine(_:on:)`).
     func relaunch(_ test: XCTestCase, configuring configure: (FeedCenter) -> Void = { _ in }) async -> FeedCenter {
         var next = environment
         next.worksOnItsOwn = true
-        let relaunched = FeedCenter(environment: next)
-        test.addTeardownBlock {
-            await Self.finish(relaunched)
-        }
+        let relaunched = engine(test, on: next)
         configure(relaunched)
         await relaunched.start(library: library)?.value
         return relaunched
