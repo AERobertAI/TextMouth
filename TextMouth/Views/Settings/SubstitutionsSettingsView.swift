@@ -1,4 +1,8 @@
 import SwiftUI
+import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 /// The Text settings tab: the substitution rules that rewrite text before it
 /// is spoken, listed in the order they apply, and below them the Repeated
@@ -18,6 +22,9 @@ struct SubstitutionsSettingsView: View {
     @State private var showAddRule = false
     /// Whether Reset to Defaults is asking before it replaces the rules.
     @State private var showResetConfirmation = false
+    /// What the last lexicon import or export says, while its alert is
+    /// open (FMT08); nil when no alert is open.
+    @State private var lexiconOutcome: LexiconFileOutcome?
 
     /// - Parameter service: The rules to show and change: the app's shared
     ///   rules, unless a test supplies its own.
@@ -36,6 +43,17 @@ struct SubstitutionsSettingsView: View {
 
                 Button("Add Rule") { showAddRule = true }
                     .accessibilityLabel("Add a new substitution rule")
+
+                #if os(macOS)
+                // Pronunciation lexicon files, as buttons beside the other
+                // rule commands so the keyboard reaches them in order (FMT08).
+                Button(PronunciationLexiconWording.importButton) { chooseLexiconToImport() }
+                    .accessibilityLabel(PronunciationLexiconWording.importLabel)
+                    .accessibilityHint(PronunciationLexiconWording.importHint)
+                Button(PronunciationLexiconWording.exportButton) { chooseLexiconDestination() }
+                    .accessibilityLabel(PronunciationLexiconWording.exportLabel)
+                    .accessibilityHint(PronunciationLexiconWording.exportHint)
+                #endif
 
                 // Asks first, naming what it replaces: it used to replace
                 // every rule at once (TODO A10).
@@ -90,6 +108,16 @@ struct SubstitutionsSettingsView: View {
                 defaultCount: TextSubstitutionService.defaultRules.count
             ))
         }
+        // The result of a lexicon import or export, which VoiceOver reads
+        // as the alert appears.
+        .alert(
+            lexiconOutcome?.title ?? "",
+            isPresented: Binding(get: { lexiconOutcome != nil }, set: { if !$0 { lexiconOutcome = nil } })
+        ) {
+            Button("OK") { lexiconOutcome = nil }
+        } message: {
+            Text(lexiconOutcome?.message ?? "")
+        }
         .sheet(isPresented: $showAddRule) {
             SubstitutionRuleEditorView(
                 rule: SubstitutionRule(pattern: ""),
@@ -113,6 +141,49 @@ struct SubstitutionsSettingsView: View {
             )
         }
     }
+
+    #if os(macOS)
+    /// Import Rules…: asks for a pronunciation lexicon file in an Open
+    /// panel, then adds its entries as rules and tells what happened.
+    private func chooseLexiconToImport() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = Self.lexiconFileTypes
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.message = PronunciationLexiconWording.importPanelMessage
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            lexiconOutcome = LexiconFileActions.importLexicon(at: url, into: service)
+        }
+    }
+
+    /// Export Rules…: asks where to save, then writes the rules as a
+    /// pronunciation lexicon and tells what was left out. With no rule that
+    /// a lexicon can hold, it says so without asking for a file.
+    private func chooseLexiconDestination() {
+        guard service.exportedLexicon().written > 0 else {
+            lexiconOutcome = LexiconFileOutcome(
+                title: PronunciationLexiconWording.exportFailedTitle,
+                message: PronunciationLexiconWording.nothingToExport
+            )
+            return
+        }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = Self.lexiconFileTypes.prefix(1).map { $0 }
+        panel.nameFieldStringValue = PronunciationLexiconWording.exportFileName
+        panel.message = PronunciationLexiconWording.exportPanelMessage
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            lexiconOutcome = LexiconFileActions.exportLexicon(from: service, to: url)
+        }
+    }
+
+    /// The file types of a pronunciation lexicon: its own extension first,
+    /// then any XML file, as lexicons are often saved as .xml.
+    private static var lexiconFileTypes: [UTType] {
+        [UTType(filenameExtension: "pls"), .xml].compactMap { $0 }
+    }
+    #endif
 
     /// The rules in the order they apply. Each row carries its own controls
     /// and context menu, and dragging rows reorders the rules as well.

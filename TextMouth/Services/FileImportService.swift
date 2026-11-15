@@ -36,11 +36,18 @@ enum FileImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat(let ext):
-            // A transcript is not a book, but it has a way in: say it.
-            let hint = TimedTextFormat.cueFileFormat(forExtension: ext) != nil
-                ? ". A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, "
+            // A transcript is not a book, but it has a way in: say it. A
+            // format that is refused on purpose says how to convert it
+            // (FMT02, `RefusedFormatAdvice`).
+            let hint: String
+            if TimedTextFormat.cueFileFormat(forExtension: ext) != nil {
+                hint = ". A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, "
                     + "and choose Attach Transcript… from the Book menu."
-                : ""
+            } else if let advice = RefusedFormatAdvice.advice(forExtension: ext) {
+                hint = ". " + advice
+            } else {
+                hint = ""
+            }
             return "Unsupported file format: .\(ext)" + hint
         case .hashingFailed: return "Failed to compute file hash."
         case .importFailed(let msg): return "Import failed: \(msg)"
@@ -1389,7 +1396,10 @@ enum FileImportService {
     private static func unsupportedSourceError(for source: URL) -> Error {
         let ext = source.pathExtension.lowercased()
         var isDirectory: ObjCBool = false
-        if ext != "tmb",
+        // A package folder of a refused format (an old Pages document is
+        // one) is that document, not a folder of files: it is told as the
+        // single file is, with its advice (FMT02).
+        if ext != "tmb", RefusedFormatAdvice.advice(forExtension: ext) == nil,
            FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
             return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
@@ -3149,6 +3159,8 @@ enum FileImportService {
         if let playlist = UTType("public.m3u-playlist") {
             types.append(playlist)
         }
+        // PLS and XSPF playlists, read the same way (FMT12).
+        types.append(contentsOf: ["pls", "xspf"].compactMap { UTType(filenameExtension: $0) })
         return types
     }
 

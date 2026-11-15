@@ -345,6 +345,13 @@ enum ImportProgressWording {
         let opening = noNewBooks(in: subject, alreadyInLibrary: 0)
         guard files.total > 0 else { return "\(opening) It holds no files." }
         return "\(opening) It holds \(kindsHeld(files)), which TextMouth does not import."
+            + adviceSuffix(for: files)
+    }
+
+    /// A space and the advice for the kinds of `files` that have some
+    /// (`RefusedFormatAdvice`, FMT02), or nothing when none has.
+    private static func adviceSuffix(for files: NonBookFiles) -> String {
+        RefusedFormatAdvice.advice(for: files).map { " " + $0 } ?? ""
     }
 
     /// That the folder `name`, chosen to import, holds no DAISY book and no
@@ -355,7 +362,7 @@ enum ImportProgressWording {
     static func noBookInFolder(named name: String, holding files: NonBookFiles) -> String {
         let opening = "“\(name)” holds no DAISY book and no audio tracks to import as one book."
         guard files.total > 0 else { return "\(opening) It holds no files." }
-        return "\(opening) It holds \(kindsHeld(files))."
+        return "\(opening) It holds \(kindsHeld(files))." + adviceSuffix(for: files)
     }
 
     /// The kinds of `files`, most first, as a sentence lists them: up to
