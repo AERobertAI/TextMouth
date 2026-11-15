@@ -593,3 +593,16 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   On October 10, 2026 they said: "please don't warry about the weekly reset and have a full set of agents going and work until the limit runs out, everything can just be resumed without issue in the new week...
   and remember this for Friday nights / Saturday mornings before the usage resets").
   On such a night the orchestrator kept three builders and the non-building agents going until the limit ran out.
+- **Branching from local main.** An agent's worktree (`isolation: "worktree"`) starts at origin/main, which can be far behind local main (1,081 commits on October 12, 2026).
+  So every brief has its agent make its branch from local main or a team branch, by name.
+- **Builds through the wrapper, before the build train.** Task agents built and tested only through `.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh`, one build of their own at a time, with a build folder of their own outside the repository.
+  The command:
+  `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-<slug>"`.
+  `-jobs 4` holds a clean build's peak memory to about 1.9 GB, against 2.6 GB at Xcode's default of eight jobs, for 13 seconds more (69 to 82 seconds, measured October 12, 2026; compiling is about a minute of a full run, the tests about eleven).
+  The wrapper holds one of three machine-wide slots (the Mac has 8 GB of memory) under `/tmp/textmouth-build-slots` (or `BUILD_SLOT_ROOT`).
+  While iterating an agent added `-only-testing:TextMouthProductionTests/<Class>`, several classes per run; a full run compiled the app and took seven to eight minutes.
+  Hosted tests run inside the real app against a sandbox under the temporary directory and never join the system's media session.
+  Before reporting, an agent deleted its build folder after unregistering its app.
+  The build train replaced all of this on October 31, 2026, and trains moved to GitHub Actions on November 9, 2026.
+- **The commit trailer.** Each commit message ended `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`, or the attribution the session's own instructions gave.
+- **Notices before a full suite.** An agent posted a `build` notice on the board before a full suite, while agents built on their own; trains made the notice unnecessary.

@@ -36,22 +36,28 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 
 ## How a task agent works
 
-The orchestrator launches each agent in its own git worktree under `.claude/worktrees/` with a brief: the branch name, a task slug, the regions to avoid because other agents are editing them, the required behavior as numbered items with one commit each, the tests each item needs, the baseline test count on main, and the report format.
+The orchestrator launches each agent in its own git worktree under `.claude/worktrees/` with a brief.
+The brief names the branch, a task slug, the regions to avoid, the numbered items (one commit each) with their tests, the baseline test count on main, and the report format.
 The agent:
 
-1. Creates its branch from `main` (a worktree can start on an older commit; branch from `main` explicitly), reads this file, its brief, and the documents the brief names, and registers on the board as its slug: `python3 .claude/skills/agent-bbs/scripts/bbs.py register <slug> --role "<one line>" --branch <branch> --files <paths or 'quoted globs'>`, then `bbs claims` and `bbs read --last 10` for overlaps.
+1. Makes its branch from `main` (or the team branch its brief names), since a worktree can start on an older commit.
+   It reads this file and its brief, registers on the board as its slug with `python3 .claude/skills/agent-bbs/scripts/bbs.py register <slug> --role "<one line>" --branch <branch> --files <paths or 'quoted globs'>`, then runs `bbs claims` and `bbs read --last 10` for overlaps.
    `bbs protocol` prints the full rules.
-2. Reads its inbox before every build, every commit, and its report (`bbs inbox <slug> --unread`); posts a `build` notice before a full suite, a `commit` notice after each commit (`--topic "$(git log -1 --format='%h %s')"`), a `finding` with `--file <path>` for a problem in files it does not own (never fixing them), a `question` to another agent when a decision touches that agent's work, and `done: <branch>` with `bbs release <slug> --all` at the end.
-   Posts are short; the board's topic limit is 200 characters.
-3. Builds and tests only through the wrapper, one build of its own at a time, with a build folder of its own outside the repository: `BBS_AGENT=<slug> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-<slug>" > log 2>&1`.
-   `-jobs 4` holds a clean build's peak memory to about 1.9 GB, against 2.6 GB at Xcode's default of eight jobs, for 13 seconds more (69 to 82 seconds, measured October 12, 2026; compiling is about a minute of a full run, the tests about eleven).
-   The wrapper holds one of three machine-wide slots (the Mac has 8 GB of memory) under `/tmp/textmouth-build-slots` (or `BUILD_SLOT_ROOT`).
-   While iterating it adds `-only-testing:TextMouthProductionTests/<Class>`, several classes per run.
-   A full run compiles the app and takes seven to eight minutes; a new test file needs `make generate` and the committed `project.pbxproj`.
-   Hosted tests run inside the real app against a sandbox under the temporary directory and never join the system's media session.
-4. Commits one logical change at a time, each message ending `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` (or the attribution the session's own instructions give), edits no `*.md` file (the orchestrator maintains the docs from the agent's report), and leaves files outside its task alone except for a hook its brief names.
-5. Before reporting: rebases onto `main` (keeping both sides of adjacent-line conflicts, which are common in `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate.applicationShouldTerminate`, and the config test fixtures), runs the complete suite once and records the exact `Executed N tests, with S tests skipped and F failures` line, keeps `make check` in mind when the Release build or the app's size changes, deletes its build folder after unregistering its app, and releases its claims.
-6. Reports: the branch; the commits with hashes and subjects; the files changed; the suite's exact result; what it could not verify; its decisions and assumptions; findings posted on the board; and the documentation wording its changes need, naming the page under docs/ each sentence belongs on, which the orchestrator or a documentation agent applies.
+2. Reads its inbox (`bbs inbox <slug> --unread`) before every commit, train request, and report.
+   It posts a `commit` notice after each commit (`--topic "$(git log -1 --format='%h %s')"`), a `finding` with `--file <path>` for a problem in files it does not own (never fixing it), and a `question` when a decision touches another agent's work.
+   It ends with `done: <branch>` and `bbs release <slug> --all`; posts are short, and the board's topic limit is 200 characters.
+3. Tests through the build train and never builds on its own: it commits, runs `make typecheck-tests REF=<commit>`, and queues `python3 -I Scripts/agents/build-train.py request --agent <slug> --branch <branch> --classes <A,B> --areas <x,y>`, naming everything its change could break.
+   It waits with one background `python3 -I Scripts/agents/wait-for-result.py --agent <slug>`.
+   [Making each train count](docs/agents/working-with-agents.md) in `working-with-agents.md` has the rest; Tests on GitHub Actions in [Testing TextMouth](docs/developer/testing.md) says how to read a result.
+   A new test file needs `make generate` and the committed `project.pbxproj`, which the train regenerates and so never notices missing.
+4. Commits one logical change at a time, each message ending with the attribution the session's own instructions give, and leaves files outside its task alone except for a hook its brief names.
+   It edits no `*.md` file, with two exceptions: it fixes the citations of any page its change leaves stale, when the change renames or removes a path or type that page cites (`doclib stale` lists them), and it adds one line to the doc-library `SKILL.md` for a new subcommand.
+   The rest of the docs stay the documentation pass's, from the agent's report.
+5. Before reporting, rebases onto `main`, keeping both sides of adjacent-line conflicts (common in `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate.applicationShouldTerminate`, and the config test fixtures).
+   It type-checks the tests, requests one last train naming every area its change touches, records that train's exact `Executed N tests, with S tests skipped and F failures` line, and releases its claims.
+   When its change could alter the Release build or the app's size, it also runs `make check SIGN_APP=true` (The make check gate, in [Building TextMouth](docs/developer/building.md)).
+6. Reports: the branch; the commits with hashes and subjects; the files changed; the train's exact result; what it could not verify; its decisions and assumptions; and its findings posted on the board.
+   It also reports the documentation wording its changes need, naming the page under `docs/` each sentence belongs on, and the sections `doclib affected` lists for its branch.
 
 ## Lessons that cost time
 
