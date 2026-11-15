@@ -1,4 +1,5 @@
 # The audiobook manifest: manifest.json
+<!-- id: audiobook-manifest-manifest-json; keys: ; src: -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -7,17 +8,20 @@ A ZIP of audio tracks becomes one audiobook in TextMouth, with a heading for eac
 This document is the complete reference. It is written so you can also hand it to an assistant, with your list of file names, and ask it to write the manifest for you.
 
 ## What works in which version
+<!-- id: what-works-which-version; keys: ; src: -->
 
 - **In a build of main from October 14, 2026 or later:** everything this document describes, including editing an imported audiobook's manifest where it is, and importing a plain folder of tracks.
 - **In an older build:** TextMouth reads only title, author, order, and chapters. It takes a manifest's title and author, passes over tracks and the pauses, so the book imports in name order, and doesn't look inside the ZIP's one folder. Before October 13, 2026, Ogg tracks don't import at all.
 
 ## Where the manifest goes
+<!-- id: where-manifest-goes; keys: ; src: -->
 
 - At the top level of the ZIP, beside the tracks.
 - Or inside the one folder that holds everything, when the ZIP's top level holds only that folder. Finder's Compress command makes ZIPs like that: put your tracks and manifest.json in a folder, then compress the folder. Hidden files and Finder's __MACOSX folder don't count against the one folder; any other file or folder beside it does. A manifest at the top level is the one read, even when the one folder holds another.
 - File names in the manifest are written as seen from the manifest's own folder, exactly, with the letters' case and the extension: "elegy.ogg", or "Disc 2/03.mp3" for a track in a folder beneath it.
 
 ## A complete example
+<!-- id: complete-example; keys: ; src: -->
 
 ```json
 {
@@ -49,15 +53,18 @@ This book is called The Twilight Zone Radio Dramas, by Various. Its headings, in
 Any track in the ZIP that the list leaves out plays after the listed ones, in Finder's order, as a level-1 heading of its own.
 
 ## The keys
+<!-- id: keys; keys: ; src: -->
 
 Every key is optional. A manifest is one JSON object.
 
 ### title and author
+<!-- id: title-author; keys: ; src: -->
 - title: the book's title. Without it, the book takes the ZIP's name.
 - author: the book's author. Without it, Unknown.
 - A title or author that is empty or only spaces counts as none.
 
 ### tracks
+<!-- id: tracks; keys: ; src: -->
 The book's order and titles, one entry per track or group heading. An entry is one of:
 - A file name, in quotation marks: the track, titled by its file name without the extension.
 - A track object: `{ "file": "elegy.ogg", "title": "Elegy", "pauseAfterMs": 500 }`. Only file is required. title is what the heading shows and VoiceOver speaks; the file keeps its own name. pauseAfterMs sets the pause after this track alone.
@@ -65,6 +72,7 @@ The book's order and titles, one entry per track or group heading. An entry is o
 - A title that is empty or only spaces shows the file's name. A group heading takes heading alone: a title or pauseAfterMs on one, an empty heading, and an empty file name are mistakes the import reports.
 
 ### pauseBetweenTracksMs
+<!-- id: pausebetweentracksms; keys: ; src: -->
 The silence between one track's end and the next track's start, in milliseconds, while the book plays on.
 - The default is 250, a quarter of a second, for every book whose ZIP has a manifest, whether it uses tracks or the older order and chapters, and for books imported earlier with a manifest too, from this update on. A ZIP without a manifest plays straight from one track into the next, as before, since many audiobooks split a sentence across two tracks.
 - Any number from 0 (no pause) to 60000 (one minute).
@@ -74,12 +82,14 @@ The silence between one track's end and the next track's start, in milliseconds,
 - The gap you hear is the pause plus about a quarter of a second while the next track starts.
 
 ### The older keys
+<!-- id: older-keys; keys: ; src: -->
 These still work, though tracks does their work in one place and can't be used with them.
 - order: a list of file names in the order the book plays them. Tracks it leaves out play after the listed ones, in Finder's order. A file listed twice in order counts once.
 - chapters: an object giving file names their titles, as in `{ "elegy.ogg": "Elegy" }`.
 - segments: TextMouth writes this itself when it converts a DAISY audio book: each section is a stretch of the audio files. Leave it to TextMouth.
 
 ## Mistakes TextMouth reports
+<!-- id: mistakes-textmouth-reports; keys: ; src: -->
 
 When a manifest has a mistake, the import stops at the first one, and its alert says what is wrong and where, as in "Could not import “My Tracks.zip”. Reading its manifest failed: manifest.json …". Fix it and import again; a later mistake, if there is one, is named then. The import checks:
 - It isn't valid JSON, or isn't one JSON object. The alert gives the line and column, counted from 1, as an editor shows them. A common cause is curly quotation marks: JSON needs straight ones ("), and TextEdit's smart quotes turn them curly, so the alert says so when the file holds any. A file saved as rich text is named as such. In TextEdit, choose Format, Make Plain Text, so the file is saved as text rather than rich text, and turn off Smart Quotes under Edit, Substitutions.
@@ -90,18 +100,21 @@ When a manifest has a mistake, the import stops at the first one, and its alert 
 - tracks used together with order, chapters, or segments.
 
 ## Writing a manifest with an assistant
+<!-- id: writing-manifest-assistant; keys: ; src: -->
 
 1. List the ZIP's files exactly. In Terminal: `zipinfo -1 "My Tracks.zip"` prints one name per line.
 2. Give the assistant this document and that list, and say what you want, for example: "Write a TextMouth manifest.json for these files. Group them by season with a heading for each, in the order the episodes first aired, and give each track its episode's title. Keep the default pause, and a two-second pause after the last track of each season."
 3. Check that every file name in its answer matches the list exactly. The import names any that don't.
 
 ## Adding a manifest to a ZIP
+<!-- id: adding-manifest-zip; keys: ; src: -->
 
 - To a ZIP you already have: in Terminal, in the folder holding both, run `zip -j "My Tracks.zip" manifest.json`. The -j stores the manifest at the ZIP's top level. zip writes the whole archive again, which for a large ZIP takes a minute or two and needs as much free space as the ZIP.
 - Or unzip the tracks into a folder, put manifest.json in that folder, and compress the folder with Finder.
 - TextMouth takes the title, author, order, titles, and headings when it imports the ZIP, and reads the pauses again each time the book opens. To change a book you have already imported, edit its manifest with Edit Manifest in Default Editor, or edit it in Finder (both below); there is no need to import it again.
 
 ## Editing an imported book's manifest
+<!-- id: editing-imported-book-manifest; keys: ; src: -->
 
 - An audiobook imported from a ZIP, a folder of tracks, or a playlist keeps its tracks and its manifest in its package; a playlist's import writes the manifest, with the playlist's order and titles. To change its order, titles, groups, or pauses, choose Edit Manifest in Default Editor or Edit Manifest With… from its reader's Book menu, or from its row's context menu in the Library window.
 - The first time, TextMouth explains what will happen. The manifest opens in your default app for JSON, or in the app you choose.
