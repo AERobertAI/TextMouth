@@ -133,7 +133,11 @@ The diagnostic logs.
   - and TEXT_ENCODING_FALLBACK, for a file read as Windows-1252 because nothing named its encoding, on every such read.
 
   Neither quotes the file's text (Text files in other encodings, in [Imports](imports-text-encodings.md)).
-  A book read again in another encoding from Book Information (encodingchoice) writes TEXT_ENCODING_CHANGED, with the book's title, how it was read ("read again as koi8-r, chosen", "read again automatically, as windows-1251, guessed", or "read again automatically, with no encoding to record"), and the copy of its earlier text that was kept, if any.
+  A book read again in another encoding from Book Information (encodingchoice) writes TEXT_ENCODING_CHANGED, with:
+  - the book's title,
+  - how it was read ("read again as koi8-r, chosen", "read again automatically, as windows-1251, guessed", or "read again automatically, with no encoding to record"),
+  - and the copy of its earlier text that was kept, if any.
+
   The same tag names a content.md that could not be put back after a failed re-read.
   A braille book read again with other braille file characters writes BRAILLE_FILE_CODE_CHANGED and with another braille code BRAILLE_TABLE_CHANGED (the table's stored value, as "BRAILLE_TABLE_CHANGED: Ledger: read again with en-ueb-g1.ctb", and the kept copy, if any).
   The two in that order for a re-read of both.
