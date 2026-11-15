@@ -799,6 +799,47 @@ final class FeedTestWorldTeardownTests: XCTestCase {
         XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
     }
 
+    /// A refresh still waiting for its feed's answer as the test ends ends
+    /// before the teardown goes on: the teardown waits while the answer is
+    /// held, and the record the refresh merged is on disk once it returns,
+    /// so no write of it can land, and fail, once the world's folders are
+    /// gone.
+    func testTheTeardownWaitsForARefreshStillUnderWay() async throws {
+        let world = try FeedTestWorld(self, label: "FeedWorldTeardownRefresh")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A", published: world.day(-2))])))
+        let feed = try await world.subscribe("/feed.xml")
+        let gate = WorkGate()
+        gate.arm()
+        // Let go however the test ends, so the refresh never waits for good.
+        defer { gate.release() }
+        var held = StubResponse.feed(FeedXML.rss(items: [
+            FeedXML.Item(guid: "b", title: "B", published: world.day(-1)),
+            FeedXML.Item(guid: "a", title: "A", published: world.day(-2)),
+        ]))
+        held.answerGate = gate
+        world.server.serve("/feed.xml", held)
+        let refresh = Task { await world.center.refresh(feed.id) }
+        await waitFor("the refresh's answer is held") { gate.wasReached }
+
+        let finished = CallLog<Bool>()
+        let teardown = Task {
+            await world.finishFeedWork()
+            finished.record(true)
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(finished.calls, [], "the teardown went on while a refresh was under way")
+
+        gate.release()
+        await teardown.value
+        _ = await refresh.value
+
+        XCTAssertEqual(finished.calls, [true])
+        let file = FeedPaths.recordFile(of: feed.id, in: world.recordsFolder)
+        let onDisk = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: Data(contentsOf: file))
+        XCTAssertTrue(onDisk.items.contains { $0.id == "guid:b" }, "the teardown went on before the refresh's record landed")
+        XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
+    }
+
     /// Every feed engine a test makes besides its world's own comes from
     /// `FeedTestWorld.engine(_:on:)`, whose teardown lands the engine's
     /// writes before the world's folders go. An engine made by hand, whose

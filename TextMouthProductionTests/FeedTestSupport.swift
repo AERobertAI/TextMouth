@@ -41,6 +41,11 @@ struct StubResponse: Sendable {
     /// cannot overtake them, as a real connection's bytes arrive before it
     /// drops. Nil tells the failure at once.
     var failureGate: WorkGate?
+    /// The gate the whole answer waits at, on a background queue, before any
+    /// of it is told to the client: a test holds a refresh or a download
+    /// whose request has reached the server (`WorkGate.wasReached`) for as
+    /// long as it chooses, then lets it go. Nil answers at once.
+    var answerGate: WorkGate?
 
     /// A response of `status` whose body is `body`.
     init(status: Int = 200, headers: [String: String] = [:], body: Data = Data()) {
@@ -237,18 +242,20 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         }
         let answer = Self.answering(range: request.value(forHTTPHeaderField: "Range"), with: response)
         let steps = Self.steps(of: answer, for: url)
-        if answer.pause <= 0 && answer.failureGate == nil {
+        if answer.pause <= 0 && answer.failureGate == nil && answer.answerGate == nil {
             for step in steps {
                 deliver(step)
             }
             return
         }
-        // A paused response, or one whose failure waits at a gate, is
-        // delivered from a background queue, each part run on this thread's
-        // run loop in order, so a failure the gate holds back still comes
-        // after the bytes before it.
+        // A paused response, or one whose answer or failure waits at a
+        // gate, is delivered from a background queue, each part run on this
+        // thread's run loop in order, so a failure the gate holds back still
+        // comes after the bytes before it.
         let runLoop = RunLoopReference(CFRunLoopGetCurrent())
         DispatchQueue.global(qos: .userInitiated).async {
+            // The whole answer waits while the test holds it.
+            answer.answerGate?.pass()
             for step in steps {
                 if answer.pause > 0 {
                     Thread.sleep(forTimeInterval: answer.pause)
@@ -635,15 +642,19 @@ final class FeedTestWorld {
     /// failure the app's failure center announces.
     ///
     /// Its download work stops first, as quitting stops it, and its own
-    /// work, a sweep or a pass of the newest-N rule, is let end, so no write
-    /// either asks for lands once the flush is done, as a stray save once
-    /// did for a test ending with work in flight (feed review item 22). The
-    /// wait gives up after 15 seconds, so a teardown never hangs.
+    /// work, a sweep or a pass of the newest-N rule, is let end, as is any
+    /// refresh under way, whose merge writes the record, so no write any of
+    /// them asks for lands once the flush is done, as a stray save once did
+    /// for a test ending with work in flight (feed review item 22). A
+    /// refresh leaves `refreshingFeedIDs` only once its merge is in the
+    /// store, so the flush that follows lands it. The wait gives up after
+    /// 15 seconds, so a teardown never hangs.
     static func finish(_ center: FeedCenter) async {
         center.stop()
         await center.downloads.stopForQuit()
         let deadline = Date().addingTimeInterval(15)
-        while center.isSweeping || center.downloads.current != nil, Date() < deadline {
+        while center.isSweeping || center.downloads.current != nil || !center.refreshingFeedIDs.isEmpty,
+              Date() < deadline {
             try? await Task.sleep(for: .milliseconds(10))
         }
         await center.store.flush()
