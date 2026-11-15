@@ -55,4 +55,26 @@ final class BundledLicenseTests: XCTestCase {
         XCTAssertTrue(licence.contains("Jonathan Hedley"), String(licence.prefix(160)))
         XCTAssertTrue(licence.contains("Nabil Chatbi"), String(licence.prefix(160)))
     }
+
+    /// ZIPFoundation's licence is in the app: the MIT License. The iPhone app ships the same file.
+    func testZIPFoundationLicenseShipsWithTheApp() throws {
+        let licence = try licenseText("ZIPFoundation", "LICENSE")
+        XCTAssertTrue(licence.hasPrefix("MIT License"), String(licence.prefix(80)))
+        XCTAssertTrue(licence.contains("Thomas Zoechling"), String(licence.prefix(160)))
+    }
+
+    /// swift-markdown's licence (Apache 2.0) and its NOTICE are in the app. When the package goes, this test and its
+    /// project.yml entries go with it.
+    func testSwiftMarkdownLicenseAndNoticeShipWithTheApp() throws {
+        let licence = try licenseText("swift-markdown", "LICENSE")
+        XCTAssertTrue(licence.contains("Apache License"), String(licence.prefix(120)))
+        let notice = try licenseText("swift-markdown", "NOTICE")
+        XCTAssertTrue(notice.contains("The Swift Markdown Project"), String(notice.prefix(120)))
+    }
+
+    /// swift-cmark's COPYING, cmark's BSD licence, is in the app.
+    func testSwiftCmarkLicenseShipsWithTheApp() throws {
+        let licence = try licenseText("swift-cmark", "COPYING")
+        XCTAssertTrue(licence.contains("John MacFarlane"), String(licence.prefix(120)))
+    }
 }
