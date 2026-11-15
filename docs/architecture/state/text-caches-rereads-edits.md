@@ -1,6 +1,8 @@
 # Kept texts, re-reads, and edited text
 <!-- id: text-caches-rereads-edits; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## Kept reading text
 <!-- id: kept-reading-text; keys: ; src: TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/CloudStorageContract.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookContentIndex.swift -->
 
