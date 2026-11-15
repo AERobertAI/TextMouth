@@ -361,6 +361,7 @@
 		222A773B64A490DD9793F0E9 /* RTFReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EE16131B2D94BBB3552D04 /* RTFReaderTests.swift */; };
 		223F55C02BA08D52113EFFF3 /* ParseSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909C95660D97C3220E0C3A61 /* ParseSettings.swift */; };
 		2243154ED8F7FF3DFE28A266 /* LibrarySearchJumpRequests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DE9EF8E7837538FD2009A0 /* LibrarySearchJumpRequests.swift */; };
+		22453EF6FC2ED5DD497177D2 /* LibraryFileWaitWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDE9A90642A049B691058D7 /* LibraryFileWaitWording.swift */; };
 		224C5E69897A8AC4AB2D40CF /* BuildIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D2B67EAF5FDA6D30CF9C53 /* BuildIdentity.swift */; };
 		2266D2D35631E454EE4D4025 /* TextInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DE8D5C20F37D59AB734B4B /* TextInputView.swift */; };
 		22A1504647F47473CF20B8BB /* WindowAccessor+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B2F6DB67463910560824B19 /* WindowAccessor+iOS.swift */; };
@@ -760,6 +761,7 @@
 		49F8F3EA4FDAD0A373C3D27B /* PlaceRelocatorTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4EB53D35C473F48CEB323C /* PlaceRelocatorTestSupport.swift */; };
 		49FC5F66E3B1F79F838C7A39 /* RTFSizeHeadings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C4A1F794D53856D0190987B /* RTFSizeHeadings.swift */; };
 		4A0F60B70C2B928E225E145C /* RecordingWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFE62580DDAB7656C5EDE7C /* RecordingWindowView.swift */; };
+		4A28B26DE239A779C3C27AC6 /* LibraryFileWaitWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDE9A90642A049B691058D7 /* LibraryFileWaitWording.swift */; };
 		4A319F6C55CE202551610D71 /* LibraryBookUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1172AED5226D2AD3F61771 /* LibraryBookUpdates.swift */; };
 		4A32359A51BACAA64B4E47AF /* LibraryIndexPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0FBD655842F63B0DD95540 /* LibraryIndexPersistenceTests.swift */; };
 		4AADAF8070F169D3FFEF386F /* TranscriptionLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C40E1A301C82B4C699F1B9 /* TranscriptionLanguageTests.swift */; };
@@ -3750,6 +3752,7 @@
 		8FB27AEE05C1C2F1AD4C7901 /* BrailleFileCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileCode.swift; sourceTree = "<group>"; };
 		8FB4EA2B01A1C83BA33DD197 /* BookRereadChoosing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookRereadChoosing.swift; sourceTree = "<group>"; };
 		8FB5FACD72EB69C2B4F205F7 /* ReadingListOpenRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingListOpenRequests.swift; sourceTree = "<group>"; };
+		8FDE9A90642A049B691058D7 /* LibraryFileWaitWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFileWaitWording.swift; sourceTree = "<group>"; };
 		900A5AD2B60753FBEC15C791 /* BrailleFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileReader.swift; sourceTree = "<group>"; };
 		909C95660D97C3220E0C3A61 /* ParseSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParseSettings.swift; sourceTree = "<group>"; };
 		90CC6CBA49002A776C2559F9 /* SummaryPress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryPress.swift; sourceTree = "<group>"; };
@@ -5308,6 +5311,7 @@
 				27B0A6A99A05BE2B716407A0 /* LibraryBookSorter.swift */,
 				11F9B2A43F95B816A78E32FE /* LibraryCloudWording.swift */,
 				BAF62E36C0DB0BF242146E08 /* LibraryFeedShelf.swift */,
+				8FDE9A90642A049B691058D7 /* LibraryFileWaitWording.swift */,
 				BE6809E5CA41DDFC40A2947C /* LibraryInfoWording.swift */,
 				05AD567695F2F1ADEBE12127 /* LibrarySearchWording.swift */,
 				0A0265F3A3B8B7ACEACA31A0 /* LibrarySortState.swift */,
@@ -8564,6 +8568,7 @@
 				5F87B34229E74BBC1385722F /* LibraryFeedShelf.swift in Sources */,
 				F238296DDA83F9DC77EE2243 /* LibraryFeedsWindowSupport.swift in Sources */,
 				A1E8D55A4017F2070D154B90 /* LibraryFileFetch.swift in Sources */,
+				22453EF6FC2ED5DD497177D2 /* LibraryFileWaitWording.swift in Sources */,
 				E08490D6D6148F4835ACEBFB /* LibraryFolderSettingsTarget.swift in Sources */,
 				FE7A26BA39767E50DE90163C /* LibraryIdentity.swift in Sources */,
 				5F9E2B1B996134DAFF1441C7 /* LibraryIndexQuarantine.swift in Sources */,
@@ -9457,6 +9462,7 @@
 				97E7BC6F4751E4B94DBAA2BA /* LibraryFeedShelf.swift in Sources */,
 				9FF22023062B3FFA8CDCC7E7 /* LibraryFeedsWindowSupport.swift in Sources */,
 				A1D66CC083756068259D7938 /* LibraryFileFetch.swift in Sources */,
+				4A28B26DE239A779C3C27AC6 /* LibraryFileWaitWording.swift in Sources */,
 				66CCA0DB88031A805FC182F0 /* LibraryFolderSettingsTarget.swift in Sources */,
 				94FD5AE6C71FF8F489D5DFF4 /* LibraryIdentity.swift in Sources */,
 				C26216187E3E0E2C19CEA8C9 /* LibraryIndexQuarantine.swift in Sources */,

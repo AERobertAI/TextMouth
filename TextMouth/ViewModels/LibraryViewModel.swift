@@ -338,6 +338,12 @@ final class LibraryViewModel: ObservableObject {
     /// The files the last check named as only in the cloud, which the fetch
     /// reads next (`LibraryFileFetch`); empty when the check named none.
     var pendingLibraryFiles: [URL] = []
+    /// The data directory, by its standardized path, that the listener chose
+    /// to open without its index, which did not arrive beside its identity
+    /// file in a cloud location (risk 5,
+    /// `openLibraryWithoutTheAwaitedFile()`), for the rest of this session;
+    /// nil until then. The check of any other folder still waits.
+    var libraryIndexWaitWaivedFor: String?
     /// The fetch of those files while one runs (LibraryViewModel+LibraryFetch);
     /// nil otherwise, so a second never starts beside it.
     var libraryFetchTask: Task<Void, Never>?
@@ -619,8 +625,10 @@ extension LibraryViewModel {
         let itemStatus: any CloudItemStatusProviding = libraryFetchTask == nil
             ? CloudServices.itemStatus
             : WithoutDownloadRequests(base: CloudServices.itemStatus)
-        let (outcome, pending) = DataDirectoryCheck.of(root: root, preferences: preferences)
-            .runNamingPending(itemStatus: itemStatus)
+        var check = DataDirectoryCheck.of(root: root, preferences: preferences)
+        // The listener's choice to open this folder without its index (risk 5).
+        check.opensWithoutItsIndex = libraryIndexWaitWaivedFor == root.standardizedFileURL.path
+        let (outcome, pending) = check.runNamingPending(itemStatus: itemStatus)
         pendingLibraryFiles = pending
         switch outcome {
         case .available(_, let relocated):

@@ -758,6 +758,76 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(model.library.books, [here, notHere])
     }
 
+    // MARK: - Small Files That Arrive Apart (Risk 5)
+
+    // A sync service can bring a library's small files down one at a time
+    // (risk 5 of LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md). In a cloud
+    // location a file not here beside the others is waited for, or stood in
+    // for, and never made afresh in its place; in a folder elsewhere it is
+    // what it always was.
+
+    /// The identity marker without library.json beside it, in a cloud
+    /// location, is waited for as a file only in the cloud is, not opened
+    /// as a library with no index; nothing is made. Elsewhere, or once the
+    /// listener has chosen to open without the index, it opens as before.
+    func testAnIdentityWithoutItsIndexInTheCloudIsWaitedFor() throws {
+        let root = try makeSandboxDirectory("IdentityWithoutIndex")
+        let identity = try LibraryIdentity.adopt(in: root).identity
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: root)
+        let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: identity.id, bookmark: nil)
+
+        let (outcome, pending) = check.runNamingPending(itemStatus: provider)
+
+        XCTAssertEqual(outcome, .unavailable(.notDownloaded(.googleDrive, folder: root.path)))
+        XCTAssertEqual(pending.map(\.lastPathComponent), ["library.json"])
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root), .index)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("library.json").path))
+        XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(identity, relocatedTo: nil),
+                       "a folder elsewhere opens without its index, as before")
+        var chosen = check
+        chosen.opensWithoutItsIndex = true
+        XCTAssertEqual(chosen.run(itemStatus: provider), .available(identity, relocatedTo: nil))
+    }
+
+    /// library.json without the identity marker this Mac expects, in a cloud
+    /// location, is waited for and never given a new identity. A Mac that
+    /// expects none, as for a library from before identities, and a folder
+    /// elsewhere open it as before.
+    func testAnIndexWithoutItsExpectedIdentityInTheCloudIsWaitedFor() throws {
+        let root = try makeSandboxDirectory("IndexWithoutIdentity")
+        try Data("{\"books\":[]}".utf8).write(to: root.appendingPathComponent("library.json"))
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.iCloudDrive), of: root)
+        let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: UUID(), bookmark: nil)
+
+        let (outcome, pending) = check.runNamingPending(itemStatus: provider)
+
+        XCTAssertEqual(outcome, .unavailable(.notDownloaded(.iCloudDrive, folder: root.path)))
+        XCTAssertEqual(pending.map(\.lastPathComponent), ["library-identity.json"])
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root), .identity)
+        XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity")
+        let expectingNone = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: nil, bookmark: nil)
+        XCTAssertEqual(expectingNone.run(itemStatus: provider), .available(nil, relocatedTo: nil))
+        XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(nil, relocatedTo: nil))
+    }
+
+    /// Only a file missing beside the other is the one awaited: not an index
+    /// only in the cloud, nor a file missing with the other missing too, nor
+    /// more files than one.
+    func testOnlyAFileMissingBesideTheOtherIsAwaited() throws {
+        let root = try makeSandboxDirectory("AwaitedFile")
+        let index = root.appendingPathComponent("library.json")
+        let marker = LibraryIdentity.markerURL(in: root)
+
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index], in: root), "neither file is here")
+        _ = try LibraryIdentity.adopt(in: root)
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: [index], in: root), .index)
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index, marker], in: root), "two files pending")
+        try Data("{}".utf8).write(to: index)
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index], in: root), "the index is here, only in the cloud")
+    }
+
     // MARK: - Fixtures
 
     /// A file's state as a sync service reports a file only in the cloud.
