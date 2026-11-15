@@ -13,6 +13,8 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, and Edit Manifest.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder…, New from Text.
 - [The Library window](docs/user/library-window.md): views, folders, sorting, searching, and commands on books.
+  - [Book Information](docs/user/book-information.md): edited details, Text Encoding, and braille pop-ups.
+  - [Letter keys and Speak Info](docs/user/library-typing-and-speak-info.md): typing a title, leading articles, summaries.
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
