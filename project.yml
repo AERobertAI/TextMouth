@@ -184,22 +184,12 @@ targets:
             destination: resources
             subpath: Licenses/SwiftSoup
       # The Swift packages' licences, from the one copy in Vendor/package-licenses that the iPhone app copies too. Each
-      # package has its own entries (two for swift-markdown's licence and notice), so a dropped package takes them with it.
+      # package has its own entries, so a dropped package takes them with it.
       - path: Vendor/package-licenses/ZIPFoundation/LICENSE
         buildPhase:
           copyFiles:
             destination: resources
             subpath: Licenses/ZIPFoundation
-      - path: Vendor/package-licenses/swift-markdown/LICENSE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
-      - path: Vendor/package-licenses/swift-markdown/NOTICE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
       - path: Vendor/package-licenses/swift-cmark/COPYING
         buildPhase:
           copyFiles:
@@ -398,16 +388,6 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/ZIPFoundation
-      - path: Vendor/package-licenses/swift-markdown/LICENSE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
-      - path: Vendor/package-licenses/swift-markdown/NOTICE
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: Licenses/swift-markdown
       - path: Vendor/package-licenses/swift-cmark/COPYING
         buildPhase:
           copyFiles:

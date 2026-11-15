@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The licences of the libraries the iPhone app links ship inside the app, as the Mac app's do (BundledLicenseTests):
-/// LAME's, SwiftSoup's, ZIPFoundation's, swift-markdown's with its NOTICE, swift-cmark's, and foliate-js's (the MOBI
+/// LAME's, SwiftSoup's, ZIPFoundation's, swift-cmark's, and foliate-js's (the MOBI
 /// reader follows its mobi.js). project.yml's TextMouthiOS target copies each from where the repository keeps it into
 /// `Licenses/<library>` of the app; the app is this bundle's host, so `Bundle.main` is the built iPhone app and the
 /// files are read where a person who unpacked the app would find them. Scripts/ios/check-licenses.py checks the same
@@ -40,13 +40,12 @@ final class BundledLicenseIOSTests: XCTestCase {
         XCTAssertTrue(licence.contains("Thomas Zoechling"), String(licence.prefix(160)))
     }
 
-    /// swift-markdown's licence is the Apache License 2.0, and its NOTICE names the project.
-    func testSwiftMarkdownLicenseAndNoticeShipWithTheApp() throws {
-        let licence = try licenseText("swift-markdown", "LICENSE")
-        XCTAssertTrue(licence.contains("Apache License"), String(licence.prefix(120)))
-        XCTAssertTrue(licence.contains("Version 2.0"), String(licence.prefix(120)))
-        let notice = try licenseText("swift-markdown", "NOTICE")
-        XCTAssertTrue(notice.contains("The Swift Markdown Project"), String(notice.prefix(120)))
+    /// swift-markdown left the iPhone app on November 15, 2026 (Markdown is read from cmark's own tree), so its licence and
+    /// its NOTICE are no longer in the app: a notice for code the app does not hold would mislead.
+    func testSwiftMarkdownNoticeIsGoneWithThePackage() throws {
+        let resources = try XCTUnwrap(Bundle.main.resourceURL, "the app has no Resources folder")
+        let folder = resources.appendingPathComponent("Licenses/swift-markdown")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "Licenses/swift-markdown is still in the app")
     }
 
     /// swift-cmark's COPYING is cmark's BSD licence, naming its author.
