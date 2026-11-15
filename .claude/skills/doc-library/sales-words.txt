@@ -1,0 +1,19 @@
+# Words and phrases that sell instead of say (docs/agents/writing-docs.md, "Every page" 4): one for each line, matched ignoring case.
+seamless
+seamlessly
+powerful
+robust
+comprehensive
+effortless
+effortlessly
+cutting-edge
+state-of-the-art
+world-class
+best-in-class
+blazing
+blazingly
+game-changing
+revolutionary
+next-generation
+stunning
+delightful
