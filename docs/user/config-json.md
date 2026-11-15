@@ -56,7 +56,8 @@ Playback: skipForwardUnit, skipBackwardUnit, shiftSkipForwardUnit, shiftSkipBack
 <!-- id: shortcuts-settings; keys: keyboardShortcuts, worksIn, shortcutDoublePressSeconds, hotkeys, key names, twice; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift -->
 
 Shortcuts: keyboardShortcuts, an object naming every action as Settings shows it, the audio editor's and the New Recording window's with their group's name first, as in "Audio Editor: Play / Pause" and "New Recording: Stop".
-TextMouth reads a name in any letter case, and one ending in "…" with three periods or none, and still reads the names earlier versions wrote, as in "Recording Window: Stop" for the New Recording window's buttons and "Add Bookmark" for the bookmark command, now Toggle Bookmark in the menu, the Shortcuts tab, and config.json, writing only the new names.
+TextMouth reads a name in any letter case, and one ending in "…" with three periods or none.
+It still reads the names earlier versions wrote, as in "Recording Window: Stop" for the New Recording window's buttons and "Add Bookmark" for the bookmark command, now Toggle Bookmark in the menu, the Shortcuts tab, and config.json, writing only the new names.
 An action whose shortcuts you changed (see the Shortcuts tab, under [Finding your way around](../../README.md)) is a list of its shortcuts, written like `option+shift+command+b`, as in "Release Media Controls": ["shift+r"], and an empty list leaves it without a shortcut.
 An action you changed whose Works in differs from its default is an object, as in "New from Text…": {"keys": ["shift+command+t"], "worksIn": "Every window"}.
 TextMouth writes the Works in pop-up's words, and reads them, or "every", "app", "library", or "reader", in any letter case, as it reads "keys" and "worksIn"; "keys" may be one shortcut written as text, an object without "worksIn" counts as a list, and a list works where its action does by default.
@@ -170,7 +171,22 @@ The tests are
 A view holds at most 20 conditions, a name is at most 60 characters, and the list holds at most 200 views in all, the built-in views among them.
 For example:
 
-- `{ "id" : "6F9619FF-8B86-D011-B42D-00C04FC964FF", "name" : "Unread EPUBs", "visibility" : "always", "filter" : { "lists" : [ "books" ], "match" : "all", "conditions" : [ { "test" : "format", "value" : "epub" }, { "test" : "readingState", "value" : "unopened" } ], "limit" : { "count" : 20, "chosenBy" : "dateAdded" } } }`
+```json
+{
+  "id" : "6F9619FF-8B86-D011-B42D-00C04FC964FF",
+  "name" : "Unread EPUBs",
+  "visibility" : "always",
+  "filter" : {
+    "lists" : [ "books" ],
+    "match" : "all",
+    "conditions" : [
+      { "test" : "format", "value" : "epub" },
+      { "test" : "readingState", "value" : "unopened" }
+    ],
+    "limit" : { "count" : 20, "chosenBy" : "dateAdded" }
+  }
+}
+```
 
 ### How libraryViews is read
 <!-- id: how-libraryviews-read; keys: libraryViews repair, unreadable view, unknown test, 206 entries, built-in view restored; src: TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Services/ConfigService.swift -->
@@ -211,7 +227,7 @@ Feeds: feedRefreshAtLaunch (true by default);
 - feedDeleteDownloadsDaysAfterPlayed (0, at once, to 365, the default 1, or -1 never; any negative number reads as -1);
 - and feedRefreshAlert and feedNotifications (false by default), whether a refresh TextMouth makes by itself that brings new items shows an alert, and posts a notification for each feed.
 
-feedKeepEntries and feedAutoDownload, which feedItems and feedNewestCount replaced on October 10, 2026, are no longer read from config.json or written to it: the first launch of that version moved them to the choice, once, and left them in the preferences as they were.
+feedKeepEntries and feedAutoDownload, which feedItems and feedNewestCount replaced, are no longer read from config.json or written to it: the first launch of the version that replaced them moved them to the choice, once, and left them in the preferences as they were.
 
 ### Transcription settings
 <!-- id: transcription-settings; keys: transcriptionLocale, offerTranscriptionAfterImport, transcription language, en-US; src: TextMouth/Services/ConfigService.swift -->
@@ -227,7 +243,8 @@ Two fields describe this Mac rather than your preferences:
 
 - dataDirectoryPath: where the data directory is, empty for the default location.
   TextMouth always writes the folder in use.
-  Changing it asks TextMouth to move the library there, exactly as Storage settings do, and emptying or deleting it names the default location. config.json can come from another Mac with a library in the cloud, so a request is ignored, with one CONFIG_FILE line in the debug log, when the folder it names doesn't exist on this Mac or already holds a TextMouth library.
+  Changing it asks TextMouth to move the library there, exactly as Storage settings do, and emptying or deleting it names the default location.
+  The file config.json can come from another Mac with a library in the cloud, so a request is ignored, with one CONFIG_FILE line in the debug log, when the folder it names doesn't exist on this Mac or already holds a TextMouth library.
   Emptying the field moves the library back only when ~/.TextMouth exists and holds no library.
   A move needs an empty destination; a value TextMouth cannot read keeps the folder in use.
 - lastOpenedBookID: the book opened most recently, which TextMouth records itself.
