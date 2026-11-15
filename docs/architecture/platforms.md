@@ -38,6 +38,10 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
 - `TextMouth/Platform/iOS/` holds what only the iOS app compiles: the iPhone app's own code (its app and scene delegates, views, and services), IOSUnavailable, and a stand-in for each Mac-only type that shared code still names, in folders that mirror the Mac's.
   The iPhone's plain types, the ones that import no UIKit, are in the shared folder `TextMouth/Phone/` instead, so the Mac's tests reach them.
   A stand-in's file name ends `+iOS` and starts with the comment `// Phase 0 stand-in:`, which says what the Mac version does and what iOS does instead.
+
+### The iOS Info.plist
+<!-- id: ios-info-plist; keys: Info.plist, UIBackgroundModes, scene manifest, LSItemContentTypes, check-ios-plist, sync-info-plist; src: project.yml, Makefile, Scripts/ios/sync-info-plist.py, TextMouth/Platform/iOS/Info.plist, TextMouth/Resources/Info.plist, TextMouthProductionTests/IOSInfoPlistTests.swift -->
+
 - The iOS app has one Info.plist, an Info.plist of its own, `TextMouth/Platform/iOS/Info.plist`, which project.yml names in `INFOPLIST_FILE` and Xcode merges into the plist it generates (`GENERATE_INFOPLIST_FILE`).
   Until 0.4.1 the iOS configurations used the Mac's plist, by accident: XcodeGen sets `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes.
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
@@ -60,7 +64,8 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
   - iOS goes by the types a document type names (`LSItemContentTypes`) and the extensions their declarations tag, not by `CFBundleTypeExtensions`, which is why a type is left out by name.
     Everything else is the Mac's, including the Kindle MOBI and KFX types and the App Transport Security setting feeds need.
   - `IOSInfoPlistTests` reads both plists and the project's per-configuration setting.
-    It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list, that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
+    It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list.
+    It also checks that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
   - Nothing has run on a device: whether `Info.plist` is the place iOS reads `.azw3` from is unchecked.
     The simulator build merges the file into Xcode's generated plist and installs, and `make check-ios-plist` passes at 1fefa2cf.
 
