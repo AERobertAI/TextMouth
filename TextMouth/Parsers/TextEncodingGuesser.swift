@@ -152,7 +152,7 @@ enum TextEncodingGuesser {
     /// through, so it is not trusted to decide that.
     /// - Returns: nil for any other file.
     static func guessSevenBit(_ data: Data) -> Guess? {
-        guard data.contains(0x1B),
+        guard data.containsByte(0x1B),
               let entry = TextEncodingCatalog.entry(forIdentifier: "iso-2022-jp"),
               TextEncodingByteGrammar.isWellFormedISO2022JP(data, requiringAShift: true),
               let text = TextFileDecoder.decodedText(data, in: entry.encoding),
