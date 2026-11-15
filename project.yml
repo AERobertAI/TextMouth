@@ -638,6 +638,8 @@ targets:
       - TextMouthProductionTests/PhoneSettingsDefaultsTests.swift
       - TextMouthProductionTests/PhoneSettingsVocabularyTests.swift
       - TextMouthProductionTests/PlaceRelocatorBookTests.swift
+      - TextMouthProductionTests/PlaceRelocatorHeadingTests.swift
+      - TextMouthProductionTests/PlaceRelocatorSharedRuleTests.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
       - TextMouthProductionTests/PlaceRelocatorTests.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
