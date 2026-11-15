@@ -24,7 +24,8 @@ LibraryBookUpdates (ViewModels/LibraryBookUpdates.swift): how open readers learn
 ## ReaderRequestStore
 <!-- id: readerrequeststore; keys: pending request, claim once, expiry, search jump; src: TextMouth/Services/ReaderRequestStore.swift, TextMouth/Services/ReaderAutoplayRequests.swift, TextMouth/Services/ReadingListOpenRequests.swift -->
 
-ReaderRequestStore (Services/ReaderRequestStore.swift): the one store of requests that wait for a book's reader, Continue to Next Book's (ReaderAutoplayRequests) and the reading list's (ReadingListOpenRequests): one a book, claimed once, thrown away after 30 seconds unless the book's reader holds them while the book downloads, and dropped when the open they wait for is refused (ReaderOpenRefusal).
+ReaderRequestStore (Services/ReaderRequestStore.swift): the one store of requests that wait for a book's reader: Continue to Next Book's (ReaderAutoplayRequests) and the reading list's (ReadingListOpenRequests).
+Each is one a book, claimed once, thrown away after 30 seconds unless the book's reader holds it while the book downloads, and dropped when the open it waits for is refused (ReaderOpenRefusal).
 
 ## LiveReadingPositions
 <!-- id: livereadingpositions; keys: playback position, save position, cursor, library write; src: TextMouth/ViewModels/LiveReadingPositions.swift -->
@@ -51,7 +52,11 @@ MarkdownCacheService.chapterMarker(title:) (Services/MarkdownCacheService.swift)
 ## MarkdownLiteral
 <!-- id: markdownliteral; keys: escaping, literal text, Markdown injection; src: TextMouth/Parsers/MarkdownLiteral.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Parsers/PlainTextParser.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Services/Export/MarkdownExportWriter.swift, TextMouth/Services/TranscriptTextBuilder.swift -->
 
-MarkdownLiteral (Parsers/MarkdownLiteral.swift): the one place text is written as literal Markdown. escaped(_:) puts a backslash before every ASCII punctuation character, the form every content.md writer uses so that TextMouth's reader reads exactly a book's characters (PlainTextParser, HTMLToMarkdownConverter, the DOCX and DAISY converters, and the braille reader through MarkdownEmphasis). minimallyEscaped(_:smartPunctuation:) puts one only where a Markdown reader needs it, and guardingLineStart(_:) adds the one a line's start needs; with smartPunctuation, which TextMouth's own reader needs, quotes and doubled hyphens or periods are escaped too.
+MarkdownLiteral (Parsers/MarkdownLiteral.swift): the one place text is written as literal Markdown.
+MarkdownLiteral.escaped(_:) puts a backslash before every ASCII punctuation character, the form every content.md writer uses so that TextMouth's reader reads exactly a book's characters.
+The writers that use it are PlainTextParser, HTMLToMarkdownConverter, the DOCX and DAISY converters, and the braille reader through MarkdownEmphasis.
+MarkdownLiteral.minimallyEscaped(_:smartPunctuation:) puts one only where a Markdown reader needs it, and guardingLineStart(_:) adds the one a line's start needs.
+With smartPunctuation, which TextMouth's own reader needs, quotes and doubled hyphens or periods are escaped too.
 The export's Markdown (MarkdownExportWriter) writes without it, and a transcript's content.md (TranscriptTextBuilder.markdown) with it.
 MarkdownEmphasis.markdown(_:styles:literal:) takes the writer for each stretch between delimiters, MarkdownLiteral.escaped unless the caller gives its own.
 
@@ -120,8 +125,12 @@ ImportStaging (Services/ImportStaging.swift): builds a package out of sight and 
 ## Managed package names in a row
 <!-- id: managed-package-names-row; keys: package name, package directory, symbolic link, book folder; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryListCache.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift -->
 
-FileImportService.namesManagedPackage(_:) (Services/FileImportService.swift): whether a row names a package the library manages, by the package's name and folder, the one check that the deletion guard, the first launch's move of feed downloads, Move to Library…, and the return of a gone feed's downloads share; and Book.FileLocation.packageDirectory(inDataDirectory:) (Models/Book.swift): where a row's package is, the one package rule, which Book.packageDirectory(inDataDirectory:) and the audio editor's AudioBookPlace follow.
-FileImportService.isManagedPackageName(_:) and isSymbolicLink(_:) are the check's parts, which a feed item's own check shares (FeedItemPackage.isPackageName(_:) and packageForRemoval(of:in:)); TextMouthPaths.bookInfoFileName and contentMarkdownFileName name a package's record and text; and LibraryListCache.index(of:) gives each book's place in a list by ID, the first of an ID winning, for the list cache and the feed rows' lookup (FeedItemRowLookup) alike.
+FileImportService.namesManagedPackage(_:) (Services/FileImportService.swift): whether a row names a package the library manages, by the package's name and folder.
+It is the one check that the deletion guard, the first launch's move of feed downloads, Move to Library…, and the return of a gone feed's downloads share.
+Book.FileLocation.packageDirectory(inDataDirectory:) (Models/Book.swift): where a row's package is, the one package rule, which Book.packageDirectory(inDataDirectory:) and the audio editor's AudioBookPlace follow.
+FileImportService.isManagedPackageName(_:) and isSymbolicLink(_:) are the check's parts, which a feed item's own check shares (FeedItemPackage.isPackageName(_:) and packageForRemoval(of:in:)).
+TextMouthPaths.bookInfoFileName and contentMarkdownFileName name a package's record and text.
+LibraryListCache.index(of:) gives each book's place in a list by ID, the first of an ID winning, for the list cache and the feed rows' lookup (FeedItemRowLookup) alike.
 
 ## Audio edit history store and package
 <!-- id: audio-edit-history-store-package; keys: audio editor, undo history, revision log, mutex; src: TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
@@ -178,13 +187,17 @@ StoredPreference and PreferenceObserver (Models/StoredPreference.swift): one def
 ## Key names and accessible key display
 <!-- id: key-names-accessible-key-display; keys: keyboard shortcut, key name, spoken shortcut; src: TextMouth/Models/KeyboardShortcut.swift -->
 
-KeyBinding.keyNames and KeyBinding.accessibleDisplayString (Models/KeyboardShortcut.swift): the one table of named keys, with each key's words, what the screen shows, and config.json's name, and a shortcut in words, single or double, which the Shortcuts tab, its announcements, the audio editor's hints, and config.json all read.
+KeyBinding.keyNames and KeyBinding.accessibleDisplayString (Models/KeyboardShortcut.swift): the one table of named keys, with each key's words, what the screen shows, and config.json's name, and a shortcut in words, single or double.
+The Shortcuts tab, its announcements, the audio editor's hints, and config.json all read them.
 Say or write a key through them rather than naming it again.
 
 ## VoiceOverAnnouncer
 <!-- id: voiceoverannouncer; keys: accessibility post, speech after sheet closes, VoiceOver speech; src: TextMouth/Services/VoiceOverAnnouncer.swift -->
 
-VoiceOverAnnouncer (Services/VoiceOverAnnouncer.swift): every VoiceOver announcement, recorded instead under tests. announceAfterSheetCloses(_:from:), and AnnouncementAfterSheet for a sheet's owner, say what a sheet's work did VoiceOverAnnouncer.afterSheetDelay, 0.6 seconds, after the sheet closes, so the closing never cuts it off (REV11 F6): a subscription, the Move sheet's note of the items it left, Move to Library…, and the Remove question's Delete Download use them, and the feed's own confirmations, Unsubscribe's, Delete Episode's, and Delete Feed's, wait the same way through afterSheetCloses(_:), as does the feed downloads section's Cancel, which moves VoiceOver's focus to the list first and speaks after it (REV13 items 1 and 3).
+VoiceOverAnnouncer (Services/VoiceOverAnnouncer.swift): every VoiceOver announcement, recorded instead under tests.
+VoiceOverAnnouncer.announceAfterSheetCloses(_:from:), and AnnouncementAfterSheet for a sheet's owner, say what a sheet's work did VoiceOverAnnouncer.afterSheetDelay, 0.6 seconds, after the sheet closes, so the closing never cuts it off (REV11 F6).
+A subscription, the Move sheet's note of the items it left, Move to Library…, and the Remove question's Delete Download use them.
+The feed's own confirmations, Unsubscribe's, Delete Episode's, and Delete Feed's, wait the same way through afterSheetCloses(_:), as does the feed downloads section's Cancel, which moves VoiceOver's focus to the list first and speaks after it (REV13 items 1 and 3).
 
 ## Sheet focus marker
 <!-- id: sheet-focus-marker; keys: focus state, accessibility focus, FocusState, defaultFocus; src: TextMouth/Views/Transcription/TranscriptionSheet.swift -->
@@ -202,7 +215,8 @@ Offer its list rather than asking the system for the voices.
 <!-- id: speechmarkupguard; keys: SSML, angle brackets, UTF-16 offset; src: TextMouth/Services/SpeechMarkupGuard.swift -->
 
 SpeechMarkupGuard (Services/SpeechMarkupGuard.swift): makes tag-shaped text, and the NUL character, harmless to the speech engine at the same UTF-16 length, so an offset into the guarded text is an offset into the original.
-Every utterance made from a book's text, or quoting a book, as Where Am I? and Speak Info do, goes through it. neutralizedStrictly(_:) silences every bracket, tag-shaped or not, and neutralized(_:strictlyWithin:) does so within a range of a text, for the rest of a chunk the engine refused; neither touches the ampersand.
+Every utterance made from a book's text, or quoting a book, as Where Am I? and Speak Info do, goes through it.
+SpeechMarkupGuard.neutralizedStrictly(_:) silences every bracket, tag-shaped or not, and neutralized(_:strictlyWithin:) does so within a range of a text, for the rest of a chunk the engine refused; neither touches the ampersand.
 
 ## TextMouthRuntime
 <!-- id: textmouthruntime; keys: test isolation, data directory, XCTest, user data; src: TextMouth/App/TextMouthRuntime.swift -->
@@ -222,15 +236,22 @@ DatalessFiles (Models/CloudStorageContract.swift): whether a file's content is o
 ## LibraryIndexQuarantine
 <!-- id: libraryindexquarantine; keys: corrupt file, copy aside, backup, library.json, recovery, undecodable; src: TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/Services/SavedFile.swift -->
 
-LibraryIndexQuarantine (Services/LibraryIndexQuarantine.swift): keeps a file beside itself, never changing the original, under a name marker of the caller's own, .unreadable- for the stores and transcript.json and .edited- for Edit Text's copies of content.md, using an earlier copy of the same bytes again; SavedFile.preserveUnusable reaches it with dataless files left in the cloud.
+LibraryIndexQuarantine (Services/LibraryIndexQuarantine.swift): keeps a file beside itself, never changing the original, under a name marker of the caller's own: .unreadable- for the stores and transcript.json and .edited- for Edit Text's copies of content.md.
+It uses an earlier copy of the same bytes again.
+SavedFile.preserveUnusable reaches it with dataless files left in the cloud.
 
 ## SavedFile
 <!-- id: savedfile; keys: atomic write, unchanged bytes, skip write, cloud sync; src: TextMouth/Services/SavedFile.swift -->
 
-SavedFile (Services/SavedFile.swift): reads a small file that TextMouth reads whole and replaces whole, one another Mac writes too or one of this Mac's own, with dataless files left in the cloud, telling a missing file, one only in the cloud, and one that can't be read apart, and preserves one that can't be used before anything replaces it.
+SavedFile (Services/SavedFile.swift): reads a small file that TextMouth reads whole and replaces whole, one another Mac writes too or one of this Mac's own, with dataless files left in the cloud.
+It tells a missing file, one only in the cloud, and one that can't be read apart, and preserves one that can't be used before anything replaces it.
 SavedFile.renameReplacing(_:_:) is the one rename(2) helper, which puts a file in place of another in one step: the log writer's rotation, the reading-text cache, and a filtered audio render's result use it.
-SavedFile.OnDiskMemory is the one memory of what this process last read or wrote of some files in one data directory (holds(_:for:at:), remember(_:for:), write(_:for:using:), forget(_:), startOver(unlessIn:)), so a save writes a file only when its freshly encoded bytes differ: library.json and each feed's index use it (see [the library index](state/library-index.md)).
-A write goes through write(_:for:using:), which runs it and remembers the bytes only when it succeeds; when it throws, it forgets what was remembered of the file, since a rename on a network volume can land and still report failure, so the file's state is unknown, and a later save, an undo to the older bytes included, writes instead of being skipped as unchanged. remember(_:for:) is for bytes just read, or known to be what the file holds.
+SavedFile.OnDiskMemory is the one memory of what this process last read or wrote of some files in one data directory (holds(_:for:at:), remember(_:for:), write(_:for:using:), forget(_:), startOver(unlessIn:)), so a save writes a file only when its freshly encoded bytes differ.
+The file library.json and each feed's index use it (see [The library index](state/library-index.md)).
+A write goes through write(_:for:using:), which runs it and remembers the bytes only when it succeeds.
+When it throws, it forgets what was remembered of the file, since a rename on a network volume can land and still report failure, so the file's state is unknown.
+A later save, an undo to the older bytes included, then writes instead of being skipped as unchanged.
+OnDiskMemory.remember(_:for:) is for bytes just read, or known to be what the file holds.
 The caller must encode the same content to the same bytes, with sorted keys and a fixed row order, and confine the value to the queue it reads and writes on, since it does no locking of its own.
 
 ## MachineLocalPaths
@@ -272,14 +293,18 @@ LogWriter and TextMouthPaths.logDestination (Services/LogWriter.swift, Services/
 ## BookTextSearch
 <!-- id: booktextsearch; keys: regular expression, canonical equivalence, find; src: TextMouth/Services/TextSearch/BookTextSearch.swift, TextMouth/App/BuildIdentity.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/TextSearch/LibrarySearchText.swift -->
 
-BookTextSearch (Services/TextSearch/BookTextSearch.swift): the one matcher of Search in Book and Search Library (BookTextSearch.Matcher: NSString's range(of:options:range:) with .caseInsensitive, or none for Match Case, never .literal, so canonically equivalent spellings match; or an NSRegularExpression, case-insensitive unless case must match), the one context function (contextSnippet, 30 characters each side), and TextSearchOptions (matchCase, isRegularExpression).
+BookTextSearch (Services/TextSearch/BookTextSearch.swift): the one matcher of Search in Book and Search Library (BookTextSearch.Matcher), the one context function (contextSnippet, 30 characters each side), and TextSearchOptions (matchCase, isRegularExpression).
+The matcher is NSString's range(of:options:range:) with .caseInsensitive, or none for Match Case, never .literal, so canonically equivalent spellings match; or an NSRegularExpression, case-insensitive unless case must match.
 Matcher.regexMatch(at:in:) is one attempt anchored at a place ([.anchored, .withTransparentBounds, .withoutAnchoringBounds]), which the reader uses to check where a library search's match is.
 BuildIdentity.cacheProducer (App/BuildIdentity.swift) is the description of the build, version, build number, commit, and date, that ReadingTextCache and LibrarySearchTextStore both key on.
 
 ## XMLEscaping
 <!-- id: xmlescaping; keys: ampersand, EPUB export, entity, markup injection; src: TextMouth/Services/Export/XMLEscaping.swift -->
 
-XMLEscaping (Services/Export/XMLEscaping.swift): the one escaper of XML text. text(_:) is for an element's content, attribute(_:) for a double-quoted attribute whose line breaks must read back (tab, line feed, and carriage return as character references), and markup(_:) for markup that an HTML or XML parser reads, in content or in a double-quoted attribute where a tab or line break may stay: what text(_:) does, and " as &quot;.
+XMLEscaping (Services/Export/XMLEscaping.swift): the one escaper of XML text.
+XMLEscaping.text(_:) is for an element's content.
+XMLEscaping.attribute(_:) is for a double-quoted attribute whose line breaks must read back (tab, line feed, and carriage return as character references).
+XMLEscaping.markup(_:) is for markup that an HTML or XML parser reads, in content or in a double-quoted attribute where a tab or line break may stay: it does what text(_:) does, and writes " as &quot;.
 Every character XML 1.0 forbids is left out, but a vertical tab and a form feed, which are white space and each become a space, so the words they kept apart stay apart; it walks scalars, as a parser reads.
 The feed, OPML, SSML, and export writers use it (see [Known duplication](known-duplication.md) for the one copy left).
 
@@ -309,5 +334,6 @@ waitForResult(timeLimit:cancelledBy:of:) ends the wait after a limit (ST07):
 - the detached task is cancelled, so work that follows cancellation ends, and work that ignores it finishes on its own and stores its late result where nobody reads it;
 - TimeLimitExceeded is thrown ("Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it.");
 - and ASYNC_TIME_LIMIT is logged, naming no file or title.
-Reading an audio file's tags has AsyncBridge.audioTagsTimeLimit (30 seconds; the import's and the reader's try? fall back to empty tags, and Book Info's LibraryBookInfoReader falls back to the metadata the library keeps), and analyzing or parsing an audiobook's audio AsyncBridge.audioAnalysisTimeLimit (5 minutes: BookParser and BookContentAnalysisService).
+Reading an audio file's tags has AsyncBridge.audioTagsTimeLimit (30 seconds; the import's and the reader's try? fall back to empty tags, and Book Info's LibraryBookInfoReader falls back to the metadata the library keeps).
+Analyzing or parsing an audiobook's audio has AsyncBridge.audioAnalysisTimeLimit (5 minutes: BookParser and BookContentAnalysisService).
 Every other user (audio-edit renders, conversions, textutil) keeps no limit, since each can honestly run for an hour and has its own cancel or watchdog.
