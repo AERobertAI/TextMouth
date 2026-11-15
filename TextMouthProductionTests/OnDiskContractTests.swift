@@ -323,7 +323,7 @@ final class OnDiskContractTests: XCTestCase {
     /// every field set. The content index is a file of its own.
     func testAPackageRecordHoldsExactlyTheseKeys() throws {
         let book = Self.bookWithEveryFieldSet()
-        var info = book.bookInfo(replacing: nil, contentIndex: nil)
+        var info = book.bookInfo(replacing: nil, contentIndex: nil, notingMoveToLibraryAt: Self.date)
         info.state.transcript = TranscriptNote(version: 1, locale: "en-US", createdAt: Self.date)
         let record = try Self.object(from: Self.recordEncoder.encode(info))
         XCTAssertEqual(
@@ -344,6 +344,9 @@ final class OnDiskContractTests: XCTestCase {
             "brailleFileCode",
             // FMT16, and encodingchoice's source, as in a library row.
             "textEncoding", "textEncodingSource",
+            // Risk 4 of the local-first research: Move to Library's note,
+            // in the record alone; an older TextMouth drops it.
+            "movedToLibrary",
         ]
         XCTAssertEqual(
             Set(metadata.keys),

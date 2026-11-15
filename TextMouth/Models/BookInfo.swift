@@ -167,6 +167,23 @@ struct BookMetadata: Codable {
     /// is nil, as the row's is, and does not fail the record.
     @LenientOptional var textEncodingSource: TextEncodingSource? = nil
 
+    /// When Move to Library… made this book, a feed's download, a book of
+    /// the library's own (FR11's branch D): the book's own word that it is
+    /// the library's, which no feed's record can contradict (risk 4 of
+    /// LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md). Another Mac's record of
+    /// the feed, written whole from memory, can still call the item
+    /// downloaded; the launch's move of downloads made before FR11 into
+    /// their feeds passes over a book whose record holds this note
+    /// (`LibraryViewModel.downloadsToMoveIntoTheirFeeds(records:access:)`),
+    /// so its file is never its feed's again for a rule to delete. Only Move
+    /// to Library… writes it; every later save of the record carries it
+    /// forward (`Book.bookInfo(replacing:contentIndex:revisionFloor:...)`),
+    /// as the feed link is. Nil for every other book, and left out of the
+    /// file then, so their records are exactly as before; a value that
+    /// cannot be read is nil and does not fail the record. An older
+    /// TextMouth drops it when it next writes the record.
+    @LenientOptional var movedToLibrary: Date? = nil
+
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,

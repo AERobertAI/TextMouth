@@ -309,12 +309,19 @@ extension LibraryViewModel {
     /// does, was moved by an earlier launch that stopped before it was done,
     /// and is not moved again; its record is written all the same. The
     /// caller has checked that both rows name a package the library manages
-    /// (`FileImportService.namesManagedPackage(_:)`).
+    /// (`FileImportService.namesManagedPackage(_:)`). `movedToLibrary`, for
+    /// Move to Library…'s move, is noted in the record written
+    /// (`BookMetadata.movedToLibrary`, risk 4); nil keeps the record's note.
     /// - Throws: `FeedItemMoveError` when the package is in neither place or
     ///   both, or the error that kept a folder from being made, the package
     ///   from moving, or its record from being written; the package is then
     ///   put back where it was when this call had moved it.
-    nonisolated static func relocatePackage(of book: Book, as relocated: Book, root: URL) throws -> Book {
+    nonisolated static func relocatePackage(
+        of book: Book,
+        as relocated: Book,
+        root: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws -> Book {
         let source = book.packageDirectory(inDataDirectory: root)
         var relocated = relocated
         let destination = relocated.packageDirectory(inDataDirectory: root)
@@ -336,7 +343,7 @@ extension LibraryViewModel {
             throw FeedItemMoveError.packageMissing
         }
         do {
-            try relocated.saveBookInfoThrowing(inPackageAt: destination)
+            try relocated.saveBookInfoThrowing(inPackageAt: destination, notingMoveToLibraryAt: movedToLibrary)
         } catch {
             if renamed {
                 try? fileManager.moveItem(at: destination, to: source)

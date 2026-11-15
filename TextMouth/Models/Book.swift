@@ -1697,10 +1697,18 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`DataDirectoryMigrator`). The record it replaces is read without its
     /// content index (`StoredBookRecord`), or is nil when there is none or
     /// it cannot be read, and the package keeps its content index file as
-    /// it is unless `contentIndex` replaces it.
-    func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil, inPackageAt tmbDir: URL) throws {
+    /// it is unless `contentIndex` replaces it. `movedToLibrary` is the time
+    /// Move to Library… made the book the library's own, which the record
+    /// notes (`BookMetadata.movedToLibrary`, risk 4); nil keeps the note
+    /// the record holds, if any.
+    func saveBookInfoThrowing(
+        contentIndex: BookContentIndex? = nil,
+        inPackageAt tmbDir: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws {
         let stored = try? StoredBookRecord.read(from: tmbDir)
-        try bookInfo(replacing: stored, contentIndex: contentIndex).saveRecord(to: tmbDir)
+        try bookInfo(replacing: stored, contentIndex: contentIndex, notingMoveToLibraryAt: movedToLibrary)
+            .saveRecord(to: tmbDir)
     }
 
     /// The record now in this book's package, with its content index, or
@@ -1809,6 +1817,12 @@ struct Book: Identifiable, Codable, Hashable {
     /// (FR11), and otherwise the one the stored record holds, so a row that
     /// never carried a link, or whose link was cleared, never erases it.
     ///
+    /// The note that Move to Library… made a feed's download the library's
+    /// own (`BookMetadata.movedToLibrary`, risk 4) is record-only, as the
+    /// transcript note is: the write that makes the move passes its time
+    /// (`movedToLibrary`), and every other write keeps the stored record's,
+    /// so no save of the book's state ever erases it.
+    ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
     /// the same way: the stored record's survives a row that lost it; and so
     /// is the Mac's liblouis version it was read with (review R2).
@@ -1860,12 +1874,16 @@ struct Book: Identifiable, Codable, Hashable {
     ///     file code, this book's own: a re-read in other braille file
     ///     characters (`LibraryPersistenceService.saveContentAnalysis`'s
     ///     `brailleFileCode`).
+    ///   - movedToLibrary: When Move to Library… made the book the library's
+    ///     own, for the write that makes the move; nil keeps the stored
+    ///     record's note.
     func bookInfo(
         replacing stored: StoredBookRecord?,
         contentIndex: BookContentIndex?,
         revisionFloor: Int = 0,
         decidingTextEncoding: Bool = false,
-        decidingBrailleFileCode: Bool = false
+        decidingBrailleFileCode: Bool = false,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
     ) -> BookInfo {
         var recorded = self
         // The reading state that stands between the row and the stored
@@ -1888,6 +1906,9 @@ struct Book: Identifiable, Codable, Hashable {
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
+        // Move to Library's note: this write's, or else the stored record's
+        // (risk 4).
+        info.metadata.movedToLibrary = movedToLibrary ?? stored?.info.metadata.movedToLibrary
         // The braille table: the row's, or else the stored record's (FMT21).
         // Its version is the row's, or else the stored record's only when
         // that describes the same table: a book read again from one of this
