@@ -559,6 +559,7 @@ targets:
       - TextMouthProductionTests/AudioZIPClassificationTests.swift
       - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
+      - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
       - TextMouthProductionTests/DOCXMalformedXMLTests.swift
@@ -582,8 +583,13 @@ targets:
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KFXFixture.swift
       - TextMouthProductionTests/KFXTestBook.swift
+      - TextMouthProductionTests/LegacyDocumentAndAccessibilityTests.swift
       - TextMouthProductionTests/LibraryFeedListCountTests.swift
       - TextMouthProductionTests/LibraryIndexTestSupport.swift
+      - TextMouthProductionTests/LibrarySearchEngineTests.swift
+      - TextMouthProductionTests/LibrarySearchPrefilterTests.swift
+      - TextMouthProductionTests/LibrarySearchSpecialsTests.swift
+      - TextMouthProductionTests/LibrarySearchTextStoreTests.swift
       - TextMouthProductionTests/ListNeighborsTests.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
@@ -600,9 +606,12 @@ targets:
       - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
       - TextMouthProductionTests/PhoneAudioPaceTests.swift
       - TextMouthProductionTests/PhoneAudioWordingTests.swift
+      - TextMouthProductionTests/PlaceRelocatorBookTests.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
+      - TextMouthProductionTests/PlaceRelocatorTests.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
+      - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RunLoopWaiting.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
@@ -611,10 +620,19 @@ targets:
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
+      - TextMouthProductionTests/TextAnchorFineWordsTests.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
+      - TextMouthProductionTests/TextAnchorRecordTests.swift
+      - TextMouthProductionTests/TextAnchorTests.swift
+      - TextMouthProductionTests/TextCacheFingerprintTests.swift
+      - TextMouthProductionTests/TextEncodingCatalogTests.swift
+      - TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift
       - TextMouthProductionTests/TextEncodingFixtures.swift
+      - TextMouthProductionTests/TextPlausibilityTests.swift
       - TextMouthProductionTests/TextutilHTMLStructureTests.swift
+      - TextMouthProductionTests/TimeEntryTests.swift
       - TextMouthProductionTests/TimeLeftEstimateTests.swift
+      - TextMouthProductionTests/UnicodeCoordinateTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
     settings:
