@@ -7,6 +7,13 @@ TextMouth subscribes to podcasts and article feeds, and lists each feed's episod
 It keeps their downloads in a folder of the feed's own in the data directory, with an index of their own, so the library's index lists books only ([What TextMouth reads](what-textmouth-reads.md) gives the formats, the refreshes, and the downloads).
 A feed's commands, and an episode's, are in their rows' context menus and among the rows' actions in VoiceOver's Actions menu (VO-Command-Space), under the same names.
 
+## The other feed pages
+<!-- id: feeds-other-pages; keys: Commands, Listing and downloading, Downloads under way, Saving and quitting, Listening on to the next episode, Feeds tab of Settings; src: docs/user/feed-downloads.md, docs/user/feed-commands.md, docs/user/feed-listening-and-settings.md -->
+
+- Listing and downloading, Downloads under way, and Saving and quitting are in [Downloading feed episodes and articles](feed-downloads.md).
+- Commands are in [Feed, episode, and article commands](feed-commands.md).
+- Listening on to the next episode, The Feeds tab of Settings, and An episode's own transcript and chapters are in [Listening on, feed settings, and transcripts](feed-listening-and-settings.md).
+
 ## Subscribing
 <!-- id: feeds-subscribing; keys: subscribe, add podcast, RSS, Atom; src: TextMouth/Views/Feeds/AddFeedSheet.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 
