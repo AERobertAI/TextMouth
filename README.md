@@ -24,6 +24,9 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
+  - [Exporting braille files](docs/user/exporting-braille.md): BRF and PEF options, layout, and emphasis.
+  - [Exporting a transcript as captions](docs/user/exporting-captions.md): WebVTT and SubRip files.
+  - [Exporting text as spoken audio](docs/user/exporting-spoken-audio.md): M4B, M4A, and MP3 files.
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
 - [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio, Retranscribe Audio, Clean Up Transcript, Attach Transcript.
 - [Settings](docs/user/settings.md): every tab of the Settings window.

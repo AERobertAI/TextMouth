@@ -7,7 +7,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: transcripts-audiobooks-macos-26-later; keys: SpeechAnalyzer, speech recognizer, macOS 26, transcript, Where Am I; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Services/TranscriptionEngine.swift, TextMouth/Services/TranscriptionAvailability.swift -->
 
 ### Transcribing an audiobook
-<!-- id: transcribing-audiobook; keys: Transcribe Audio, SpeechAnalyzer, sentence, Edit Text, Where Am I?; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/ReaderViewModel+Transcript.swift -->
+<!-- id: reads-transcribing-audiobook; keys: Transcribe Audio, SpeechAnalyzer, sentence, Edit Text, Where Am I?; src: TextMouth/Services/TranscriptionService.swift, TextMouth/Models/TranscriptionWording.swift, TextMouth/ViewModels/ReaderViewModel+Transcript.swift -->
 
 - Transcribe Audio… transcribes an audiobook with the Mac's own speech recognizer (SpeechAnalyzer), which asks no permission and sends nothing anywhere: the book's audio never leaves this Mac (see [Transcribing an audiobook](transcribing.md)).
 - The transcript becomes the book's text: the reader shows it around the sentence being narrated, following the narration as the book plays, while positions and bookmarks go on counting time.
