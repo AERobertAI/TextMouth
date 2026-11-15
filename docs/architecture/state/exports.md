@@ -20,7 +20,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
   The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic: FileManager.moveItem checks and then renames, so a file made between the two would be replaced) or, where the volume cannot do that (EXDEV, ENOTSUP, or EINVAL), an exclusive copy (copyfile with COPYFILE_EXCL) and then the removal of the source.
   A target that exists, even one made an instant ago, fails that file with fileWriteFileExists and is left as it was, and the scratch folder is removed in every case.
   So an export never replaces a file in the chosen folder, removes none that was there before it began, and leaves no half-written file after a Stop or a failure.
-  The one thing it removes in the folder is the partial file that copyExclusively created itself, when an exclusive copy fails for a reason other than an existing target (an open follow-up in the TODO, from team export, October 19).
+  The one thing it removes in the folder is the partial file that copyExclusively created itself, when an exclusive copy fails for a reason other than an existing target (an open follow-up in the TODO, from team export).
   Stop (BookExportCancellation) is read before each file and, through checkCancelled(), between a conversion's steps and a writer's blocks, so a conversion ends partway; a copy already begun finishes in the scratch folder, and writeThroughScratchFile, checking once more before the move, does not move it.
   Either way the file is neither exported nor a failure, and the files after it are not started.
   A destination inside the data directory is refused (BookExportModel.isInsideDataDirectory).
@@ -32,7 +32,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
 ## Text export and its writers
 <!-- id: text-export-writers; keys: Convert to picker, text writers, conversion, writer options, export formats, iOS Word writer; src: TextMouth/ViewModels/BookExportModel.swift, TextMouth/Services/BookExportService.swift, TextMouth/Services/Export/TextExportWriter.swift, TextMouth/Views/Export/BookExportSheet.swift -->
 
-Text export (FMT18, FMT19, FMT22): what the Convert to picker, beside Text as Markdown, makes of a text book's content.md in place of its Markdown (T3, October 23, 2026: Markdown is written too, and no export copies content.md).
+Text export (FMT18, FMT19, FMT22): what the Convert to picker, beside Text as Markdown, makes of a text book's content.md in place of its Markdown (T3: Markdown is written too, and no export copies content.md).
 What each format keeps and leaves out is in [Exporting books](../../user/exporting-books.md).
 
 - Owner: BookExportModel keeps the Convert to choice of each kind whose text a writer can convert (conversionIDs: a writer's id, or TextExportWriters.markdownID until another is chosen; BookExportKind.convertsText is true for .markdown alone) and each writer's options (optionsStates, one TextExportOptionsState for each writer chosen, kept for the dialog's life), and BookExportSheet draws the picker beside the checked checkbox, with the chosen writer's options view under it.
@@ -116,7 +116,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     BrailleDocumentWriter translates the blocks' text, with its emphasis, to braille (BrailleTranslator, print to braille, with the options' table; liblouis writes the table's emphasis indicators for the classes the helper finds liblouis reads back exactly (the helper, in [Imports](imports-braille-tables.md)), UEB's; EBAE's italic and bold, which liblouis misreads, and most of this Mac's tables write plain braille, byte for byte as without emphasis, although the helper reads EBAE's signs in a braille book), lays the cells out with BrailleLayout.pages(of:format:), and frames the pages with BrailleFileWriter: brf(pages:lineEnd:code:), each row's cells written in the options' braille file code (BrailleFileCode: a byte of North American Braille ASCII or of Eurobraille, which are ASCII only, or Unicode braille patterns in UTF-8 with no byte order mark and the blank cell as U+2800), with the line end after each row and one form feed between pages, or pef(pages:metadata:format:), PEF 2008-1 XML in one volume of the options' cells and lines (PEFExportWriter.metadata(of:): the title, the author or none, the language or "en", a urn:uuid identifier, and the day).
     Both write six-dot cells only (sixDotCells(of:)), so the eight-dot cell liblouis writes for the backslash of an escape becomes ⠳ and TextMouth reads its own files.
     Any other eight-dot cell is refused, never written as its six-dot part: sixDotCell(of:) throws EightDotCell, whose sentence names the print character the table writes with it (BrailleDocumentWriter finds it by translating each distinct character of the block alone), and BrailleExportWriting turns it into a TextExportError.
-    No table writes an emphasis indicator in eight dots (all 328 of macOS 26's were measured on October 21, 2026), so emphasis adds no such failure.
+    No table writes an emphasis indicator in eight dots (all 328 of macOS 26's were measured), so emphasis adds no such failure.
     Before translating, BrailleDocumentWriter.printForBraille(_:) writes an eight-dot braille pattern already in the print as its six-dot part and removes Unicode's noncharacters.
     The PEF escapes its head's text with an escaped(_:) of its own (see [Known duplication](../known-duplication.md)).
   - Layout: BrailleLayout is pure Swift over translated cells: BANA's margins, each list set apart by blank lines (setListsApart), pagination (Paginator), and the cuts of a word too long for a line (cutLength(of:room:)).
@@ -181,5 +181,5 @@ Spoken audio (FMT43; 0.4.2): a text book, or a range of its headings, spoken by 
   The model's progress is "Speaking chapter N of M…" and "Encoding the audio file…".
   Every sentence is in SpeechExportWording.
 - The render coordinator is not used: measured, overlapping writes of different and of the same voices wrote the same samples as each alone.
-  A speech export's writes beside the reader speaking aloud in direct mode were not measured, and on March 23, 2026 (62fc142e) a background render of a very long chapter made speak() loop back to text it had spoken.
+  A speech export's writes beside the reader speaking aloud in direct mode were not measured, and a background render of a very long chapter made speak() loop back to text it had spoken (62fc142e).
 - Not done: encoding each chapter while the next is spoken; resuming per heading; WAV, AIFF, CAF, Apple Lossless, FLAC, time ranges, and a selection (FMT44).
