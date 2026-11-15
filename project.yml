@@ -562,6 +562,8 @@ targets:
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
+      - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
+      - TextMouthProductionTests/BrailleFileCodeTests.swift
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
