@@ -12,7 +12,7 @@ Shortcuts that are a letter alone, W, J, K, L, F, and B by default, work in read
 Space is not a letter, so Play / Pause keeps it, except while you type a title that goes on with a space, in the two choices of the Leading articles setting that pass over articles when typing (next).
 A letter with Shift, Option, Command, or Control still runs its shortcut in a Library window, as a Shift-R you gave Release Media Controls does.
 Shift-J and Shift-L do not fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings-shortcuts.md)).
-Speak Info and Speak Full Info do not use I and I twice; unless you changed their keys, they follow the defaults described under Speak Info, below.
+Speak Info and Speak Full Info do not use the letter I alone, or I pressed twice; unless you changed their keys, they follow the defaults described under Speak Info, below.
 
 ## Leading articles
 <!-- id: leading-articles; keys: The Hobbit, articles, Titles section, leadingArticles, partOfTitle, config.json; src: TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Models/TitleTyping.swift, TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/ViewModels/LibraryListCache.swift -->

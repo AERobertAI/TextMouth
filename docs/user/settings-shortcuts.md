@@ -149,7 +149,8 @@ Like Next in Reading List and Previous in Reading List, they have no keys until 
 While a text field or text area has the keyboard, the Library's search field and every sheet's fields included, the keys that edit text are the field's and never act as shortcuts.
 They are Delete and Forward Delete, the arrows, Home, End, Page Up, and Page Down, with any modifiers.
 They are also Command-A, Command-C, Command-V, Command-X, Command-Z, and Shift-Command-Z.
-And they are Control with A, B, D, E, F, H, K, L, N, O, P, T, V, or Y. So in the search field Command-Delete deletes to the start of the line rather than removing the selected books.
+And they are Control with A, B, D, E, F, H, K, L, N, O, P, T, V, or Y.
+So in the search field Command-Delete deletes to the start of the line rather than removing the selected books.
 Command-A selects the field's text rather than every book.
 Command-Left Arrow and Command-Right Arrow move to the ends of the line rather than skipping.
 Every other shortcut with Command or Control works from a field, such as Command-I for Book Info, and a key with neither types in the field, as it always has.
