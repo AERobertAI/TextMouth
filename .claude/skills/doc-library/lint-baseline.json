@@ -1,11 +1,11 @@
 {
   "version": 1,
   "pages": {
-    "AGENTS.md": {"date": 79, "line-length": 69, "page-size": 1, "section-length": 1, "sentences-per-line": 169, "stale": 1, "user-quote": 21},
+    "AGENTS.md": {"date": 33, "line-length": 37, "page-size": 1, "sentences-per-line": 51, "user-quote": 9},
     "ARCHITECTURE.md": {"date": 1, "index-line": 1, "line-length": 2, "sentences-per-line": 2},
     "CLAUDE.md": {"date": 1, "line-length": 2, "page-size": 1, "sentences-per-line": 4},
     "README.md": {"date": 1, "index-line": 16, "line-length": 6, "sentences-per-line": 6},
-    "docs/agents/history.md": {"line-length": 5},
+    "docs/agents/history.md": {"line-length": 37},
     "docs/agents/working-with-agents.md": {"date": 5, "line-length": 11, "marker-missing": 1, "sentences-per-line": 16, "user-quote": 1},
     "docs/agents/writing-docs.md": {"marker-missing": 7, "sentences-per-line": 2},
     "docs/architecture/known-duplication.md": {"date": 5, "line-length": 7, "marker-missing": 1, "sentences-per-line": 8},
