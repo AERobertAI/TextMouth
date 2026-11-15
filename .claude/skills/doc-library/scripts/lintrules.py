@@ -32,9 +32,12 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple, Optional, Sequence, Tuple
 from urllib.parse import unquote
 
+import cmd_stale
 import docmodel
 import output
+import swiftindex
 import targets
+from citations import KIND_SRC
 from docmodel import Block, Page
 from repofiles import RepoFiles
 # The one finder of a link's ``](destination)`` spans, which the sentence splitter
@@ -617,6 +620,21 @@ def rule_marker_src(context: LintContext) -> Iterator[Violation]:
                                     section.heading, f"src {entry} does not exist")
 
 
+def rule_stale(context: LintContext) -> Iterator[Violation]:
+    """``stale``: cited paths and backticked Swift names that no longer exist, on pages but logs.
+
+    ``cmd_stale.stale_items`` finds them, with the Swift index and the allowlist. A
+    marker's ``src`` entries are ``marker-src``'s, so a missing one is not counted
+    twice; and a log page may name what was removed, since it is history.
+    """
+    pages = list(context.selected(logs=False))
+    index = swiftindex.SwiftIndex.load(context.repo)
+    allow = cmd_stale.load_allowlist(context.root)
+    for item in cmd_stale.stale_items(pages, context.repo, index, allow):
+        if item.citation_kind != KIND_SRC:
+            yield Violation(item.page, "stale", item.line, item.line, item.heading, item.detail)
+
+
 # ---------------------------------------------------------------------------
 # Headings and sentences.
 # ---------------------------------------------------------------------------
@@ -681,6 +699,7 @@ RULES: List[Tuple[str, Callable[[LintContext], Iterable[Violation]]]] = [
     ("marker-invalid", rule_marker_invalid),
     ("marker-duplicate-id", rule_marker_duplicate_id),
     ("marker-src", rule_marker_src),
+    ("stale", rule_stale),
     ("duplicate-heading", rule_duplicate_heading),
     ("sentences-per-line", rule_sentences_per_line),
     ("emoji", rule_emoji),

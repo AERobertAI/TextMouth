@@ -453,6 +453,31 @@ class MarkerRuleTests(RuleCase):
         self.assertEqual({v.start for v in found}, {3})
 
 
+class StaleRuleTests(RuleCase):
+    """stale: what stale_items finds, less marker src entries (marker-src's) and log pages."""
+
+    # A repository with one Swift type, so a backticked name can be known or not.
+    SWIFT = {"TextMouth/Models/Book.swift": "struct Book {}\n"}
+
+    def test_a_missing_path_and_an_unknown_name_are_counted(self) -> None:
+        body = "It reads `TextMouth/Models/Gone.swift` and `Book`, and `Vanished` too."
+        files = dict(self.SWIFT, **{"docs/user/a.md": marked("a", body)})
+        found = self.found(files, "stale")
+        self.assertEqual([v.detail for v in found],
+                         ["missing path: TextMouth/Models/Gone.swift", "unknown name: Vanished"])
+        self.assertEqual({v.start for v in found}, {4})
+
+    def test_a_missing_marker_src_is_marker_srcs_not_stales(self) -> None:
+        page = "# Title\n\n<!-- id: a; src: TextMouth/Models/Gone.swift -->\nText.\n"
+        files = dict(self.SWIFT, **{"docs/user/a.md": page})
+        self.assertEqual(self.found(files, "stale"), [])
+        self.assertEqual([v.rule for v in self.found(files, "marker-src")], ["marker-src"])
+
+    def test_a_log_page_may_name_what_was_removed(self) -> None:
+        files = dict(self.SWIFT, **{"docs/user/changelog.md": "# Changelog\n\nRemoved `TextMouth/Models/Gone.swift`.\n"})
+        self.assertEqual(self.found(files, "stale"), [])
+
+
 class DuplicateHeadingTests(RuleCase):
     """duplicate-heading: a title that repeats an earlier heading of the page."""
 
@@ -540,7 +565,7 @@ class LintRunTests(RuleCase):
         self.assertEqual(lintrules.rule_names(), [
             "line-length", "section-length", "page-size", "date", "user-quote", "sales-word", "broken-link",
             "index-link", "index-line", "marker-missing", "marker-invalid", "marker-duplicate-id", "marker-src",
-            "duplicate-heading", "sentences-per-line", "emoji"])
+            "stale", "duplicate-heading", "sentences-per-line", "emoji"])
 
     def test_rules_can_be_chosen(self) -> None:
         self.write_tree({"docs/user/a.md": "# T\n\nOne. Two. On October 12.\n"})
