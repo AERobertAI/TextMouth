@@ -1294,6 +1294,7 @@
 		7BB5AAED282F2863E96C581A /* DOCXMalformedXMLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6018DC6189219689FF4F390 /* DOCXMalformedXMLTests.swift */; };
 		7BBDE9896FBAB03B472566D3 /* BookManifestEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5783AD76BC904EFC296FAC29 /* BookManifestEditing.swift */; };
 		7BE0CD05C59D84AEAF3D77E8 /* LibraryViewModel+Import.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451BE98605FAB22016B9236C /* LibraryViewModel+Import.swift */; };
+		7C063661B58F83EC2042FFF7 /* AudioEditTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF8E59F54073167110549593 /* AudioEditTimelineTests.swift */; };
 		7C0BF95F3C7A22EAE5B72F38 /* Profiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F6BD88A97DDE6CB82EB2787 /* Profiler.swift */; };
 		7C129EB8AB760257EC1C25C9 /* XmlDeclaration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264D1D8B99D1C4731582C5E5 /* XmlDeclaration.swift */; };
 		7C16DAE0B028B174C3C4823C /* NextBookWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E6538839684B14C66ACEDD /* NextBookWindowPicker.swift */; };
@@ -7428,6 +7429,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B91269FAC035D4139A519EC1 /* ArchiveBudgetTests.swift in Sources */,
+				7C063661B58F83EC2042FFF7 /* AudioEditTimelineTests.swift in Sources */,
 				797DCBD9EDB6A1D2B72FD160 /* AudioSeekAndObserverTests.swift in Sources */,
 				731886EEE7A56EAC01F269B3 /* AudioZIPClassificationTests.swift in Sources */,
 				AF072615E57126E65DFCA3F2 /* BookAuthorPlaceholderTests.swift in Sources */,

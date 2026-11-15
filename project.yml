@@ -555,6 +555,7 @@ targets:
       - TextMouthiOSTests
       # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
       - TextMouthProductionTests/ArchiveBudgetTests.swift
+      - TextMouthProductionTests/AudioEditTimelineTests.swift
       - TextMouthProductionTests/AudioSeekAndObserverTests.swift
       - TextMouthProductionTests/AudioZIPClassificationTests.swift
       - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
