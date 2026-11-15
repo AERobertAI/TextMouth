@@ -85,6 +85,29 @@ def pcm_bytes(frames, bits, is_float):
     return bytes(out)
 
 
+def special_floats(frames):
+    """The bytes of `frames` as floats, in runs of 97 frames: zeros, negative zeros, the sound, and the sound
+    with an infinity, a value that is not a number, or a value far above full scale every seventh sample."""
+    specials = [0x7F800000, 0xFF800000, 0x7FC00000, 0x7F800001, 0xFFC12345]
+    out = bytearray()
+    count = 0
+    for index, frame in enumerate(frames):
+        phase = (index // 97) % 4
+        for value in frame:
+            count += 1
+            if phase == 0:
+                out += struct.pack("<I", 0x00000000)
+            elif phase == 1:
+                out += struct.pack("<I", 0x80000000)
+            elif phase == 3 and count % 7 == 0:
+                out += struct.pack("<I", specials[(count // 7) % len(specials)])
+            elif phase == 3 and count % 7 == 3:
+                out += struct.pack("<f", value * 3000.0)
+            else:
+                out += struct.pack("<f", value)
+    return bytes(out)
+
+
 def write_wav(path, rate, channels, bits, data, is_float, mask):
     """A WAV file of `data`: plain PCM, or WAVE_FORMAT_EXTENSIBLE when a mask or many channels need it."""
     width = (bits + 7) // 8
@@ -108,11 +131,15 @@ class Shape:
     """One recording: its name and what its audio is."""
 
     def __init__(self, name, rate, channels, bits, seconds, seed, is_float=False, mask=None, noise=None,
-                 silent_frames=0, same_channels=False):
+                 silent_frames=0, same_channels=False, float_kind=None):
         self.name, self.rate, self.channels, self.bits = name, rate, channels, bits
         self.seconds, self.seed, self.is_float, self.mask = seconds, seed, is_float, mask
         # How many frames at the start are digital silence, and whether every channel repeats the first.
         self.silent_frames, self.same_channels = silent_frames, same_channels
+        # For floats: "from16" (16-bit whole numbers scaled down, so every mantissa ends in zeros) or
+        # "specials" (runs of zeros and negative zeros, with infinities and values that are not numbers).
+        # For 32-bit whole numbers: "as32" (each made from a single-precision float).
+        self.float_kind = float_kind
         # Noise of about eight steps of the sample's own depth keeps every file small.
         self.noise = noise if noise is not None else 8 / (1 << (min(bits, 24) - 1))
 
@@ -122,7 +149,15 @@ class Shape:
         if self.same_channels:
             frames = [[frame[0]] * self.channels for frame in frames]
         frames = [[0.0] * self.channels] * self.silent_frames + frames
+        if self.float_kind == "from16":
+            frames = [[round(value * 32767) / 32768.0 for value in frame] for frame in frames]
         data = pcm_bytes(frames, self.bits, self.is_float)
+        if self.float_kind == "specials":
+            data = special_floats(frames)
+        if self.float_kind == "as32":
+            # 32-bit whole numbers made from single-precision floats: only 24 bits of each are busy.
+            data = b"".join(struct.pack("<i", max(-(1 << 31), min((1 << 31) - 1, int(
+                struct.unpack("<f", struct.pack("<f", value))[0] * 2147483648.0)))) for frame in frames for value in frame)
         path = os.path.join(work, self.name + ".wav")
         write_wav(path, self.rate, self.channels, self.bits, data, self.is_float, self.mask)
         return path, len(frames), hashlib.sha256(data).hexdigest()
@@ -277,6 +312,15 @@ def make_wv(arguments):
         ("float32", Shape("wv-float32", 44100, 2, 32, 0.1, 47, is_float=True), [],
          "32-bit floats, rebuilt from the extra bitstream"),
         ("floatmono-fast", Shape("wv-floatmono", 16000, 1, 32, 0.2, 48, is_float=True), ["-f"], "32-bit floats, mono"),
+        ("floatfrom16", Shape("wv-floatfrom16", 22050, 2, 32, 0.15, 66, is_float=True, float_kind="from16"), [],
+         "floats made from 16-bit numbers: the bits shifted into each mantissa are zeros, not sent"),
+        ("floatspecials-high", Shape("wv-floatspecials", 22050, 1, 32, 0.2, 67, is_float=True, float_kind="specials"),
+         ["-h"], "floats with zeros, negative zeros, infinities, values that are not numbers, and values above 1"),
+        ("hybridfloatfrom16", Shape("wv-hybridfloatfrom16", 22050, 1, 32, 0.15, 68, is_float=True, float_kind="from16"),
+         ["-b4", "-c"], "hybrid floats made from 16-bit numbers"),
+        ("int32fromfloat-optimized", Shape("wv-int32fromfloat", 22050, 2, 32, 0.15, 69, float_kind="as32"),
+         ["--optimize-int32", "-f"],
+         "32-bit numbers made from floats, with --optimize-int32: the newer extra bitstream and its width limit"),
         ("six16", Shape("wv-six16", 48000, 6, 16, 0.1, 49, mask=0x3F), [],
          "5.1 in four blocks a stretch, with its channel mask (mixed to stereo at import)"),
         ("short16", Shape("wv-short16", 44100, 2, 16, 0.002, 50), [], "88 frames in one small block"),
@@ -364,6 +408,8 @@ def make_ape(arguments):
         ("float32-fast", Shape("ape-float32", 44100, 2, 32, 0.1, 82, is_float=True), "-c1000",
          "32-bit floats (signature MACF): the float transform undone"),
         ("floatmono-high", Shape("ape-floatmono", 16000, 1, 32, 0.2, 83, is_float=True), "-c3000", "32-bit floats, mono"),
+        ("floatspecials-normal", Shape("ape-floatspecials", 22050, 1, 32, 0.2, 94, is_float=True, float_kind="specials"),
+         "-c2000", "floats with zeros, negative zeros, infinities, values that are not numbers, and values above 1"),
         ("three16-normal", Shape("ape-three16", 44100, 3, 16, 0.1, 84, mask=0x7), "-c2000",
          "three channels: none stored as a pair"),
         ("four24-fast", Shape("ape-four24", 44100, 4, 24, 0.1, 85, mask=0x33), "-c1000", "four channels: two pairs"),
