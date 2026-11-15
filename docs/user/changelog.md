@@ -674,9 +674,6 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - 0.1.1 cannot read the index of a library that holds a book in any of eight kinds that 0.2.0 added: braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML.
   It leaves library.json as it is, keeps a copy of it beside it, and offers Try Again and Rebuild Library Index under Recovery Options…, but it still writes each book's record.
   And those records lose what 0.2.0 added to them: the record of an edit of the book's text and of the page reader that wrote it. Back in 0.2.0, a book whose text you edited is read from its file again, and your edit is kept beside it as a copy.
-- A TextMouth built before October 18, 2026 could not open a library that held a book in a format added that day:
-  - rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, or SSML.
-- One built before October 20, 2026 could not open a library that held a braille book (BRF, BRL, or PEF), the format added that day.
 - 0.1.1 was built on October 17, 2026. A build made before October 18, 2026 does not know the seven kinds added that day: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML.
 - A build made before October 20, 2026 does not know braille. Each such build finds the index unreadable when it holds a book in a kind it does not know.
 - Never choose Rebuild Library Index in 0.1.1. It makes an index without the books in those eight kinds, and without the folders and the manual order that only the index held, which the copy of library.json that it keeps still has.
@@ -710,7 +707,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Podcasts and article feeds can be subscribed to by address or by searching Apple's podcast directory, each feed lists its episodes and articles in a folder of its own, and the newest are downloaded as you choose.
 - A Reading List holds books from any folder in an order you choose and carries on from one to the next, and the Unopened and Recently Opened categories take the place of No Folder and Recent.
 - A library can live in iCloud Drive, Dropbox, or Google Drive, and each book can be downloaded when you need it, removed from this Mac to free space, or kept on it.
-- Add to Library, a plus button in the Library window's toolbar, opens a sheet with every way to add to the library, and on October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons (see [Adding books](adding-books.md)).
+- Add to Library, a plus button in the Library window's toolbar, opens a sheet with every way to add to the library (see [Adding books](adding-books.md)).
 - Import DAISY Folder… was renamed Import Folder… on October 14, 2026, since it imports a folder of audio tracks as one audiobook too, and a key you gave it keeps working.
 - Unopened took the place of No Folder on October 7, 2026, and the books in no folder are at the top of the library in Folders.
 - Recently Opened was called Recent until October 10, 2026, and keeps the sort you chose for it then.
