@@ -310,13 +310,22 @@ final class PersistenceFailureCenterTests: XCTestCase {
         let second = try boundary.holdWork(for: .rebuildingDirectory)
         defer { second.release() }
         // The wait saw the first release; it returns having found the second
-        // hold and kept the retry for it, which the row then says.
+        // hold and kept the retry for it, which the row then says. Nothing
+        // ran, so VoiceOver is told nothing: no "Retry did not succeed." for
+        // a Retry nobody pressed. A hosted test's announcements are recorded.
+        let heardBefore = VoiceOverAnnouncer.recordedAnnouncements.count
         await center.waitForRetriesKeptForStorageWork()
 
         XCTAssertEqual(attempts.calls, [], "the kept retry ran while the second operation held the work")
         XCTAssertEqual(center.bannerRows.map(\.text), [
             "Text substitution rules could not be saved: TextMouth saves them once it has finished rebuilding its data directory.",
         ])
+        let heardMeanwhile = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(heardBefore).map(\.message)
+        XCTAssertEqual(
+            heardMeanwhile.filter { $0.contains("Text substitution rules") },
+            [],
+            "VoiceOver heard about the kept retry when the first operation ended"
+        )
 
         second.release()
         await center.waitForRetriesKeptForStorageWork()

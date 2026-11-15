@@ -205,6 +205,11 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         defer { hold.release() }
         recordingAnnouncements { shared.retry(.statistics) }
         XCTAssertEqual(attempts.calls, [], "the retry ran while a folder edit held the storage work")
+        // While the edit still holds the work, the flush leaves the retry
+        // kept, and VoiceOver hears nothing of it.
+        let early = recordingAnnouncements { UnsavedChangesTerminationGuard.flushPendingWrites() }
+        XCTAssertEqual(attempts.calls, [], "the flush ran the kept retry while the folder edit held the storage work")
+        XCTAssertEqual(early.announcements.map(\.message).filter { $0.contains("Listening statistics") }, [])
 
         hold.release()
         recordingAnnouncements { UnsavedChangesTerminationGuard.flushPendingWrites() }
