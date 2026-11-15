@@ -722,3 +722,8 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - The page's account of the iPhone app described the code main held since November 8, 2026.
 - A third launch variable, `TEXTMOUTH_SEARCH_IN_BOOK`, filled the Search in Book field at launch so that a UI test did not type.
 - It was removed on November 10, 2026: the interface tests type on GitHub's runners now.
+
+## From The iPhone interface: announcements, text, sheets, and search
+
+- The two remaining contrast findings were proven to be false positives from the screenshots on November 9, 2026.
+- The probe test that put the sheet buttons back in `.cancellationAction` and read the sheet's tree was run on November 8, 2026.

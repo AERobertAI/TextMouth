@@ -8,7 +8,7 @@
     "docs/architecture/known-duplication.md": {"line-length": 6},
     "docs/architecture/launch.md": {"line-length": 10},
     "docs/architecture/parts-of-the-app.md": {"date": 3, "line-length": 18},
-    "docs/architecture/platforms-phone-interface.md": {"date": 2, "line-length": 1},
+    "docs/architecture/platforms-phone-interface.md": {"line-length": 1},
     "docs/architecture/platforms.md": {"line-length": 9},
     "docs/architecture/reading-a-book.md": {"line-length": 17},
     "docs/architecture/shared-helpers-parsers.md": {"date": 1, "line-length": 4},

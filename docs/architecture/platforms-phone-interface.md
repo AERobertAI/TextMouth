@@ -153,7 +153,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   Button words stay at full contrast, since `primary` is a separate line.
 - The contrast result: the audit's findings of contrast fell from about 50 to 2 on the sheets tested.
   Both remaining ones are on the first section header under the bar ("Voice" in Settings, "New Timer" in Sleep Timer).
-  They are false positives, proven on November 9, 2026 from the screenshots: the pixels over each header's frame are black (0, 0, 0) on (235 to 242, 235 to 242, 240 to 247), about 17 to 1.
+  They are false positives, proven from the screenshots: the pixels over each header's frame are black (0, 0, 0) on (235 to 242, 235 to 242, 240 to 247), about 17 to 1.
   Nothing switched off cleared them (the header trait, sliders, switches, steppers, the field).
   The audit accepts them by the header's label and the contrast kind only (see [Testing TextMouth](../developer/testing-iphone-audit.md)).
 
@@ -180,7 +180,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     They follow the spec now.
 - Why not the system's places, `.cancellationAction` and `.confirmationAction`:
   - In the simulator's tests (iPhone 17, iOS 26), Book Information's and the choice sheet's Cancel were reported missing, though Go To's, in `.topBarTrailing`, was found.
-  - A probe test put the buttons back in `.cancellationAction` and read the sheet's tree on November 8, 2026.
+  - A probe test put the buttons back in `.cancellationAction` and read the sheet's tree.
     The probe was removed in 0.4.3, with its test and its launch variable.
     `PhoneSheetButton.swift`'s comment keeps the history, and it is accurate.
     The buttons were never missing.
