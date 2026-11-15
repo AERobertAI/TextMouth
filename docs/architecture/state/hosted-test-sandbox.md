@@ -47,7 +47,7 @@ Redraw counts.
   Debug builds, which the tests run, count each view's body evaluations by name; Release builds compile the calls to nothing.
 
 ## Performance baselines
-<!-- id: performance-baselines; keys: benchmark, timing tests, regression, machine load, slow tests, perf run; src: TextMouth/Services/ReadingTextCache.swift, Makefile, TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineRulesTests.swift, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/performance-substitutions.json, Scripts/perf-baselines.sh, Scripts/check.sh -->
+<!-- id: sandbox-performance-baselines; keys: benchmark, timing tests, regression, machine load, slow tests, perf run; src: TextMouth/Services/ReadingTextCache.swift, Makefile, TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineRulesTests.swift, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/performance-substitutions.json, Scripts/perf-baselines.sh, Scripts/check.sh -->
 
 Performance baselines.
 
