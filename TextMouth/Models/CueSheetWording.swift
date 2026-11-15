@@ -33,9 +33,40 @@ enum CueSheetWording {
     /// end, past the end of the audio it names.
     static let timesPastAudio = "Its tracks run past the end of the audio it names, so it was made for another copy of that audio."
 
-    /// Why a folder's or archive's cue sheet was not used.
+    /// The heading of an Audacity label with no text (FMT06): "Label 4", by
+    /// its place among the file's labels, from 1.
+    static func untitledLabel(number: Int) -> String {
+        "Label \(number)"
+    }
+
+    /// The kinds of file that give a folder's audio its headings.
+    enum ListKind: Equatable, Sendable {
+        /// A CUE sheet (FMT24).
+        case cueSheet
+        /// An Audacity label file (FMT06).
+        case labelFile
+
+        /// The kind as a notice names it.
+        var name: String {
+            switch self {
+            case .cueSheet: return "cue sheet"
+            case .labelFile: return "label file"
+            }
+        }
+
+        /// What the kind's entries are called.
+        var entries: String {
+            switch self {
+            case .cueSheet: return "tracks"
+            case .labelFile: return "labels"
+            }
+        }
+    }
+
+    /// Why a folder's or archive's cue sheet or label file was not used.
     enum UnusedReason: Equatable, Sendable {
-        /// It names none of the audio beside it.
+        /// It names none of the audio beside it (for a label file: no audio
+        /// file has its stem, and there is not just one beside it).
         case namesNoAudio
         /// It could not be read (too large, or not readable as text).
         case unreadable
@@ -43,16 +74,19 @@ enum CueSheetWording {
         case timesPastAudio
     }
 
-    /// The notice of a folder's or archive's cue sheet that was not used, so
-    /// the tracks it would have arranged imported as they are.
-    static func sheetUnused(_ name: String, because reason: UnusedReason) -> String {
+    /// The notice of a folder's or archive's cue sheet or label file that
+    /// was not used, so the tracks it would have arranged imported as they
+    /// are.
+    static func sheetUnused(_ name: String, kind: ListKind = .cueSheet, because reason: UnusedReason) -> String {
         switch reason {
+        case .namesNoAudio where kind == .labelFile:
+            return "The label file “\(name)” matches no audio file beside it by name, so its headings were not used."
         case .namesNoAudio:
-            return "The cue sheet “\(name)” names none of the audio beside it, so its headings were not used."
+            return "The \(kind.name) “\(name)” names none of the audio beside it, so its headings were not used."
         case .unreadable:
-            return "TextMouth could not read the cue sheet “\(name)”, so its headings were not used."
+            return "TextMouth could not read the \(kind.name) “\(name)”, so its headings were not used."
         case .timesPastAudio:
-            return "The tracks of the cue sheet “\(name)” run past the end of its audio, so its headings were not used."
+            return "The \(kind.entries) of the \(kind.name) “\(name)” run past the end of its audio, so its headings were not used."
         }
     }
 }

@@ -1510,10 +1510,11 @@ enum FileImportService {
             if let location = AudioManifestLocation.find(in: folder) {
                 paths.append(location.prefix + AudioManifest.fileName)
             } else {
-                // Without a manifest, the folder's cue sheets travel with
-                // its tracks, to arrange them (FMT24, `arrangeByCueSheets`),
-                // and count in its checksum as a manifest does.
-                paths += CueSheetArrangement.sheets(in: folder).map { AudioBookParser.relativeName(of: $0, in: folder) }
+                // Without a manifest, the folder's cue sheets and Audacity
+                // label files travel with its tracks, to arrange them (FMT24,
+                // FMT06, `arrangeByCueSheets`), and count in its checksum as
+                // a manifest does.
+                paths += CueSheetArrangement.chapterLists(in: folder).map { AudioBookParser.relativeName(of: $0, in: folder) }
             }
             let hash = try folderHash(of: paths, in: folder)
             let bookID = UUID()

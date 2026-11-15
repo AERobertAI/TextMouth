@@ -30,10 +30,13 @@ struct CueSheetArrangement: Equatable, Sendable {
         let entries: [M3UPlaylist.Skipped]
     }
 
-    /// A sheet of a folder or archive that arranges nothing, and why.
+    /// A sheet or label file of a folder or archive that arranges nothing,
+    /// and why.
     struct UnusedSheet: Equatable, Sendable {
-        /// The sheet's path from the folder.
+        /// The file's path from the folder.
         let name: String
+        /// A cue sheet's, or an Audacity label file's.
+        var kind: CueSheetWording.ListKind = .cueSheet
         let reason: CueSheetWording.UnusedReason
     }
 
@@ -66,7 +69,7 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// nothing to tell.
     var notice: String? {
         let sentences = skipped.compactMap { PlaylistImportWording.notice(playlistName: $0.sheet, skipped: $0.entries) }
-            + unusedSheets.map { CueSheetWording.sheetUnused($0.name, because: $0.reason) }
+            + unusedSheets.map { CueSheetWording.sheetUnused($0.name, kind: $0.kind, because: $0.reason) }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 
@@ -96,43 +99,64 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// those it converts first, which no reader opens; a test passes its own.
     typealias Measure = (_ files: [M3UPlaylist.Track]) -> [String: TimeInterval]
 
-    /// The cue sheets in the audiobook folder `folder`, at any depth, found
-    /// by the walk that finds its tracks (`AudioBookParser.regularFiles`),
-    /// in Finder's order by their paths from it; none when it cannot be
-    /// walked, which the tracks' own walk then reports.
-    static func sheets(in folder: URL) -> [URL] {
-        (try? AudioBookParser.regularFiles(in: folder, accepting: CueSheet.isCueSheet)) ?? []
+    /// The files that give the audiobook folder `folder` its headings: its
+    /// cue sheets (FMT24) and its Audacity label files (FMT06, a .txt file
+    /// that holds labels and nothing else, `AudacityLabels.isLabelFile`), at
+    /// any depth, found by the walk that finds its tracks
+    /// (`AudioBookParser.regularFiles`), in Finder's order by their paths
+    /// from it; none when it cannot be walked, which the tracks' own walk
+    /// then reports. A .txt of anything else (a track's lyrics, a book's
+    /// notes) is no such file.
+    static func chapterLists(in folder: URL) -> [URL] {
+        (try? AudioBookParser.regularFiles(in: folder) { file in
+            CueSheet.isCueSheet(file) || isLabelFile(file)
+        }) ?? []
     }
 
-    /// How the cue sheets in `folder`, a folder of tracks being imported (a
-    /// ZIP's extraction or the copy of a folder), arrange it; nil when it
-    /// holds no sheet.
+    /// Whether the file at `url` is an Audacity label file: a .txt file, in
+    /// any case, that holds labels and nothing else.
+    private static func isLabelFile(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == AudacityLabels.fileExtension && AudacityLabels.labels(inFileAt: url) != nil
+    }
+
+    /// How the cue sheets and label files in `folder`, a folder of tracks
+    /// being imported (a ZIP's extraction or the copy of a folder), arrange
+    /// it; nil when it holds neither.
     ///
-    /// Each sheet, in Finder's order, gives the sections of the files it
-    /// names among the folder's tracks (`sections(of:at:base:allowed:)`), its
-    /// files found inside its own folder. A sheet is not used, and is named
-    /// in `unusedSheets` with why, when it cannot be read, gives no section,
-    /// or has a track that begins or ends past the end of its file as
-    /// `measure` measures it (`fits(_:durations:)`), since the book's parse
-    /// would refuse the whole book for it; the tracks it names then import
-    /// as they would without it. A sheet that plays a file an earlier sheet
-    /// plays (a second copy of one sheet, or a ripper's sheet for the same
-    /// files) is passed over. When any sheet gives sections, the tracks no
-    /// sheet plays follow, in Finder's order, each a section titled by its
-    /// file's name, as a manifest's tracks list leaves its unlisted tracks
-    /// to follow, so no audio is left out of the book. The title and the
-    /// author are those every sheet used agrees on.
+    /// Each, in Finder's order, gives the sections of the files it names
+    /// among the folder's tracks (`sections(of:at:base:allowed:)`), its
+    /// files found inside its own folder; a label file names the one audio
+    /// file it is paired with (`labelSheet(at:labels:base:tracks:)`). One is
+    /// not used, and is named in `unusedSheets` with why, when it cannot be
+    /// read, gives no section, or has a track or label that begins or ends
+    /// past the end of its file as `measure` measures it
+    /// (`fits(_:durations:)`), since the book's parse would refuse the whole
+    /// book for it; the tracks it names then import as they would without
+    /// it. One that plays a file an earlier one plays (a second copy of a
+    /// sheet, a ripper's sheet for the same files, a label file beside a
+    /// sheet) is passed over. When any gives sections, the tracks none plays
+    /// follow, in Finder's order, each a section titled by its file's name,
+    /// as a manifest's tracks list leaves its unlisted tracks to follow, so
+    /// no audio is left out of the book. The title and the author are those
+    /// every sheet used agrees on.
     static func arranging(folder: URL, measure: Measure) -> CueSheetArrangement? {
-        let sheetURLs = sheets(in: folder)
-        guard !sheetURLs.isEmpty else { return nil }
+        let listURLs = chapterLists(in: folder)
+        guard !listURLs.isEmpty else { return nil }
         let tracks = (try? AudioBookParser.trackPaths(in: folder, scan: .importing)) ?? []
         let allowed = Set(tracks)
 
-        // Each sheet's sections, then every file they play measured at once.
-        let made: [(name: String, sections: SheetSections?)] = sheetURLs.map { sheetURL in
-            let name = AudioBookParser.relativeName(of: sheetURL, in: folder)
-            guard let sheet = try? CueSheet.read(at: sheetURL) else { return (name, nil) }
-            return (name, sections(of: sheet, at: sheetURL, base: folder, allowed: allowed))
+        // Each file's sections, then every file they play measured at once.
+        let made: [(name: String, kind: CueSheetWording.ListKind, sections: SheetSections?)] = listURLs.map { url in
+            let name = AudioBookParser.relativeName(of: url, in: folder)
+            guard !CueSheet.isCueSheet(url) else {
+                guard let sheet = try? CueSheet.read(at: url) else { return (name, .cueSheet, nil) }
+                return (name, .cueSheet, sections(of: sheet, at: url, base: folder, allowed: allowed))
+            }
+            guard let labels = AudacityLabels.labels(inFileAt: url) else { return (name, .labelFile, nil) }
+            // A label file paired with no audio makes no section.
+            let sheet = labelSheet(at: url, labels: labels, base: folder, tracks: tracks)
+                ?? CueSheet(title: nil, performer: nil, files: [], tracks: [])
+            return (name, .labelFile, sections(of: sheet, at: url, base: folder, allowed: allowed))
         }
         var everyFile: [M3UPlaylist.Track] = []
         var listed = Set<String>()
@@ -147,17 +171,17 @@ struct CueSheetArrangement: Equatable, Sendable {
         var titles: [String?] = []
         var authors: [String?] = []
         var played = Set<String>()
-        for (name, sheetSections) in made {
+        for (name, kind, sheetSections) in made {
             guard let sheetSections else {
-                arrangement.unusedSheets.append(UnusedSheet(name: name, reason: .unreadable))
+                arrangement.unusedSheets.append(UnusedSheet(name: name, kind: kind, reason: .unreadable))
                 continue
             }
             guard !sheetSections.segments.isEmpty else {
-                arrangement.unusedSheets.append(UnusedSheet(name: name, reason: .namesNoAudio))
+                arrangement.unusedSheets.append(UnusedSheet(name: name, kind: kind, reason: .namesNoAudio))
                 continue
             }
             guard fits(sheetSections.segments, durations: durations) else {
-                arrangement.unusedSheets.append(UnusedSheet(name: name, reason: .timesPastAudio))
+                arrangement.unusedSheets.append(UnusedSheet(name: name, kind: kind, reason: .timesPastAudio))
                 continue
             }
             let files = Set(sheetSections.files.map(\.path))
@@ -221,6 +245,45 @@ struct CueSheetArrangement: Equatable, Sendable {
             return clip.startTime < duration
                 && (clip.endTime == 0 || clip.endTime <= duration + AudioBookParser.endTolerance(forFileLasting: duration))
         }
+    }
+
+    // MARK: - An Audacity Label File (FMT06)
+
+    /// The labels of the Audacity label file at `url` as a sheet of one
+    /// file, for its folder to be arranged as a cue sheet arranges it: the
+    /// audio file beside it (among `tracks`, paths from `base`) of the label
+    /// file's own stem, in any letter case, or, without one, the only audio
+    /// file beside it. Each label is a track beginning at its start, to the
+    /// nearest frame of 1/75 second, a CUE sheet's unit (6.7 milliseconds at
+    /// most from the label's time), titled by its text, or "Label N" without
+    /// one (`CueSheetWording.untitledLabel`), N its place in the file; the
+    /// labels are taken in the order of their starts, a region's end making
+    /// no heading of its own. Nil when no audio file is paired with it.
+    static func labelSheet(at url: URL, labels: [AudacityLabels.Label], base: URL, tracks: [String]) -> CueSheet? {
+        let prefix = relativePrefix(of: url.deletingLastPathComponent(), in: base)
+        // The tracks lying in the label file's own folder, by their names
+        // there.
+        let beside = tracks.compactMap { path -> String? in
+            guard path.hasPrefix(prefix) else { return nil }
+            let name = String(path.dropFirst(prefix.count))
+            return name.contains("/") ? nil : name
+        }
+        let stem = url.deletingPathExtension().lastPathComponent
+        let sameStem = beside.first {
+            ($0 as NSString).deletingPathExtension.caseInsensitiveCompare(stem) == .orderedSame
+        }
+        guard let audio = sameStem ?? (beside.count == 1 ? beside.first : nil) else { return nil }
+        let ordered = labels.enumerated().sortedStably { $0.element.start < $1.element.start }
+        let sheetTracks = ordered.map { place, label in
+            CueSheet.Track(
+                number: place + 1,
+                title: label.text.nonBlank ?? CueSheetWording.untitledLabel(number: place + 1),
+                performer: nil,
+                fileIndex: 0,
+                startFrame: CueSheet.frames(ofSeconds: label.start)
+            )
+        }
+        return CueSheet(title: nil, performer: nil, files: [audio], tracks: sheetTracks)
     }
 
     /// The one value every entry of `values` is, or nil when any is nil or

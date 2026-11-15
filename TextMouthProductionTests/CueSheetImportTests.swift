@@ -280,7 +280,96 @@ final class CueSheetImportTests: XCTestCase {
         XCTAssertNil(imported.notice)
     }
 
+    // MARK: - Audacity Labels Beside Tracks (FMT06)
+
+    /// A label file beside a folder's one audio file gives it a heading per
+    /// label, a label without text named by its place, each beginning at
+    /// its label's start to the nearest 1/75 second; the label file travels
+    /// with the track.
+    func testALabelFileBesideTheOneTrackGivesItsHeadings() throws {
+        let folder = try folderWithLabels(["labels.txt"])
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: folder, toFolder: folderPath)
+
+        XCTAssertEqual(try chapterTitles(of: imported.book), [
+            "Point at the start", "Region: second tone, café", "Point inside the third tone", "Label 4",
+        ])
+        // 2.5 seconds is 187.5 frames, rounded to 188: within a frame.
+        let starts = try sectionTimes(of: imported.book).map(\.start)
+        XCTAssertEqual(starts.count, 4)
+        for (found, expected) in zip(starts, [0, 1, 2.5, 3]) {
+            XCTAssertEqual(found, expected, accuracy: 1.0 / 75)
+        }
+        XCTAssertNil(imported.notice)
+        XCTAssertEqual(try audioFolderNames(of: imported.book), ["labels.txt", "manifest.json", "tone4.wav"])
+        XCTAssertEqual(CueSheetWording.untitledLabel(number: 4), "Label 4")
+    }
+
+    /// Of two tracks, a label file goes with the one of its own stem; and
+    /// the sample folder's two label files for its one track give the
+    /// headings of the first in Finder's order, the other passed over.
+    func testALabelFileGoesWithTheTrackOfItsStem() throws {
+        let folder = try folderWithLabels([])
+        try FileManager.default.copyItem(
+            at: CueSheetTests.sample("audacity-labels/tone4.wav"), to: folder.appendingPathComponent("other.wav")
+        )
+        try FileManager.default.copyItem(
+            at: CueSheetTests.sample("audacity-labels/labels-spectral.txt"), to: folder.appendingPathComponent("other.txt")
+        )
+
+        let paired = try FileImportService.importAudioFolderWithReport(from: folder, toFolder: folderPath)
+        let sample = try FileImportService.importAudioFolderWithReport(from: try copySampleFolder("audacity-labels"), toFolder: folderPath)
+
+        XCTAssertEqual(try chapterTitles(of: paired.book), ["Point with frequency", "Region, high only", "tone4"])
+        XCTAssertEqual(try chapterTitles(of: sample.book), ["Point with frequency", "Region, high only"])
+    }
+
+    /// A label file beside two tracks of neither's stem pairs with none and
+    /// says so, and the tracks import as they are; a text file that is no
+    /// label file is passed over in silence and not copied.
+    func testALabelFileOfNoTracksStemIsUnusedAndOtherTextIsIgnored() throws {
+        let folder = try folderWithLabels(["labels.txt"])
+        try FileManager.default.copyItem(
+            at: CueSheetTests.sample("audacity-labels/tone4.wav"), to: folder.appendingPathComponent("second.wav")
+        )
+        try Data("Verse one\nVerse two\n".utf8).write(to: folder.appendingPathComponent("lyrics.txt"))
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: folder, toFolder: folderPath)
+
+        XCTAssertEqual(try chapterTitles(of: imported.book), ["second", "tone4"])
+        XCTAssertEqual(
+            imported.notice,
+            "The label file “labels.txt” matches no audio file beside it by name, so its headings were not used."
+        )
+        XCTAssertFalse(try audioFolderNames(of: imported.book).contains("lyrics.txt"))
+    }
+
+    /// Labels past the end of their track leave it as it was, saying why.
+    func testLabelsPastTheTracksEndAreNotUsed() throws {
+        let folder = try folderWithLabels([])
+        try Data("0\t0\tStart\n90\t90\tLong after\n".utf8).write(to: folder.appendingPathComponent("tone4.txt"))
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: folder, toFolder: folderPath)
+
+        XCTAssertEqual(try chapterTitles(of: imported.book), ["tone4"])
+        XCTAssertEqual(
+            imported.notice,
+            "The labels of the label file “tone4.txt” run past the end of its audio, so its headings were not used."
+        )
+    }
+
     // MARK: - Helpers
+
+    /// A folder in the sandbox holding the label sample's tone, and the
+    /// label files of that sample named `labelFiles`.
+    private func folderWithLabels(_ labelFiles: [String]) throws -> URL {
+        let folder = sources.appendingPathComponent("Labels \(UUID().uuidString.prefix(6))", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for name in ["tone4.wav"] + labelFiles {
+            try FileManager.default.copyItem(at: CueSheetTests.sample("audacity-labels/\(name)"), to: folder.appendingPathComponent(name))
+        }
+        return folder
+    }
 
     /// A copy of the sample folder `name` in this test's sandbox.
     private func copySampleFolder(_ name: String) throws -> URL {

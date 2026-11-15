@@ -13,6 +13,10 @@ import Foundation
 /// - Chosen on its own (`importCueSheetWithReport`), as a playlist is: the
 ///   files it names inside its folder become one book, and nothing else of
 ///   the folder.
+///
+/// An Audacity label file (FMT06) arrives with its audio in a folder only:
+/// a .txt chosen on its own imports as a text book, as it always has, and a
+/// ZIP holding one is imported as a batch of books.
 extension FileImportService {
     /// Whether `source` is a cue sheet's file (`CueSheet.isCueSheet`): a
     /// folder that happens to be named like one is not.
@@ -96,13 +100,15 @@ extension FileImportService {
         }
     }
 
-    /// Lets the cue sheets in `audioDirectory`, a book's folder of tracks
-    /// staged by the import of a folder or a ZIP, arrange it when no
-    /// manifest.json does (FMT24): their sections are written as a manifest
-    /// where a new one goes (`AudioManifestLocation.forNewManifest(in:)`), so
-    /// the import reads the book by it. A folder with a manifest, or without
-    /// a sheet, is left exactly as it was, and so is one whose sheets arrange
-    /// nothing, as the notice returned says.
+    /// Lets the cue sheets and Audacity label files in `audioDirectory`, a
+    /// book's folder of tracks staged by the import of a folder or a ZIP,
+    /// arrange it when no manifest.json does (FMT24, FMT06): their sections
+    /// are written as a manifest where a new one goes
+    /// (`AudioManifestLocation.forNewManifest(in:)`), so the import reads the
+    /// book by it. A folder with a manifest, or with neither, is left exactly
+    /// as it was, and so is one whose sheets and label files arrange nothing,
+    /// as the notice returned says. (A ZIP holding a .txt file is imported as
+    /// a batch of books, so a label file arranges a folder's tracks alone.)
     /// - Returns: what the import tells of the sheets
     ///   (`CueSheetArrangement.notice`): the names they skipped and the
     ///   sheets not used; nil when there is nothing to tell.

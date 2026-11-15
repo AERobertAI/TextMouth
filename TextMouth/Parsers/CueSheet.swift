@@ -105,6 +105,15 @@ struct CueSheet: Equatable, Sendable {
         Double(frames) / Double(framesPerSecond)
     }
 
+    /// `seconds` as CD frames, to the nearest frame: 0 for a time that is no
+    /// finite number above zero, and at most a sheet's longest time (999,999
+    /// minutes), so no time can overflow.
+    static func frames(ofSeconds seconds: TimeInterval) -> Int {
+        guard seconds.isFinite, seconds > 0 else { return 0 }
+        let longest = Double(999_999 * 60 * framesPerSecond + 59 * framesPerSecond + framesPerSecond - 1)
+        return Int(min(seconds * Double(framesPerSecond), longest).rounded())
+    }
+
     /// Whether `url` names a cue sheet, by its extension in any case.
     static func isCueSheet(_ url: URL) -> Bool {
         url.pathExtension.lowercased() == fileExtension
