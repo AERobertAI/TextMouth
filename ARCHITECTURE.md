@@ -40,4 +40,6 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 
 - [Reading a book: the path from library row to spoken audio](docs/architecture/reading-a-book.md)
 - [Shared helpers](docs/architecture/shared-helpers.md)
+  - [Shared helpers: values, ordering, and wording](docs/architecture/shared-helpers-values.md)
+  - [Shared helpers: readers and markup guards](docs/architecture/shared-helpers-parsers.md)
 - [Known duplication](docs/architecture/known-duplication.md)
