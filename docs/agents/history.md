@@ -672,3 +672,6 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Package records: places, transcripts, origin, manifests
 
 - **The transcript index version:** BookContentTranscriptIndex.currentVersion, "1.1.0", was raised from "1.0.0" on October 23, 2026 with that escaping, so each transcribed book's text is written again once as it opens.
+## From Preferences
+
+- **The Leading articles setting:** LeadingArticles (Models/LeadingArticles.swift) is saved under leadingArticles (November 13, 2026).
