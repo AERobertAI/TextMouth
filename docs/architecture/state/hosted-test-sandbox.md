@@ -1,10 +1,10 @@
 # The hosted-test sandbox
-<!-- id: hosted-test-sandbox; keys: ; src: -->
+<!-- id: hosted-test-sandbox; keys: unit test environment, test isolation, XCTest, test host; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The process's runtime
-<!-- id: process-runtime; keys: ; src: TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Models/CloudStorageContract.swift, Scripts/test/quit-while-held/Stubs.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
+<!-- id: process-runtime; keys: fake home, user data protection, test host detection, immutable runtime, XCTest environment; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/SpeechService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 The process's runtime.
 
@@ -20,7 +20,7 @@ The process's runtime.
 - Files: App/TextMouthRuntime.swift, Services/TextMouthPaths.swift.
 
 ## Sandboxes left behind
-<!-- id: sandboxes-left-behind; keys: ; src: TextMouth/App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestObservers.swift, Scripts/test/quit-while-held/Stubs.swift -->
+<!-- id: sandboxes-left-behind; keys: stale folders, pid reuse, process id, XCTestObservation, crashed run, orphan folders; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestObservers.swift -->
 
 Sandboxes left behind.
 
@@ -32,7 +32,7 @@ Sandboxes left behind.
 - Files: App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestObservers.swift.
 
 ## Config saves a test leaves waiting
-<!-- id: config-saves-test-leaves-waiting; keys: ; src: TextMouthProductionTests/ConfigTestSupport.swift, TextMouthProductionTests/HostedTestObservers.swift, TextMouth/Services/ConfigService.swift -->
+<!-- id: config-saves-test-leaves-waiting; keys: settings tests, isolated settings, debounced save, flaky test, delayed write; src: TextMouth/Services/ConfigService.swift, TextMouthProductionTests/ConfigTestSupport.swift, TextMouthProductionTests/HostedTestObservers.swift -->
 
 Config saves a test leaves waiting.
 
@@ -42,7 +42,7 @@ Config saves a test leaves waiting.
 - Files: TextMouthProductionTests/ConfigTestSupport.swift, TextMouthProductionTests/HostedTestObservers.swift.
 
 ## Redraw counts
-<!-- id: redraw-counts; keys: ; src: TextMouth/Views/ViewBodyCounter.swift, TextMouth/Views/Reader/BookSearchView.swift -->
+<!-- id: redraw-counts; keys: view redraw, render count, SwiftUI performance, unnecessary redraw, lazy list; src: TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Views/ViewBodyCounter.swift -->
 
 Redraw counts.
 
@@ -51,7 +51,7 @@ Redraw counts.
 - Files: Views/ViewBodyCounter.swift.
 
 ## Performance baselines
-<!-- id: performance-baselines; keys: ; src: TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineRulesTests.swift, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/performance-substitutions.json, Scripts/perf-baselines.sh, Scripts/check.sh, TextMouth/Services/ReadingTextCache.swift -->
+<!-- id: performance-baselines; keys: benchmark, timing tests, regression, machine load, slow tests, perf run; src: TextMouth/Services/ReadingTextCache.swift, Makefile, TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineRulesTests.swift, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/performance-substitutions.json, Scripts/perf-baselines.sh, Scripts/check.sh -->
 
 Performance baselines.
 
@@ -64,7 +64,7 @@ Performance baselines.
 - Files: TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineRulesTests.swift, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/performance-substitutions.json, Scripts/perf-baselines.sh, Scripts/check.sh.
 
 ## Hosted windows and accessibility controls
-<!-- id: hosted-windows-accessibility-controls; keys: ; src: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/AccessibilityTestSupportTests.swift, TextMouthProductionTests/ReaderTextAreaTests.swift -->
+<!-- id: hosted-windows-accessibility-controls; keys: GitHub Actions runner, skipped tests, CI, accessibility tree, missing stepper; src: TextMouthProductionTests/ReaderTextAreaTests.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/AccessibilityTestSupportTests.swift -->
 
 Whether hosted windows expose their controls to accessibility.
 
@@ -78,7 +78,7 @@ Whether hosted windows expose their controls to accessibility.
 - Files: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/AccessibilityTestSupportTests.swift.
 
 ## A hosted view's work during a wait
-<!-- id: hosted-view-work-during-wait; keys: ; src: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/TranscriptionSheetViewTests.swift -->
+<!-- id: hosted-view-work-during-wait; keys: async test, test hangs, never runs, view tasks, task starvation; src: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/TranscriptionSheetViewTests.swift -->
 
 A hosted view's own work while a test waits.
 
@@ -88,7 +88,7 @@ A hosted view's own work while a test waits.
 - Files: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/TranscriptionSheetViewTests.swift.
 
 ## SwiftUI's checkboxes and steppers in a hosted test
-<!-- id: swiftui-checkboxes-steppers-hosted-test; keys: ; src: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/FeedUISettingsTests.swift, TextMouthProductionTests/RepeatedSymbolSettingsViewTests.swift, TextMouthProductionTests/FeedItemUIPolicyControlsTests.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift, TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift -->
+<!-- id: swiftui-checkboxes-steppers-hosted-test; keys: press a checkbox, switch, dropdown menu, stepper increment, click simulation, testing controls; src: TextMouth/Views/Settings/RepeatedSymbolsSettingsView.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/FeedUISettingsTests.swift, TextMouthProductionTests/RepeatedSymbolSettingsViewTests.swift, TextMouthProductionTests/FeedItemUIPolicyControlsTests.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift -->
 
 SwiftUI's checkboxes and steppers in a hosted test.
 
@@ -99,7 +99,7 @@ SwiftUI's checkboxes and steppers in a hosted test.
 - Files: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/FeedUISettingsTests.swift, TextMouthProductionTests/RepeatedSymbolSettingsViewTests.swift, TextMouthProductionTests/FeedItemUIPolicyControlsTests.swift, Views/Feeds/FeedThresholdControl.swift.
 
 ## A hosted view wider than its window
-<!-- id: hosted-view-wider-than-window; keys: ; src: TextMouthProductionTests/SettingsTabFitTests.swift -->
+<!-- id: hosted-view-wider-than-window; keys: layout loop, constraints crash, window resize loop, test host crash, fixed frame; src: TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/ViewsAndWindowsTestSupport.swift, TextMouthProductionTests/SettingsTabFitTests.swift -->
 
 A hosted view whose width outgrows the width it is offered.
 
@@ -110,7 +110,7 @@ A hosted view whose width outgrows the width it is offered.
 - Files: TextMouthProductionTests/SettingsTabFitTests.swift.
 
 ## A delayed closure that outlives its test
-<!-- id: delayed-closure-that-outlives-test; keys: ; src: TextMouthProductionTests/EpisodeDownloadContinuationTests.swift -->
+<!-- id: delayed-closure-that-outlives-test; keys: teardown order, addTeardownBlock, leaked save, announcement in next test, flaky test, timer; src: TextMouthProductionTests/EpisodeDownloadContinuationTests.swift -->
 
 A delayed closure that outlives its test's teardown.
 
@@ -121,7 +121,7 @@ A delayed closure that outlives its test's teardown.
 - Files: TextMouthProductionTests/EpisodeDownloadContinuationTests.swift.
 
 ## VoiceOver announcements
-<!-- id: voiceover-announcements; keys: ; src: TextMouth/Services/VoiceOverAnnouncer.swift -->
+<!-- id: voiceover-announcements; keys: accessibility announcement, NSAccessibility, speech recorder, announce text, spoken messages; src: TextMouth/Views/ContentView.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
 
 VoiceOver announcements.
 
@@ -131,7 +131,7 @@ VoiceOver announcements.
 - Files: Services/VoiceOverAnnouncer.swift.
 
 ## The network
-<!-- id: network; keys: ; src: TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift, TextMouth/Services/Feeds/FeedStore.swift -->
+<!-- id: network; keys: URLProtocol, offline tests, notifications permission, URLSession, no internet, stubbing; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift -->
 
 The network.
 
@@ -142,7 +142,7 @@ The network.
 - Files: Services/Feeds/FeedNetwork.swift, Services/Feeds/FeedCenter.swift, Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift.
 
 ## The system's media session
-<!-- id: system-media-session; keys: ; src: TextMouth/Services/NowPlayingService.swift, TextMouthProductionTests/IntegrationTestSupport.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift -->
+<!-- id: system-media-session; keys: remote commands, MPRemoteCommandCenter, CoreAudio listener, headphone buttons, Bluetooth, play pause key; src: TextMouth/Services/NowPlayingService.swift, TextMouthProductionTests/IntegrationTestSupport.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift -->
 
 The system's media session.
 
@@ -152,7 +152,7 @@ The system's media session.
 - Files: Services/NowPlayingService.swift, TextMouthProductionTests/IntegrationTestSupport.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift.
 
 ## The microphone
-<!-- id: microphone; keys: ; src: TextMouth/Services/AudioInputPermission.swift, TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/RecordingEndToEndTests.swift -->
+<!-- id: microphone; keys: capture session, recording tests, AVCaptureDevice, TCC permission, privacy prompt; src: TextMouth/Services/AudioInputPermission.swift, TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/RecordingEndToEndTests.swift -->
 
 The microphone.
 
@@ -162,7 +162,7 @@ The microphone.
 - Files: Services/AudioInputPermission.swift, TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/RecordingEndToEndTests.swift.
 
 ## Reader windows a test leaves open
-<!-- id: reader-windows-test-leaves-open; keys: ; src: TextMouthProductionTests/HostedTestObservers.swift -->
+<!-- id: reader-windows-test-leaves-open; keys: window leak, XCTestObservation, leaked windows, close windows, test cleanup; src: TextMouthProductionTests/HostedTestObservers.swift -->
 
 Reader windows a test leaves open.
 
@@ -171,7 +171,7 @@ Reader windows a test leaves open.
 - Files: TextMouthProductionTests/HostedTestObservers.swift.
 
 ## A data directory a test leaves elsewhere
-<!-- id: data-directory-test-leaves-elsewhere; keys: ; src: TextMouthProductionTests/HostedTestObservers.swift, TextMouthProductionTests/StorageGenerationTestSupport.swift -->
+<!-- id: data-directory-test-leaves-elsewhere; keys: storage move, data folder, leak check, restore preferences, test pollution; src: TextMouthProductionTests/HostedTestObservers.swift, TextMouthProductionTests/StorageGenerationTestSupport.swift -->
 
 A data directory a test leaves elsewhere.
 
@@ -181,7 +181,7 @@ A data directory a test leaves elsewhere.
 - Files: TextMouthProductionTests/HostedTestObservers.swift, TextMouthProductionTests/StorageGenerationTestSupport.swift.
 
 ## Build slots
-<!-- id: build-slots; keys: ; src: .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh, Scripts/check.sh, Scripts/test/run-area.py -->
+<!-- id: build-slots; keys: mkdir lock, concurrent builds, parallel agents, machine-wide lock, slot reclaim; src: .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh, Scripts/check.sh, Scripts/test/run-area.py -->
 
 Build slots.
 
@@ -191,7 +191,7 @@ Build slots.
 - Files: .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh, Scripts/check.sh, Scripts/test/run-area.py.
 
 ## The test kit
-<!-- id: test-kit; keys: ; src: Scripts/test/testkit.py, Scripts/test/difflint.py, Scripts/test/run-area.py, Scripts/test/areas.conf, Scripts/test/trap-lint.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/test-diff.py, Scripts/test/test-logs.py, Scripts/test/make-corpus.py, Scripts/test/update-goldens.sh, Scripts/test/corpus-report.sh, Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/storage-drill-selftest.sh, TextMouthProductionTests/DiskImageDrill.swift, Makefile, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/CorpusReportTests.swift -->
+<!-- id: test-kit; keys: lint scripts, golden files, fuzzing, sparse image, test scripts, xcodebuild wrapper, test areas; src: TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/CorpusReportTests.swift, Scripts/test/testkit.py, Scripts/test/difflint.py, Scripts/test/run-area.py, Scripts/test/areas.conf, Scripts/test/trap-lint.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/test-diff.py, Scripts/test/test-logs.py, Scripts/test/make-corpus.py, Scripts/test/update-goldens.sh, Scripts/test/corpus-report.sh, Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/storage-drill-selftest.sh, TextMouthProductionTests/DiskImageDrill.swift, Makefile -->
 
 The test kit: the scripts in Scripts/test/, whose use is in [Testing TextMouth](../../developer/testing.md).
 
