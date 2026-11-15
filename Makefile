@@ -294,6 +294,7 @@ check-selftest:
 	@python3 Scripts/test/test-logs.py --selftest
 	@python3 Scripts/test/ogg-lint.py --selftest
 	@python3 Scripts/test/make-corpus.py --selftest
+	@python3 -I -B Scripts/vendor/swiftsoup/test_make_vendor.py
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
