@@ -568,8 +568,10 @@ targets:
       - TextMouthProductionTests/DOCXTestPackages.swift
       - TextMouthProductionTests/DamagedFileTestSupport.swift
       - TextMouthProductionTests/DocumentByteLimitTests.swift
+      - TextMouthProductionTests/EPUBLinkAddressTests.swift
       - TextMouthProductionTests/EPUBStructureFailureTests.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
+      - TextMouthProductionTests/ExportContentsListTests.swift
       - TextMouthProductionTests/ExtractionReportTests.swift
       - TextMouthProductionTests/FFmpegMetadataTests.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
