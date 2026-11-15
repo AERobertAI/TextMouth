@@ -100,7 +100,8 @@ Part of [TextMouth's documentation](../../README.md).
 ## The first search, and the search texts
 <!-- id: first-search-search-texts; keys: ; src: -->
 
-- Searching a library of 750 books in a second or two is possible because TextMouth keeps the text of each book, ready to search, in a store of this Mac's own, outside the library: the folder Search Text in ~/Library/Caches/com.textmouth.TextMouth (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- Searching a library of 750 books in a second or two is possible because TextMouth keeps the text of each book, ready to search, in a store of this Mac's own, outside the library.
+  The store is the folder Search Text in ~/Library/Caches/com.textmouth.TextMouth (see [Where TextMouth keeps your library](where-your-library-lives.md)).
   The store holds about as much as the library's text: on the library it was measured on, 676 MB of text made 650 MB.
 - TextMouth makes the store in the background after the first launch of a new installation, once the launch's other work has ended, at the lowest priority, two books at a time.
   It never downloads a book, it is not done in Low Power Mode, and it stops while the data directory moves or the disk has no room.
@@ -109,7 +110,7 @@ Part of [TextMouth's documentation](../../README.md).
   Edit Text, a book read again, Redo Text Extraction, and a sync all change a book's text, so its search text is made again.
 - A search that meets a book with no search text made yet makes it itself, and says "Preparing 120 of 737 books…".
   That is the slow case: the first search ever, within about a minute of the first launch of a new installation, took 8 seconds for 737 books.
-  With the store made, a plain search of those books took under a second, Match Case the same, and a regular expression about 2.5 seconds (measured on November 13, 2026, on the library of 737 books and 676 MB it was built for).
+  With the store made, a plain search of those books took under a second, Match Case the same, and a regular expression about 2.5 seconds (measured on the library of 737 books and 676 MB it was built for).
 - The store is made again for every new build of TextMouth, since a new build may read books differently, and whenever macOS empties the Caches folder, which it may do when the disk runs low.
   Time Machine leaves Caches out.
   Making the store again takes about 51 seconds of processor time, spread over the background pass, and writes about as much as the library's text.
