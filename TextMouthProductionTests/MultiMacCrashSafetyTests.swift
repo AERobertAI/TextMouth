@@ -894,7 +894,72 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 60)
     }
 
+    /// In a cloud location, a config.json not on this Mac at all is not
+    /// written from this Mac's settings by the launch's save; once it is
+    /// here, the library's fetch hook merges it, the other Mac's settings
+    /// standing, and nothing was written over its place meanwhile.
+    func testSettingsNotHereYetInTheCloudAreNotWrittenAtLaunch() throws {
+        let folder = try makeSandboxDirectory("ConfigNotHereYet")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = makeConfigService(at: file)
+
+        service.saveToDisk(creatingAwaitedFile: false)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the launch wrote this Mac's settings in the file's place")
+
+        var theirs = ConfigService.AppConfig()
+        theirs.wordsPerMinute = 222
+        let theirBytes = try ConfigService.fileData(for: theirs)
+        try theirBytes.write(to: file)
+        service.fileMayHaveArrived()
+
+        XCTAssertEqual(service.config.wordsPerMinute, 222, "the other Mac's settings did not stand")
+        XCTAssertEqual(try Data(contentsOf: file), theirBytes)
+    }
+
+    /// A setting changed while config.json is awaited is saved, making the
+    /// file, as substitutions.json is made once a rule changes.
+    func testASettingChangedWhileTheSettingsAreAwaitedIsSaved() throws {
+        let folder = try makeSandboxDirectory("ConfigChangedWhileAwaited")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = makeConfigService(at: file)
+        service.saveToDisk(creatingAwaitedFile: false)
+
+        service.config.wordsPerMinute = 300
+        service.saveToDisk()
+
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 300)
+    }
+
+    /// One Mac, a folder elsewhere: the launch's save writes a missing
+    /// config.json from the settings, as before.
+    func testSettingsWithNoFileElsewhereAreWrittenAtLaunchAsBefore() throws {
+        let file = try makeSandboxDirectory("ConfigLocal").appendingPathComponent("config.json")
+        installItemStatus(FakeCloudItemStatusProvider())
+        let service = makeConfigService(at: file)
+        service.config.wordsPerMinute = 260
+
+        service.saveToDisk(creatingAwaitedFile: false)
+
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 260)
+    }
+
     // MARK: - Fixtures
+
+    /// A settings service for `file`, writing as the app does and watching
+    /// nothing.
+    private func makeConfigService(at file: URL) -> ConfigService {
+        ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+    }
 
     /// A file's state as a sync service reports a file only in the cloud.
     private let onlyInTheCloud = CloudItemStatus(

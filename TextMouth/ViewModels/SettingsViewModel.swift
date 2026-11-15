@@ -592,8 +592,10 @@ final class SettingsViewModel: ObservableObject {
         writePreferences(into: &configService.config)
         // A file that could not be read is someone's edit in progress. It
         // stays on disk to be corrected; the watcher applies the correction.
+        // A file not here at all, in a cloud location, may not have arrived
+        // yet, and is not made from this Mac's settings (risk 5).
         if configService.loadedFile != .unreadable {
-            configService.saveToDisk()
+            configService.saveToDisk(creatingAwaitedFile: false)
         }
         configService.startWatching()
     }
