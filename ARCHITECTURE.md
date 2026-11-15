@@ -28,7 +28,18 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
 - [Saving failures](docs/architecture/state/saving-failures.md)
-- [Imports](docs/architecture/state/imports.md), the Kindle readers included
+- [Imports](docs/architecture/state/imports.md): the import itself, its progress, questions, and folders.
+  - [Duplicates](docs/architecture/state/imports-duplicates.md): unanswered duplicates, and Replace Existing.
+  - [DAISY 3 books](docs/architecture/state/imports-daisy.md): several DTBook files, and SMIL clocks.
+  - [Audio](docs/architecture/state/imports-audio.md): manifests, conversion, playlists, Ogg, and chapters.
+  - [Documents textutil reads](docs/architecture/state/imports-textutil.md): web archives, SSML, and DTBooks.
+  - [Rich text and Word](docs/architecture/state/imports-rtf-and-word.md): the RTF, Word 97-2003, and Word 6 readers.
+  - [DOCX, OpenDocument, and Word 2003 XML](docs/architecture/state/imports-office-xml.md): the readers' policies.
+  - [Kindle books](docs/architecture/state/imports-kindle.md): KFX, MOBI 6, and KF8.
+  - [Braille files](docs/architecture/state/imports-braille.md): BRF, BRL, and PEF books, and their records.
+  - [Braille tables](docs/architecture/state/imports-braille-tables.md): the catalog, the translator helper, and the guess.
+  - [Text in other encodings](docs/architecture/state/imports-text-encodings.md): finding and guessing the encoding.
+  - [Choosing the encoding](docs/architecture/state/imports-text-encoding-choice.md): the listener's way to mend a guess.
 - [Feeds](docs/architecture/state/feeds.md)
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)
