@@ -30,6 +30,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Saving failures](docs/architecture/state/saving-failures.md)
 - [Imports](docs/architecture/state/imports.md), the Kindle readers included
 - [Feeds](docs/architecture/state/feeds.md)
+  - [Feed options, interface, and arrivals](docs/architecture/state/feeds-interface.md)
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)
 - [Exports](docs/architecture/state/exports.md)
