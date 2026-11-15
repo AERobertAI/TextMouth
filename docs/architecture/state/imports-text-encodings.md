@@ -68,7 +68,7 @@ The policy: TextFileDecoder.EncodingPolicy is what a read does with bytes that n
 - .guess is the policy of the import of a file the user chose.
 - .recorded(identifier) is the policy of a book with a recorded encoding, and EncodingPolicy.forBook(recording:) chooses between it and .fallback.
 - .chosen(identifier) is the policy of a book whose encoding the listener chose (TextEncodingRecord.policy gives it, from the record's source, in place of forBook(recording:)).
-  Not an answer to bytes that name no encoding, as the three before it are, but a reading that overrules whatever the bytes name, and that is strict.
+  It is not an answer to bytes that name no encoding, as the three before it are, but a reading that overrules whatever the bytes name, and that is strict.
 
 A recorded identifier that the catalog does not know, or an encoding that the bytes are not valid in (a file changed since, or a record a later TextMouth wrote), leaves the bytes to the fallback.
 A recorded 7-bit encoding is checked against the bytes again (TextEncodingGuesser.guessSevenBit(_:)), since Foundation's reader lets a changed file through.
@@ -97,7 +97,8 @@ A missed guess costs less than a wrong one: the default is today's reading, whil
    A single line longer than four limits is cut after a byte that ends a character in all of them (lastByte(ofLineFrom:to:in:): a byte below 0x40 that is not a digit, since the digits are the second and fourth bytes of a four-byte GB 18030 character).
    A file with no such line, or whose sample is more than maximumControlByteShare (2 in 100) control characters other than white space and escape, is no text and is not guessed.
 2. The sample is read as Windows-1252 and judged as Judging.windows1252, and in every catalog entry marked isAlwaysTried and the one entry Foundation's own guess names, judged as Judging.rival.
-   Foundation's own guess is foundationHint(for:), from NSString.stringEncoding(for:encodingOptions:convertedString:usedLossyConversion:) through TextEncodingCatalog.entry(for:), which gives none when Foundation names nothing, Windows-1252, or an encoding the catalog lacks.
+   Foundation's own guess is foundationHint(for:), from NSString.stringEncoding(for:encodingOptions:convertedString:usedLossyConversion:) through TextEncodingCatalog.entry(for:).
+   The hint is none when Foundation names nothing, Windows-1252, or an encoding the catalog lacks.
    A reading with a replacement character is dropped.
 3. The readings are ranked by their surprise, fewest first, a tie keeping the catalog's order.
    In that order each must pass, or give way:
@@ -189,7 +190,7 @@ Both are kept in three files, each under keys named textEncoding and textEncodin
 - The package record (BookMetadata.textEncoding and textEncodingSource, in bookInfo.json), @LenientOptional (Models/LenientFields.swift) that decode a missing, null, or unreadable value as none, logged as a repair, without failing the record around it.
   Book.bookInfo(replacing:contentIndex:revisionFloor:decidingTextEncoding:) takes the two as one, by the rule in [Package records](package-records.md): a row that lost the encoding never erases it, and a row that lags behind a re-read never writes the old encoding back.
 - The removal marker (RemovedFromLibraryMarker.textEncoding and textEncodingSource, the latter an @LenientOptional that never makes the marker unreadable), which FileImportService.reconstructedBook(inPackage:marker:folderPath:dateAdded:) gives back to a book of a format that reads text files.
-  Since the removal deletes bookInfo.json and a book rebuilt without it would be read by the fallback, and its text would change.
+  This is because the removal deletes bookInfo.json and a book rebuilt without it would be read by the fallback, and its text would change.
   The marker keeps no source path, so a book added back from a marker that recorded neither has no Text Encoding pop-up (Book.offersTextEncodingChoice).
 
 ### Reading the record
@@ -250,7 +251,7 @@ Limits, as the reviewers measured them on thousands of windows of real prose in 
   Of 92 one-line notes and two-cue subtitles in Windows-1251 and Mac Cyrillic, 22 that an earlier round read right are left garbled: all lack ы, ь, and я, the bytes Windows-1255 cannot read, so its reading is as clean as the Cyrillic one and Foundation's pick is not Hebrew.
   A full paragraph still reads right.
 - Identifiers: a file of near-ASCII code whose only non-ASCII letters are capitals inside lowercase names ("zeigeÜbersicht"), in an encoding other than Windows-1252, is left as Windows-1252.
-  Because its right reading holds a case flip for each capital and a rival may hold few anomalies (the disorder limit above).
+  That is because its right reading holds a case flip for each capital and a rival may hold few anomalies (the disorder limit above).
   The error the other way remains for Windows-1252 code with five camelCase capitals of one letter, or three or more across two letters, whose Mac Roman reading is clean: "listarÕes()" reads "listar’es()".
   Ê (read as a no-break space), Š (as "ä"), Ž (as "é"), Œ, Õ, Ñ, and Ð are such capitals, and since a rival may hold one anomaly, "créerŒuvre" passes too.
   Identifiers inside ordinary French or Spanish prose stay Windows-1252, and the reviewer judged a real file losing this way unlikely.
