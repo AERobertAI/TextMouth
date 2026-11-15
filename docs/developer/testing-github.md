@@ -1,5 +1,5 @@
 # Tests on GitHub Actions
-<!-- id: tests-github-actions; keys: ; src: -->
+<!-- id: tests-github-actions; keys: CI, hosted runner, macos-26, workflow, remote train; src: .github/workflows/test-build.yml, .github/workflows/tests.yml, Scripts/agents/github_run.py -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,7 +8,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
 Building.md (Builds on GitHub Actions) has the design; this section is for reading a run and knowing what a run cannot tell you.
 
 ## What runs where
-<!-- id: what-runs-where; keys: ; src: Scripts/agents/github_run.py, Scripts/agents/run_suite.py -->
+<!-- id: what-runs-where; keys: CI, concurrency group, cancel-in-progress, queue, serialize pushes, typecheck; src: Scripts/agents/github_run.py, Scripts/agents/run_suite.py, .github/workflows/test-build.yml, .github/workflows/tests.yml, Scripts/agents/build-train.py, Makefile -->
 
 - **On this Mac:** merging the requests, pushing, waiting, reading the result.
   A remote train takes no heavy-work lock and runs no iOS census (the run builds the iPhone app on GitHub instead).
@@ -21,7 +21,7 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
 - **Still on this Mac:** the type-checks (`make typecheck-mac`, `make typecheck-ios`), the lints, `make check`, anything that needs the development Mac's voices, accessibility session, or signing identity, and the tests the runner leaves out (below).
 
 ## How a run goes
-<!-- id: how-run-goes; keys: ; src: TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/run_suite.py -->
+<!-- id: how-run-goes; keys: CI, matrix, workflow_call, build-for-testing, simulator, artifact, xcresult, xcodegen; src: TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/run_suite.py, .github/workflows/tests.yml, .github/workflows/test-build.yml, .github/workflows/check.yml, Scripts/agents/class-times.json, Scripts/agents/plan_shards.py, Scripts/agents/run-on-runner.py, Scripts/agents/test_command.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, Scripts/agents/merge_shards.py, Scripts/test/run-area.py, project.yml -->
 
 1. **The request.**
    A train or a suite pushes a commit of the tree to test plus `.github/test-request.json`: `areas`, `classes`, `full`, and `shards`.
@@ -59,7 +59,7 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
    `run_suite.py --remote` prints the same verdicts, the files the errors are in with how many errors each holds, and each failed iPhone test, unit or interface, with its bundle.
 
 ## Reading a run
-<!-- id: reading-run; keys: ; src: Scripts/agents/run_suite.py -->
+<!-- id: reading-run; keys: troubleshooting, failed run, cancelled run, artifact, retry, gh CLI; src: Scripts/agents/run_suite.py, Scripts/agents/build-train.py, .github/workflows/tests.yml -->
 
 - **From the Mac:** the train's folder, `build/orchestrator/train/trains/<id>/`, holds `run.log`, `run-summary.txt`, `summary.md`, and `remote.json` (the run's link and minutes); a retry without a broken branch keeps each run's download in `remote-1`, `remote-2`.
   `run_suite.py --remote` writes the log to the LOG it was given.
@@ -72,7 +72,7 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
   Only the first is a result.
 
 ## What differs from this Mac
-<!-- id: what-differs-from-this-mac; keys: ; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/EndBehaviorMatrixTests.swift -->
+<!-- id: what-differs-from-this-mac; keys: coreaudiod, virtual machine, spindump, thread pool starvation, skip list, test timeout, no_skips; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/EndBehaviorMatrixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/VoiceCatalogTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift, TextMouthProductionTests/ImportProgressTests.swift, TextMouthProductionTests/RetainedPackageImportTests.swift, TextMouthProductionTests/PodcastChaptersHeadingsTests.swift, TextMouthProductionTests/PublishedFileProgressTests.swift, TextMouthProductionTests/ReaderAudioFailureTests.swift, Scripts/agents/runner-skips.conf, Scripts/agents/runner_skips.py, Scripts/agents/run-on-runner.py, Scripts/agents/tests/test_run_on_runner.py, Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/test/run-area.py, .github/workflows/tests.yml -->
 
 The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), no display session, no sound hardware that works, and no Accessibility permission.
 
@@ -110,7 +110,7 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
   Pin margins every Mac meets.
 
 ## Time
-<!-- id: time; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
+<!-- id: time; keys: duration, how long, speed, performance, cache, bootstatus, simctl, minutes; src: TextMouthiOSUITests/TextMouthUITestCase.swift, .github/workflows/tests.yml, Scripts/agents/class-times.json, Scripts/agents/run-ios-ui-tests.py -->
 
 Measured on November 9 and 10, 2026, on the `macos-26` runner (Xcode 26.0.1).
 The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); the numbers here are the ones that matter.
@@ -146,7 +146,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   No build, no test host, no heavy-work lock.
 
 ## Fixed on November 10, 2026 (what each failure was)
-<!-- id: fixed-november-10-2026-what; keys: ; src: TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift -->
+<!-- id: fixed-november-10-2026-what; keys: cancellation, hang, timeScale, time scale, deadline, flaky, race; src: TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/PackageSAXParser.swift, TextMouthProductionTests/VoiceCatalogTests.swift, TextMouthProductionTests/OfficeXMLGuardTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, TextMouthProductionTests/XMLInputGuardTests.swift, TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/MOBIHostileFileTests.swift, TextMouthProductionTests/SpeechBufferSynthesizerTests.swift, TextMouthProductionTests/AudioEngineBehaviorTests.swift, Scripts/agents/run-on-runner.py -->
 
 - **Three threads of the concurrency pool held by the voice listing** (hung `EpisodeDownloadContinuationTests`, `PreRenderedSpeechInvalidationTests`, `ReadingListReaderTests`, `AudioEngineBehaviorTests.testReportWhilePausedShortOfTheEndIsNotFinishedOnResume`, and the tests the audio hangs were blamed for before): `VoiceCatalog` now lists voices on a queue of its own and on a thread of its own, so the pool is never held.
   Each catalog has its own queue, one listing at a time: a listing replaced while it waits is skipped there, a listing that has not returned after `listingDeadline` (10 seconds) is given up on and the queue goes on (so one hung listing cannot stop `VoiceCatalog.shared` from refreshing for the rest of the session), and `waitUntilListed(limit: 15)` says whether it waited the listing out; the phone's voice sheet goes on with no voices when it did not.
@@ -169,7 +169,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
 - **A run that failed with no failed test** now says why on its page: `judge()` names the first ERROR line, else the first CRASH line, else that the log lacks `** TEST SUCCEEDED **` (run 42911613586 had 11,849 tests and 0 failures and was judged FAILED for an NSError line cut at the front by interleaved output, which `testkit` no longer reads as an error).
 
 ## Flaky or unexplained on the runner
-<!-- id: flaky-unexplained-runner; keys: ; src: TextMouthProductionTests/IntegrationPersistenceTests.swift, TextMouthProductionTests/MenuKeyShortcutTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouthProductionTests/RecordingSaveTests.swift, TextMouthProductionTests/IntegrationWindowRoutingTests.swift -->
+<!-- id: flaky-unexplained-runner; keys: intermittent, flake, not retried, 503, rate limit, egress, network error; src: TextMouthProductionTests/IntegrationPersistenceTests.swift, TextMouthProductionTests/MenuKeyShortcutTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouthProductionTests/RecordingSaveTests.swift, TextMouthProductionTests/IntegrationWindowRoutingTests.swift, TextMouthProductionTests/ContinueToNextBookTests.swift, TextMouthProductionTests/PreferenceStoreTests.swift, TextMouthProductionTests/MigrationStagingLeftoversTests.swift, TextMouthProductionTests/ReaderLifecycleAuditTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, Scripts/agents/runner-skips.conf, Scripts/agents/github_run.py, Scripts/agents/merge_shards.py -->
 
 These failed on the runner in some runs and not others, and nobody found the cause.
 They are not retried (nothing here is retried on any machine); the ones named in the skip list are left out there, the others are expected now and then in a remote result, and one that appears twice in a row on a quiet change deserves a look on this Mac.
@@ -187,7 +187,7 @@ They are not retried (nothing here is retried on any machine); the ones named in
   Download a bundle only to look into a failure.
 
 ## Safety
-<!-- id: safety; keys: ; src: -->
+<!-- id: safety; keys: security, permissions, token, secrets, pull request, fork, pinned actions, refspec; src: Scripts/agents/github_run.py, .github/workflows/test-build.yml, .github/workflows/tests.yml, .github/workflows/check.yml, .github/actions/setup-xcode/action.yml, Scripts/agents/tests/test_workflow.py, Scripts/agents/tests/test_github_run.py -->
 
 The workflow reads the repository and nothing else: a read-only token, no secrets, GitHub's own actions pinned to commit hashes, and a trigger of a push to `TestBuild` alone, so a pull request or a fork starts no job.
 `Scripts/agents/github_run.py` pushes only `<commit>:refs/heads/TestBuild` (with `--no-follow-tags`, so no tag goes with it), builds that refspec from a constant, makes the commit from tracked files with git's plumbing, and checks before it pushes: that no object the push would send, in the tip's tree or in the history behind it that origin does not have, has a path under `build/`, `humanQuestions/`, or `humanReports/` (names are read NUL-separated, so quoted ones are checked too); that, once `test-build.yml` is on origin's main (**the guard is off until then**: on November 10, 2026 origin's main has only `check.yml`, and pushing main after the branch that adds `tests.yml` merges switches it on), the tree's `.github/workflows/` and `.github/actions/` are the same as main's, so a merged branch cannot widen the workflow's permissions or add a step; and that origin's push URL is this repository's.
