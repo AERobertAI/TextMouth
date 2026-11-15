@@ -18,7 +18,11 @@ import Foundation
 ///   made to a field of the object in place. An object this TextMouth makes
 ///   anew (a reading position at another place, a fingerprint of rewritten
 ///   files) starts with none: what a later TextMouth noted about the object
-///   that was replaced would describe the wrong one.
+///   that was replaced would describe the wrong one. Where TextMouth makes
+///   an object anew though the thing it describes is the same, the new one
+///   is given the old one's: a reading position saved again at the place it
+///   holds (`ReadingPosition.keepingUnknownKeys(ofSamePlaceIn:)`), a skipped
+///   heading that still names its heading after the text was read again.
 /// - **They take part in `==`** (see `==` below) **and not in hashing**
 ///   (`hash(into:)`).
 /// - **Keys are written sorted**, as every file TextMouth writes sorts its

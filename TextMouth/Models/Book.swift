@@ -2546,6 +2546,31 @@ struct ReadingPosition: Codable, Hashable, KeepsUnknownKeys {
     }
 }
 
+extension ReadingPosition {
+    /// This position with the unknown keys of `stored`, the position it is
+    /// saved over, where the two are the same (V04): the position's own
+    /// when they are at the same chapter and offset, and the anchor's when
+    /// both hold an anchor of the same words. For a position made anew at
+    /// a place that has not moved, as a reader makes one at every save
+    /// (`Library.updateReadingPosition`). A position or an anchor that
+    /// already holds unknown keys keeps its own, and a place that moved, or
+    /// words that changed, take none: what a later TextMouth noted would
+    /// describe another place or other words.
+    func keepingUnknownKeys(ofSamePlaceIn stored: ReadingPosition?) -> ReadingPosition {
+        guard let stored else { return self }
+        var kept = self
+        if unknownKeys.isEmpty, chapterIndex == stored.chapterIndex, characterOffset == stored.characterOffset {
+            kept.unknownKeys = stored.unknownKeys
+        }
+        if var anchor = anchor, let storedAnchor = stored.anchor, anchor.unknownKeys.isEmpty,
+           anchor.before == storedAnchor.before, anchor.after == storedAnchor.after {
+            anchor.unknownKeys = storedAnchor.unknownKeys
+            kept.anchor = anchor
+        }
+        return kept
+    }
+}
+
 struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     let id: UUID
     var number: Int

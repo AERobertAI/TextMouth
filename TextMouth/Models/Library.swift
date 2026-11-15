@@ -537,9 +537,18 @@ struct Library: Codable, Equatable, KeepsUnknownKeys {
     /// it moves as opened at the user's first launch, for good, and Recently
     /// Opened, the Last Opened sort, and Speak Info's "Last opened" would
     /// all have said so (REV14).
+    ///
+    /// A reader saves a place it makes anew each time, at every opening,
+    /// closing, quit, and checkpoint, moved or not. When `position` is the
+    /// place the row already holds, it takes the keys of that place that
+    /// this TextMouth does not know, and its anchor takes the stored
+    /// anchor's when its words are the same (V04,
+    /// `ReadingPosition.keepingUnknownKeys(ofSamePlaceIn:)`): opening a book
+    /// must not drop what a later TextMouth noted about a place that has
+    /// not moved. A place that moved starts with none.
     mutating func updateReadingPosition(bookID: UUID, position: ReadingPosition, markingOpened: Bool = true) {
         guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
-        books[index].readingPosition = position
+        books[index].readingPosition = position.keepingUnknownKeys(ofSamePlaceIn: books[index].readingPosition)
         if markingOpened {
             books[index].lastOpened = Date()
         }

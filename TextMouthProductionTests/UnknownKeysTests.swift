@@ -720,6 +720,64 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(book.readingPosition?.unknownKeys, UnknownKeys())
     }
 
+    /// A reader saves its place anew at every opening, closing, quit, and
+    /// checkpoint, moved or not (review6, finding 1). A place saved where
+    /// the row already holds it keeps the stored place's unknown keys, and
+    /// its anchor the stored anchor's when the words are the same; a place
+    /// that moved, and an anchor of other words, start with none. The
+    /// record written from the row then holds what the row holds.
+    func testAPositionSavedAgainAtItsPlaceKeepsItsKeysAndAMovedOneDropsThem() throws {
+        var book = Self.plainBook()
+        var stored = try XCTUnwrap(book.readingPosition)
+        var storedAnchor = try XCTUnwrap(stored.anchor)
+        storedAnchor.unknownKeys = UnknownKeys(["sentence": .integer(7)])
+        stored.anchor = storedAnchor
+        stored.unknownKeys = UnknownKeys(["page": .integer(41)])
+        book.readingPosition = stored
+        var library = Library(books: [book])
+
+        // The reader's save of the same place: a new position, a new anchor
+        // of the same words, another date.
+        let unmoved = ReadingPosition(
+            chapterIndex: stored.chapterIndex,
+            characterOffset: stored.characterOffset,
+            globalCharacterOffset: stored.globalCharacterOffset,
+            anchor: TextAnchor(before: storedAnchor.before, after: storedAnchor.after, fraction: storedAnchor.fraction)
+        )
+        XCTAssertTrue(unmoved.unknownKeys.isEmpty)
+        library.updateReadingPosition(bookID: book.id, position: unmoved, markingOpened: false)
+
+        let saved = try XCTUnwrap(library.books.first?.readingPosition)
+        XCTAssertEqual(saved.unknownKeys, stored.unknownKeys)
+        XCTAssertEqual(saved.anchor?.unknownKeys, storedAnchor.unknownKeys)
+        XCTAssertEqual(saved.lastUpdated, unmoved.lastUpdated)
+        // The record a save writes from the row holds them too.
+        let record = try XCTUnwrap(library.books.first).bookInfo(replacing: nil, contentIndex: nil)
+        XCTAssertEqual(record.state.readingPosition?.unknownKeys, stored.unknownKeys)
+        XCTAssertEqual(record.state.readingPosition?.anchor?.unknownKeys, storedAnchor.unknownKeys)
+
+        // The same place with other words around it (the text was read
+        // again): the place's keys stay, the anchor's go.
+        let reworded = ReadingPosition(
+            chapterIndex: stored.chapterIndex,
+            characterOffset: stored.characterOffset,
+            anchor: TextAnchor(before: "other words before", after: "other words after", fraction: 0.5)
+        )
+        library.updateReadingPosition(bookID: book.id, position: reworded, markingOpened: false)
+        XCTAssertEqual(library.books.first?.readingPosition?.unknownKeys, stored.unknownKeys)
+        XCTAssertEqual(library.books.first?.readingPosition?.anchor?.unknownKeys, UnknownKeys())
+
+        // A place that moved starts with none.
+        let moved = ReadingPosition(
+            chapterIndex: stored.chapterIndex,
+            characterOffset: stored.characterOffset + 25,
+            anchor: TextAnchor(before: "further on", after: "in the chapter", fraction: 0.6)
+        )
+        library.updateReadingPosition(bookID: book.id, position: moved, markingOpened: false)
+        XCTAssertEqual(library.books.first?.readingPosition?.unknownKeys, UnknownKeys())
+        XCTAssertEqual(library.books.first?.readingPosition?.anchor?.unknownKeys, UnknownKeys())
+    }
+
     // MARK: - config.json's Saves and Merges
 
     /// A setting changed and saved keeps config.json's unknown keys, and
