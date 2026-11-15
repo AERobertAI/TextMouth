@@ -449,8 +449,9 @@ final class FFmpegImportConversionTests: XCTestCase {
     // MARK: - Tags Before the Conversion
 
     /// A file only ffmpeg reads is named by the tags ffprobe reports, the
-    /// file's own first and the stream's where the file names none; with no
-    /// ffmpeg it keeps its file's name.
+    /// file's own first and, in Ogg, the stream's where the file names none
+    /// (a Matroska track's name is no title); a RealMedia file's author is
+    /// the book's; with no ffmpeg it keeps its file's name.
     func testTheTagsBeforeTheConversionComeFromFFprobe() throws {
         let wma = try source()
         let wmaStandIn = try ffmpegStandIn(report: standInWMAReport)
@@ -476,6 +477,16 @@ final class FFmpegImportConversionTests: XCTestCase {
             ImportedFileMetadata.read(from: mkv, format: .audio)
         }
         XCTAssertEqual(fromTrackName.title, "Lecture")
+
+        // RealMedia's author reaches ffprobe as `author`, not `artist`
+        // (review9 finding 5); an artist would come first, an album's last.
+        let realMedia = #"{"streams": [{"index": 0, "codec_type": "audio", "codec_name": "cook", "sample_rate": "44100", "channels": 2, "disposition": {"default": 0}}], "format": {"format_name": "rm", "tags": {"title": "Talk", "author": "Only Author", "album_artist": "An Album's Artist"}}}"#
+        let ra = try source("rm/tones.ra", named: "tones.ra")
+        let realMediaStandIn = try ffmpegStandIn(report: realMedia)
+        let fromAuthor = FFmpegAudioConverter.$tool.withValue(realMediaStandIn) {
+            ImportedFileMetadata.read(from: ra, format: .audio)
+        }
+        XCTAssertEqual([fromAuthor.title, fromAuthor.author], ["Talk", "Only Author"])
 
         let missingStandIn = try ffmpegStandIn(located: .ffmpegMissing, report: standInWMAReport)
         let unnamed = FFmpegAudioConverter.$tool.withValue(missingStandIn) {

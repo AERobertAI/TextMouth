@@ -1716,8 +1716,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 result.duration = durationString(header.duration)
             } else if let probed = await FFmpegAudioConverter.tags(of: url, using: ffmpeg) {
                 result.title = probed.tags["title"] ?? ""
-                // ASF's Author and Matroska's ARTIST both reach ffprobe as the artist.
-                result.artist = probed.tags["artist"] ?? probed.tags["album_artist"] ?? ""
+                // ASF's Author and Matroska's ARTIST both reach ffprobe as the
+                // artist; RealMedia's author keeps its name (review9 finding 5).
+                result.artist = probed.tags["artist"] ?? probed.tags["author"] ?? probed.tags["album_artist"] ?? ""
                 result.album = probed.tags["album"] ?? ""
                 result.genre = probed.tags["genre"] ?? ""
                 result.year = probed.tags["date"] ?? probed.tags["year"] ?? ""
