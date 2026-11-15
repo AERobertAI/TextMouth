@@ -59,6 +59,41 @@ UNIT_BASE = "XCTestCase"
 TEST_METHOD = re.compile(r"^[ \t]*" + _BEFORE + r"func\s+(test[A-Za-z0-9_]*)\s*\(", re.M)
 
 
+# What would make sound or use a microphone, in three groups, so a unit test of either bundle may name none of them:
+# - the audio frameworks and the speech recognizer (`import Speech` uses the microphone's permission);
+# - the app's own ways in, which `@testable import TextMouth` exposes: its players, its recorder, and its audio session;
+# - calls that start sound: `togglePlay()`, `playOrResume()`, `playSelection()`, `playAudioChapter()`,
+#   `startPunchIn()` and `.play(at:)` (any arguments), and any call beginning with play or speak, and `resume(` (a Swift continuation's is not one; `resumeIndexWrites(` is a library helper).
+# A bare `record(...)` is not read: in these tests it is the feed store, the log, or a test's own list recording a value, and the
+# recorder types and `startRecording` are named above.
+# A false red is the safe side. The check of the unit bundle's files (test_run_ios_ui_tests.py) and the tests census
+# (Scripts/ios/typecheck.py) both read this one pattern.
+SOUND_PATTERN = re.compile(
+    r"AVFoundation|AVAudio|AVSpeech|AVPlayer|AVQueuePlayer|AudioToolbox|AudioUnit|CoreAudio|MediaPlayer|import Speech|"
+    r"SpeechEngine|AudioEngine|PhoneAudioSession|PhoneAppModel|ReaderViewModel|"
+    r"Recorder|RecordingService|togglePlay|playOrResume|playSelection|playAudioChapter|startPunchIn|startRecording|"
+    r"\.(?:play|speak)\(|\b(?:play|speak)\w*\(|(?<!continuation\.)\bresume\("
+)
+
+
+def sound_in_source(text):
+    """The first thing in the Swift source `text` that would make sound (see SOUND_PATTERN), or "" when there is none.
+    Comments say "plays" in prose, so only code counts: a line that starts with `//` is not read."""
+    code = "\n".join(line for line in text.splitlines() if not line.strip().startswith("//"))
+    match = SOUND_PATTERN.search(code)
+    return match.group(0) if match else ""
+
+
+def sound_in_files(files):
+    """The files (paths) that name something that makes sound, as {file name: first match}."""
+    found = {}
+    for path in files:
+        match = sound_in_source(Path(path).read_text(encoding="utf-8", errors="replace"))
+        if match:
+            found[Path(path).name] = match
+    return found
+
+
 def swift_files(folder):
     """The Swift files under `folder`, subfolders included, in path order; none when the folder is absent (a tree from
     before the tests)."""
@@ -66,18 +101,73 @@ def swift_files(folder):
     return sorted(folder.rglob("*.swift")) if folder.is_dir() else []
 
 
-def _counts_in(folder, base):
-    """How many test methods each test class of `folder` holds, as {class: count}: a test class is one that inherits `base`.
-    A method counts for the class or extension it follows, wherever that is in the folder: an extension of a test class
-    adds to its count, an extension of any other type (or a class that inherits something else) adds to none. The runner
-    checks that at least this many results came back (a run that returns fewer has lost tests)."""
-    texts = [path.read_text(encoding="utf-8", errors="replace") for path in swift_files(folder)]
-    # First every test class of the folder, so an extension may come before its class or in another file.
-    counts = {}
-    for text in texts:
-        for match in _SCOPE.finditer(text):
-            if match.group("class") and match.group("base").split(".")[-1] == base:
-                counts.setdefault(match.group("class"), 0)
+def unit_source_files(root=ROOT):
+    """Every Swift file the unit bundle compiles, in path order: its own folder's, and the Mac tests' files that
+    project.yml lists for it by path (so that one file serves the Mac's bundle and the iPhone's; see `shared_files`).
+    A file listed but absent from the tree is left out."""
+    root = Path(root)
+    return sorted(set(swift_files(root / UNIT_FOLDER)) | set(shared_files(root)))
+
+
+def shared_files(root=ROOT):
+    """The Mac tests' Swift files that project.yml lists among the sources of TextMouthiOSTests, as absolute paths in
+    the order listed: the files the two bundles share. None when project.yml is absent or lists none."""
+    root = Path(root)
+    project = root / "project.yml"
+    if not project.is_file():
+        return []
+    block = re.search(rf"^  {UNIT_BUNDLE}:\n(.*?)^    settings:", project.read_text(encoding="utf-8"), re.M | re.S)
+    if not block:
+        return []
+    listed = re.findall(r"^      - (\S+\.swift)\s*$", block.group(1), re.M)
+    return [root / path for path in listed if (root / path).is_file()]
+
+
+def without_mac_only(text):
+    """`text` without the lines the iPhone does not compile: those between `#if os(macOS)` and its `#else` or `#endif` (the
+    tests a shared Mac file fences off because they need the Mac). Nested `#if`s are followed; `#if !os(macOS)` and
+    other conditions are kept, as the iPhone compiles them."""
+    kept, depth_in_mac = [], 0
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if depth_in_mac:
+            if stripped.startswith("#if"):
+                depth_in_mac += 1
+            elif stripped.startswith("#endif"):
+                depth_in_mac -= 1
+            elif stripped.startswith(("#else", "#elseif")) and depth_in_mac == 1:
+                depth_in_mac = 0
+                # What follows an #else of a Mac-only block is the iPhone's; its #endif is then dropped below.
+                kept.append("#if true")
+            continue
+        if re.match(r"#if\s+os\(macOS\)\s*$", stripped):
+            depth_in_mac = 1
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
+def _counts_of(files, base):
+    """How many test methods each test class declared in `files` (paths) holds, as {class: count}: a test class is one
+    that inherits `base`, or inherits a class of these files that is one (so a shared helper base such as the Mac tests'
+    `CloudMaintenanceTestCase` counts). A method counts for the class or extension it follows, wherever that is in the
+    files: an extension of a test class adds to its count, an extension of any other type (or a class that inherits
+    something else) adds to none. The runner checks that at least this many results came back (a run that returns fewer
+    has lost tests)."""
+    texts = [without_mac_only(path.read_text(encoding="utf-8", errors="replace")) for path in files]
+    # First every test class of the files, so an extension may come before its class or in another file. A class that
+    # inherits one found already is found in a later pass, so the order of the files does not matter.
+    declared = [(match.group("class"), match.group("base").split(".")[-1])
+                for text in texts for match in _SCOPE.finditer(text) if match.group("class")]
+    bases, counts = {base}, {}
+    grown = True
+    while grown:
+        grown = False
+        for name, parent in declared:
+            if parent in bases and name not in counts:
+                counts[name] = 0
+                bases.add(name)
+                grown = True
     for text in texts:
         scopes = [(match.start(), match.group("class") or match.group("ext").split(".")[-1])
                   for match in _SCOPE.finditer(text)]
@@ -86,6 +176,11 @@ def _counts_in(folder, base):
             if name in counts:
                 counts[name] += len(TEST_METHOD.findall(text[start:end]))
     return counts
+
+
+def _counts_in(folder, base):
+    """`_counts_of` the Swift files under `folder`."""
+    return _counts_of(swift_files(folder), base)
 
 
 def _classes_in(folder, base):
@@ -100,8 +195,15 @@ def ui_classes(root=ROOT):
 
 
 def unit_classes(root=ROOT):
-    """The unit test classes in `root`'s TextMouthiOSTests folder, sorted: every class that inherits `XCTestCase`."""
-    return _classes_in(Path(root) / UNIT_FOLDER, UNIT_BASE)
+    """The unit test classes of `root`, sorted: every class that inherits `XCTestCase` in the TextMouthiOSTests folder or
+    in a Mac test file that project.yml lists for the bundle."""
+    return sorted(unit_counts(root))
+
+
+def shared_classes(root=ROOT):
+    """The unit test classes that are also Mac test classes, sorted: those declared in the files the two bundles share.
+    Their names stay in a request's `"classes"` for the Mac, and are added to the iPhone's."""
+    return sorted(_counts_of(shared_files(root), UNIT_BASE))
 
 
 def all_classes(root=ROOT):
@@ -122,8 +224,8 @@ def test_counts(root=ROOT):
 
 
 def unit_counts(root=ROOT):
-    """How many test methods each unit test class holds, as {class: count}."""
-    return _counts_in(Path(root) / UNIT_FOLDER, UNIT_BASE)
+    """How many test methods each unit test class holds, as {class: count}, the shared Mac test files' included."""
+    return _counts_of(unit_source_files(root), UNIT_BASE)
 
 
 def counts_by_bundle(names, root=ROOT):
@@ -139,13 +241,15 @@ def counts_by_bundle(names, root=ROOT):
 
 
 def split_classes(request, root=ROOT):
-    """A copy of `request` with the iPhone test classes (of either bundle) named in its "classes" moved to
-    "ios_ui_classes" (joined with any already there, once each, in order), so that "classes" holds only Mac test classes
-    for run-area.py."""
+    """A copy of `request` with the iPhone test classes (of either bundle) named in its "classes" added to
+    "ios_ui_classes" (joined with any already there, once each, in order). An iPhone-only class is moved out of "classes",
+    so that "classes" holds only Mac test classes for run-area.py; a class the two bundles share stays in "classes" as
+    well, because the Mac still runs it."""
     known = set(all_classes(root))
+    shared = set(shared_classes(root))
     classes = list(request.get("classes", []))
     moved = [name for name in classes if name in known]
-    kept = [name for name in classes if name not in known]
+    kept = [name for name in classes if name not in known or name in shared]
     already = [name for name in request.get("ios_ui_classes", []) if isinstance(name, str)]
     joined = list(dict.fromkeys(already + moved))
     split = {**request, "classes": kept}

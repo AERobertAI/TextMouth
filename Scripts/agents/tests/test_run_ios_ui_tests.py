@@ -566,36 +566,32 @@ class TheSoundRuleTests(unittest.TestCase):
 
 class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
     """The unit tests run in the same simulator as the interface tests, with no sound variable of their own: they must
-    not play, speak, or record anything (the iPhone tests may make sound only where TEXTMOUTH_UI_SOUND allows it)."""
+    not play, speak, or record anything (the iPhone tests may make sound only where TEXTMOUTH_UI_SOUND allows it). The
+    rule covers every file the unit bundle compiles, wherever it lives: its own folder, and the Mac test files that
+    project.yml lists for it by path."""
 
-    # What would make sound or use a microphone, in three groups:
-    # - the audio frameworks and the speech recognizer (`import Speech` uses the microphone's permission);
-    # - the app's own ways in, which `@testable import TextMouth` exposes: its players, its recorder, and its audio session;
-    # - calls that start sound: `togglePlay()`, `playOrResume()`, `playSelection()`, `playAudioChapter()`,
-    #   `startPunchIn()` and `.play(at:)` (any arguments), and any call beginning with play, resume, speak, or record.
-    # None of the 19 unit tests of November 11, 2026 names any of them. A false red is the safe side.
-    SOUNDS = re.compile(
-        r"AVFoundation|AVAudio|AVSpeech|AVPlayer|AVQueuePlayer|AudioToolbox|AudioUnit|CoreAudio|MediaPlayer|import Speech|"
-        r"SpeechEngine|AudioEngine|PhoneAudioSession|PhoneAppModel|ReaderViewModel|"
-        r"togglePlay|playOrResume|playSelection|playAudioChapter|startPunchIn|startRecording|"
-        r"\.(?:play|speak)\(|\b(?:play|resume|speak|record)\w*\("
-    )
+    # What would make sound or use a microphone: the one pattern the tests census reads as well (ios_ui_tests.SOUND_PATTERN;
+    # its comment says what it holds). None of the 19 unit tests of November 11, 2026 named any of them. A false red is
+    # the safe side.
+    SOUNDS = uitests.ios_ui_tests.SOUND_PATTERN
 
     def sound_in(self, folder):
         """The Swift files under `folder` (subfolders included) whose code names something in SOUNDS, as {file name: first
         match}. Comments say "plays" in prose, so only code counts."""
-        found = {}
-        for path in uitests.ios_ui_tests.swift_files(folder):
-            code = "\n".join(line for line in path.read_text().splitlines() if not line.strip().startswith("//"))
-            match = self.SOUNDS.search(code)
-            if match:
-                found[path.name] = match.group(0)
-        return found
+        return uitests.ios_ui_tests.sound_in_files(uitests.ios_ui_tests.swift_files(folder))
 
     def test_no_unit_test_names_an_audio_framework_a_player_or_a_recorder(self):
-        folder = ROOT / "TextMouthiOSTests"
-        self.assertTrue(uitests.ios_ui_tests.swift_files(folder), "the unit tests are not where the test looks")
-        self.assertEqual(self.sound_in(folder), {}, "a unit test names something that makes sound")
+        """Every file the bundle compiles: its own folder's and the shared Mac files', named in project.yml."""
+        files = uitests.ios_ui_tests.unit_source_files(ROOT)
+        self.assertTrue(uitests.ios_ui_tests.swift_files(ROOT / "TextMouthiOSTests"), "the unit tests are not where the test looks")
+        self.assertEqual(uitests.ios_ui_tests.sound_in_files(files), {}, "a unit test names something that makes sound")
+
+    def test_every_file_the_unit_target_lists_by_path_is_a_file_that_exists_and_is_read(self):
+        """A path in project.yml that names no file is a mistake the check would otherwise not see."""
+        block = re.search(r"^  TextMouthiOSTests:\n(.*?)^    settings:", (ROOT / "project.yml").read_text(), re.M | re.S).group(1)
+        listed = re.findall(r"^      - (\S+\.swift)\s*$", block, re.M)
+        read = {str(path.relative_to(ROOT)) for path in uitests.ios_ui_tests.shared_files(ROOT)}
+        self.assertEqual(sorted(read), sorted(listed), "a listed file is missing from the tree")
 
     def test_the_check_catches_what_it_is_for(self):
         for source in ("import AVFoundation", "let p = AVAudioPlayer()", "reader.play()", "synth.speak(utterance)",
@@ -615,6 +611,22 @@ class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
             (folder / "Deeper" / "Loud.swift").write_text(
                 "final class LoudTests: XCTestCase {\n    func testA() { model.togglePlay() }\n}\n")
             self.assertEqual(self.sound_in(folder), {"Loud.swift": "togglePlay"})
+
+    def test_a_shared_mac_file_that_makes_sound_fails_the_check_wherever_it_lives(self):
+        """The break: a scratch tree whose project.yml lists a Mac test file, outside the unit folder, that starts playback."""
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            (root / "TextMouthiOSTests").mkdir()
+            (root / "TextMouthProductionTests").mkdir()
+            (root / "TextMouthiOSTests" / "Own.swift").write_text("final class OwnTests: XCTestCase {\n    func testA() {}\n}\n")
+            (root / "TextMouthProductionTests" / "Shared.swift").write_text(
+                "final class SharedTests: XCTestCase {\n    func testA() { reader.playOrResume() }\n}\n")
+            (root / "project.yml").write_text(
+                "targets:\n  TextMouthiOSTests:\n    sources:\n      - TextMouthiOSTests\n"
+                "      - TextMouthProductionTests/Shared.swift\n    settings:\n      base:\n        X: y\n")
+            files = uitests.ios_ui_tests.unit_source_files(root)
+            self.assertEqual(sorted(path.name for path in files), ["Own.swift", "Shared.swift"])
+            self.assertEqual(uitests.ios_ui_tests.sound_in_files(files), {"Shared.swift": "playOrResume"})
 
 
 class SettingUpTheSimulatorTests(unittest.TestCase):
