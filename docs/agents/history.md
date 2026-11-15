@@ -671,3 +671,10 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - The unanswered-duplicate marker (DuplicateQuestionMarker) came on October 31, 2026.
 - Answering off the main actor (answerImportDecisionOffMain, replaceExistingOffMain) came on November 13, 2026.
+
+## From Imports: Kindle books
+
+- Kindle KFX books (FMT52) came on November 5 and 6, 2026.
+- Kindle MOBI 6 books (FMT42) came on November 4, 2026.
+- KF8 (FMT48) came on November 8, 2026.
+- The continuation rule's measurement on the real books (the last chapters and licences of Pride and Prejudice, Moby Dick, and The Yellow Wallpaper) was made on November 9, 2026.
