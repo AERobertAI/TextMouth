@@ -579,7 +579,10 @@ targets:
       - TextMouthProductionTests/RunLoopWaiting.swift
       - TextMouthProductionTests/SourceScanTestSupport.swift
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
+      - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
+      - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
+      - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
       - TextMouthProductionTests/TextEncodingFixtures.swift
       - TextMouthProductionTests/TimeLeftEstimateTests.swift
