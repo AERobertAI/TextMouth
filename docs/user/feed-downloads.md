@@ -9,7 +9,11 @@ Part of [TextMouth's documentation](../../README.md).
 ### The List and download choices
 <!-- id: feeds-list-download-choices; keys: feedItems, feedNewestCount, global setting, per feed, ten seconds, 1 to 2,000; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
-Every feed follows one List and download choice, the one for every feed, set in the Feeds tab of Settings, or one of its own, set in its [Feed Info](feed-commands.md): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed, where 5 stands for the number that goes with the choice, from 1 to 2,000, 5 unless you change it.
+Every feed follows one List and download choice, the one for every feed, set in the Feeds tab of Settings, or one of its own, set in its [Feed Info](feed-commands.md):
+- Every item listed, newest 5 downloaded, the default;
+- Every item listed, downloads by hand;
+- or Only the newest 5 listed, where 5 stands for the number that goes with the choice, from 1 to 2,000, 5 unless you change it.
+
 A feed's list follows a change of the choice or the number at once; what downloads, and what is removed, follows once neither has changed for ten seconds.
 
 ### Newest downloaded by default
@@ -45,7 +49,11 @@ Under Only the newest 5 listed, the feed's record keeps only the newest of that 
 ### Settings moved over from earlier versions
 <!-- id: feeds-settings-moved-over; keys: feedKeepEntries, feedAutoDownload, upgrade, migration, Keep every entry; src: TextMouth/Models/FeedSettings.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
-The first launch after an update moves the earlier settings over, once: Keep the newest 10 entries, as TextMouth shipped it, or Download new episodes and articles by themselves turned on, becomes the default; Keep every entry becomes Every item listed, downloads by hand; and any other number of entries becomes Only the newest of that number listed, at least 1.
+The first launch after an update moves the earlier settings over, once:
+- Keep the newest 10 entries, as TextMouth shipped it, or Download new episodes and articles by themselves turned on, becomes the default;
+- Keep every entry becomes Every item listed, downloads by hand;
+- and any other number of entries becomes Only the newest of that number listed, at least 1.
+
 A feed's own number of entries, from its Feed Info, becomes its own Only the newest of that number listed, 10 included, and a feed's own Keep every entry makes it follow the choice for every feed when that lists every item, and otherwise gives it Every item listed, downloads by hand.
 So, in a library whose settings were as TextMouth shipped them, that launch downloads each feed's newest 5 not yet played or downloaded, its episodes on a network without data limits, and removes nothing.
 
@@ -79,7 +87,8 @@ A run TextMouth began by itself, which nobody heard start, is announced once, af
 Cancel stops every feed download, whether you or TextMouth asked for it: the one under way, those waiting to start, and those TextMouth asked for that wait for a network or for room; and it deletes what they had downloaded, partial files included.
 A download whose book is already being added to the library finishes, as in "“Ep.
 368” is already being added to the library."; meanwhile the section says "Cancelling..." in place of the time left, and its Cancel is dimmed, until the run ends or a download you ask for meanwhile begins, which gives Cancel back.
-Cancel is a pause: for a feed whose List and download choice downloads by itself, TextMouth downloads its newest again by itself once a check of the feed that began after Cancel has ended, the regular check, Check Feed, or Refresh All Feeds, or the next time TextMouth opens; Download on an item still downloads it at once, and Cancel Download on an item's row is still how you keep TextMouth from downloading that item by itself.
+Cancel is a pause: for a feed whose List and download choice downloads by itself, TextMouth downloads its newest again by itself once a check of the feed that began after Cancel has ended, the regular check, Check Feed, or Refresh All Feeds, or the next time TextMouth opens.
+Download on an item still downloads it at once, and Cancel Download on an item's row is still how you keep TextMouth from downloading that item by itself.
 A moment after Cancel, VoiceOver's focus moves to the Library window's list, since the section goes once the run ends, and only then does VoiceOver say what Cancel did, as in "Stopped 6 feed downloads.
 TextMouth downloads each feed's newest again at its next check, or the next time it opens."
 VoiceOver says how what Cancel stopped comes back: that line when the feeds will download all of it by themselves; "To download it again, choose Download on its row."

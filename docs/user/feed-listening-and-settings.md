@@ -67,9 +67,11 @@ Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
 
 Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself (see [Listing and downloading](feed-downloads.md)): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed.
 The first and third titles say the number in force, and VoiceOver speaks the choice as the menu's value and the choice's own sentence as its hint, which the screen shows under the number, as in "Lists every episode and article with what you did with it, keeps the newest 5 downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
-How many of the newest, a number field and a stepper, sets that number, from 1 to 2,000, 5 by default, a number typed outside moving to the nearer bound; the stepper speaks it with its unit, as in "5 items", and both are dimmed under Every item listed, downloads by hand, which counts none and keeps the number for a choice that does.
+How many of the newest, a number field and a stepper, sets that number, from 1 to 2,000, 5 by default, a number typed outside moving to the nearer bound.
+The stepper speaks it with its unit, as in "5 items", and both are dimmed under Every item listed, downloads by hand, which counts none and keeps the number for a choice that does.
 A line under them, which VoiceOver reads, says "The list follows a change of List and download at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then."
-A feed's list follows a change at once, and TextMouth downloads and removes by it once it has stayed unchanged for ten seconds, so typing 15 never passes through 1; VoiceOver then says, as in "List and download is now in effect: Only the newest 3 listed.", after a change made in config.json too, and then says the same of each feed whose own choice you changed within those ten seconds.
+A feed's list follows a change at once, and TextMouth downloads and removes by it once it has stayed unchanged for ten seconds, so typing 15 never passes through 1.
+VoiceOver then says, as in "List and download is now in effect: Only the newest 3 listed.", after a change made in config.json too, and then says the same of each feed whose own choice you changed within those ten seconds.
 Then Delete downloads after playing, from 0, at once, to 365 days, 1 by default, or Never delete played downloads.
 A feed can have its own List and download choice and its own days, in its Feed Info.
 
