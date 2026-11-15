@@ -659,3 +659,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **The braille page reader version:** Braille's page reader was at "1.0.0" until November 13, 2026, "1.1.0" from then, and "1.1.1" since November 14, 2026.
 - **The launch re-read's review:** The October 21, 2026 review that kept the re-read off until PG16 is restated in the comment on launchRereadIsOn.
 - **The text pipeline goldens:** TextPipelineGoldenTests hold the digests of what the text pipeline produced on main before the performance work of October 3.
+## From Kept texts, re-reads, and edited text
+
+- **Search Library's search texts:** Search Library's search texts (libsearch, November 13, 2026).
+- **A refusal that names the work under way:** A refusal for a book in booksBeingReadAgain, or, with no ID, for any, has, since November 13, 2026, named the work under way.
+- **One wait for every entry point of a re-read:** Four entry points ask it, so each waits in the same words and none leaves a content.md from one run beside the record of another (review of October 24, finding 3).
+- **A transcript stays when its download goes:** A transcribed episode's transcript is the listener's own work and stays in the episode's package when its download goes (October 23, 2026).
