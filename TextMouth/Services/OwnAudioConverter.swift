@@ -73,6 +73,11 @@ enum OwnAudioConverter {
         }
         do {
             let decoder = try format.decoder(of: bytes, companion: companionBytes(of: url))
+            // A header can promise any length. No watchdog stands over a
+            // decoder that runs in the app, so a length no recording has (over
+            // a year, as for every other source) is refused as damage before
+            // any of it is decoded.
+            guard decoder.stream.duration <= AudioFileInfo.maximumPlausibleDuration else { throw OwnAudioError.damaged }
             return sourceInfo(for: decoder.stream, format: format)
         } catch let problem as OwnAudioError {
             throw ImportAudioConverter.Failure.notRead(fileName: url.lastPathComponent, problem: problem)

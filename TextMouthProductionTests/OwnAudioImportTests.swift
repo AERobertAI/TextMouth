@@ -498,6 +498,24 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertEqual(OggTestFixtures.names(in: source.deletingLastPathComponent()), ["hybrid16.wv", "hybrid16.wvc"])
     }
 
+    /// A header that promises more than a year of audio is refused as
+    /// damage before any of it is decoded.
+    func testALengthNoRecordingHasIsRefused() async throws {
+        // Byte 11 of a WavPack file is the top byte of its 40-bit length in
+        // frames: 255 there makes this file of 22,050 Hz last 575 days. The
+        // file is ffmpeg's, whose blocks carry no checksum of their bytes, so
+        // the header still reads; without the cap it would decode until the
+        // file ended, and be refused as cut short instead.
+        var bytes = try ownAudioSampleBytes("wv/ffmpeg-mono16.wv")
+        bytes.replaceSubrange(11..<12, with: [0xFF])
+        let file = try writeFile(bytes, named: "Endless.wv")
+        let failure = await conversionFailure(of: file)
+        XCTAssertEqual(failure, .notRead(fileName: "Endless.wv", problem: .damaged))
+        XCTAssertGreaterThan(
+            try WavPackDecoder(OwnAudioBytes(bytes)).stream.duration, AudioFileInfo.maximumPlausibleDuration)
+        XCTAssertEqual(OggTestFixtures.names(in: file.deletingLastPathComponent()), ["Endless.wv"])
+    }
+
     /// A conversion stops when its task is cancelled, and leaves nothing.
     func testACancelledConversionLeavesNothing() async throws {
         let source = try copySample("tta/tones.tta")
