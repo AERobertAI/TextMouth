@@ -368,6 +368,65 @@ final class FFmpegImportConversionTests: XCTestCase {
         XCTAssertEqual(try names(in: folder), ["01.wma", "02.wma", "03.mp3"])
     }
 
+    /// A folder of MP3s with a stray video and a file merely named like
+    /// Speex (review9 finding 2): without ffmpeg both are left out, named in
+    /// the import's notice with what to install, and the book is its two
+    /// MP3s, where the whole book was refused; with ffmpeg the video is a
+    /// third track, and only the file that holds no sound is left out. The
+    /// folder imported from keeps its files.
+    func testAFolderLeavesOutWhatThisMacCannotConvert() throws {
+        let folder = try makeSandboxDirectory("FFmpegStray").appendingPathComponent("Book")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for name in ["01.mp3", "02.mp3"] {
+            try FileManager.default.copyItem(at: try formatSampleURL("mp3-chapters/three-tones.mp3"), to: folder.appendingPathComponent(name))
+        }
+        try FileManager.default.copyItem(at: try formatSampleURL("avi/tones-mp3.avi"), to: folder.appendingPathComponent("Trailer.avi"))
+        try Data(#"<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><array/></plist>"#.utf8)
+            .write(to: folder.appendingPathComponent("Report.spx"))
+        let noSound = "TextMouth left out “Report.spx”, which holds no sound it can read."
+
+        let withoutFFmpeg = try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(located: .ffmpegMissing, report: nil)) {
+            try FileImportService.importAudioFolderWithReport(from: folder)
+        }
+        addTeardownBlock { try? FileManager.default.removeItem(at: withoutFFmpeg.book.tmbDirectory) }
+        XCTAssertEqual(try AudioBookParser.trackPaths(in: URL(fileURLWithPath: withoutFFmpeg.book.filePath)).sorted(), ["01.mp3", "02.mp3"])
+        XCTAssertEqual(
+            withoutFFmpeg.notice,
+            "TextMouth left out “Trailer.avi”, which needs ffmpeg, a free program that isn't installed on this Mac. "
+                + "Install it with Homebrew by typing brew install ffmpeg in Terminal, then import the book again. " + noSound
+        )
+
+        let log = FFmpegPlanLog()
+        let withFFmpeg = try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(report: standInWMAReport, log: log)) {
+            try FileImportService.importAudioFolderWithReport(from: folder)
+        }
+        addTeardownBlock { try? FileManager.default.removeItem(at: withFFmpeg.book.tmbDirectory) }
+        XCTAssertEqual(
+            try AudioBookParser.trackPaths(in: URL(fileURLWithPath: withFFmpeg.book.filePath)).sorted(),
+            ["01.mp3", "02.mp3", "Trailer.m4a"]
+        )
+        XCTAssertEqual(withFFmpeg.notice, noSound)
+        XCTAssertEqual(log.all.count, 1)
+        XCTAssertEqual(try names(in: folder), ["01.mp3", "02.mp3", "Report.spx", "Trailer.avi"])
+    }
+
+    /// A folder with no track but the ones this Mac can't convert leaves
+    /// none out: it is refused as one such file is, with what to install.
+    func testAFolderOfNothingThisMacCanConvertIsRefused() throws {
+        let folder = try makeSandboxDirectory("FFmpegOnlyStray").appendingPathComponent("Clips")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: try formatSampleURL("avi/tones-mp3.avi"), to: folder.appendingPathComponent("Trailer.avi"))
+
+        XCTAssertThrowsError(try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(located: .ffmpegMissing, report: nil)) {
+            try FileImportService.importAudioFolderWithReport(from: folder)
+        }) { error in
+            XCTAssertEqual(
+                (error as? ImportFailure)?.errorDescription,
+                "Could not import “Clips”. Converting its audio failed: " + FFmpegImportWording.ffmpegMissing(kind: "AVI video")
+            )
+        }
+    }
+
     /// With the setting that keeps originals on, the WMA file is kept in the
     /// package's hidden folder beside the .m4a that is the book (FMT14).
     func testTheOriginalIsKeptWhenTheSettingSaysSo() throws {

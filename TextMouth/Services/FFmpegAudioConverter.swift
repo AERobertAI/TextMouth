@@ -50,6 +50,51 @@ enum FFmpegAudioConverter {
         return container != .ogg
     }
 
+    /// The files a book of several tracks leaves out rather than be refused
+    /// for (`tracksToLeaveOut(of:located:)`).
+    struct TracksLeftOut: Equatable, Sendable {
+        /// Files of a container ffmpeg reads that can't be converted here:
+        /// this Mac has no ffmpeg, or no ffprobe beside it, or this is the
+        /// iPhone, which has neither.
+        var needingFFmpeg: [URL] = []
+        /// Files named for a format only ffmpeg reads whose bytes are of no
+        /// container it reads, such as a System Information report (.spx).
+        var holdingNoSound: [URL] = []
+        /// What `located` found when it was asked: nil on the iPhone, and
+        /// when no file was one only ffmpeg reads.
+        var located: Located?
+
+        /// Every file left out, those needing ffmpeg first.
+        var all: [URL] { needingFFmpeg + holdingNoSound }
+    }
+
+    /// Which of `sources`, tracks of a book of several that the import
+    /// converts, the book leaves out (review9 finding 2): a folder, ZIP, or
+    /// playlist of MP3s may hold a stray video, or a file merely named like
+    /// one of these formats, and it imported its MP3s before these formats
+    /// were tracks. Of the files only ffmpeg reads (`converts(_:)`), those
+    /// whose bytes are of no container ffmpeg reads are always left out, and
+    /// the rest when `located`, asked only when there is such a file, found
+    /// no ffmpeg or no ffprobe (nil on the iPhone, which never has them). A
+    /// file of such a container is converted when it can be, and fails the
+    /// book if that fails, as any track's conversion does.
+    static func tracksToLeaveOut(of sources: [URL], located: () -> Located?) -> TracksLeftOut {
+        var leftOut = TracksLeftOut()
+        let ffmpegFiles = sources.filter(converts)
+        guard !ffmpegFiles.isEmpty else { return leftOut }
+        leftOut.located = located()
+        var installed = false
+        if case .found? = leftOut.located { installed = true }
+        for file in ffmpegFiles {
+            if FFmpegContainer.of(fileAt: file) == nil {
+                leftOut.holdingNoSound.append(file)
+            } else if !installed {
+                leftOut.needingFFmpeg.append(file)
+            }
+        }
+        return leftOut
+    }
+
     // MARK: - The Programs
 
     /// The installed ffmpeg, and the ffprobe that came with it.

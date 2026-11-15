@@ -31,6 +31,11 @@ extension FileImportService {
     /// staged copy is ever changed: the archive, folder, or file imported
     /// from is never touched. A book without such audio, and every other
     /// format, is left as it is.
+    ///
+    /// A folder of tracks leaves out the files only ffmpeg reads that can't
+    /// be converted here (`leavingOutWhatOnlyFFmpegReads(_:from:located:)`)
+    /// when it has other tracks, and the notice returned names them.
+    /// - Returns: that notice, or nil when nothing was left out.
     /// - Throws: the conversion's errors (`ImportAudioConverter.Failure`), or
     ///   the manifest's or the file system's; the import then fails at
     ///   Converting its audio, with whatever was staged removed. When the
@@ -41,28 +46,34 @@ extension FileImportService {
         in staging: ImportStaging,
         keepingOriginals: @autoclosure () -> Bool,
         run: inout ImportRun
-    ) throws {
-        guard book.format.isAudio else { return }
+    ) throws -> String? {
+        guard book.format.isAudio else { return nil }
         let bookURL = URL(fileURLWithPath: book.filePath)
         var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: bookURL.path, isDirectory: &isDirectory) else { return }
+        guard FileManager.default.fileExists(atPath: bookURL.path, isDirectory: &isDirectory) else { return nil }
         if isDirectory.boolValue {
             // The content decides, not the extension: a track named .m4a may hold Ogg or AC-3.
-            let sources = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
-            guard !sources.isEmpty else { return }
+            let found = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
+            guard !found.isEmpty else { return nil }
             #if os(iOS)
-            // iOS has no converter: the book is refused, naming the kind.
+            // The iPhone never has ffmpeg, and has no converter at all: what
+            // only ffmpeg reads is left out, and the rest refused, naming the kind.
+            let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { nil }
             try PhoneImportRefusal.refuseConversion(of: sources)
+            #else
+            let (sources, notice) = try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { FFmpegAudioConverter.tool.locate() }
             #endif
+            guard !sources.isEmpty else { return notice }
             let unnamed = try convertTracks(sources, inPackage: staging.directory, run: &run)
             // The sources' paths are read now, while they exist to be resolved.
             let sourceNames = unnamed.map { AudioBookParser.relativeName(of: $0.source, in: bookURL) }
             try disposeOfSources(of: unnamed, from: bookURL, in: staging, keepingOriginals: keepingOriginals())
             let conversions = try givingFinalNames(to: unnamed)
             try ImportAudioConverter.renameTracks(of: conversions, inManifestOf: bookURL, bookID: nil, sourceNames: sourceNames)
+            return notice
         } else {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
-            guard !needed.isEmpty else { return }
+            guard !needed.isEmpty else { return nil }
             #if os(iOS)
             // iOS has no converter: the book is refused, naming the kind.
             try PhoneImportRefusal.refuseConversion(of: needed)
@@ -75,9 +86,47 @@ extension FileImportService {
                 keepingOriginals: keepingOriginals()
             )
             let conversions = try givingFinalNames(to: unnamed)
-            guard let converted = conversions.first?.converted else { return }
+            guard let converted = conversions.first?.converted else { return nil }
             book.filePath = converted.path
+            return nil
         }
+    }
+
+    /// Leaves out of the book whose staged folder of tracks is `folder` the
+    /// files among `sources`, its tracks the import converts, that only
+    /// ffmpeg reads and that can't be converted here
+    /// (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`, review9
+    /// finding 2): a stray video in a folder, ZIP, or playlist of MP3s, or a
+    /// file merely named like one. Their staged copies are removed, so no
+    /// reader or player meets them; what was imported from is never touched.
+    /// `located` says what this Mac has of ffmpeg (nil on the iPhone), and is
+    /// asked only when some source is a file only ffmpeg reads. A book that
+    /// would have no track left leaves nothing out, so it is refused as a
+    /// single such file is, with what to install.
+    /// - Returns: the sources still to convert, and the notice that names
+    ///   what was left out (nil when nothing was).
+    /// - Throws: the file system's error when a staged copy can't be removed.
+    private static func leavingOutWhatOnlyFFmpegReads(
+        _ sources: [URL],
+        from folder: URL,
+        located: () -> FFmpegAudioConverter.Located?
+    ) throws -> (sources: [URL], notice: String?) {
+        let leftOut = FFmpegAudioConverter.tracksToLeaveOut(of: sources, located: located)
+        let leaving = Set(leftOut.all.map(\.standardizedFileURL))
+        guard !leaving.isEmpty else { return (sources, nil) }
+        let tracks = (try? AudioBookParser.audioFiles(in: folder, scan: .importing)) ?? []
+        guard tracks.contains(where: { !leaving.contains($0.standardizedFileURL) }) else { return (sources, nil) }
+        // The names are read while the files exist to be resolved.
+        let named = { (files: [URL]) in files.map { AudioBookParser.relativeName(of: $0, in: folder) } }
+        let notice = FFmpegImportWording.tracksLeftOutNotice(
+            needingFFmpeg: named(leftOut.needingFFmpeg),
+            holdingNoSound: named(leftOut.holdingNoSound),
+            located: leftOut.located
+        )
+        for file in leftOut.all {
+            try FileManager.default.removeItem(at: file)
+        }
+        return (sources.filter { !leaving.contains($0.standardizedFileURL) }, notice)
     }
 
     /// Gives each of `conversions`, written under a hidden temporary name

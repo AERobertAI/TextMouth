@@ -39,6 +39,17 @@ final class PhoneImportBranchTests: XCTestCase {
         }
     }
 
+    /// On iOS a book of several tracks leaves out what only ffmpeg reads,
+    /// looking for no ffmpeg, before the rest of its converted audio is
+    /// refused (review9 finding 2).
+    func testWhatOnlyFFmpegReadsIsLeftOutBeforeTheRefusal() throws {
+        let source = try Self.source("Services/FileImportService+AudioConversion.swift")
+        let leftOut = try XCTUnwrap(source.range(of: "try leavingOutWhatOnlyFFmpegReads(found, from: bookURL) { nil }"))
+        let refused = try XCTUnwrap(source.range(of: "try PhoneImportRefusal.refuseConversion(of: sources)"))
+        XCTAssertLessThan(leftOut.lowerBound, refused.lowerBound)
+        XCTAssertTrue(Self.isInsideIOSBranch(leftOut, of: source), "the iPhone's leaving out is outside #if os(iOS)")
+    }
+
     /// A Word 6 or Word 95 document is refused on iOS where it would go to
     /// textutil: after TextMouth's own readers, before the converter.
     func testWordSixOrNinetyFiveIsRefusedBeforeTextutil() throws {

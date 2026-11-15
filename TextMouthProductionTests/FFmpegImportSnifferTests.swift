@@ -152,6 +152,37 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(speexNamedOgg))
     }
 
+    /// Which tracks of a book of several are left out (review9 finding 2):
+    /// without ffmpeg, or on the iPhone, every file only ffmpeg reads; with
+    /// it, only a file whose bytes are of no container it reads. MP3 and Ogg
+    /// Vorbis are never left out, and ffmpeg is looked for only when a track
+    /// is one of its files.
+    func testWhichTracksABookOfSeveralLeavesOut() throws {
+        let folder = try makeSandboxDirectory("FFmpegLeftOut")
+        let avi = folder.appendingPathComponent("Trailer.avi")
+        try FileManager.default.copyItem(at: try formatSampleURL("avi/tones-mp3.avi"), to: avi)
+        let report = folder.appendingPathComponent("Report.spx")
+        try Data(#"<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><array/></plist>"#.utf8).write(to: report)
+        let mp3 = try formatSampleURL("mp3-chapters/three-tones.mp3")
+        let vorbis = try requireFile("audio/ogg-vorbis-tone.ogg")
+        let tracks = [mp3, avi, vorbis, report]
+
+        let missing = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .ffmpegMissing }
+        XCTAssertEqual(missing.needingFFmpeg, [avi])
+        XCTAssertEqual(missing.holdingNoSound, [report])
+        XCTAssertEqual(missing.located, .ffmpegMissing)
+        let phone = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { nil }
+        XCTAssertEqual(phone.all, [avi, report])
+        XCTAssertNil(phone.located)
+        let installed = FFmpegAudioConverter.tracksToLeaveOut(of: tracks) { .found(self.standInPrograms) }
+        XCTAssertEqual(installed.all, [report])
+        let none = FFmpegAudioConverter.tracksToLeaveOut(of: [mp3, vorbis]) {
+            XCTFail("ffmpeg is looked for only when a track is one of its files")
+            return nil
+        }
+        XCTAssertEqual(none, FFmpegAudioConverter.TracksLeftOut())
+    }
+
     /// Every extension ffmpeg converts is an audiobook extension that the
     /// import converts and no reader ever decodes in the app, and none is a
     /// package track or a feed's audio: a package holds the .m4a made of

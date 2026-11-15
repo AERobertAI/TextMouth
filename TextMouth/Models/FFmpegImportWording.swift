@@ -58,11 +58,12 @@ enum FFmpegImportWording {
 
     // MARK: - When It Can't Be Imported
 
-    /// How to install ffmpeg, which every sentence below ends with, naming
-    /// what is installed as `program`: "Install it with Homebrew by typing
-    /// brew install ffmpeg in Terminal, then import the file again."
-    static func installAdvice(naming program: String) -> String {
-        "Install \(program) with Homebrew by typing brew install ffmpeg in Terminal, then import the file again."
+    /// How to install ffmpeg, which every sentence of a missing program ends
+    /// with, naming what is installed as `program` and what to import again
+    /// as `what`: "Install it with Homebrew by typing brew install ffmpeg in
+    /// Terminal, then import the file again."
+    static func installAdvice(naming program: String, importingAgain what: String = "the file") -> String {
+        "Install \(program) with Homebrew by typing brew install ffmpeg in Terminal, then import \(what) again."
     }
 
     /// Why a file of the format `kind` was not imported on a Mac without
@@ -109,4 +110,71 @@ enum FFmpegImportWording {
     /// failed check says (`ImportAudioConverter.Failure.checkFailed`): "The
     /// audio converted from Talk.webm failed its check: it lasts no time."
     static let convertedFileIsSilent = "it lasts no time"
+
+    // MARK: - Tracks Left Out of a Book
+
+    /// The most left-out files a notice names; "and 3 more" counts the rest.
+    static let leftOutNamedLimit = 5
+
+    /// `names`, files a book left out, as its notice names them: "“Trailer.avi”",
+    /// or, for several, their count first, "2 files, “Trailer.avi” and
+    /// “Intro.wmv”", with at most `leftOutNamedLimit` named.
+    static func leftOutFiles(_ names: [String]) -> String {
+        let named = names.prefix(leftOutNamedLimit).map { "“\($0)”" }
+        let more = names.count > named.count ? ["\(names.count - named.count) more"] : []
+        let listed = CountWording.list(named + more)
+        return names.count == 1 ? listed : "\(CountWording.phrase(names.count, singular: "file", plural: "files")), \(listed)"
+    }
+
+    /// What a book of several tracks says of `names`, files only ffmpeg
+    /// reads that it left out because this Mac has no ffmpeg (`located` is
+    /// `.ffmpegMissing`) or no ffprobe beside it (`.ffprobeMissing`), with
+    /// what to install: "TextMouth left out “Trailer.avi”, which needs
+    /// ffmpeg, a free program that isn't installed on this Mac. Install it
+    /// with Homebrew by typing brew install ffmpeg in Terminal, then import
+    /// the book again." Nil for no names, or when both are installed.
+    static func leftOutNeedingFFmpeg(_ names: [String], located: FFmpegAudioConverter.Located) -> String? {
+        guard !names.isEmpty else { return nil }
+        let needs = names.count == 1 ? "needs" : "need"
+        switch located {
+        case .found:
+            return nil
+        case .ffmpegMissing:
+            return "TextMouth left out \(leftOutFiles(names)), which \(needs) ffmpeg, "
+                + "a free program that isn't installed on this Mac. " + installAdvice(naming: "it", importingAgain: "the book")
+        case .ffprobeMissing:
+            return "TextMouth left out \(leftOutFiles(names)), which \(needs) ffprobe: it comes with ffmpeg "
+                + "but isn't installed on this Mac. " + installAdvice(naming: "ffmpeg", importingAgain: "the book")
+        }
+    }
+
+    /// What a book of several tracks says of `names`, files named for a
+    /// format only ffmpeg reads whose bytes are of none, which it left out:
+    /// "TextMouth left out “Report.spx”, which holds no sound it can read."
+    /// Nil for no names.
+    static func leftOutHoldingNoSound(_ names: [String]) -> String? {
+        guard !names.isEmpty else { return nil }
+        return "TextMouth left out \(leftOutFiles(names)), which \(names.count == 1 ? "holds" : "hold") no sound it can read."
+    }
+
+    /// The notice of a book of several tracks that left out files only
+    /// ffmpeg reads (`FFmpegAudioConverter.tracksToLeaveOut(of:located:)`):
+    /// those needing ffmpeg, then those holding no sound, as one message;
+    /// nil when it left out none. `located` is what the Mac found of ffmpeg,
+    /// nil on the iPhone, whose own words are used
+    /// (`PhoneImportWording.ffmpegTracksLeftOut(_:)`).
+    static func tracksLeftOutNotice(
+        needingFFmpeg: [String],
+        holdingNoSound: [String],
+        located: FFmpegAudioConverter.Located?
+    ) -> String? {
+        let needing: String?
+        if let located {
+            needing = leftOutNeedingFFmpeg(needingFFmpeg, located: located)
+        } else {
+            needing = PhoneImportWording.ffmpegTracksLeftOut(needingFFmpeg)
+        }
+        let sentences = [needing, leftOutHoldingNoSound(holdingNoSound)].compactMap { $0 }
+        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+    }
 }

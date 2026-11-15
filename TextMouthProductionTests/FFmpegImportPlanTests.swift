@@ -471,6 +471,29 @@ final class FFmpegImportPlanTests: XCTestCase {
         ])
     }
 
+    /// The notice of the tracks a book of several left out (review9 finding
+    /// 2): on a Mac without ffprobe, on the iPhone, and for files that hold
+    /// no sound, with at most five named; nothing when none was left out or
+    /// ffmpeg is installed.
+    func testTheNoticeOfTracksLeftOut() {
+        XCTAssertEqual(
+            FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: ["Trailer.avi", "Intro.wmv"], holdingNoSound: [], located: .ffprobeMissing),
+            "TextMouth left out 2 files, “Trailer.avi” and “Intro.wmv”, which need ffprobe: it comes with ffmpeg but isn't installed "
+                + "on this Mac. Install ffmpeg with Homebrew by typing brew install ffmpeg in Terminal, then import the book again."
+        )
+        XCTAssertEqual(
+            FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: ["Trailer.avi"], holdingNoSound: ["a.spx", "b.spx"], located: nil),
+            "TextMouth left out “Trailer.avi”, which TextMouth on iPhone can't play. To keep it, import the book on a Mac with "
+                + "ffmpeg installed, then send the book here. TextMouth left out 2 files, “a.spx” and “b.spx”, which hold no sound it can read."
+        )
+        XCTAssertNil(FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: [], holdingNoSound: [], located: .ffmpegMissing))
+        XCTAssertNil(FFmpegImportWording.tracksLeftOutNotice(needingFFmpeg: ["a.avi"], holdingNoSound: [], located: .found(standInPrograms)))
+        XCTAssertEqual(
+            FFmpegImportWording.leftOutFiles((1...7).map { "\($0).wmv" }),
+            "7 files, “1.wmv”, “2.wmv”, “3.wmv”, “4.wmv”, “5.wmv”, and 2 more"
+        )
+    }
+
     /// The sentences a listener hears, word for word: they name the format,
     /// say what to install and how, and hold no symbol VoiceOver would
     /// spell out.
