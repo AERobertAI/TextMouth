@@ -1,35 +1,35 @@
 # The data directory
-<!-- id: data-directory; keys: ; src: -->
+<!-- id: data-directory; keys: library folder, storage location, move library, cloud library, Storage settings; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Its location, and moving it
-<!-- id: location-moving-it; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Models/CloudStorageContract.swift -->
+<!-- id: location-moving-it; keys: Move Library Here, Reset to Default, Change Location, library folder, relocate; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 Its location, and moving it.
 
 ### Owner of the data directory's location
-<!-- id: owner-data-directory-location; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift -->
+<!-- id: owner-data-directory-location; keys: library root, generation, default location, current location; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 - Owner: StorageBoundary.shared, which holds the current StorageGeneration, the data directory's root numbered by the moves this process has published, and the earlier ones.
   TextMouthPaths.root is the current generation's root: at launch the folder TextMouthPaths.root(for:) names (~/.TextMouth, or the folder the textMouthDataDirectory preference names, which a test host ignores), and after a move the new location.
   It changes only when a move publishes its copy, never because the preference changed.
 
 ### Who may write the location
-<!-- id: who-may-write-location; keys: ; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/MaintenanceFileAccess.swift -->
+<!-- id: who-may-write-location; keys: config.json, move refused, open books, cloud-only files, Move Library Here; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 - Who may write it: a published move, and a check whose bookmark finds the library under another path (its availability, below).
   TextMouthPaths.moveDataDirectory(to:library:) changes the preference, the current generation, and the library only once the copy is published, and publishes the generation between the persistence queues' writes (LibraryPersistenceService.betweenWrites), so no write resolves its file under the old root and writes it afterwards.
   Change Location's Move Library Here and Reset to Default in Storage settings, and a changed dataDirectoryPath in config.json, reach the move in LibraryViewModel+Migration, which refuses while the index cannot be read or the data directory is unavailable, while any book is open (openBooksRefusal, naming the books), and while any book inside the data directory has files only in the cloud, which copying would download (countBooksOnlyInCloud, through MaintenanceFileAccess.itemInCloud).
 
 ### Choosing a folder
-<!-- id: choosing-folder; keys: ; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
+<!-- id: choosing-folder; keys: folder picker, NSOpenPanel, destination check, hidden folders, confirmation wording; src: TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 - Choosing: a folder chosen in Storage settings (StorageSettingsView.makeLibraryFolderPanel, a chooser that shows hidden folders and can make one) is judged off the main thread, from metadata alone, by StorageDestinationAssessment: a move for a missing or empty folder, Use This Library for one holding a library (an identity marker, or library.json beside a Library folder), the library in use, a new library in the default location while the library is unavailable, or a refusal with its reason.
   StorageChoice and StorageWording word the confirmation or the status line.
 
 ### Holding storage work
-<!-- id: holding-storage-work; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
+<!-- id: holding-storage-work; keys: storage hold, StorageBusyError, Try again, Rebuild Directory, import blocked, feed items set aside; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Models/Library.swift -->
 
 - Holding: withStorageWorkHeld(moving:waiting:_:) holds new storage work back (StorageBoundary.holdWork(for:)), waits for the import, text extraction, and book analysis under way (StorageWorkHold.waitForWorkUnderWay), flushes the queued saves and logs, runs the move, and then lets the held work go on under the new generation.
   Work that captured paths before the publication moves them under the new root first (rebasedToCurrent and rebaseToCurrent), so nothing is written under the old one.
@@ -40,7 +40,7 @@ Its location, and moving it.
   Try again when that finishes."
 
 ### Copying and publishing
-<!-- id: copying-publishing; keys: ; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
+<!-- id: copying-publishing; keys: migration, staging folder, copy library, cancel move, rename into place, rmdir; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 - Copying: copyAndPublish runs TextMouthPaths.moveDataDirectory on a background queue (OffMainWork) with the task-local DataDirectoryMigrator.copyObserver bound, which hears each DataDirectoryCopyProgress and answers Cancel.
   DataDirectoryMigrator takes each location as the real folder its links lead to (DataDirectoryLocation): a data directory that is a link is copied from its folder, and a new location that is a link to an empty folder receives the data in that folder, the link staying as it is.
@@ -53,7 +53,7 @@ Its location, and moving it.
   The library is taken once the wait is over, and nothing should change it during the copy; a change made anyway is kept, its paths rebased.
 
 ### Leftovers of a move
-<!-- id: leftovers-move; keys: ; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
+<!-- id: leftovers-move; keys: stale staging folder, journal, orphaned copy, launch sweep; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 - Leftovers: the hidden staging folder of a move, when the move could not remove it.
   DataDirectoryMigrator.prepareMigration notes the folder in MigrationStagingLeftovers (note) before anything is created, and defers discard(_:fileManager:), which removes the folder however the move ends and forgets the note once it has; a removal that fails leaves the note, and logs MIGRATION_STAGING_LEFT only if the folder can still be seen, since a folder on an unplugged volume can be neither seen nor removed and "not there" cannot be told from "gone".
@@ -62,14 +62,14 @@ Its location, and moving it.
   AppDelegate.applicationDidFinishLaunching calls MigrationStagingLeftovers.sweepInBackground(), once on a utility queue and never in a hosted test. sweep(fileManager:now:) takes the entries in order: it drops one whose last component is not exactly stagingNamePrefix and a UUID (isStagingName), so a hand-edited journal can never make it delete another folder; leaves one this process is using; keeps one whose path cannot be seen until it is unseenLifetime (30 days) old, then drops it; drops one that is not a real directory (a file, or a link, which attributesOfItem does not follow); and otherwise removes the folder and logs MIGRATION_STAGING_REMOVED, or keeps the entry and logs MIGRATION_STAGING_LEFT when the removal fails.
 
 ### Use This Library
-<!-- id: use-this-library; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
+<!-- id: use-this-library; keys: switch library, Choose Another Library, relaunch, open existing library; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/TextMouthPaths.swift -->
 
 - Use This Library (useLibraryReturningOutcome(at:relaunching:)) moves nothing but holds the storage work itself (StorageHoldReason.switchingLibraries, "TextMouth is switching to another library and opening again on it."), so a move, a rebuild, or a folder edit under way refuses it with the StorageBusyError naming that operation, and nothing starts one while the switch runs.
   It writes pending saves, refuses while changes can't be saved unless the library is unavailable, records the folder for the next launch with TextMouthPaths.setCustomRoot (nil for the default location), and has TextMouthRelauncher open a new instance of TextMouth and quit this one.
   A process hosting tests never opens again.
 
 ### How a move is observed
-<!-- id: how-move-observed; keys: ; src: TextMouth/Services/StorageGeneration.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: how-move-observed; keys: progress sheet, move progress, Move cancelled, quit during move, status line; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 - How others observe it: LibraryViewModel.dataDirectoryMove, a DataDirectoryMoveProgress, is set while a move runs: every Library window shows DataDirectoryMoveSheet and refuses to open or add books, Storage settings show DataDirectoryMoveProgressView, VoiceOver hears what the move waits for, its start, each quarter, and Cancel, and AppDelegate calls DataDirectoryMoveProgress.stopForQuit before quitting. config.json's dataDirectoryPath names the folder in use after every attempt.
   The Storage settings status line, which VoiceOver announces once, or else the library's alert, says "Done.
@@ -79,7 +79,7 @@ Its location, and moving it.
 - Files: Services/StorageGeneration.swift, Services/StorageDestinationAssessment.swift, Services/DataDirectoryMigrator.swift, Services/MigrationStagingLeftovers.swift, Services/TextMouthPaths.swift, ViewModels/LibraryViewModel+Migration.swift, ViewModels/DataDirectoryMoveProgress.swift, Views/Library/DataDirectoryMoveSheet.swift, Views/Settings/StorageSettingsView.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Whether the data directory is available
-<!-- id: whether-data-directory-available; keys: ; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Views/ContentView.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/LibraryFileFetch.swift -->
+<!-- id: whether-data-directory-available; keys: Library Not Available, Try Again, unmounted volume, cloud sync, iCloud, bookmark, Use Default Location; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/ViewModels/LibraryViewModel+LibraryFetch.swift, TextMouth/ViewModels/LibraryViewModel+LaunchFiles.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryFileFetch.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Views/ContentView.swift -->
 
 Its availability: whether the data directory can be used.
 
@@ -100,7 +100,7 @@ Its availability: whether the data directory can be used.
 - Files: Services/DataDirectoryAvailability.swift, ViewModels/LibraryViewModel.swift, ViewModels/LibraryViewModel+IndexRecovery.swift, Services/LibraryPersistenceService.swift, Services/TextMouthPaths.swift, Views/Library/DataDirectoryUnavailableView.swift, Views/ContentView.swift.
 
 ## Which library a data directory holds
-<!-- id: which-library-data-directory-holds; keys: ; src: TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/StorageDestinationAssessment.swift -->
+<!-- id: which-library-data-directory-holds; keys: identity marker, UUID, wrong folder, another copy of the library; src: TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 Its identity: which library a data directory holds.
 
@@ -111,7 +111,7 @@ Its identity: which library a data directory holds.
 - Files: Services/LibraryIdentity.swift, Services/DataDirectoryAvailability.swift, Services/TextMouthPaths.swift, ViewModels/LibraryViewModel.swift.
 
 ## The session lease
-<!-- id: session-lease; keys: ; src: TextMouth/Services/LibrarySessionLease.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
+<!-- id: session-lease; keys: TextMouth Is Open on Another Mac, Sessions folder, multiple Macs, lease file, stale lease; src: TextMouth/Services/LibrarySessionLease.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Platform/macOS/App/AppDelegate.swift -->
 
 The session lease: this Mac's note, in a library another Mac can open, that it has the library open.
 
@@ -126,7 +126,7 @@ The session lease: this Mac's note, in a library another Mac can open, that it h
 - Files: Services/LibrarySessionLease.swift, ViewModels/LibraryViewModel.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Files several Macs write
-<!-- id: files-several-macs-write; keys: ; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift, TextMouth/Services/PersistenceFailureCenter.swift -->
+<!-- id: files-several-macs-write; keys: multi-Mac, conflict copy, stand-in, dataless, unsaved notice, crash safety; src: TextMouth/Services/SavedFile.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/LibraryIndexQuarantine.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift -->
 
 Files several Macs write: reading_stats.json and substitutions.json, which TextMouth reads whole and replaces whole, and which another Mac sharing a library in the cloud writes too.
 
@@ -145,7 +145,7 @@ Files several Macs write: reading_stats.json and substitutions.json, which TextM
 - Files: Services/SavedFile.swift, Services/ReadingStatsService.swift, Services/TextSubstitutionService.swift, Services/LibraryIndexQuarantine.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift.
 
 ## This Mac's own folders
-<!-- id: this-mac-own-folders; keys: ; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/ImportScratchSpace.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Services/KeptBooks.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/RecordingService.swift -->
+<!-- id: this-mac-own-folders; keys: Application Support, Caches, machine-local, scratch folders, not synced; src: TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/ImportScratchSpace.swift, TextMouth/Services/ImportStaging.swift, TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/AudioEditing/AudioEditComposition.swift, TextMouth/Services/AudioEditing/AudioEditCaches.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Services/KeptBooks.swift, TextMouth/Services/ReadingTextCache.swift, TextMouth/Services/RecordingService.swift, TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Services/Feeds/FeedStore.swift -->
 
 This Mac's own folders.
 
