@@ -30,6 +30,7 @@ from typing import Any, Iterator, List, Optional, Tuple
 import citations
 import docmodel
 import output
+import sectionrefs
 from citations import Citation
 from docmodel import Page, Section
 from output import Hit, UsageError
@@ -64,14 +65,6 @@ def classify(name: str, repo: RepoFiles) -> str:
     raise UsageError(USAGE_MESSAGE)
 
 
-def section_citations(page: Page, section: Section, repo: RepoFiles) -> List[Citation]:
-    """The paths the section cites, in the order ``citations.citations`` gives them."""
-    marker = section.marker
-    return citations.citations(
-        docmodel.prose_blocks(page, section), marker.src if marker else [],
-        marker.line if marker else None, repo)
-
-
 def citation_hit(page: Page, section: Section, citation: Citation, prefix: str = "") -> Hit:
     """The hit for a section at one of its citations: the citing line, focused on the token.
 
@@ -100,7 +93,7 @@ def path_targets(name: str, kind: str, repo: RepoFiles) -> List[str]:
 def path_hit(page: Page, section: Section, repo: RepoFiles, name: str, kind: str,
              targets: List[str]) -> Optional[Hit]:
     """The hit at the section's first citation of NAME, or None when it cites none."""
-    for citation in section_citations(page, section, repo):
+    for citation in sectionrefs.section_citations(page, section, repo):
         named = any(citations.names_path(citation, target, name) for target in targets)
         # A file name also finds a citation whose last component it is, even when
         # that file no longer exists.

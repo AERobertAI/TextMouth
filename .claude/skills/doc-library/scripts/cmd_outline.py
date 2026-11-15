@@ -14,9 +14,9 @@ from __future__ import annotations
 
 from typing import Any, Iterator
 
-import citations
 import docmodel
 import output
+import sectionrefs
 import targets
 from docmodel import Page, Section
 from output import Hit
@@ -36,11 +36,7 @@ def section_bytes(page: Page, section: Section) -> int:
 
 def path_count(page: Page, section: Section, repo: RepoFiles) -> int:
     """The number of distinct path tokens the section cites."""
-    marker = section.marker
-    found = citations.citations(
-        docmodel.prose_blocks(page, section), marker.src if marker else [],
-        marker.line if marker else None, repo)
-    return len({citation.token for citation in found})
+    return len({citation.token for citation in sectionrefs.section_citations(page, section, repo)})
 
 
 def outline_hit(page: Page, section: Section, repo: RepoFiles) -> Hit:

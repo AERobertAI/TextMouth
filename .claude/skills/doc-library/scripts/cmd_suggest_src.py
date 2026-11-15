@@ -129,4 +129,4 @@ def register(subparsers: Any, common: Any) -> None:
                     "declare the names it mentions, and the file names it writes. TARGET is "
                     "PAGE#HEADING, PAGE:LINE, or a section id.")
     parser.add_argument("target", help="PAGE#HEADING, PAGE:LINE, or a section id")
-    parser.set_defaults(func=run, default_max=20)
+    parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)

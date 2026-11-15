@@ -31,7 +31,8 @@ import citations
 import docmodel
 import output
 from citations import Citation
-from cmd_where import citation_hit, section_citations
+from cmd_where import citation_hit
+from sectionrefs import section_citations
 from docmodel import Page, Section
 from output import Hit, UsageError
 from repofiles import RepoFiles

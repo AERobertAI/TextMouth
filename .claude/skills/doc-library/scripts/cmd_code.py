@@ -114,4 +114,4 @@ def register(subparsers: Any, common: Any) -> None:
         description="List the files a section cites and the declarations of the code names "
                     "it mentions. TARGET is PAGE#HEADING, PAGE:LINE, or a section id.")
     parser.add_argument("target", help="PAGE#HEADING, PAGE:LINE, or a section id")
-    parser.set_defaults(func=run, default_max=20)
+    parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)

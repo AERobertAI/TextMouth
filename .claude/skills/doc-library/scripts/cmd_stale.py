@@ -227,4 +227,4 @@ def register(subparsers: Any, common: Any) -> None:
         "stale", parents=[common], help="paths and code names the docs cite that no longer exist",
         description="Report each cited path that names nothing and each backticked code name "
                     "the Swift sources do not declare, except what the allowlist names.")
-    parser.set_defaults(func=run, default_max=20)
+    parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)
