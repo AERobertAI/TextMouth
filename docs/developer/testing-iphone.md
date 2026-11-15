@@ -17,14 +17,39 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
 - Three of the 56 classes are for the error alert, Speech Stopped, and the preview's pause: `PhoneErrorAlertPlanTests`, `PhonePreviewPauseTests`, and `PhoneSpeechRefusalPresentationTests`.
   `Scripts/test/areas.conf` lists them in `phone` only.
 - Search in Book (0.4.4) is tested in the hosted suite by:
-  - `PhoneBookSearchTests` (12 tests): the words, that the shared words are the Mac's own, the one-second typing pause, a text result's row (a percent) and a transcript's (a time), a result with no heading, that a row says what the Mac's row says, an empty source, and the model searching, saying the count once, saying "No matches" and an invalid pattern, and saying nothing when cancelled.
-  - `PhoneFocusRequestsTests` (6 tests): an undisturbed request posts once; a landing on any kind of reader control cancels the waiting request, with every control kind tried so that one whose landing fails to cancel is named; a landing elsewhere (Back, the title) cancels nothing; a landing cancels every request waiting; a request made after a landing stands; a landing with nothing waiting is harmless.
-  - Additions to `PhoneReaderModelTests` (an untranscribed audiobook says why without telling anyone to transcribe, the Mac's words still name the command, a text book's jump), `PhoneReaderControlsTests` (the control's words, and `testTheGridRowsKeepOrderAndPairs`), `PhoneFoundationTypesTests`, `PhoneLaunchRequestTests` (6 tests: the third variable, the reads and the debug-only type), `PhoneSessionTests` (four tests of `closeBook(id:)`), and `TranscriptSearchTests` (`goToSearchResult` takes the transcript's move for a transcript and the other move for any other book).
+  - `PhoneBookSearchTests` (12 tests):
+    - the words,
+    - that the shared words are the Mac's own,
+    - the one-second typing pause,
+    - a text result's row (a percent) and a transcript's (a time),
+    - a result with no heading,
+    - that a row says what the Mac's row says,
+    - an empty source, and
+    - the model searching, saying the count once, saying "No matches" and an invalid pattern, and saying nothing when cancelled.
+  - `PhoneFocusRequestsTests` (6 tests):
+    - an undisturbed request posts once;
+    - a landing on any kind of reader control cancels the waiting request, with every control kind tried so that one whose landing fails to cancel is named;
+    - a landing elsewhere (Back, the title) cancels nothing;
+    - a landing cancels every request waiting;
+    - a request made after a landing stands;
+    - a landing with nothing waiting is harmless.
+  - Additions to
+    - `PhoneReaderModelTests` (an untranscribed audiobook says why without telling anyone to transcribe, the Mac's words still name the command, a text book's jump),
+    - `PhoneReaderControlsTests` (the control's words, and `testTheGridRowsKeepOrderAndPairs`),
+    - `PhoneFoundationTypesTests`,
+    - `PhoneLaunchRequestTests` (6 tests: the third variable, the reads and the debug-only type),
+    - `PhoneSessionTests` (four tests of `closeBook(id:)`), and
+    - `TranscriptSearchTests` (`goToSearchResult` takes the transcript's move for a transcript and the other move for any other book).
+
     The Mac's pinned sentences in `TranscriptSearchTests` still call with the defaults.
   - These classes run in the full suite.
     `PhoneBookSearchTests` and `PhoneFocusRequestsTests` are not listed in an area of `Scripts/test/areas.conf` at the merge, so `run-area.py` does not run them.
 - `PhoneLaunchRequestTests` is inside `#if DEBUG`, with the type it tests, so a Release test run does not have it.
   `PhoneSessionTests` pins the reopen keys that go with the crash guard (`testTheReopenKeysGoWithTheCrashGuardWhenTheSessionIsMade`, `testTheVerdictLeavesTheKeysOfABookOpenedSince`, and `testTheReopenKeysStandWhenNoCrashGuardIsFound`), and `PhoneLifeCycleReopeningTests` checks from the life cycle that the crashed book's key is gone after the verdict (see The crash guard in [The two apps and the platform folders](../architecture/platforms.md)).
+
+### Running the phone area
+<!-- id: running-phone-area; keys: make test-area, run-area.py, train request, os(iOS), Mac build; src: Scripts/test/run-area.py, Scripts/test/areas.conf, Makefile -->
+
 - It runs like any area: `make test-area AREAS="phone"`, `Scripts/test/run-area.py phone`, or a train request with `--areas phone` (see Reusable test tools, above).
 - It tests the Mac's build.
   A rule written under `#if os(iOS)` that has no plain type behind it is not reached here.
@@ -37,7 +62,8 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
   GitHub runs both in one `xcodebuild` run (see Tests on GitHub Actions, above), so this Mac needs no simulator to run them.
 - `TextMouthiOSTests` is a unit-test bundle hosted in the iPhone app.
   It has 19 tests, which make no sound (they play, speak, and record nothing; `test_run_ios_ui_tests.py` fails if a file of the folder names an audio framework, a player, or a recorder), so they need no sound variable.
-  The check reads names, so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`; what it does catch is the model types a unit test would reach one through (`ReaderViewModel`, `PhoneAppModel`), so add a pattern for those words if a unit test ever takes a bare model.
+  The check reads names, so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`.
+  What it does catch is the model types a unit test would reach one through (`ReaderViewModel`, `PhoneAppModel`), so add a pattern for those words if a unit test ever takes a bare model.
   - `PhoneControlButtonTests` (12 tests) tests the reader's UIKit control: its words, its traits, that it is one element, its actions, and its smallest height of 44 points.
   - `IOSRuntimeTests` (4 tests) tests the iOS runtime: that a hosting process runs in a sandbox, that a UI test's launch request does too, that without the request the home is the app's container, and that the library lives in Application Support.
     The two tests that read `PhoneLaunchRequest` are inside `#if DEBUG`, as the type is, so a Release test run has 2 of the 4.
@@ -66,7 +92,8 @@ The rule:
 - The interface tests press Play and type, as a person does.
   That makes sound, since the simulator plays through the Mac's speakers and the keyboard clicks, so such a test runs only where nobody listens: on a GitHub runner.
 - A test that makes sound runs only when the environment variable `TEXTMOUTH_UI_SOUND` is 1.
-  `Scripts/agents/run-ios-ui-tests.py` is the one place that sets it (as `TEST_RUNNER_TEXTMOUTH_UI_SOUND`, which `xcodebuild` hands to the test runner without the prefix), and it runs only on the runner: anywhere `GITHUB_ACTIONS` is not `true`, it stops at once with exit status 2, before it reads a request, writes a file, or starts a simulator.
+  `Scripts/agents/run-ios-ui-tests.py` is the one place that sets it (as `TEST_RUNNER_TEXTMOUTH_UI_SOUND`, which `xcodebuild` hands to the test runner without the prefix), and it runs only on the runner.
+  Anywhere `GITHUB_ACTIONS` is not `true`, it stops at once with exit status 2, before it reads a request, writes a file, or starts a simulator.
   Never run it on this Mac; to run the interface tests, ask a GitHub run for them.
   The workflow, the other scripts, and the Mac never set it: `test_run_ios_ui_tests.py` fails if another tracked file names it, if the workflow sets it, or if a test file presses Play or types by hand.
 - `TextMouthUITestCase` decides in one place.
@@ -99,7 +126,11 @@ The rule:
   A run takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
   Its errors read as the train's do (file, line, message), and its summary is in `build/typecheck/results/` of the main checkout.
 - `TextMouthiOSUITests` can be type-checked on this Mac without the iOS runtime, because Xcode's iPhone Simulator SDK and its XCTest are enough (`xcrun --sdk iphonesimulator --show-sdk-path`).
-  It touches nothing and builds no app; run it under the heavy-work lock: `python3 -I Scripts/agents/run_locked.py NAME xcrun swiftc -typecheck -sdk $P/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios26.0-simulator -F $P/Library/Frameworks -I $P/usr/lib -swift-version 5 TextMouthiOSUITests/*.swift`, with `P=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer`.
+  It touches nothing and builds no app.
+  Run it under the heavy-work lock:
+  - `python3 -I Scripts/agents/run_locked.py NAME xcrun swiftc -typecheck -sdk $P/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios26.0-simulator -F $P/Library/Frameworks -I $P/usr/lib -swift-version 5 TextMouthiOSUITests/*.swift`, with
+  - `P=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer`.
+
   It would have found the unterminated string of run 42947183810 in seconds.
   `make typecheck-ios` does not cover these files, nor `TextMouthiOSTests`: it builds the app's sources alone.
 - So, apart from `make typecheck-tests` and that command, a compile error in a test file is found only by a build that builds the tests.
