@@ -235,7 +235,7 @@ The feed downloads' progress (FR10's feed half): what each Library window's feed
   The section is a container labelled with all its lines (spokenStatus(at:)), holding its heading, its bar (overallBarLabel), its lines, and Cancel (cancelButtonLabel, "Cancel Feed Downloads", and cancelButtonHint), dimmed once pressed.
   TimeLeftEstimate (Models/TimeLeftEstimate.swift) gives the time left once one download has reached the library (secondsLeft(at:)), and none once Cancel is pressed.
   A run the newest-N rule began, which nobody heard begin, is announced once as it has lasted ImportProgress.announcedAfter, at medium priority, with the downloads under way and the time left (FeedDownloadProgressWording.underWay(_:secondsLeft:)).
-  The announcement comes from announceStartIfDue(at:), at the run's first download begun byItself, unless a quarter was heard or Cancel pressed first (feed review item 17).
+  The announcement comes from announceStartIfDue(at:), for a run whose first download began byItself, unless a quarter was heard or Cancel pressed first (feed review item 17).
   A run that has lasted ImportProgress.announcedAfter, 10 seconds, announces each quarter of its downloads once, at medium priority, and its end, naming the download of a run of one, unless Cancel was pressed or nothing downloaded, failed, or waits.
   What Cancel stopped is said by the window it was pressed in, once its focus has moved (above):
   - the downloads stopped,
@@ -255,7 +255,7 @@ Played downloads, and their deletion.
   A sweep (requestSweep()) runs at launch, after each refresh, when an item plays to its end or is marked played, and whenever the books open in readers change, as when a reader closes.
   It deletes the file of each download played at least feedDeleteDownloadsDaysAfterPlayed days ago, or the feed's own number (0 at once, -1 never), for good, with dataless files left in the cloud.
   It keeps the package, with an article's content.md in it (FeedItemPackage.staysWithoutTheFile(_:)), while it holds the listener's state, in the order the feed items entry gives ([Feed items](library-index-reading-feeds.md)).
-  It deletes:
+  It deletes under these limits:
   - never a book in use, which the sweep leaves for its next pass (FeedLibraryHost.feedBooksInUse:
     - one open in a reader, one an export is reading, BookExportModel.booksBeingExported, the one being transcribed, TranscribedBooks.shared.transcribingBookID,
     - and a book whose text is being edited with Edit Text, LibraryViewModel.textEditSessions.bookIDs, which the rules wait for but the listener's own deletions do not, since an editing session ends only when TextMouth quits and a refusal would stand until then;
@@ -283,7 +283,7 @@ Played downloads, and their deletion.
   They take an article's content.md with the file.
   Delete Episode (deleteItem(_:of:)) removes the package whole, kept or not, each following the removal setting's choice of the Trash and refusing a download in use (FeedLibraryHost.feedBookUse(of:), FeedBookUse; the feed follow-ups after FR14, item 1).
   The removal throws FeedDownloadInUseError, whose sentence names the download and what to do (FEED_DOWNLOAD_DELETE_REFUSED).
-  The listener's deletions refuse rather than wait, as the rules do, since a deletion carried out minutes later, unannounced, could take a download the listener had since decided to keep.
+  The listener's deletions refuse a download in use rather than wait for its use to end, as the rules leave it for their next pass, since a deletion carried out minutes later, unannounced, could take a download the listener had since decided to keep.
   Delete Feed… refuses the same way (FeedDeleteError.downloadInUse(title:use:)), and LibraryFeedsPresenter.refusal(for:) words the alert.
 - How others observe it: the item stays in its feed's record, not downloaded, and a kept package's row on its feed's shelf; and an item deleted (deleteItem(_:of:)) stays in the record too, out of every list, so no refresh brings it back.
   The record of a deleted item the feed no longer lists is kept, deleted, for FeedReconciler.deletedItemRetention, 90 days from its deletion, decided by keepsUnlisted(_:at:keepingEveryDeletion:).
