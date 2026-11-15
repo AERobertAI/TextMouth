@@ -1,9 +1,9 @@
-# Where things stood, earlier campaigns
+# The agents' history
 
 Part of [working on TextMouth with coding agents](../../AGENTS.md).
 
-The status sections AGENTS.md carried at the end of earlier campaigns, newest first.
-AGENTS.md keeps only the latest.
+This page holds the status sections of earlier campaigns, newest first, and then the stories behind the rules of AGENTS.md and CLAUDE.md.
+AGENTS.md keeps only the latest status.
 
 ## Where things stood on November 13, 2026
 
@@ -578,3 +578,9 @@ Main held, all with green suites: the cloud data directory (FR02), the performan
 The evening's four polish branches are on main too, each merged after a green suite on the merged tree: `fix/reader-polish-october-4` (6308e97b), `fix/audio-editor-polish` (5a9176df), and the two that were in flight when the weekly budget ran out, `feature/feed-search-and-polish` (eeb8a0b5: podcast search, JSON Feed, resume data at quit, video re-import, failures reported, Stats by kind) and `feature/recording-polish-and-mp3` (b5a6dd75: recovered takes, quit asks, readers pause, exported originals, LAME MP3 as a vendored C target), after which the suite on main counted 4535 tests, 50 skipped, 0 failures.
 No feature branch is in flight; `docs/october-4-wave-4` describes the four in README.md and ARCHITECTURE.md.
 The user's open decisions: P07 (the end-of-book position), P08 (the audiobook jump time convention), and merging what two Macs wrote.
+
+## The stories behind the rules
+
+The date, the incident, and the user's words behind a rule that AGENTS.md or CLAUDE.md now states without them.
+
+- **The message board.** It was used for every task since October 2: well over a thousand messages by October 4.

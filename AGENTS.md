@@ -1,34 +1,22 @@
 # Working on TextMouth with coding agents
 
-This file is for a coding-agent session that starts cold: an orchestrator that runs several task agents at once, and the task agents themselves.
-It says where the project's state lives, what the user has standing rules about, how a task agent must work, and how the orchestrator merges and records.
-README.md is the index of the documentation, whose pages are in docs/: docs/user explains the app to its user, docs/developer how to build and test it, and ARCHITECTURE.md, the index of docs/architecture, explains the code.
-None repeats what is here.
+This file holds what every agent session must know, whether it orchestrates or works on one task.
 The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agents/orchestrator.md).
 
 ## Start here
 
-- `docs/agents/writing-docs.md`: how every page and memory file is written.
-  Follow it in any document you edit.
-- `README.md`: the index of the documentation in `docs/`.
-  `docs/user/` holds a page for each part of the app, for the person using it.
-  `docs/developer/building.md` holds what you need, the make targets, and the make check gate; `docs/developer/testing.md` the hosted suite, the performance baselines, and the cloud-drive tests.
-  `docs/agents/working-with-agents.md` introduces the message board, and `docs/agents/history.md` keeps the status of earlier campaigns.
-- `ARCHITECTURE.md`: the index of `docs/architecture/`: the parts of the app, launch, who owns each kind of state (a page for each, in `docs/architecture/state/`), the reading walkthrough, the shared helpers, and the duplication left in place.
-  Read only the pages your task touches, and keep them true after every merge.
-- `TODO-2026-09-04.md`: the record.
-  Every merge gets a `- [x]` entry before the paragraph that begins `**Open follow-ups noted by the September 28 agents**`, a sentence with the suite's exact counts appended to the long verification paragraph (search for the latest "After the … merge: **N tests, S skipped, 0 failures**"), and open items go into the paragraph that begins `**Open follow-ups noted on October 3 afternoon and evening**`.
-  Its "Feature requests (October 3)" section holds FR01 to FR05; its "Performance review (October 3)" section holds PERF01 to PERF33.
-- `research/`: the research, plan, and design documents, each written before its feature was built and ending in the user's answered questions.
-  `research/README.md` lists them.
-- `AGENT-NOTES-2026-10-04.md`: what each agent of the September 28 to October 4 campaign left unverified or undone, in its own words, with the documentation wording that was still to be applied.
-  Read it before a documentation pass.
-- `.claude/skills/agent-bbs/`: the message board the agents coordinate through (`SKILL.md` is the reference; `scripts/bbs.py` is the command; `scripts/build-slot-with-bbs.sh` is the build wrapper).
-  It was used for every task since October 2: well over a thousand messages by October 4.
-- `Scripts/agents/`: `merge-chain.sh` (merge a branch into main and run the suite) and `extract-report.py` (print a subagent transcript's final report).
-- `*.md` is gitignored except README.md, AGENTS.md, ARCHITECTURE.md, CLAUDE.md, and the pages under `docs/`: stage any other Markdown file (the TODO, AGENT-NOTES, the research documents, the briefs) with `git add -f`.
-- `humanQuestions/` (gitignored, in the main checkout only, so agents' worktrees do not have it): the questions put to the user and their answers, one Markdown file per session or batch, named by date and part (`2026-10-07-evening.md`).
-  Read the newest files before asking the user anything; an answer there is the user's answer.
+- [`docs/agents/writing-docs.md`](docs/agents/writing-docs.md): how every page and memory file is written.
+- [`README.md`](README.md): the index of the documentation in `docs/`.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): the index of the code's parts; read only the pages your task touches.
+- [`.claude/skills/doc-library/SKILL.md`](.claude/skills/doc-library/SKILL.md): find and check a doc section; `doclib affected` for a branch.
+- [`.claude/skills/agent-bbs/SKILL.md`](.claude/skills/agent-bbs/SKILL.md): the message board the agents coordinate through.
+- [`docs/agents/working-with-agents.md`](docs/agents/working-with-agents.md): the board, and making each train count.
+- [`docs/agents/history.md`](docs/agents/history.md): earlier campaigns' status, and the stories behind these rules.
+- [`TODO-2026-09-04.md`](TODO-2026-09-04.md): the record of every merge, and the open items.
+- [`AGENT-NOTES-2026-10-04.md`](AGENT-NOTES-2026-10-04.md): what agents left unverified; read it before a documentation pass.
+- [`research/README.md`](research/README.md): the research and design documents, each ending in the user's answers.
+- `*.md` is gitignored except README.md, AGENTS.md, ARCHITECTURE.md, CLAUDE.md, and the pages under `docs/`: stage other Markdown with `git add -f`.
+- `humanQuestions/` (in the main checkout only) holds the user's questions and answers: read its newest file before asking anything again, and put new questions in a new file.
 
 ## The user's standing rules
 
