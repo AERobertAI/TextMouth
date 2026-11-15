@@ -1,6 +1,8 @@
 # Windows: the Library's sheets, search, and Speak Info
 <!-- id: windows-library-sheets-search-speak; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## The library's folder and Book Info sheets
 <!-- id: library-folder-book-info-sheets; keys: ; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Views/Feeds/AddFeedSheet.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift, TextMouth/Views/Feeds/OPMLImportSheet.swift, TextMouthProductionTests/LibraryFolderPickerTests.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Views/Library/FeedItemBookInfoSheet.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Views/Library/LibraryView.swift, TextMouthProductionTests/FeedUIAddFeedTests.swift -->
 
