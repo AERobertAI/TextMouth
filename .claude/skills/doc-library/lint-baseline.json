@@ -9,7 +9,7 @@
     "docs/architecture/launch.md": {"line-length": 10},
     "docs/architecture/parts-of-the-app.md": {"date": 3, "line-length": 20, "marker-missing": 1, "sentences-per-line": 14},
     "docs/architecture/platforms-phone-interface.md": {"date": 2, "line-length": 2, "stale": 1},
-    "docs/architecture/platforms.md": {"date": 5, "line-length": 9, "stale": 1},
+    "docs/architecture/platforms.md": {"date": 5, "line-length": 9},
     "docs/architecture/reading-a-book.md": {"line-length": 18, "marker-missing": 1, "sentences-per-line": 8},
     "docs/architecture/shared-helpers-parsers.md": {"date": 1, "line-length": 4},
     "docs/architecture/shared-helpers-values.md": {"line-length": 18},

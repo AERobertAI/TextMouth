@@ -26,7 +26,7 @@ On November 8, 2026 the iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-
 <!-- id: platform-folders; keys: ; src: TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformControlStyles.swift, TextMouth/Platform/macOS/App/TextMouthApp.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Platform/iOS/App/FrontWindowKind+iOS.swift -->
 
 - `TextMouth/Platform/macOS/` holds what only the Mac compiles.
-  Its folders mirror the ones the files came from, so a file keeps its place below `Platform/macOS/`: `TextMouth/Services/WatchedProcess.swift` is `TextMouth/Platform/macOS/Services/WatchedProcess.swift`.
+  Its folders mirror the ones the files came from, so a file keeps its place below `Platform/macOS/`: WatchedProcess, which came from the `Services` folder, is `TextMouth/Platform/macOS/Services/WatchedProcess.swift`.
   It holds:
   - `App`: TextMouthApp, AppDelegate, and FrontWindowKind (split out of MenuCommands, which stays in `App`);
   - `Services`: WatchedProcess, OrphanedConversionSweep (and its Textutil extension), PackageFileEditing, BookTextEditor, BookManifestEditor, MenuVisibilityManager, and `Export/WordDocExportWriter`;
