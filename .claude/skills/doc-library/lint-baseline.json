@@ -13,7 +13,7 @@
     "docs/architecture/shared-helpers-parsers.md": {"line-length": 4},
     "docs/architecture/shared-helpers-values.md": {"line-length": 18},
     "docs/architecture/shared-helpers.md": {"line-length": 22},
-    "docs/architecture/state/audio-edits.md": {"line-length": 26},
+    "docs/architecture/state/audio-edits.md": {"line-length": 19},
     "docs/architecture/state/cloud-state.md": {"line-length": 17},
     "docs/architecture/state/data-directory.md": {"line-length": 25},
     "docs/architecture/state/exports.md": {"line-length": 26},
