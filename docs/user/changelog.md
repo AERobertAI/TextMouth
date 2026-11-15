@@ -236,15 +236,24 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Transcripts that come with podcasts and audiobooks
 - Book > Attach Transcript… gives an audiobook a transcript from a WebVTT (.vtt) or SubRip (.srt) file, on any macOS, with nothing transcribed. It asks first before replacing a transcript the book has, and says so if you edited or cleaned it up (see [Transcribing an audiobook](transcribing.md)).
-- An audiobook imported with a .vtt or .srt file beside its audio, named as a track is with its extension changed (01.vtt beside 01.mp3), takes that file as the track's transcript, whether the book came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then. A file that can't be used is named once the import is done, and never fails it.
+- An audiobook imported with a .vtt or .srt file beside its audio, named as a track is with its extension changed (01.vtt beside 01.mp3), takes that file as the track's transcript, whether the book came as one file, a folder of tracks, a ZIP, or a playlist. No transcription is offered then.
+  A file that can't be used is named once the import is done, and never fails it.
 - A downloaded podcast episode brings its own transcript and chapters, for every feed (see [Podcasts and article feeds](feeds.md)). The chapters become its headings when its audio has none.
 - Downloading an episode again replaces its own transcript with the new one, unless you made, edited, or cleaned up the transcript.
 - Book Information has a read-only Transcript detail that says where a transcript came from and when, as in "Attached from “lecture.vtt” on October 30, 2026."
 - Transcribe Audio… is dimmed for a book while a transcript is being attached to it, and says "A transcript is being attached to Moby-Dick. Transcribe it once that finishes." from any other route.
 - Export's Transcript checkbox has a "Convert transcript to" pop-up that adds WebVTT and SubRip captions, one file for the book, timed from the start of its audio. SubRip writes a few strings as character references so that they read back as written, and other players may show those as written.
 - A Transcript item that holds no timed transcript can't be written as captions, and the export says so: "The book has no timed transcript to write as captions."
-- Replace Existing keeps a transcript that recognition made, or that you edited or cleaned up, over the transcript file the new copy brought. An untouched transcript from outside, attached or a podcast's, gives way to the file. The duplicate question says which will happen, and afterwards VoiceOver names a file that wasn't used and points to Attach Transcript… (see [Adding books](adding-books.md)).
-- Fixed in the same work: a speaker was misnamed after a cue that changes voice partway; a 20 MB file of blank lines took 640 MB and now takes 80 MB; SubRip writing lost cues on re-read; a window closing during the Replace confirmation left Attach Transcript… dimmed until quit; two tracks with the same name, such as 01.mp3 and 01.flac, both took 01.vtt; Attach reads only a plain file, so a named pipe can't hang it; and a chapter title is cut to 200 characters.
+- Replace Existing keeps a transcript that recognition made, or that you edited or cleaned up, over the transcript file the new copy brought. An untouched transcript from outside, attached or a podcast's, gives way to the file.
+  The duplicate question says which will happen, and afterwards VoiceOver names a file that wasn't used and points to Attach Transcript… (see [Adding books](adding-books.md)).
+- Fixed in the same work:
+  - a speaker was misnamed after a cue that changes voice partway;
+  - a 20 MB file of blank lines took 640 MB and now takes 80 MB;
+  - SubRip writing lost cues on re-read;
+  - a window closing during the Replace confirmation left Attach Transcript… dimmed until quit;
+  - two tracks with the same name, such as 01.mp3 and 01.flac, both took 01.vtt;
+  - Attach reads only a plain file, so a named pipe can't hang it;
+  - and a chapter title is cut to 200 characters.
 
 ### Symbols in Word documents
 - A Word document (.docx) and Word 2003 XML now read symbols, as .doc has since 0.4.1: a w:sym is read by its font, and text typed in a symbol font is read the same way (see [What TextMouth reads](what-textmouth-reads.md)).
@@ -253,11 +262,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Not read: a font a table style names, a font a theme names alone, and the complex-script and East Asian fonts.
 
 ### Kindle books in the KF8 format
-- An .azw3 book now imports, with its chapters, its headings at the levels its author gave them, and its print pages when it has page breaks (see [What TextMouth reads](what-textmouth-reads.md)). A KF8 book named .mobi or .azw imports too. Earlier versions refused them with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+- An .azw3 book now imports, with its chapters, its headings at the levels its author gave them, and its print pages when it has page breaks (see [What TextMouth reads](what-textmouth-reads.md)). A KF8 book named .mobi or .azw imports too.
+  Earlier versions refused them with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
 - A .mobi file that holds a book twice, in MOBI 6 and in KF8, is read from its KF8 half. When the KF8 half can't be read, it is read from its MOBI 6 half.
 - A copy-protected book is still refused, in either half of such a file: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." TextMouth never tries to remove copy protection.
 - A book's contents decides its chapters: an entry that names a whole page titles that chapter, and an entry inside a page is a heading there.
-- A piece of a book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it only when its title repeats the previous piece's, or is the heading the next piece opens with. This puts back together the chapters that calibre cuts into pieces: Pride and Prejudice no longer has the end of a chapter headed with the next chapter's name, and the Project Gutenberg licence is one section.
+- A piece of a book that opens with no heading of its own, and that no entry of the contents names, joins the chapter before it only when its title repeats the previous piece's, or is the heading the next piece opens with.
+  This puts back together the chapters that calibre cuts into pieces: Pride and Prejudice no longer has the end of a chapter headed with the next chapter's name, and the Project Gutenberg licence is one section.
 - A page of links that a converter added to the end of a book, headed "Table of Contents", is left out, so it is not read aloud at the end. Soft hyphens are left out.
 - KF8 keeps no page list, so its pages are the page breaks in its text, when it has them.
 - A book whose file is damaged says so: "This Kindle book is damaged or incomplete: …"
