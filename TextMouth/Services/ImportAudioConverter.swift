@@ -769,10 +769,11 @@ enum ImportAudioConverter {
     /// debug log).
     ///
     /// With `keepingChapters`, which an import passes (FMT17), the source's
-    /// chapters (`SourceInfo.chapters`) are written into the .m4a's chapter
-    /// track before it is checked (`ChapterTrackWriter`), its samples copied
-    /// as they are; when that fails, the file keeps no chapters, as before,
-    /// and `AUDIO_CHAPTERS_NOT_KEPT` says why in the debug log. The library's
+    /// chapters (`SourceInfo.chapters`) are then written into the checked
+    /// .m4a's chapter track (`keepChapters`, `ChapterTrackWriter`), its
+    /// samples copied as they are, and the file with them checked again;
+    /// when either fails, the file keeps no chapters, as before, and
+    /// `AUDIO_CHAPTERS_NOT_KEPT` says why in the debug log. The library's
     /// conversion of an older book's Ogg files keeps none, so that book's
     /// chapters, and the places in it, stay as they were.
     /// - Throws: `Failure`, or `CancellationError` when the task is
@@ -813,10 +814,10 @@ enum ImportAudioConverter {
         let staged = temporaryURL(beside: source)
         do {
             try await write(source, to: staged, info: info, target: target, using: tool)
+            try await check(staged, against: info.duration, from: name)
             if keepingChapters, !info.chapters.isEmpty {
                 await keepChapters(info.chapters, in: staged, lasting: info.duration, from: name)
             }
-            try await check(staged, against: info.duration, from: name)
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error
@@ -936,21 +937,29 @@ enum ImportAudioConverter {
     /// could not be kept (FMT17).
     static let chaptersNotKeptLogTag = "AUDIO_CHAPTERS_NOT_KEPT"
 
-    /// Writes `chapters`, the chapters of the file named `sourceName`, into
-    /// the .m4a converted from it at `url`, which lasts `duration` seconds
-    /// (`ChapterTrackWriter`). A failure leaves the file as it was, with no
-    /// chapters, and is recorded as one line,
-    /// `AUDIO_CHAPTERS_NOT_KEPT: <file>: <reason>`, the reason naming only
-    /// an error's domain and code, which never quote a path.
+    /// Gives the .m4a at `url`, converted from the file named `sourceName`
+    /// and already checked, the source's `chapters`: written with them to a
+    /// hidden file beside it (`ChapterTrackWriter`), which is checked as the
+    /// conversion was (`check(_:against:from:)`) and only then takes the
+    /// file's place, so the chapters can never cost the import its audio. A
+    /// failure leaves the file as it was, with no chapters, and is recorded
+    /// as one line, `AUDIO_CHAPTERS_NOT_KEPT: <file>: <reason>`, the reason
+    /// naming only an error's domain and code, which never quote a path.
     private static func keepChapters(
         _ chapters: [NeroChapterReader.Chapter],
         in url: URL,
         lasting duration: TimeInterval,
         from sourceName: String
     ) async {
+        let withChapters = temporaryURL(beside: url)
         do {
-            try await ChapterTrackWriter.write(chapters, into: url, lasting: duration)
+            // A list that makes no chapter (every start past the end) writes
+            // nothing, and the file stays as it is.
+            guard try await ChapterTrackWriter.write(chapters, from: url, to: withChapters, lasting: duration) else { return }
+            try await check(withChapters, against: duration, from: sourceName)
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: withChapters)
         } catch {
+            try? FileManager.default.removeItem(at: withChapters)
             let failure = error as NSError
             DiagnosticLog.event(.storage, "\(chaptersNotKeptLogTag): \(sourceName): \(failure.domain) \(failure.code)")
         }

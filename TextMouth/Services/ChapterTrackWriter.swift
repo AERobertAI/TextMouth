@@ -8,27 +8,36 @@ import AVFoundation
 ///
 /// The file's samples are copied exactly as they are stored, never decoded
 /// and encoded again, so a chapter list costs no second lossy generation;
-/// its tags are kept. The new file is written under a hidden name beside the
-/// old, which a leftover sweep knows (`ImportAudioConverter.temporarySuffix`),
-/// and takes its place only once whole; any failure leaves the old file as
-/// it was.
+/// its tags are kept. The copy is written to a new file the caller names
+/// (the import's own hidden name beside the old, which a leftover sweep
+/// knows, `ImportAudioConverter.temporaryURL(beside:)`), which the caller
+/// checks before it takes the old file's place; the old file is never
+/// changed.
 ///
 /// Only a file of TextMouth's own converting is opened: an .m4a whose bytes
 /// are no Ogg (`ImportAudioConverter.isNeverDecodedInApp`), the one file kind
 /// the import's conversion writes.
 enum ChapterTrackWriter {
-    /// Gives the .m4a at `file`, which lasts `duration` seconds, the chapters
-    /// `chapters` lists, made into a book's chapters as every list read by
-    /// hand is (`NeroChapterReader.bookChapters(from:fileDuration:)`: sorted,
-    /// each lasting until the next, the first from the start). A list that
-    /// makes no chapter changes nothing.
+    /// Writes the .m4a at `file`, which lasts `duration` seconds, to a new
+    /// .m4a at `destination` with the chapters `chapters` lists, made into a
+    /// book's chapters as every list read by hand is
+    /// (`NeroChapterReader.bookChapters(from:fileDuration:)`: sorted, each
+    /// lasting until the next, the first from the start).
+    /// - Returns: whether anything was written: a list that makes no chapter
+    ///   writes nothing.
     /// - Throws: `AudioEditError.unreadableAudio` for a file this writer
     ///   never opens or that has no audio track, `AudioEditError.renderFailed`
-    ///   when AVFoundation refuses the copy, `CancellationError`, or the file
-    ///   system's error taking the file's place; `file` is as it was.
-    static func write(_ chapters: [NeroChapterReader.Chapter], into file: URL, lasting duration: TimeInterval) async throws {
+    ///   when AVFoundation refuses the copy, or `CancellationError`; nothing
+    ///   is left at `destination`.
+    @discardableResult
+    static func write(
+        _ chapters: [NeroChapterReader.Chapter],
+        from file: URL,
+        to destination: URL,
+        lasting duration: TimeInterval
+    ) async throws -> Bool {
         let list = NeroChapterReader.bookChapters(from: chapters, fileDuration: duration)
-        guard !list.isEmpty else { return }
+        guard !list.isEmpty else { return false }
         guard !ImportAudioConverter.isNeverDecodedInApp(file) else { throw AudioEditError.unreadableAudio }
 
         let asset = AVURLAsset(url: file) // lint-ok: the import's own .m4a, refused above when it is of a converted format or Ogg
@@ -37,17 +46,13 @@ enum ChapterTrackWriter {
         }
         let hint = try await track.load(.formatDescriptions).first
         let tags = (try? await asset.load(.metadata)) ?? []
-
-        let staged = file.deletingLastPathComponent()
-            .appendingPathComponent(".\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)")
         do {
-            try await copy(track, of: asset, hint: hint, tags: tags, chapters: list, to: staged)
-            // The whole new file takes the old one's place in one step.
-            _ = try FileManager.default.replaceItemAt(file, withItemAt: staged)
+            try await copy(track, of: asset, hint: hint, tags: tags, chapters: list, to: destination)
         } catch {
-            try? FileManager.default.removeItem(at: staged)
+            try? FileManager.default.removeItem(at: destination)
             throw error
         }
+        return true
     }
 
     /// Writes `track` of `asset`, its samples as they are stored (their

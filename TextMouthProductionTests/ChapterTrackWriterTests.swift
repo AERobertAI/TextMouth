@@ -10,44 +10,50 @@ import XCTest
 /// conversion, and the writer. Nothing is played; no Ogg is decoded.
 @MainActor
 final class ChapterTrackWriterTests: XCTestCase {
-    /// An AAC .m4a and an Apple Lossless one gain the chapters given, in
-    /// order, each lasting until the next, read back by AVFoundation; the
-    /// audio keeps its format and its length.
+    /// An AAC .m4a and an Apple Lossless one, copied with the chapters given,
+    /// gain them in order, each lasting until the next, read back by
+    /// AVFoundation; the audio keeps its format and its length, and the file
+    /// copied from is as it was.
     func testAnM4AGainsTheChaptersAndKeepsItsAudio() async throws {
         let folder = try makeSandboxDirectory("chapter-track")
         for (name, codec) in [("aac.m4a", kAudioFormatMPEG4AAC), ("alac.m4a", kAudioFormatAppleLossless)] {
             let file = folder.appendingPathComponent(name)
+            let copy = folder.appendingPathComponent("chaptered-\(name)")
             try writeSilence(to: file, codec: codec, duration: 3)
+            let bytes = try Data(contentsOf: file)
             let before = try await facts(of: file)
 
-            try await ChapterTrackWriter.write(
-                [.init(title: "Second", start: 1.5), .init(title: "First", start: 0)], into: file, lasting: before.duration
+            let wrote = try await ChapterTrackWriter.write(
+                [.init(title: "Second", start: 1.5), .init(title: "First", start: 0)], from: file, to: copy, lasting: before.duration
             )
 
-            let chapters = await AudioPlaybackService.extractChapters(from: file)
+            XCTAssertTrue(wrote, name)
+            let chapters = await AudioPlaybackService.extractChapters(from: copy)
             XCTAssertEqual(chapters.map(\.title), ["First", "Second"], name)
             XCTAssertEqual(chapters.map(\.startTime), [0, 1.5], name)
-            let after = try await facts(of: file)
+            let after = try await facts(of: copy)
             XCTAssertEqual(after.codec, codec, "\(name): the samples are copied as stored")
             XCTAssertEqual(after.duration, before.duration, accuracy: 0.05, name)
+            XCTAssertEqual(try Data(contentsOf: file), bytes, "\(name): the file copied from is unchanged")
         }
     }
 
-    /// A list that makes no chapter changes nothing, and a file of a kind the
-    /// writer never opens is refused and left as it was, with nothing left
-    /// beside it.
+    /// A list that makes no chapter writes nothing, and a file of a kind the
+    /// writer never opens is refused, with nothing written.
     func testNothingIsWrittenForNoChaptersOrAFileNeverOpened() async throws {
         let folder = try makeSandboxDirectory("chapter-track-refused")
         let file = folder.appendingPathComponent("plain.m4a")
         try writeSilence(to: file, codec: kAudioFormatMPEG4AAC, duration: 1)
-        let bytes = try Data(contentsOf: file)
-        try await ChapterTrackWriter.write([], into: file, lasting: 1)
-        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        let unused = folder.appendingPathComponent("unused.m4a")
+        let wrote = try await ChapterTrackWriter.write([], from: file, to: unused, lasting: 1)
+        XCTAssertFalse(wrote)
+        let pastTheEnd = try await ChapterTrackWriter.write([.init(title: "Late", start: 5)], from: file, to: unused, lasting: 1)
+        XCTAssertFalse(pastTheEnd, "a chapter past the file's end makes no chapter")
 
         let ogg = folder.appendingPathComponent("radio.ogg")
         try Data("OggS not really".utf8).write(to: ogg)
         do {
-            try await ChapterTrackWriter.write([.init(title: "A", start: 0)], into: ogg, lasting: 1)
+            try await ChapterTrackWriter.write([.init(title: "A", start: 0)], from: ogg, to: unused, lasting: 1)
             XCTFail("an Ogg file was opened")
         } catch {
             XCTAssertEqual(error as? AudioEditError, .unreadableAudio)
