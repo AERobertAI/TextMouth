@@ -102,6 +102,9 @@ The rich text reader (RTFDocumentReader, written from Microsoft's RTF 1.9.1 spec
    - keeps the budget: the limit in bytes, charged the text's bytes, 16 for each piece of text, 64 for each paragraph, and 81 for each cell (64 and its word's 17), past which DocumentTooLargeError (a table of about 790,000 cells, 5.5 MB of rich text, is the most a document may hold).
    A \page, a \pagebb (directly, or by its style), and a \sect whose section starts a page (\sbkpage, \sbkeven, \sbkodd, and \sectd's default; not \sbknone or \sbkcol) each add a pending break, written before the next letter or digit; a \pagebb or style break before any letter or digit adds none.
 7. When no paragraph is a heading by a style or an outline level, RTFSizeHeadings.apply guesses them by TextutilHTMLStructure's rule over the RTFBlocks.
+   Its census counts each paragraph's characters that are not white space with `String.forEachCharacter(_:)`.
+   It judges a long paragraph by `RTFParagraph.plainText(stoppingAfter:)`, its first 480 bytes (four for each of a heading's at most 120 characters), when that beginning alone is already too long to be a heading.
+   The answer is the whole text's, and `RTFSizeHeadingsTests` compares both with the old expressions (see [Shared helpers: readers and markup guards](../shared-helpers-parsers.md)).
    (the body size by characters, a paragraph of 1 to 120 characters that is not one letter, larger sizes by rank, bold at the body size unless the body is mostly bold).
    Never in a table or a list.
 8. RTFHTMLWriter writes the HTML (a heading carries no emphasis; consecutive list items share their lists by level; a list can begin no deeper than one level below the open list).

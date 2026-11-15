@@ -189,3 +189,20 @@ The readers that ask it (the feed, OPML, SMIL, PEF, and ODT manifest reads) have
 
 `WordMLReaderTests` has no real Word 2003 XML sample: the two samples were written by textutil, and the reader was written from the format and checked on a hand-made document that covers every rule.
 A real sample was not added because the one candidate is over the size preference and has no licence file.
+
+## Import speed-up tests
+<!-- id: import-speed-up-tests; keys: ByteSearchTests, PlainTextLinesTests, differential test, random texts, reference expression, import area; src: TextMouthProductionTests/ByteSearchTests.swift, TextMouthProductionTests/ImportSpeedUpPinTests.swift, TextMouthProductionTests/PlainTextLinesTests.swift, TextMouthProductionTests/RTFSizeHeadingsTests.swift, TextMouthProductionTests/EPUBBlankChapterTests.swift, TextMouthProductionTests/EPUBXMLIndexTests.swift, TextMouthProductionTests/PublicationSemanticsTypeNamesTests.swift, Scripts/test/areas.conf -->
+
+Each import speed-up keeps the expression it replaced as a reference, and its tests hold the two to the same answer on named edge cases and on thousands of random inputs; the goldens (`DocumentGoldenTests`, `TextPipelineGoldenTests`) hold the books' output.
+The classes, each placed in an area of `Scripts/test/areas.conf`:
+- `ByteSearchTests`: the `memchr` search, `splitAtLineFeeds()`, and `String.forEachCharacter(_:)` against `utf8.contains`, `split`, and the Character walk;
+- `ImportSpeedUpPinTests`: the prefix strip at the last colon and the line endings;
+- `PlainTextLinesTests`: every edge of the line split by name, and 20,000 random texts;
+- `RTFSizeHeadingsTests`: the 120 and 121 character boundary, kinds of white space, CJK, emoji, accents, and bold, against the old expressions;
+- `EPUBBlankChapterTests`: named and long chapters, and 20,000 random texts against the old regular expression;
+- `EPUBXMLIndexTests`: the index against the old XPath on 1,000 random packages, the container, an NCX, and a 2,000-deep document;
+- `PublicationSemanticsTypeNamesTests`: the type names against the full attribute search.
+
+Harnesses that mirror the tests, run on a copy with a deliberate fault (an off-by-one length, a missing last line, a wrong white space set), showed that the byte searches, line split, prefix strip, blank test, index, and white space set fail them.
+The type names and the portable tree were checked by reading only.
+
