@@ -285,6 +285,110 @@ final class CueSheetImportTests: XCTestCase {
         )
     }
 
+    // MARK: - Times Past the End of Audio Apple's Decoders Do Not Open First
+
+    /// A sheet whose second track begins past the end of an AAC .m4a (a file
+    /// the import measures with afinfo, not Apple's decoders), in a folder or
+    /// a ZIP, and a label file with a label past that end, are left unused,
+    /// each saying why, and the track imports as it would without them, as
+    /// it did before sheets were read.
+    func testSheetsAndLabelsPastTheEndOfAnAACFileAreUnusedAndTheTrackImports() throws {
+        let sheet = "FILE \"Book.m4a\" MP4\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n  TRACK 02 AUDIO\n    INDEX 01 05:00:00\n"
+        let sheetFolder = try aacFolder("AAC Sheet", beside: ["Book.cue": sheet])
+        let labelFolder = try aacFolder("AAC Labels", beside: ["Book.txt": "0\t0\tStart\n300\t300\tLong after\n"])
+        let zip = try makeTemporaryZip(prefix: "cue-aac", entries: [
+            "Album/Book.m4a": try Data(contentsOf: sheetFolder.appendingPathComponent("Book.m4a")),
+            "Album/Book.cue": Data(sheet.utf8),
+        ])
+        addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
+
+        let fromFolder = try FileImportService.importAudioFolderWithReport(from: sheetFolder, toFolder: folderPath)
+        let fromLabels = try FileImportService.importAudioFolderWithReport(from: labelFolder, toFolder: folderPath)
+        let fromZip = try FileImportService.importAudioZipWithReport(from: zip, toFolder: folderPath)
+
+        let sheetUnused = "The tracks of the cue sheet “Book.cue” run past the end of its audio, so its headings were not used."
+        XCTAssertEqual(fromFolder.notice, sheetUnused)
+        XCTAssertEqual(fromZip.notice, sheetUnused)
+        XCTAssertEqual(
+            fromLabels.notice,
+            "The labels of the label file “Book.txt” run past the end of its audio, so its headings were not used."
+        )
+        for imported in [fromFolder, fromLabels, fromZip] {
+            XCTAssertEqual(try chapterTitles(of: imported.book), ["Book"])
+            XCTAssertNil(AudioManifest.read(inAudioFolder: URL(fileURLWithPath: imported.book.filePath)))
+        }
+    }
+
+    /// The same sheet chosen on its own is refused in its own words while
+    /// the source is read, as one past the end of a WAVE file is.
+    func testASheetOnItsOwnPastTheEndOfAnAACFileIsRefusedInItsWords() throws {
+        let folder = try aacFolder("AAC Alone", beside: [:])
+        let sheet = folder.appendingPathComponent("Book.cue")
+        try Data("FILE \"Book.m4a\" MP4\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n  TRACK 02 AUDIO\n    INDEX 01 05:00:00\n".utf8)
+            .write(to: sheet)
+
+        XCTAssertEqual(try refusal(of: sheet).underlying as? CueSheetError, .timesPastAudio)
+        XCTAssertEqual(try libraryFolderEntries(), [])
+    }
+
+    /// Every file a sheet names is measured, none through Apple's decoders
+    /// unless the book plays it as it is: a WAVE by the parse's own measure,
+    /// an AAC .m4a and the PCM and Opus CAF samples (which the import
+    /// converts) as the conversion reads them, by afinfo.
+    func testEveryFileASheetNamesIsMeasured() throws {
+        let folder = try makeSandboxDirectory("cue-measure")
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("plain.wav"), duration: 2)
+        try AudioTestFixtures.writeAACSilence(to: folder.appendingPathComponent("aac.m4a"), duration: 2)
+        for name in ["tones-pcm.caf", "tones-opus.caf"] {
+            try FileManager.default.copyItem(at: CueSheetTests.sample("caf/\(name)"), to: folder.appendingPathComponent(name))
+        }
+        let names = ["plain.wav", "aac.m4a", "tones-pcm.caf", "tones-opus.caf"]
+
+        let lengths = FileImportService.measuredLengths(of: names.map {
+            M3UPlaylist.Track(url: folder.appendingPathComponent($0), path: $0, title: nil)
+        })
+
+        XCTAssertEqual(Set(lengths.keys), Set(names))
+        for (name, expected) in zip(names, [2.0, 2, 3, 3]) {
+            XCTAssertEqual(lengths[name] ?? 0, expected, accuracy: 0.1, name)
+        }
+    }
+
+    /// Should the book's reading find a sheet's section past its file's end
+    /// after all (a converted file a little shorter than its source), the
+    /// sheets' manifest goes and the tracks are published again without it,
+    /// saying why; any other failure, or a misfit in a manifest the sheets
+    /// did not write, is thrown as it is.
+    func testAMisfitTheReadingFindsPublishesTheTracksWithoutTheSheets() throws {
+        let manifest = sources.appendingPathComponent(AudioManifest.fileName)
+        try Data("{}".utf8).write(to: manifest)
+        let arranged = FileImportService.SheetsArranged(manifest: manifest, notice: "with", noticeWithoutTheirSections: "without")
+        let misfit = AudioParseError.sectionStartsPastEnd(
+            section: AudioSectionName(title: "Two", number: 2), file: "Book.m4a", start: 300, fileDuration: 60
+        )
+
+        var notices: [String?] = []
+        let published = try FileImportService.publishingWithoutSheetsOnMisfit(arranged) { (notice: String?) throws -> String in
+            notices.append(notice)
+            if notices.count == 1 { throw misfit }
+            return "published"
+        }
+
+        XCTAssertEqual(published, "published")
+        XCTAssertEqual(notices, ["with", "without"])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: manifest.path), "the sheets' manifest is gone")
+        XCTAssertThrowsError(try FileImportService.publishingWithoutSheetsOnMisfit(arranged) { (_: String?) throws -> String in
+            throw AudioParseError.noAudioFiles
+        }) { XCTAssertEqual($0 as? AudioParseError, .noAudioFiles) }
+        XCTAssertThrowsError(try FileImportService.publishingWithoutSheetsOnMisfit(FileImportService.SheetsArranged()) {
+            (_: String?) throws -> String in throw misfit
+        }) { XCTAssertEqual($0 as? AudioParseError, misfit) }
+        XCTAssertEqual(
+            CueSheetWording.headingsDidNotFit(["Book.cue", "Disc 2/labels.txt"]),
+            "The headings from “Book.cue” and “Disc 2/labels.txt” run past the end of the audio, so the tracks were imported without them."
+        )
+    }
+
     /// A folder of tracks without a sheet imports exactly as before: one
     /// heading per track, no manifest written, and the same checksum.
     func testAFolderWithoutASheetImportsAsBefore() throws {
@@ -389,6 +493,18 @@ final class CueSheetImportTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for name in ["tone4.wav"] + labelFiles {
             try FileManager.default.copyItem(at: CueSheetTests.sample("audacity-labels/\(name)"), to: folder.appendingPathComponent(name))
+        }
+        return folder
+    }
+
+    /// A folder `name` in the sandbox holding a two-second AAC "Book.m4a" and,
+    /// beside it, each file of `files` (its name, then its text).
+    private func aacFolder(_ name: String, beside files: [String: String]) throws -> URL {
+        let folder = sources.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try AudioTestFixtures.writeAACSilence(to: folder.appendingPathComponent("Book.m4a"), duration: 2)
+        for (file, text) in files {
+            try Data(text.utf8).write(to: folder.appendingPathComponent(file))
         }
         return folder
     }

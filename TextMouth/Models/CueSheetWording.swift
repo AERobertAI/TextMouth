@@ -74,6 +74,16 @@ enum CueSheetWording {
         case timesPastAudio
     }
 
+    /// The notice of a folder's or archive's tracks imported without the
+    /// headings of the cue sheets and label files `names` (their paths from
+    /// the folder) gave, because the book's reading found one of those
+    /// headings past the end of its audio (a converted file a little shorter
+    /// than its source, or one the import could not measure first).
+    static func headingsDidNotFit(_ names: [String]) -> String {
+        let listed = CountWording.list(names.map { "“\($0)”" })
+        return "The headings from \(listed) run past the end of the audio, so the tracks were imported without them."
+    }
+
     /// The notice of a folder's or archive's cue sheet or label file that
     /// was not used, so the tracks it would have arranged imported as they
     /// are.

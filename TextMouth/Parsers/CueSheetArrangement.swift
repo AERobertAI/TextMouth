@@ -57,10 +57,24 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// The sheets of a folder or archive that arrange nothing, in the order
     /// found.
     var unusedSheets: [UnusedSheet]
+    /// The sheets and label files whose sections are used, by their paths
+    /// from the folder, in the order found.
+    var usedLists: [String] = []
 
     /// Whether the sheets make any section at all.
     var arrangesAnything: Bool {
         !segments.isEmpty
+    }
+
+    /// What the import tells when the book's parse finds a section of these
+    /// past its file's end after all, and the tracks import without them
+    /// (`FileImportService.publishTracks`): that the headings of the lists
+    /// used run past the end of the audio, then each list not used, with
+    /// why.
+    var noticeWithoutItsSections: String? {
+        let sentences = (usedLists.isEmpty ? [] : [CueSheetWording.headingsDidNotFit(usedLists)])
+            + unusedSheets.map { CueSheetWording.sheetUnused($0.name, kind: $0.kind, because: $0.reason) }
+        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 
     /// What the import tells of the sheets: the names each sheet used
@@ -99,8 +113,9 @@ struct CueSheetArrangement: Equatable, Sendable {
 
     /// What measures the files a sheet's sections play: the length, in
     /// seconds, of each file it can measure, by the file's path. The import
-    /// measures them as the book's parse will (`AudioMediaProber`), except
-    /// those it converts first, which no reader opens; a test passes its own.
+    /// measures every file, never through Apple's decoders unless the book
+    /// plays the file as it is (`FileImportService.measuredLengths(of:)`); a
+    /// test passes its own.
     typealias Measure = (_ files: [M3UPlaylist.Track]) -> [String: TimeInterval]
 
     /// The files that give the audiobook folder `folder` its headings: its
@@ -194,6 +209,7 @@ struct CueSheetArrangement: Equatable, Sendable {
             if !sheetSections.skipped.isEmpty {
                 arrangement.skipped.append(SkippedNames(sheet: name, entries: sheetSections.skipped))
             }
+            arrangement.usedLists.append(name)
             arrangement.segments += sheetSections.segments
             arrangement.files += sheetSections.files
             titles.append(sheetSections.title)
@@ -232,7 +248,8 @@ struct CueSheetArrangement: Equatable, Sendable {
             segments: made.segments,
             files: made.files,
             skipped: made.skipped.isEmpty ? [] : [SkippedNames(sheet: sheetURL.lastPathComponent, entries: made.skipped)],
-            unusedSheets: []
+            unusedSheets: [],
+            usedLists: [sheetURL.lastPathComponent]
         )
     }
 

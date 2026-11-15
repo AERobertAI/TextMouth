@@ -79,18 +79,26 @@ extension FileImportService {
             )
             try BookManifestFile.encoded(arrangement.manifest(at: location)).write(to: location.url)
 
-            var imported = try publishTracks(
-                titled: bookTitle,
-                in: audioDirectory,
-                of: staging,
-                id: bookID,
-                md5Hash: hash,
-                folderPath: folderPath,
-                dateAdded: dateAdded,
-                source: sheet,
-                pairingIn: folder,
-                run: &run
-            )
+            var imported: ImportedBook
+            do {
+                imported = try publishTracks(
+                    titled: bookTitle,
+                    in: audioDirectory,
+                    of: staging,
+                    id: bookID,
+                    md5Hash: hash,
+                    folderPath: folderPath,
+                    dateAdded: dateAdded,
+                    source: sheet,
+                    pairingIn: folder,
+                    run: &run
+                )
+            } catch let error as AudioParseError where error.placesASectionOutsideItsFile {
+                // The book's reading, after the conversion, found a track past
+                // its file's end that the check before could not see: the
+                // sheet is refused in its own words, as that check refuses it.
+                throw CueSheetError.timesPastAudio
+            }
             // The files and the sheet belong to the listener's folders, so
             // none is deleted or offered for deletion, whatever "After
             // Importing a Book" says.
@@ -98,6 +106,19 @@ extension FileImportService {
             imported.notice = joinedNotices(imported.notice, arrangement.notice)
             return imported
         }
+    }
+
+    /// What the cue sheets and label files of a book's folder of tracks did
+    /// to it (`arrangeByCueSheets(in:)`).
+    struct SheetsArranged {
+        /// The manifest their sections were written to; nil when they wrote
+        /// none (the folder had a manifest, or they arrange nothing).
+        var manifest: URL?
+        /// What the import tells of them (`CueSheetArrangement.notice`).
+        var notice: String?
+        /// What it tells instead should the book be read without their
+        /// sections (`CueSheetArrangement.noticeWithoutItsSections`).
+        var noticeWithoutTheirSections: String?
     }
 
     /// Lets the cue sheets and Audacity label files in `audioDirectory`, a
@@ -109,45 +130,95 @@ extension FileImportService {
     /// as it was, and so is one whose sheets and label files arrange nothing,
     /// as the notice returned says. (A ZIP holding a .txt file is imported as
     /// a batch of books, so a label file arranges a folder's tracks alone.)
-    /// - Returns: what the import tells of the sheets
-    ///   (`CueSheetArrangement.notice`): the names they skipped and the
-    ///   sheets not used; nil when there is nothing to tell.
+    /// - Returns: the manifest written, if any, and what the import tells.
     /// - Throws: the error writing the manifest.
-    static func arrangeByCueSheets(in audioDirectory: URL) throws -> String? {
+    static func arrangeByCueSheets(in audioDirectory: URL) throws -> SheetsArranged {
         guard AudioManifestLocation.find(in: audioDirectory) == nil,
               let arrangement = CueSheetArrangement.arranging(folder: audioDirectory, measure: measuredLengths(of:))
-        else { return nil }
+        else { return SheetsArranged() }
+        var arranged = SheetsArranged(notice: arrangement.notice, noticeWithoutTheirSections: arrangement.noticeWithoutItsSections)
         if arrangement.arrangesAnything {
             let location = AudioManifestLocation.forNewManifest(in: audioDirectory)
             try BookManifestFile.encoded(arrangement.manifest(at: location)).write(to: location.url)
+            arranged.manifest = location.url
         }
-        return arrangement.notice
+        return arranged
     }
 
-    /// The length of each of `files` that a reader may open at import,
-    /// measured as the book's parse measures it (`AudioMediaProber.avFoundation`),
-    /// by its path. Only a file whose bytes are of a format TextMouth plays as
-    /// it is (`ImportAudioConverter.verdict(for:)` is `.leave`) is opened: a
-    /// format the import converts is never handed to Apple's decoders before
-    /// it is converted, and a file the bytes leave open (MPEG-4) waits for
-    /// `afinfo`. A file not opened, or that cannot be measured, is not
-    /// listed, and the parse checks it after the conversion.
-    static func measuredLengths(of files: [M3UPlaylist.Track]) -> [String: TimeInterval] {
-        let measurable = files.filter { ImportAudioConverter.verdict(for: $0.url) == .leave }
-        guard !measurable.isEmpty,
-              let outcomes = try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit, of: {
-                  await AudioMediaProber.avFoundation.probeEach(measurable.map(\.url))
-              }) else { return [:] }
-        var lengths: [String: TimeInterval] = [:]
-        for (file, outcome) in zip(measurable, outcomes) {
-            if case .success(let seconds) = outcome { lengths[file.path] = seconds }
+    /// The book `publish` makes of a folder of tracks the sheets arranged
+    /// (`arranged`), as `publishTracks` makes every one: once with their
+    /// sections, telling their notice; and, should the book's reading find
+    /// one of those sections past its file's end after all, once more
+    /// without them, their manifest removed, telling why. The reading
+    /// measures each file as the reader will, after the import's
+    /// conversion, which the sheets' check could not wait for: a converted
+    /// file can be a little shorter than its source, and a file no check
+    /// could measure is checked only there. Any other failure, or one from a
+    /// manifest the sheets did not write, is thrown as it is. Generic over
+    /// what `publish` returns, so a test can watch the two tries.
+    static func publishingWithoutSheetsOnMisfit<Published>(
+        _ arranged: SheetsArranged,
+        publish: (_ sheetNotice: String?) throws -> Published
+    ) throws -> Published {
+        do {
+            return try publish(arranged.notice)
+        } catch let error as AudioParseError where error.placesASectionOutsideItsFile {
+            guard let manifest = arranged.manifest else { throw error }
+            try FileManager.default.removeItem(at: manifest)
+            return try publish(arranged.noticeWithoutTheirSections)
         }
-        return lengths
+    }
+
+    /// The length of each of `files`, by its path, measured without Apple's
+    /// decoders unless the book plays the file as it is: a file whose bytes
+    /// are of a format TextMouth plays as it is
+    /// (`ImportAudioConverter.verdict(for:)` is `.leave`) as the book's
+    /// parse measures it (`AudioMediaProber.avFoundation`); every other file
+    /// (MPEG-4, which the bytes leave open, and every format the import
+    /// converts) as the conversion reads it first (`ImportAudioConverter.inspect`:
+    /// an Ogg file from its own pages, any other by `afinfo` in its child).
+    /// A file that cannot be measured is not listed, and the parse checks
+    /// it, after the conversion.
+    static func measuredLengths(of files: [M3UPlaylist.Track]) -> [String: TimeInterval] {
+        guard !files.isEmpty else { return [:] }
+        // The verdict reads a file's first bytes, so it is asked once a file.
+        let playedAsTheyAre = Set(files.filter { ImportAudioConverter.verdict(for: $0.url) == .leave }.map(\.path))
+        let asTheyAre = files.filter { playedAsTheyAre.contains($0.path) }
+        let others = files.filter { !playedAsTheyAre.contains($0.path) }
+        let measured = try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit, of: {
+            var lengths: [String: TimeInterval] = [:]
+            let outcomes = await AudioMediaProber.avFoundation.probeEach(asTheyAre.map(\.url))
+            for (file, outcome) in zip(asTheyAre, outcomes) {
+                if case .success(let seconds) = outcome { lengths[file.path] = seconds }
+            }
+            for file in others {
+                if let info = try await ImportAudioConverter.inspect(file.url), info.duration.isFinite, info.duration > 0 {
+                    lengths[file.path] = info.duration
+                }
+            }
+            return lengths
+        })
+        return measured ?? [:]
     }
 
     /// `notices` that are not nil, joined into one message; nil when none is.
     static func joinedNotices(_ notices: String?...) -> String? {
         let sentences = notices.compactMap { $0 }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+    }
+}
+
+extension AudioParseError {
+    /// Whether the parse refused a section for where it lies in its file:
+    /// starting, or ending, past the file's end, or starting before an
+    /// earlier section of the same file. A cue sheet's or label file's
+    /// times made for other audio fail so (`publishingWithoutSheetsOnMisfit`).
+    var placesASectionOutsideItsFile: Bool {
+        switch self {
+        case .sectionStartsPastEnd, .sectionEndsPastEnd, .sectionStartsBeforeEarlierSection:
+            return true
+        default:
+            return false
+        }
     }
 }

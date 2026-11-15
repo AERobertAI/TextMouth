@@ -210,6 +210,23 @@ final class CueSheetArrangementTests: XCTestCase {
         XCTAssertEqual(CueSheetArrangement.resolvedFiles(of: two, at: sheetURL).tracks.map { $0?.path }, [nil, nil])
     }
 
+    /// A folder's arrangement names the lists whose sections it uses, in
+    /// Finder's order, so that, should the book's reading find one of their
+    /// sections past its file's end after all, the notice can say whose
+    /// headings the tracks were imported without.
+    func testAFoldersArrangementNamesTheListsItUses() throws {
+        let folder = try makeSandboxDirectory("cue-used").appendingPathComponent("cue", isDirectory: true)
+        try FileManager.default.copyItem(at: CueSheetTests.sample("cue"), to: folder)
+
+        let arrangement = try XCTUnwrap(CueSheetArrangement.arranging(folder: folder) { _ in [:] })
+
+        XCTAssertEqual(arrangement.usedLists, ["album.cue", "two-files.cue"])
+        XCTAssertEqual(
+            arrangement.noticeWithoutItsSections,
+            "The headings from “album.cue” and “two-files.cue” run past the end of the audio, so the tracks were imported without them."
+        )
+    }
+
     /// The performer every track shares is the book's author when the sheet
     /// names none of its own, so no heading repeats it; the sheet's own
     /// performer wins when it names one.

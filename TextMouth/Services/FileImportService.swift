@@ -2993,8 +2993,10 @@ enum FileImportService {
     /// FMT23). Without a manifest, the cue sheets among the tracks arrange
     /// them, through a manifest written here (`arrangeByCueSheets(in:)`,
     /// FMT24), and the book returned carries the notice of what they left
-    /// out. Internal so a cue sheet's import ends as every other does
-    /// (`importCueSheetWithReport`).
+    /// out; should the book's reading find one of their sections past its
+    /// file's end after all, the tracks import without them
+    /// (`publishingWithoutSheetsOnMisfit`). Internal so a cue sheet's import
+    /// ends as every other does (`importCueSheetWithReport`).
     static func publishTracks(
         titled title: String,
         in audioDirectory: URL,
@@ -3007,30 +3009,32 @@ enum FileImportService {
         pairingIn transcriptFolder: URL,
         run: inout ImportRun
     ) throws -> ImportedBook {
-        var title = title
-        var author = Book.unknownAuthor
-        let sheetNotice = try arrangeByCueSheets(in: audioDirectory)
-        if let location = AudioManifestLocation.find(in: audioDirectory) {
-            try run.begin(.readingManifest, in: staging.directory)
-            let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
-            // A blank title or author falls back as a missing one does.
-            if let manifestTitle = manifest.bookTitle { title = manifestTitle }
-            if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
+        let sheets = try arrangeByCueSheets(in: audioDirectory)
+        return try publishingWithoutSheetsOnMisfit(sheets) { sheetNotice in
+            var title = title
+            var author = Book.unknownAuthor
+            if let location = AudioManifestLocation.find(in: audioDirectory) {
+                try run.begin(.readingManifest, in: staging.directory)
+                let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
+                // A blank title or author falls back as a missing one does.
+                if let manifestTitle = manifest.bookTitle { title = manifestTitle }
+                if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
+            }
+            let staged = stagedAudioBook(
+                id: bookID,
+                title: title,
+                author: author,
+                audioDirectory: audioDirectory,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                staging: staging,
+                source: source
+            )
+            var imported = try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
+            imported.notice = joinedNotices(imported.notice, sheetNotice)
+            return imported
         }
-        let staged = stagedAudioBook(
-            id: bookID,
-            title: title,
-            author: author,
-            audioDirectory: audioDirectory,
-            md5Hash: hash,
-            folderPath: folderPath,
-            dateAdded: dateAdded,
-            staging: staging,
-            source: source
-        )
-        var imported = try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
-        imported.notice = joinedNotices(imported.notice, sheetNotice)
-        return imported
     }
 
     /// Creates the folder an audio archive's tracks go in, inside `staging`.
