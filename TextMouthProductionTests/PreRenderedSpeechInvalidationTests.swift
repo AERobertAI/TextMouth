@@ -830,9 +830,17 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     }
 
     /// A resume after a long pause, with the cursor within the lead, asks
-    /// for the render again at once.
+    /// for the render again at once. The resume's utterance goes to the
+    /// recorder `withReader` gives every reader, not to the synthesizer.
     func testAResumeWithinTheLeadAfterALongPauseAsksAgain() throws {
         try withReader { reader, renders in
+            XCTAssertNotNil(
+                reader.speechService._directUtteranceRecorderForTesting,
+                "withReader left direct speech to the synthesizer"
+            )
+            var handedOver = 0
+            reader.speechService._directUtteranceRecorderForTesting = { _ in handedOver += 1 }
+            defer { XCTAssertGreaterThanOrEqual(handedOver, 1, "the resume handed the recorder no utterance") }
             let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
             reader.currentTransformation = speech.transformation
             reader.currentOffsetMap = speech.offsetMap
@@ -1372,6 +1380,10 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         )
         reader.content = content
         reader.isLoading = false
+        // Direct speech goes nowhere: a resume or a chapter's start hands
+        // its utterance to this recorder, never to the synthesizer, so no
+        // test depends on stopping speech before the run loop turns.
+        reader.speechService._directUtteranceRecorderForTesting = { _ in }
         defer {
             reader.close()
             try? FileManager.default.removeItem(at: configFile)
