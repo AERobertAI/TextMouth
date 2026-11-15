@@ -32,7 +32,6 @@ Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by Te
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
   The sample books and their tests are in [Testing](../../developer/testing.md).
-- Files: Parsers/KFXParser.swift, KFXSignature.swift, KFXPackage.swift, KFXSidecar.swift, KFXContainer.swift, KFXView.swift, KFXIon.swift, KFXSymbol.swift, KFXSymbols.swift, KFXFragments.swift, KFXMetadata.swift, KFXNavigation.swift, KFXTargets.swift, KFXBook.swift, KFXWalk.swift, KFXInlineText.swift, KFXStyles.swift, KFXError.swift, Parsers/MOBIParser.swift (preparedBook, shared with MOBI), Parsers/BookParser.swift, Services/MarkdownCacheService.swift (extractFromKindle), Services/FileImportService.swift.
 
 ## Kindle MOBI 6 and KF8 books
 <!-- id: kindle-mobi-6-kf8-books; keys: Mobipocket, AZW3, PRC, PalmDOC, Amazon Kindle, kindlegen, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/BookParser.swift -->
