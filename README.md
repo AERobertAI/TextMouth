@@ -15,6 +15,10 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [The Library window](docs/user/library-window.md): views, folders, sorting, searching, and commands on books.
 - [Search Library](docs/user/search-library.md): finding text in every book at once.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
+  - [Pages in a reader](docs/user/reader-pages.md): Go to Page and skipping by page.
+  - [Media keys and the sleep timer](docs/user/reader-media-and-sleep-timer.md): headphones, AirPods, the timer.
+  - [When a book ends, and your saved places](docs/user/reader-book-end.md): what plays next.
+  - [When speech or audio goes wrong](docs/user/reader-speech-problems.md): refusals, stalls, memory limits.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
 - [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio, Retranscribe Audio, Clean Up Transcript, Attach Transcript.
