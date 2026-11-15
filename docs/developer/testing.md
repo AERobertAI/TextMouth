@@ -207,7 +207,7 @@ Recording new baselines:
   - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
 
 ## Testing on real cloud drives
-<!-- id: testing-real-cloud-drives; keys: File Provider, evict, dataless file, cloud fetch, real drive, sync service; src: TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouthProductionTests/CloudDriveTestSupport.swift, TextMouthProductionTests/CloudDriveTestSupportTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md -->
+<!-- id: testing-real-cloud-drives; keys: File Provider, evict, dataless file, cloud fetch, real drive, sync service; src: TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouthProductionTests/CloudDriveTestSupport.swift, TextMouthProductionTests/CloudDriveTestSupportTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouth/Services/BookCloudStorageService.swift, research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md -->
 
 CloudDriveIntegrationTests runs the cloud services against real sync services.
 It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
