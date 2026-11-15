@@ -88,14 +88,14 @@ final class PDFTextRecognizerTests: XCTestCase {
         let internalError = NSError(domain: VNErrorDomain, code: VNErrorCode.internalError.rawValue)
         let elsewhere = NSError(domain: NSCocoaErrorDomain, code: VNErrorCode.unsupportedRevision.rawValue)
 
-        guard case .unavailable(let reason) = VisionPDFTextRecognizer.recognitionError(for: unsupported) else {
+        guard case .unavailable(let reason) = VisionTextRecognition.recognitionError(for: unsupported) else {
             return XCTFail("An unsupported revision should make OCR unavailable")
         }
         XCTAssertTrue(reason.hasPrefix("text recognition failed: "), reason)
-        guard case .failed = VisionPDFTextRecognizer.recognitionError(for: internalError) else {
+        guard case .failed = VisionTextRecognition.recognitionError(for: internalError) else {
             return XCTFail("An internal error should fail this region only")
         }
-        guard case .failed = VisionPDFTextRecognizer.recognitionError(for: elsewhere) else {
+        guard case .failed = VisionTextRecognition.recognitionError(for: elsewhere) else {
             return XCTFail("Only Vision's own codes can make OCR unavailable")
         }
     }
