@@ -2,9 +2,10 @@ import Foundation
 
 /// The work a quit that is sure to go ahead, with nothing unsaved or Quit
 /// Anyway chosen, must not cut off, and how it waits for it: feed downloads
-/// keeping their place (`FeedQuitHold`, FR03), a book's text being read again
-/// in another encoding (`TextRereads`, encodingchoice), and a book being
-/// spoken into an audio file, stopped with its chapters kept
+/// keeping their place (`FeedQuitHold`, FR03), feed records still being
+/// written (`FeedStore.quitWork()`), a book's text being read again in
+/// another encoding (`TextRereads`, encodingchoice), and a book being spoken
+/// into an audio file, stopped with its chapters kept
 /// (`SpeechExportsUnderWay`, FMT43).
 ///
 /// There are two ways, by who asks (`AppDelegate.applicationShouldTerminate`):
@@ -20,7 +21,9 @@ import Foundation
 ///   each piece of work has ended, or has had the longest it may wait.
 ///
 /// Either way a quit waits no longer than the sum of the work's longest
-/// waits, so work that cannot end never keeps TextMouth open.
+/// waits, so work that cannot end never keeps TextMouth open; work given up
+/// on can first report what it leaves unsaved (`Work.gaveUp`), which the
+/// person's quit, asked again, then asks about.
 @MainActor
 enum QuitHold {
     /// One piece of work a quit may wait for.
@@ -42,6 +45,11 @@ enum QuitHold {
         /// the work when several pieces of a kind run, so it is read when the
         /// quit is asked, not when the work is made.
         let finishing: @MainActor () -> String
+        /// What the work does when the quit stops waiting for it, its longest
+        /// wait past, before the quit goes on: such as reporting the changes
+        /// it leaves unsaved, so the quit asked again asks about them first
+        /// (`FeedStore.quitWork()`). Nil for work that leaves nothing to say.
+        var gaveUp: (@MainActor () -> Void)? = nil
     }
 
     /// Holds the quit while each of `works` that runs now reaches its end,
@@ -63,7 +71,8 @@ enum QuitHold {
     }
 
     /// Returns once `work` has ended or its longest wait has passed,
-    /// whichever comes first.
+    /// whichever comes first. When the wait passes first, the work is told
+    /// (`Work.gaveUp`) before the quit goes on.
     static func end(_ work: Work) async {
         await withCheckedContinuation { (ended: CheckedContinuation<Void, Never>) in
             let resume = RunOnce { ended.resume() }
@@ -73,7 +82,7 @@ enum QuitHold {
             }
             Task {
                 try? await Task.sleep(for: work.longestWait)
-                resume.run()
+                resume.run(after: work.gaveUp)
             }
         }
     }
@@ -92,10 +101,12 @@ private final class RunOnce {
         self.action = action
     }
 
-    /// Runs the action, unless it has run already.
-    func run() {
+    /// Runs the action, unless it has run already; `first`, when given, runs
+    /// just before it, and only then.
+    func run(after first: (@MainActor () -> Void)? = nil) {
         guard let action else { return }
         self.action = nil
+        first?()
         action()
     }
 }

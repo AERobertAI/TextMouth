@@ -123,21 +123,35 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertEqual(QuitHoldWording.list(["a", "b", "c", "d"]), "a, b, c, and d")
     }
 
-    /// The app's three kinds of work each give a phrase of their own.
-    func testEachKindOfWorkSaysWhatItIsDoing() {
+    /// The app's four kinds of work each give a phrase of their own.
+    func testEachKindOfWorkSaysWhatItIsDoing() throws {
+        let records = try feedStoreOverItsOwnFolder().store
         let phrases = [
             FeedQuitHold.work(FeedCenter.shared.downloads).finishing(),
+            records.quitWork().finishing(),
             TextRereads().quitWork().finishing(),
             SpeechExportsUnderWay().quitWork().finishing(),
         ]
-        XCTAssertEqual(Set(phrases).count, 3, "two kinds of work say the same thing: \(phrases)")
+        XCTAssertEqual(Set(phrases).count, 4, "two kinds of work say the same thing: \(phrases)")
         XCTAssertFalse(phrases.contains(""), "a kind of work says nothing: \(phrases)")
         let kinds = [
             FeedQuitHold.work(FeedCenter.shared.downloads).kind,
+            records.quitWork().kind,
             TextRereads().quitWork().kind,
             SpeechExportsUnderWay().quitWork().kind,
         ]
-        XCTAssertEqual(Set(kinds).count, 3, "two kinds of work share a kind: \(kinds)")
+        XCTAssertEqual(Set(kinds).count, 4, "two kinds of work share a kind: \(kinds)")
+    }
+
+    /// The app's quit waits for the feed records still being written, after
+    /// the feed downloads, whose stop can add to them: it used to wait only
+    /// for downloads, re-reads, and exports, so a feed change still queued
+    /// was dropped at exit without a word.
+    func testTheAppsQuitWaitsForFeedRecordsAfterTheDownloads() {
+        XCTAssertEqual(
+            AppDelegate().heldWork().map(\.kind),
+            ["feed downloads", "feed records", "text re-reads", "speech exports"]
+        )
     }
 
     /// Several books read again, or several speech exports, are said as
@@ -269,6 +283,155 @@ final class QuitWhileHeldTests: XCTestCase {
         XCTAssertTrue(stuck.running)
         XCTAssertEqual(finisher.takeFinished(), ["stuck"], "the request after the wait was not told to go ahead")
         stuck.released = true
+    }
+
+    /// Work given up on, its longest wait past, is told so before the quit
+    /// is asked again, once; work that ends in time is not.
+    func testWorkGivenUpOnIsToldSoBeforeTheQuitGoesOn() async {
+        let log = FinisherLog()
+        let finisher = log.finisher()
+        let order = Order()
+        let stuck = FakeWork("stuck", order: order)
+        let prompt = FakeWork("prompt", order: order)
+
+        XCTAssertTrue(finisher.finish([
+            prompt.work(gaveUp: { order.events.append("prompt given up on") }),
+            stuck.work(longestWait: .milliseconds(50), gaveUp: { order.events.append("stuck given up on") }),
+        ]))
+        prompt.released = true
+        let asked = await eventually { log.asks == 1 }
+
+        XCTAssertTrue(asked)
+        XCTAssertEqual(order.events, ["prompt started", "prompt ended", "stuck started", "stuck given up on"])
+        stuck.released = true
+    }
+
+    // MARK: - Feed Records
+
+    /// A store's record changes on its write queue are counted until each
+    /// has reported back: a write, and a removal too.
+    func testAFeedStoreCountsItsRecordChangesUntilEachHasLanded() async throws {
+        let feeds = try feedStoreOverItsOwnFolder()
+        let record = FeedRecordTests.record(itemCount: 1)
+        XCTAssertFalse(feeds.store.hasChangesUnderWay)
+
+        feeds.store.add(record)
+        XCTAssertTrue(feeds.store.hasChangesUnderWay, "a write on the queue was not counted")
+        await feeds.store.flush()
+        XCTAssertFalse(feeds.store.hasChangesUnderWay)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: feeds.file(of: record).path))
+
+        feeds.store.remove(record.feed.id)
+        XCTAssertTrue(feeds.store.hasChangesUnderWay, "a removal on the queue was not counted")
+        await feeds.store.flush()
+        XCTAssertFalse(feeds.store.hasChangesUnderWay)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: feeds.file(of: record).path))
+    }
+
+    /// A quit asked while a feed's record write waits behind a folder edit's
+    /// hold is held, says it is saving the feeds' changes, and asks again
+    /// only once the edit has ended and the record is on disk; that request
+    /// quits. It used to quit at once and drop the write.
+    func testAQuitWaitsForAFeedRecordWriteHeldBehindAFolderEdit() async throws {
+        let feeds = try feedStoreOverItsOwnFolder()
+        let world = DelegateWorld()
+        world.delegate.heldWork = { [feeds.store.quitWork()] }
+        let hold = try feeds.boundary.holdWork(for: .movingBooksBetweenFolders)
+        defer { hold.release() }
+        let record = FeedRecordTests.record(itemCount: 2)
+        feeds.store.add(record)
+
+        XCTAssertEqual(world.ask(), .terminateCancel, "the quit did not wait for the feed record's write")
+        XCTAssertEqual(world.log.told, [QuitHoldWording.message(finishing: [FeedRecordQuitWording.finishing])])
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+        XCTAssertEqual(world.log.asks, 0, "asked to quit again while the write waited for the folder edit")
+
+        hold.release()
+        let asked = await eventually { world.log.asks == 1 }
+
+        XCTAssertTrue(asked, "never asked to quit again once the folder edit ended")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: feeds.file(of: record).path), "the record was not written")
+        XCTAssertEqual(world.ask(), .terminateNow, "the request after the write did not quit")
+        XCTAssertFalse(feeds.center.hasUnsavedChanges)
+    }
+
+    /// A feed change still waiting when the quit stops waiting for it is
+    /// reported unsaved, with what it waits for, so the request asked again
+    /// asks about it first instead of quitting without it; with no hold, a
+    /// change behind a slow disk is reported as still being saved. Either
+    /// lands by itself afterwards and settles its report.
+    func testAFeedChangeAQuitStopsWaitingForIsReportedSoTheQuitAsksFirst() async throws {
+        for held in [true, false] {
+            let gate = makeGate()
+            let feeds = try feedStoreOverItsOwnFolder(waitingAt: held ? nil : gate)
+            let prompted = CallLog<[PersistenceFailure.Subject]>()
+            let world = DelegateWorld(terminationGuard: UnsavedChangesTerminationGuard(
+                failureCenter: feeds.center,
+                flush: {},
+                prompt: { unsaved in
+                    prompted.record(unsaved.map(\.subject))
+                    return .cancel
+                },
+                requestTermination: {}
+            ))
+            world.delegate.heldWork = { [feeds.store.quitWork(longestWait: .milliseconds(50))] }
+            var hold: StorageWorkHold?
+            if held {
+                hold = try feeds.boundary.holdWork(for: .rebuildingDirectory)
+            }
+            defer { hold?.release() }
+            let record = FeedRecordTests.record(itemCount: 1)
+            feeds.store.add(record)
+
+            XCTAssertEqual(world.ask(), .terminateCancel, "held \(held): the quit did not wait for the write")
+            let gaveUp = await eventually { world.log.asks == 1 }
+            XCTAssertTrue(gaveUp, "held \(held): the quit never stopped waiting")
+
+            let reason = held
+                ? "TextMouth saves them once it has finished rebuilding its data directory."
+                : "TextMouth is still saving them."
+            XCTAssertEqual(
+                feeds.center.unsavedFailures().map(\.sentence),
+                ["Changes to the feed “The Tactile Atlas” could not be saved: \(reason)"],
+                "held \(held): the change left behind was not reported"
+            )
+            XCTAssertEqual(world.ask(), .terminateCancel, "held \(held): the request after the wait quit without asking")
+            let asked = await eventually { prompted.calls.count == 1 }
+            XCTAssertTrue(asked, "held \(held): the unsaved feed change was not asked about")
+            XCTAssertEqual(prompted.calls.first, [.feedRecord(feedID: record.feed.id, title: "The Tactile Atlas")])
+
+            hold?.release()
+            gate.signal()
+            await feeds.store.flush()
+            XCTAssertTrue(FileManager.default.fileExists(atPath: feeds.file(of: record).path), "held \(held): the write never landed")
+            XCTAssertFalse(feeds.center.hasUnsavedChanges, "held \(held): the write that landed did not settle the report")
+        }
+    }
+
+    /// A removal still waiting when the quit stops waiting for it, as Delete
+    /// Feed… leaves one, is reported too, and withdrawn once it lands.
+    func testAFeedRemovalAQuitStopsWaitingForIsReportedUntilItLands() async throws {
+        let feeds = try feedStoreOverItsOwnFolder()
+        let record = FeedRecordTests.record(itemCount: 1)
+        feeds.store.add(record)
+        await feeds.store.flush()
+        let hold = try feeds.boundary.holdWork(for: .movingBooksBetweenFolders)
+        defer { hold.release() }
+        feeds.store.remove(record.feed.id)
+        let log = FinisherLog()
+        let finisher = log.finisher()
+
+        XCTAssertTrue(finisher.finish([feeds.store.quitWork(longestWait: .milliseconds(50))]))
+        let gaveUp = await eventually { log.asks == 1 }
+
+        XCTAssertTrue(gaveUp)
+        XCTAssertEqual(feeds.center.unsavedFailures().map(\.subject), [.feedRecord(feedID: record.feed.id, title: "The Tactile Atlas")])
+        hold.release()
+        await feeds.store.flush()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: feeds.file(of: record).path))
+        XCTAssertFalse(feeds.center.hasUnsavedChanges, "the removal that landed left its report")
     }
 
     // MARK: - The Delegate
@@ -616,9 +779,10 @@ final class QuitWhileHeldTests: XCTestCase {
             self.order = order
         }
 
-        /// The work as a quit sees it. Its end waits for `released`, but for
-        /// no longer than ten seconds, so a test that forgets cannot hang.
-        func work(longestWait: Duration = .seconds(5)) -> QuitHold.Work {
+        /// The work as a quit sees it, told `gaveUp` when the quit stops
+        /// waiting for it. Its end waits for `released`, but for no longer
+        /// than ten seconds, so a test that forgets cannot hang.
+        func work(longestWait: Duration = .seconds(5), gaveUp: (@MainActor () -> Void)? = nil) -> QuitHold.Work {
             QuitHold.Work(
                 isRunning: { self.running },
                 end: {
@@ -633,9 +797,49 @@ final class QuitWhileHeldTests: XCTestCase {
                 },
                 longestWait: longestWait,
                 kind: name,
-                finishing: { self.name }
+                finishing: { self.name },
+                gaveUp: gaveUp
             )
         }
+    }
+
+    /// A feed store over a Feeds folder of the test's own, with a boundary
+    /// and a failure center of its own, so the app's feeds, storage work,
+    /// and failures are never involved.
+    private struct FeedWorld {
+        let store: FeedStore
+        let boundary: StorageBoundary
+        let center: PersistenceFailureCenter
+        let folder: URL
+
+        /// Where the store writes `record`.
+        func file(of record: FeedRecord) -> URL {
+            FeedPaths.recordFile(of: record.feed.id, in: folder)
+        }
+    }
+
+    /// A feed world (`FeedWorld`); with `gate`, each write and removal waits
+    /// at it before it touches the folder, as one behind a slow disk does.
+    private func feedStoreOverItsOwnFolder(waitingAt gate: DispatchSemaphore? = nil) throws -> FeedWorld {
+        let root = try makeSandboxDirectory("QuitFeedRecords")
+        let folder = root.appendingPathComponent("Feeds", isDirectory: true)
+        let boundary = StorageBoundary(root: root)
+        let center = PersistenceFailureCenter(boundary: boundary)
+        let location = FeedStore.Location(
+            currentFolder: { folder },
+            folder: { _ in
+                gate?.wait()
+                return folder
+            },
+            boundary: boundary,
+            isUnavailable: { false }
+        )
+        return FeedWorld(
+            store: FeedStore(location: location, failureCenter: center),
+            boundary: boundary,
+            center: center,
+            folder: folder
+        )
     }
 
     /// What a finisher said and asked, in place of a panel, VoiceOver, and AppKit.

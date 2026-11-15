@@ -275,14 +275,6 @@ final class StorageGenerationWorkTests: XCTestCase {
         return hold
     }
 
-    /// A gate a background thread waits at until the test signals it,
-    /// opened when the test ends so no thread is left waiting.
-    private func makeGate() -> DispatchSemaphore {
-        let gate = DispatchSemaphore(value: 0)
-        addTeardownBlock { gate.signal() }
-        return gate
-    }
-
     /// A count kept on the main actor, which tasks there add to.
     @MainActor
     private final class Tally {

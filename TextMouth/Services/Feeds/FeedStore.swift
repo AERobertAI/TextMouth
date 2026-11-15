@@ -117,7 +117,8 @@ struct FeedRecordWaitsForStorageWork: LocalizedError, Equatable {
 /// reported to `PersistenceFailureCenter`, as every other save is, with a
 /// retry, so the Library window's banner names the feed and quitting asks
 /// first; the feed's next write that succeeds settles it, and removing the
-/// feed's record (`remove(_:)`, as Delete Feed… does) withdraws it.
+/// feed's record (`remove(_:)`, as Delete Feed… does) withdraws it. A quit
+/// waits for the writes and removals still on the queue (`quitWork()`).
 @MainActor
 final class FeedStore: ObservableObject {
     /// Where a store keeps its records.
@@ -171,6 +172,10 @@ final class FeedStore: ObservableObject {
     private var retriesWaiting: Set<UUID> = []
     /// Writes and removes record files in the order asked.
     private let writeQueue = DispatchQueue(label: "com.textmouth.feed-records", qos: .utility)
+    /// The feeds with a write or a removal of their record on the write
+    /// queue that has not reported back yet, each with how many and the
+    /// feed's title: what a quit waits for (`quitWork()`).
+    private var changesUnderWay: [UUID: ChangeUnderWay] = [:]
     /// Where failed writes are reported.
     private let failureCenter: PersistenceFailureCenter
     /// Hears when the data directory is available again.
@@ -340,11 +345,14 @@ final class FeedStore: ObservableObject {
     /// waiting for the storage work is dropped, silently: nothing is left to
     /// save, and it no longer holds back what VoiceOver hears of the others.
     func remove(_ feedID: UUID) {
-        guard records.removeValue(forKey: feedID) != nil else { return }
+        guard let removed = records.removeValue(forKey: feedID) else { return }
         unsavedFeedIDs.remove(feedID)
         retriesWaiting.remove(feedID)
         failureCenter.withdraw(.feed(feedID))
         let location = location
+        noteChangeQueued(of: feedID, title: removed.feed.title)
+        // The store is kept until the removal ends, which reports back to it
+        // on the main queue, as a write does.
         writeQueue.async {
             location.boundary.perform(.savingFeeds) { generation in
                 let file = FeedPaths.recordFile(of: feedID, in: location.folder(generation))
@@ -358,6 +366,12 @@ final class FeedStore: ObservableObject {
                         "FEED_RECORD_SAVE_FAILED: could not delete \(file.lastPathComponent): \(error.localizedDescription)"
                     )
                 }
+            }
+            DispatchQueue.main.async {
+                self.noteChangeEnded(of: feedID)
+                // Nothing is left to save for the feed, including a change a
+                // quit reported as still under way (`quitWork()`).
+                self.failureCenter.withdraw(.feed(feedID))
             }
         }
     }
@@ -404,6 +418,7 @@ final class FeedStore: ObservableObject {
             return
         }
         let location = location
+        noteChangeQueued(of: feedID, title: record.feed.title)
         // The store is kept until the write ends, which reports back to it
         // on the main queue.
         writeQueue.async {
@@ -411,6 +426,7 @@ final class FeedStore: ObservableObject {
                 Self.writeRecord(record, in: location.folder(generation))
             }
             DispatchQueue.main.async {
+                self.noteChangeEnded(of: feedID)
                 self.noteWrite(of: feedID, title: record.feed.title, failure: failure)
             }
         }
@@ -559,4 +575,106 @@ final class FeedStore: ObservableObject {
             }
         }
     }
+
+    // MARK: Quitting
+
+    /// A feed's changes on the write queue: how many, and the feed's latest
+    /// title, for a report of the changes a quit could not wait for.
+    private struct ChangeUnderWay {
+        var count: Int
+        var title: String
+    }
+
+    /// Notes that a write or removal of the feed `feedID`'s record, titled
+    /// `title` now, is on the write queue.
+    private func noteChangeQueued(of feedID: UUID, title: String) {
+        let count = changesUnderWay[feedID]?.count ?? 0
+        changesUnderWay[feedID] = ChangeUnderWay(count: count + 1, title: title)
+    }
+
+    /// Notes that a write or removal of the feed `feedID`'s record has
+    /// reported back.
+    private func noteChangeEnded(of feedID: UUID) {
+        guard var change = changesUnderWay[feedID] else { return }
+        change.count -= 1
+        changesUnderWay[feedID] = change.count > 0 ? change : nil
+    }
+
+    /// Whether a write or removal of a record is on the write queue.
+    var hasChangesUnderWay: Bool {
+        !changesUnderWay.isEmpty
+    }
+
+    /// The longest a quit waits for the record changes on the write queue:
+    /// a write takes moments, unless an operation holding the storage work
+    /// holds it, such as a folder edit or Rebuild Directory, which a quit
+    /// waits for this long to end. Past this TextMouth quits anyway, once it
+    /// has said what is still unsaved (`reportChangesStillUnderWay()`).
+    static let longestQuitWait: Duration = .seconds(10)
+
+    /// The record changes on the write queue as work a quit waits for
+    /// (`QuitHold`, review3 item 5): while any is there, until none is, for
+    /// at most `longestWait`. A quit used to drop them without a word, since
+    /// a change still queued had not failed: a feed change made just before
+    /// quitting, or one waiting behind a folder edit's or Rebuild
+    /// Directory's hold. When the quit stops waiting, each change still
+    /// there is reported unsaved, so the quit asked again asks about it
+    /// first; one that lands later settles its report, as any write does.
+    func quitWork(longestWait: Duration = FeedStore.longestQuitWait) -> QuitHold.Work {
+        QuitHold.Work(
+            isRunning: { self.hasChangesUnderWay },
+            end: {
+                // Changes made during the wait are waited for too.
+                while self.hasChangesUnderWay {
+                    await self.flush()
+                }
+            },
+            longestWait: longestWait,
+            kind: "feed records",
+            finishing: { FeedRecordQuitWording.finishing },
+            gaveUp: { self.reportChangesStillUnderWay() }
+        )
+    }
+
+    /// Reports each feed whose change is still on the write queue as
+    /// unsaved, when a quit has stopped waiting for it: with the operation
+    /// holding the storage work as the reason, in the words of a retry kept
+    /// for it (`RetryWaitsForStorageWork`), or else that TextMouth is still
+    /// saving it. No retry is offered: the change is queued already, and
+    /// lands by itself unless TextMouth quits first; its write then settles
+    /// the report, and a removal withdraws it.
+    private func reportChangesStillUnderWay() {
+        let folder = location.currentFolder()
+        let reason: any Error = location.boundary.heldFor.map { RetryWaitsForStorageWork(operation: $0, action: .save) }
+            ?? FeedRecordStillBeingSaved()
+        for (feedID, change) in changesUnderWay {
+            failureCenter.recordFailure(
+                .feedRecord(feedID: feedID, title: change.title),
+                path: FeedPaths.recordFile(of: feedID, in: folder).path,
+                error: reason
+            )
+        }
+    }
+}
+
+/// Why a feed's change is not saved when a quit has stopped waiting for its
+/// write with no operation holding the storage work: the write is still on
+/// the write queue, behind a slow disk (`FeedStore.quitWork()`).
+struct FeedRecordStillBeingSaved: LocalizedError, Equatable {
+    var errorDescription: String? {
+        FeedRecordQuitWording.stillSaving
+    }
+}
+
+/// The words of a quit that waits for feed records to be written
+/// (`FeedStore.quitWork()`).
+enum FeedRecordQuitWording {
+    /// What the quit is finishing, after "TextMouth is finishing up before
+    /// it quits:" (`QuitHoldWording`).
+    static let finishing = "saving the changes to your feed subscriptions"
+
+    /// Why a feed's change is still unsaved when the quit stopped waiting:
+    /// the reason that ends "Changes to the feed “Planet Money” could not be
+    /// saved:" in the quit's prompt and the banner.
+    static let stillSaving = "TextMouth is still saving them."
 }
