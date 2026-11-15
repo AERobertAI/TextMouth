@@ -200,7 +200,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 ## Search in Book
 <!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 
-- The reader's sixteenth control, `PhoneReaderControl.searchInBook`, comes after Headings and before Go To in VoiceOver's order.
+- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 16 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
   Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text."
   (`PhoneBookSearchVocabulary`).
   It opens `PhoneReaderSheet.search`.
