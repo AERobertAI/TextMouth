@@ -587,7 +587,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **Pushing main and its tags:** Since November 14, 2026 the orchestrator pushes main and its version tags to GitHub, and only at a version bump it judges a fairly stable release.
   The user: "You have permission to push to main and tags I say when you increment the release number to a fairly stable release".
   The project CLAUDE.md carried the same authorization, dated November 14, 2026.
-- **The workflow guard:** Once main held `tests.yml` (since that first push, 0.4.10), `github_run.py`'s workflow guard was on.
+- **The workflow guard:** Once main held `test-build.yml` (since that first push, 0.4.10), `github_run.py`'s workflow guard was on.
 - **No iPhone simulator on this Mac:** The user also allowed deleting the iPhone simulator runtime once the iPhone tests ran wholly on GitHub; it was deleted on November 14, 2026 (7.5 GB).
 - **The usage override:** The user set the override as standing for the night before the weekly reset (Saturdays at 8:00 a.m. Eastern).
   On October 10, 2026 they said: "please don't warry about the weekly reset and have a full set of agents going and work until the limit runs out, everything can just be resumed without issue in the new week...
