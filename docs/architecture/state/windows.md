@@ -46,6 +46,10 @@ A reader window's book changing in place (0.2.5): listening goes on to the next 
   - and .bringTheOpenWindowForwardThenClose when the book is open in another window already, which posts as today and closes this reader's hostWindow on the next turn of the main queue, so no two windows show one book.
 
   The window choice is read when the book is asked for, never earlier, after every request for the book (autoplay, reading list) has been made, which the new reader claims once loaded.
+
+### How a switched window is observed
+<!-- id: reader-window-switch-observed; keys: onDisappear, onWindowFound, registerReaderWindow, readerID teardown, VoiceOver focus, markBookOpened; src: TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Services/LibraryWindowRouter.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Services/WindowSwitchRequests.swift, TextMouth/Platform/macOS/Views/SwitchedWindowFocus.swift, TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
+
 - How others observe it: BookReaderWindowView's onDisappear leaves the window registered with LibraryWindowRouter when the reader has switched its window (hasSwitchedWindow), and closes the reader as before.
   The new view registers the same NSWindow in onWindowFound, and registerReaderWindow(_:openReader:) replaces any earlier entry for a window, so an ordinary close unregisters as always. markBookOpened runs in the new view's onAppear, and reader windows are still not restored.
   The teardown of the old reader is its own.
@@ -135,6 +139,10 @@ Letter navigation in the Library list (the Leading articles setting): typing a t
   Since SwiftUI's scrollTo and AppKit's type select both fell short of a row far down (row 62 selected with rows 47 to 54 in view).
   A key that reaches no row leaves the selection and says nothing.
   After each letter, TitleTyping.spaceGoesOn(after:in:showingInverted:) says whether a row goes on with the letters and a space ("the " into "The Hobbit", as TypedForms.begins with articleAloneCounts), and the claim is made until the key's time plus interval, or released.
+
+### How the letter navigation is observed and tested
+<!-- id: library-letter-navigation-observed; keys: selection, VoiceOver, space claim, acceptanceSlack, type select tests; src: TextMouth/Views/Library/LibraryTitleTyping.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouthProductionTests/TitleTypingTests.swift, TextMouthProductionTests/LibraryTitleTypingTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift -->
+
 - How others observe it: the selection, which VoiceOver follows and reads as it reads any row; nothing is announced for a reach.
   TitleTypingSpaceClaim (in LibraryTitleTyping.swift, @MainActor, TitleTypingSpaceClaim.shared) holds the claiming window weakly and the time, by TitleTypingSpaceClaim.clock (system uptime; a test sets its own).
   And KeyboardShortcutManager.handleKeyEvent asks it before the dispatcher (key presses, below).
@@ -202,32 +210,35 @@ Key presses: which action a key press is, single or double, and the keys a text 
   - the kind of window it was pressed in (windowKind(ofKeyWindow:): an audio editor's or the Record window by identifier; a panel of its own or a modal session's window .other; a reader or a Library window as MenuVisibilityManager.detectWindowType tells them apart, and any other window, Settings among them, .other; a sheet, and a sheet over a sheet, as the kind of the window under them all, found as menu commands are routed (WindowCommandRouting.rootWindow(for:)), where a sheet over a sheet once counted as a Library window (REV11), but nil over an audio editor, where no shortcut matches (pressKind(window:sheetParent:)); and .other with no key window),
   - whether the key window is a dialog (isDialog(_:): a sheet, a window styled as one, or a modal session's window), whether text input has the keyboard, and whether it is a held key's repeat.
 
-  The dispatcher posts back a Trigger, at once or, for a single press that waits, when its PressTimer fires (MainQueuePressTimer in the app; the clock and the timer are injected, so its tests never wait).
-  Its Index, built in ShortcutAction.allCases order and rebuilt whenever the bindings in force change (rebuild(from:), from the manager's take(_:), which also runs a waiting single press at once), gives each kind of window's keys a single and a double action, each action's entered in every kind where its keys act (ShortcutScope.windowKinds(of:)), except that:
-  - a letter alone (KeyBinding.isLetterAlone: one letter, of any alphabet, with none of Command, Option, Shift, or Control, once or twice) is left out of every kind of window that navigatesByLetter (ShortcutWindowKind.navigatesByLetter, which only the Library's does, a sheet over a Library window counting as one), so the list takes it, no key of that kind waits on it, and Shift-J and Shift-L find no J or L there to fall back to (B10),
-  - and a key equivalent's noted there (isKeyEquivalent(_:in:)) and given to no action,
+### How the dispatcher reads a press
+<!-- id: key-press-dispatcher; keys: Press, Trigger, PressTimer, Index, double press, escalates, singleWaits, text field keys; src: TextMouth/Services/ShortcutPressDispatcher.swift, TextMouth/Models/TextEditingKeys.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift -->
 
-  And marks singleWaits where the double action is neither the single one nor the action it escalates (ShortcutAction.escalates, read from the table ShortcutAction.escalations, in ShortcutPressDispatcher.swift: since FR12's branch C, Where Am I?
-  Full Summary escalates Where Am I?, and Speak Full Info escalates Speak Info, whatever keys they have, so the first W or Shift-Command-I acts at once).
-  Its rules: a second press of the same key, with the same modifiers, in the same kind of window and window, less than the double-press time after the first by the events' own timestamps, is the double press, and one at exactly the time a single press.
-  Another key, another window, or a key a text field keeps ends a wait at once, running the waiting single press.
-  A held key's repeats are ignored for a key with a double action, and act as its presses do for any other.
-  Once a double press has acted, each further press of its key within the time of the one before is ignored.
-  And a waiting single press acts in its own window, held weakly, or nowhere once that window is gone.
-  A press with Shift that matches no binding of its own matches its binding without Shift, and posts shiftHeld, only for an action that takes Shift along (ShortcutAction.actionsTakingShiftAlong, in ShortcutPressDispatcher.swift: Skip Forward, Skip Backward, and Increase Speed).
-  And never while text input has the keyboard.
-  No press matches a key equivalent's key in a kind of window where its action works, nor, while the key window is a dialog, one of KeyBinding.dialogKeys (Return, the keypad's Enter, Escape, and Command-Period, each with no other modifier), which press the dialog's own buttons.
-  The dispatcher asks shouldHandle(binding:whenTextInputIsFocused:) of each press's stroke.
-  While a text field or text view has the keyboard (isTextInput(_:): any text view, editable or only selectable, the field editor of a text field or a search field included, or a text field; SwiftUI's selectable text, which refuses the keyboard, is none of these), the field keeps:
-  - every key with neither Command nor Control,
-  - and every key TextEditingKeys (Models/TextEditingKeys.swift) lists:
-    - Delete, Forward Delete, the arrows, Home, End, Page Up, and Page Down with any modifiers;
-    - the Edit menu's Command-A, C, V, X, and Z and Shift-Command-Z, which KeyBinding.editMenuCommands writes once, with their names (KeyBinding.systemCommands and TextEditingKeys.editMenuKeys derive from it), matched by the binding's stroke (TextEditingKeys.contains(_:)), so a double press of such a key stays the field's;
-    - and Control, without Command, with the letters AppKit's standard key bindings give a command.
+The dispatcher posts back a Trigger, at once or, for a single press that waits, when its PressTimer fires (MainQueuePressTimer in the app; the clock and the timer are injected, so its tests never wait).
+Its Index, built in ShortcutAction.allCases order and rebuilt whenever the bindings in force change (rebuild(from:), from the manager's take(_:), which also runs a waiting single press at once), gives each kind of window's keys a single and a double action, each action's entered in every kind where its keys act (ShortcutScope.windowKinds(of:)), except that:
+- a letter alone (KeyBinding.isLetterAlone: one letter, of any alphabet, with none of Command, Option, Shift, or Control, once or twice) is left out of every kind of window that navigatesByLetter (ShortcutWindowKind.navigatesByLetter, which only the Library's does, a sheet over a Library window counting as one), so the list takes it, no key of that kind waits on it, and Shift-J and Shift-L find no J or L there to fall back to (B10),
+- and a key equivalent's noted there (isKeyEquivalent(_:in:)) and given to no action,
 
-  For those the manager posts nothing and returns the event, so the Edit menu and then the field get it.
-  Every other Command or Control binding acts from a field too, as Command-I's Book Info does, and Shift-Command-T, which closes the sleep timer's panel from its own minutes field.
-  One Space is the Library list's, not Play / Pause's: with an NSTableView as the first responder and TitleTypingSpaceClaim.shared.takesSpace(in:) true for the key window, handleKeyEvent returns false before the dispatcher sees the press (letter navigation in the Library list, above).
+And marks singleWaits where the double action is neither the single one nor the action it escalates (ShortcutAction.escalates, read from the table ShortcutAction.escalations, in ShortcutPressDispatcher.swift: since FR12's branch C, Where Am I?
+Full Summary escalates Where Am I?, and Speak Full Info escalates Speak Info, whatever keys they have, so the first W or Shift-Command-I acts at once).
+Its rules: a second press of the same key, with the same modifiers, in the same kind of window and window, less than the double-press time after the first by the events' own timestamps, is the double press, and one at exactly the time a single press.
+Another key, another window, or a key a text field keeps ends a wait at once, running the waiting single press.
+A held key's repeats are ignored for a key with a double action, and act as its presses do for any other.
+Once a double press has acted, each further press of its key within the time of the one before is ignored.
+And a waiting single press acts in its own window, held weakly, or nowhere once that window is gone.
+A press with Shift that matches no binding of its own matches its binding without Shift, and posts shiftHeld, only for an action that takes Shift along (ShortcutAction.actionsTakingShiftAlong, in ShortcutPressDispatcher.swift: Skip Forward, Skip Backward, and Increase Speed).
+And never while text input has the keyboard.
+No press matches a key equivalent's key in a kind of window where its action works, nor, while the key window is a dialog, one of KeyBinding.dialogKeys (Return, the keypad's Enter, Escape, and Command-Period, each with no other modifier), which press the dialog's own buttons.
+The dispatcher asks shouldHandle(binding:whenTextInputIsFocused:) of each press's stroke.
+While a text field or text view has the keyboard (isTextInput(_:): any text view, editable or only selectable, the field editor of a text field or a search field included, or a text field; SwiftUI's selectable text, which refuses the keyboard, is none of these), the field keeps:
+- every key with neither Command nor Control,
+- and every key TextEditingKeys (Models/TextEditingKeys.swift) lists:
+  - Delete, Forward Delete, the arrows, Home, End, Page Up, and Page Down with any modifiers;
+  - the Edit menu's Command-A, C, V, X, and Z and Shift-Command-Z, which KeyBinding.editMenuCommands writes once, with their names (KeyBinding.systemCommands and TextEditingKeys.editMenuKeys derive from it), matched by the binding's stroke (TextEditingKeys.contains(_:)), so a double press of such a key stays the field's;
+  - and Control, without Command, with the letters AppKit's standard key bindings give a command.
+
+For those the manager posts nothing and returns the event, so the Edit menu and then the field get it.
+Every other Command or Control binding acts from a field too, as Command-I's Book Info does, and Shift-Command-T, which closes the sleep timer's panel from its own minutes field.
+One Space is the Library list's, not Play / Pause's: with an NSTableView as the first responder and TitleTypingSpaceClaim.shared.takesSpace(in:) true for the key window, handleKeyEvent returns false before the dispatcher sees the press (letter navigation in the Library list, above).
 
 ### How others observe a key press
 <!-- id: key-press-observers; keys: notification, shiftHeld, Shift units, WindowCommandRouting, test stand-in; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift -->
