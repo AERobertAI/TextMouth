@@ -723,7 +723,8 @@ final class ReaderViewModel: ObservableObject {
     private(set) var hasOpened = false
     /// Whether the cursor was published live (playback moving it) since the
     /// last durable save. It counts as a move even should the cursor have
-    /// come back to the saved place.
+    /// come back to the saved place. A publish while nothing plays and the
+    /// cursor rests at the saved place does not set it (risk 2).
     private var hasPlayedSinceSave = false
     /// The measure of the text this reader shows, which every anchor it
     /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
@@ -2454,7 +2455,13 @@ final class ReaderViewModel: ObservableObject {
         } else {
             // A live position carries none: only its cursor is read.
             libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: makeCurrentReadingPosition(withAnchor: false))
-            hasPlayedSinceSave = true
+            // Playing, or a cursor that left its saved place, is a move; a
+            // publish while nothing plays and the cursor rests where it was
+            // saved, as setting the cursor to the same place asks for, is
+            // not, so it never dates that place anew (risk 2).
+            if isActivelyPlaying || lastSavedPlace != TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset) {
+                hasPlayedSinceSave = true
+            }
         }
         lastLivePositionPublish = now
         // With the position published, see whether the next episode of a

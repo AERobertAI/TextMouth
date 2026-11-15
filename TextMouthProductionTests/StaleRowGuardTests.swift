@@ -203,7 +203,10 @@ final class StaleRowGuardTests: CloudMaintenanceTestCase {
         XCTAssertEqual(reader.currentCharacterOffset, 5)
         let saved = try XCTUnwrap(model.bookByID(row.id))
         XCTAssertEqual(saved.readingPosition?.lastUpdated, Self.readHere, "opening should not date the place anew")
-        XCTAssertEqual(saved.bookmarks, row.bookmarks)
+        // The load gives a bookmark saved without words its words, as ever;
+        // the bookmark itself is the same.
+        XCTAssertEqual(saved.bookmarks.map(\.id), row.bookmarks.map(\.id))
+        XCTAssertEqual(saved.bookmarks.map(\.characterOffset), row.bookmarks.map(\.characterOffset))
         XCTAssertGreaterThan(try XCTUnwrap(saved.lastOpened), Self.readThere, "opening should date the opening")
         let record = try BookInfo.load(from: row.tmbDirectory)
         XCTAssertEqual(record.state.readingPosition?.lastUpdated, Self.readHere)
@@ -222,6 +225,26 @@ final class StaleRowGuardTests: CloudMaintenanceTestCase {
 
         XCTAssertEqual(model.bookByID(row.id)?.readingPosition?.lastUpdated, Self.readHere)
         XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.readingPosition?.lastUpdated, Self.readHere)
+    }
+
+    /// A cursor set to where it already rests, as a load or a command can
+    /// set it, publishes a live place without moving: a close afterwards
+    /// keeps the place's date.
+    @MainActor
+    func testACursorSetWhereItRestsIsNoMove() throws {
+        let row = try rowReadHere()
+        try row.saveBookInfoThrowing()
+        let model = makeModel(with: [row])
+        let reader = try openReader(of: row, in: model)
+
+        let resting = reader.currentCharacterOffset
+        reader.currentCharacterOffset = resting
+        // The live publish it asks for runs on the main queue's next turns.
+        _ = waitUntil(timeout: 0.5) { false }
+        reader.close()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(model.bookByID(row.id)?.readingPosition?.lastUpdated, Self.readHere, "a cursor at rest was taken for a move")
     }
 
     /// A place the listener moved to is dated when it is saved, and wins
