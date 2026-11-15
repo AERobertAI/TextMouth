@@ -583,6 +583,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A TextMouth built before October 18, 2026 could not open a library that held a book in a format added that day:
   - rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, or SSML.
 - One built before October 20, 2026 could not open a library that held a braille book (BRF, BRL, or PEF), the format added that day.
+- 0.1.1 was built on October 17, 2026. A build made before October 18, 2026 does not know the seven kinds added that day: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML.
+- A build made before October 20, 2026 does not know braille. Each such build finds the index unreadable when it holds a book in a kind it does not know.
 - Never choose Rebuild Library Index in 0.1.1. It makes an index without the books in those eight kinds, and without the folders and the manual order that only the index held, which the copy of library.json that it keeps still has.
 
 ### Reading

@@ -57,7 +57,6 @@
     "docs/user/changelog.md": {"line-length": 68},
     "docs/user/feeds.md": {"date": 5, "line-length": 60, "marker-missing": 2, "page-size": 1, "section-length": 1, "sentences-per-line": 50},
     "docs/user/library-typing-and-speak-info.md": {"date": 1},
-    "docs/user/recording.md": {"date": 3, "line-length": 10, "marker-missing": 1, "sentences-per-line": 16},
-    "docs/user/where-your-library-lives.md": {"date": 13, "line-length": 78, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 75}
+    "docs/user/recording.md": {"date": 3, "line-length": 10, "marker-missing": 1, "sentences-per-line": 16}
   }
 }
