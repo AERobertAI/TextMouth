@@ -31,7 +31,7 @@ Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by Te
 - The refusals: protected (MOBIError.copyProtected: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."), damaged or not a Kindle book (MOBIError, the MOBI sentences), no flowing text (KFXError.noFlowingText: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."), a Kindle Create package (KFXError.kindleCreatePackage: "This file is a Kindle Create package, which TextMouth can't read yet."), and a partial container (KFXError.partOfABook: "This file holds only part of a Kindle book.
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
-  The sample books and their tests are in [Testing](../../developer/testing.md).
+  The sample books and their tests are in [Testing](../../developer/testing-formats.md).
 
 ## Kindle MOBI 6 and KF8 books
 <!-- id: kindle-mobi-6-kf8-books; keys: Mobipocket, AZW3, PRC, PalmDOC, Amazon Kindle, kindlegen, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/BookParser.swift -->
