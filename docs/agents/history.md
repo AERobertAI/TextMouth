@@ -853,6 +853,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Windows
 
 - **The Library's category picker:** Until October 30, 2026 the picker was a segmented control of the five categories, read as "Library category"; it is now a pop-up button, the View pop-up.
+- **A sheet over a sheet:** A sheet over a sheet once counted as a Library window (REV11); it now takes the kind of the window under all its sheets.
 
 ## From Windows: the Library's sheets, search, and Speak Info
 

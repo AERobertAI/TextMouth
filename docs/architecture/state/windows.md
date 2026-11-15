@@ -9,7 +9,7 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 App-wide actions.
 
 - Owner: LibraryWindowRouter.shared.
-  It keeps weak references to every open Library window, each with its way of taking an action, and to every reader window, each with its way of opening another reader, and decides once which window takes each GlobalAction: Open Book…, New from Text…, Import Folder…, Go to Library, opening files from Finder, opening a book's reader, and Continue to Next Book.
+  It keeps weak references to every open Library window, each with its way of taking an action, and to every reader window, each with its way of opening another reader, and decides once which window takes each GlobalAction.
   An action that no open window can take waits while a Library window opens.
 - Who may write it: Library windows register and unregister themselves (ContentView); reader windows register (BookReaderWindowView); AppDelegate supplies the way to open a Library window.
   Menu commands, keyboard shortcuts, finished books, and imports that open their book (LibraryViewModel.readerOpener) post notifications that the router listens for on the default center from launch (GlobalAction.routedNotificationNames), and AppDelegate hands over the files Finder opens.
@@ -26,13 +26,16 @@ A reader window's book changing in place (0.2.5): listening goes on to the next 
 - Owner: the scene, the "Book Reader" WindowGroup(for: UUID.self) in Platform/macOS/App/TextMouthApp.swift, whose binding $bookID is the window's one book.
   It shows ReaderWindowContent (Views/Reader/BookReaderWindowView.swift), which hands BookReaderWindowView a showBook closure that sets $bookID, and gives the view .id(bookID).
   A new value is a new view identity, so SwiftUI makes a new @StateObject ReaderViewModel in the same NSWindow and tears the old one down.
-  ReaderWindowContent sits above that identity and holds the window's sleep timer, a WindowSleepTimerHolder (an ObservableObject that holds a SleepTimerService and publishes nothing, so a tick of the timer does not run the content's body) as a @StateObject made once for the window, and passes the timer to each BookReaderWindowView, which gives it to the reader it makes (ReaderViewModel.init(sleepTimer:)): the window keeps its timer through the switch, and the new reader takes it over (claimSleepTimerHandOver(), in [Timers and statistics](timers-and-statistics.md)).
+  ReaderWindowContent sits above that identity and holds the window's sleep timer, a WindowSleepTimerHolder, as a @StateObject made once for the window.
+  The holder is an ObservableObject that holds a SleepTimerService and publishes nothing, so a tick of the timer does not run the content's body.
+  The content passes the timer to each BookReaderWindowView, which gives it to the reader it makes (ReaderViewModel.init(sleepTimer:)), so the window keeps its timer through the switch and the new reader takes it over (claimSleepTimerHandOver(), in [Timers and statistics](timers-and-statistics.md)).
   A window of another book, or one opened for the next book, has a timer of its own, which takes the running state of the one it is to go on from.
   The view stores the closure and gives it to its reader as nextBookWindowSwitcher as the reader is made (makeReader); a reader with no scene to set it in, as one made by a test, has none and always opens a new window.
   The registry of open readers is the library's: LibraryViewModel.openBookIDs, the books a reader is open for, counted per book (openReaderCounts).
   A reader registers its book as it is made (registerOpenBook(_:)) and unregisters it as it closes (unregisterOpenBook(_:)), and a book stays in openBookIDs until its last reader closes, so two readers of one book leave it open until both have closed.
   It is the one registry there is: the sleep timer's last-resort deadline asks it (SleepTimerService.heldTimerDeadline, in [Timers and statistics](timers-and-statistics.md)), and so does showNextBook, to tell whether the next book is open in another window.
-- Who may write it: the reader, in ReaderViewModel+NextBookWindow, once for every move to another book (the end of a book going on, Next and Previous in Reading List, Next and Previous in Folder): showNextBook(_:under:openingANewWindowWith:), which asks the pure NextBookWindowRule (Models/NextBookWindow.swift) what to do, and does it.
+- Who may write it: the reader, in ReaderViewModel+NextBookWindow, once for every move to another book (the end of a book going on, Next and Previous in Reading List, Next and Previous in Folder).
+  It calls showNextBook(_:under:openingANewWindowWith:), which asks the pure NextBookWindowRule (Models/NextBookWindow.swift) what to do, and does it.
   The choice is NextBookWindowRule.choice(options:global:globalEndOfBook:).
   The feed's or plain folder's own ListeningOptions.nextBookWindow when it has one and its items go on (ListeningOptions.goesOn(under:); a dimmed choice is not in effect).
   Else the global SettingsViewModel.nextBookWindow (SettingsPolicy.nextBookWindow, the config.json key nextBookWindow, defaulting to This Window).
@@ -71,7 +74,7 @@ Each Library window's place.
 - Owner: the window's own views: its folder path, view, search, selection, and back and forward history (FolderNavigationHistory).
   A second Library window keeps its own.
   The view is a LibraryViewID (Models/LibraryViewDefinition.swift): one of the five categories, a LibraryCategory (ViewModels/LibraryViewModel.swift: Folders, All Items, Unopened, Recently Opened, and Reading List), the Feeds view, or a view the listener made, by its UUID.
-  And the Library's views, their order, and their settings are in LibraryViewDefinitionStore (preferences, above).
+  And the Library's views, their order, and their settings are in LibraryViewDefinitionStore ([Editor, library, feed, and transcription preferences](preferences.md)).
   The window's identity of its view is ContentView's @State viewID, an optional that nothing saves:
   - nil until the window first appears, when it takes the first view the pop-up offers (LibraryViewModel.shownView(_:in:center:), Folders as the views ship),
   - and kept afterwards, even when the view is hidden in Settings or lists nothing, until the listener chooses another, so nothing moves under VoiceOver's cursor.
@@ -85,7 +88,8 @@ Each Library window's place.
   VoiceOver reading it as LibraryView.categoryPickerLabel, "Library view", the constant keeping the name the tests used, and its width bounded by LibraryViewPickerWording.pickerWidthLimit.
   Go to View 1 to Go to View 9 (ShortcutAction.goToView1, Command-1 to Command-9) and the Library menu's Go to View submenu post goToLibraryView with the number, which LibraryViewModel.goToView(numbered:in:folderPath:center:) answers in the window that takes commands.
 - Who may write it: the window's own navigation, and, for its folder, the library's folders changing elsewhere.
-  ShownFolderFollowing (Views/Library/LibraryView.swift) notes, by ID, the folder the window shows each time it shows another, and when the library's folders change, as another window deletes, renames, or moves that folder, puts the window where FolderSheetNavigation.folderPath(showing:folderID:in:) says:
+  ShownFolderFollowing (Views/Library/LibraryView.swift) notes, by ID, the folder the window shows each time it shows another.
+  When the library's folders change, as another window deletes, renames, or moves that folder, it puts the window where FolderSheetNavigation.folderPath(showing:folderID:in:) says:
   - the same path while a folder is there,
   - the folder's new path when it is there under another,
   - and otherwise the nearest folder above it still in the library, or the top level (the feed follow-ups after FR14).
@@ -97,8 +101,8 @@ Each Library window's place.
 
 The list a Library window shows.
 
-- Owner: LibraryView, which reads its list from the model once per draw (the lists Library windows show, above) and passes it down.
-  Each row is a LibraryBookListRow, the unit SwiftUI compares: equal on everything it shows (the book, whether a reader has it open, the speed, edit mode and selection, the books its commands act on, the cloud state and commands, whether it is kept on this Mac, the manual-order moves, the removal preferences, the audio commands (LibraryAudioCommand) and the transcription note, the commands of the feed item it came from, whether it says its book is in the reading list, its reading list commands, and its book's live position object, compared by identity), never on its actions (LibraryBookRowActions), which read the current state when they run.
+- Owner: LibraryView, which reads its list from the model once per draw ([Lists Library windows show](library-index.md)) and passes it down.
+  Each row is a LibraryBookListRow, the unit SwiftUI compares: equal on everything it shows (LibraryBookListRow.==, which compares its book's live position object by identity), never on its actions (LibraryBookRowActions), which read the current state when they run.
   So one changed book redraws one row, and SwiftUI builds a row's context menu only when the row has something new to show.
   A book resting at its end (Book.restsAtEnd, P07) says EndOfBookWording.finishedProgress, "Finished", on screen and to VoiceOver, in place of its percent, with no time left (BookRow.progressText(for:), spokenProgress(for:besideDownloadPercentage:), and timeRemaining(for:wpm:)).
   And Speak Info's facts take the row's words (BookInfoFacts, from LibraryInfoRow.swift).
@@ -121,7 +125,7 @@ Letter navigation in the Library list (the Leading articles setting): typing a t
   - and a rows closure, LibraryView's typedRows(folders:books:allBooks:feedID:articles:), called at each key and not at each draw:
     - the Folders section's folders by their names as written (TypedRow(id:name:)),
     - the Feeds section's feeds (LibraryFeedsSectionRows.rows),
-    - and the books, which LibraryViewModel.typedRows(of:) keeps folded (the library index, above), in a feed's folder in the order FeedFolderListing.make lists them, items not downloaded left out.
+    - and the books, which LibraryViewModel.typedRows(of:) keeps folded ([Titles as the lists read them](library-index.md)), in a feed's folder in the order FeedFolderListing.make lists them, items not downloaded left out.
 
   It holds a TitleTypingSearch (Models/TitleTyping.swift: the letters typed and when, which add up while each key comes within interval, 1.25 seconds, of the one before) and a count of rows reached.
   In the first choice (LeadingArticles.typesWithoutArticles false) every key is ignored and the list's own type select, AppKit's, works as it always did.
@@ -133,7 +137,9 @@ Letter navigation in the Library list (the Leading articles setting): typing a t
   A held key's repeat is handled and does nothing.
   A Space is taken only while the search has letters and TitleTypingSpaceClaim.shared.acceptsSpace(in:at:) says the window claimed it, and extends the search however late the clock is.
   TitleTyping.firstRow(reachedBy:in:selection:isNewSearch:showingInverted:) finds the row.
-  The first row, from TitleTyping.searchStart (the top with nothing selected; the selected row for a search that added letters; the row after the last selected one, wrapping, for a new search, as AppKit's own type select, measured by LibraryTypeSelectProbeTests, searches), that TypedForms.begins(with:showingInverted:articleAloneCounts:) says the letters reach: the filing text begins with them, or, past the article (more letters typed than the article and its space), the title as written does, or, while showingInverted (articles.sortsWithoutArticles), the inverted title does.
+  The first row, from TitleTyping.searchStart, that TypedForms.begins(with:showingInverted:articleAloneCounts:) says the letters reach.
+  TitleTyping.searchStart is the top with nothing selected, the selected row for a search that added letters, and the row after the last selected one, wrapping, for a new search, as AppKit's own type select, measured by LibraryTypeSelectProbeTests, searches.
+  The letters reach a row when the filing text begins with them, or, past the article (more letters typed than the article and its space), the title as written does, or, while showingInverted (articles.sortsWithoutArticles), the inverted title does.
   The match replaces the selection, proxy.scrollTo(row) takes it to the table (on GitHub's runner a far row the list had never drawn stayed unselected without it).
   And a count of reaches starts .task(id:), scrollSelectedRowIntoView(), which looks at the window's table up to scrollLooks (4) times, scrollLookDelay (30 ms) apart, and scrolls the selected row whole with scrollRowToVisible (showsSelectedRow(of:), rowShowsWhole(_:in:)).
   Since SwiftUI's scrollTo and AppKit's type select both fell short of a row far down (row 62 selected with rows 47 to 54 in view).
@@ -162,7 +168,7 @@ A closed window.
 - Owner: the window's views.
   SwiftUI keeps a closed window and its views for the rest of the session, so a closed window must cost nothing.
   A closed Library window shows ClosedLibraryWindowPlaceholder, the word Library, in place of its list, from NSWindow.willCloseNotification until the window is key or visible again, as when SwiftUI shows it again for a book opened from Finder.
-  A closed reader lets go of its book (a closed reader, above).
+  A closed reader lets go of its book ([A closed reader](reader.md)).
   A VoiceOver focus request holds its window weakly and searches only a window still showing content, so a window closed within the request's delay is neither kept alive nor searched.
 
 ## Menus
@@ -174,27 +180,28 @@ Menus.
   It hides the context-specific menus, such as Playback and Navigate, when the key window cannot use them, so VoiceOver never lands in an empty menu.
   The Record window counts as Settings does: its identifier, "new-recording", names neither a Library nor a reader window (detectWindowType returns nil for it), so every context-specific menu is hidden while it is in front.
   The audio editor's windows, whose identifier is "audio-editor", count the same way.
-  BookCommands (App/MenuCommands.swift) adds the Book menu, Edit Text in Default Editor, Edit Text With…, Transcribe Audio… (titled Retranscribe Audio… while canDeleteBookTranscript says the key reader's book has a transcript: TranscriptionWording.transcribeCommandTitle(hasTranscript:)), Clean Up Transcript (Experimental)…, Delete Transcript…, after a divider, Edit Audio…, and, after another, Move to Library… (FR11's branch D), one of the reader's menus (readerMenuTitles).
+  BookCommands (App/MenuCommands.swift) adds the Book menu, one of the reader's menus (readerMenuTitles).
+  Its Transcribe Audio… item is titled Retranscribe Audio… while canDeleteBookTranscript says the key reader's book has a transcript (TranscriptionWording.transcribeCommandTitle(hasTranscript:)).
   Its commands are enabled through the scene values the key reader publishes (canEditBookText, canTranscribeBookAudio, canCleanUpBookTranscript, canDeleteBookTranscript, canEditBookAudio, and canMoveBookToLibrary), so they stay available while VoiceOver reads the text without keyboard focus.
-  NavigationCommands enables the Navigate menu's Next in Reading List and Previous in Reading List the same way, through the readsFromReadingList scene value (reading from the reading list, above).
+  NavigationCommands enables the Navigate menu's Next in Reading List and Previous in Reading List the same way, through the readsFromReadingList scene value ([Reading from the reading list](reader-navigation.md)).
   BookCommands also adds Export… to the File menu, after its import and export group.
   ExportCommandRouting.exportFromWindowInFront posts exportBooks when a Library or reader window, or a sheet over one, is key, and that window exports its selection or its book (WindowCommandRouting).
   Otherwise VoiceOver hears BookExportWording.noWindowOpen or noWindowInFront.
   LibraryCommands adds the feed commands to the Library menu:
-  - Add Feed…, Refresh All Feeds, Import OPML…, and Export OPML…, which the Library window that takes commands runs (the feed reader's interface, below),
-  - Speak Info and Speak Full Info, which post speakInfo and speakFullInfo (Speak Info, above),
-  - Speak Import Progress, which posts speakImportProgress (import progress, below),
-  - Speak Download Progress, which posts speakDownloadProgress (the feed downloads' progress, below),
-  - Add to Reading List and Remove from Reading List, which post addToReadingList and removeFromReadingList (the reading list, above),
-  - and Folder or Feed Settings, which posts showFolderOrFeedSettings (the Folder Settings sheet, above).
+  - Add Feed…, Refresh All Feeds, Import OPML…, and Export OPML…, which the Library window that takes commands runs ([The feed reader's interface](feeds-interface.md)),
+  - Speak Info and Speak Full Info, which post speakInfo and speakFullInfo ([Speak Info](windows-sheets.md)),
+  - Speak Import Progress, which posts speakImportProgress ([Import progress](imports.md)),
+  - Speak Download Progress, which posts speakDownloadProgress ([Feed downloads' progress](feeds.md)),
+  - Add to Reading List and Remove from Reading List, which post addToReadingList and removeFromReadingList ([The reading list](library-index-reading-feeds.md)),
+  - and Folder or Feed Settings, which posts showFolderOrFeedSettings ([The Folder Settings and Add to Library sheets](windows-sheets.md)).
 
   PlaybackCommands offers Where Am I?
-  Full Summary after Where Am I?, posting whereAmIFull (a Where Am I? announcement, under the reader, above); no menu item shows a double press, so the two full summaries' menu items show no key.
-  FileCommands, PlaybackCommands, and LibraryCommands give each menu command whose key is a shortcut action (ShortcutAction.keyEquivalentActions: Open Book…, New from Text…, New Recording…, Copy Reading Position, Search in Book, Import Folder…, and Add Feed…) View.menuCommandKey(_:shortcuts:frontKind:).
+  Full Summary after Where Am I?, posting whereAmIFull ([Where Am I announcement](reader-playback.md)); no menu item shows a double press, so the two full summaries' menu items show no key.
+  FileCommands, PlaybackCommands, and LibraryCommands give each menu command whose key is a shortcut action (ShortcutAction.keyEquivalentActions) View.menuCommandKey(_:shortcuts:frontKind:).
   The item shows the key in force while its action's scope admits the kind of window in front (FrontWindowKind.shared, ShortcutScope.admitsMenuCommand(in:), which admits every scope while no window is in front), and otherwise shows no key and is dimmed, so the key reaches that window's own shortcut.
-  The Record window's Record, Pause or Resume, and Stop buttons take their keys from StoredKeyEquivalents, and their hints name the keys in force (keyboard shortcuts, under preferences, above).
+  The Record window's Record, Pause or Resume, and Stop buttons take their keys from StoredKeyEquivalents, and their hints name the keys in force ([Keyboard shortcuts](preferences-shortcuts.md)).
   The File and Library menus' New Recording… and the Library menu's Add Feed… are titled by their actions (ShortcutAction.newRecording.title, ShortcutAction.addFeed.title), one name for the menu, the Shortcuts tab, and config.json.
-  The Edit menu stays AppKit's: in an audio editor window its Undo, Redo, Cut, Copy, Paste, and Select All are the editor's (the editor window, above).
+  The Edit menu stays AppKit's: in an audio editor window its Undo, Redo, Cut, Copy, Paste, and Select All are the editor's ([The editor window](audio-edits.md)).
 
 ## Key presses
 <!-- id: key-press-actions; keys: hotkey, keystroke, press twice, local monitor, edit field, Option key, Shift key; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Services/ShortcutPressDispatcher.swift, TextMouth/Models/TextEditingKeys.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Platform/macOS/Services/MenuVisibilityManager.swift, TextMouth/Views/Library/LibraryTitleTyping.swift -->
@@ -202,20 +209,25 @@ Menus.
 Key presses: which action a key press is, single or double, and the keys a text field keeps (B03).
 
 - Owner: KeyboardShortcutManager (Services/KeyboardShortcutManager.swift), which every window shares.
-  Its local event monitor sees each key press before the menus do and hands it to its ShortcutPressDispatcher (Services/ShortcutPressDispatcher.swift, FR12's branch B), which matches it against the manager's bindings, every action's keys in force (keyboard shortcuts, above).
+  Its local event monitor sees each key press before the menus do and hands it to its ShortcutPressDispatcher (Services/ShortcutPressDispatcher.swift, FR12's branch B), which matches it against the manager's bindings, every action's keys in force ([Keyboard shortcuts](preferences-shortcuts.md)).
   A press it takes never reaches the menus, but a key equivalent's key is never the manager's.
-  No other action holds it, once or twice, in a kind of window where its command works (KeyClaims), and elsewhere its menu item shows no key and is dimmed (menus, above), so Shift-Command-T is New from Text…'s in a Library window and Show Sleep Timer's in a reader (board #1451, ended by FR12's branch E).
+  No other action holds it, once or twice, in a kind of window where its command works (KeyClaims), and elsewhere its menu item shows no key and is dimmed (menus, above), so Shift-Command-T is New from Text…'s in a Library window and Show Sleep Timer's in a reader (FR12's branch E).
 - Who may write it: no one but the manager. handleKeyEvent(_:keyWindow:firstResponder:) takes each key-down with the key window and its first responder and, unless a recorder of the Shortcuts tab records or Try a Double Press runs, hands it to the dispatcher as a Press:
   - its stroke (KeyBinding.from(event:)), its timestamp, the key window,
-  - the kind of window it was pressed in (windowKind(ofKeyWindow:): an audio editor's or the Record window by identifier; a panel of its own or a modal session's window .other; a reader or a Library window as MenuVisibilityManager.detectWindowType tells them apart, and any other window, Settings among them, .other; a sheet, and a sheet over a sheet, as the kind of the window under them all, found as menu commands are routed (WindowCommandRouting.rootWindow(for:)), where a sheet over a sheet once counted as a Library window (REV11), but nil over an audio editor, where no shortcut matches (pressKind(window:sheetParent:)); and .other with no key window),
+  - the kind of window it was pressed in (windowKind(ofKeyWindow:), whose cases windowKind(of:) lists; a sheet, and a sheet over a sheet, count as the window under them all, found as menu commands are routed (WindowCommandRouting.rootWindow(for:))),
   - whether the key window is a dialog (isDialog(_:): a sheet, a window styled as one, or a modal session's window), whether text input has the keyboard, and whether it is a held key's repeat.
+
+  A press has no kind (nil, so no shortcut matches) over an audio editor (pressKind(window:sheetParent:)), and in the Search Library window or a sheet over it; with no key window the kind is .other.
 
 ### How the dispatcher reads a press
 <!-- id: key-press-dispatcher; keys: Press, Trigger, PressTimer, Index, double press, escalates, singleWaits, text field keys; src: TextMouth/Services/ShortcutPressDispatcher.swift, TextMouth/Models/TextEditingKeys.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouthProductionTests/ShortcutPressDispatcherTests.swift, TextMouthProductionTests/TextFieldEditingKeysTests.swift -->
 
 The dispatcher posts back a Trigger, at once or, for a single press that waits, when its PressTimer fires (MainQueuePressTimer in the app; the clock and the timer are injected, so its tests never wait).
-Its Index, built in ShortcutAction.allCases order and rebuilt whenever the bindings in force change (rebuild(from:), from the manager's take(_:), which also runs a waiting single press at once), gives each kind of window's keys a single and a double action, each action's entered in every kind where its keys act (ShortcutScope.windowKinds(of:)), except that:
-- a letter alone (KeyBinding.isLetterAlone: one letter, of any alphabet, with none of Command, Option, Shift, or Control, once or twice) is left out of every kind of window that navigatesByLetter (ShortcutWindowKind.navigatesByLetter, which only the Library's does, a sheet over a Library window counting as one), so the list takes it, no key of that kind waits on it, and Shift-J and Shift-L find no J or L there to fall back to (B10),
+Its Index is built in ShortcutAction.allCases order and rebuilt whenever the bindings in force change (rebuild(from:), from the manager's take(_:), which also runs a waiting single press at once).
+It gives each kind of window's keys a single and a double action, each action's entered in every kind where its keys act (ShortcutScope.windowKinds(of:)), except that:
+- a letter alone (KeyBinding.isLetterAlone: one letter, of any alphabet, with none of Command, Option, Shift, or Control, once or twice) is left out of every kind of window that navigatesByLetter (ShortcutWindowKind.navigatesByLetter, which only the Library's does).
+  A sheet over a Library window counts as one,
+- so the list takes it, no key of that kind waits on it, and Shift-J and Shift-L find no J or L there to fall back to (B10),
 - and a key equivalent's noted there (isKeyEquivalent(_:in:)) and given to no action,
 
 And marks singleWaits where the double action is neither the single one nor the action it escalates (ShortcutAction.escalates, read from the table ShortcutAction.escalations, in ShortcutPressDispatcher.swift: since FR12's branch C, Where Am I?
