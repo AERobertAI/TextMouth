@@ -29,6 +29,7 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [PAGES-RESEARCH-2026-10-21.md](PAGES-RESEARCH-2026-10-21.md): Pages across formats: research (October 21, 2026)
 - [PLAN-0.2.0-2026-10-23.md](PLAN-0.2.0-2026-10-23.md): The plan for the official 0.2.0 install (October 23, 2026)
 - [RSS-READER-RESEARCH-2026-10-03.md](RSS-READER-RESEARCH-2026-10-03.md): A podcast and article reader fed by RSS and Atom feeds
+- [SHORTCUT-LABELS-RESEARCH-2026-11-15.md](SHORTCUT-LABELS-RESEARCH-2026-11-15.md): Menu and context menu items that show their keyboard shortcuts (FR22)
 - [TEXT-ANCHORS-ADDENDUM-2026-10-10.md](TEXT-ANCHORS-ADDENDUM-2026-10-10.md): Addendum to T06: finding places again by diff when a book's text…
 - [TEXT-ANCHORS-RESEARCH-2026-10-10.md](TEXT-ANCHORS-RESEARCH-2026-10-10.md): Reading places that survive re-extraction (T06)
 - [TITLE-ARTICLES-RESEARCH-2026-11-13.md](TITLE-ARTICLES-RESEARCH-2026-11-13.md): Leading articles in the Library: research and design
