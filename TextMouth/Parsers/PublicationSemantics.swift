@@ -29,7 +29,12 @@ enum PublicationSemantics {
     /// reads no other attribute and builds no list (the November 14, 2026
     /// speed-up, H6). Nil, as for an element of unknown markup, looks through
     /// all the element's attributes for one whose name ends in ":type".
-    static func hasEPUBType(_ token: String, _ element: Element, typeNames: [String]? = nil) -> Bool {
+    static func hasEPUBType(_ token: String, _ element: Element) -> Bool {
+        hasEPUBType(token, element, typeNames: nil)
+    }
+
+    /// `hasEPUBType(_:_:)` for an element whose document's names are known.
+    static func hasEPUBType(_ token: String, _ element: Element, typeNames: [String]?) -> Bool {
         if let typeNames {
             return typeNames.contains { containsToken(token, in: (try? element.attr($0)) ?? "") }
         }
@@ -54,7 +59,13 @@ enum PublicationSemantics {
     /// A page list (PG05): the navigation container EPUB 3 types `page-list`
     /// (or DPUB-ARIA gives the `doc-pagelist` role), whose links name the
     /// places where the print book's pages begin.
-    static func isPageList(_ element: Element, typeNames: [String]? = nil) -> Bool {
+    static func isPageList(_ element: Element) -> Bool {
+        isPageList(element, typeNames: nil)
+    }
+
+    /// `isPageList(_:)` for an element of a document whose `:type` attribute
+    /// names are known (see `hasEPUBType(_:_:typeNames:)`).
+    static func isPageList(_ element: Element, typeNames: [String]?) -> Bool {
         isNavigationContainer(element)
             && (hasEPUBType("page-list", element, typeNames: typeNames) || hasRole("doc-pagelist", element))
     }
@@ -62,7 +73,13 @@ enum PublicationSemantics {
     /// A page break (PG05): any element EPUB 3 types `pagebreak` (or DPUB-ARIA
     /// gives the `doc-pagebreak` role) to mark where a print page begins. Its
     /// own text is usually the page's number.
-    static func isPageBreak(_ element: Element, typeNames: [String]? = nil) -> Bool {
+    static func isPageBreak(_ element: Element) -> Bool {
+        isPageBreak(element, typeNames: nil)
+    }
+
+    /// `isPageBreak(_:)` for an element of a document whose `:type` attribute
+    /// names are known (see `hasEPUBType(_:_:typeNames:)`).
+    static func isPageBreak(_ element: Element, typeNames: [String]?) -> Bool {
         hasEPUBType("pagebreak", element, typeNames: typeNames) || hasRole("doc-pagebreak", element)
     }
 
@@ -70,7 +87,13 @@ enum PublicationSemantics {
     /// They are navigation aids, never chapter headings or words to read aloud.
     /// `doc-landmarks` is not a registered DPUB-ARIA role; it is accepted
     /// defensively alongside the registered `doc-pagelist`.
-    static func isSupplementaryNavigation(_ element: Element, typeNames: [String]? = nil) -> Bool {
+    static func isSupplementaryNavigation(_ element: Element) -> Bool {
+        isSupplementaryNavigation(element, typeNames: nil)
+    }
+
+    /// `isSupplementaryNavigation(_:)` for an element of a document whose
+    /// `:type` attribute names are known (see `hasEPUBType(_:_:typeNames:)`).
+    static func isSupplementaryNavigation(_ element: Element, typeNames: [String]?) -> Bool {
         guard isNavigationContainer(element) else { return false }
         return isPageList(element, typeNames: typeNames) || hasEPUBType("landmarks", element, typeNames: typeNames)
             || hasRole("doc-landmarks", element)
