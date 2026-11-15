@@ -927,6 +927,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - V03, which keeps a row this TextMouth cannot read as it was read, dates from October 23, 2026.
 - ImportedBook.originalKeptNotice was named rtfdOriginalKeptNotice until October 31, 2026.
 - docx (with .dotx, .docm, and .dotm) joined formatsRefusedWhenBlank on November 13, 2026.
+- Through 0.4.0 textutil read Word 6 and Word 95 documents too.
 
 ## From Imports
 
