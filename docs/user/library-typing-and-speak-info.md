@@ -80,7 +80,7 @@ It also gives its last check, or, for a feed you unsubscribed from, since when i
 Feed.
 Unsubscribed.
 10 of 381 episodes listed.
-Not checked since October 9 at 3:05 PM."
+Not checked since", then the day and time of the last check.
 With nothing selected it says "Nothing is selected."
 
 ## Speak Full Info
