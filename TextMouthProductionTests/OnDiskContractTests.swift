@@ -33,7 +33,8 @@ final class OnDiskContractTests: XCTestCase {
     }
 
     /// What a changed `BookFormat` forces.
-    private static let formatForces = "a TextMouth built before it refuses the whole library"
+    private static let formatForces =
+        "a TextMouth built before it opens the library without those books (from 0.2.1, V03), or refuses it (before 0.2.1)"
 
     /// What a changed row or record key forces.
     private static let keyForces =
@@ -50,11 +51,13 @@ final class OnDiskContractTests: XCTestCase {
     /// each package's record, in this order.
     ///
     /// "mobi" (FMT42, November 4, 2026) was added deliberately at the end: a
-    /// TextMouth built before it refuses a library that holds a Kindle book,
-    /// as 0.2.0's eight formats did, so the orchestrator raises the version's
-    /// MINOR and the changelog cautions the user. "kfx" (FMT52, November 6,
-    /// 2026) was added deliberately after it, for the same reason, and so
-    /// were "picture" and "comic" (FMT34, November 15, 2026).
+    /// TextMouth from 0.2.1 built before it opens a library that holds a
+    /// Kindle book without that book (V03, `NewerLibraryRowsTests`), and one
+    /// before 0.2.1 refuses the library, as before 0.2.0's eight formats, so
+    /// the orchestrator raises the version's MINOR and the changelog cautions
+    /// the user. "kfx" (FMT52, November 6, 2026) was added deliberately after
+    /// it, for the same reason, and so were "picture" and "comic" (FMT34,
+    /// November 15, 2026), which 0.2.1 to 0.4.11 open without.
     func testEveryBookFormatIsSavedUnderItsOwnName() {
         XCTAssertEqual(
             BookFormat.allCases.map(\.rawValue),

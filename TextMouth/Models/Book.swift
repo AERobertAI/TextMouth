@@ -15,6 +15,13 @@ enum ReadingTimeEstimator {
     }
 }
 
+/// The formats TextMouth reads. Each case's raw value is written into the
+/// library index and each package's record, and is never changed. A case
+/// added later is unknown to an older TextMouth: one from 0.2.1 on opens a
+/// library that holds such a book without that book, keeping its row as it
+/// was written (`UnreadableLibraryRow`, V03), while one before 0.2.1 cannot
+/// decode the index and refuses the whole library. The changelog cautions the
+/// user each time a case is added.
 enum BookFormat: String, Codable, CaseIterable {
     case epub
     case txt
@@ -47,29 +54,23 @@ enum BookFormat: String, Codable, CaseIterable {
     case pdf
     case audio
     // A Kindle book (MOBI 6, FMT42), read by TextMouth's own reader
-    // (`MOBIParser`) on the Mac and on iOS. Like every raw value here, written
-    // into the library index and never changed: a TextMouth built before this
-    // case refuses a library that holds a Kindle book, as one built before
-    // the braille case refuses a library that holds a braille book. The
-    // documentation warns the user before they go back to an older build.
+    // (`MOBIParser`) on the Mac and on iOS. Added after V03 (see above):
+    // TextMouth 0.2.1 to 0.2.6 opens a library that holds one without it,
+    // and one before 0.2.1 refuses the library.
     case mobi
     // A DRM-free Kindle KFX book (FMT52), read by TextMouth's own reader
-    // (`KFXParser`) on the Mac and on iOS. Like every raw value here, written
-    // into the library index and never changed: a TextMouth built before this
-    // case refuses a library that holds a KFX book, as with the MOBI case
-    // before it. The documentation warns the user before they go back to an
-    // older build.
+    // (`KFXParser`) on the Mac and on iOS. Added after V03 (see above):
+    // TextMouth 0.2.1 to 0.3.2 opens a library that holds one without it,
+    // and one before 0.2.1 refuses the library.
     case kfx
     // A picture of a page (FMT34): a PNG, JPEG, HEIC, or TIFF photograph or
     // scan, read by text recognition (`PageImageReader`), a chapter for each
-    // page of a TIFF of several. Like every raw value here, written into the
-    // library index and never changed: a TextMouth built before this case
-    // refuses a library that holds a picture, as with the Kindle cases
-    // before it. The documentation warns the user before they go back to an
-    // older build.
+    // page of a TIFF of several. Added after V03 (see above): TextMouth 0.2.1
+    // to 0.4.11 opens a library that holds one without it, and one before
+    // 0.2.1 refuses the library.
     case picture
     // A comic book archive (FMT34): a ZIP of pictures named .cbz, read as a
-    // book of pages by the same reader. The same holds for its raw value.
+    // book of pages by the same reader. The same holds for older builds.
     case comic
 
     var displayName: String {
