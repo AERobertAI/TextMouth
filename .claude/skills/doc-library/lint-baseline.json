@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "docs/agents/history.md": {"line-length": 18},
-    "docs/agents/orchestrator.md": {"date": 14, "line-length": 21, "sentences-per-line": 18, "user-quote": 6},
+    "docs/agents/orchestrator.md": {"date": 13, "line-length": 21, "sentences-per-line": 18, "user-quote": 6},
     "docs/agents/working-with-agents.md": {"date": 4, "line-length": 12, "marker-missing": 1, "sentences-per-line": 16, "user-quote": 1},
     "docs/agents/writing-docs.md": {"marker-missing": 7, "sentences-per-line": 2},
     "docs/architecture/known-duplication.md": {"date": 5, "line-length": 6},
