@@ -1,15 +1,15 @@
 # Listening on, feed settings, and transcripts
-<!-- id: listening-feed-settings-transcripts; keys: ; src: -->
+<!-- id: feeds-listening-settings-overview; keys: next episode, feed settings, podcast transcript, chapters; src: TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Services/Feeds/FeedEpisodeExtras.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Listening on to the next episode
-<!-- id: listening-next-episode; keys: ; src: -->
+<!-- id: feeds-listening-next; keys: continue to next book, play next episode, autoplay, queue; src: TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
 Listening on to the next episode:
 
 ### The listening controls in Feed Info
-<!-- id: listening-controls-feed-info; keys: ; src: -->
+<!-- id: feeds-listening-controls; keys: When an episode ends, Open the next episode in, ListeningOptions, per-feed options, folder settings sheet; src: TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 Feed Info's This Feed's Settings ends with four controls for how listening goes on from one of the feed's episodes to another.
 Each is worded with what the feed's items are called, "episode" here, "article" or "item" for a feed whose items are those, and each is saved as you make it.
@@ -28,26 +28,26 @@ Each is worded with what the feed's items are called, "episode" here, "article" 
   Its hint then is "Available only while this feed's episodes go on to another episode when one ends", and it keeps its setting for when they do.
 
 ### The episode below and the episode above
-<!-- id: episode-below-episode-above; keys: ; src: -->
+<!-- id: feeds-episode-below-above; keys: order, newest first, Next in Folder, Previous in Folder, moved to library; src: TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/ListeningOptionsWording.swift -->
 
 The episode below is the next one down the feed's list as its folder shows it, newest first, so the next older episode, and the episode above is the next newer one.
 An episode you moved into the library is passed over, since it is a book of your own library now.
 Which of the book's own choice, the feed's, and the global setting decides what happens when an episode ends, and what VoiceOver says then, are under When a book ends, in [Reader windows](reader-windows.md).
 
 ### Skip finished episodes
-<!-- id: skip-finished-episodes; keys: ; src: -->
+<!-- id: feeds-skip-finished; keys: finished, already played, rests at its end; src: TextMouth/Models/EndOfBookRule.swift, TextMouth/Models/ListeningOptionsWording.swift -->
 
 Skip finished episodes passes over an episode that is downloaded and rests at its end, and over an episode that is not on this Mac but that you played, whose download has been deleted.
 
 ### When the next episode is not on this Mac
-<!-- id: when-next-episode-not-this; keys: ; src: -->
+<!-- id: feeds-next-not-on-mac; keys: download next, queue first, network, stream; src: TextMouth/ViewModels/ReaderViewModel+EpisodeDownload.swift, TextMouth/Models/EndOfBookRule.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
 When an episode ends and the one that follows it is not on this Mac, TextMouth downloads it, at once and on any network, as Download does, and goes on with it when it arrives.
 That download goes first in the queue, ahead of the downloads waiting before it, though not ahead of the one under way.
 This counts as a download you asked for (see Listing and downloading, above).
 
 ### Downloading the next episode ahead of time
-<!-- id: downloading-next-episode-ahead-time; keys: ; src: -->
+<!-- id: feeds-download-ahead; keys: predownload, 10 minutes left, time left, reading list; src: TextMouth/ViewModels/ReaderViewModel+Predownload.swift, TextMouth/Models/ListeningOptionsWording.swift -->
 
 Download the next episode before this one ends asks for that download ahead of time, the first time 10 minutes or less of the episode are left while it plays in a window, as the reader's time left shows it.
 It asks only when listening would go on to another episode, and that one is not on this Mac and not downloading already; a download TextMouth put off, for a network without data limits or for room, is asked for all the same, and the ask takes its place.
@@ -55,19 +55,19 @@ The reader says nothing when it asks, and the download shows like any other (see
 A book read from the reading list never asks, since the reading list goes on to books that are on this Mac.
 
 ## The Feeds tab of Settings
-<!-- id: feeds-tab-settings; keys: ; src: -->
+<!-- id: feeds-settings-tab; keys: Settings window, feed settings, FeedSettings, config.json; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Models/FeedSettings.swift -->
 
 The Feeds tab of Settings:
 
 ### Refreshing
-<!-- id: refreshing; keys: ; src: -->
+<!-- id: feeds-settings-refreshing; keys: feedRefreshAtLaunch, refresh interval, feedRefreshIntervalHours, hours, Refresh All Feeds Now; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift -->
 
 Refreshing: Refresh every feed when TextMouth opens, on by default; Refresh feeds every 1 to 168 hours, 1 by default, or Only at launch and when I ask; and Refresh All Feeds Now, also in the Library menu as Refresh All Feeds, which says what came, as in "Refreshed 3 feeds: 2 new episodes."
 Each checks only the feeds you subscribe to; with every feed unsubscribed from, Refresh All Feeds says "Every feed in your library is unsubscribed, so none was checked.
 Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
 
 ### Episodes and Articles
-<!-- id: episodes-articles; keys: ; src: -->
+<!-- id: feeds-settings-episodes-articles; keys: feedItems, feedNewestCount, feedDeleteDownloadsDaysAfterPlayed, number field, stepper, ten seconds; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift -->
 
 Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself (see Listing and downloading, above): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed.
 The first and third titles say the number in force, and VoiceOver speaks the choice as the menu's value and the choice's own sentence as its hint, which the screen shows under the number, as in "Lists every episode and article with what you did with it, keeps the newest 5 downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -78,14 +78,14 @@ Then Delete downloads after playing, from 0, at once, to 365 days, 1 by default,
 A feed can have its own List and download choice and its own days, in its Feed Info.
 
 ### When new episodes arrive
-<!-- id: when-new-episodes-arrive; keys: ; src: -->
+<!-- id: feeds-settings-arrivals; keys: feedRefreshAlert, feedNotifications, notification permission, alert; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouth/Models/FeedSettings.swift -->
 
 When New Episodes Arrive: Show an alert when a refresh brings new episodes, and Post a notification for each feed with new episodes, both off by default.
 They follow only the refreshes TextMouth makes by itself, at launch and on the interval; a refresh you ask for is answered by VoiceOver instead.
 The alert names each feed and what came, in the Library window in front, and a notification shows even while TextMouth is in front. macOS asks permission for notifications the first time they are turned on, and while they are refused, the setting says how to allow them in System Settings.
 
 ## An episode's own transcript and chapters
-<!-- id: episode-own-transcript-chapters; keys: ; src: -->
+<!-- id: feeds-podcast-transcripts; keys: podcast:transcript, podcast:chapters, Podcasting 2.0, ads, Book Information; src: TextMouth/Services/Feeds/FeedEpisodeExtras.swift, TextMouth/Parsers/PodcastTranscriptReader.swift, TextMouth/Parsers/PodcastChapters.swift, TextMouth/Models/FeedItem.swift -->
 
 - From version 0.4.2, a podcast episode brings the transcript and chapters its feed links, once its audio has downloaded.
   This is on for every feed.

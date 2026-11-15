@@ -1,21 +1,21 @@
 # Downloading feed episodes and articles
-<!-- id: downloading-feed-episodes-articles; keys: ; src: -->
+<!-- id: feeds-downloads-overview; keys: download, newest episodes, waiting, cancel, quit, auto download; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Listing and downloading
-<!-- id: listing-downloading; keys: ; src: -->
+<!-- id: feeds-listing-downloading; keys: List and download, newest-N rule, auto download, feedItems; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Models/FeedSettings.swift -->
 
 Listing and downloading:
 
 ### The List and download choices
-<!-- id: list-download-choices; keys: ; src: -->
+<!-- id: feeds-list-download-choices; keys: feedItems, feedNewestCount, global setting, per feed, ten seconds, 1 to 2,000; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
 Every feed follows one List and download choice, the one for every feed, set in the Feeds tab of Settings, or one of its own, set in its Feed Info (below): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed, where 5 stands for the number that goes with the choice, from 1 to 2,000, 5 unless you change it.
 A feed's list follows a change of the choice or the number at once; what downloads, and what is removed, follows once neither has changed for ten seconds.
 
 ### Newest downloaded by default
-<!-- id: newest-downloaded-default; keys: ; src: -->
+<!-- id: feeds-newest-downloaded; keys: newest-N rule, automatic download, oldest downloads removed, played downloads, Cancel Download, serial show; src: TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedLifecycle.swift -->
 
 Under the default, a feed's folder lists every episode and article the feed lists, and TextMouth keeps downloaded those of the newest 5 not yet played, newest by publication date, a serial show's too: it downloads each of them by itself, at launch, after you subscribe, after each refresh, and once one of its own downloads finishes, an episode only on a network without data limits.
 Played ones count among the newest 5, so playing one never downloads an older one, while deleting one with Delete Episode… brings the next older one in.
@@ -26,7 +26,7 @@ An item becomes yours when you ask for its download, even while TextMouth's own 
 Nor does it download an item whose download was deleted before this version.
 
 ### Downloads that wait
-<!-- id: downloads-that-wait; keys: ; src: -->
+<!-- id: feeds-downloads-that-wait; keys: Low Data Mode, data limits, constrained network, offline, 1 GB free, no room, retry; src: TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
 
 A download TextMouth makes by itself waits rather than failing: an episode on a network with data limits waits for the next refresh TextMouth makes by itself on a network without them, as does an article that must fetch its page because its feed gives only a short summary, and a download without room on this Mac for the size its feed gives, beside the 1 GB TextMouth keeps free, waits for a later pass that finds room.
 While this Mac is offline, such a download waits in the same way, for the next refresh TextMouth makes by itself that reaches the network, rather than failing; its row's one reason covers both: "it downloads once this Mac is on a network without data limits".
@@ -37,7 +37,7 @@ A download TextMouth asked for by itself that hasn't started, waits, or failed i
 A download you asked for is never taken back.
 
 ### Downloads by hand and only the newest listed
-<!-- id: downloads-hand-only-newest-listed; keys: ; src: -->
+<!-- id: feeds-downloads-by-hand; keys: manual downloads, newest listed only, hidden items, feed record; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedReconciler.swift -->
 
 Every item listed, downloads by hand, lists every episode and article the feed lists, and downloads nothing by itself.
 Only the newest 5 listed lists the newest 5, less those you have played or read that aren't downloaded, and every item downloaded, downloading, or waiting to, wherever it falls, and downloads nothing by itself either.
@@ -45,19 +45,19 @@ Choosing either takes back the downloads TextMouth asked for and hadn't started,
 Under Only the newest 5 listed, the feed's record keeps only the newest of that number, beside every item downloaded or downloading, played, or whose place is kept, so when you choose a longer list, the items it hid are listed again at once, and those it no longer holds come back at the feed's next refresh, which then reads the whole feed.
 
 ### Settings moved over from earlier versions
-<!-- id: settings-moved-over-from-earlier; keys: ; src: -->
+<!-- id: feeds-settings-moved-over; keys: feedKeepEntries, feedAutoDownload, upgrade, migration, Keep every entry; src: TextMouth/Models/FeedSettings.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 The first launch of this version moves the earlier settings over, once: Keep the newest 10 entries, as TextMouth shipped it, or Download new episodes and articles by themselves turned on, becomes the default; Keep every entry becomes Every item listed, downloads by hand; and any other number of entries becomes Only the newest of that number listed, at least 1.
 A feed's own number of entries, from its Feed Info, becomes its own Only the newest of that number listed, 10 included, and a feed's own Keep every entry makes it follow the choice for every feed when that lists every item, and otherwise gives it Every item listed, downloads by hand.
 So, in a library whose settings were as TextMouth shipped them, that launch downloads each feed's newest 5 not yet played or downloaded, its episodes on a network without data limits, and removes nothing.
 
 ## Downloads under way
-<!-- id: downloads-under-way; keys: ; src: -->
+<!-- id: feeds-downloads-under-way; keys: Feed Downloads section, progress, cancel, Speak Download Progress; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/ViewModels/FeedDownloadProgress.swift -->
 
 Downloads under way:
 
 ### The Feed Downloads section
-<!-- id: feed-downloads-section; keys: ; src: -->
+<!-- id: feeds-downloads-section; keys: progress bar, Download 4 of 9, time left, waiting reason, every 5 seconds; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/ViewModels/FeedDownloadProgress.swift -->
 
 While episodes and articles download, each Library window shows a Feed Downloads section at its bottom, below the list, which it never covers.
 It shows only while downloads run: its heading and a Cancel button, a bar for the whole run, how many of the run's downloads are done, as in "3 of 9 done", with "1 failed" when one did, and the download under way, with its feed and how far its file has come, as in "Download 4 of 9: “Ep.
@@ -67,7 +67,7 @@ Downloads TextMouth asked for by itself that wait are counted apart, by their re
 How far a file has come, and the time left, are shown anew every 5 seconds.
 
 ### What VoiceOver reads for downloads
-<!-- id: what-voiceover-reads-downloads; keys: ; src: -->
+<!-- id: feeds-downloads-voiceover; keys: announcement, quarter of the run, run finished, section label, Cancel Feed Downloads; src: TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/ViewModels/FeedDownloadProgress.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadProgress.swift, TextMouth/Views/Feeds/FeedDownloadProgressSection.swift -->
 
 VoiceOver reads every line as the section's label, as in "Feed Downloads: 3 of 9 done.
 Download 4 of 9: “Ep.
@@ -78,7 +78,7 @@ For a run of 10 seconds or more, VoiceOver also hears, wherever you are, each qu
 A run TextMouth began by itself, which nobody heard start, is announced once, after ten seconds, with how many downloads are under way and the time left, as in "Feed downloads: 9 under way, about 4 minutes left.", unless a quarter has been heard or Cancel pressed by then.
 
 ### Cancelling feed downloads
-<!-- id: cancelling-feed-downloads; keys: ; src: -->
+<!-- id: feeds-cancel-downloads; keys: Cancel Feed Downloads, stop downloads, pause, partial files, Cancelling; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/FeedDownloadProgress.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
 
 Cancel stops every feed download, whether you or TextMouth asked for it: the one under way, those waiting to start, and those TextMouth asked for that wait for a network or for room; and it deletes what they had downloaded, partial files included.
 A download whose book is already being added to the library finishes, as in "“Ep.
@@ -92,29 +92,29 @@ To download the other one again, choose Download on its row."
 The button's hint begins "Stops every feed download, those waiting for a network or for room too, and deletes what they had downloaded." and then says the same of how they come back before you press it.
 
 ### Speak Download Progress
-<!-- id: speak-download-progress; keys: ; src: -->
+<!-- id: feeds-speak-download-progress; keys: Library menu, shortcut, Information shortcuts, status request; src: TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadProgress.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
 
 Library menu, Speak Download Progress has VoiceOver speak the section's lines on request, or say "No feed download is under way.", followed by the downloads waiting, if any, as in "No feed download is under way.
 2 waiting until this Mac is on a network without data limits."
 Give it a key in the Shortcuts tab of Settings, under Information, to use it in every window but an audio editor's (see Works in, under the Shortcuts tab).
 
 ### A row that is downloading
-<!-- id: row-that-downloading; keys: ; src: -->
+<!-- id: feeds-row-downloading; keys: Downloading badge, percent read, episode row; src: TextMouth/Views/Feeds/FeedLibraryWording.swift, TextMouth/Views/Feeds/FeedRows.swift -->
 
 An episode's or article's row says "Downloading" while its download waits to start or runs, without a percent, since the section says how far it has got; a place kept for it is read beside it as "42 percent read".
 
 ## Saving and quitting
-<!-- id: saving-quitting; keys: ; src: -->
+<!-- id: feeds-saving-quitting; keys: quit, unsaved feed record, downloads at quit; src: TextMouth/App/QuitFinisher.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedStore.swift -->
 
 Saving and quitting:
 
 ### Saving a feed's record
-<!-- id: saving-feed-record; keys: ; src: -->
+<!-- id: feeds-saving-record; keys: banner, Retry, Dismiss, unsaved change, library.json; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 A feed's record that can't be saved is reported as any unsaved change is: the Library window's banner names the feed, with Retry and Dismiss, and quitting asks first.
 
 ### Quitting while episodes download
-<!-- id: quitting-while-episodes-download; keys: ; src: -->
+<!-- id: feeds-quit-while-downloading; keys: Quitting TextMouth window, Command-Q, Quit Anyway, log out, shut down, resume data, three seconds; src: TextMouth/App/QuitFinisher.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
 Quitting while episodes download, or wait to, keeps their place: the one under way keeps what it has downloaded, when its server allows, and at the next launch they are asked for again, that one going on from where it stopped, while one TextMouth downloads by itself still waits for a network without data limits, and for room.
 Quitting waits at most three seconds for this.

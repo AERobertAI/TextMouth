@@ -1,15 +1,15 @@
 # Feed, episode, and article commands
-<!-- id: feed-episode-article-commands; keys: ; src: -->
+<!-- id: feeds-commands-overview; keys: feed commands, episode commands, context menu, Actions menu; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Commands
-<!-- id: commands; keys: ; src: -->
+<!-- id: feeds-commands; keys: context menu, VoiceOver Actions, VO-Command-Space, row commands; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 Commands:
 
 ### A feed's commands
-<!-- id: feed-commands; keys: ; src: -->
+<!-- id: feeds-feed-commands; keys: Check Feed, Unsubscribe, Resubscribe, Mark All Played, Command-I, Feed Settings button, orphaned feed folder; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 
 For a feed, on its row: Check Feed, which says what came; Feed Info…, which Command-I opens too, as does the Feed Settings button in the Library window's toolbar, in the feed's folder (see [The Library window](library-window.md)); Mark All Played (Mark All Read for articles); Unsubscribe, or, for a feed you unsubscribed from, Resubscribe in place of Check Feed and Unsubscribe; and, last, Delete Feed… (below).
 When unsubscribing would delete what the feed kept of downloads you removed, the command is Unsubscribe…, with an ellipsis, and asks first, saying what happens, as in "TextMouth stops checking this feed for new episodes.
@@ -27,7 +27,7 @@ A launch that finds a feed's folder in the data directory with no record of the 
 Another Mac's launches don't count, a record only in the cloud counts as there, and a launch that finds it again starts the count over; meanwhile no folder lists those downloads.
 
 ### Delete Feed
-<!-- id: delete-feed; keys: ; src: -->
+<!-- id: feeds-delete-feed; keys: remove subscription, Trash, Removal Behavior, Storage settings, open in a reader, being transcribed; src: TextMouth/Services/Feeds/FeedCenter+DeleteFeed.swift, TextMouth/ViewModels/LibraryViewModel+DeleteFeed.swift, TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift -->
 
 Delete Feed…, the last of a feed's commands on its row, among its VoiceOver actions, and in Feed Info, for a feed you subscribe to or one you unsubscribed from, is the one command that deletes a feed.
 It asks first, as in "Delete the feed “Finish It!”?", saying what goes, to the Trash or for good as Removal Behavior in Storage settings says: "The feed leaves your library, with its list of episodes and its settings.
@@ -44,7 +44,7 @@ While one of the feed's downloads is open in a reader, being transcribed, or bei
 Close it, then choose Delete Feed… again."; a download that can't be deleted keeps the feed, with whatever wasn't deleted, the alert naming each and why.
 
 ### An episode's or article's commands
-<!-- id: episode-article-commands; keys: ; src: -->
+<!-- id: feeds-episode-commands; keys: Open, Download, Mark Played, Show Description, Show in Finder, Delete Article, Edit Audio, Edit Text; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Models/FeedBookUse.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedLifecycle.swift -->
 
 For an episode or article: Open, which downloads it first; Download, or Cancel Download while it downloads, and both for one waiting to download by itself, where Download downloads it at once, on any network, and Cancel Download leaves it to you, saying, as in "“Ep.
 368” no longer waits to download; it downloads when you choose Download."; Mark Played or Mark Unplayed (Mark Read or Mark Unread for an article); Show Description…; for a downloaded one, Show in Finder and Delete Download; and Delete Episode… (Delete Article…), which asks first, deletes everything kept for it, its download included, and keeps it out of the list for good; when TextMouth keeps anything of yours for the item, such as its place, the question adds "The place, bookmarks, and transcript kept for it are deleted too.", and once the question has closed VoiceOver says, as in "Deleted “Ep.
@@ -55,7 +55,7 @@ Wait until the transcription ends, or cancel it, then try again."; TextMouth's o
 A downloaded episode's book row offers these beside the book's own commands, less Move to Folder… and Edit Audio…, which an episode or article never offers while it belongs to its feed, and Edit Text in Default Editor and Edit Text With…, which an article never offers and an episode offers once it is transcribed (see [Transcribing an audiobook](transcribing.md)).
 
 ### Cancel Download while a book is being added
-<!-- id: cancel-download-while-book-being; keys: ; src: -->
+<!-- id: feeds-cancel-download-adding; keys: already being added, Stopped downloading, offline, cancelled download, restart; src: TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/FeedDownloadProgress.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Views/Feeds/FeedCommands.swift -->
 
 Cancel Download chosen on an episode whose book is already being added to the library changes nothing, since the book arrives all the same, and VoiceOver says "“Ep.
 368” is already being added to the library." instead of "Stopped downloading", the sentence the Feed Downloads section's Cancel says too; the episode stays as TextMouth's own rule asked for it, and is not made yours.
@@ -63,14 +63,14 @@ Download or Open chosen right after Cancel Download downloads the episode, and o
 A download, or a check of a feed, that is cancelled just as it begins ends as cancelled, even while this Mac is offline, and no longer holds up every later download until TextMouth restarts.
 
 ### Deleted episodes stay deleted
-<!-- id: deleted-episodes-stay-deleted; keys: ; src: -->
+<!-- id: feeds-deleted-episodes; keys: 90 days, deleted record, empty feed read, newest-episodes rule, check result; src: TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 An episode you deleted stays deleted when its feed lists less than it did.
 TextMouth keeps the record of a deleted episode that the feed no longer lists for 90 days after you deleted it, and when a read lists none of the feed's items, as a publisher's server sometimes sends, it keeps every deleted episode's record whatever its age, so none comes back as a new, unplayed episode that the newest-episodes rule downloads.
 New episodes a check found are not lost when TextMouth quits, or the library can't be saved, before the check's result is written: the next check reads the feed whole again and adds them.
 
 ### Move to Library
-<!-- id: move-library; keys: ; src: -->
+<!-- id: feeds-move-to-library; keys: Move to Folder, In Library, folder picker, book of the library, Book menu, episode becomes a book; src: TextMouth/Views/Feeds/MoveToLibrarySheet.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift, TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 
 Move to Library…, on a downloaded episode's or article's book row, among its VoiceOver actions, and in its reader's Book menu, makes it a book of the library's own; it has no key until you give it one in the Shortcuts tab of Settings, under Library, and then acts on the episodes and articles selected in a Library window, or on a reader's book.
 It opens the folder picker Move to Folder… uses, under a heading such as "Move “Ep.
@@ -92,7 +92,7 @@ A book you move into the feed's own folder is listed there once, as its book's r
 A move cut short never loses the book: the next launch finds it in its feed or in the folder chosen.
 
 ### Delete Download keeps your place
-<!-- id: delete-download-keeps-your-place; keys: ; src: -->
+<!-- id: feeds-delete-download; keys: Delete Downloads, Remove from Library, Confirm before removing a book, Command-Delete, kept place, package, Trash; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Models/RemovalWording.swift, TextMouth/Models/FeedBookUse.swift -->
 
 Deleting a download keeps your place.
 Delete Download removes the download's file, and an article's text, to the Trash or for good as Removal Behavior in Storage settings says, an article's file and its text going to the Trash together, as one item, deletes for good anything else made from the file, and keeps in the feed's own folder in the data directory the episode's or article's place, playback times, bookmarks, its own settings, any details you edited by hand, its transcript, and any copies Edit Text kept of an edited text; a download you never opened, holding none of these, goes entirely, to the Trash or for good as that setting says.
@@ -125,7 +125,7 @@ Delete Download removes its file and keeps its place and bookmarks."
 A feed's record keeps every item you played, and every item whose place it keeps, whatever its List and download choice lists.
 
 ### Feed Info
-<!-- id: feed-info; keys: ; src: -->
+<!-- id: feeds-feed-info; keys: This Feed's Settings, feed address, publisher, Use the global setting, Description, Unsubscribe button; src: TextMouth/Views/Feeds/FeedInfoSheet.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 Feed Info… shows the feed's address, web site, publisher, episodes, counted as its row counts them, last check, the date you subscribed, and the date you unsubscribed, while you are, its last check then reading "Not checked since …", and a plain-http warning when it applies, each read as one line, and its description, under a Description heading, in a text area labelled with the feed's title, as "Description of Planet Money", so VoiceOver says Description once.
 It chooses the library folder that lists the feed's episodes and articles, its downloads included, all of them at once, since the downloads stay in the feed's own folder in the data directory; a feed whose library folder is gone downloads nothing until you choose another.
@@ -135,12 +135,12 @@ Return stays with the number fields, entering the number typed, except while the
 Each change is saved as you make it; the feed's list follows a change of its List and download choice at once, and what downloads or is removed follows ten seconds after the last change, when VoiceOver says, as in "List and download for Finish It! is now in effect: Every episode listed, newest 3 downloaded.", or, once the box is checked again, "List and download for Finish It! now follows the global setting: Every item listed, newest 5 downloaded."
 
 ### Show Description
-<!-- id: show-description; keys: ; src: -->
+<!-- id: feeds-show-description; keys: episode text, show notes, text area; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift, TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift -->
 
 Show Description… shows an episode's text in a text area that VoiceOver reads by line, word, and character; Return or Escape closes it.
 
 ### Book Information of an episode
-<!-- id: book-information-episode; keys: ; src: -->
+<!-- id: feeds-book-info-episode; keys: read-only Book Info, Show book information, Transcribe Audio, Edit Text With, album, genre; src: TextMouth/Views/Library/FeedItemBookInfoSheet.swift, TextMouth/Models/FeedBookUse.swift -->
 
 While an episode or article belongs to its feed, its Book Info, from the Library (Command-I or Book Info) or from its reader, is read-only: under the heading Book Information and the line "An episode's details come from its feed; Move to Library… makes it a book you can edit."
 (an article's says "An article's details"), it gives its title, artist or author, feed, an episode's album, genre, year, duration, and format, an article's format and word count, and when it was added and last opened, each read as one line whose value can be selected and copied, a detail without a value left out.
