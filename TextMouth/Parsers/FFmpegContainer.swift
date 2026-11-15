@@ -149,11 +149,13 @@ enum FFmpegContainer: String, CaseIterable, Equatable, Sendable {
 
 /// What TextMouth reads of an ASF file's header (FMT31): only whether it is
 /// copy-protected. A protected WMA or WMV file names its protection system
-/// in its header, before any packet, in one of three objects:
+/// in its header, before any packet, in one of four objects:
 /// - Content Encryption (Windows Media DRM version 1),
-/// - Extended Content Encryption (version 7 and later), or
-/// - Advanced Content Encryption (PlayReady), inside the Header Extension
-///   object.
+/// - Extended Content Encryption (version 7 and later),
+/// - Advanced Content Encryption (Windows Media DRM for Network Devices),
+///   inside the Header Extension object, or
+/// - Protection System Identifier (PlayReady), inside the Header Extension
+///   object too.
 ///
 /// The header is a Header object (its identifier, its size, the number of
 /// objects in it, and two reserved bytes: 30 bytes), followed by its
@@ -178,16 +180,19 @@ enum ASFHeader {
     static let headerObjectID = guidBytes("75B22630-668E-11CF-A6D9-00AA0062CE6C")
 
     /// The Header Extension object's identifier, whose body holds the newer
-    /// objects (metadata, PlayReady's encryption).
+    /// objects (metadata, and the newer protection systems').
     static let headerExtensionID = guidBytes("5FBF03B5-A92E-11CF-8EE3-00C00C205365")
 
-    /// The identifiers of the three objects that say the content is
-    /// encrypted: Content Encryption, Extended Content Encryption, and
-    /// Advanced Content Encryption.
+    /// The identifiers of the four objects that say the content is
+    /// encrypted: Content Encryption, Extended Content Encryption, Advanced
+    /// Content Encryption, and PlayReady's Protection System Identifier
+    /// (review9 finding 4: without it a PlayReady file reached ffmpeg, which
+    /// decodes the encrypted data as noise of the right length).
     static let protectionObjectIDs: [[UInt8]] = [
         guidBytes("2211B3FB-BD23-11D2-B4B7-00A0C955FC6E"),
         guidBytes("298AE614-2622-4C17-B935-DAE07EE9289C"),
         guidBytes("43058533-6981-49E6-9B74-AD12CB86D58C"),
+        guidBytes("9A04F079-9840-4286-AB92-E65BE0885F95"),
     ]
 
     /// The 16 bytes of the identifier `spelled` as the specification prints

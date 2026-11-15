@@ -281,17 +281,29 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertFalse(ASFHeader.isCopyProtected(fileAt: try formatSampleURL("mka/tones-2tracks.mka")))
     }
 
-    /// Each of the three protection objects marks a file protected: Content
-    /// Encryption and Extended Content Encryption at the header's top level,
-    /// and Advanced Content Encryption (PlayReady) inside the Header
-    /// Extension, as a real sample's header with the object added.
+    /// Each of the four protection objects marks a file protected, at the
+    /// header's top level or inside its Header Extension, as a real sample's
+    /// header with the object added: Content Encryption, Extended Content
+    /// Encryption, Advanced Content Encryption (Windows Media DRM for Network
+    /// Devices), and PlayReady's Protection System Identifier (review9
+    /// finding 4).
     func testEachProtectionObjectMarksAFileProtected() throws {
         let sample = try Data(contentsOf: try formatSampleURL("wma/tones.wma"))
-        for (index, identifier) in ASFHeader.protectionObjectIDs.enumerated() {
+        // Spelled here, so a protection system left out of the list fails.
+        let identifiers = [
+            "2211B3FB-BD23-11D2-B4B7-00A0C955FC6E", // Content Encryption: Windows Media DRM 1
+            "298AE614-2622-4C17-B935-DAE07EE9289C", // Extended Content Encryption: DRM 7 and later
+            "43058533-6981-49E6-9B74-AD12CB86D58C", // Advanced Content Encryption: DRM for Network Devices
+            "9A04F079-9840-4286-AB92-E65BE0885F95", // Protection System Identifier: PlayReady
+        ]
+        XCTAssertEqual(ASFHeader.protectionObjectIDs, identifiers.map(ASFHeader.guidBytes))
+        for spelled in identifiers {
+            let identifier = ASFHeader.guidBytes(spelled)
+            XCTAssertEqual(identifier.count, 16, spelled)
             let protected = try asfHeaderAdding(asfObject(identifier, body: [0, 0, 0, 0]), to: sample)
-            XCTAssertTrue(ASFHeader.isCopyProtected(header: protected), "protection object \(index) at the top level")
+            XCTAssertTrue(ASFHeader.isCopyProtected(header: protected), "\(spelled) at the top level")
             let nested = try asfHeaderAdding(headerExtension(holding: asfObject(identifier, body: [])), to: sample)
-            XCTAssertTrue(ASFHeader.isCopyProtected(header: nested), "protection object \(index) in the extension")
+            XCTAssertTrue(ASFHeader.isCopyProtected(header: nested), "\(spelled) in the extension")
         }
         XCTAssertFalse(ASFHeader.isCopyProtected(header: try asfHeaderAdding(headerExtension(holding: []), to: sample)))
     }
