@@ -165,26 +165,32 @@ final class PageImageImportTests: XCTestCase {
     // MARK: - The Direct Reading
 
     /// A book read straight from its file, as one without a content.md is
-    /// read (`BookParser`), has the cache's chapters and text, titled by its
-    /// file's name, without pages; the scripted recognizer stands in for
-    /// Vision through the reader's default.
+    /// read (`BookParser`), has the cache's chapters and text, without pages:
+    /// a picture of one page is one chapter named by its file, and one of
+    /// several a chapter for each page with text. The scripted recognizer
+    /// stands in for Vision through the reader's default.
     func testTheDirectReadingHasTheCachesChapters() throws {
         let page = try PageImageFixtures.picture(width: 120, height: 90)
-        let url = try PageImageFixtures.write(
+        let several = try PageImageFixtures.write(
             try PageImageFixtures.encoded([page, page, page], as: .tiff), named: "Works Notice.tiff", for: self
         )
+        let one = try PageImageFixtures.write(try PageImageFixtures.encoded(page, as: .png), named: "Harbour Letter.png", for: self)
         let saved = PageImageReader.defaultRecognizer
         defer { PageImageReader.defaultRecognizer = saved }
         PageImageReader.defaultRecognizer = ScriptedPageRecognizer([
             .lines(PageImageFixtures.paragraph(["Notice of works"])), .lines([]), .lines(PageImageFixtures.paragraph(["Signed"])),
+            .lines(PageImageFixtures.paragraph(["Dear neighbour,"])),
         ])
 
-        let content = try BookParser.parse(url: url, format: .picture)
+        let pages = try BookParser.parse(url: several, format: .picture)
+        let letter = try BookParser.parse(url: one, format: .picture)
 
-        XCTAssertEqual(content.title, "Works Notice")
-        XCTAssertEqual(content.chapters.map(\.title), ["Page 1", "Page 3"])
-        XCTAssertEqual(content.chapters.map(\.text), ["Notice of works", "Signed"])
-        XCTAssertTrue(content.pages.isEmpty)
+        XCTAssertEqual(pages.chapters.map(\.title), ["Page 1", "Page 3"])
+        XCTAssertEqual(pages.chapters.map(\.text), ["Notice of works", "Signed"])
+        XCTAssertTrue(pages.pages.isEmpty)
+        XCTAssertEqual(letter.title, "Harbour Letter")
+        XCTAssertEqual(letter.chapters.map(\.title), ["Harbour Letter"])
+        XCTAssertEqual(letter.chapters.map(\.text), ["Dear neighbour,"])
     }
 
     /// A comic book archive in a ZIP batch with a page that cannot be read is
