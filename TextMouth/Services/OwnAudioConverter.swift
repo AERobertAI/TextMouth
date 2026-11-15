@@ -53,6 +53,15 @@ enum OwnAudioConverter {
         return nil
     }
 
+    /// The tags of the file at `url`, read by the own readers' tag reader;
+    /// nil when it is not a file of one of the readers' formats, which
+    /// AVFoundation reads no tag of. An import names its book by these.
+    static func tags(of url: URL) -> OwnAudioTags? {
+        guard !DatalessFiles.isDataless(url), let bytes = OwnAudioBytes(path: url.path),
+              OwnAudioFormat.of(bytes) != nil else { return nil }
+        return OwnAudioTagReader.read(bytes)
+    }
+
     /// The bytes of the companion of the file at `url`, when it has one.
     private static func companionBytes(of url: URL) -> OwnAudioBytes? {
         companion(of: url).flatMap { OwnAudioBytes(path: $0.path) }

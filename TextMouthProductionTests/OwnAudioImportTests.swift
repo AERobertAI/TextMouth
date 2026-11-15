@@ -572,6 +572,7 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertEqual(OggTestFixtures.names(in: audio.deletingLastPathComponent()).filter { $0.hasSuffix(".tta") }, [])
         XCTAssertEqual(imported.book.title, "Ferry Timetables")
         XCTAssertEqual(imported.book.author, "Odalys Brennecke")
+        XCTAssertEqual(imported.book.audioAlbum, "Harbour Notices")
         XCTAssertEqual(try Data(contentsOf: source), sourceBytes)
     }
 
@@ -588,7 +589,9 @@ final class OwnAudioImportTests: XCTestCase {
         let audio = URL(fileURLWithPath: imported.book.filePath)
         XCTAssertEqual(audio.lastPathComponent, "hybrid16.m4a")
         // The import waits on its own thread for its conversions, so this test is not an async one.
-        let stored = try AVAudioFile(forReading: audio).fileFormat.streamDescription.pointee.mFormatID
+        // The format is held while its description is read: the pointer is into the format's own storage.
+        let storedFormat = try AVAudioFile(forReading: audio).fileFormat
+        let stored = storedFormat.streamDescription.pointee.mFormatID
         XCTAssertEqual(stored, kAudioFormatAppleLossless)
         XCTAssertTrue(try samplesOfConvertedFile(at: audio) == (try samplesToBeWritten(of: "wv/hybrid16.wv")))
         let left = OggTestFixtures.names(in: audio.deletingLastPathComponent())

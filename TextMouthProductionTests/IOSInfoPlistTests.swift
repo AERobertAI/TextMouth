@@ -212,7 +212,9 @@ final class IOSInfoPlistTests: XCTestCase {
     func testTheDeclarationsAreTheMacsLessTheBrailleFiles() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
-        XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes))
+        XCTAssertEqual(
+            Set(ios.keys),
+            Set(mac.keys).subtracting(Self.brailleTypes).subtracting(Self.ffmpegDeclaredTypes).subtracting(Self.ownReaderTypes))
         for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
