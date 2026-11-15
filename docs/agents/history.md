@@ -1033,3 +1033,12 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The Record window's hints:** The Record window does the same for its buttons (RecordingWindowView, through StoredKeyEquivalents):
   - each hint ends with the button's key in force, in those words (RecordingWording.recordHint(device:key:), pauseHint(key:), resumeHint(key:), and stopHint(key:)),
   - or with nothing while the button has no key, where it once named the default keys whatever was set.
+
+## From The hosted-test sandbox
+
+- **The settings helper's four copies:** A test that changes the global settings makes a settings model of its own, makeIsolatedSettings(_:configFile:configWrite:) (TextMouthProductionTests/ConfigTestSupport.swift):
+  - its preferences a sandboxed store, its config.json a file of the test's own, never watched, written as the test chooses, and
+  - its notifications its own (REV13, which made four copies of it one).
+- **The feed world's finish, relaunch, and holdImports:** FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits for its sweeps and passes, and then waits for every write it asked for;
+  - relaunch(_:configuring:) lets a test hook the next engine, and holdImports(_:), through a WorkGate, holds the import queue, as the two formerly racing feed tests do to prove the old reading fails, its records (FeedStore.flush()), its fetch details, and the statistics saves;
+  - each world's teardown runs it while the world's folders are still there, so no record write fails in, and is announced into, a later test.

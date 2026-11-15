@@ -25,7 +25,8 @@ The process's runtime.
 Sandboxes left behind.
 
 - Owner: HostedSandboxCleanup, which the test bundle's principal class, TextMouthTestBundle, registers.
-  As the bundle starts, it deletes, off the main thread, the sandboxes earlier processes left behind (TextMouthRuntime.removeAbandonedSandboxes): folders named for another process that has ended, as isFolderMakerRunning judges it, the one rule of both sweeps of folders that ended processes leave behind, this one and the archive extraction sweep at launch.
+  As the bundle starts, it deletes, off the main thread, the sandboxes earlier processes left behind (TextMouthRuntime.removeAbandonedSandboxes).
+  They are folders named for another process that has ended, as isFolderMakerRunning judges it, the one rule of both sweeps of folders that ended processes leave behind, this one and the archive extraction sweep at launch.
   The system reuses process numbers, so a running process with the folder's number counts as its maker only when it started no later than an hour after the folder was made (folderMakerStartAllowance, and startDate(ofProcess:), read with sysctl).
   When either date is unknown, the folder is kept, and so are kept sandboxes and anything that is not a plain folder.
   As the bundle finishes, it waits for that sweep, at most a minute, and deletes its own sandbox (finishWithSandbox()), unless TEXTMOUTH_KEEP_SANDBOX is 1, which marks it kept with a KEPT-SANDBOX.txt file instead.
@@ -38,7 +39,8 @@ Config saves a test leaves waiting.
 
 - Owner: ConfigSaveFlush, which TextMouthTestBundle registers too.
   As each test ends, it writes a config.json save the test left waiting (ConfigService.flushScheduledSave()), so the save never lands during the next test.
-  A test that changes the global settings makes a settings model of its own, makeIsolatedSettings(_:configFile:configWrite:) (TextMouthProductionTests/ConfigTestSupport.swift): its preferences a sandboxed store, its config.json a file of the test's own, never watched, written as the test chooses, and its notifications its own (REV13, which made four copies of it one).
+  A test that changes the global settings makes a settings model of its own, makeIsolatedSettings(_:configFile:configWrite:) (TextMouthProductionTests/ConfigTestSupport.swift).
+  Its preferences are a sandboxed store, its config.json a file of the test's own, never watched, written as the test chooses, and its notifications its own (REV13).
 
 ## Redraw counts
 <!-- id: redraw-counts; keys: view redraw, render count, SwiftUI performance, unnecessary redraw, lazy list; src: TextMouth/Views/Reader/BookSearchView.swift, TextMouth/Views/ViewBodyCounter.swift -->
@@ -53,12 +55,19 @@ Redraw counts.
 
 Performance baselines.
 
-- Owner: PerformanceBaselineRun.shared (TextMouthProductionTests/PerformanceBaselineSupport.swift), the run every PerformanceBaselineTests test in a process shares, and the committed baselines it reads once, TextMouthProductionTests/performance-baselines.json (PerformanceBaselineFile), which name the Mac model, the build configuration, and the date they were recorded with.
-  Before each test, prepareToMeasure() decides, from TEXTMOUTH_PERFORMANCE_STRICT and TEXTMOUTH_PERFORMANCE_RECORD (PerformanceRunSettings), the Mac model and build configuration, and the one-minute load average, whether the test measures, skips with a PERFORMANCE SKIPPED: line, or, when recording, first waits up to five minutes for a quiet Mac.
+- Owner: PerformanceBaselineRun.shared (TextMouthProductionTests/PerformanceBaselineSupport.swift), the run every PerformanceBaselineTests test in a process shares.
+  It reads once the committed baselines, TextMouthProductionTests/performance-baselines.json (PerformanceBaselineFile), which name the Mac model, the build configuration, and the date they were recorded with.
+  Before each test, prepareToMeasure() decides whether the test measures, skips with a PERFORMANCE SKIPPED: line, or, when recording, first waits up to five minutes for a quiet Mac.
+  It decides from TEXTMOUTH_PERFORMANCE_STRICT and TEXTMOUTH_PERFORMANCE_RECORD (PerformanceRunSettings), the Mac model and build configuration, and the one-minute load average.
   PerformanceRules holds the rules: the median of five runs after one uncounted warm-up, a second five runs for a number more than twice its baseline, which fails only when the lower median still is, a warning at 1.5 times, and a note at half.
-- Who may write it: a recording run, which rewrites the file once every measurement in PerformanceMeasure.all has its number, printing each old and new one; make perf-baselines (Scripts/perf-baselines.sh) starts one, running the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1, and puts the file back as it was unless the whole run succeeds.
-- How others observe it: every line the tests print begins with PERFORMANCE. make check runs them strictly, through make test PERFORMANCE_STRICT=1, whose TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 xcodebuild hands the test host as TEXTMOUTH_PERFORMANCE_STRICT, and repeats their PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines (Scripts/check.sh).
-  The measured inputs are generated (PerformanceFixtures), never the user's library, and the developer's 16 substitution rules are a frozen copy, performance-substitutions.json, so a change to the standard rules never changes what a baseline measured. open.textBook measures a first open, each run first forgetting the kept text through ReadingTextCache.remove(bookID:); open.textBookCached checks that each run read the same kept file.
+- Who may write it: a recording run, which rewrites the file once every measurement in PerformanceMeasure.all has its number, printing each old and new one.
+  Running make perf-baselines (Scripts/perf-baselines.sh) starts one, running the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1, and puts the file back as it was unless the whole run succeeds.
+- How others observe it: every line the tests print begins with PERFORMANCE.
+  The make check target runs them strictly, through make test PERFORMANCE_STRICT=1, whose TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 xcodebuild hands the test host as TEXTMOUTH_PERFORMANCE_STRICT.
+  It repeats their PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines (Scripts/check.sh).
+  The measured inputs are generated (PerformanceFixtures), never the user's library, and the developer's 16 substitution rules are a frozen copy, performance-substitutions.json, so a change to the standard rules never changes what a baseline measured.
+  The measurement open.textBook measures a first open, each run first forgetting the kept text through ReadingTextCache.remove(bookID:).
+  The measurement open.textBookCached checks that each run read the same kept file.
 
 ## Hosted windows and accessibility controls
 <!-- id: hosted-windows-accessibility-controls; keys: GitHub Actions runner, skipped tests, CI, accessibility tree, missing stepper; src: TextMouthProductionTests/ReaderTextAreaTests.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/AccessibilityTestSupportTests.swift -->
@@ -67,11 +76,13 @@ Whether hosted windows expose their controls to accessibility.
 
 - Owner: HostedWindowAccessibility (TextMouthProductionTests/AccessibilityTestSupport.swift), which holds this run's answer: whether the AppKit controls SwiftUI draws in a hosted window, its sliders, steppers, pop-up buttons, and text fields, appear among the window's accessibility elements.
   The development Mac exposes them; a GitHub Actions macOS runner draws the same controls but exposes none of them, so a check that reads them there would fail for want of the capability rather than for a missing control.
-  SwiftUI's own text and buttons have elements only for a connected assistive app, except a Text that can be selected (textSelection(.enabled)), which is drawn through AppKit and appears among those controls as a static text whose value and character count a test reads (ReaderTextAreaAccessibilityTests).
+  SwiftUI's own text and buttons have elements only for a connected assistive app, except a Text that can be selected (textSelection(.enabled)).
+  That Text is drawn through AppKit and appears among those controls as a static text whose value and character count a test reads (ReaderTextAreaAccessibilityTests).
 - Who may write it: the first call of hostedWindowsExposeAccessibility() in a run measures it, on a probe of its own, never on the view under test.
   It hosts a labelled stepper (LoneStepper) and waits, as withHostedView waits out a slow first render, for a stepper to appear among the window's accessibility elements.
   HostedWindowAccessibility.assuming(_:_:) puts another answer in its place for the tests of the skip itself, which must see both answers on every Mac, and then puts back the one it had.
-- How others observe it: every test that reads hosted controls through accessibleControls(in:) first calls skipUnlessHostedWindowsExposeAccessibility(), through withHostedControls, which throws for that reason, or on its own, and where the answer is no it is skipped, before its view is hosted, with the one message HostedWindowAccessibility.unavailableMessage.
+- How others observe it: every test that reads hosted controls through accessibleControls(in:) first calls skipUnlessHostedWindowsExposeAccessibility(), through withHostedControls, which throws for that reason, or on its own.
+  Where the answer is no it is skipped, before its view is hosted, with the one message HostedWindowAccessibility.unavailableMessage.
   The run's log then has one HOSTED_ACCESSIBILITY_UNAVAILABLE line saying how many steppers the probe drew.
   Because the probe never looks at the view under test, a control missing from that view, or left without its label, still fails wherever the controls are exposed, as AccessibilityTestSupportTests shows with a stepper left without a label, an expected failure.
 
@@ -103,7 +114,8 @@ A hosted view whose width outgrows the width it is offered.
 
 - Owner: the test.
   A hosting view sets its window's smallest and largest sizes from its content's.
-  So content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window", which ends the test host with a crash dialog the user sees (in exploratory runs no committed test makes).
+  So content whose width follows the width it is given and adds to it, as a macOS form in the columns style did, makes the window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window".
+  That ends the test host with a crash dialog the user sees (in exploratory runs no committed test makes).
   Host such a view inside a frame of a fixed size, as SettingsTabFitTests hosts each Settings tab at the window's size, or measure it with NSHostingController.sizeThatFits(in:) and no window.
   The hosting helpers, withHostedView (TextMouthProductionTests/AccessibilityTestSupport.swift) and hostOffscreen (TextMouthProductionTests/ViewsAndWindowsTestSupport.swift), say so in their documentation.
 
@@ -131,10 +143,16 @@ VoiceOver announcements.
 
 The network.
 
-- Owner: FeedNetwork.app, whose sessions refuse every request in a process hosting tests (FeedNetworkRefusal), and FeedCenter.shared, which never works on its own there (FeedEnvironment.worksOnItsOwn): no launch or scheduled refresh, no downloads asked for again from the last quit, no sweep of played downloads, and no pass of the newest-N rule nor its ten-second wait, which a test runs itself (applyItemPolicy(to:retrying:)), though the move of the retired settings to the List and download choice still runs.
+- Owner: FeedNetwork.app, whose sessions refuse every request in a process hosting tests (FeedNetworkRefusal), and FeedCenter.shared, which never works on its own there (FeedEnvironment.worksOnItsOwn).
+  There it makes no launch or scheduled refresh, no downloads asked for again from the last quit, no sweep of played downloads, and no pass of the newest-N rule nor its ten-second wait, which a test runs itself (applyItemPolicy(to:retrying:)).
+  The move of the retired settings to the List and download choice still runs.
   The feed tests answer their requests, a podcast directory search's included (FeedEnvironment.directory), from a stub server of their own (FeedNetwork.stubbed(protocolClasses:reachability:)), so no test reaches the network.
   FeedArrivals.shared posts its notifications through InertFeedNotifier there, so no test reaches the system's notification center or shows a permission prompt.
-  FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits for its sweeps and passes, and then waits for every write it asked for; relaunch(_:configuring:) lets a test hook the next engine, and holdImports(_:), through a WorkGate, holds the import queue, as the two formerly racing feed tests do to prove the old reading fails, its records (FeedStore.flush()), its fetch details, and the statistics saves; each world's teardown runs it while the world's folders are still there, so no record write fails in, and is announced into, a later test.
+  FeedTestWorld.finish(_:) stops a test's feed engine, stops its downloads as quitting does, waits for its sweeps and passes, and then waits for every write it asked for: its records (FeedStore.flush()), its fetch details, and the statistics saves.
+  FeedTestWorld.relaunch(_:configuring:) lets a test hook the next engine.
+  FeedTestWorld.holdImports(_:), through a WorkGate, holds the import queue until the gate is released, as heavy load can.
+  The test's teardown releases the gate too.
+  Each world's teardown runs finish(_:) while the world's folders are still there, so no record write fails in, and is announced into, a later test.
 
 ## The system's media session
 <!-- id: system-media-session; keys: remote commands, MPRemoteCommandCenter, CoreAudio listener, headphone buttons, Bluetooth, play pause key; src: TextMouth/Services/NowPlayingService.swift, TextMouthProductionTests/IntegrationTestSupport.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/NowPlayingOwnershipTests.swift -->
@@ -144,7 +162,8 @@ The system's media session.
 - Owner: NowPlayingService.shared, which in a process hosting tests takes no part in it (installsSystemIntegrations(in:)).
   It registers no MediaPlayer command targets, tells the system's Now Playing center nothing, and starts no CoreAudio device listener, though it still routes the commands handed to it among its readers.
   The test host is TextMouth.app itself, with the bundle identifier of the developer's own copy, and macOS sends the AirPods and the media keys to the app that last said it was playing, so a suite whose readers play silent test audio could otherwise take the developer's AirPods presses.
-  MediaCommandPlaybackTests and NowPlayingOwnershipTests give their readers a coordinator of their own (IntegrationWorld.openReader(nowPlaying:)) and see what the system would be told through a writer of their own, and RecordedSoundEffects (TextMouthProductionTests/IntegrationTestSupport.swift) records the sounds a reader asks for and plays none, for the tests of which sounds a reader makes.
+  MediaCommandPlaybackTests and NowPlayingOwnershipTests give their readers a coordinator of their own (IntegrationWorld.openReader(nowPlaying:)) and see what the system would be told through a writer of their own.
+  RecordedSoundEffects (TextMouthProductionTests/IntegrationTestSupport.swift) records the sounds a reader asks for and plays none, for the tests of which sounds a reader makes.
 
 ## The microphone
 <!-- id: microphone; keys: capture session, recording tests, AVCaptureDevice, TCC permission, privacy prompt; src: TextMouth/Services/AudioInputPermission.swift, TextMouthProductionTests/RecordingTestSupport.swift, TextMouthProductionTests/RecordingEndToEndTests.swift -->
@@ -184,10 +203,20 @@ Build slots.
 ## The test kit
 <!-- id: test-kit; keys: lint scripts, golden files, fuzzing, sparse image, test scripts, xcodebuild wrapper, test areas; src: TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/CorpusReportTests.swift, Scripts/test/testkit.py, Scripts/test/difflint.py, Scripts/test/run-area.py, Scripts/test/areas.conf, Scripts/test/trap-lint.py, Scripts/test/a11y-lint.py, Scripts/test/ogg-lint.py, Scripts/test/test-diff.py, Scripts/test/test-logs.py, Scripts/test/make-corpus.py, Scripts/test/update-goldens.sh, Scripts/test/corpus-report.sh, Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/storage-drill-selftest.sh, TextMouthProductionTests/DiskImageDrill.swift, Makefile -->
 
-The test kit: the scripts in Scripts/test/, whose use is in [Testing TextMouth](../../developer/testing-tools.md).
+The test kit: the scripts in Scripts/test/, whose use is in [Reusable test tools](../../developer/testing-tools.md).
 
-- Owner: Scripts/test/testkit.py, the shared module: it inventories the hosted test classes by scanning TextMouthProductionTests (hosted_test_classes), reads Scripts/test/areas.conf (parse_areas), builds the xcodebuild command (build_command), and summarizes an xcodebuild log (summarize_log). difflint.py is the engine under trap-lint.py, a11y-lint.py, ogg-lint.py, and test-diff.py: it asks git which lines a branch added (added_lines), masks Swift strings and comments (mask_swift), runs a list of rules over a file (lint_file), and prints the findings as plain words (report). run-area.py is the one command line every wrapper script calls (update-goldens.sh, corpus-report.sh, voice-sweep.sh, import-fuzz.sh, storage-drill.sh, and make test-area): it runs xcodebuild once for all the classes asked for, through the build-slot wrapper unless given --no-slot, hands the test host the TEST_RUNNER_ variables a sweep needs to switch itself on (--env), and sets sys.dont_write_bytecode, as the linters do, so that no bytecode lands in the tree. storage-drill.sh keeps the runner's lines in a file to tell whether any drill test ran (at least one executed and not every one skipped), asks hdiutil info whether an image is left attached, and ends in one verdict, PASSED, FAILED, or NOT RUN (the words and exit statuses are in [Testing TextMouth](../../developer/testing-tools.md)); TEXTMOUTH_DRILL_RUN_AREA and TEXTMOUTH_DRILL_HDIUTIL name the programs run in place of run-area.py and hdiutil, which Scripts/test/storage-drill-selftest.sh sets to stubs so that make check-selftest tests every verdict without building or attaching an image.
-  The drill's hosted side, TextMouthProductionTests/DiskImageDrill.swift, keeps its disk images safe: DiskImage.fillToCapacity writes zeros only to the image's own mounted volume, by the pure decisions of FillGuards (volumeDevice(inside:outside:), refusalBeforeFilling(volumeDevice:capacityBytes:), refusalForDescriptor(descriptorDevice:volumeDevice:), and exceedsCap(written:capacityBytes:), which stops a fill at twice the image's size, capMultiple), and DiskImage.sweepLeftovers detaches the drill's images that an earlier crashed run left, except those in the sandbox of a test run going on at the same moment (LeftoverImages.sparingRunningRuns, which reads the process number from the TextMouthTests-<number> folder in the image's path).
+- Owner: Scripts/test/testkit.py, the shared module: it inventories the hosted test classes by scanning TextMouthProductionTests (hosted_test_classes), reads Scripts/test/areas.conf (parse_areas), builds the xcodebuild command (build_command), and summarizes an xcodebuild log (summarize_log).
+  Scripts/test/difflint.py is the engine under trap-lint.py, a11y-lint.py, ogg-lint.py, and test-diff.py.
+  It asks git which lines a branch added (added_lines), masks Swift strings and comments (mask_swift), runs a list of rules over a file (lint_file), and prints the findings as plain words (report).
+  Scripts/test/run-area.py is the one command line every wrapper script calls (update-goldens.sh, corpus-report.sh, voice-sweep.sh, import-fuzz.sh, storage-drill.sh, and make test-area).
+  It runs xcodebuild once for all the classes asked for, through the build-slot wrapper unless given --no-slot, hands the test host the TEST_RUNNER_ variables a sweep needs to switch itself on (--env), and sets sys.dont_write_bytecode, as the linters do, so that no bytecode lands in the tree.
+  Scripts/test/storage-drill.sh keeps the runner's lines in a file to tell whether any drill test ran (at least one executed and not every one skipped), asks hdiutil info whether an image is left attached.
+  It ends in one verdict, PASSED, FAILED, or NOT RUN (the words and exit statuses are in [Reusable test tools](../../developer/testing-tools.md)).
+  TEXTMOUTH_DRILL_RUN_AREA and TEXTMOUTH_DRILL_HDIUTIL name the programs run in place of run-area.py and hdiutil, which Scripts/test/storage-drill-selftest.sh sets to stubs so that make check-selftest tests every verdict without building or attaching an image.
+  The drill's hosted side, TextMouthProductionTests/DiskImageDrill.swift, keeps its disk images safe.
+  DiskImage.fillToCapacity writes zeros only to the image's own mounted volume, by the pure decisions of FillGuards.
+  Those are volumeDevice(inside:outside:), refusalBeforeFilling(volumeDevice:capacityBytes:), refusalForDescriptor(descriptorDevice:volumeDevice:), and exceedsCap(written:capacityBytes:), which stops a fill at twice the image's size, capMultiple.
+  DiskImage.sweepLeftovers detaches the drill's images that an earlier crashed run left, except those in the sandbox of a test run going on at the same moment (LeftoverImages.sparingRunningRuns, which reads the process number from the TextMouthTests-<number> folder in the image's path).
 - Who may write it: a person, for areas.conf (its header says how to place a class) and for the goldens, TestData/golden/<file name>.golden, which carry that extension because .gitignore ignores *.txt and *.md; update-goldens.sh writes the goldens too.
   The other scripts write logs, reports, and generated documents where their options say, in the temporary folder by default.
 - How others observe it: the Makefile's test-area, lint-tests, lint-a11y, lint-ogg, and check-selftest targets; DocumentGoldenTests reads the goldens, and the sweeps (VoiceSweepTests, ImportFuzzTests, StorageDrillTests, and CorpusReportTests) skip unless their scripts set their variables.
