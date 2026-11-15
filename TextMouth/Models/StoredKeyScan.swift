@@ -94,7 +94,7 @@ enum StoredKeyScan {
     /// The `userInfo` a decoder of `data` takes, for a file whose top-level
     /// object `schema` describes: the word that the file holds no unknown
     /// key when the scan found none, and nothing otherwise.
-    static func userInfo(forDecoding data: Data, schema: StoredKeySchema) -> [CodingUserInfoKey: Any] {
+    static func userInfo(forDecoding data: Data, schema: StoredKeySchema) -> [CodingUserInfoKey: any Sendable] {
         mayHoldUnknownKeys(data, schema: schema) ? [:] : [noUnknownKeysInfoKey: true]
     }
 
