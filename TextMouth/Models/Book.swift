@@ -60,6 +60,17 @@ enum BookFormat: String, Codable, CaseIterable {
     // before it. The documentation warns the user before they go back to an
     // older build.
     case kfx
+    // A picture of a page (FMT34): a PNG, JPEG, HEIC, or TIFF photograph or
+    // scan, read by text recognition (`PageImageReader`), a chapter for each
+    // page of a TIFF of several. Like every raw value here, written into the
+    // library index and never changed: a TextMouth built before this case
+    // refuses a library that holds a picture, as with the Kindle cases
+    // before it. The documentation warns the user before they go back to an
+    // older build.
+    case picture
+    // A comic book archive (FMT34): a ZIP of pictures named .cbz, read as a
+    // book of pages by the same reader. The same holds for its raw value.
+    case comic
 
     var displayName: String {
         switch self {
@@ -81,6 +92,8 @@ enum BookFormat: String, Codable, CaseIterable {
         case .audio: return "Audio"
         case .mobi: return "Kindle Book (MOBI)"
         case .kfx: return "Kindle Book (KFX)"
+        case .picture: return "Picture"
+        case .comic: return "Comic Book Archive (CBZ)"
         }
     }
 
@@ -141,7 +154,29 @@ enum BookFormat: String, Codable, CaseIterable {
         // rather than as an unknown type. An `.azw` file holding KFX bytes is
         // a MOBI-named file read by its bytes (`MOBIParser`), not listed here.
         case .kfx: return ["kfx", "kfx-zip", "azw8", "kpf"]
+        // The pictures text recognition reads as pages (FMT34). The bytes
+        // decide in the end: a file of another kind under one of these names
+        // is refused by its kind (`PageImageDecoding.readableTypes`).
+        case .picture: return ["png", "jpg", "jpeg", "heic", "heif", "tif", "tiff"]
+        // A real RAR comic (.cbr) is not read: its advice is FMT02's.
+        case .comic: return ["cbz"]
         }
+    }
+
+    /// Whether a file of this format found among other files, in a ZIP
+    /// archive of books, beside an audiobook's tracks, or in a DAISY book's
+    /// archive, is a book of its own. A picture is not: there it is a cover,
+    /// an album's artwork, or a page of the book beside it, so only a picture
+    /// chosen on its own is read as a book of its text (FMT34), and an
+    /// archive's pictures stay among its files passed over. Every other
+    /// format is, a comic book archive among them.
+    var isBookAmongOtherFiles: Bool { self != .picture }
+
+    /// The format of the file at `url` when, found among other files, it is
+    /// a book of its own (`isBookAmongOtherFiles`); nil for a picture there
+    /// and for a file of no format TextMouth reads.
+    static func detectBookAmongOtherFiles(from url: URL) -> BookFormat? {
+        detect(from: url).flatMap { $0.isBookAmongOtherFiles ? $0 : nil }
     }
 
     /// The extensions, in lowercase, that a package's track scan takes as

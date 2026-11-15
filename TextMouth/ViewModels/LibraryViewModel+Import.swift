@@ -460,7 +460,8 @@ extension LibraryViewModel {
             if ext.isEmpty || ext == "json" { continue } // Skip directories and manifest
             if audioExtensions.contains(ext) {
                 hasAudio = true
-            } else if BookFormat.detect(from: URL(fileURLWithPath: entry.path)) != nil {
+            } else if BookFormat.detectBookAmongOtherFiles(from: URL(fileURLWithPath: entry.path)) != nil {
+                // A cover picture beside the tracks is no other book (FMT34).
                 hasNonAudio = true
             }
         }

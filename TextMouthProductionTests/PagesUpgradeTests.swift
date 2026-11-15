@@ -63,7 +63,10 @@ final class PagesUpgradeTests: XCTestCase {
     /// changed since they gained pages, except rich text and Word 97-2003, which
     /// went to TextMouth's own readers at 1.1.0.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
-        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .txt, .kfx, .mobi]
+        // Pictures of pages and comic book archives (FMT34) have their pages from their first reading, at 1.0.0.
+        let withPages: Set<BookFormat> = [
+            .epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .txt, .kfx, .mobi, .picture, .comic,
+        ]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),

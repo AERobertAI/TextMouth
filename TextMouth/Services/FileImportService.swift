@@ -273,11 +273,12 @@ struct ImportedFileMetadata {
     }
 
     /// Whether this reader opens a file of `format` at all: a plain text,
-    /// Markdown, or HTML file keeps no title or author it reads.
+    /// Markdown, or HTML file keeps no title or author it reads, and neither
+    /// does a picture, which is listed by its file's name.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi, .kfx: return true
-        case .txt, .markdown, .html, .webarchive, .ssml: return false
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi, .kfx, .comic: return true
+        case .txt, .markdown, .html, .webarchive, .ssml, .picture: return false
         }
     }
 
@@ -383,6 +384,12 @@ struct ImportedFileMetadata {
             if let named = try? KFXParser.readMetadata(url: url) {
                 adopt(title: named.title, author: named.author)
             }
+        case .comic:
+            // Title and writer from the archive's ComicInfo.xml (FMT34), when
+            // it names them; an archive without one keeps its file's name.
+            if let named = PageImageArchive.metadata(ofArchiveAt: url) {
+                adopt(title: named.title ?? "", author: named.author ?? "")
+            }
         case .daisy:
             // Title and author from the OPF or ncc.html.
             if let daisy = try? DAISYParser.readMetadata(from: url) {
@@ -394,7 +401,7 @@ struct ImportedFileMetadata {
             if !tags.album.isEmpty { metadata.audioAlbum = tags.album }
             if !tags.genre.isEmpty { metadata.audioGenre = tags.genre }
             if !tags.year.isEmpty { metadata.audioYear = tags.year }
-        case .txt, .markdown, .html, .webarchive, .ssml:
+        case .txt, .markdown, .html, .webarchive, .ssml, .picture:
             break
         }
         return metadata
@@ -2216,7 +2223,9 @@ enum FileImportService {
                 } else {
                     found += try nested.candidates(inArchive: url)
                 }
-            } else if BookFormat.detect(from: url) != nil {
+            } else if BookFormat.detectBookAmongOtherFiles(from: url) != nil {
+                // A picture among an archive's files is a cover or artwork,
+                // passed over with the files that are no book (FMT34).
                 found.books.append(url)
             } else {
                 found.nonBookFiles.add(url)
@@ -2402,8 +2411,10 @@ enum FileImportService {
                 seenBookIDs.insert(imported.book.id)
                 books.append(imported.book)
                 if !imported.report.isComplete {
-                    // A PDF whose pictures OCR could not read is missing
-                    // pages; any other incomplete book is missing chapters.
+                    // A PDF whose pictures OCR could not read, or a book of
+                    // pictures with a page that could not be read (FMT34),
+                    // is missing pages; any other incomplete book is missing
+                    // chapters.
                     incompleteBooks.append(
                         ZipImportFailure(
                             fileName: fileURL.lastPathComponent,
@@ -2819,7 +2830,8 @@ enum FileImportService {
         var otherBooks = bookFolder.isEmpty ? 0 : otherFolders.count
         if !bookFolder.isEmpty {
             for path in paths where !lies(path, in: bookFolder) && !otherFolders.contains(where: { lies(path, in: $0) }) {
-                if let format = BookFormat.detect(from: URL(fileURLWithPath: path)), !format.isAudio {
+                // A picture beside the book is no other book (FMT34).
+                if let format = BookFormat.detectBookAmongOtherFiles(from: URL(fileURLWithPath: path)), !format.isAudio {
                     otherBooks += 1
                 }
             }
@@ -3087,6 +3099,11 @@ enum FileImportService {
         types.append(.xml)
         // PDF documents
         types.append(.pdf)
+        // Pictures of pages, read by text recognition (FMT34), and comic book
+        // archives: .cbz, for which macOS declares no type; the app imports
+        // one in Info.plist.
+        types.append(contentsOf: [.png, .jpeg, .heic, .heif, .tiff])
+        types.append(UTType(importedAs: "com.textmouth.cbz", conformingTo: .data))
         // DAISY books (OPF files and .daisy extension)
         // Use custom UTIs matching Info.plist imported type declarations
         if let opf = UTType("com.textmouth.opf-package") {

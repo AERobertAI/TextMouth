@@ -84,6 +84,10 @@ enum BookParser {
         case .kfx:
             // A DRM-free Kindle KFX book, read by TextMouth's own reader (FMT52).
             return try KFXParser.parse(url: url)
+        case .picture, .comic:
+            // A picture of a page, or a comic book archive, read by text
+            // recognition as the Markdown cache reads it (FMT34).
+            return try PageImageReader.parse(url: url, format: format)
         case .audio:
             // Audio parsing is async, so wait for it through the shared bridge.
             return try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {

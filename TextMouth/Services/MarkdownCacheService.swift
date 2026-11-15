@@ -719,6 +719,12 @@ enum MarkdownCacheService {
             // keeps the original, and every generation logs those pages.
             let pdf = try PDFTextParser.extract(from: url, includesPages: includesPages)
             return ExtractedCache(markdown: pdf.markdown, report: pdf.report)
+        case .picture, .comic:
+            // Pictures of pages, read by text recognition as a scanned PDF's
+            // pages are (FMT34); the report names any page that could not be
+            // read, so an import warns and keeps the original.
+            let pictures = try PageImageReader.extract(from: url, format: format, includesPages: includesPages)
+            return ExtractedCache(markdown: pictures.markdown, report: pictures.report)
         case .audio:
             // Audio books don't get text caching
             markdown = ""

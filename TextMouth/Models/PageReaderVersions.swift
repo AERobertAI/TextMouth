@@ -192,6 +192,12 @@ enum PageReaderVersions {
             // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and
             // is not read as pages. The format has its own case and version.
             return "1.0.0"
+        case .picture, .comic:
+            // Pictures of pages (FMT34) have their pages from their first
+            // reading: each picture, each page of a TIFF, and each picture of
+            // a comic book archive is a page of the book. Each format has its
+            // own case and version.
+            return "1.0.0"
         default:
             return nil
         }

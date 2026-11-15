@@ -64,7 +64,9 @@ struct ExtractionReport: Equatable, Sendable {
     var blankChapterCount: Int
     /// The chapters that could not be read, in reading order.
     var omissions: [ExtractionOmission]
-    /// How each page of a PDF was read; nil for every other format.
+    /// How each page of a PDF was read, or of a book of pictures, whose
+    /// pages text recognition reads as it reads a scanned PDF's (FMT34); nil
+    /// for every other format.
     var pdf: PDFExtractionDiagnostics?
 
     /// A report of `chapterCount` chapters, `blankChapterCount` of them

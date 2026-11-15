@@ -110,7 +110,8 @@ struct LibraryBookInfoReader: Sendable {
                 return .audio(book.storedAudioMetadata, isCloudOnly: false)
             }
             return .audio(book.mergingEditableAudioMetadata(tags), isCloudOnly: false)
-        case .txt, .markdown, .html, .webarchive, .ssml, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .daisy, .pdf, .mobi, .kfx:
+        case .txt, .markdown, .html, .webarchive, .ssml, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .daisy, .pdf, .mobi, .kfx,
+             .picture, .comic:
             return .simple
         }
     }
