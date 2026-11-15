@@ -35,6 +35,26 @@ struct AudioFileInfo: Equatable, Sendable {
     /// True when afinfo prints no layout at all (nothing is known against
     /// the file).
     var hasChannelLayout = true
+    /// The first track's markers, as afinfo lists them (FMT17): a WAVE
+    /// file's cue points with their labels, an AIFF file's MARK chunk, a CAF
+    /// file's mark chunk, each with its name and its place in sample frames
+    /// at `sampleRate`, in afinfo's order. The import keeps them as the
+    /// chapters of the file it converts (`ImportAudioConverter.SourceInfo`).
+    var markers: [Marker] = []
+
+    /// One marker afinfo lists.
+    struct Marker: Equatable, Sendable {
+        /// Its name; empty when it has none.
+        let name: String
+        /// Where it is, in sample frames from the start.
+        let frame: Double
+    }
+
+    /// The markers as chapters, each at its frame's time in seconds, in the
+    /// shape every chapter list read by hand takes (`NeroChapterReader.Chapter`).
+    var markerChapters: [NeroChapterReader.Chapter] {
+        markers.map { NeroChapterReader.Chapter(title: $0.name, start: $0.frame / sampleRate) }
+    }
 
     /// Whether the codec keeps every bit of the source: linear PCM, ALAC,
     /// and FLAC.
@@ -132,6 +152,19 @@ struct AudioFileInfo: Equatable, Sendable {
             "channel_layout", "format_list/format/channel_layout",
         ]
 
+        /// Where one of the first track's markers starts, and the two of its
+        /// elements read (FMT17).
+        private static let markerPath = trackPrefix + "audio_markers/audio_marker"
+        private static let markerNamePath = markerPath + "/marker_name"
+        private static let markerFramePath = markerPath + "/marker_frame_pos"
+        /// The most markers read; a track that lists more keeps the first.
+        static let maximumMarkers = 10_000
+
+        /// The marker being read: its name and frame as far as read.
+        private var pendingMarker: (name: String?, frame: Double?)?
+        /// The first track's markers, in afinfo's order.
+        private(set) var markers: [AudioFileInfo.Marker] = []
+
         /// The names of the elements open now, outermost first.
         private var stack: [String] = []
         /// How many audio files and tracks have started: only the first of
@@ -163,12 +196,15 @@ struct AudioFileInfo: Equatable, Sendable {
             qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]
         ) {
             stack.append(elementName)
-            switch path {
+            let current = path
+            switch current {
             case Self.filePath: fileCount += 1
             case Self.trackPath: trackCount += 1
+            case Self.markerPath where fileCount == 1 && trackCount == 1: pendingMarker = (nil, nil)
             default: break
             }
-            text = keyOfCurrentElement() == nil ? nil : ""
+            let isMarkerField = pendingMarker != nil && (current == Self.markerNamePath || current == Self.markerFramePath)
+            text = keyOfCurrentElement() == nil && !isMarkerField ? nil : ""
         }
 
         func parser(_ parser: XMLParser, foundCharacters string: String) {
@@ -182,8 +218,30 @@ struct AudioFileInfo: Equatable, Sendable {
             if let text, let key = keyOfCurrentElement(), values[key] == nil {
                 values[key] = text
             }
+            collectMarker(endingAt: path)
             text = nil
             stack.removeLast()
+        }
+
+        /// Takes what the element ending at `current` says of the marker
+        /// being read, and keeps the marker once its own element ends: with
+        /// a frame that is a finite number, 0 or more, and while fewer than
+        /// `maximumMarkers` are kept.
+        private func collectMarker(endingAt current: String) {
+            guard pendingMarker != nil else { return }
+            switch current {
+            case Self.markerNamePath:
+                pendingMarker?.name = Self.trimmed(text)
+            case Self.markerFramePath:
+                pendingMarker?.frame = text.flatMap(Self.number)
+            case Self.markerPath:
+                if let frame = pendingMarker?.frame, frame >= 0, markers.count < Self.maximumMarkers {
+                    markers.append(AudioFileInfo.Marker(name: pendingMarker?.name ?? "", frame: frame))
+                }
+                pendingMarker = nil
+            default:
+                break
+            }
         }
 
         /// The facts as an `AudioFileInfo`, or nil when any is missing or
@@ -212,7 +270,8 @@ struct AudioFileInfo: Equatable, Sendable {
                 duration: duration,
                 bitsPerSample: bits.flatMap { $0 > 0 ? $0 : nil },
                 isFloat: isFloat,
-                hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"])
+                hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"]),
+                markers: markers
             )
         }
 
