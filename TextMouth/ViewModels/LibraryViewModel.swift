@@ -482,6 +482,9 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, the other small files it opens with that are
         // only in the cloud come down now, without holding anything back.
         fetchLaunchFilesInBackground()
+        // In a cloud library, a conflict copy a sync service set aside of
+        // the index or a record is reported, once (Phase 0, compare0).
+        reportConflictCopiesInBackground()
     }
 
     /// What follows the startup maintenance, once every pass that rebuilds

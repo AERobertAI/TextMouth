@@ -397,6 +397,9 @@ final class LogContentPolicyTests: XCTestCase {
         // Search Library's background preparation (November 13, 2026): how a pass ended, with its counts
         // and seconds.
         "LIBRARY_SEARCH_PREPARATION",
+        // Compare Libraries (November 14, 2026): how many differences a comparison found and how many files it
+        // could not read; and a cloud drive's conflict copy of an index or a record, by kind and file name.
+        "LIBRARY_COMPARED", "CONFLICT_COPY_FOUND",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

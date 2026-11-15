@@ -757,6 +757,13 @@ enum MachineLocalPaths {
         root.appendingPathComponent("Keep Reading List Books.json", isDirectory: false)
     }
 
+    /// The conflict copies this Mac has told the listener about
+    /// (`ConflictCopyMemory`), each once: a choice of this Mac's own, since
+    /// another Mac sharing the library reports for itself.
+    static var conflictCopiesReported: URL {
+        root.appendingPathComponent("Conflict Copies Reported.json", isDirectory: false)
+    }
+
     /// The hidden staging folders data-directory moves have begun and not yet
     /// cleaned up (`MigrationStagingLeftovers`): a journal of this Mac's own,
     /// since the folders are on a volume that may be away, and a sweep at
