@@ -1,10 +1,10 @@
 # Feeds
-<!-- id: feeds; keys: ; src: -->
+<!-- id: feeds; keys: podcast, RSS, Atom, article feed, subscription, FeedCenter; src: TextMouth/Services/Feeds/FeedCenter.swift -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Feed records
-<!-- id: feed-records; keys: ; src: TextMouth/Models/Feed.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedCenter+DeleteFeed.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/LibraryViewModel+DeleteFeed.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/PersistenceFailureCenter.swift -->
+<!-- id: feed-records; keys: FeedRecord, FeedEvent, Feeds/<id>.json, podcast, subscription store, FeedPaths; src: TextMouth/Models/Feed.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedCenter+DeleteFeed.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/LibraryViewModel+DeleteFeed.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/Services/SavedFile.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
 Feed records (FR03): each subscription and the episodes and articles it keeps.
 
@@ -27,10 +27,9 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   A book without the feed's link, as an item moved into the library, stays.
 - How others observe it: FeedCenter republishes every change of the records and the fetch details, publishes the feeds refreshing (refreshingFeedIDs), and sends FeedEvent values (a subscription, a refresh's end, the end of a refresh of every feed, a download's start, end, failure, or cancelling (downloadCancelled(feedID:itemID:)), and a change of the List and download choice taking effect, itemPolicyApplied(global:feedIDs:)), which the interface reads (below).
   A record that can't be read is preserved beside itself (SavedFile.preserveUnusable, FEED_RECORD_UNREADABLE) and its feed left out; one only in the cloud is asked of the sync service and read at the next refresh of every feed (FEED_RECORD_IN_CLOUD).
-- Files: Models/Feed.swift, Models/FeedItem.swift, Services/Feeds/FeedStore.swift, Services/Feeds/FeedReconciler.swift, Services/Feeds/FeedCenter.swift, Services/Feeds/FeedCenter+DeleteFeed.swift, ViewModels/LibraryViewModel+Feeds.swift, ViewModels/LibraryViewModel+DeleteFeed.swift.
 
 ## This Mac's fetch details
-<!-- id: this-mac-fetch-details; keys: ; src: TextMouth/Services/Feeds/FeedFetchState.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
+<!-- id: this-mac-fetch-details; keys: ETag, Last-Modified, If-None-Match, 304, conditional request, machine-local; src: TextMouth/Services/Feeds/FeedFetchState.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 This Mac's fetch details.
 
@@ -42,10 +41,9 @@ This Mac's fetch details.
 - Who may write it: the refresher after each check, and subscribing.
   Unsubscribe keeps them, for Resubscribe's check (FR11's branch D); Delete Feed… removes them with the feed's record (FeedFetchStates.remove(_:), FR14).
 - How others observe it: the refresher's conditional requests, and FeedCenter.fetchState(of:).
-- Files: Services/Feeds/FeedFetchState.swift.
 
 ## A refresh
-<!-- id: refresh; keys: ; src: TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/Services/Feeds/FeedDates.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedDiscovery.swift, TextMouth/Services/Feeds/JSONFeedParser.swift, TextMouth/Services/Feeds/FeedJSON.swift, TextMouth/Resources/Info.plist, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
+<!-- id: refresh; keys: FeedRefresher, RSS, Atom, JSON Feed, Refresh All Feeds, App Transport Security, digest; src: TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedParser.swift, TextMouth/Services/Feeds/FeedDates.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedDiscovery.swift, TextMouth/Services/Feeds/JSONFeedParser.swift, TextMouth/Services/Feeds/FeedJSON.swift, TextMouth/Resources/Info.plist, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift -->
 
 A refresh.
 
@@ -64,10 +62,9 @@ A refresh.
   A feed that moved for good, by a permanent redirect or itunes:new-feed-url, is fetched from its new address from then on (FEED_MOVED).
   Each refresh ends in a FeedRefreshReport, and a refresh of every feed in a FeedRefreshSummary, which FeedCenter sends as events; each refresh's end (refreshEnded) then asks for a sweep of played downloads and a pass of the newest-N rule over its feed, which downloads what the feed's List and download choice keeps downloaded (below).
   The transfers and fetches wait on a FeedOnceContinuation (Services/Feeds/FeedNetwork.swift), resumed once only, by whichever comes first, the task's end or its cancel, since a CheckedContinuation resumed twice traps; a transfer or fetch cancelled before it begins throws its cancelled failure before any URLSession task exists (even offline), and one cancelled between the check and the delegate is caught by URLSessionTask.resumeUnlessCancelled(otherwise:), so a cancel in the turn a download starts never leaves FeedDownloadManager.run waiting for good.
-- Files: Services/Feeds/FeedRefresher.swift, Services/Feeds/FeedNetwork.swift, Services/Feeds/FeedParser.swift, Services/Feeds/FeedDates.swift, Services/Feeds/FeedReconciler.swift, Services/Feeds/FeedDiscovery.swift, Services/Feeds/JSONFeedParser.swift, Services/Feeds/FeedJSON.swift, Resources/Info.plist.
 
 ## Downloads
-<!-- id: downloads; keys: ; src: TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedTransfer.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift, TextMouth/Services/Feeds/FeedTextConverter.swift, TextMouth/Models/FeedBookLink.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Services/FileImportService.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/ImportStaging.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/App/QuitFinisher.swift -->
+<!-- id: downloads; keys: FeedDownloadManager, episode, enclosure, quit, Command-Q, partial download, queue; src: TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedTransfer.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift, TextMouth/Services/Feeds/FeedTextConverter.swift, TextMouth/Models/FeedBookLink.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Services/FileImportService.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Models/FeedItem.swift, TextMouth/Services/ImportStaging.swift, TextMouth/App/QuitFinisher.swift, TextMouth/Platform/macOS/Views/QuitNotice.swift -->
 
 Downloads.
 
@@ -100,10 +97,9 @@ Downloads.
     The work ends before the quit's last pass through the questions of step 0 and the unsaved-changes guard, so a Cancel there (a failed write during the wait, or a library move, a take, or an editor's edits that began meanwhile) leaves TextMouth open with isStoppedForQuit true for the rest of the session.
     Each download is listed for the next launch, which asks for it again.
     Nothing resumes them in the meantime, and FeedQuitHold's comment says so.
-- Files: Services/Feeds/FeedDownloadManager.swift, Services/Feeds/FeedDownloadManager+PartialDownloads.swift, Services/Feeds/FeedTransfer.swift, Services/Feeds/FeedEpisodeImporter.swift, Services/Feeds/FeedTextConverter.swift, Models/FeedBookLink.swift, Models/BookInfo.swift, Models/Book.swift, Services/FileImportService.swift, Platform/macOS/App/AppDelegate.swift.
 
 ## Feed downloads' progress
-<!-- id: feed-downloads-progress; keys: ; src: TextMouth/ViewModels/FeedDownloadProgress.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/Models/TimeLeftEstimate.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadProgress.swift, TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Views/ContentView.swift, TextMouth/Models/FeedItem.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/ImportProgress.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift -->
+<!-- id: feed-downloads-progress; keys: FeedDownloadProgress, progress bar, time left, Cancel Feed Downloads, VoiceOver progress, queue; src: TextMouth/ViewModels/FeedDownloadProgress.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/Models/TimeLeftEstimate.swift, TextMouth/Models/ImportProgressWording.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadProgress.swift, TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Views/ContentView.swift, TextMouth/Models/FeedItem.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/ViewModels/ImportProgress.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Views/Library/LibraryView.swift -->
 
 The feed downloads' progress (FR10's feed half): what each Library window's feed downloads section shows, and what VoiceOver hears of a run of feed downloads.
 
@@ -128,10 +124,9 @@ The feed downloads' progress (FR10's feed half): what each Library window's feed
   A run the newest-N rule began, which nobody heard begin, is announced once as it has lasted ImportProgress.announcedAfter, at medium priority, with the downloads under way and the time left (FeedDownloadProgressWording.underWay(_:secondsLeft:); announceStartIfDue(at:), the run's first download begun byItself), unless a quarter was heard or Cancel pressed first (feed review item 17).
   A run that has lasted ImportProgress.announcedAfter, 10 seconds, announces each quarter of its downloads once, at medium priority, and its end, naming the download of a run of one, unless Cancel was pressed or nothing downloaded, failed, or waits; what Cancel stopped is said by the window it was pressed in, once its focus has moved (above): the downloads stopped, the download that finishes all the same, and when TextMouth downloads again by itself (FeedDownloadProgressWording.retryAfterCancel), which the Cancel button's hint says too.
   ShortcutAction.speakDownloadProgress, under Information with no default key, working in every window but an audio editor's, and Library > Speak Download Progress post speakDownloadProgress, which the library model hears (observeDownloadProgressRequests()) and answers with FeedDownloadManager.spokenProgress(), which counts the waits anew first, since a wait for room lives only in its item's state.
-- Files: ViewModels/FeedDownloadProgress.swift, Models/FeedDownloadProgressWording.swift, Models/TimeLeftEstimate.swift, Models/ImportProgressWording.swift, Services/Feeds/FeedDownloadManager.swift, ViewModels/LibraryViewModel+FeedDownloadProgress.swift, Views/Feeds/FeedDownloadProgressSection.swift, Views/ContentView.swift, Models/FeedItem.swift, Models/KeyboardShortcut.swift, App/MenuCommands.swift.
 
 ## Played downloads and their deletion
-<!-- id: played-downloads-their-deletion; keys: ; src: TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouthProductionTests/FeedItemRecordTests.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/FeedBookUse.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/StorageGeneration.swift -->
+<!-- id: played-downloads-their-deletion; keys: playedDate, downloadDeletedDate, Delete Download, delete after, bookDidFinish, Trash; src: TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouthProductionTests/FeedItemRecordTests.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Models/FeedBookUse.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/TranscribedBooks.swift -->
 
 Played downloads, and their deletion.
 
@@ -147,4 +142,3 @@ Played downloads, and their deletion.
   The record of a deleted item the feed no longer lists is kept, deleted, for FeedReconciler.deletedItemRetention, 90 days from its deletion, decided by keepsUnlisted(_:at:keepingEveryDeletion:); when a read lists none of the record's items, every deleted record is kept whatever its age, so one empty or cut-short channel forgets no deletion.
   The retention counts from the deletion, not from when the feed last listed the item, which would need a date in the feed index.
   FeedDownloadManager.cancel(_:of:) returns whether the download stopped or finishes, .finishing for the one whose book is already being added (isAddingToLibrary), and FeedCenter.cancelDownload(_:of:) makes the item the listener's only when it stopped; download(_:of:origin:opening:startingNext:) merges a new ask into the download under way only while its task is not cancelled, and otherwise queues a fresh request, which run's catch leaves alone.
-- Files: Services/Feeds/FeedLifecycle.swift, Services/Feeds/FeedItemPackage.swift, Services/ReadingStatsService.swift, ViewModels/LibraryViewModel+Feeds.swift, ViewModels/BookExportModel.swift, TextMouthProductionTests/FeedItemRecordTests.swift.
