@@ -30,7 +30,7 @@ And when others connect, as in "USB Microphone was connected; choose it in the M
 ### Title and folder
 <!-- id: new-recording-title-folder; keys: default title, timestamp, Save in, destination folder; src: TextMouth/Views/Recording/RecordingWording.swift, TextMouth/ViewModels/RecordingWindowModel.swift -->
 
-Title starts as "Recording" followed by the date and time, as in "Recording 2026-10-04 06:30".
+Title starts as "Recording" followed by the date and time, as in "Recording YYYY-MM-DD HH:MM", the year, month, day, hour, and minute.
 Save in chooses the library folder, the top of the library, Library, by default.
 
 ## Recording
@@ -115,14 +115,14 @@ A save that fails keeps TextMouth open, the window saying why, and the next quit
 <!-- id: new-recording-recovered-list; keys: crash recovery, leftover take, forced quit, Recordings folder; src: TextMouth/Services/RecordingTake.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift -->
 
 A recording cut off by a crash, a forced quit, or a power cut stays in this Mac's Recordings folder, readable up to where it stopped, as does one whose save failed after its window closed.
-The New Recording window lists them first, under Recovered recordings, each by when it was recorded and how long it lasts, as in "Recording of October 4, 2026 at 6:30 AM, 1 minute, 4 seconds", and says how many it kept when it first lists them.
+The New Recording window lists them first, under Recovered recordings, each by when it was recorded and how long it lasts, as in "Recording of", the date and time, and the length, "1 minute, 4 seconds", and says how many it kept when it first lists them.
 When TextMouth starts and finds any, it opens the window on them, VoiceOver starting on the first one's Save as Audiobook.
 A recording an audio editor is making is never listed.
 
 ### Saving or discarding a recovered recording
 <!-- id: new-recording-recovered-save-discard; keys: Save as Audiobook, Discard, empty recording, unsaved take; src: TextMouth/Services/RecordingTake.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWording.swift -->
 
-Save as Audiobook saves one as Stop does, titled for when it was recorded, as in "Recording 2026-10-04 06:30", in the Save in folder; Discard deletes it.
+Save as Audiobook saves one as Stop does, titled for when it was recorded, as in "Recording YYYY-MM-DD HH:MM", in the Save in folder; Discard deletes it.
 Each button's label names its recording; one that holds no sound can only be discarded, and both wait while a recording is under way, being saved, or waiting to be saved.
 Nothing is deleted on its own: a recording neither saved nor discarded is listed again next time.
 
@@ -133,7 +133,7 @@ Nothing is deleted on its own: a recording neither saved nor discarded is listed
 <!-- id: new-recording-original-policy; keys: recordingOriginalPolicy, recordingOriginalDays, Storage settings, Audio Editing, undo edits; src: TextMouth/Models/AudioOriginalPolicy.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Services/RecordingPreferences.swift -->
 
 A recording is first made as its original take, lossless audio of about 345 megabytes an hour, from which the audiobook's audio is encoded.
-What happens to it follows the original audio policy of Editing audio, below.
+What happens to it follows the original audio policy of [Editing audio](editing-audio.md).
 Original audio, in the Storage tab's Audio Editing group, offers Keep, Don't keep, and Keep for a number of days, the default, with Days to keep an original, from 1 to 365, 1 by default, counted from when the recording was saved, or from its last edit.
 A change applies to the originals already kept too.
 
