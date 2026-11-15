@@ -753,6 +753,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026.
 - **Opt-in sweeps, the textfmt team's run of the import fuzz:**
   The textfmt team's run over those 21 made 351 damaged copies, and no check broke.
+- **Mac braille table check tests, the first failure:**
+  The test passed in the 13 train runs before it first failed, in train 1104-0000, in code that no change had touched.
 
 ## From Tests of the markup guard, Kindle, and MOBI readers
 
