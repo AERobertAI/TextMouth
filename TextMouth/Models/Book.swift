@@ -1776,8 +1776,9 @@ struct Book: Identifiable, Codable, Hashable {
     /// `id`), read without downloading anything. Nil for a book without a
     /// package, and when the package holds no record, one that cannot be
     /// read, one only in the cloud, or another book's, as an old shared
-    /// package's may. The reader weighs its place against the row's as the
-    /// book opens (`ReaderViewModel.readContent(of:audioTagsFrom:readingTexts:)`,
+    /// package's may. The load that opens a book weighs the reading state it
+    /// holds against the reader's copy of the book
+    /// (`ReaderViewModel.readContent(of:audioTagsFrom:readingTexts:weighingRecordedState:)`,
     /// risk 2). Blocks on the file, so call it off the main thread.
     func ownStoredRecord() -> BookInfo? {
         guard !tmbDirectoryName.isEmpty else { return nil }
