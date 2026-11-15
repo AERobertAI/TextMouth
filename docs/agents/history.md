@@ -733,3 +733,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - The soft hyphen's effects (Search in Book, braille, speech) were measured on November 9, 2026.
 - XMLEscaping.markup(_:) dates from November 13, 2026.
 - MarkdownNesting, the first layer of the guard on Markdown's nesting, dates from November 13, 2026.
+
+## From Shared helpers: readers and markup guards
+
+- MarkupGuard's four limits were set on November 7, 2026.

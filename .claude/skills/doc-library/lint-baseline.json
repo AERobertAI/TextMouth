@@ -11,7 +11,7 @@
     "docs/architecture/platforms-phone-interface.md": {"line-length": 1},
     "docs/architecture/platforms.md": {"line-length": 9},
     "docs/architecture/reading-a-book.md": {"line-length": 17},
-    "docs/architecture/shared-helpers-parsers.md": {"date": 1, "line-length": 4},
+    "docs/architecture/shared-helpers-parsers.md": {"line-length": 4},
     "docs/architecture/shared-helpers-values.md": {"line-length": 18},
     "docs/architecture/shared-helpers.md": {"line-length": 22},
     "docs/architecture/state/audio-edits.md": {"line-length": 26},
