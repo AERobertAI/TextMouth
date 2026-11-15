@@ -10,7 +10,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: reader-markup-guard; keys: angle quotation marks, opening tag, closing tag, less-than sign, greater-than sign, ampersand; src: TextMouth/Services/SpeechMarkupGuard.swift, TextMouth/Services/SpeechService.swift -->
 
 A book's text can hold what looks like markup, such as the <sm> and </sm> one novel marks its silent messages with, and the speech engine of macOS 26.3.1 takes such tags for speech markup: it skipped the rest of a passage after an opening tag, and refused a passage holding a closing tag alone, after which the book's speech stopped and couldn't be started again.
-Since October 7, 2026, TextMouth hands the voice each tag with its two angle brackets changed to single angle quotation marks, which the engine doesn't take for markup, so the brackets are silent and what is between them, a tag's name included, is spoken.
+TextMouth hands the voice each tag with its two angle brackets changed to single angle quotation marks, which the engine doesn't take for markup, so the brackets are silent and what is between them, a tag's name included, is spoken.
 The engine takes for an opening tag any name of letters, figures, or symbols between angle brackets, with no space or slash inside it and spaces around it or not, such as <sm>, < sm >, <5>, <...>, <=>, or <*>; such a name followed by name=value attributes, as in <a href="x">; and empty brackets, <> or < >.
 Each of these made it skip the rest of a passage without a sound, and TextMouth silences the brackets of every one, and of every closing tag, such as </sm>.
 A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > z", is still read aloud, except in audio TextMouth prepared again with every angle bracket silent (below), an ampersand is left for the voice, which reads it as "and", and the text on screen and on a braille display is unchanged.
@@ -18,7 +18,7 @@ A less-than or greater-than sign that isn't part of a tag, as in "x < y and y > 
 ### A null character
 <!-- id: reader-null-character; keys: U+0000, NUL, control character, Where Am I, Speak Info; src: TextMouth/Services/SpeechMarkupGuard.swift -->
 
-A null character (U+0000), which a badly converted file can hold, made the speech engine drop the rest of a passage without a sound, and without a refusal TextMouth could hear; since October 10, 2026 TextMouth hands the voice a space in its place.
+A null character (U+0000), which a badly converted file can hold, made the speech engine drop the rest of a passage without a sound, and without a refusal TextMouth could hear; TextMouth hands the voice a space in its place.
 No other control character dropped anything.
 Where Am I?, which can quote the book, and Speak Info, which speaks titles, are spoken the same way.
 

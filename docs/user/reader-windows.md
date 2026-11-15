@@ -39,7 +39,7 @@ Full Summary, then, while the window's book holds the media controls (below), Re
 ## Speak Info
 <!-- id: reader-windows-speak-info; keys: summary, Shift-Command-I, SummaryPress, announcement, press twice; src: TextMouth/ViewModels/ReaderViewModel+SpeakInfo.swift, TextMouth/Models/SummaryPress.swift, TextMouth/Models/LibraryInfoWording.swift -->
 
-Speak Info, Shift-Command-I, speaks this window's book's brief summary in the same words the Library's Speak Info says for its row, and Shift-Command-I pressed twice quickly speaks its full summary (since October 17, 2026).
+Speak Info, Shift-Command-I, speaks this window's book's brief summary in the same words the Library's Speak Info says for its row, and Shift-Command-I pressed twice quickly speaks its full summary.
 In a reader it is a VoiceOver announcement, made while the book goes on playing, so with VoiceOver off it says nothing; it has no menu item here, since the Library menu is hidden in a reader.
 
 ## The Navigate menu

@@ -56,7 +56,7 @@ Headings are one concept for any book: where the next heading of any level begin
 End of heading pauses playback where the heading playing ends: within a chapter, where the next heading begins, with the cursor put back at that heading for Play to start it; at a chapter's end, when the next chapter opens with the next heading, as every audiobook chapter does, with the reader waiting at the start of that chapter, which Play starts; and at the book's end, which ends the last heading.
 A timer for the end of the heading set where there is nothing to read, as on a book's cover, waits for the end of the heading that playback starts in, so Play does not stop in silence at once.
 A next chapter that has text before its first heading, or no heading at all, goes on under the same heading, so playback goes on into it.
-End of heading took the place of End of chapter on October 6, 2026, and Restart Sleep Timer after a timer saved as End of chapter, or as End of document, arms End of heading.
+Restart Sleep Timer after a timer saved as End of chapter, or as End of document, arms End of heading.
 VoiceOver says "Sleep timer: stops at the end of this heading." as the timer is set, reads its status the same way in the sheet and in the reader, and says "Sleep timer expired at the end of the heading.
 Playback paused." where it stops; stopped at the book's end, the reader says instead that the book finished and why nothing follows, as in "Finished: Moby-Dick.
 Next book not started because of the sleep timer."
@@ -71,7 +71,7 @@ End of book pauses playback when the book ends, before the book starts again or 
 
 An audiobook fades out toward a stop at a chapter's end over the sleep timer's Fade out time, in Playback settings, when one is set; speech is not faded toward such a stop, and an m4b's chapter marker inside one file stops the timer a moment past the marker, without a fade, the cursor put back at the marker.
 When a timer counting minutes runs out and a Fade out time is set, playback fades out over that time before it pauses: an audiobook in its own audio, speech playing from the audio TextMouth prepared in that audio, and speech read straight from the voice in ever quieter stretches, the voice starting again from the word it had reached.
-Since October 10, 2026, speech read straight from the voice no longer moves to the prepared audio as the fade begins, a move that could repeat or skip a few words.
+Speech read straight from the voice does not move to the prepared audio as the fade begins, a move that could repeat or skip a few words.
 
 ### One sleep timer for each window
 <!-- id: reader-one-sleep-timer-each-window; keys: SleepTimerRegistry, second window, timer per window, window's own timer; src: TextMouth/Services/SleepTimerRegistry.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Models/SleepTimerHandOverWording.swift -->
@@ -96,6 +96,6 @@ In the sheet, the custom timer's field and its Adjust minutes stepper both say t
 ## Stop and Release Media Controls
 <!-- id: reader-stop-release-media-controls; keys: stop command, chapter download, countdown, speech engine word past end; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Services/NowPlayingService.swift -->
 
-Stop, and Release Media Controls, which stops the book, end the wait of a chapter downloading from the cloud, and Play then waits for the chapter again, where Play did nothing until the download ended and then played nothing.
+Stop, and Release Media Controls, which stops the book, end the wait of a chapter downloading from the cloud, and Play then waits for the chapter again.
 A sleep timer of minutes stops counting down at every stop, as it does at a pause, and counts on only when playback does.
-A voice that reports a word past the end of its text is ignored, with the cursor staying where it was, where it ended TextMouth.
+A voice that reports a word past the end of its text is ignored, with the cursor staying where it was.

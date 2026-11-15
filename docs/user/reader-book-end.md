@@ -117,7 +117,7 @@ It goes on at a book's end, with Next in Reading List and Previous in Reading Li
 ## A one-file audiobook's last chapter
 <!-- id: reader-one-file-audiobook-last-chapter; keys: m4b, chapter markers, finished early, last chapter, tenth of a second; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Models/EndOfBookRule.swift -->
 
-A one-file audiobook with chapter markers plays its last chapter to its file's end before it is announced finished, where it used to be finished up to a tenth of a second for each chapter early, with its last seconds unplayed.
+A one-file audiobook with chapter markers plays its last chapter to its file's end before it is announced finished.
 
 ## A finished book
 <!-- id: reader-finished-book; keys: Finished, Starting again, Play on a finished book, 100 percent, end position, Go to Percent; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/EndOfBookRule.swift -->
