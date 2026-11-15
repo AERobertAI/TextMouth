@@ -21,7 +21,7 @@
     "docs/architecture/state/feeds-interface.md": {"date": 2, "line-length": 46},
     "docs/architecture/state/feeds.md": {"date": 1, "line-length": 41},
     "docs/architecture/state/hosted-test-sandbox.md": {"date": 1, "line-length": 21, "user-quote": 1},
-    "docs/architecture/state/imports-audio.md": {"date": 1, "line-length": 27},
+    "docs/architecture/state/imports-audio.md": {"line-length": 27},
     "docs/architecture/state/imports-braille-tables.md": {"date": 5, "line-length": 34},
     "docs/architecture/state/imports-braille.md": {"date": 4, "line-length": 29},
     "docs/architecture/state/imports-daisy.md": {"date": 1, "line-length": 3},
