@@ -165,6 +165,36 @@ final class CueSheetArrangementTests: XCTestCase {
         ])
     }
 
+    /// The names a sheet skipped are told as a playlist's are, except that
+    /// one outside the folder is outside the cue sheet's folder, not a
+    /// playlist's; a playlist's own words are as they were.
+    func testTheNoticeNamesTheCueSheetsFolder() {
+        let skipped = [
+            M3UPlaylist.Skipped(location: "../outside.wav", reason: .outsideFolder),
+            M3UPlaylist.Skipped(location: "notes.wav", reason: .missing),
+            M3UPlaylist.Skipped(location: "album.flac", reason: .listedBefore),
+        ]
+        let arrangement = CueSheetArrangement(
+            title: nil, author: nil, segments: [], files: [],
+            skipped: [CueSheetArrangement.SkippedNames(sheet: "disc.cue", entries: skipped)],
+            unusedSheets: [CueSheetArrangement.UnusedSheet(name: "Extra/other.cue", reason: .unreadable)]
+        )
+
+        XCTAssertEqual(
+            arrangement.notice,
+            "TextMouth skipped 3 entries of “disc.cue”: “../outside.wav” (outside the cue sheet's folder), "
+                + "“notes.wav” (not found), and “album.flac” (listed before). "
+                + "TextMouth could not read the cue sheet “Extra/other.cue”, so its headings were not used."
+        )
+        XCTAssertEqual(M3UPlaylist.SkipReason.outsideFolder.words(listedIn: "cue sheet"), "outside the cue sheet's folder")
+        XCTAssertEqual(M3UPlaylist.SkipReason.outsideFolder.words, "outside the playlist's folder")
+        XCTAssertEqual(M3UPlaylist.SkipReason.missing.words(listedIn: "cue sheet"), M3UPlaylist.SkipReason.missing.words)
+        XCTAssertEqual(
+            PlaylistImportWording.notice(playlistName: "mix.m3u", skipped: Array(skipped.prefix(1))),
+            "TextMouth skipped 1 entry of “mix.m3u”: “../outside.wav” (outside the playlist's folder)."
+        )
+    }
+
     /// A sheet of one file whose name and stem are both gone falls back to
     /// an audio file of the sheet's own stem ("Album.cue" naming
     /// "CDImage.wav" beside "Album.flac"); a sheet of two files does not.

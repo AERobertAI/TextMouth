@@ -65,11 +65,15 @@ struct CueSheetArrangement: Equatable, Sendable {
 
     /// What the import tells of the sheets: the names each sheet used
     /// skipped (`PlaylistImportWording.notice`, as a playlist's import tells
-    /// its own), then each sheet not used, with why; nil when there is
-    /// nothing to tell.
+    /// its own, a name outside the folder "outside the cue sheet's folder"),
+    /// then each sheet not used, with why; nil when there is nothing to
+    /// tell. (A label file names no file, so only a cue sheet skips names.)
     var notice: String? {
-        let sentences = skipped.compactMap { PlaylistImportWording.notice(playlistName: $0.sheet, skipped: $0.entries) }
-            + unusedSheets.map { CueSheetWording.sheetUnused($0.name, kind: $0.kind, because: $0.reason) }
+        let list = CueSheetWording.ListKind.cueSheet.name
+        let skippedNames = skipped.compactMap {
+            PlaylistImportWording.notice(playlistName: $0.sheet, skipped: $0.entries, listedIn: list)
+        }
+        let sentences = skippedNames + unusedSheets.map { CueSheetWording.sheetUnused($0.name, kind: $0.kind, because: $0.reason) }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 
@@ -212,15 +216,15 @@ struct CueSheetArrangement: Equatable, Sendable {
     /// with no other track of the folder.
     /// - Throws: what reading the sheet throws (`CueSheet.read(at:)`);
     ///   `CueSheetError.noTracks` for a sheet that places no audio track;
-    ///   `PlaylistImportError.noTrack` naming the names skipped when none is
-    ///   a file TextMouth can import, as a playlist's import refuses one;
+    ///   `CueSheetError.noAudio` naming the names skipped when none is a
+    ///   file TextMouth can import, as a playlist's import refuses one;
     ///   and `CueSheetError.timesPastAudio` when a track runs past the end
     ///   of its file as `measure` measures it.
     static func arranging(sheetAt sheetURL: URL, measure: Measure) throws -> CueSheetArrangement {
         let sheet = try CueSheet.read(at: sheetURL)
         guard !sheet.tracks.isEmpty else { throw CueSheetError.noTracks }
         let made = sections(of: sheet, at: sheetURL, base: sheetURL.deletingLastPathComponent())
-        guard !made.segments.isEmpty else { throw PlaylistImportError.noTrack(skipped: made.skipped) }
+        guard !made.segments.isEmpty else { throw CueSheetError.noAudio(skipped: made.skipped) }
         guard fits(made.segments, durations: measure(made.files)) else { throw CueSheetError.timesPastAudio }
         return CueSheetArrangement(
             title: made.title,

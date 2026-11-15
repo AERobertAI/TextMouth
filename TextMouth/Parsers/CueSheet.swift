@@ -9,16 +9,24 @@ enum CueSheetError: LocalizedError, Equatable {
     case tooLarge(fileName: String)
     /// The sheet places no audio track: none has an `INDEX 01` in a file.
     case noTracks
+    /// No file the sheet names is audio inside its own folder that
+    /// TextMouth can import. The names skipped are told, so the listener
+    /// hears why each was left out, as a playlist's refusal tells them.
+    case noAudio(skipped: [M3UPlaylist.Skipped])
     /// The sheet's tracks run past the end of the audio it names.
     case timesPastAudio
 
-    /// The sentence for the refusal, from `CueSheetWording`.
+    /// The sentence for the refusal, from `CueSheetWording`, or, for the
+    /// names skipped, the playlist's words naming the cue sheet's folder
+    /// (`PlaylistImportWording.noTrack(skipped:listedIn:)`).
     var errorDescription: String? {
         switch self {
         case let .tooLarge(fileName):
             return CueSheetWording.tooLarge(fileName: fileName)
         case .noTracks:
             return CueSheetWording.noTracks
+        case let .noAudio(skipped):
+            return PlaylistImportWording.noTrack(skipped: skipped, listedIn: CueSheetWording.ListKind.cueSheet.name)
         case .timesPastAudio:
             return CueSheetWording.timesPastAudio
         }

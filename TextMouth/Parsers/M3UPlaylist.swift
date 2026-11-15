@@ -219,9 +219,17 @@ extension M3UPlaylist {
 
         /// The reason as a sentence part a listener hears after the entry's name.
         var words: String {
+            words(listedIn: PlaylistImportWording.playlistKind)
+        }
+
+        /// The reason as a sentence part a listener hears after the name of
+        /// an entry of a list of `kind` ("playlist", or "cue sheet" for the
+        /// files a cue sheet names, FMT24): an entry outside the folder is
+        /// outside that list's own.
+        func words(listedIn kind: String) -> String {
             switch self {
             case .webAddress: return "a web address"
-            case .outsideFolder: return "outside the playlist's folder"
+            case .outsideFolder: return "outside the \(kind)'s folder"
             case .missing: return "not found"
             case .folder: return "a folder"
             case .notAudio: return "not an audio file"

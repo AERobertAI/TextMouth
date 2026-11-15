@@ -134,6 +134,28 @@ final class CueSheetImportTests: XCTestCase {
         XCTAssertEqual(try libraryFolderEntries(), [])
     }
 
+    /// A sheet whose one file lies outside its folder, with no file of that
+    /// stem beside it, is refused as a playlist of such a file is, the
+    /// reason naming the cue sheet's folder; the file outside is never read.
+    func testASheetOfAFileOutsideItsFolderIsRefusedNamingTheSheetsFolder() throws {
+        let elsewhere = sources.appendingPathComponent("Elsewhere", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: elsewhere.appendingPathComponent("far.wav"), duration: 2)
+        let sheet = try write("FILE \"../Elsewhere/far.wav\" WAVE\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n", to: "Sheet/outside.cue")
+
+        let failure = try refusal(of: sheet)
+
+        XCTAssertEqual(
+            failure.underlying as? CueSheetError,
+            .noAudio(skipped: [M3UPlaylist.Skipped(location: "../Elsewhere/far.wav", reason: .outsideFolder)])
+        )
+        XCTAssertEqual(
+            failure.errorDescription,
+            "Could not import “outside.cue”. Reading the file failed: It names no audio file in its own folder that "
+                + "TextMouth can import. It skipped 1 entry: “../Elsewhere/far.wav” (outside the cue sheet's folder)."
+        )
+        XCTAssertEqual(try libraryFolderEntries(), [])
+    }
+
     /// A folder named like a sheet is no sheet to the import, which takes
     /// it for the folder it is; a file of the extension in any case is one.
     func testOnlyAFileNamedLikeASheetIsOne() throws {

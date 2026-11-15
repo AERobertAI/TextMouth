@@ -34,6 +34,11 @@ enum PlaylistImportWording {
     /// The most skipped entries a sentence names; the rest are counted.
     static let namedLimit = 10
 
+    /// What a skipped entry's reason calls a playlist ("outside the
+    /// playlist's folder", `M3UPlaylist.SkipReason.words(listedIn:)`); a cue
+    /// sheet's names are told as "cue sheet" instead (FMT24).
+    static let playlistKind = "playlist"
+
     /// The refusal of an HLS stream.
     static let streaming = "It is a streaming playlist for audio on the web, which TextMouth does not import."
 
@@ -72,18 +77,28 @@ enum PlaylistImportWording {
     static let onlyWebAddresses = "It lists only web addresses, and TextMouth imports only files on this Mac."
 
     /// The refusal of a playlist with no track left, followed, when entries
-    /// were skipped, by what became of them.
-    static func noTrack(skipped: [M3UPlaylist.Skipped]) -> String {
+    /// were skipped, by what became of them. `kind` names the list in a
+    /// reason (`M3UPlaylist.SkipReason.words(listedIn:)`): "playlist", or
+    /// "cue sheet" for a cue sheet's files (FMT24).
+    static func noTrack(
+        skipped: [M3UPlaylist.Skipped],
+        listedIn kind: String = PlaylistImportWording.playlistKind
+    ) -> String {
         let refusal = "It names no audio file in its own folder that TextMouth can import."
         guard !skipped.isEmpty else { return refusal }
-        return "\(refusal) It skipped \(entries(skipped.count)): \(skippedList(skipped))."
+        return "\(refusal) It skipped \(entries(skipped.count)): \(skippedList(skipped, listedIn: kind))."
     }
 
     /// The notice of a playlist that imported with entries left out, naming
-    /// the playlist; nil when none was skipped.
-    static func notice(playlistName: String, skipped: [M3UPlaylist.Skipped]) -> String? {
+    /// the playlist; nil when none was skipped. `kind` names the list in a
+    /// reason, as for `noTrack(skipped:listedIn:)`.
+    static func notice(
+        playlistName: String,
+        skipped: [M3UPlaylist.Skipped],
+        listedIn kind: String = PlaylistImportWording.playlistKind
+    ) -> String? {
         guard !skipped.isEmpty else { return nil }
-        return "TextMouth skipped \(entries(skipped.count)) of “\(playlistName)”: \(skippedList(skipped))."
+        return "TextMouth skipped \(entries(skipped.count)) of “\(playlistName)”: \(skippedList(skipped, listedIn: kind))."
     }
 
     /// `count` entries: "1 entry", "2 entries".
@@ -126,17 +141,18 @@ enum PlaylistImportWording {
     }
 
     /// The skipped entries in playlist order, each as its (shortened)
-    /// location in curly quotes and its reason in parentheses, listed as a
-    /// sentence lists them. At most `namedLimit` are named, and only while
-    /// the named entries stay within `listLimit` characters; "and 2 more"
-    /// counts the rest. The first entry is always named.
-    private static func skippedList(_ skipped: [M3UPlaylist.Skipped]) -> String {
+    /// location in curly quotes and its reason in parentheses, the list
+    /// named as `kind`, listed as a sentence lists them. At most
+    /// `namedLimit` are named, and only while the named entries stay within
+    /// `listLimit` characters; "and 2 more" counts the rest. The first entry
+    /// is always named.
+    private static func skippedList(_ skipped: [M3UPlaylist.Skipped], listedIn kind: String) -> String {
         var items: [String] = []
         var length = 0
         // Only the first `namedLimit` entries are ever looked at, however
         // many the playlist skipped.
         for entry in skipped.prefix(namedLimit) {
-            let item = "“\(shortened(entry.location))” (\(entry.reason.words))"
+            let item = "“\(shortened(entry.location))” (\(entry.reason.words(listedIn: kind)))"
             // Two characters for the ", " that joins it to the one before.
             if !items.isEmpty, length + item.count + 2 > listLimit { break }
             items.append(item)
