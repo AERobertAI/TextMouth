@@ -4,7 +4,8 @@ A page that is split, merged, or reflowed must hold the same words in the same o
 ``words`` reduces a page to its words (leaving out what a rework may change: front
 matter, headings, markers, list and quote markers, white space), ``read_version``
 reads a page from the working tree or from a git ref, and ``compare`` walks two word
-lists once and says where they first differ.
+lists once and says where they first differ. A loose reading (``loose=True``) compares
+each prose word without its case and end punctuation, and keeps code as written.
 
 Only the standard library is used, and a page is read only from inside the repository.
 """
@@ -38,17 +39,35 @@ _ITEM_KIND = "list-item"
 # white space (or the line's end). Applied repeatedly, it strips ``> - 1. text`` down to ``text``.
 _LEADING_MARKER = re.compile(r"[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$))")
 
+# The block kinds whose words are prose, so that a loose reading may change their case and end
+# punctuation. Every other kind (code, table, html, rule) is compared as written.
+_PROSE_KINDS = frozenset({"paragraph", "list-item", "list-para", "quote"})
+# What a loose reading strips from both ends of a word: ``.,;:!?()[]"'`` and the curly quotes.
+_END_PUNCTUATION = frozenset(".,;:!?()[]\"'\u2018\u2019\u201c\u201d")
+# The dashes that, left alone in a word, make it only punctuation (a lone ``-`` or ``\u2014``).
+_DASHES = frozenset("-\u2013\u2014")
+
 # How many words of context a difference shows on each side of the differing word.
 CONTEXT_WORDS = 8
 
 
 @dataclass(frozen=True)
 class Word:
-    """One word of a page: its text, the file it came from, and its (1-based) line there."""
+    """One word of a page: its text, the file it came from, and its (1-based) line there.
+
+    ``key`` is what the word is compared by when it differs from ``text`` (a loose
+    reading sets it); ``same_as`` gives the one to compare.
+    """
 
     text: str
     source: str      # the file (or REF:PATH) it came from
     line: int
+    key: Optional[str] = None
+
+    @property
+    def same_as(self) -> str:
+        """What this word is compared by: its ``key`` when it has one, else its text."""
+        return self.text if self.key is None else self.key
 
 
 @dataclass(frozen=True)
@@ -82,16 +101,71 @@ def strip_leading_markers(line: str) -> str:
         line = line[match.end():]
 
 
+def code_mask(piece: str, open_run: int) -> Tuple[List[bool], int]:
+    """Which characters of ``piece`` are inline code, and the code span still open after it.
+
+    ``open_run`` is the length of the backtick run that opened a span in an earlier
+    piece of the same block (0 for none). A run of backticks opens a span; a later run
+    of the same length closes it (a run of another length is code). The backticks
+    themselves count as code. A span that never closes keeps the rest of the block
+    as code, which only makes the comparison stricter.
+    """
+    mask: List[bool] = []
+    index = 0
+    while index < len(piece):
+        if piece[index] != "`":
+            mask.append(open_run > 0)
+            index += 1
+            continue
+        # One whole run of backticks decides whether a span opens or closes.
+        end = index
+        while end < len(piece) and piece[end] == "`":
+            end += 1
+        length = end - index
+        mask.extend([True] * length)
+        if open_run == 0:
+            open_run = length
+        elif length == open_run:
+            open_run = 0
+        index = end
+    return mask, open_run
+
+
+def loose_key(piece: str, open_run: int) -> Tuple[Optional[str], int]:
+    """``(key, open code span)`` of a prose ``piece`` read loosely; the key is None for a punctuation-only word.
+
+    The key is the piece lowercased with the punctuation at both ends stripped, so
+    ``Word,`` and ``(word`` both give ``word`` while ``file.swift`` and ``don't`` stay
+    whole. Characters that are inline code (see ``code_mask``) are never lowercased
+    or stripped, so a split cannot change ``foo(bar:)`` or a path.
+    """
+    mask, open_run = code_mask(piece, open_run)
+    start, end = 0, len(piece)
+    # Strip only prose punctuation: the first code character on a side stops the stripping.
+    while start < end and not mask[start] and piece[start] in _END_PUNCTUATION:
+        start += 1
+    while end > start and not mask[end - 1] and piece[end - 1] in _END_PUNCTUATION:
+        end -= 1
+    key = "".join(char if is_code else char.lower()
+                  for char, is_code in zip(piece[start:end], mask[start:end]))
+    # What is left is only punctuation when it is empty or nothing but prose dashes.
+    if all(char in _DASHES and not is_code for char, is_code in zip(piece[start:end], mask[start:end])):
+        return None, open_run
+    return key, open_run
+
+
 def is_files_block(page: Page, block: Block) -> bool:
     """Whether ``block`` is a ``Files:`` list (continuation lines included)."""
     return block.kind in _FILES_KINDS and FILES_LINE.match(page.text(block.start, block.end)) is not None
 
 
-def page_words(page: Page, source: str, files_to_src: bool = False) -> List[Word]:
+def page_words(page: Page, source: str, files_to_src: bool = False, loose: bool = False) -> List[Word]:
     """The words of ``page``, as ``words`` describes, labelled with ``source``.
 
     Code blocks and tables keep every word as written, markers included. With
-    ``files_to_src`` a ``Files:`` block is left out too.
+    ``files_to_src`` a ``Files:`` block is left out too. With ``loose``, each prose
+    word carries a ``key`` (see ``loose_key``) and a word that is only punctuation is
+    left out; words in code blocks and tables, and inline code, stay exact.
     """
     found: List[Word] = []
     for block in page.blocks:
@@ -99,24 +173,34 @@ def page_words(page: Page, source: str, files_to_src: bool = False) -> List[Word
             continue
         if files_to_src and is_files_block(page, block):
             continue
+        prose = loose and block.kind in _PROSE_KINDS
+        # The inline code span left open by the previous word of this block (0 for none).
+        open_run = 0
         for number in range(block.start, block.end + 1):
             line = page.lines[number - 1]
             # Only the lines that can start with a marker lose it; a code line is left as written.
             if block.kind == _QUOTE_KIND or (block.kind == _ITEM_KIND and number == block.start):
                 line = strip_leading_markers(line)
-            found.extend(Word(piece, source, number) for piece in line.split())
+            for piece in line.split():
+                if not prose:
+                    found.append(Word(piece, source, number))
+                    continue
+                key, open_run = loose_key(piece, open_run)
+                if key is not None:
+                    found.append(Word(piece, source, number, key))
     return found
 
 
-def words(text: str, source: str, files_to_src: bool = False) -> List[Word]:
+def words(text: str, source: str, files_to_src: bool = False, loose: bool = False) -> List[Word]:
     """The words of the page ``text`` in order, as ``Word``s labelled with ``source``.
 
     Front matter, heading lines, marker lines, and blank lines add none; from every
     other line the leading list marker (``-``, ``*``, ``+``, ``1.``, ``1)``) and quote
     marker (``>``) are dropped, and the rest is split at white space. Code blocks and
     tables keep their words. With ``files_to_src``, ``Files:`` blocks add none either.
+    With ``loose``, see ``page_words``.
     """
-    return page_words(docmodel.parse(source, text), source, files_to_src)
+    return page_words(docmodel.parse(source, text), source, files_to_src, loose)
 
 
 def page_paths(page: Page) -> Tuple[List[str], List[str]]:
@@ -238,12 +322,13 @@ def _context(listed: List[Word], index: int) -> str:
 def compare(old: List[Word], new: List[Word]) -> Optional[Difference]:
     """The first difference between two word lists, or None when their texts are the same.
 
-    One walk over the shared length finds the first word that differs; when one list
-    is a prefix of the other, the difference is where the shorter one ends.
+    One walk over the shared length finds the first word that differs (by ``same_as``,
+    so a loose reading's keys); when one list is a prefix of the other, the difference
+    is where the shorter one ends.
     """
     shared = min(len(old), len(new))
     index = 0
-    while index < shared and old[index].text == new[index].text:
+    while index < shared and old[index].same_as == new[index].same_as:
         index += 1
     if index == shared and len(old) == len(new):
         return None
