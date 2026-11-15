@@ -35,7 +35,7 @@ The data directory itself can't move while any book is open.
 <!-- id: reader-playback-menu; keys: Play/Pause, skip, speed, navigation unit, copy position, menu bar; src: TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
 The Playback menu holds Play / Pause, Skip Forward and Skip Backward, Cycle Forward Navigation Unit and Cycle Backward Navigation Unit, Increase Speed and Decrease Speed, Where Am I? and Where Am I?
-Full Summary, then, while the window's book holds the media controls (below), Release Media Controls, and last Copy Reading Position (Shift-Command-P) and Search in Book (Command-F; see below).
+Full Summary, then, while the window's book holds the media controls (see [Release Media Controls](reader-media-and-sleep-timer.md#release-media-controls)), Release Media Controls, and last Copy Reading Position (Shift-Command-P) and Search in Book (Command-F; see below).
 
 ## Speak Info
 <!-- id: reader-windows-speak-info; keys: summary, Shift-Command-I, SummaryPress, announcement, press twice; src: TextMouth/ViewModels/ReaderViewModel+SpeakInfo.swift, TextMouth/Models/SummaryPress.swift, TextMouth/Models/LibraryInfoWording.swift -->
@@ -52,9 +52,9 @@ The Navigate menu holds:
 - Go Back, which in a reader returns to where the last jump began (see below),
 - and Go Forward,
 - Next Heading and Previous Heading,
-- Go to Page… (Pages, below),
-- Next in Reading List and Previous in Reading List (below),
-- Next in Folder and Previous in Folder (below),
+- Go to Page… (see [Pages in a reader](reader-pages.md)),
+- Next in Reading List and Previous in Reading List (see [The Reading List](reader-book-end.md#the-reading-list)),
+- Next in Folder and Previous in Folder (see [Next in Folder and Previous in Folder](reader-book-end.md#next-in-folder-and-previous-in-folder)),
 - Show Headings,
 - Show Sleep Timer,
 - and Book Info.

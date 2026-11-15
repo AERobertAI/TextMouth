@@ -10,7 +10,7 @@ When a book ends, TextMouth stops, starts the book again, or continues to the ne
 Four settings can decide, the first that applies winning:
 
 - First, a book read from the reading list follows the list instead (below).
-- Second, each book can override that choice in its own settings (above).
+- Second, each book can override that choice in its own settings (see [A book's own settings](reader-windows.md#a-books-own-settings)).
   The settings sheet's picker, When this book ends, which VoiceOver calls "End of book behavior for this book", names the choice in force, and names Continue to Next Book whether the book's feed or folder plays the book below or the one above.
   Use Global Default, which VoiceOver calls "Reset to global end-of-book setting" and which shows only while the book has a choice of its own, removes the book's own choice, so that the choice of its feed or folder applies, or the global setting where it has none.
 - Third, a feed and a plain folder each choose for their own books with a pop-up button, "When an episode ends" in Feed Info and "When a book ends" in Folder Settings (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)).
@@ -39,7 +39,7 @@ One that is not on this Mac is downloaded first, and that download goes first in
 VoiceOver says "Finished: Episode 368.
 Downloading the next episode: Episode 367."
 ("the next article" for an article), and "Starting: Episode 367" when the file arrives.
-Until it arrives, the episode rests finished at its end, as a book that stops does (above).
+Until it arrives, the episode rests finished at its end, as a book that stops does (see [A book that rests finished at its end](reader-media-and-sleep-timer.md#a-book-that-rests-finished-at-its-end)).
 If the download fails, VoiceOver says "The next episode could not be downloaded, so playback stopped." followed by the download's own sentence, as the episode's row says it; if TextMouth will not start the download, as while it quits, that sentence is "TextMouth is not downloading right now."
 If you close the window before the file arrives, nothing starts when it does, and a sleep timer the window owns stops, as closing the window a timer belongs to stops it.
 Nothing starts either, and nothing is said of the download, if you have moved on in another way: played the episode again, or taken the media controls for another book, by playing it or by bringing its window to the front.
@@ -54,7 +54,7 @@ If you cancel that download yourself, with Cancel Download on its row, the Cance
 This window's sleep timer keeps the next book from starting, and starts no download for it either, when it ends listening at this book's end: when it is fading out, or is set for the end of the heading or of the book, which this end reaches.
 VoiceOver says "Finished: Dune.
 Next book not started because of the sleep timer."
-(see the sleep timer, above).
+(see [The sleep timer](reader-media-and-sleep-timer.md#the-sleep-timer)).
 A timer counting minutes does not: it goes on with the next book (see The sleep timer when listening goes on, below).
 
 ## Where the next book opens
@@ -142,7 +142,7 @@ Play on a finished book does what its end did, without playing the end again:
 - and a book read from the reading list does what the list's own When a book ends says (below).
 
 A caption under the Playback tab's picker says what Play does with the first two.
-A backward skip after the end replays the end (above), which counts as no new finish, and a forward skip at the end stays there.
+A backward skip after the end replays the end (see [A book that rests finished at its end](reader-media-and-sleep-timer.md#a-book-that-rests-finished-at-its-end)), which counts as no new finish, and a forward skip at the end stays there.
 Go to Percent with 100 lands just short of the end, so Play then plays the last moment and ends the book again.
 
 ## The Reading List

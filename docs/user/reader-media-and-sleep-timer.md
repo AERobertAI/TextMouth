@@ -12,7 +12,8 @@ A Play command, which some headphones send apart from Play/Pause, goes to that l
 ### A book that pauses behind another window
 <!-- id: reader-book-that-pauses-behind-another; keys: paused in Now Playing, headphones disconnecting, voice not starting, waiting to play, auto-play; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/NowPlayingService.swift -->
 
-A book that pauses while another book's window is in front, from the AirPods, a media key, its sleep timer running out, the headphones disconnecting, a recording starting, or its voice not starting a passage (below), is shown paused in Now Playing.
+A book that pauses while another book's window is in front, from the AirPods, a media key, its sleep timer running out, the headphones disconnecting, a recording starting, or its voice not starting a passage, is shown paused in Now Playing.
+See [A voice that does not start a passage](reader-speech-problems.md#a-voice-that-does-not-start-a-passage).
 And the next Play resumes it rather than starting the book in front.
 Moving to another book's window afterwards makes that window's book the one Play starts.
 A book waiting to play, for its chapter's speech or for a chapter's files to download, counts as playing: the AirPods leaving, a recording starting, or another book starting pauses it, so it never starts by itself once ready; Auto-play on navigate leaves such a book waiting.
@@ -27,7 +28,7 @@ It plays again only while no other book plays: with another book playing, Skip B
 When a sleep timer set for the end of the heading or of the book stops, at its end, a book that would continue to the next book, the timer is spent and the book rests finished: Skip Backward plays its end again, at full volume, and when it ends this time, the next book starts.
 Skip Forward or Next Track by a number of seconds stays at the end and plays nothing, while a forward skip by sentence, paragraph, heading, or bookmark that finds a later place moves there without playing.
 That move, or any other jump, such as to a heading, ends the finished state, as Release Media Controls does.
-The book is then an ordinary stopped book, whose skips move the cursor without playing, and Play plays from the cursor, or, while the cursor is still at the end, does what Play does at a book's end (see When a book ends, below).
+The book is then an ordinary stopped book, whose skips move the cursor without playing, and Play plays from the cursor, or, while the cursor is still at the end, does what Play does at a book's end (see [When a book ends](reader-book-end.md#when-a-book-ends)).
 Closing the window, or quitting TextMouth, keeps it: the book is saved at its end, and opens finished again.
 
 ### A book that continues to the next book
@@ -101,7 +102,8 @@ Speech read straight from the voice does not move to the prepared audio as the f
 
 Each reader window has a sleep timer of its own, which belongs to the window and pauses only its book: setting, restarting, or cancelling a timer in one window leaves every other window's timer as it is, and another window's playback, even of the same book, never pauses or ends it.
 A book you open in a second window while the first has a timer, running or paused, starts with no timer, and playing it neither runs nor stops the first window's.
-A window keeps its timer when the book it shows changes in place, as when listening goes on to the next book in the same window (see When a book ends, below); a new window that listening goes on to takes the timer once its book has loaded; closing a window stops only its own timer.
+A window keeps its timer when the book it shows changes in place, as when listening goes on to the next book in the same window (see [When a book ends](reader-book-end.md#when-a-book-ends)).
+A new window that listening goes on to takes the timer once its book has loaded; closing a window stops only its own timer.
 
 ### Showing, setting, and restarting the timer
 <!-- id: reader-showing-setting-restarting-timer; keys: Show Sleep Timer, Restart Sleep Timer, AirPods gesture, MediaGestureDetector, Timer reset, Timer restarted; src: TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Views/Reader/SleepTimerView.swift, TextMouth/Services/MediaGestureDetector.swift, TextMouth/App/MenuCommands.swift -->
