@@ -170,8 +170,10 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
     In this round's three full suites (runs 43012968916, 43021219456 and 43025487714), the 33 tests took 14.3 to 23.6 minutes of xcodebuild, the step (with the simulator's set-up, 3.6 to 7.0 minutes) 19.4 to 27.1 minutes, and the iPhone job 28.7 to 40.1 minutes, the longest of the run, against about 11 for the slowest of the four shards.
     Two clones of the simulator took 17.1 minutes against 17.5 for one.
   - **Two cuts that were tried.**
-    Looking with `exists` before a wait (`XCUIElement.appears(within:)`), the keyboard's one-time page checked with `exists`, and the timer test waiting for its value to change cost nothing and saved time: the phone-area run 42986107227 ran its 33 tests in 768 seconds (23 seconds each) against 29 to 37 seconds each before, on whatever machine it got; it failed only on the skip test, whose new check had a different fault.
-    Starting the simulator while the app builds was tried and taken out: the runs that did it (42976557216, 42979000712) found `bootstatus` still waiting after 300 seconds, so no interface test ran, but so did a run with that change already undone (42982618359), and the next (42986107227) booted in 2.5 minutes.
+    Looking with `exists` before a wait (`XCUIElement.appears(within:)`), the keyboard's one-time page checked with `exists`, and the timer test waiting for its value to change cost nothing and saved time.
+    The phone-area run 42986107227 ran its 33 tests in 768 seconds (23 seconds each) against 29 to 37 seconds each before, on whatever machine it got; it failed only on the skip test, whose new check had a different fault.
+    Starting the simulator while the app builds was tried and taken out: the runs that did it (42976557216, 42979000712) found `bootstatus` still waiting after 300 seconds, so no interface test ran.
+    But so did a run with that change already undone (42982618359), and the next (42986107227) booted in 2.5 minutes.
     The cause is not known; it may be the runner and not the early boot.
     A boot that never finishes stopped the interface tests of four runs (42976557216, 42979000712, 42982618359 and 43005173856), `bootstatus` printing "Waiting on BackBoard" for the whole 300 seconds.
     So the first boot is waited for 180 seconds; a device that has not booted by then is shut down, a new one is made and booted (300 seconds); and a boot that still does not finish is a failure whose message holds what `simctl` had printed and the booted devices.
@@ -184,7 +186,10 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
 <!-- id: runner-failure-rules; keys: cancellation, hang, timeScale, time scale, deadline, flaky, race; src: TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift, TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Parsers/XMLInputGuard.swift, TextMouth/Parsers/PackageSAXParser.swift, TextMouthProductionTests/VoiceCatalogTests.swift, TextMouthProductionTests/OfficeXMLGuardTests.swift, TextMouthProductionTests/OwnReaderCancellationTests.swift, TextMouthProductionTests/XMLInputGuardTests.swift, TextMouthProductionTests/KF8HostileFileTests.swift, TextMouthProductionTests/MOBIHostileFileTests.swift, TextMouthProductionTests/SpeechBufferSynthesizerTests.swift, TextMouthProductionTests/AudioEngineBehaviorTests.swift, Scripts/agents/run-on-runner.py -->
 
 - **The voice listing never holds the concurrency pool:** `VoiceCatalog` lists voices on a queue of its own and on a thread of its own, so the pool is never held.
-  Each catalog has its own queue, one listing at a time: a listing replaced while it waits is skipped there, a listing that has not returned after `listingDeadline` (10 seconds) is given up on and the queue goes on (so one hung listing cannot stop `VoiceCatalog.shared` from refreshing for the rest of the session), and `waitUntilListed(limit: 15)` says whether it waited the listing out; the phone's voice sheet goes on with no voices when it did not.
+  Each catalog has its own queue, one listing at a time:
+  - a listing replaced while it waits is skipped there,
+  - a listing that has not returned after `listingDeadline` (10 seconds) is given up on and the queue goes on (so one hung listing cannot stop `VoiceCatalog.shared` from refreshing for the rest of the session), and
+  - `waitUntilListed(limit: 15)` says whether it waited the listing out; the phone's voice sheet goes on with no voices when it did not.
   Proven by `VoiceCatalogTests.testListingsThatNeverComeBackLeaveTheConcurrencyPoolFree` and, on this Mac's own code paths, by `testAListingCancelledWhileItWaitsOnTheQueueIsSkipped`, `testAListingThatNeverReturnsIsGivenUpOnAndTheNextOneIsListed`, and `testWaitingForAListingThatDoesNotEndGivesUpAtItsLimit`.
 - **A cancel is heard at once** (`OfficeXMLGuardTests.testCancelLandsInTheMiddleOfARead`, `OwnReaderCancellationTests.testCancelPartwayThroughALargeWordDocumentIsHeardAtOnce`).
   `XMLInputGuard`'s attribute-count scan of the whole part, which runs before the parser, asks every 4,096 start tags whether the import was cancelled, and `XMLInputGuard.problem(throwingWhenCancelled:)`, which `PackageSAXParser.parseDocument()` uses, throws `ImportCancelled` for a scan it did not finish (it never answers nil for one, so a caller cannot forget to ask before it hands the part to a parser).
@@ -211,10 +216,20 @@ They are not retried (nothing here is retried on any machine); the ones named in
 - **Left out, cause not found:** `IntegrationPersistenceTests.testReadOnlyDataDirectoryShowsTheFailedSaveUntilRetryWritesIt` and `MenuKeyShortcutTests.testTheMenusShowTheKeysInForceAndFollowAChange` (a wait of 5 seconds for the main queue or SwiftUI that missed in 3 of 5 and 3 of 4 full runs; the diagnostic of run 42881292091 showed the failure recorded at once and published only after the wait, with a block queued afterwards running), `LibraryLaunchFilesTests.testNoMoreThanEightLaunchFilesAreReadAtOnce` (an 8-second wait for queued reads missed in 2 of 12 runs), and `RecordingSaveTests.testSavingARecordingAddsItsBookToTheLibrary` (a file missing at the end, 2 of 6 runs).
   `IntegrationWindowRoutingTests.testFinishedBookOpensOneReaderForTheNextBookWithNoLibraryWindow` and two ContinueToNextBookTests are left out because an audio book did not finish loading.
 - **Not left out:** The unexplained ones of the earlier list did not appear in the ten runs after the fixes.
-  That list: `PreferenceStoreTests.testChangeFromAnotherThreadReachesTheHandlerOnTheMainThread`, `MigrationStagingLeftoversTests.testTheBackgroundSweepRunsOnlyOutsideHostedTests`, `ReaderLifecycleAuditTests.testNegativeSavedReadingPositionIsClampedWhenContentLoads`, `NowPlayingOwnershipTests.testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses`, `HostedTestIsolationTests.testSoundEffectsDefaultToThisProcessPreferences`.
+  That list:
+  - `PreferenceStoreTests.testChangeFromAnotherThreadReachesTheHandlerOnTheMainThread`,
+  - `MigrationStagingLeftoversTests.testTheBackgroundSweepRunsOnlyOutsideHostedTests`,
+  - `ReaderLifecycleAuditTests.testNegativeSavedReadingPositionIsClampedWhenContentLoads`,
+  - `NowPlayingOwnershipTests.testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses`,
+  - `HostedTestIsolationTests.testSoundEffectsDefaultToThisProcessPreferences`.
+
   Several of the 4-to-6-failure runs of the day before were the hung voice listing and the late cancels, which are fixed.
-- **Not the tests:** GitHub did not give one of the four shards a machine for 15 minutes in run 42867725014 ("The job was not acquired by Runner of type hosted even after multiple attempts": the join named the shard as having reported nothing, and the run failed with no test failed); `xcodebuild -downloadPlatform iOS` failed once with "Unable to connect to simulator."
-  (run 42887766443; it is now tried three times); and a dropped connection to api.github.com ended a wait on the Mac (`github_run.py` now tries a failed call four times).
+- **Not the tests:**
+  - GitHub did not give one of the four shards a machine for 15 minutes in run 42867725014 ("The job was not acquired by Runner of type hosted even after multiple attempts": the join named the shard as having reported nothing, and the run failed with no test failed);
+  - `xcodebuild -downloadPlatform iOS` failed once with "Unable to connect to simulator."
+    (run 42887766443; it is now tried three times); and
+  - a dropped connection to api.github.com ended a wait on the Mac (`github_run.py` now tries a failed call four times).
+
   A run that fails this way is no verdict on the tests: send it again.
   Also, after many downloads of the large result bundles (130 MB for each failed shard), GitHub answered "503 Egress is over the account limit" to `gh run download` for a while; the job logs stayed readable through `gh api repos/AERobertAI/TextMouth/actions/jobs/ID/logs`.
   Download a bundle only to look into a failure.
@@ -223,9 +238,18 @@ They are not retried (nothing here is retried on any machine); the ones named in
 <!-- id: safety; keys: security, permissions, token, secrets, pull request, fork, pinned actions, refspec; src: Scripts/agents/github_run.py, .github/workflows/test-build.yml, .github/workflows/tests.yml, .github/workflows/check.yml, .github/actions/setup-xcode/action.yml, Scripts/agents/tests/test_workflow.py, Scripts/agents/tests/test_github_run.py -->
 
 The workflow reads the repository and nothing else: a read-only token, no secrets, GitHub's own actions pinned to commit hashes, and a trigger of a push to `TestBuild` alone, so a pull request or a fork starts no job.
-`Scripts/agents/github_run.py` pushes only `<commit>:refs/heads/TestBuild` (with `--no-follow-tags`, so no tag goes with it), builds that refspec from a constant, makes the commit from tracked files with git's plumbing, and checks before it pushes: that no object the push would send, in the tip's tree or in the history behind it that origin does not have, has a path under `build/`, `humanQuestions/`, or `humanReports/` (names are read NUL-separated, so quoted ones are checked too); that, once `test-build.yml` is on origin's main (it is, so the guard is on), the tree's `.github/workflows/` and `.github/actions/` are the same as main's, so a merged branch cannot widen the workflow's permissions or add a step; and that origin's push URL is this repository's.
+`Scripts/agents/github_run.py` pushes only `<commit>:refs/heads/TestBuild` (with `--no-follow-tags`, so no tag goes with it), builds that refspec from a constant, makes the commit from tracked files with git's plumbing, and checks before it pushes:
+- that no object the push would send, in the tip's tree or in the history behind it that origin does not have, has a path under `build/`, `humanQuestions/`, or `humanReports/` (names are read NUL-separated, so quoted ones are checked too);
+- that, once `test-build.yml` is on origin's main (it is, so the guard is on), the tree's `.github/workflows/` and `.github/actions/` are the same as main's, so a merged branch cannot widen the workflow's permissions or add a step; and
+- that origin's push URL is this repository's.
+
 `.github/workflows/check.yml` (`make check`) runs for pushes to `main` and for pull requests, and not for `TestBuild`; a test keeps it so.
-The workflow tests (`Scripts/agents/tests/test_workflow.py`) pin these rules for the three files (`test-build.yml`, the shared `tests.yml`, and the local action `setup-xcode`) and for the jobs `check.yml` calls them with: that `tests.yml` has no concurrency group of its own (one could cancel the caller's runs), that `check.yml` is in a group that is not `test-build`, that the request given as an input reaches a job only through the environment, and that every action is GitHub's own and pinned to a hash.
+The workflow tests (`Scripts/agents/tests/test_workflow.py`) pin these rules for the three files (`test-build.yml`, the shared `tests.yml`, and the local action `setup-xcode`) and for the jobs `check.yml` calls them with:
+- that `tests.yml` has no concurrency group of its own (one could cancel the caller's runs),
+- that `check.yml` is in a group that is not `test-build`,
+- that the request given as an input reaches a job only through the environment, and
+- that every action is GitHub's own and pinned to a hash.
+
 Workflow changes can be proved on `TestBuild` only for what `test-build.yml` shares with `check.yml`; the gate job and the call from `check.yml` itself run only for a push to main or a pull request.
 
 The tests of all of this are in `Scripts/agents/tests`: the fake `gh`, the bare throwaway repository used as the push target, and the pretend clock mean none reaches GitHub or waits.
