@@ -72,7 +72,9 @@ The shipped views look as they always have, and a shipped view with nothing to l
 <!-- id: go-view; keys: Command-1, Go to View 1, goToView, Library menu, number keys; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/App/MenuCommands.swift -->
 
 Go to View goes to a view by number.
-Command-1 to Command-9, the Shortcuts tab's actions "Go to View 1" to "Go to View 9" under Library, work in a Library window and go to the first to the ninth view its pop-up offers a window showing no view of its own, counting the views set to Always and those set to When Applicable that list something, and never one a pop-up keeps only because its window shows it, so a key always goes to the same view.
+Command-1 to Command-9, the Shortcuts tab's actions "Go to View 1" to "Go to View 9" under Library, work in a Library window.
+They go to the first to the ninth view its pop-up offers a window showing no view of its own.
+They count the views set to Always and those set to When Applicable that list something, and never one a pop-up keeps only because its window shows it, so a key always goes to the same view.
 The Library menu's Go to View submenu lists those views by name, the first nine with their keys; with no Library window in front it has one dimmed item, "No Library Window".
 Going to a view says its name and what it lists, as in "All Items, 743 books, 2 feeds", or, for a view of your own or a built-in filter view that lists nothing, "New Episodes, nothing matches this view now."; a key with no view says "There is no view 7.
 Go to View reaches 6 views."
@@ -205,7 +207,9 @@ Destination folder: Reports/Q3."; once they close, Return presses Move again and
 ### Episodes and articles
 <!-- id: episodes-articles; keys: feed items, Move to Library, feed folder, stay in feeds; src: TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift -->
 
-Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feeds.md)), and with only episodes and articles selected, the Library menu's Move to Folder… (Shift-Command-M) and the edit bar's Move open no Move dialog, while a selection holding books too moves only its books; either way VoiceOver says which stayed, a moment after the dialog has closed when there is one, as in "Left “Ep.
+Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feeds.md)).
+With only episodes and articles selected, the Library menu's Move to Folder… (Shift-Command-M) and the edit bar's Move open no Move dialog, while a selection holding books too moves only its books.
+Either way VoiceOver says which stayed, a moment after the dialog has closed when there is one, as in "Left “Ep.
 368” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
 
 ### When a move fails
@@ -222,7 +226,8 @@ Save waits for a title of more than spaces, and drops the spaces typed around th
 ### The Braille Code row
 <!-- id: braille-code-row; keys: braille table, braille language, bookInfoLabel, mac: table name; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
-A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)", and which VoiceOver reads as "Braille Code, Unified English Braille, contracted (Grade 2)".
+A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)".
+VoiceOver reads it as "Braille Code, Unified English Braille, contracted (Grade 2)".
 A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
 When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb".
 
@@ -242,7 +247,8 @@ With several rows selected it acts on the first in the list's order, in Edit Mod
 
 A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), include Show in Finder, which selects the book's package in Finder.
 In a library in the cloud they also offer Download Now, Remove Download, and Keep on This Mac (see [Keeping your library in the cloud](cloud-library.md)).
-An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript, and a transcribed audiobook's Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)).
+An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript.
+A transcribed audiobook's also offer Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)).
 A feed's episode, whose audio can't be edited, offers no Edit Audio….
 
 ## Exporting from the Library window
@@ -293,7 +299,11 @@ The Folder Settings sheet shows a plain folder's facts and how listening goes on
 
 - Its title is "Folder Settings", and the folder's name is its heading.
   Under the heading are read-only rows.
-  Each is one element that VoiceOver says as its label, a comma, and its value, and its value can be selected and copied: "Location", the path of the folder that holds this one, or "Library Root" at the top of the library; "Books", the books in the folder and in every folder inside it, with how many are unopened, as in "12 books, 3 unopened"; "Subfolders" and "Feeds", each only when the folder has any; and "Time remaining", only when it is known, as in "14 hours, 3 minutes remaining in total".
+  Each is one element that VoiceOver says as its label, a comma, and its value, and its value can be selected and copied:
+  - "Location", the path of the folder that holds this one, or "Library Root" at the top of the library
+  - "Books", the books in the folder and in every folder inside it, with how many are unopened, as in "12 books, 3 unopened"
+  - "Subfolders" and "Feeds", each only when the folder has any
+  - "Time remaining", only when it is known, as in "14 hours, 3 minutes remaining in total"
 - Under a heading, "Listening", are three controls, each saved as you choose it.
   The pop-up button "When a book ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Continue to Next Book)", then "Play the book below", "Play the book above", and "Stop".
   Its hint is "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting".
