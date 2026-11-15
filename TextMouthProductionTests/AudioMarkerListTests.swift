@@ -87,7 +87,9 @@ final class AudioMarkerListTests: XCTestCase {
 
     /// Markers written into a WAVE, an AIFF, and a CAF file made here read
     /// back with their names, at their times to the nearest frame; a WAVE's
-    /// and an AIFF's are their chapters. A CAF, which the import converts,
+    /// and an AIFF's are their chapters. An AIFF's last marker is read too,
+    /// though Core Audio hands back a size 8 bytes short of the list it
+    /// fills (train 1115-1258 lost it). A CAF, which the import converts,
     /// is never opened by the chapter reader, so it lists none there.
     func testMarkersWrittenReadBackInEveryFormat() async throws {
         let folder = try makeSandboxDirectory("markers-round-trip")

@@ -63,16 +63,24 @@ enum AudioMarkerList {
               Int(size) >= MemoryLayout<AudioFileMarkerList>.size else {
             return ([], sampleRate)
         }
-        let buffer = UnsafeMutableRawPointer.allocate(byteCount: Int(size), alignment: MemoryLayout<AudioFileMarkerList>.alignment)
+        let allocated = Int(size)
+        let buffer = UnsafeMutableRawPointer.allocate(byteCount: allocated, alignment: MemoryLayout<AudioFileMarkerList>.alignment)
         defer { buffer.deallocate() }
-        guard AudioFileGetProperty(file, kAudioFilePropertyMarkerList, &size, buffer) == noErr else {
+        // Zeroed first, so a marker Core Audio left unwritten would have no
+        // name to release and a frame of 0, never stray bytes.
+        buffer.initializeMemory(as: UInt8.self, repeating: 0, count: allocated)
+        var returned = size
+        guard AudioFileGetProperty(file, kAudioFilePropertyMarkerList, &returned, buffer) == noErr else {
             return ([], sampleRate)
         }
         let list = buffer.assumingMemoryBound(to: AudioFileMarkerList.self).pointee
-        // The markers follow the list's header; only as many as the bytes
-        // Core Audio wrote hold are read.
+        // The markers follow the list's header, as many as the list says and
+        // the bytes allocated hold: the size Core Audio gave for the list,
+        // not the size it hands back, which for an AIFF file is 8 bytes short
+        // of what it fills (a probe of November 15, 2026: three markers
+        // filled whole, 120 of 128 bytes reported), and would lose the last.
         let start = MemoryLayout<AudioFileMarkerList>.offset(of: \AudioFileMarkerList.mMarkers) ?? 0
-        let room = max(0, (Int(size) - start) / MemoryLayout<AudioFileMarker>.stride)
+        let room = max(0, (allocated - start) / MemoryLayout<AudioFileMarker>.stride)
         let count = min(Int(list.mNumberMarkers), room)
         let markers = (buffer + start).bindMemory(to: AudioFileMarker.self, capacity: count)
         var read: [Marker] = []
