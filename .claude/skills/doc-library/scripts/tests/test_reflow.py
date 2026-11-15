@@ -12,7 +12,9 @@ from unittest import mock
 from doclib_case import DocLibCase
 
 import cmd_reflow
-from cmd_reflow import reflow_text, starts_a_block
+import reflowblocks
+from cmd_reflow import reflow_text
+from reflowblocks import starts_a_block
 
 
 class StartsABlockTests(unittest.TestCase):
@@ -76,7 +78,7 @@ class ReflowTextTests(unittest.TestCase):
                 self.assertEqual(reflow_text(text), expected)
 
     def test_the_refused_split_would_have_been_made_without_the_test(self) -> None:
-        with mock.patch.object(cmd_reflow, "starts_a_block", return_value=False):
+        with mock.patch.object(reflowblocks, "starts_a_block", return_value=False):
             self.assertEqual(reflow_text("Alpha is first. 2) Beta follows.\n"),
                              "Alpha is first.\n2) Beta follows.\n")
 
@@ -230,7 +232,7 @@ class ReflowCommandTests(DocLibCase):
         text = "# T\n\nAlpha is first. 2) Beta follows.\n"
         self.write_tree({PAGE: text})
         # Without starts_a_block's refusal, the second sentence would start an ordered list item.
-        with mock.patch.object(cmd_reflow, "starts_a_block", return_value=False):
+        with mock.patch.object(reflowblocks, "starts_a_block", return_value=False):
             status, out, _ = self.reflow()
         self.assertEqual(status, 1)
         self.assertIn("blocks or headings differ", out)
