@@ -22,7 +22,6 @@
     "docs/architecture/state/hosted-test-sandbox.md": {"line-length": 21, "user-quote": 1},
     "docs/architecture/state/imports-audio.md": {"line-length": 27},
     "docs/architecture/state/imports-braille-tables.md": {"line-length": 34},
-    "docs/architecture/state/imports-braille.md": {"line-length": 13},
     "docs/architecture/state/imports-daisy.md": {"line-length": 3},
     "docs/architecture/state/imports-duplicates.md": {"line-length": 17},
     "docs/architecture/state/imports-kindle.md": {"line-length": 15},

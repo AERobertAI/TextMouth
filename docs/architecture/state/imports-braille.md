@@ -23,7 +23,10 @@ FileImportService.supportedTypes offers them in Open Book with whatever type the
 Reading: BookParser.parse(url:format:brailleTable:brailleTableVersion:brailleFileCode:encodingPolicy:), through BrailleBookReader.parse, and MarkdownCacheService.extractCache both read through BrailleBookReader.markdown(of:table:recordedVersion:fileCode:includesPages:).
 So the direct parse and the cache read the same text.
 For a BRF or BRL the book's braille file code is resolved first, by BrailleFileCode.code(forStored:) (nil or empty is North American Braille ASCII), and an id this TextMouth does not know is refused by name, BrailleFileError.unknownFileCode, before the file is read; a PEF ignores the code.
-The cache passes the row's code when the read decides the code (an import, a re-read with other braille file characters) and Book.recordedBrailleFileCode() otherwise, and a book that records none is read through Book.brailleFileCodeForReading(), which asks BrailleFileReader.certainCode(ofFileAt:) and gives unicode only when the file's first character is a braille pattern, so a Unicode book whose code an earlier TextMouth dropped heals at its next rebuild; the three rebuild paths of MarkdownCacheService and BookContentAnalysisService use it.
+The cache passes the row's code when the read decides the code (an import, a re-read with other braille file characters) and Book.recordedBrailleFileCode() otherwise.
+A book that records none is read through Book.brailleFileCodeForReading(), which asks BrailleFileReader.certainCode(ofFileAt:) and gives unicode only when the file's first character is a braille pattern.
+So a Unicode book whose code an earlier TextMouth dropped heals at its next rebuild.
+The three rebuild paths of MarkdownCacheService and BookContentAnalysisService use it.
 
 1. requireSizeWithinLimit(of:) refuses a file over maximumFileBytes, 32 MB, by the size of its target (a link is sized by what it points to), before a byte is read (BrailleFileError.fileTooLarge).
 2. BrailleFileReader.read(_:as:) reads the file, held to DocumentByteLimit too, into BrailleFilePages: one buffer of cell bytes with 32-bit offsets for its rows and pages, at most maxPages (100,000) pages and maxRows (4,000,000) rows (tooManyPages and tooManyRows).
@@ -35,32 +38,65 @@ The cache passes the row's code when the read decides the code (an import, a re-
    A form feed between braille text ends a BRF page and marks its pages (BrailleFilePages.marksItsPages), while a BRF with none, a form feed only at its start or end being none, is cut into pieces of 25 rows (linesPerUnmarkedPage) only so that its layout can be read.
    A UTF-8 byte order mark and a final Ctrl-Z are dropped.
    A PEF goes through an XMLParser (PEFCollector, with no external entities).
-   Both stop at the first refusal (BrailleFileError: notBrailleASCII for North American Braille ASCII, notInFileCode for any other code, naming its characters, eightBitBraille(byte:line:) for a byte above 0x7F that begins no valid character in a seven-bit code, utf16Text for a byte order mark, checked first, unknownFileCode, damagedPEF, and eightDotBraille, also for a Unicode BRF's dot 7 or 8), whose words are in [Adding books](../../user/import-progress-and-errors.md).
+   Both stop at the first refusal (BrailleFileError, each case with its conditions in BrailleFileReader.swift; utf16Text, for a byte order mark, is checked first).
+   The words of the refusals are in [Adding books](../../user/import-progress-and-errors.md).
    BrailleFileReader.certainCode(of:) reads the first 64 KB (detectionByteCount) and gives unicode when the first character after the blank lines is a braille pattern, and nothing else, since the seven-bit codes' bytes are the same printable characters.
+### Finding the blocks of a braille file
+<!-- id: braille-blocks; keys: BraillePageAnalyzer, running head, page number, print page change, chapter row, heading level, block structure; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouthProductionTests/BraillePageAnalyzerTests.swift -->
+
 3. BraillePageAnalyzer.structure(of:), pure and bounded, finds the blocks.
    A BRL is unformatted: each row that is not blank is a paragraph.
-   Otherwise it takes the line width from a PEF's cols, else from the rows that end in page numbers, else from the centered headings; takes each page's braille page number, print page number, and print-page change lines out of its rows (BraillePageNumbers, with where the page begins: its first block, and the cell of that block's braille its first row begins at, firstCellOffset, PG12; braillePageLabel reads the braille page number as print through printLabel(of:), cell by cell: letters, then the number sign with its digits (a to j for 1 to 9 and 0), then letters, a capital sign or a letter sign standing where one is needed, as "⠼⠁⠃" reads 12 and "⠏⠼⠁" reads p1, and nil for a word with a second number, a cell outside these, an indicator with no letter after it, or no digit, whose page is then labelled by its place among the pages kept; hasText says whether the page holds text; the print page numbers are kept for a later move by print page, and a page is a braille page whatever print pages it holds); and reads centered runs of rows first, so a title of several lines is one level-1 heading, then rows at cell 5 and cell 7 as level-2 and level-3 headings, and the rest as paragraphs, with the runovers of paragraphs and list items.
+   Otherwise it takes the line width from a PEF's cols, else from the rows that end in page numbers, else from the centered headings.
+   It takes each page's braille page number, print page number, and print-page change lines out of its rows (BraillePageNumbers, with where the page begins: its first block, and the cell of that block's braille its first row begins at, firstCellOffset, PG12).
+   BraillePageNumbers.braillePageLabel reads the braille page number as print through BraillePageAnalyzer.printLabel(of:), cell by cell.
+   The cells are letters, then the number sign with its digits (a to j for 1 to 9 and 0), then letters, a capital sign or a letter sign standing where one is needed, as "⠼⠁⠃" reads 12 and "⠏⠼⠁" reads p1.
+   The label is nil for a word with a second number, a cell outside these, an indicator with no letter after it, or no digit, and the page is then labelled by its place among the pages kept.
+   BraillePageNumbers.hasText says whether the page holds text.
+   The print page numbers are kept for a later move by print page, and a page is a braille page whatever print pages it holds.
+   It reads centered runs of rows first, so a title of several lines is one level-1 heading, then rows at cell 5 and cell 7 as level-2 and level-3 headings, and the rest as paragraphs, with the runovers of paragraphs and list items.
    It drops the blank rows at a page's top, except in a book of block-style paragraphs.
    It also applies three rules of layout.
-   (a) Running heads: pageHead(ofRows:width:) reads a page's first row with text, less a print page number at its right (a number word that ends a full-width row) and a number word at its left (isLeftPageNumber: at most one letter cell, the number sign, and one to four digit cells, so a list item's number sign, digit, and period is none), and is nil for a row with neither, a print-page change line, or a lone number word with no text; runningHeads(width:) keeps the head texts that repeat on at least minHeadRepeats (3) pages, and extractNumbers(fromPage:width:dropsTopBlankRows:runningHeads:) takes that row out of the page's text, and takes its left number word as the braille page number when the page's last row held none.
-   A row of text alone is never taken for a head, since a head carries a number word.
+   (a) Running heads (see Running heads, below): extractNumbers(fromPage:width:dropsTopBlankRows:runningHeads:) takes the head's row out of the page's text, and takes its left number word as the braille page number when the page's last row held none.
    (b) Print-page change lines: a Roman numeral word (isRomanNumeralWord: a letter sign or a capital sign, then one to maxNumberWordLength of i, v, x, l, c, d, and m) ends a change line like a number word, so ------;IX is left out of the text.
    (c) Chapter rows: a centered run of at most maxRunOnHeadingRows (3) rows of text that no blank row follows and that runs straight into an indented row (indent 2, cell 3) is a level-1 heading (runsOnIntoIndentedText(_:)), as a transcriber writes "Chapter 1" on the line above its text.
    A rule row (isRule(_:in:): at least minRuleCells (4) of one cell among dots 5, 2-5, 3-6, 4-5-6, and all six) is never part of a heading's text, and a run of rules alone makes no heading.
-4. BrailleTranslator.translate turns each block's cells into print (below). markdown(of:table:recordedVersion:) then trims each translation, writes a heading as an ATX heading of its level and every other block as a paragraph, each as a Markdown literal (MarkdownLiteral.escaped) so text that looks like Markdown reads as written, with the emphasis the helper read from the braille's indicators as Markdown's own (markdownLine(of:): BrailleEmphasis.markdownStyle gives italic, underline, script, and the transcriber typefaces as *…*, bold as **…**, and both as ***…***, through MarkdownEmphasis.markdown, whose delimiters CommonMark always pairs, so none is spoken), and joins the blocks with a blank line.
-   Keeping emphasis changes no word by itself, since Markdown's delimiters are never text (BrailleImportTests pins it), and the helper's pass for EBAE's signs (below) keeps every word liblouis reads alone.
+
+### Translating a braille file and marking its pages
+<!-- id: braille-translating-pages; keys: markdown, emphasis, includesPages, page marker, PagedTranslation, form feed, Markdown literal; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Parsers/MarkdownEmphasis.swift, TextMouth/Parsers/MarkdownLiteral.swift, TextMouthProductionTests/BrailleBookPageTests.swift, TextMouthProductionTests/BrailleImportTests.swift -->
+
+4. BrailleTranslator.translate turns each block's cells into print ([The translator and the helper](imports-braille-tables.md)).
+   BrailleBookReader.markdown(of:table:recordedVersion:) then trims each translation, writes a heading as an ATX heading of its level and every other block as a paragraph, each as a Markdown literal (MarkdownLiteral.escaped) so text that looks like Markdown reads as written.
+   It joins the blocks with a blank line.
+   It writes the emphasis the helper read from the braille's indicators as Markdown's own (markdownLine(of:)).
+   BrailleEmphasis.markdownStyle maps each style to Markdown's italic, bold, or both, through MarkdownEmphasis.markdown, whose delimiters CommonMark always pairs, so none is spoken.
+   Keeping emphasis changes no word by itself, since Markdown's delimiters are never text (BrailleImportTests pins it), and the helper's pass for EBAE's signs ([The EBAE fix pass](imports-braille-tables.md)) keeps every word liblouis reads alone.
    Only its pass for UEB's emphasis terminators changes words, where liblouis misread them, so a book's text can change with the better reading, by its emphasis or, in contracted UEB, by a word.
    No cache version was raised: a braille book imported before keeps its content.md until something rebuilds it, which braille's page reader line does once at the next launch (V07, in [Text caches](text-caches.md)).
    PG16's compare then keeps a copy of the old text of a book whose new reading differs, even by emphasis alone, and its saved places move with the text.
    A book with no blocks or no print text throws FileImportError.noTextToRead.
-5. With includesPages, which only MarkdownCacheService asks for (it is false otherwise, so the direct parse reads the text alone), each braille page of a file that marks its pages is a page marker (BrailleBookReader+Pages.swift, PG12). marksItsPages(_:_:) says which files do: a PEF by its page elements, a BRF by the form feeds between its braille text, or, in a BRF with none, braille page numbers that end more than half of its 25-row pieces, which shows the cut matches its layout, since the pieces are otherwise no pages an embosser counts and naming them would invent pages; a BRL has none. pageStarts(of:) leaves out a page with neither text nor a braille page number, such as the blank back of a two-sided page or the empty page a form feed leaves at a file's start or end, and labels the others by braillePageLabel or, without one, by their place among the pages kept, so a book without numbers reads 1 to N. PagedTranslation puts the markers between block lines, never inside one, writing the markers that share a place at once and looking each page's cut up, so many pages cost linear time: a page that begins a block, or begins inside a heading, is a marker of its own before it, and one that begins inside a paragraph splits the paragraph's Markdown into lines there, each its own literal with its own emphasis, the marker after the words of the line before, so the lines read as one paragraph.
-   Every block is still translated whole, so pages change no word; each paragraph a page begins inside is also sent in pieces cut at those pages' first cells, in the same run of the helper, and places(ofCutsIn:pieces:) finds each page in the whole paragraph's print, from the start and then from the end, or else places it at the last place found before it, never after its first word, as when an indicator's passage goes on over the page and only the piece that holds the indicator reads it; nothing is logged then.
+5. With includesPages, which only MarkdownCacheService asks for (it is false otherwise, so the direct parse reads the text alone), each braille page of a file that marks its pages is a page marker (BrailleBookReader+Pages.swift, PG12).
+   BrailleBookReader.marksItsPages(_:_:) says which files do: a PEF by its page elements, a BRF by the form feeds between its braille text, or, in a BRF with none, braille page numbers that end more than half of its 25-row pieces.
+   That shows the cut matches its layout, since the pieces are otherwise no pages an embosser counts and naming them would invent pages.
+   A BRL has none.
+   BrailleBookReader.pageStarts(of:) leaves out a page with neither text nor a braille page number, such as the blank back of a two-sided page or the empty page a form feed leaves at a file's start or end.
+   It labels the others by BraillePageNumbers.braillePageLabel or, without one, by their place among the pages kept, so a book without numbers reads from 1 up to the number of pages kept.
+   BrailleBookReader.PagedTranslation puts the markers between block lines, never inside one, writing the markers that share a place at once and looking each page's cut up, so many pages cost linear time.
+   A page that begins a block, or begins inside a heading, is a marker of its own before it.
+   One that begins inside a paragraph splits the paragraph's Markdown into lines there, each its own literal with its own emphasis, the marker after the words of the line before, so the lines read as one paragraph.
+   Every block is still translated whole, so pages change no word.
+   Each paragraph a page begins inside is also sent in pieces cut at those pages' first cells, in the same run of the helper.
+   BrailleBookReader.places(ofCutsIn:pieces:) finds each page in the whole paragraph's print, from the start and then from the end, or else places it at the last place found before it, never after its first word.
+   That happens when an indicator's passage goes on over the page and only the piece that holds the indicator reads it.
+   Nothing is logged then.
    A BRL has no pages, and its book is read again with the other braille books when braille gains its page reader (PageReaderVersions, in [Text caches](text-caches.md)).
 
 ### The table
 <!-- id: table; keys: braille table setting, stored value, liblouis table, Braille Code pop-up, mac prefix, table choice; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
-The table: Book.brailleTable, a stored value (BrailleTableSource) such as "en-ueb-g2.ctb" for a bundled table or "mac:fr-bfu-g2.ctb" for one of this Mac's, which names the "mac:" prefix in one place, in the row and in BookMetadata.brailleTable, is the table the book was imported with. importFileWithReport stamps the table FileImportService.brailleReading(ofImported:) decides, BraillePreferences.importTable(), the Braille setting at that import, or, when the guess applies (The guess of English Braille, American Edition, below), the bundled contracted EBAE table, and every later reading uses it, the cache's rebuild included, so a change of the setting never moves a book's text under its places.
+The table: Book.brailleTable, a stored value (BrailleTableSource) such as "en-ueb-g2.ctb" for a bundled table or "mac:fr-bfu-g2.ctb" for one of this Mac's, which names the "mac:" prefix in one place, in the row and in BookMetadata.brailleTable, is the table the book was imported with.
+FileImportService.importFileWithReport stamps the table that FileImportService.brailleReading(ofImported:) decides: BraillePreferences.importTable(), the Braille setting at that import.
+When the guess applies ([The guess of English Braille, American Edition](imports-braille-tables.md)), it stamps the bundled contracted EBAE table instead.
+Every later reading uses the stamped table, the cache's rebuild included, so a change of the setting never moves a book's text under its places.
 Only the listener's own choice changes it later: Book Information's Braille Code pop-up reads the book again with another table (TextRereadChoice.brailleTable, in [Text caches](text-caches-rereads-edits.md)), which Replace Existing then carries to a new copy of the same bytes.
 Nil reads as BrailleTableCatalog.defaultTableID.
 The record keeps it (see [Package records](package-records.md)), and so does the removal marker (Retirement markers, in [The library index](library-index.md)).
@@ -69,10 +105,14 @@ The record keeps it (see [Package records](package-records.md)), and so does the
 <!-- id: file-code; keys: braille file characters, Braille ASCII, Eurobraille, Unicode braille, character set, braille encoding; src: TextMouth/Parsers/BrailleFileCode.swift, TextMouth/Models/BrailleFileCodeRecord.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Models/TextEncodingChoice.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/ViewModels/BrailleFileCodeChoiceModel.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Services/DuplicateReplacement.swift, TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouthProductionTests/BrailleFileCodeTests.swift, TextMouthProductionTests/BrailleFileCodeRecordTests.swift -->
 
 The file code: Book.brailleFileCode, a stored id (BrailleFileCode.id: ascii-na, ascii-eurobraille, or unicode), kept in the row, in BookMetadata, and in the removal marker, for a BRF or BRL book (Book.offersBrailleFileCodeChoice: not a PEF, never a feed's item).
-FileImportService.brailleFileCode(ofImported:) gives it at an import: the code the file's bytes say for certain (certainCode(ofFileAt:)), else BraillePreferences.importFileCode(), the Braille setting's, which reads only the two seven-bit codes (BrailleFileCode.importChoices) and is North American Braille ASCII otherwise, by an explicit id, North American's included, so a later change of the setting never moves a book's text; a PEF records none. nil is a book that records no code.
+FileImportService.brailleFileCode(ofImported:) gives it at an import: the code the file's bytes say for certain (certainCode(ofFileAt:)), else BraillePreferences.importFileCode(), the Braille setting's.
+That setting reads only the two seven-bit codes (BrailleFileCode.importChoices) and is North American Braille ASCII otherwise, by an explicit id, North American's included, so a later change of the setting never moves a book's text.
+A PEF records none.
+A value of nil is a book that records no code.
 The record decides apart from the row.
 The standing rule is the record's code when it names one, else the row's (BrailleFileCodeRecord.standing(row:recorded:)), and a re-read with other characters is the one save that decides anew (decidingBrailleFileCode, beside decidingTextEncoding; see [Package records](package-records.md)).
-Book Information changes it through BookRereadPopUp and BrailleFileCodeChoiceModel, which share the Text Encoding pop-up's re-read, LibraryViewModel.readTextAgain(bookID:choosing:access:) for a TextRereadChoice (see [Windows](windows-sheets.md)); Replace Existing keeps it (DuplicateReplacement.prepare reads a BRF or BRL copy of the same bytes again in the replaced book's code, through brailleFileCodeToReadAgain(replacing:with:) and LibraryViewModel.rereadText, unless the copy's bytes are certainly Unicode, and refuses the replacement, leaving both copies, when it cannot be read so; Preparation.undo() puts the copy's files back).
+Book Information changes it through BookRereadPopUp and BrailleFileCodeChoiceModel, which share the Text Encoding pop-up's re-read, LibraryViewModel.readTextAgain(bookID:choosing:access:) for a TextRereadChoice (see [Windows](windows-sheets.md)).
+Replace Existing keeps it, unless the copy's bytes are certainly Unicode (DuplicateReplacement.brailleFileCodeToReadAgain(replacing:with:), in [Reading the new copy again](imports-duplicates.md)).
 BraillePageAnalyzer.printLabel(of:) reads a page number's cells through SevenBitBrailleTable.northAmerican by name, whatever the book's code, since the cells are what count, so a Eurobraille book's pages get the same labels.
 
 ### The version
@@ -108,13 +148,22 @@ The refresh (refreshedValues(of:from:)) replaces, as for every format, any unedi
 ### The reader version
 <!-- id: reader-version; keys: page reader version, launch re-read, version bump, re-read once, stamp; src: TextMouth/Models/PageReaderVersions.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
-The reader version: PageReaderVersions.current(for:) names "1.1.1" for braille ("1.1.0", which shipped in 0.4.8, and "1.0.0" before): the running heads, the Roman change lines, and the chapter rows change what a braille book's pages and text are, so every braille book is read again once at the launch re-read, and once more for 1.1.1 (the heads keyed without their numbers, below), and a book with none of those reads byte for byte as before (PagesUpgradeTests, OnDiskContractTests.testThePageReaderVersions).
-The braille helper's EBAE fixes (below) ride on this bump and raise no version of their own.
+The reader version: PageReaderVersions.current(for:) names "1.1.1" for braille ("1.1.0", which shipped in 0.4.8, and "1.0.0" before).
+The running heads, the Roman change lines, and the chapter rows change what a braille book's pages and text are, so every braille book is read again once at the launch re-read, and once more for 1.1.1 (the heads keyed without their numbers, below).
+A book with none of those reads byte for byte as before (PagesUpgradeTests, OnDiskContractTests.testThePageReaderVersions).
+The braille helper's EBAE fixes ([The EBAE fix pass](imports-braille-tables.md)) ride on this bump and raise no version of their own.
 
 ### Running heads
 <!-- id: running-heads; keys: page header, running title, page number word, repeated heading, volume number; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouthProductionTests/BraillePageAnalyzerTests.swift -->
 
-Running heads: pageHead(ofRows:width:) reads the first row with text on a page as a head only when it has a number word at either end (a print page number at its right, ending the line, or a braille page number at its left); a row with neither, a print page change line, or a number word alone with no text is no head. runningHeads(width:) counts the heads by headKey(of:), the head's cells with each number (a number sign and the digit cells after it) taken out, so heads that differ only by a part or volume number are one head and repeat across parts ("life of pi. part1" and "life of pi. part2"); a key left empty by the numbers (a head of numbers alone) names no head, and a key counts as a running head at BraillePageAnalyzer.minHeadRepeats (3) pages. extractNumbers matches each page's head by the same key.
+Running heads: pageHead(ofRows:width:) reads the first row with text on a page as a head only when it has a number word at either end (a print page number at its right, ending the line, or a braille page number at its left).
+A print page number is a number word that ends a full-width row, and the head's text is the row less the number words at its two ends.
+A braille page number at the left is isLeftPageNumber: at most one letter cell, the number sign, and one to four digit cells, so a list item's number sign, digit, and period is none.
+A row with neither, a print page change line, or a number word alone with no text is no head.
+The analyzer's runningHeads(width:) counts the heads by headKey(of:), the head's cells with each number (a number sign and the digit cells after it) taken out.
+So heads that differ only by a part or volume number are one head and repeat across parts ("life of pi. part1" and "life of pi. part2").
+A key left empty by the numbers (a head of numbers alone) names no head, and a key counts as a running head at BraillePageAnalyzer.minHeadRepeats (3) pages.
+The analyzer's extractNumbers matches each page's head by the same key.
 A plain row of text with no number word is never a head, however often it repeats.
 
 ### Suggesting English Braille, American Edition
@@ -128,8 +177,9 @@ It counts the words (runs of cells between blanks) that show EBAE's signs:
   Since a name with a capital inside it, "McNeil", repeats and EBAE's words are many.
 
 Count.looksLikeEBAE is true at minimumWords (10) of them and one in wordsPerHit (100) words.
-BrailleCodeChoiceModel.load() asks it off the main actor (looksLikeEBAE(_:), through OffMainWork, for a book read with a UEB table, whose file is on this Mac, never downloading it), keeps showsEBAESigns, and suggestion is LibraryInfoWording's BrailleCodeWording.suggestsEnglishBrailleAmericanEdition, "This braille looks like English Braille, American Edition.
-Choose its Braille Code in Book Information.", only while the book's table is UEB (system "ueb"), which the Book Information sheet (LibrarySheetViews.swift) draws as a secondary Text under the Braille Code pop-up.
+BrailleCodeChoiceModel.load() asks it off the main actor (looksLikeEBAE(_:), through OffMainWork, for a book read with a UEB table, whose file is on this Mac, never downloading it), and keeps showsEBAESigns.
+The suggestion is LibraryInfoWording's BrailleCodeWording.suggestsEnglishBrailleAmericanEdition, shown only while the book's table is UEB (system "ueb"), and the Book Information sheet (LibrarySheetViews.swift) draws it as a secondary Text under the Braille Code pop-up.
+Its words are two sentences: "This braille looks like English Braille, American Edition." and "Choose its Braille Code in Book Information."
 The suggestion changes nothing by itself, and load() announces the sentence once as it appears (announceSuggestionOnce(), through VoiceOverAnnouncer, guarded by hasAnnouncedSuggestion so a second load() says nothing), since the sheet shows it late.
 VoiceOver also reads it as the item after the pop-up.
-The detector also runs at import, by a stricter rule (next bullet).
+The detector also runs at import, by a stricter rule ([The guess of English Braille, American Edition](imports-braille-tables.md)).
