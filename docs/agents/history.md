@@ -666,3 +666,8 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - DAISY 3 books of several DTBook files, and SMIL clocks, came on November 13, 2026.
 - DAISYParser.parseTime: "500ms" used to read as no time.
+
+## From Imports: duplicates
+
+- The unanswered-duplicate marker (DuplicateQuestionMarker) came on October 31, 2026.
+- Answering off the main actor (answerImportDecisionOffMain, replaceExistingOffMain) came on November 13, 2026.

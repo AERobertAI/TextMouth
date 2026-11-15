@@ -25,7 +25,7 @@
     "docs/architecture/state/imports-braille-tables.md": {"line-length": 34},
     "docs/architecture/state/imports-braille.md": {"line-length": 29},
     "docs/architecture/state/imports-daisy.md": {"line-length": 3},
-    "docs/architecture/state/imports-duplicates.md": {"date": 2, "line-length": 17},
+    "docs/architecture/state/imports-duplicates.md": {"line-length": 17},
     "docs/architecture/state/imports-kindle.md": {"date": 4, "line-length": 15},
     "docs/architecture/state/imports-office-xml.md": {"date": 1, "line-length": 11},
     "docs/architecture/state/imports-rtf-and-word.md": {"date": 1, "line-length": 29},
