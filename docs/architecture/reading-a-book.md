@@ -80,13 +80,13 @@ The reader refreshes its view at most every 0.12 seconds, gives the library's ro
 
 When a chapter's speech finishes, the callback made for its play ignores the end of a play the reader has already left, a later play having begun.
 Otherwise it saves the position and starts the next speakable chapter after the one that played, as a new play.
-It does not when the reader's own sleep timer stops playback at this chapter's end, where the next chapter begins the next heading, or the book ends (expireAtChapterEnd(endingTheHeading:endingTheBook:by:)): the reader stops there instead, its cursor waiting at the next chapter's start.
+It does not do so when the reader's own sleep timer stops playback at this chapter's end, where the next chapter begins the next heading, or the book ends (expireAtChapterEnd(endingTheHeading:endingTheBook:by:)): the reader stops there instead, its cursor waiting at the next chapter's start.
 If the look-ahead holds that chapter's audio, rendered with the signature its speech has now, the engine plays it at once and the chapter after it is pre-rendered; otherwise the chapter is spoken from its current text.
 When no speakable chapter remains, handleEndOfBook stops, starts the book again, or continues to the next book in the folder or feed, as the book's end-of-book rule says (EndOfBookRule: its own choice, else its feed's or folder's, else the global setting).
 A sleep timer of the reader's can end listening there instead (sleepTimerEndsListeningHere: a running timer counting minutes goes on with the next book).
 For a book read from the reading list, handleEndOfBook goes where the list's options say (finishBookReadFromReadingList).
 Every end but a loop's calls finishAtTheEnd(replayingAFinishedEnd:) (P07), which tells ReadingStatsService.markBookFinished, unless the end replayed a finished end, writes one BOOK_FINISHED event line, counted, counted already, or a replay, and calls restAtEnd().
-Its restAtEnd() saves the cursor at endOfBookPlace, the last chapter at its full length, so the place's global offset is the book's total, beginning a new playback generation only when that moves it to another chapter.
+ReaderViewModel.restAtEnd() saves the cursor at endOfBookPlace, the last chapter at its full length, so the place's global offset is the book's total, beginning a new playback generation only when that moves it to another chapter.
 Book.restsAtEnd, a saved place at or past the book's total, with no field of its own, and the reader's cursorRestsAtEnd, its live counterpart, then read the book as finished.
 A book that neither loops back to its beginning nor hands over to the next book rests finished at its end (hasFinishedBook) and keeps its Now Playing session.
 So a backward skip that reaches its reader, from the AirPods, the media keys, or the keyboard, plays it again from where the skip lands, while no other book plays (see [Now Playing and media keys](state/media-playback.md)).
@@ -134,7 +134,7 @@ When a multi-file audiobook's chapter ends and a pause follows it (chapterPauses
 - and starts the chapter from a cancellable work item once the pause has passed (startCursorChapter(afterPause:)).
 
 The reader's isPlaybackUnderWay counts the wait.
-It is cancelled by stopAudioWaitingToPlay, stop() and so closing, a package move, and playAudioChapter(); a jump moves only the cursor.
+The wait is cancelled by stopAudioWaitingToPlay, stop() and so closing, a package move, and playAudioChapter(); a jump moves only the cursor.
 The fileAfterCurrentChapter property names no file after a chapter a pause follows; without a pause, playback rolls on gaplessly.
 
 ## Manifest edits made outside the app
