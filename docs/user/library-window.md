@@ -44,7 +44,8 @@ Of the shipped views, only Recently Opened lists them, and the Reading List hold
 <!-- id: what-shipped-views-list; keys: built-in views, default views, view definition, one episode per feed; src: TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/Models/LibraryViewDefinitionStore.swift -->
 
 All Items, as shipped, lists every book and every feed, sorted by title until you choose another sort.
-Unopened, as shipped, lists every book you have never opened, from every folder, and a book leaves it once you open it, and a feed only while it has a new episode or article among those it lists, one published, or, undated, first seen, since you subscribed and neither played nor opened, so a podcast's back catalog never keeps it there.
+Unopened, as shipped, lists every book you have never opened, from every folder, and a book leaves it once you open it, and a feed only while it has a new episode or article among those it lists, one published, or, undated, first seen, since you subscribed and neither played nor opened.
+So a podcast's back catalog never keeps it there.
 It replaces No Folder: the books in no folder, which No Folder listed, are at the top of the library in Folders.
 Recently Opened, as shipped, lists the ten books, episodes, and articles you opened last, and of each feed's episodes and articles only the one you opened last, which takes one of the ten places; it keeps the sort you chose for it under its old name, Recent.
 The Reading List lists the books you add to it, in the order you arrange (below).
@@ -90,7 +91,8 @@ Whether a title's leading article counts when the Title sort orders books, and w
 <!-- id: where-book-author-comes-from; keys: creator, Unknown author, EPUB metadata, contributor, Book Info; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/BookInfo.swift -->
 
 A book's author comes from its file.
-An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author; TextMouth reads them all, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one.
+An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author.
+TextMouth reads them all, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one.
 A book whose file names no one is listed under Unknown, and Book Info, or an EPUB's metadata editor, lets you type an author in, which is kept whatever the file says.
 
 ## Moving books in manual order
@@ -111,7 +113,8 @@ A feed's episode or article in a folder can't be moved, and they say "<title> is
 ## Move Up and Move Down on a row
 <!-- id: move-up-move-down-row; keys: row actions, Actions menu, accessibility action, LibraryManualMove; src: TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift -->
 
-Where the list shows an order you arrange, a folder in manual order or the Reading List, a book's row also offers Move Up and Move Down in its context menu and as the first of its actions in VoiceOver's Actions menu (VO-Command-Space), each only where the book can make that move: the first book offers Move Down alone, and a book alone in the list offers neither.
+Where the list shows an order you arrange, a folder in manual order or the Reading List, a book's row also offers Move Up and Move Down in its context menu and as the first of its actions in VoiceOver's Actions menu (VO-Command-Space), each only where the book can make that move.
+The first book offers Move Down alone, and a book alone in the list offers neither.
 The VoiceOver actions move the book one place and say where it now stands, as in "Dune, 3 of 12"; the context menu's items, and Move Book Up and Move Book Down from the Library menu or the keyboard, say which book the move passed, as in "Moved Dune above Almanac".
 Should the list change after the row offered a move it can no longer make, the action says so, as in "Dune can't move up."
 
@@ -127,18 +130,21 @@ Add to Reading List, in a book's context menu, its actions in VoiceOver's Action
 For several books selected, each command counts them, as in "Add 3 Books to Reading List", and a selection holding books of both kinds offers both.
 VoiceOver says what changed, as in "Added to reading list: Moby-Dick", or why nothing did, as in "Moby-Dick is already in the reading list."
 Neither command has a key until you give it one in the Shortcuts tab of Settings, under Library.
-In every other view, a book in the list says "In reading list" right after its title and author in its row's VoiceOver label, as in "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text", so it is in the same place on every row; in edit mode a selected row still begins "Selected", and the row has no VoiceOver value of its own.
+In every other view, a book in the list says "In reading list" right after its title and author in its row's VoiceOver label, as in "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text", so it is in the same place on every row.
+In edit mode a selected row still begins "Selected", and the row has no VoiceOver value of its own.
 
 ### Rearranging and removing at the Reading List
 <!-- id: rearranging-removing-at-reading-list; keys: Reading List Order, empty list, Delete key, Remove from Library; src: TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
 
-At the Reading List, Move Book Up, Move Book Down, and dragging rearrange the list, its Sort menu names its one order, Reading List Order, and an empty list says how to add a book; Remove from Library… and the Delete key still remove a book from the library there, so take a book off the list alone with Remove from Reading List.
+At the Reading List, Move Book Up, Move Book Down, and dragging rearrange the list, its Sort menu names its one order, Reading List Order, and an empty list says how to add a book.
+Remove from Library… and the Delete key still remove a book from the library there, so take a book off the list alone with Remove from Reading List.
 A book that leaves the library leaves the list too, one taken out with Remove from Library Only included, even when the next launch is what takes it out.
 
 ### Importing at the Reading List
 <!-- id: importing-at-reading-list; keys: import to reading list, duplicate, Replace, Library Root, ZIP; src: TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Models/ReadingListWording.swift -->
 
-At the Reading List, Open Book…, Import Folder…, and New from Text…, whether chosen in the Add to Library sheet or from their menus, put their books in the folder the window showed last, as anywhere else, and add them to the end of the reading list; VoiceOver says where the books themselves went, as in "Added to reading list: Moby-Dick.
+At the Reading List, Open Book…, Import Folder…, and New from Text…, whether chosen in the Add to Library sheet or from their menus, put their books in the folder the window showed last, as anywhere else, and add them to the end of the reading list.
+VoiceOver says where the books themselves went, as in "Added to reading list: Moby-Dick.
 The book is in Essays/Sea.", calling the top of the library Library Root, as the folder pickers do, and says it after the import's own words, not over them.
 A ZIP archive's books join together, a duplicate joins once you keep both, and a book opened from Finder never joins.
 Replace on a duplicate gives the new copy the old one's place on the reading list, wherever you import it; at the Reading List, the new copy of a book that wasn't on the list joins its end, and VoiceOver says so.
@@ -153,7 +159,8 @@ Skip finished books, checked unless you clear it, passes over the books Books Fi
 <!-- id: remove-books-when-finished; keys: removeFinishedLabel, finished books, auto remove, Books Finished; src: TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift -->
 
 Remove books when finished, unchecked unless you check it (VoiceOver reads its hint, "Takes a finished book off the reading list once its reader window moves on or closes.
-Books finished before you turn this on stay on it."), takes a book off the list as soon as it is finished, whether you opened it from the list or not, the same way Remove from Reading List does, so the book stays in the library and is saved off the list at once; nothing is said of it, so the end of a book says what it always said, and the Reading List, if open, shows the book gone.
+Books finished before you turn this on stay on it."), takes a book off the list as soon as it is finished, whether you opened it from the list or not, the same way Remove from Reading List does, so the book stays in the library and is saved off the list at once.
+Nothing is said of it, so the end of a book says what it always said, and the Reading List, if open, shows the book gone.
 A book read from the list that ends still goes on to the book that followed it, or preceded it with Play the book above, and Skip finished books still passes over finished books after it.
 While its window rests on the finished book, the book stays on the list, so Rewind, Play, and Next in Reading List in that window still follow the list as before, and it leaves the list when the window goes on to another book or closes.
 A book finished with no window resting on it, such as a feed episode marked played, leaves at once.
@@ -165,7 +172,8 @@ The sleep timer, Where Am I?, and Next in Reading List are unchanged, though a b
 ### The options bar in a cloud library and a narrow window
 <!-- id: options-bar-cloud-library-narrow; keys: Keep these books on this Mac, kept books, iCloud, narrow window; src: TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
 
-In a library in the cloud the options bar has a fourth control, the checkbox "Keep these books on this Mac", checked unless you clear it, which keeps every book on the list downloaded on this Mac (see [Cloud libraries](cloud-library.md)); it is this Mac's own choice, and it is not there for a library on this Mac or another drive.
+In a library in the cloud the options bar has a fourth control, the checkbox "Keep these books on this Mac", checked unless you clear it, which keeps every book on the list downloaded on this Mac (see [Cloud libraries](cloud-library.md)).
+It is this Mac's own choice, and it is not there for a library on this Mac or another drive.
 In a window too narrow for all the options on one line, the bar goes on to a second line rather than cutting a label, in the same order.
 
 ## Edit Mode
@@ -208,7 +216,8 @@ A move, a folder's rename or move, or Delete Folder's Move Contents that fails k
 ## Book Info and Command-I
 <!-- id: book-info-command-i; keys: Info sheet, title and author, metadata editor, showBookInfo; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
-Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feeds.md)): Save waits for a title of more than spaces, and drops the spaces typed around the title or the author.
+Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feeds.md)).
+Save waits for a title of more than spaces, and drops the spaces typed around the title or the author.
 
 ### The Braille Code row
 <!-- id: braille-code-row; keys: braille table, braille language, bookInfoLabel, mac: table name; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/BrailleTableCatalog.swift -->
@@ -233,7 +242,8 @@ With several rows selected it acts on the first in the list's order, in Edit Mod
 
 A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), include Show in Finder, which selects the book's package in Finder.
 In a library in the cloud they also offer Download Now, Remove Download, and Keep on This Mac (see [Keeping your library in the cloud](cloud-library.md)).
-An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript, and a transcribed audiobook's Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)); a feed's episode, whose audio can't be edited, offers no Edit Audio….
+An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript, and a transcribed audiobook's Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)).
+A feed's episode, whose audio can't be edited, offers no Edit Audio….
 
 ## Exporting from the Library window
 <!-- id: exporting-from-library-window; keys: File menu, export selected books, noBooksSelected, nothing to export; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/App/MenuCommands.swift -->
@@ -247,7 +257,9 @@ These commands aren't among the row's actions in VoiceOver's Actions menu.
 <!-- id: summary-line; keys: summary bar, book count, time remaining, status line, CountWording; src: TextMouth/Models/CountWording.swift, TextMouth/Models/FolderNavigationHistory.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
 
 A summary line gives each location's book count and its listening time remaining at the current speed, and, in a library in the cloud, how many of its books are in the cloud and how many are kept on this Mac.
-The count never counts a feed's episodes and articles as books: where the Feeds section lists feeds, it names them beside the books, as in "743 books, 2 feeds", or "2 feeds" where there is no book; in Recently Opened and the Reading List, which list episodes and articles beside books, it counts each kind, as in "9 books, 1 article", as the list's heading does, "Books (9), Articles (1)"; and in a feed's folder it counts the feed's episodes instead (see Feeds in the library, under [Podcasts and article feeds](feeds.md)).
+The count never counts a feed's episodes and articles as books: where the Feeds section lists feeds, it names them beside the books, as in "743 books, 2 feeds", or "2 feeds" where there is no book.
+In Recently Opened and the Reading List, which list episodes and articles beside books, it counts each kind, as in "9 books, 1 article", as the list's heading does, "Books (9), Articles (1)".
+And in a feed's folder it counts the feed's episodes instead (see Feeds in the library, under [Podcasts and article feeds](feeds.md)).
 VoiceOver hears the same words entering a folder, as in "Library, 743 books, 2 feeds", and in a folder's row, as in "Podcasts, 3 books, 2 feeds".
 Storage settings' Library Statistics count the books, then the feeds, where there are any, the folders, and the books kept in packages, and Use This Library's confirmation counts the library in use the same way.
 
