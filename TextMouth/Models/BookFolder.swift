@@ -1,6 +1,6 @@
 import Foundation
 
-struct BookFolder: Identifiable, Codable, Hashable {
+struct BookFolder: Identifiable, Codable, Hashable, KeepsUnknownKeysBesideSynthesizedCoding {
     let id: UUID
     var name: String
     var parentPath: String  // empty for root-level folders
@@ -19,6 +19,20 @@ struct BookFolder: Identifiable, Codable, Hashable {
         self.parentPath = parentPath
         self.dateCreated = dateCreated
         self.listeningOptions = nil
+    }
+
+    /// The keys of the folder's entry in library.json that this TextMouth
+    /// does not know (V04, `UnknownKeys`), written back as they were; none
+    /// in a folder made here. A folder renamed or moved is changed in
+    /// place, and keeps them. The synthesized coding passes them over:
+    /// `Library` reads and writes them beside the fields
+    /// (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of a folder's entry that this version knows
+    /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
     }
 
     var fullPath: String {

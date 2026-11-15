@@ -364,9 +364,13 @@ struct Library: Codable, Equatable, KeepsUnknownKeys {
         let decoded = try UnreadableLibraryRow.decodeRows(from: &rows)
         books = decoded.books.map { $0.placedInLibraryFolder() }
         unreadableRows = decoded.unreadable
-        folders = try container.decode([BookFolder].self, forKey: .folders)
+        // Each folder and the reading list with the keys it does not know
+        // (V04). A folder's sort setting keeps none: a change of sort makes
+        // the setting anew (`LibrarySortState.setting`).
+        folders = try container.decode([WithUnknownKeys<BookFolder>].self, forKey: .folders).map(\.value)
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
-        readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
+        readingList = (try? container.decodeIfPresent(WithUnknownKeys<ReadingList>.self, forKey: .readingList))?.value
+            ?? ReadingList()
         feedShelf = FeedShelf()
         // Every other section is kept as it is, to be written back (V04).
         unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
@@ -393,9 +397,9 @@ struct Library: Codable, Equatable, KeepsUnknownKeys {
         for row in unreadableRows {
             try rows.encode(row.json)
         }
-        try container.encode(folders, forKey: .folders)
+        try container.encode(folders.map(WithUnknownKeys.init), forKey: .folders)
         try container.encode(folderSortSettings, forKey: .folderSortSettings)
-        try container.encode(readingList, forKey: .readingList)
+        try container.encode(WithUnknownKeys(readingList), forKey: .readingList)
     }
 
     // MARK: - Books and Feed Items (FR11)
