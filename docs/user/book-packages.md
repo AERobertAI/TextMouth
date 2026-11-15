@@ -88,7 +88,7 @@ A Word 6 or Word 95 document, which textutil read until version 0.4.1, with a ta
 
 First it compares the whole of the book's content.md with what the book's file gives.
 A book whose text you changed with Edit Text keeps that text, without pages, until Redo Text Extraction, and so does one whose content.md was changed in another editor since TextMouth last wrote it.
-Any other book whose content.md differs from what its file gives, even only in a heading, a heading's level, or a chapter's title, as an edit made before TextMouth began recording edits on October 21, 2026 may, or in a chapter that an EPUB lost by naming its file in another letter case than its ZIP spells it, is read again with its pages too, once TextMouth has kept a copy of its text beside it as content.md.edited- followed by a date and time (below); if no copy can be made, the book keeps its text, without pages, and every automatic rebuild keeps it, as it keeps text you changed with Edit Text.
+Any other book whose content.md differs from what its file gives, even only in a heading, a heading's level, or a chapter's title, as an edit made before version 0.2.0 recorded edits may, or in a chapter that an EPUB lost by naming its file in another letter case than its ZIP spells it, is read again with its pages too, once TextMouth has kept a copy of its text beside it as content.md.edited- followed by a date and time (below); if no copy can be made, the book keeps its text, without pages, and every automatic rebuild keeps it, as it keeps text you changed with Edit Text.
 A book whose file is missing keeps its text without pages; one whose file can't be read is tried again at the next launch, then keeps its text without pages; and one whose files are only in the cloud gains its pages at a launch when they're on this Mac.
 A Word document older than Word 6, which textutil reads, whose pages textutil couldn't read is tried again at the next launch, then keeps its text without pages until Redo Text Extraction.
 The debug log records a PAGES_REPLACED_TEXT line naming each copy kept, a PAGES_SKIPPED_CHANGED_TEXT line for each book that keeps its text, and one PAGES_UPGRADE_SUMMARY line counting the books given pages, replaced keeping a copy, kept as changed, skipped, and failed.
@@ -110,7 +110,7 @@ A transcribed audiobook's content.md holds its transcript's text instead (see tr
 ### Braille, plain text, EPUB, and HTML books read again
 <!-- id: braille-plain-text-epub-html; keys: read again, page number, heading names, braille emphasis; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
-The first launch after the update of October 24, 2026 reads every braille, plain text, EPUB, and HTML book again, once, in the way just described.
+The first launch of version 0.2.2 reads every braille, plain text, EPUB, and HTML book again, once, in the way just described.
 Braille and plain text books gain their pages, an EPUB or HTML book loses the number of a page break from the name of any heading that held one, and a braille book is read with the update's better reading of emphasis and of some words (see [What TextMouth reads](what-textmouth-reads.md) and [Reader windows](reader-windows.md)).
 A braille book whose new reading differs from its text, by its words or by its emphasis alone, as one whose braille holds emphasis signs may, keeps a copy of its old text beside it, as any book whose content.md differs from what its file gives does.
 An EPUB or HTML book that has its pages already is read again without that comparison, and keeps no copy.
@@ -119,7 +119,7 @@ A book's places follow its words in every case.
 ### DAISY books read again
 <!-- id: daisy-books-read-again; keys: DTBook, DAISY 3, page entries; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift -->
 
-The first launch after the update of November 13, 2026 reads every DAISY book again, once, in the way just described: only a DAISY 3 book of several DTBook files, with a page that holds no words, ends with another text (see [What TextMouth reads](what-textmouth-reads.md)).
+The first launch of version 0.4.7 reads every DAISY book again, once, in the way just described: only a DAISY 3 book of several DTBook files, with a page that holds no words, ends with another text (see [What TextMouth reads](what-textmouth-reads.md)).
 
 ## content.md.edited- copies of text
 <!-- id: content-md-edited-copies-text; keys: kept copy, backup of text, edited text, Edit Text; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/Services/TextMouthPaths.swift -->

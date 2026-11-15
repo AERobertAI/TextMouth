@@ -73,8 +73,8 @@ A move from a current data directory that is not there, or is a file, says "The 
 <!-- id: book-stored-outside-data-directory; keys: external file, linked book, copy is missing content; src: TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 A book stored outside the data directory stops the move before anything is copied or published (0.4.3).
-The move cannot carry a file that is not in the data directory, and used to say the copy was missing the book's content.
-The alert now names the book and where it is, as in "The book Harbour Pilots is stored at /Volumes/Shelf/pilots.mp3, outside the data directory, so the move cannot carry it.
+The move cannot carry a file that is not in the data directory.
+The alert names the book and where it is, as in "The book Harbour Pilots is stored at /Volumes/Shelf/pilots.mp3, outside the data directory, so the move cannot carry it.
 Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again."
 The title and path are the book's own.
 

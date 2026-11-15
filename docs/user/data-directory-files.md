@@ -13,7 +13,7 @@ It lists every book of the library's own (title, author, format, folder, file pa
 ### Feeds are not in library.json
 <!-- id: feeds-are-not-library-json; keys: feed episodes, articles, feed index; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/Feeds/FeedIndex.swift -->
 
-Since October 10, 2026 it never holds a feed's downloaded episode or article, whose feed's own index lists it instead (see Feeds, below), and a row it holds is always a book of the library's own, whatever a hand edit of the file says.
+It never holds a feed's downloaded episode or article, whose feed's own index lists it instead (see Feeds, below), and a row it holds is always a book of the library's own, whatever a hand edit of the file says.
 ### How reading positions reach the index
 <!-- id: how-reading-positions-reach-index; keys: saving position, five minutes, autosave, reader closes; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift -->
 
@@ -24,11 +24,11 @@ While a book plays, its reading position reaches the index within five minutes, 
 Each book's row also records which version of TextMouth's metadata reader last read its file for its title and author, and which of its details you edited by hand (see [The Library window](library-window.md), under [Finding your way around](../../README.md)).
 The first launch after an update that reads a format's metadata better reads every older row's file again, in the background before the text caches, and takes the author the file names where the row still says Unknown; an author you typed stays, and a file that still names no one leaves Unknown.
 It never replaces a field edited by hand.
-For a book imported from its own file since October 7, 2026, by Open Book, from Finder, in a ZIP of books, or with Import Folder…, whose record of hand edits begins at its import, it also brings up to date the title, author, publisher, and publication date the file names.
-For every other book, from before then, or made with New from Text, by a recording, from a feed's episode or article, or from a ZIP of audio tracks or a DAISY audio book's ZIP, whose names come from elsewhere than the file it reads, it replaces nothing but that Unknown author, and only with a name, so a title or an author you typed stays.
+For a book imported from its own file by Open Book, from Finder, in a ZIP of books, or with Import Folder…, whose record of hand edits begins at its import, it also brings up to date the title, author, publisher, and publication date the file names.
+For every other book, imported before its record of hand edits began, or made with New from Text, by a recording, from a feed's episode or article, or from a ZIP of audio tracks or a DAISY audio book's ZIP, whose names come from elsewhere than the file it reads, it replaces nothing but that Unknown author, and only with a name, so a title or an author you typed stays.
 It never reads an episode or article its feed lists, whose title and author come from the feed.
 A book whose files are only in the cloud waits for a launch that finds them on this Mac.
-The October 7, 2026 update does this once for every book. library.json is read one row at a time.
+library.json is read one row at a time.
 ### Rows this TextMouth cannot read
 <!-- id: library-json-unreadable-rows; keys: unknown format, newer TextMouth, kept rows, unknown sort; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Models/Library.swift -->
 
@@ -55,8 +55,8 @@ When neither gives one, as when the file was cut short, the Rebuild choice says 
 ### Older TextMouths find the index unreadable
 <!-- id: older-textmouths-find-index-unreadable; keys: older version, downgrade, compatibility, new format names; src: TextMouth/Models/Library.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
-A TextMouth built before October 18, 2026 finds the index unreadable whenever it holds a book in a format added that day, and one built before October 20, 2026 whenever it holds a braille book, a format added on that day: 0.1.1, built October 17, 2026, does for all eight (braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML).
-The index names each book's format, and a TextMouth built before October 18 does not know the names rtf, rtfd, doc, odt, wordml, webarchive, and ssml, and one built before October 20 does not know braille.
+A TextMouth that does not know a format finds the index unreadable whenever it holds a book in that format: 0.1.1 does for all eight (braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML).
+The index names each book's format, and 0.1.1 does not know the names rtf, rtfd, doc, odt, wordml, webarchive, ssml, and braille.
 It leaves library.json as it is, saves this copy beside it, and writes no index, but it still writes each book's package record, and those records lose the fields it does not know: the record of an edit of the book's text and of the page reader that wrote it.
 A newer TextMouth then reads a book whose text you edited from its file again, keeping your edit beside it as content.md.edited- followed by a date and time (below).
 Nothing else is lost until someone chooses Rebuild Library Index there, which makes an index without the books in the formats it does not know, though their packages stay in the Library folder, and without the folders and the manual order that only the index held, which the preserved copy keeps.

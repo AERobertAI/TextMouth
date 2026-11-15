@@ -18,7 +18,7 @@ The debug log records OGG_CONVERTED for each book converted and OGG_CONVERSION_W
 TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](what-textmouth-reads.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when it runs longer than a minute plus a tenth of the track's length, grows past 1 GB, stops writing for 20 seconds, or writes more than four times what the track should come to and 16 MB more, and that the Mac itself ends when it has used more than four times that many seconds of processor time or tries to write past that amount.
 An import that can't convert a track stops (see [Adding books](adding-books.md)).
 A library book whose Ogg conversion fails is left exactly as it was and tried again at the next launch; Play says so.
-The debug log records AUDIO_CONVERSION_KILLED for each conversion stopped, as OGG_CONVERSION_KILLED did before October 18, 2026.
+The debug log records AUDIO_CONVERSION_KILLED for each conversion stopped, as OGG_CONVERSION_KILLED did before version 0.2.0.
 
 ### When the converter ends
 <!-- id: when-converter-ends; keys: orphan, force-quit, leftover converter; src: TextMouth/Platform/macOS/Services/OrphanedConversionSweep.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->

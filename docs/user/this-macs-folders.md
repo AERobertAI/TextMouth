@@ -36,7 +36,7 @@ Archive Extraction: the working folders of ZIP imports, under the same condition
 ### Recordings
 <!-- id: this-mac-recordings; keys: New Recording, Recovered recordings, Discard Recording, CAF, crash; src: TextMouth/Services/RecordingTake.swift -->
 
-Recordings: the takes being recorded, and any not yet saved as a book, each a CAF file named for when it started, as in "Take 2026-10-04 06.30.12 1A2B3C4D.caf".
+Recordings: the takes being recorded, and any not yet saved as a book, each a CAF file named for when it started, in the form "Take yyyy-MM-dd HH.mm.ss 1A2B3C4D.caf".
 A take leaves once its book, with the original the original audio policy keeps, is in the library, or when Discard Recording deletes it.
 A take cut off by a crash or a forced quit, or whose save failed after its window closed, stays here, still readable, and the New Recording window lists it under Recovered recordings until it is saved or discarded (see [Recording from a microphone](recording.md)).
 A punch-in's take, recorded in the audio editor, leaves once its edit holds it, or when it is discarded.
