@@ -273,23 +273,6 @@ enum TestMicrophones {
     static let usb = AudioInputDevice(id: "AppleUSBAudioEngine:Studio Microphone:4100000:1", name: "Studio Microphone")
 }
 
-// MARK: - Waiting
-
-extension XCTestCase {
-    /// Waits, letting the main actor run, until `condition` holds or
-    /// `timeout` seconds pass, and returns whether it held: for what the
-    /// recorder does in tasks of its own.
-    @MainActor
-    func eventually(timeout: TimeInterval = 5, _ condition: @escaping @MainActor () -> Bool) async -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition() {
-            guard Date() < deadline else { return false }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        return true
-    }
-}
-
 // MARK: - A Record Window Without Hardware
 
 /// A Record window model with fakes for everything outside it: a recorder

@@ -23,4 +23,19 @@ extension XCTestCase {
         }
         return condition()
     }
+
+    /// Waits, letting the main actor run, until `condition` holds or
+    /// `timeout` seconds pass, and returns whether it held: for what code
+    /// does in tasks of its own, such as the recorder's, or a wait for held
+    /// storage work to end, so a wait that never ends fails its test rather
+    /// than hanging it.
+    @MainActor
+    func eventually(timeout: TimeInterval = 5, _ condition: @escaping @MainActor () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() {
+            guard Date() < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return true
+    }
 }

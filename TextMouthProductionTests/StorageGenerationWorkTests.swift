@@ -192,16 +192,18 @@ final class StorageGenerationWorkTests: XCTestCase {
 
     /// A wait for the release returns at once while nothing holds the work,
     /// and otherwise only once the operation holding it lets it go: each
-    /// caller waiting then goes on, however many wait.
+    /// caller waiting then goes on, however many wait. Every wait here has a
+    /// limit, so one that never ends fails the test instead of hanging it.
     func testAWaitForTheReleaseEndsOnlyWhenTheHoldIsReleased() async throws {
         let boundary = try makeBoundary()
-        await boundary.waitForRelease()
+        await boundary.waitForRelease(after: boundary.releases)
 
         let hold = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
+        let seen = boundary.releases
         let released = Tally()
-        let waiters = (0..<3).map { _ in
+        for _ in 0..<3 {
             Task { @MainActor in
-                await boundary.waitForRelease()
+                await boundary.waitForRelease(after: seen)
                 released.count += 1
             }
         }
@@ -213,11 +215,33 @@ final class StorageGenerationWorkTests: XCTestCase {
         XCTAssertEqual(released.count, 0, "a wait for the release ended while the work was held")
 
         hold.release()
-        for waiter in waiters {
-            await waiter.value
-        }
-        XCTAssertEqual(released.count, 3, "a waiter never went on after the release")
+        let allWent = await eventually { released.count == 3 }
+        XCTAssertTrue(allWent, "\(released.count) of 3 waiters went on after the release")
         XCTAssertNil(boundary.heldFor)
+    }
+
+    /// A release counted before a wait begins is not missed, though another
+    /// operation holds the work by the time the wait begins: the wait
+    /// returns at once, for its caller to see the new hold for itself, as a
+    /// retry kept for the first operation does. It used to wait for the
+    /// second operation, and say the first one's words meanwhile.
+    func testAWaitSeesAReleaseThatCameBeforeItBegan() async throws {
+        let boundary = try makeBoundary()
+        let first = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
+        let seen = boundary.releases
+        // In one turn of the main actor, before the wait below begins.
+        first.release()
+        _ = try makeHold(on: boundary, for: .rebuildingDirectory)
+        let ended = Tally()
+
+        Task { @MainActor in
+            await boundary.waitForRelease(after: seen)
+            ended.count += 1
+        }
+
+        let sawTheRelease = await eventually { ended.count == 1 }
+        XCTAssertTrue(sawTheRelease, "the wait missed the release that came before it began")
+        XCTAssertEqual(boundary.heldFor, .rebuildingDirectory)
     }
 
     // MARK: - The Import Queue

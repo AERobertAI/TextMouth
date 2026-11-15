@@ -778,13 +778,17 @@ final class PersistenceFailureCenter: ObservableObject {
     }
 
     /// Starts waiting for the operation holding the storage work to end,
-    /// unless a wait is under way already.
+    /// unless a wait is under way already. The releases are counted now,
+    /// not in the wait's first turn: a release that comes before that turn,
+    /// with another operation holding the work by then, is seen, and the
+    /// retries are kept for that operation with its words.
     private func waitForStorageWorkToBeFree() {
         guard storageWorkWait == nil else { return }
         storageWorkWaitNumber += 1
         let number = storageWorkWaitNumber
+        let seen = boundary.releases
         storageWorkWait = Task { [weak self, boundary] in
-            await boundary.waitForRelease()
+            await boundary.waitForRelease(after: seen)
             self?.storageWorkWasReleased(wait: number)
         }
     }
