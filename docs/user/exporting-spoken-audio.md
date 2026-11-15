@@ -1,5 +1,5 @@
 # Exporting text as spoken audio
-<!-- id: text-as-spoken-audio; keys: ; src: -->
+<!-- id: export-spoken-audio; keys: speech export, M4B, M4A, MP3, audiobook from text, synthesize; src: TextMouth/Models/SpeechExportWording.swift, TextMouth/Services/SpeechExport/SpeechExportJob.swift, TextMouth/Views/Export/SpeechExportOptionsView.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -7,7 +7,7 @@ Part of version 0.4.2.
 A text book can be spoken by its voice into one audio file, with a chapter for each heading.
 
 ## The options
-<!-- id: options; keys: ; src: -->
+<!-- id: export-spoken-audio-options; keys: Format, From, To, Speed, Pitch, voice licence, headings range; src: TextMouth/Views/Export/SpeechExportOptionsView.swift, TextMouth/ViewModels/SpeechExportOptionsState.swift, TextMouth/Models/SpeechExportWording.swift -->
 
 - The Export dialog of a text book has a checkbox named "Text as spoken audio".
   Its hint is "The book's text spoken by its voice into one audio file, with a chapter for each heading."
@@ -41,7 +41,7 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
 - The voice, speed, and pitch start from what the book is read with.
 
 ## MP3 and chapters
-<!-- id: mp3-chapters; keys: ; src: -->
+<!-- id: export-spoken-audio-mp3-chapters; keys: 255 chapters, ID3 chapters, M4B; src: TextMouth/Models/SpeechExportWording.swift, TextMouth/ViewModels/SpeechExportOptionsState.swift -->
 
 - M4B and M4A have a chapter at each heading.
   An MP3 can hold chapters for the first 255 headings only.
@@ -51,7 +51,7 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
 - The end of such an export says it too: "The MP3 has chapters for the first 255 of its 300 headings; export it as M4B to have a chapter for each."
 
 ## While it runs
-<!-- id: while-it-runs; keys: ; src: -->
+<!-- id: export-spoken-audio-while-running; keys: Speaking chapter, Encoding, Stop, kept chapters, Speech Export folder, Quitting TextMouth, Command-Q; src: TextMouth/Services/SpeechExport/SpeechExportJob.swift, TextMouth/Services/SpeechExport/SpeechExportStore.swift, TextMouth/Services/SpeechExport/SpeechExportsUnderWay.swift -->
 
 - Export speaks the book chapter by chapter, and the progress says which: "Speaking chapter 2 of 12…".
   Then it says "Encoding the audio file…".
@@ -74,7 +74,7 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
 - The spoken chapters are deleted only after the finished file is in the chosen folder, so a file that can't be put there loses no chapters.
 
 ## When a book can't be spoken
-<!-- id: when-book-cant-be-spoken; keys: ; src: -->
+<!-- id: export-spoken-audio-refusals; keys: Personal Voice, no voice, disk space, silence, -60 dBFS, spoken chapters folder; src: TextMouth/Services/SpeechExport/SpeechExportError.swift, TextMouth/Services/SpeechExport/SpeechExportSpace.swift, TextMouth/Services/SpeechExport/SpeechExportVoice.swift, TextMouth/Services/SpeechExport/SpeechChapterRenderer.swift -->
 
 - Each reason is said before anything is spoken, with what to do:
   - A Personal Voice: "“Ana” is a Personal Voice, which macOS can't record to a file.
@@ -98,13 +98,13 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
   Choose another folder."
 
 ## A caution about listening
-<!-- id: caution-about-listening; keys: ; src: -->
+<!-- id: export-spoken-audio-caution; keys: listening during export, reading jumps back; src: TextMouth/Services/SpeechExport/SpeechExportJob.swift -->
 
 - While a spoken-audio export runs, listening to a book in TextMouth hasn't been tested.
   If the reading jumps back to words it has already said, stop the export or pause the reading.
 
 ## What is not done yet
-<!-- id: what-not-done-yet; keys: ; src: -->
+<!-- id: export-spoken-audio-not-done; keys: WAV, AIFF, CAF, FLAC, time ranges, Premium voices; src: TextMouth/Models/SpeechExportWording.swift -->
 
 - Time ranges, a selection, and the formats WAV, AIFF, CAF, Apple Lossless, and FLAC are not offered.
 - Each chapter is not encoded while the next is spoken: the file is encoded once, at the end.
