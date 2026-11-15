@@ -644,3 +644,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From The library index
 
 - **Formats an older build cannot read:** A build from before October 18, 2026 that meets rtf, rtfd, doc, odt, wordml, webarchive, or ssml in an index, or one from before October 20, 2026 that meets braille, fails to decode it.
+## From The reading list and feed items
+
+- **The list overrides a book's own end rule:** A reader that reads its book from the list holds it at its end, and the list overrides the book's own end rule (the user, October 7, 2026).
+- **The In reading list note:** Until October 17, 2026 "In reading list" was a book row's accessibility value, the empty string for a book not in the list.
