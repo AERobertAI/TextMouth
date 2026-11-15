@@ -1,8 +1,10 @@
 # TextMouth
 
-TextMouth is a native macOS application that reads books aloud with the Mac's text-to-speech voices and plays audiobooks. It is designed for people who read with VoiceOver and a braille display, and its rule is that every control has a spoken label, every value on screen has a spoken equivalent, and every action can be done from the keyboard.
+TextMouth is a native macOS application that reads books aloud with the Mac's text-to-speech voices and plays audiobooks.
+It is designed for people who read with VoiceOver and a braille display, and its rule is that every control has a spoken label, every value on screen has a spoken equivalent, and every action can be done from the keyboard.
 
-This file is the index of TextMouth's documentation, whose pages are in the docs folder: a page for each part of the app, for the person using it; how to build and test TextMouth; and the notes coding agents work from. ARCHITECTURE.md, in the same folder, is the index of the pages explaining how the code is organized and which part of the app owns each kind of data.
+This file is the index of TextMouth's documentation, whose pages are in the docs folder: a page for each part of the app, for the person using it; how to build and test TextMouth; and the notes coding agents work from.
+ARCHITECTURE.md, in the same folder, is the index of the pages explaining how the code is organized and which part of the app owns each kind of data.
 
 ## For people using TextMouth
 
@@ -28,13 +30,16 @@ This file is the index of TextMouth's documentation, whose pages are in the docs
 ## For people building TextMouth
 
 - [Building TextMouth](docs/developer/building.md): what you need, the make targets (`make build`, then `make install` to put the app in Applications), the version policy and how the version number is raised (`make bump-patch`, `make bump-minor`) or set (`make set-version`), the make check gate, and the iOS app (`TextMouthiOS`), which `make typecheck-ios` compiles and links without Xcode's iOS platform, with `make typecheck-mac` and `make mac-projection`.
-- [Testing TextMouth](docs/developer/testing.md): the hosted test suite, the performance baselines, and the tests on real cloud drives. It also covers the reusable test tools in `Scripts/test/`: run only some tests (`make test-area AREAS="feeds bookmarks"`), check the lines a branch adds (`make lint-tests`, `make lint-a11y`, `make lint-ogg`), record and compare document goldens (`Scripts/test/update-goldens.sh`), report on a folder of documents (`Scripts/test/corpus-report.sh`), and the opt-in sweeps for voices, damaged imports, and storage failures.
-- [Architecture](ARCHITECTURE.md): who owns each kind of state, how a book is read, the shared helpers, and the duplication left in place. [The two apps and the platform folders](docs/architecture/platforms.md) says how one source folder builds the Mac app and the iOS app: `TextMouth/Platform/macOS`, `TextMouth/Platform/iOS`, and the files they share.
+- [Testing TextMouth](docs/developer/testing.md): the hosted test suite, the performance baselines, and the tests on real cloud drives.
+  It also covers the reusable test tools in `Scripts/test/`: run only some tests (`make test-area AREAS="feeds bookmarks"`), check the lines a branch adds (`make lint-tests`, `make lint-a11y`, `make lint-ogg`), record and compare document goldens (`Scripts/test/update-goldens.sh`), report on a folder of documents (`Scripts/test/corpus-report.sh`), and the opt-in sweeps for voices, damaged imports, and storage failures.
+- [Architecture](ARCHITECTURE.md): who owns each kind of state, how a book is read, the shared helpers, and the duplication left in place.
+  [The two apps and the platform folders](docs/architecture/platforms.md) says how one source folder builds the Mac app and the iOS app: `TextMouth/Platform/macOS`, `TextMouth/Platform/iOS`, and the files they share.
 - [Third-party code](docs/developer/third-party-code.md): the libraries TextMouth includes, and their licences.
 
 ## For coding agents
 
-- [AGENTS.md](AGENTS.md): start here. Where the project's state lives, the user's standing rules, how a task agent works, and how the orchestrator merges and records.
+- [AGENTS.md](AGENTS.md): start here.
+  Where the project's state lives, the user's standing rules, how a task agent works, and how the orchestrator merges and records.
 - [Working on TextMouth with coding agents](docs/agents/working-with-agents.md): the message board the agents coordinate through.
 - [Where things stood, earlier campaigns](docs/agents/history.md): the status of each earlier campaign.
 - [Writing docs and memory files](docs/agents/writing-docs.md): the rules every page and memory file follows.
