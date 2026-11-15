@@ -625,6 +625,7 @@ targets:
       - TextMouthProductionTests/PackageNavigationAuditTests.swift
       - TextMouthProductionTests/PageModelTests.swift
       - TextMouthProductionTests/ParserContentFidelityTests.swift
+      - TextMouthProductionTests/PatienceDiffTests.swift
       - TextMouthProductionTests/PhoneAudioErrorCodeTests.swift
       - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
       - TextMouthProductionTests/PhoneAudioPaceTests.swift
@@ -665,6 +666,7 @@ targets:
       - TextMouthProductionTests/TextutilHTMLStructureTests.swift
       - TextMouthProductionTests/TimeEntryTests.swift
       - TextMouthProductionTests/TimeLeftEstimateTests.swift
+      - TextMouthProductionTests/TimedTextModelTests.swift
       - TextMouthProductionTests/TitleTypingTests.swift
       - TextMouthProductionTests/UnicodeCoordinateTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
