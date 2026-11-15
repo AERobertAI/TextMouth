@@ -372,7 +372,15 @@ class ShardingTests(TreeCase):
 
     def test_a_class_with_no_recorded_time_is_counted_by_its_tests_and_its_bundle(self):
         seconds = ui.estimated_seconds(["BigUITests", "SmallUITests", "UnitsTests", "Nowhere"], self.sized(), times={})
-        self.assertEqual(seconds, {"BigUITests": 100.0, "SmallUITests": 25.0, "UnitsTests": 6.0, "Nowhere": 1.0})
+        # Each test of a bundle counts as that bundle's SECONDS_PER_TEST: an interface test 25 seconds, a unit test a
+        # small fraction of one; a class in neither bundle counts as the shard default.
+        per_unit_test = ui.SECONDS_PER_TEST[ui.UNIT_BUNDLE]
+        self.assertEqual(seconds["BigUITests"], 4 * ui.SECONDS_PER_TEST[ui.UI_BUNDLE])
+        self.assertEqual(seconds["SmallUITests"], ui.SECONDS_PER_TEST[ui.UI_BUNDLE])
+        self.assertAlmostEqual(seconds["UnitsTests"], 6 * per_unit_test)
+        self.assertEqual(seconds["Nowhere"], 1.0)
+        # An interface test costs far more than a unit test, so a big unit class never outweighs an interface test.
+        self.assertLess(per_unit_test, ui.SECONDS_PER_TEST[ui.UI_BUNDLE] / 100)
 
     def test_a_recorded_time_wins_over_the_estimate(self):
         seconds = ui.estimated_seconds(["BigUITests"], self.sized(), times={"BigUITests": 7.5})

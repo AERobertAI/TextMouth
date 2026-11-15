@@ -306,8 +306,11 @@ def executed_with_counts(lines):
 TIMES_FILE = Path(__file__).resolve().parent / "ios-class-times.json"
 # What a class that the times file does not know is counted as, for each test it holds: an interface test launches the app
 # (10 to 15 seconds on the runner's three cores) and waits for screens, 25 to 35 seconds each in the runs of November 10 to 13;
-# a unit test takes about a second. So a class a later change adds is dealt out by its size and not as one second.
-SECONDS_PER_TEST = {UI_BUNDLE: 25.0, UNIT_BUNDLE: 1.0}
+# a unit test is far quicker: 1,979 of them, most shared with the Mac, took 70.9 seconds of test time in run 43690096205,
+# about 0.04 seconds each, so 0.05 is counted. So a class a later change adds is dealt out by its size and not as one second,
+# and the unit bundle's 1,960 tests do not pass for half an hour of work (they took the Mac tests' third shard when counted
+# at a second each).
+SECONDS_PER_TEST = {UI_BUNDLE: 25.0, UNIT_BUNDLE: 0.05}
 # One iPhone job's share of tests, in seconds, past which another job is worth its own set-up (the platform's download, the
 # build, the simulator's boot: about 10 to 13 minutes on the runner).
 TARGET_SHARD_SECONDS = 480
