@@ -138,23 +138,14 @@ final class AudioEditorSavingTests: XCTestCase {
         }
     }
 
-    /// Every format the editor writes keeps the chapter markers (FMT11): a
-    /// save of a WAVE book keeps them as the file's markers, which the book
-    /// reads back as its chapters, and an export as AIFF, CAF, or M4A keeps
-    /// them too; none says they are left out. The warning's words stay for a
-    /// format that would leave them out.
+    /// Every format the editor writes keeps the chapter markers (FMT11): an
+    /// export as AIFF, CAF, or M4A keeps them, and a save of a WAVE book
+    /// keeps them as the file's markers; none says they are left out. The
+    /// warning's words stay for a format that would leave them out.
     func testEveryFormatKeepsTheChapterMarkers() async throws {
         let harness = try await openRamp(seconds: 4)
         let model = harness.model
         await model.insertChapter(titled: "Quay")
-
-        await model.save()
-        XCTAssertTrue(harness.announcements.sentences.contains(
-            "Saving 4 seconds of audio as WAV, the format this book keeps."
-        ), "\(harness.announcements.sentences)")
-        XCTAssertEqual(AudioMarkerList.read(at: harness.fixture.book.bookFileURL)?.markers.map(\.name), ["Quay"])
-        let saved = await AudioPlaybackService.extractChapters(from: harness.fixture.book.bookFileURL)
-        XCTAssertEqual(saved.map(\.title), ["Quay"], "the saved WAVE file's marker is its chapter")
         XCTAssertEqual(AudioRenderFormat.allCases.filter { !$0.holdsChapterMarkers }, [])
         XCTAssertEqual(model.chapterWarning(for: .pcmAIFF), "")
         XCTAssertEqual(
@@ -177,6 +168,18 @@ final class AudioEditorSavingTests: XCTestCase {
                 XCTAssertEqual(AudioMarkerList.read(at: destination)?.markers.map(\.name), ["Quay"], name)
             }
         }
+
+        // The save comes last: once saved, the editor reads the file again.
+        await model.save()
+        XCTAssertTrue(harness.announcements.sentences.contains(
+            "Saving 4 seconds of audio as WAV, the format this book keeps."
+        ), "\(harness.announcements.sentences)")
+        XCTAssertEqual(AudioMarkerList.read(at: harness.fixture.book.bookFileURL)?.markers.map(\.name), ["Quay"])
+        // One marker at the start is the whole file: a list of one place is
+        // no chapters (`FileChapterReaders.placedChapters`), so the book keeps
+        // its title as its one heading, as a file of no markers does.
+        let saved = await AudioPlaybackService.extractChapters(from: harness.fixture.book.bookFileURL)
+        XCTAssertEqual(saved.map(\.title), [], "the saved WAVE file's one marker makes no chapters of its own")
     }
 
     /// A file written without the chapter markers it should hold says so,

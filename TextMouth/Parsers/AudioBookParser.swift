@@ -216,6 +216,15 @@ enum AudioBookParser {
         try await parseFile(url: url, prober: prober, fallbackChapters: fallbackChapters).content
     }
 
+    /// The title a book of the one audio file at `url` takes: the title its
+    /// tags give (`metadataTitle`), or its file's name without the
+    /// extension. A list of places read from the file by hand titles the
+    /// sound before its first place the same way
+    /// (`FileChapterReaders.placedChapters`).
+    static func bookTitle(metadataTitle: String?, of url: URL) -> String {
+        metadataTitle ?? url.deletingPathExtension().lastPathComponent
+    }
+
     /// Parse a single audio file, saying where its chapters came from.
     /// Extracts chapters from M4B metadata if available. A file without
     /// any takes `fallbackChapters`, a podcast episode's chapters kept
@@ -243,7 +252,7 @@ enum AudioBookParser {
 
         // Try to extract metadata
         let metadata = await AudioPlaybackService.extractMetadata(from: url)
-        let title = metadata.title ?? url.deletingPathExtension().lastPathComponent
+        let title = bookTitle(metadataTitle: metadata.title, of: url)
         let author = metadata.artist ?? Book.unknownAuthor
 
         // Try to extract chapter markers, or take a podcast's chapters

@@ -1647,7 +1647,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// (`FLACCueSheetReader`, FMT24), since a CD rip's track list can be
     /// kept there alone, and a WAVE or AIFF file's markers
     /// (`AudioMarkerList`, FMT17), which audio editors and Broadcast Wave
-    /// recorders write.
+    /// recorders write; the last two with the sound before their first
+    /// place titled as the book is, and none when they make one chapter
+    /// (`FileChapterReaders.placedChapters`).
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         // An Ogg file never reaches AVFoundation's probing (see `metadataAsset`).
         guard let asset = metadataAsset(for: url) else { return [] }
@@ -1668,10 +1670,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))
             }
             // No chapters AVFoundation reads: try the list the file's kind
-            // keeps, read by hand.
-            if chapters.isEmpty, let listed = FileChapterReaders.chapters(of: url) {
+            // keeps, read by hand, the sound before its first place titled
+            // as the book is (`AudioBookParser.bookTitle`).
+            if chapters.isEmpty {
                 let length = CMTimeGetSeconds((try? await asset.load(.duration)) ?? .zero)
-                return NeroChapterReader.bookChapters(from: listed, fileDuration: length)
+                let listed = await FileChapterReaders.bookChapters(of: url, lasting: length) {
+                    AudioBookParser.bookTitle(metadataTitle: await extractMetadata(from: url).title, of: url)
+                }
+                if let listed { return listed }
             }
             return chapters
         } catch {

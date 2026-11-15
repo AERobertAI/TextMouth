@@ -20,11 +20,13 @@ import AVFoundation
 enum ChapterTrackWriter {
     /// Writes the .m4a at `file`, which lasts `duration` seconds, to a new
     /// .m4a at `destination` with the chapters `chapters` lists, made into a
-    /// book's chapters as every list read by hand is
-    /// (`NeroChapterReader.bookChapters(from:fileDuration:)`: sorted, each
-    /// lasting until the next, the first from the start).
-    /// - Returns: whether anything was written: a list that makes no chapter
-    ///   writes nothing.
+    /// book's chapters as every list of places read by hand is
+    /// (`FileChapterReaders.placedChapters`: sorted, each lasting until the
+    /// next, the sound before the first titled as the book will be, by the
+    /// file's own title tag or `fallbackTitle`, and none when they make one
+    /// chapter).
+    /// - Returns: whether anything was written: a list that makes no chapter,
+    ///   or only one, writes nothing.
     /// - Throws: `AudioEditError.unreadableAudio` for a file this writer
     ///   never opens or that has no audio track, `AudioEditError.renderFailed`
     ///   when AVFoundation refuses the copy, or `CancellationError`; nothing
@@ -34,11 +36,14 @@ enum ChapterTrackWriter {
         _ chapters: [NeroChapterReader.Chapter],
         from file: URL,
         to destination: URL,
-        lasting duration: TimeInterval
+        lasting duration: TimeInterval,
+        titled fallbackTitle: String
     ) async throws -> Bool {
-        let list = NeroChapterReader.bookChapters(from: chapters, fileDuration: duration)
-        guard !list.isEmpty else { return false }
+        guard !chapters.isEmpty else { return false }
         guard !ImportAudioConverter.isNeverDecodedInApp(file) else { throw AudioEditError.unreadableAudio }
+        let title = await AudioPlaybackService.extractMetadata(from: file).title ?? fallbackTitle
+        let list = FileChapterReaders.placedChapters(chapters, lasting: duration, leadingTitle: title)
+        guard !list.isEmpty else { return false }
 
         let asset = AVURLAsset(url: file) // lint-ok: the import's own .m4a, refused above when it is of a converted format or Ogg
         guard let track = try await asset.loadTracks(withMediaType: .audio).first else {

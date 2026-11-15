@@ -957,9 +957,13 @@ enum ImportAudioConverter {
     ) async throws {
         let withChapters = temporaryURL(beside: url)
         do {
-            // A list that makes no chapter (every start past the end) writes
-            // nothing, and the file stays as it is.
-            guard try await ChapterTrackWriter.write(chapters, from: url, to: withChapters, lasting: duration) else { return }
+            // A list that makes no chapter (every start past the end), or
+            // only one, writes nothing, and the file stays as it is. The
+            // sound before the first place is titled as the book will be: by
+            // the file's title tag, or the source's name, which the
+            // converted file takes.
+            let title = (sourceName as NSString).deletingPathExtension
+            guard try await ChapterTrackWriter.write(chapters, from: url, to: withChapters, lasting: duration, titled: title) else { return }
             try await check(withChapters, against: duration, from: sourceName)
             _ = try FileManager.default.replaceItemAt(url, withItemAt: withChapters)
         } catch {

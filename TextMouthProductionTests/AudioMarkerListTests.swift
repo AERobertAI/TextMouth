@@ -108,6 +108,38 @@ final class AudioMarkerListTests: XCTestCase {
         }
     }
 
+    /// A file's markers are places in it (`FileChapterReaders.placedChapters`):
+    /// one unnamed marker at the start makes no chapter, so the book keeps
+    /// its title, as it did before markers were read, not "Chapter 1"; one a
+    /// second in begins a chapter there, after one titled as the book is (by
+    /// the file's name, as it has no title tag). A FLAC cue sheet's one track
+    /// makes none either, and a place past the end leaves nothing.
+    func testAFilesPlacesFollowTheBooksTitleAndOneAloneMakesNone() async throws {
+        let folder = try makeSandboxDirectory("markers-places")
+        let alone = folder.appendingPathComponent("Ferry Log.wav")
+        try writeSilence(to: alone)
+        try AudioMarkerList.write([("", 0)], to: alone)
+        let later = folder.appendingPathComponent("Pier Notes.wav")
+        try writeSilence(to: later)
+        try AudioMarkerList.write([("", 1)], to: later)
+
+        let aloneChapters = await AudioPlaybackService.extractChapters(from: alone)
+        let parsed = try await AudioBookParser.parseFile(url: alone)
+        let laterChapters = await AudioPlaybackService.extractChapters(from: later)
+
+        XCTAssertEqual(aloneChapters.map(\.title), [])
+        XCTAssertEqual(parsed.content.chapters.map(\.title), ["Ferry Log"])
+        XCTAssertEqual(laterChapters.map(\.title), ["Pier Notes", "Chapter 2"])
+        XCTAssertEqual(laterChapters.map(\.startTime), [0, 1])
+        let place = { (title: String, start: TimeInterval) in NeroChapterReader.Chapter(title: title, start: start) }
+        XCTAssertEqual(FileChapterReaders.placedChapters([place("Track 1", 0)], lasting: 60, leadingTitle: "Album").map(\.title), [])
+        XCTAssertEqual(FileChapterReaders.placedChapters([place("Late", 90)], lasting: 60, leadingTitle: "Album").map(\.title), [])
+        XCTAssertEqual(
+            FileChapterReaders.placedChapters([place("B", 30), place("A", 0)], lasting: 60, leadingTitle: "Album").map(\.title),
+            ["A", "B"]
+        )
+    }
+
     /// Names with letters outside ASCII, and typographic punctuation, read
     /// back as written in each format, as chapter titles in other languages
     /// need.

@@ -24,7 +24,7 @@ final class ChapterTrackWriterTests: XCTestCase {
             let before = try await facts(of: file)
 
             let wrote = try await ChapterTrackWriter.write(
-                [.init(title: "Second", start: 1.5), .init(title: "First", start: 0)], from: file, to: copy, lasting: before.duration
+                [.init(title: "Second", start: 1.5), .init(title: "First", start: 0)], from: file, to: copy, lasting: before.duration, titled: "Harbour"
             )
 
             XCTAssertTrue(wrote, name)
@@ -45,20 +45,49 @@ final class ChapterTrackWriterTests: XCTestCase {
         let file = folder.appendingPathComponent("plain.m4a")
         try writeSilence(to: file, codec: kAudioFormatMPEG4AAC, duration: 1)
         let unused = folder.appendingPathComponent("unused.m4a")
-        let wrote = try await ChapterTrackWriter.write([], from: file, to: unused, lasting: 1)
+        let wrote = try await ChapterTrackWriter.write([], from: file, to: unused, lasting: 1, titled: "Plain")
         XCTAssertFalse(wrote)
-        let pastTheEnd = try await ChapterTrackWriter.write([.init(title: "Late", start: 5)], from: file, to: unused, lasting: 1)
+        let pastTheEnd = try await ChapterTrackWriter.write(
+            [.init(title: "Late", start: 5)], from: file, to: unused, lasting: 1, titled: "Plain"
+        )
         XCTAssertFalse(pastTheEnd, "a chapter past the file's end makes no chapter")
 
         let ogg = folder.appendingPathComponent("radio.ogg")
         try Data("OggS not really".utf8).write(to: ogg)
         do {
-            try await ChapterTrackWriter.write([.init(title: "A", start: 0)], from: ogg, to: unused, lasting: 1)
+            try await ChapterTrackWriter.write([.init(title: "A", start: 0)], from: ogg, to: unused, lasting: 1, titled: "Radio")
             XCTFail("an Ogg file was opened")
         } catch {
             XCTAssertEqual(error as? AudioEditError, .unreadableAudio)
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["plain.m4a", "radio.ogg"])
+    }
+
+    /// The places given make a book's chapters as a file's markers do
+    /// (`FileChapterReaders.placedChapters`): one chapter alone writes
+    /// nothing, so the book keeps its title, as it did before; a place a
+    /// second and a half in begins a chapter there, after one titled as the
+    /// book will be, here by the name given, as the file has no title tag.
+    func testOnePlaceWritesNothingAndALaterOneFollowsTheBooksTitle() async throws {
+        let folder = try makeSandboxDirectory("chapter-track-places")
+        let file = folder.appendingPathComponent("plain.m4a")
+        try writeSilence(to: file, codec: kAudioFormatMPEG4AAC, duration: 3)
+        let alone = folder.appendingPathComponent("alone.m4a")
+        let later = folder.appendingPathComponent("later.m4a")
+
+        let wroteAlone = try await ChapterTrackWriter.write(
+            [.init(title: "Only", start: 0)], from: file, to: alone, lasting: 3, titled: "Harbour Talk"
+        )
+        let wroteLater = try await ChapterTrackWriter.write(
+            [.init(title: "Departure", start: 1.5)], from: file, to: later, lasting: 3, titled: "Harbour Talk"
+        )
+
+        XCTAssertFalse(wroteAlone)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: alone.path))
+        XCTAssertTrue(wroteLater)
+        let chapters = await AudioPlaybackService.extractChapters(from: later)
+        XCTAssertEqual(chapters.map(\.title), ["Harbour Talk", "Departure"])
+        XCTAssertEqual(chapters.map(\.startTime), [0, 1.5])
     }
 
     /// An import cancelled while its converted file gains its chapters
@@ -74,7 +103,9 @@ final class ChapterTrackWriterTests: XCTestCase {
         // The task runs on the main actor, so it starts only once this test
         // awaits it: it is already cancelled when it begins.
         let task = Task {
-            try await ImportAudioConverter.keepChapters([.init(title: "A", start: 0)], in: file, lasting: 1, from: "plain.m4a")
+            try await ImportAudioConverter.keepChapters(
+                [.init(title: "A", start: 0), .init(title: "B", start: 0.5)], in: file, lasting: 1, from: "plain.m4a"
+            )
         }
         task.cancel()
         do {
