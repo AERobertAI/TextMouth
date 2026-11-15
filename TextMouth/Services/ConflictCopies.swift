@@ -51,6 +51,8 @@ struct ConflictCopyFinding: Equatable, Sendable, Identifiable {
         case libraryIndex
         /// A feed's record in the Feeds folder.
         case feedRecord
+        /// A feed's own index of its packages, Feeds/<feed ID>/library.json.
+        case feedIndex
         /// A book's record, bookInfo.json.
         case bookRecord
     }
@@ -118,8 +120,20 @@ struct ConflictCopyFinder: Sendable {
         for record in feedRecordFiles(in: feeds) {
             found += versionFindings(of: record, subject: .feedRecord, service: service)
         }
-        for package in packages(in: [root.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)] + feedFolders(in: feeds, of: root)) {
-            found += copies(of: TextMouthPaths.bookInfoPath(in: package), subject: .bookRecord, service: service)
+        let feedItemFolders = feedFolders(in: feeds, of: root)
+        // Each feed's own index holds its episodes' places and bookmarks.
+        for folder in feedItemFolders {
+            found += copies(of: folder.appendingPathComponent(FeedPaths.indexFileName), subject: .feedIndex, service: service)
+        }
+        for package in packages(in: [root.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)] + feedItemFolders) {
+            let record = copies(of: TextMouthPaths.bookInfoPath(in: package), subject: .bookRecord, service: service)
+            found += record
+            // iCloud Drive syncs a package as one item, so its conflicts sit
+            // on the package, whose files carry no flags: ask it too, unless
+            // the record's own flags already reported a version.
+            if !record.contains(where: { if case .version = $0.place { return true } else { return false } }) {
+                found += versionFindings(of: package, subject: .bookRecord, service: service)
+            }
         }
         return found
     }
@@ -254,6 +268,11 @@ struct ConflictCopyFinder: Sendable {
                 copy: try? BookInfo.decodeRecordFile(copyBytes),
                 original: originalBytes.flatMap { try? BookInfo.decodeRecordFile($0) }
             )
+        case .feedIndex:
+            return ConflictCopyWording.feedIndexHolds(
+                copy: try? LibraryPersistenceService.decodeIndex(from: copyBytes),
+                original: originalBytes.flatMap { try? LibraryPersistenceService.decodeIndex(from: $0) }
+            )
         case .feedRecord:
             let decoder = FeedRecordCoding.decoder()
             return ConflictCopyWording.feedRecordHolds(
@@ -350,6 +369,7 @@ enum ConflictCopyWording {
         switch subject {
         case .libraryIndex: return "the library index, \(file)"
         case .feedRecord: return "a feed's record, \(file)"
+        case .feedIndex: return "a feed's index of its episodes, \(file)"
         case .bookRecord: return "a book's record, \(file)"
         }
     }
@@ -414,6 +434,14 @@ enum ConflictCopyWording {
         guard let place = info.state.readingPosition else { return "no place saved, and \(bookmarks)" }
         let saved = place.lastUpdated.formatted(date: .abbreviated, time: .shortened)
         return "chapter \(place.chapterIndex + 1), saved \(saved), and \(bookmarks)"
+    }
+
+    /// What a copy of a feed's own index holds, set against the index itself.
+    static func feedIndexHolds(copy: Library?, original: Library?) -> String {
+        guard let copy else { return "It couldn't be read." }
+        let held = "It holds \(CountWording.phrase(copy.books.count, singular: "episode", plural: "episodes"))"
+        guard let original else { return held + "." }
+        return "\(held); the index holds \(CountWording.phrase(original.books.count, singular: "episode", plural: "episodes"))."
     }
 
     /// What a copy of a feed's record holds, set against the record itself.

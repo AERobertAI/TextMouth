@@ -68,6 +68,39 @@ final class ConflictCopyTests: XCTestCase {
         XCTAssertEqual(findings[0].folderPath, library.root.path)
     }
 
+    /// A feed's own index, Feeds/<feed ID>/library.json, is searched too, and
+    /// a copy of it is reported with what it holds.
+    func testConflictCopiesOfAFeedsOwnIndexAreFound() throws {
+        let library = try makeLibrary(withConflictFiles: false)
+        let folder = FeedPaths.itemsFolder(of: library.feedID, in: library.root)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let episode = Book(title: "Episode 1", format: .txt, filePath: "/e.mp3", md5Hash: "e", tmbDirectoryName: "e.tmb")
+        try LibraryPersistenceService.encodedIndex(Library(books: [episode])).write(to: folder.appendingPathComponent("library.json"))
+        try LibraryPersistenceService.encodedIndex(Library()).write(to: folder.appendingPathComponent("library (1).json"))
+
+        let findings = ConflictCopyFinder(itemStatus: FakeDrive()).findAll(in: library.root)
+
+        XCTAssertEqual(findings.map(\.subject), [.feedIndex])
+        XCTAssertTrue(findings[0].sentence.hasPrefix("Google Drive set aside a conflicting copy of a feed's index of its episodes, library.json: “library (1).json”"))
+        XCTAssertTrue(findings[0].sentence.contains("It holds 0 episodes; the index holds 1 episode."), findings[0].sentence)
+    }
+
+    /// iCloud Drive syncs a book's package as one item, so a conflict sits on
+    /// the package, not on the record inside it: asked of the package too.
+    func testICloudsConflictOnABooksPackageIsReported() throws {
+        let library = try makeLibrary(withConflictFiles: false)
+        let drive = FakeDrive(provider: .iCloudDrive, conflicted: ["Moby-Dick.tmb"])
+        let saved = Date(timeIntervalSince1970: 1_790_000_000)
+        let finder = ConflictCopyFinder(itemStatus: drive, versions: { file in
+            file.lastPathComponent == "Moby-Dick.tmb" ? [ConflictVersion(computerName: "Study iMac", modified: saved)] : []
+        })
+
+        let findings = finder.findAll(in: library.root)
+
+        XCTAssertEqual(findings.count, 1)
+        XCTAssertTrue(findings[0].sentence.hasPrefix("iCloud Drive holds a conflicting version of a book's record, Moby-Dick.tmb, saved on “Study iMac”"), findings[0].sentence)
+    }
+
     /// A library that is not in a cloud location has none found, though a
     /// file is named like a conflict copy.
     func testALocalLibraryHasNoConflictCopiesReported() throws {

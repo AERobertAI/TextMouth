@@ -17,6 +17,7 @@ extension ConflictCopyFinding {
         switch subject {
         case .libraryIndex: return "library index: \(file)"
         case .feedRecord: return "feed record: \(file)"
+        case .feedIndex: return "feed index: \(file)"
         case .bookRecord: return "book record: \(file)"
         }
     }
