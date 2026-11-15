@@ -594,6 +594,7 @@ targets:
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
       - TextMouthProductionTests/FolderSafetyTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
+      - TextMouthProductionTests/IOSInfoPlistTests.swift
       - TextMouthProductionTests/ImportConcurrencyTests.swift
       - TextMouthProductionTests/ImportDecisionQueueTests.swift
       - TextMouthProductionTests/ImportDecisionTestSupport.swift
@@ -651,9 +652,37 @@ targets:
       - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
       - TextMouthProductionTests/PhoneAudioPaceTests.swift
       - TextMouthProductionTests/PhoneAudioWordingTests.swift
+      - TextMouthProductionTests/PhoneBackgroundHoldTests.swift
+      - TextMouthProductionTests/PhoneBookSearchTests.swift
+      - TextMouthProductionTests/PhoneBookmarksModelTests.swift
+      - TextMouthProductionTests/PhoneEscapePolicyTests.swift
+      - TextMouthProductionTests/PhoneFocusRequestsTests.swift
+      - TextMouthProductionTests/PhoneFolderVocabularyTests.swift
+      - TextMouthProductionTests/PhoneGoToModelTests.swift
+      - TextMouthProductionTests/PhoneHeadingsModelTests.swift
+      - TextMouthProductionTests/PhoneImportBranchTests.swift
+      - TextMouthProductionTests/PhoneImportCopyTests.swift
+      - TextMouthProductionTests/PhoneImportHoldingTests.swift
+      - TextMouthProductionTests/PhoneImportQuestionTests.swift
+      - TextMouthProductionTests/PhoneImportWordingTests.swift
+      - TextMouthProductionTests/PhoneLaunchRequestTests.swift
+      - TextMouthProductionTests/PhoneLibraryChoicesTests.swift
+      - TextMouthProductionTests/PhoneLibraryOfferTests.swift
+      - TextMouthProductionTests/PhoneLibraryRowsTests.swift
+      - TextMouthProductionTests/PhoneLibrarySectionsTests.swift
       - TextMouthProductionTests/PhoneLogExportTests.swift
+      - TextMouthProductionTests/PhoneMemoryPolicyTests.swift
+      - TextMouthProductionTests/PhoneMoveFeedbackTests.swift
+      - TextMouthProductionTests/PhoneNavigationUnitsTests.swift
+      - TextMouthProductionTests/PhoneReaderControlsTests.swift
+      - TextMouthProductionTests/PhoneRouteTests.swift
+      - TextMouthProductionTests/PhoneRowValueTests.swift
+      - TextMouthProductionTests/PhoneRowWordingTests.swift
+      - TextMouthProductionTests/PhoneScreenHoldsTests.swift
       - TextMouthProductionTests/PhoneSettingsDefaultsTests.swift
       - TextMouthProductionTests/PhoneSettingsVocabularyTests.swift
+      - TextMouthProductionTests/PhoneSleepDeadlineTests.swift
+      - TextMouthProductionTests/PhoneSleepTimerModelTests.swift
       - TextMouthProductionTests/PlaceRelocatorBookTests.swift
       - TextMouthProductionTests/PlaceRelocatorHeadingTests.swift
       - TextMouthProductionTests/PlaceRelocatorSharedRuleTests.swift
