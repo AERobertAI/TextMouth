@@ -41,7 +41,7 @@
     "docs/architecture/state/preferences-shortcuts.md": {"line-length": 21},
     "docs/architecture/state/preferences.md": {"line-length": 20},
     "docs/architecture/state/reader-navigation.md": {"line-length": 31, "user-quote": 1},
-    "docs/architecture/state/reader-playback.md": {"line-length": 23},
+    "docs/architecture/state/reader-playback.md": {"line-length": 20},
     "docs/architecture/state/reader.md": {"line-length": 29},
     "docs/architecture/state/recordings.md": {"line-length": 6},
     "docs/architecture/state/saving-failures.md": {"line-length": 1},
