@@ -18,7 +18,7 @@ The List and download choice, and the newest-N rule (FR11's branch B): which of 
   Who asked last for an item's download is FeedItem.downloadOrigin (FeedDownloadOrigin: listener, or window, the rule's discretionary downloads), nil for an item no download has been asked for since the rule came, whose download counts as the listener's.
   A rule download that a network with data limits refused, or that lacks room for the size its feed gives beside the 1 GB TextMouth keeps free, waits (FeedItemState.waiting, with the reason FeedDownloadWait gives: network, or room(bytes:)), which FeedRecord.durable writes as not downloaded.
   So a feed's record never holds a wait.
-  The waits for a network are kept, in order, in FeedDownloadManager.putOff, which quitting lists in this Mac's Downloads at Quit.json (downloads, above).
+  The waits for a network are kept, in order, in FeedDownloadManager.putOff, which quitting lists in this Mac's Downloads at Quit.json ([Downloads](feeds.md)).
 - Who may write it: the Feeds tab of Settings (FeedItemPolicyControls, through SettingsViewModel.feedSettings) and config.json, for the choice for every feed.
   Feed Info, through FeedCenter.setItemPolicy(_:of:), which sets a feed's own, a change of which the list follows at once while the rule waits the ten seconds, and itemPolicy(of:) reads the one a feed follows.
   The retired settings move once.
@@ -26,7 +26,8 @@ The List and download choice, and the newest-N rule (FR11's branch B): which of 
   Every entry kept, everyListedDownloadsByHand.
   Any other number n, onlyNewestListed with n.
   Writing the choice's key marks the move done, and a number the store already holds is kept.
-  FeedCenter.moveKeptEntriesOverrides(), as the records load and again at each refreshAll(origin:), gives each feed whose record still holds the retired Feed.keepEntriesOverride the choice it asks for, through migrated(keepEntriesOverride:under:) (a number n, onlyNewestListed with n; every entry, the global choice while that lists every item, and everyListedDownloadsByHand otherwise), and clears it.
+  FeedCenter.moveKeptEntriesOverrides(), as the records load and again at each refreshAll(origin:), gives each feed whose record still holds the retired Feed.keepEntriesOverride the choice it asks for, through migrated(keepEntriesOverride:under:), and clears it.
+  A number n gives onlyNewestListed with n; every entry gives the global choice while that lists every item, and everyListedDownloadsByHand otherwise.
   An item becomes the listener's (downloadOrigin listener) when:
   - the listener asks for its download, even while the rule's waits or runs,
   - cancels it (cancelDownload(_:of:)),
@@ -38,7 +39,11 @@ The List and download choice, and the newest-N rule (FR11's branch B): which of 
 
 - How others observe it: FeedCenter.listedItems(of:) lists a feed's items by its listing (FeedRecord.listedItems(under:hasFile:): every item not deleted, or the newest n less those played without their file here, beside every item whose file is here or that downloads or waits, wherever it falls).
   And a feed's folder and its counts read it.
-  The newest-N rule (Services/Feeds/FeedNewestRule.swift: FeedCenter.applyItemPolicy(to:retrying:), which returns a FeedItemPolicyPassReport) serves each feed whose choice downloads by itself: it takes back its downloads not yet under way whose items no longer count (FeedDownloadManager.withdrawRuleDownloads), asks for each of the newest n not played that it may download (ruleMayDownload(_:): never an item the listener asked for, deleted, or stopped, nor one whose download made before the rule went; and an item that failed only in a pass that follows a refresh of its feed), and, holding more of its own downloads than n, removes the files of its oldest outside the newest until it holds n, for good, through removeDue(_:from:by:at:putOffEvent:), as the after-playing sweep does (above), passing over a download the listener asked for, one on the reading list, one in use (feedBooksInUse, as the sweep), and, in a library in the cloud, one this Mac doesn't hold whole, until a later pass.
+  The newest-N rule (Services/Feeds/FeedNewestRule.swift: FeedCenter.applyItemPolicy(to:retrying:), which returns a FeedItemPolicyPassReport) serves each feed whose choice downloads by itself:
+  - it takes back its downloads not yet under way whose items no longer count (FeedDownloadManager.withdrawRuleDownloads),
+  - asks for each of the newest n not played that it may download (ruleMayDownload(_:): never an item the listener asked for, deleted, or stopped, nor one whose download made before the rule went; and an item that failed only in a pass that follows a refresh of its feed),
+  - and, holding more of its own downloads than n, removes the files of its oldest outside the newest until it holds n, for good, through removeDue(_:from:by:at:putOffEvent:), as the after-playing sweep does ([Played downloads and their deletion](feeds.md)),
+  - passing over a download the listener asked for, one on the reading list, one in use (feedBooksInUse, as the sweep), and, in a library in the cloud, one this Mac doesn't hold whole, until a later pass.
   A download that waits or fails removes nothing.
   For a feed that downloads by hand it takes back the rule's downloads not yet under way and removes nothing, and no pass runs while the library's index is being recovered.
   For a feed the listener unsubscribed from (FR11's branch D), whose rules stay in force while checking stops, it takes back its downloads not yet under way and asks for none, while its removals act as above, so its downloads beyond the newest still go.
@@ -79,7 +84,10 @@ A feed's listening options (FR19): how listening goes on from one of its episode
   And, for a folder, LibraryViewModel.setListeningOptions(_:ofFolder:), which saves the library once, and saves nothing for a folder that is gone or for options it already has, from the Folder Settings sheet (FolderSettingsModel, in [Windows](windows-sheets.md)).
 - How others observe it: LibraryViewModel.listeningOptions(of:) finds the options that govern a book: its feed's for an item of a feed (nil when the feed's record is gone), and otherwise those of the folder that holds it directly, never those of a folder above it (nil at the top of the library).
   The reader weighs them against its book's own choice and the global setting (EndOfBookRule, in [The reader](reader-navigation.md)).
-  ListeningOptions.goesOn(under:) says whether listening would go on from one item to another under them, which dims Feed Info's download checkbox (FeedInfoModel.continuesToAnotherEpisode) and the window pop-up of both sheets (NextBookWindowPicker, whose isAvailable is FeedInfoModel.continuesToAnotherEpisode or FolderSettingsModel.continuesToAnotherBook; NextBookWindowRule.choiceIsAvailable words the same rule), so a dimmed choice is in effect nowhere: NextBookWindowRule.choice then gives the global setting, for the end of a book and for Next and Previous in Folder alike (folderMoveWindowChoice, in [The reader](reader-navigation.md)); ListeningOptionsWording words the three older controls once, and NextBookWindowWording the window pop-up (label, choices, hint, and dimmed hint), for Feed Info and Folder Settings.
+  ListeningOptions.goesOn(under:) says whether listening would go on from one item to another under them, which dims Feed Info's download checkbox (FeedInfoModel.continuesToAnotherEpisode) and the window pop-up of both sheets.
+  The pop-up is NextBookWindowPicker, whose isAvailable is FeedInfoModel.continuesToAnotherEpisode or FolderSettingsModel.continuesToAnotherBook; NextBookWindowRule.choiceIsAvailable words the same rule.
+  So a dimmed choice is in effect nowhere: NextBookWindowRule.choice then gives the global setting, for the end of a book and for Next and Previous in Folder alike (folderMoveWindowChoice, in [The reader](reader-navigation.md)).
+  ListeningOptionsWording words the three older controls once, and NextBookWindowWording the window pop-up (label, choices, hint, and dimmed hint), for Feed Info and Folder Settings.
 
 ## The feed reader's interface
 <!-- id: feed-reader-interface; keys: Add Feed, Feed Info, Library window, context menu, VoiceOver actions, podcast; src: TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift, TextMouth/Views/Feeds/FeedRows.swift, TextMouth/Views/Library/LibraryView.swift -->
@@ -90,8 +98,10 @@ The feed reader's interface in a Library window (FR03).
 <!-- id: feed-interface-owner; keys: Folders rotor, LibraryFeedsSection, Delete Folder, feed row, unsubscribed feeds, folder rows; src: TextMouth/Views/Feeds/LibraryFeedFolders.swift, TextMouth/Views/Feeds/FeedLibraryPresentation.swift, TextMouth/Views/Feeds/FeedRows.swift, TextMouth/Models/RemovalWording.swift, TextMouth/Views/Feeds/LibraryFeedsWindowSupport.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
 - Owner: each Library window's views.
-  LibraryView observes only LibraryFeedFolders.shared, which knows which library folders hold feeds and which feeds the listener unsubscribed from (unsubscribedFeedIDs), and publishes only when a feed is subscribed, unsubscribed from, resubscribed, given another folder, or deleted, never for a download's progress or a refresh.
-  The Feeds section (LibraryFeedsSection), a feed folder's rows (FeedFolderSections), and its summary bar (FeedFolderSummaryBar) observe FeedCenter themselves, so a download's start and end redraw them and nothing else of the list, and its bytes, which reach the feed downloads' progress alone (above), redraw none of them.
+  LibraryView observes only LibraryFeedFolders.shared, which knows which library folders hold feeds and which feeds the listener unsubscribed from (unsubscribedFeedIDs).
+  It publishes only when a feed is subscribed, unsubscribed from, resubscribed, given another folder, or deleted, never for a download's progress or a refresh.
+  The Feeds section (LibraryFeedsSection), a feed folder's rows (FeedFolderSections), and its summary bar (FeedFolderSummaryBar) observe FeedCenter themselves.
+  So a download's start and end redraw them and nothing else of the list, and its bytes, which reach the feed downloads' progress alone ([Feed downloads' progress](feeds.md)), redraw none of them.
   Which feeds the section lists at a location is LibraryFeedsSectionRows.feeds(at:center:)'s rule:
   - every feed at the top of the library and in All Items,
   - in a folder the feeds whose folders are inside it,
@@ -124,11 +134,11 @@ The feed reader's interface in a Library window (FR03).
 - Who may write it: the listener, through the rows' context menus and VoiceOver actions, under the same names: FeedAction, for a feed, on its row and on its folder's row, where it has one, and FeedItemAction, for an item, on its row or, beside the book's own commands, on its book's row.
   LibraryFeedsWindowSupport also takes the Library menu's:
   - Add Feed… (Shift-Command-F unless changed, ShortcutAction.addFeed, a menu command's key that works in Library windows),
-  - Refresh All Feeds,
-  - Import OPML…,
-  - and Export OPML…,
+  - Refresh All Feeds, Import OPML…, and Export OPML…,
   - which post addFeed, refreshAllFeeds, importOPML, and exportOPML, for the window that takes commands (WindowCommandRouting, through LibraryView's takesCommand(_:)).
-  Subscribing makes the feed's folder only once the feed has been read: FeedCenter.subscribe(to:into:), with FeedFolderChoice.newFolder(inParentPath:), asks FeedLibraryHost.makeFeedFolder, which LibraryViewModel answers with createFolderReturningFolder, naming the folder after the feed and numbering it while the name is taken (FeedFolderNaming); subscribe(to:folderID:) remains for an existing folder.
+  Subscribing makes the feed's folder only once the feed has been read.
+  FeedCenter.subscribe(to:into:), with FeedFolderChoice.newFolder(inParentPath:), asks FeedLibraryHost.makeFeedFolder, which LibraryViewModel answers with createFolderReturningFolder, naming the folder after the feed and numbering it while the name is taken (FeedFolderNaming).
+  The call subscribe(to:folderID:) remains for an existing folder.
   Mark All Played changes one record (FeedCenter.markAllPlayed(of:)).
   Unsubscribe asks first when it would delete what the feed kept for removed downloads (FR14).
   LibraryFeedsPresenter.requestUnsubscribe(_:in:) decides as it is chosen, from FeedCenter.keptRowsUnsubscribeDeletes(of:), the kept rows but those whose items wait in the download queue or download, unsubscribing at once when there are none and otherwise returning the question.
@@ -146,8 +156,11 @@ The feed reader's interface in a Library window (FR03).
   Feed Info's onUnsubscribe passes the confirmed question to confirm(_:in:).
   What a confirmed command did is said once its alert has closed, VoiceOverAnnouncer.afterSheetDelay later.
   And at once when nothing was asked (LibraryFeedsPresenter's say(_:afterAlert:in:), through VoiceOverAnnouncer.afterSheetCloses(_:); REV13 item 1): Unsubscribe, Delete Episode, and Delete Feed….
-  Delete Feed…, last among a feed's commands (FeedAction.actions(for:noun:isSubscribed:unsubscribeAsks:)) and in Feed Info, asks first (deleteFeedConfirmation(for:in:): FeedWording.deleteFeedQuestion(title:) and deleteFeedMessage(downloads:kept:keptParts:noun:folderPath:mode:), naming what goes, to the Trash or for good, the folder that goes when nothing else is in it, and Move to Library… for a download to keep), then runs FeedCenter.deleteFeed(_:) (feed records, above) through deleteFeed(_:in:), which first closes Feed Info should it show the feed.
-  Its FeedDeleteOutcome is worded by FeedWording.deletedFeed(_:noun:keptParts:), with keptParts(ofFeed:in:) serving both the question and the announcement, and a FeedDeleteError by deleteFeedRefused(_:title:mode:) in an alert (the presenter's notice) alone: refuse(message:) and the OPML notices set notice only, as an alert speaks for itself.
+  Delete Feed…, last among a feed's commands (FeedAction.actions(for:noun:isSubscribed:unsubscribeAsks:)) and in Feed Info, asks first (deleteFeedConfirmation(for:in:)).
+  The question and message (FeedWording.deleteFeedQuestion(title:) and deleteFeedMessage(downloads:kept:keptParts:noun:folderPath:mode:)) name what goes, to the Trash or for good, the folder that goes when nothing else is in it, and Move to Library… for a download to keep.
+  It then runs FeedCenter.deleteFeed(_:) ([Feed records](feeds.md)) through deleteFeed(_:in:), which first closes Feed Info should it show the feed.
+  Its FeedDeleteOutcome is worded by FeedWording.deletedFeed(_:noun:keptParts:), with keptParts(ofFeed:in:) serving both the question and the announcement, and a FeedDeleteError by deleteFeedRefused(_:title:mode:) in an alert (the presenter's notice) alone.
+  Both refuse(message:) and the OPML notices set notice only, as an alert speaks for itself.
   Resubscribe (FeedCenter.resubscribe(_:)) clears the date and checks the feed at once, as Check Feed does (FEED_RESUBSCRIBED, FeedWording.resubscribed(title:)); FeedAction.actions(for:in:) offers one or the other by the feed's state, and Check Feed only while subscribed.
   Add Feed with an unsubscribed feed's address is refused with FeedSubscribeError.unsubscribedAlready, which points to Resubscribe.
   Delete Episode's question (deleteItemMessage(isArticle:keepsListenerState:isInLibrary:)) says when the kept place goes too, or, for an item In Library, that its book stays (itemDeleted(title:isInLibrary:) says so again after).
@@ -172,21 +185,26 @@ The feed reader's interface in a Library window (FR03).
   Feed Info adds the date it was unsubscribed (unsubscribedLabel) and offers Resubscribe in place of Unsubscribe.
   An item In Library says "In Library" (FeedItemState.visibleNote), and its row's hint is "Opens its book in your library" (itemRowHint(_:keptPlace:)).
   FeedWording.sectionTitle(_:count:total:) heads an open feed's items, "Episodes (10 of 381 listed)", given FeedFolderListing.total, which is nil while a search narrows them: "Episodes (2)".
-  An item's row content (FeedItemRowContent) carries the item's kept row as FeedKeptProgress (from feedItemRows(of:).kept, by item identity): its progress and time left in the book row's own words (BookRow.progressText, spokenProgress, remainingText, and timeRemaining(for:wpm:), which are nonisolated), so a kept item at its end says "Finished" alone, unless the item is played, and its bookmark count (CountWording.bookmarks); itemRowLabel adds FeedItemState.reason, a failure's or a wait's, and the kept parts, and itemRowHint(_:keptPlace:) gives the hint.
+  An item's row content (FeedItemRowContent) carries the item's kept row as FeedKeptProgress (from feedItemRows(of:).kept, by item identity):
+  - its progress and time left in the book row's own words (BookRow.progressText, spokenProgress, remainingText, and timeRemaining(for:wpm:), which are nonisolated), so a kept item at its end says "Finished" alone, unless the item is played,
+  - and its bookmark count (CountWording.bookmarks).
+  Its itemRowLabel adds FeedItemState.reason, a failure's or a wait's, and the kept parts, and itemRowHint(_:keptPlace:) gives the hint.
   FeedFolderSections and FeedFolderListing.make take SettingsViewModel.wordsPerMinute, at which book rows estimate an article's time left.
   FeedItemAction.actions offers Download and Cancel Download for a waiting item.
   And the runner words a waiting item's cancel (waitingDownloadCancelled(title:)) and a kept package's Delete Download (downloadDeleted(title:kept:), naming only what the kept package holds, FeedWording.KeptParts.of(_:package:); feed review item 18).
   ReadOnlyTextArea (Platform/macOS/Views/ReadOnlyTextArea.swift) is the read-only NSTextView both sheets read descriptions in, labelled FeedWording.descriptionTextLabel(title:), with the feed's title in Feed Info, under a Description heading, and with the item's in Show Description.
   And SilentKeyEquivalent (Platform/macOS/Views/SilentKeyEquivalent.swift) is an NSViewRepresentable of no size and no accessibility element whose NSView takes one unmodified key in performKeyEquivalent, which AppKit offers to every view of a window before the focused view sees the key.
   Show Description's Close answers Escape through it while its one SwiftUI shortcut is Return (the default action): a SwiftUI button carries one shortcut, and onExitCommand, sent from an AppKit text view's responder chain, never reaches SwiftUI (measured in a hosted test).
-  Any sheet with one button can use it, and the report of a speech refusal (the reader, above) uses both it and ReadOnlyTextArea.
+  Any sheet with one button can use it, and the report of a speech refusal ([Speech refusal report](reader-playback.md)) uses both it and ReadOnlyTextArea.
   A feed's folder's row, where it has one, and its rotor entry say the note Feed and the feed's count (FolderRow.accessibilityLabel(name:bookCount:feedCounts:), which is FeedWording.folderAnnouncement(name:counts:)).
   As entering the folder announces it (FolderNavigationHistory.announcement(for:library:feedFolders:)).
-  The Leading articles setting (the library index, above) reaches the feeds' rows too: LibraryFeedsSectionRows.rows(at:center:now:articles:) lists the section's feeds by title as the feeds are kept, or, while sorting passes over articles, by each title's filing key (LeadingArticles.sortKey(of:language:), localizedStandardCompare, ties keeping the feeds' order), and each FeedRowContent then carries shownTitle ("Digital Antiquarian, The") beside title, so rowTitle and label show and speak the shown title while commands and announcements keep naming the feed by title.
+  The Leading articles setting ([Titles as the lists read them](library-index.md)) reaches the feeds' rows too.
+  LibraryFeedsSectionRows.rows(at:center:now:articles:) lists the section's feeds by title as the feeds are kept, or, while sorting passes over articles, by each title's filing key (LeadingArticles.sortKey(of:language:), localizedStandardCompare, ties keeping the feeds' order).
+  And each FeedRowContent then carries shownTitle ("Digital Antiquarian, The") beside title, so rowTitle and label show and speak the shown title while commands and announcements keep naming the feed by title.
   A feed names no language, so English's articles count (language nil), and a feed's item shows its title the same way (FeedItemRowContent.shownTitle, from FeedFolderListing.make's articles parameter), in the feed's own order, newest first.
   And a search of a feed's folder finds an item by its title as written or as its row shows it (FeedFolderListing's matches(_:query:articles:)).
   The Folders rotor's entry for a feed whose row stands for its folder reads the title as the row shows it (LibraryFeedFolders.folderRows(_:at:articles:bookCount:)), and a plain folder's name stays as written.
-  LibraryView's typed rows for letter navigation take the section's feeds in that order (LibraryTitleTyping, in windows, above).
+  LibraryView's typed rows for letter navigation take the section's feeds in that order (LibraryTitleTyping, in [Letter navigation in the Library list](windows.md)).
 
 ## Searching the podcast directory
 <!-- id: searching-podcast-directory; keys: iTunes Search, Apple podcast directory, FeedDirectory, Add Feed sheet, AddFeedModel, search results; src: TextMouth/Services/Feeds/FeedDirectory.swift, TextMouth/Services/Feeds/FeedJSON.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/AddFeedSheet.swift, TextMouth/Views/Feeds/FeedWording.swift, TextMouth/Services/Feeds/FeedDiscovery.swift, TextMouth/Services/Feeds/FeedNetwork.swift -->
@@ -198,7 +216,8 @@ Searching the podcast directory (FR03): the Add Feed sheet's search.
   - the podcasts the last search found (searchResults, each a FeedDirectoryResult: its title, publisher, episode count, and feed),
   - and what the sheet says when it found none (searchNote) or failed (searchFailure).
 - Who may write it: search(), from the Search button or Return in the Search field, through FeedCenter.searchDirectory(for:) and the directory the engine's environment names (FeedEnvironment.directory: FeedDirectory.apple, Apple's iTunes Search API, or a test's stub server).
-  FeedDirectory asks for podcasts alone, at most 50 (media=podcast, entity=podcast, limit=50), with the term percent-encoded beyond the unreserved characters, through the feed engine's connections, as a request the listener made, on any network, and reads the answer through FeedJSON (results(in:)), keeping each podcast that names a web feed once (FeedAddress.comparisonKey).
+  FeedDirectory asks for podcasts alone, at most 50 (media=podcast, entity=podcast, limit=50), with the term percent-encoded beyond the unreserved characters, through the feed engine's connections, as a request the listener made, on any network.
+  It reads the answer through FeedJSON (results(in:)), keeping each podcast that names a web feed once (FeedAddress.comparisonKey).
   A failure is a FeedSearchError, worded by FeedFetchError.searchMessage, as when the directory refuses more than about 20 searches a minute. subscribe(to:) puts a result's feed in the address field and subscribes as Subscribe does.
 - How others observe it: AddFeedSheet lists the results, each read as one line beside a Subscribe button of its own, and VoiceOver hears how many were found, or why none were (FeedWording).
 
@@ -209,7 +228,8 @@ New items arriving: the alert and the notifications (FR03).
 
 - Owner: FeedArrivals.shared, on the main actor: the alert waiting to be shown (pendingAlert, a FeedArrivalAlert), and the Library window showing it (alertWindow).
 - Who may write it: FeedArrivals itself, from FeedCenter.events.
-  A refresh of every feed that TextMouth made by itself (FeedRefreshOrigin.isDiscretionary: at launch or on the interval) and that brought new items makes the alert, while feedRefreshAlert is on, and posts a notification for each feed through its FeedNotifying, while feedNotifications is on and notifications are allowed.
+  A refresh of every feed that TextMouth made by itself (FeedRefreshOrigin.isDiscretionary: at launch or on the interval) and that brought new items makes the alert, while feedRefreshAlert is on.
+  It posts a notification for each feed through its FeedNotifying, while feedNotifications is on and notifications are allowed.
   A refresh the listener asked for is answered where it was asked, by VoiceOver (FeedWording.refreshedAll and FeedWording.checked).
   Turning notifications on asks permission the first time (FeedArrivals.settingTurnedOn).
   FeedArrivals also speaks FeedEvent.itemPolicyApplied(global:feedIDs:), which FeedCenter.itemPolicyChanged(for:) sends as its ten-second wait ends, after a change in Settings, Feed Info, or config.json.
@@ -229,7 +249,8 @@ A podcast episode's own transcript and chapters (FMT25; 0.4.2).
   It tries at most three transcript links (maximumTranscriptTries), in the order WebVTT, JSON, SubRip, by the link's MIME type and then its address's extension; HTML and plain text are never fetched.
   Files are fetched under the download's own network rules (FeedNetwork.fetch): no cookie, redirects to http and https only, no link inside a file followed, and a body cap of 5 MB for a transcript and 1 MB for chapters (TimedTextLimits).
   The whole fetch stops after FeedNetwork.feedResourceTimeout, 2 minutes (timeLimit).
-  FeedEpisodeImporter puts the chapters into the staged package as podcastChapters.json (TextMouthPaths.podcastChaptersFileName, titles cut to 200 characters), where they become the episode's headings when its audio has none; attach(_:to:) makes the transcript the episode's once its book is listed, with Origin podcast.
+  FeedEpisodeImporter puts the chapters into the staged package as podcastChapters.json (TextMouthPaths.podcastChaptersFileName, titles cut to 200 characters), where they become the episode's headings when its audio has none.
+  Then attach(_:to:) makes the transcript the episode's once its book is listed, with Origin podcast.
 - A podcast's own transcript does not keep an aged-out download's package (2a398017).
   When an episode downloads again, TranscriptInstallation replaces an untouched podcast transcript (givingWayToAnUntouchedPodcastTranscript); a transcript recognition made, or that the listener edited or cleaned up, is kept.
   This is one commit that can be dropped on its own (fda87492, with 42daa613).
