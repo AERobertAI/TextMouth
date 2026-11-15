@@ -909,6 +909,9 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Imports: DOCX, OpenDocument, and Word 2003 XML
 
 - The own readers of OpenDocument text and Word 2003 XML (FMT27 and FMT53) came on November 5 and 6, 2026.
+- The 1,000,000-byte limit on a start tag was replaced by the refusal of a start tag of more than 1,024 attributes in 0.4.1.
+- elementsBetweenCancellationChecks was lowered from 4,096.
+- Before 0.4.1 the words of a Word 2003 XML row marked w:trPr/w:hidden were dropped.
 
 ## From Imports: rich text and Word documents
 
