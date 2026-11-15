@@ -81,7 +81,8 @@ Part of [TextMouth's documentation](../../README.md).
   A context menu on a match offers the same.
 - The Books rotor moves from book to book, and the Matches rotor from match to match, each stopping on the words the list reads.
 - The list keeps its limits so that it stays usable: a book keeps its first 100 matches and counts up to 1,000, the list shows 20 for each book and 1,000 in all, and a book with more ends with a row "Show all 212 matches in The Long Road".
-  Choosing it lists up to 500 of that book's matches, as Search in Book does; for a book with more than that the row reads "Show the first 500 of 700 matches in The Long Road", VoiceOver says "Listing the first 500 of 700 matches in The Long Road", and a last row says "Listing 500 of 700 matches: refine the search to see the rest".
+  Choosing it lists up to 500 of that book's matches, as Search in Book does.
+  For a book with more than that the row reads "Show the first 500 of 700 matches in The Long Road", VoiceOver says "Listing the first 500 of 700 matches in The Long Road", and a last row says "Listing 500 of 700 matches: refine the search to see the rest".
   The book's heading keeps its real count when Show All has seen every match.
 
 ## Opening a match
