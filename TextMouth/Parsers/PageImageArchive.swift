@@ -298,7 +298,17 @@ private final class ComicInfoParser: PackageSAXParser {
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        // Only a name is kept, and only as much as a name may hold.
+        keep(string)
+    }
+
+    /// A name written in a CDATA section is a name all the same.
+    func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
+        keep(String(decoding: CDATABlock, as: UTF8.self))
+    }
+
+    /// Adds `string` to the text being read when it is part of one of the
+    /// book's names, and only as much as a name may hold.
+    private func keep(_ string: String) {
         guard path.count == 2, Self.names.contains(path[1]),
               text.count < PageImageComicInfo.maximumNameLength * 2 else { return }
         text += string

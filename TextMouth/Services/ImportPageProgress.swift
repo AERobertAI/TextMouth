@@ -1,8 +1,8 @@
 import Foundation
 
 /// How far a book read page by page has got, told to the import reading it
-/// (FMT34). A picture of several pages, or a comic book archive, takes a
-/// second or more a page while text recognition reads it, so the import
+/// (FMT34). A picture of several pages, or a comic book archive, is read by
+/// text recognition a page at a time, up to seconds a page, so the import
 /// overlay counts the pages read, as it counts the tracks it converts:
 /// "“Harbour Notices.cbz”, reading its text: 3 of 12 pages".
 ///

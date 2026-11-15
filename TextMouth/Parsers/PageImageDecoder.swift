@@ -86,9 +86,9 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
 /// - **Only common kinds.** ImageIO picks its decoder by the bytes, never by
 ///   the name, so the kind it identifies is checked against `readableTypes`
 ///   before a pixel is decoded: PNG, JPEG, HEIC and HEIF, TIFF, GIF, and
-///   WebP, the decoders every Apple app exercises daily. Camera raw, DNG,
-///   Photoshop, OpenEXR, and the rest of ImageIO's rarer decoders are never
-///   reached from a book.
+///   WebP, the common kinds that photographs, scans, and the web use.
+///   Camera raw, DNG, Photoshop, OpenEXR, and the rest of ImageIO's rarer
+///   decoders are never reached from a book.
 /// - **A declared size checked first.** A picture says its size in its
 ///   header, which ImageIO reads without decoding; one past
 ///   `PageImageWording.maximumMegapixels` is refused, so a small file that
@@ -112,9 +112,9 @@ enum PageImageDecoding {
     /// The most pixels a picture may declare, from `PageImageWording`.
     static let maximumPixels = PageImageWording.maximumMegapixels * 1_000_000
 
-    /// The most pixels a page is decoded at: 16 megapixels, about a 12
-    /// megapixel phone photograph at its full size, which Vision reads small
-    /// print in, and 64 MB to hold. A larger picture is scaled down to it,
+    /// The most pixels a page is decoded at: 16 megapixels, a 12 megapixel
+    /// phone photograph at its full size, and 64 MB to hold once flattened.
+    /// A larger picture is scaled down to it,
     /// its proportions kept, so a tall strip of a page is not shrunk to a
     /// sliver as a cap on its longest side would shrink it.
     static let decodedPixels = 16_000_000
@@ -159,8 +159,11 @@ struct PageImageSource {
     private let source: CGImageSource
 
     /// What ImageIO is told as it opens bytes: decode nothing until asked,
-    /// and keep nothing decoded.
-    private static let openingOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+    /// and keep nothing decoded. Made afresh each time, since a Core
+    /// Foundation dictionary is not safe to share between threads.
+    private static var openingOptions: CFDictionary {
+        [kCGImageSourceShouldCache: false] as CFDictionary
+    }
 
     /// The pages of the picture file at `url`, read lazily from the file:
     /// every page of a TIFF.

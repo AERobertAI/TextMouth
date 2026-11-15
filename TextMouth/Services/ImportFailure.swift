@@ -30,10 +30,10 @@ enum ImportStep: Equatable, Sendable {
     case readingText
     /// Reading the text of a book read page by page, `done` of `total` pages
     /// so far: pictures of pages and comic book archives (FMT34), whose
-    /// pages text recognition takes a second or more each. It is a part of
-    /// reading the text, named the same, which the overlay counts as it
-    /// counts the tracks it converts; a failure meanwhile is reading the
-    /// text's (`readingText`).
+    /// pages text recognition reads one at a time, up to seconds each. It is
+    /// a part of reading the text, named the same, which the overlay counts
+    /// as it counts the tracks it converts; a failure meanwhile is reading
+    /// the text's (`readingText`).
     case readingPages(done: Int, of: Int)
     /// Reading the book's audio chapters, as the reader will.
     case readingAudio

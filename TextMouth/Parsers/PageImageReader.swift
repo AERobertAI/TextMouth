@@ -74,8 +74,8 @@ struct PageImageFilePages: PageImageBook {
 /// (`VisionTextRecognition`). Every page is a page of the book, its marker
 /// written as a PDF's is.
 ///
-/// Each page takes a second or more, so the import running on this thread
-/// is told how many pages are read (`ImportPageProgress`), and its Cancel
+/// A page takes up to seconds, so the import running on this thread is
+/// told how many pages are read (`ImportPageProgress`), and its Cancel
 /// stops the reading before the next page (`ImportCancellation`). A page that
 /// cannot be read leaves the others to be read, and the report names it, as
 /// a PDF's report names the pages OCR could not run on.

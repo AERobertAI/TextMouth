@@ -44,9 +44,10 @@ enum PageImageWording {
     static let maximumMegapixels = 100
 
     /// The most pages one book of pictures may have: the pages of a TIFF, or
-    /// the pictures of a comic book archive. Text recognition takes a second
-    /// or more a page, so 2,000 pages is most of an hour; a comic has a few
-    /// dozen, a scanned book a few hundred.
+    /// the pictures of a comic book archive. Text recognition took about a
+    /// fifth of a second for a 2-megapixel page on the development Mac, and
+    /// takes longer for a large photograph, so 2,000 pages is several minutes
+    /// at the least; a comic has a few dozen, a scanned book a few hundred.
     static let maximumPages = 2_000
 
     // MARK: - Refusals of a Whole Book
