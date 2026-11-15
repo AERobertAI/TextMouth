@@ -30,8 +30,8 @@ def test_summary(verdict="PASSED", unit=(0, 0, 0), ui=(2, 0, 0), seconds=100.0, 
     return "\n".join(lines) + "\n"
 
 
-class JoiningTests(unittest.TestCase):
-    """merge_ios_shards.join on throwaway `ios-results-N` folders."""
+class JoinCase(unittest.TestCase):
+    """A throwaway folder for the iPhone jobs' results, with a way to write one job's files and to read a joined one."""
 
     def setUp(self):
         folder = tempfile.TemporaryDirectory()
@@ -55,6 +55,10 @@ class JoiningTests(unittest.TestCase):
     def joined(self, name):
         """The text of a joined file."""
         return (self.out / name).read_text()
+
+
+class JoiningTests(JoinCase):
+    """merge_ios_shards.join on throwaway `ios-results-N` folders."""
 
     def test_every_job_passing_is_one_passed_with_the_tests_added_up(self):
         self.job(1, build_summary(minutes=6.0), test_summary(ui=(3, 0, 0), seconds=300.0))
@@ -132,6 +136,24 @@ class JoiningTests(unittest.TestCase):
         (self.ios / "something-else").mkdir()
         self.assertEqual(sorted(merge_ios_shards.shard_folders(self.ios)), [1])
         self.assertEqual(merge_ios_shards.shard_folders(self.root / "absent"), {})
+
+
+class AJobThatCameAloneTests(JoinCase):
+    """The download leaves one artifact's files in the folder itself, not in a folder of its own."""
+
+    def test_files_in_the_folder_itself_are_the_job_their_summary_names_and_the_others_reported_nothing(self):
+        self.ios.mkdir()
+        (self.ios / "ios-summary.txt").write_text(build_summary())
+        (self.ios / "ios-ui-summary.txt").write_text(test_summary(extra=["Shard: 2 of 2"]))
+        self.assertEqual(sorted(merge_ios_shards.shard_folders(self.ios, 2)), [2])
+        merge_ios_shards.join(self.ios, self.out, 2)
+        self.assertIn("iPhone job 1 of 2 reported nothing", self.joined("ios-ui-summary.txt"))
+        self.assertTrue(self.joined("ios-ui-summary.txt").startswith("iOS UI tests: NOT RUN"))
+
+    def test_with_one_job_expected_the_files_are_left_to_the_single_job_reading(self):
+        self.ios.mkdir()
+        (self.ios / "ios-summary.txt").write_text(build_summary())
+        self.assertEqual(merge_ios_shards.shard_folders(self.ios, 1), {})
 
 
 class MergeShardsReadsSeveralJobsTests(unittest.TestCase):

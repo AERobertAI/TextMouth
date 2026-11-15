@@ -39,12 +39,20 @@ def shard_number(folder):
     return int(name[len(FOLDER_PREFIX):]) if name.startswith(FOLDER_PREFIX) and name[len(FOLDER_PREFIX):].isdigit() else None
 
 
-def shard_folders(ios_dir):
-    """{job number: folder} of the `ios-results-N` folders inside `ios_dir`; empty when it has none (one job's files, or none)."""
+def shard_folders(ios_dir, expected=1):
+    """{job number: folder} of the `ios-results-N` folders inside `ios_dir`; empty when it has none and one job is expected (one
+    job's files in the folder itself, as the download leaves them when a single artifact matched). With several jobs expected,
+    files directly in `ios_dir` are one job's that came alone (the others uploaded nothing): they are filed under the number
+    its ios-ui-summary.txt gives ("Shard: I of N"), else 1."""
     ios_dir = Path(ios_dir)
     if not ios_dir.is_dir():
         return {}
-    return {shard_number(path): path for path in sorted(ios_dir.iterdir()) if path.is_dir() and shard_number(path) is not None}
+    found = {shard_number(path): path for path in sorted(ios_dir.iterdir()) if path.is_dir() and shard_number(path) is not None}
+    if found or expected <= 1 or not ((ios_dir / "ios-summary.txt").exists() or (ios_dir / "ios-ui-summary.txt").exists()):
+        return found
+    lines = read_lines(ios_dir / "ios-ui-summary.txt") or []
+    number = next((int(m.group(1)) for line in lines if (m := re.match(r"^Shard: (\d+) of \d+$", line))), 1)
+    return {number: ios_dir}
 
 
 def read_lines(path):
@@ -146,7 +154,7 @@ def join(ios_dir, out_dir, expected):
     whose folder is missing, or empty, counts as one that reported nothing). Returns the number of jobs that reported."""
     ios_dir, out_dir = Path(ios_dir), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    folders = shard_folders(ios_dir)
+    folders = shard_folders(ios_dir, expected)
     builds = {n: read_lines(folders[n] / "ios-summary.txt") for n in range(1, expected + 1) if n in folders}
     tests = {n: read_lines(folders[n] / "ios-ui-summary.txt") for n in range(1, expected + 1) if n in folders}
     errors = {n: (read_lines(folders[n] / "ios-errors.txt") or []) for n in builds}

@@ -214,7 +214,7 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
             request = json.loads(request_path.read_text(encoding="utf-8"))
             break
     (out_dir / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
-    if ios_dir is not None and merge_ios_shards.shard_folders(ios_dir):
+    if ios_dir is not None and merge_ios_shards.shard_folders(ios_dir, ios_expected):
         # The iPhone work was split over several jobs: join their files into the five one job would have written.
         joined = out_dir / ".ios-joined"
         merge_ios_shards.join(ios_dir, joined, ios_expected)
