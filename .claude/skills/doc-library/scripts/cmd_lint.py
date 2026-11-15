@@ -29,8 +29,6 @@ from baseline import Counts
 from lintrules import Violation
 from output import Hit
 
-# The cap on hits when ``--max`` is not given: a regression's lines and violations together.
-DEFAULT_MAX = 20
 # How much of a commit's name a message shows.
 SHORT_COMMIT = 9
 
@@ -187,4 +185,4 @@ def register(subparsers: Any, common: Any) -> None:
                        help="lower the baseline to today's counts (never raising one), or make it; then lint")
     modes.add_argument("--rebuild-baseline", action="store_true",
                        help="for the orchestrator alone, after it accepts a regression: write today's counts, raising where they rose")
-    parser.set_defaults(func=run, default_max=DEFAULT_MAX)
+    parser.set_defaults(func=run, default_max=output.DEFAULT_MAX)

@@ -109,6 +109,15 @@ def _link_destinations(text: str, code: List[Span]) -> List[Span]:
     return spans
 
 
+def link_destinations(text: str) -> List[Span]:
+    """The ``](`` ... ``)`` spans of the links and images in ``text``, outside inline code.
+
+    The sentence splitter protects these spans; the lint reads each link's
+    destination out of them, so both see the same links.
+    """
+    return _link_destinations(text, [(start, end) for start, end, _ in code_spans(text)])
+
+
 def _bare_urls(text: str, code: List[Span]) -> List[Span]:
     """Bare ``http(s)://`` URLs, without the punctuation that ends a sentence."""
     spans: List[Span] = []

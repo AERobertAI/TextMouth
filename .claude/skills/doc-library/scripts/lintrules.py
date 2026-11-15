@@ -39,8 +39,7 @@ from docmodel import Block, Page
 from repofiles import RepoFiles
 # The one finder of a link's ``](destination)`` spans, which the sentence splitter
 # also protects; the lint reads the destination out of each span.
-from sentences import _link_destinations as link_destination_spans
-from sentences import code_spans, protected_spans, split_sentences
+from sentences import code_spans, link_destinations, protected_spans, split_sentences
 
 # ---------------------------------------------------------------------------
 # The limits of docs/agents/writing-docs.md: one constant each.
@@ -429,8 +428,7 @@ def block_links(block: ProseBlock) -> List[Link]:
     """The links and images of one prose block, and its reference definitions."""
     found: List[Link] = []
     text = block.text
-    code = [(start, end) for start, end, _ in code_spans(text)]
-    for start, end in link_destination_spans(text, code):
+    for start, end in link_destinations(text):
         # The span runs from the ``](`` to the closing parenthesis.
         dest = destination_of(text[start + 2:end - 1])
         found.append(Link(block.start + text.count("\n", 0, start), dest))
