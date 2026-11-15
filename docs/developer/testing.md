@@ -105,9 +105,10 @@ Delete a kept sandbox when you are done with it.
 
 - GitHub's macOS runner, where the gate's suite runs for every push to main and every pull request from this repository, skips more tests than the development Mac.
   [The make check gate](building.md#the-make-check-gate) says in what ways that suite is weaker than `make check` here.
-  It skips the 103 of `Scripts/agents/runner-skips.conf` (see [Tests on GitHub Actions](testing-github.md)), and the following.
-  There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility, and keyboard navigation is off.
-  So the three kinds of test above that read accessibility or need keyboard navigation skip rather than fail, as do the opt-in tests and benchmarks.
+  It skips the 14 of `Scripts/agents/runner-skips.conf` (see [Tests on GitHub Actions](testing-github.md)), and the following.
+  There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility.
+  Keyboard navigation is off there until `Scripts/agents/runner_settings.py` turns it on, so most tests that need it run.
+  So the kinds of test above that read accessibility skip rather than fail, as do the opt-in tests and benchmarks.
   The performance baselines tests skip too, since their baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
 
 ### Benchmarks of the performance work

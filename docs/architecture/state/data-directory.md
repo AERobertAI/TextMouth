@@ -85,6 +85,7 @@ Its location, and moving it.
   So a move, a rebuild, or a folder edit under way refuses it with the StorageBusyError naming that operation, and nothing starts one while the switch runs.
   It writes pending saves, refuses while changes can't be saved unless the library is unavailable, records the folder for the next launch with TextMouthPaths.setCustomRoot (nil for the default location), and has TextMouthRelauncher open a new instance of TextMouth and quit this one.
   A process hosting tests never opens again.
+  Before the confirmation, Storage settings runs the comparison of Compare Libraries for at most 60 seconds, which Stop Comparing (a cancel flag) ends, and the confirmation says which copy is newer (StorageWording.copyOfCurrentLibrarySentence(_:), LibraryComparisonWording.newerCopySentence).
 
 ### How a move is observed
 <!-- id: how-move-observed; keys: progress sheet, move progress, Move cancelled, quit during move, status line; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
@@ -140,6 +141,21 @@ Its availability: whether the data directory can be used.
   A check that finds the library again posts dataDirectoryDidBecomeAvailable, and those services read their files.
   After a loss while TextMouth ran, reloadLibraryAfterDataDirectoryReturned reads library.json afresh, carrying the session's newer reading positions and moved packages into it.
 
+### A library's two small files in the cloud
+<!-- id: library-two-small-files-cloud; keys: library.json, library-identity.json, awaitedFile, LibraryFileAwaited, identityNotKnown, Open Without the Index, Restore Its Identity, Give It a New Identity; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel+LibraryFetch.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/LibraryFileWaitWording.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Services/LibraryIdentity.swift, TextMouthProductionTests/MultiMacCrashSafetyTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift -->
+
+A sync service can bring a cloud library's small files down one at a time, so a folder may hold library.json without library-identity.json, or the reverse, for a while.
+Only in a cloud location (`itemStatus.location(of:).isCloud`) the check waits for the missing one as a file that is only in the cloud, whether or not this Mac expects an identity: a Mac given the folder knows none yet, and would otherwise give the library a second one.
+`DataDirectoryCheck.awaitedFile(among:in:expectingIdentity:)` names it as the fetch gives up (after its three retries, about 50 seconds): `LibraryFileAwaited.index`, `.identity`, or `.identityNotKnown` (the identity file missing on a Mac that expects none).
+The reason is then `DataDirectoryUnavailability.libraryFileNotArrived`, and the Library Not Available screen puts the choice to the listener, which TextMouth never makes alone:
+- `.index`: "Open Without the Index…" asks first, then opens the library for the rest of the session (`libraryIndexWaitWaivedFor`), and the startup repair makes a new index from the books here.
+- `.identity`: "Restore Its Identity…" asks first, then writes the identity this Mac expects (`LibraryIdentity.adopt`, a marker that arrived meanwhile stands), inside `DatalessFiles.withoutDownloading`, so a marker that arrived as a placeholder goes back to the fetch.
+- `.identityNotKnown`: "Give It a New Identity…" asks first, with a warning, then opens the library for the rest of the session (`libraryIdentityWaitWaivedFor`), and it is given a new identity as it starts.
+
+Each button's title, hint, question, and answers are in `LibraryFileWaitWording`, and a test pins each.
+A new library, with no index and no identity, saves its empty index with its identity (`saveIndexOfNewLibrary(madeIdentity:hadIndex:)`), so its next launch opens without waiting; an index that existed before identities is left as it was.
+That writes an empty library.json for a new local library at its first launch too.
+
 ## Which library a data directory holds
 <!-- id: which-library-data-directory-holds; keys: identity marker, UUID, wrong folder, another copy of the library; src: TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/Services/StorageDestinationAssessment.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
@@ -175,6 +191,11 @@ Files several Macs write: reading_stats.json and substitutions.json, which TextM
 - Who may write it: each service, never over a file only in the cloud, and over one it can't read or decode only after keeping a copy of it, or logging that none could be made.
   A file found only in the cloud is asked of the sync service (SavedFile.requestDownload(of:)), with one line in the log, and stand-ins are used meanwhile, never saved over it.
   Fresh statistics stand in (statsAwaitFileInCloud), counting this session's listening; each save first reads the file again, and the first that finds it on this Mac adds the stand-ins to what it holds (ReadingStats.adding(_:)) and saves the sum.
+  A reading_stats.json that isn't on this Mac at all, in a cloud location, is waited for the same way (SavedFile.mayStillArrive(_:)).
+  Only a save with listening to keep writes the stand-ins while it is still missing.
+  config.json is not made by a save that only reconciles it or notes a book was opened (ConfigService.scheduleSave(creatingAwaitedFile:)).
+  Saves merged into one write may make it if any of them may, so a changed setting's save still writes it.
+  In a cloud location the settings stay in the preferences until the file arrives.
   ReadingStatsService.statsReadFromFile says whether the statistics hold what the file held: true once it was read and decoded (at launch, when the library is available again, or once a file only in the cloud was added to the stand-ins), never for stand-ins.
   The standard rules stand in for the substitutions (rulesAwaitFileInCloud).
   The file is read again when the app becomes active and before each save, a save meanwhile is reported to PersistenceFailureCenter as unsaved, with a retry (SavedFile.InCloudError).

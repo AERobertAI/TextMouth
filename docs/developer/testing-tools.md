@@ -60,6 +60,7 @@ That watches only the train's own copy of the app.
 `PortableXMLDifferentialTests` (in the import and feeds areas) tests the portable XML tree that the iOS app reads EPUB, feed, and OPML files with (see [The two apps and the platform folders](../architecture/platforms.md)).
 It compares that tree with Foundation's `XMLDocument` on 104 documents, each read strictly and tidied: the XML documents of the test EPUBs, the feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`.
 It fails on any difference that its `knownDifferences` does not list with the reason and evidence, and on a listed difference that has gone away.
+`testEveryXPathTheReadersPassIsCompared` scans the four reader files for XPath strings and fails on one the comparison does not make; its floor on how many it finds is 4, since the EPUB reader's package, NCX, and page list moved to `XMLElementIndex`.
 
 ## Mac braille table check tests
 <!-- id: mac-braille-table-check-tests; keys: peakResidentBytes, liblouis, braille helper, watchdog, flaky, peak memory, table check; src: TextMouthProductionTests/MacBrailleTableCheckTests.swift, TextMouth/Services/MacBrailleTableCheck.swift -->

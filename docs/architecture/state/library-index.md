@@ -221,6 +221,7 @@ The on-disk contract (V02): what 0.2.0 writes, pinned so that a change is a deli
   - and the versions that say how a file was written.
 
   Among the keys of the row and the record are textEncodingSource, the optional note of who decided a text book's encoding, which an older TextMouth drops, and brailleTableOrigin, the optional note of whether a braille book's table was guessed, in the row, the record, and the removal marker alike.
+  The record alone has movedToLibrary ([Package records](package-records.md)).
   Each assertion's message says what a change forces: an older build's refusal, a re-read of the library, or a re-index.
   What other tests pin already, as the text cache format and the metadata reader's version, is not pinned again.
 

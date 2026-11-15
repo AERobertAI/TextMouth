@@ -39,6 +39,7 @@ Otherwise it reads it off the main thread once the book shows, through LibraryBo
 It keeps the metadata on the row and in the book's record (Book.keepEPUBMetadata(readFromFile:)), giving only the fields the row lacks the file's values, so an edit stands and later opens read nothing.
 Back on the main actor, the reader:
 - publishes the content and its headings;
+- at the book's first load only, takes the place, bookmarks, and settings its record holds when the record's place was saved later than the row's, as another Mac sharing the library may have saved it (takeNewerRecordedState(_:); see [Package records](state/package-records.md));
 - lays the book's own metadata edits over what the files hold, taking them from its copy of the book as it is by then;
 - brings the saved position into range;
 - commits a new or changed index through LibraryViewModel.updateContentIndex;
@@ -115,7 +116,7 @@ Pausing first ends a Where Am I? announcement, leaving its book paused, then rec
 Closing the window unregisters it from the router and closes the reader, which:
 - stops waiting for any download;
 - stops playback;
-- saves the position;
+- saves the position only if it moved (savePositionIfMoved()), so a reader that never moved puts no older place over a later one another reader saved;
 - releases its Now Playing session;
 - stops the sleep timer if this reader owns it and has not held it for the next book;
 - stops a timer held for its own book that it never took when no other reader of the book is left;

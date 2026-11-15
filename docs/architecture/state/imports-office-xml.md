@@ -9,6 +9,8 @@ Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 The DOCX reader's reading policy (0.4.0; DOCXParser and its extensions, which turn a Word document into Markdown directly, not through the HTML of OwnDocumentReaders).
 The converter holds a paragraph's state in one struct (ParagraphState) and gathers a paragraph's runs as raw text with a style for each scalar, a stretch at a time (StyledLine), writing emphasis through MarkdownEmphasis so that no mark is spoken.
 A page break, a line break, or a link ends a stretch, and strikethrough is written plain.
+A run's text is split at its line feeds by `String.splitAtLineFeeds()`, which finds none with one `memchr` and gives the run whole.
+`ParserUtilities.stripNamespacePrefix(_:)` cuts an ASCII element name at its last colon byte, and gives any other name to Foundation (see [Shared helpers: readers and markup guards](../shared-helpers-parsers.md)).
 
 - Hidden text: w:vanish is resolved by DOCXHiding.isHidden(documentDefaults:table:paragraph:character:direct:) (0.4.1; DOCXParser+Styles) from five levels, each keeping its stated value (true, or false for a w:val of 0):
   - the document defaults (w:docDefaults),

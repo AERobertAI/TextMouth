@@ -49,9 +49,38 @@ The confirmation says that the library is copied there, checked, and used, with 
 Use This Library, for a folder that holds a TextMouth library: its library-identity.json, or a library.json beside a Library folder.
 TextMouth switches to that library as it is, copying nothing, then quits and opens again on it.
 This is how another Mac restores a library from the cloud.
-The confirmation names both libraries, and says when the folder holds another copy of the library in use, such as the folder an earlier move left behind, which may lack the latest changes.
+The confirmation names both libraries, and says when the folder holds another copy of the library in use, such as the folder an earlier move left behind, which of the two copies is newer.
+First TextMouth compares the two, for up to a minute.
+Storage settings says:
+  "This can take up to a minute.
+  Choose Stop Comparing to skip it."
+The confirmation then says, for example, that the copy in this folder is the newer, with newer places in so many books and so many books the other lacks, or that neither is newer, or that TextMouth couldn't tell (and why, such as that you stopped the comparison).
+It points to Compare Libraries for every difference.
 Changes not yet saved are written first, and the switch is refused while some still can't be saved: choose Retry Saving, then try again.
 It is refused too while a move, Rebuild Directory, or a change that moves books between folders is under way, saying which, and while it runs those are refused in turn: "TextMouth is switching to another library and opening again on it."
+
+#### Compare Libraries
+<!-- id: compare-libraries; keys: another copy, which copy is newer, differences, Stop, Copy Results, read-only; src: TextMouth/Models/LibraryComparison.swift, TextMouth/Models/LibraryComparisonWording.swift, TextMouth/Services/LibraryCopyReader.swift, TextMouth/Views/Settings/CompareLibrariesSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
+
+Compare Libraries… is a button in Storage settings beside Change Location.
+It asks for the folder that holds another copy of this library, with the prompt "Compare", and lists what differs.
+It changes nothing in either copy, and asks the sync service for nothing to be downloaded beyond reading the files it needs.
+The sheet, "Compare Libraries, results", reads the count first: "7 differences between this library and the copy in FOLDER."
+Each difference is one sentence, such as:
+- "Position in TITLE: newer in this copy, chapter 3, 41%.
+  The other copy has chapter 2, 20%."
+- "Bookmark 2 in TITLE: only in the other copy, chapter 2, with the note “NOTE”."
+It lists books only in one copy, a book filed in different folders, positions, bookmarks, the reading list's books, order and options, and folders.
+A file it couldn't read is listed apart, under "Files not read", and is never counted as missing; the count says so, since the comparison may then be missing differences.
+In a cloud folder, files that are only in the cloud are brought to this Mac to be read, each waited for up to 30 seconds and the whole comparison up to 5 minutes.
+While it works it says so, and every 30 seconds it says:
+  "Still comparing: N seconds so far.
+  Press Escape to stop."
+Stop, or Escape, ends it, and it says:
+  "Comparing stopped.
+  Nothing was changed."
+Copy Results puts the count and every difference on the clipboard, one to a line, and says "Results copied to the clipboard."
+A folder that holds a different library compares nothing.
 
 #### The folder the library is in already
 <!-- id: folder-library-already; keys: same folder, current library, in use; src: TextMouth/Services/StorageDestinationAssessment.swift -->

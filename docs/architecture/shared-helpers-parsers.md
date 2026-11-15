@@ -154,3 +154,46 @@ KFXParser and MOBIParser.preparedBook (Parsers/KFXParser.swift, Parsers/MOBIPars
 KF8Book and the guard (Parsers/KF8Book.swift, Parsers/KF8Layout.swift): a KF8 book's sections reach SwiftSoup only through HTMLToMarkdownConverter.convert, which calls MarkupGuard.parse, so the guard settles the nesting, declaration, and size inputs of a KF8 part as it does a MOBI 6 section's.
 KF8Book and KF8Layout call no SwiftSoup parse of their own, which the policy test that holds each parse to the big stack needs.
 KF8 also ends in MOBIParser.preparedBook, where a section that continues the chapter before it (Section.continuesPrevious) is joined to it.
+
+## ByteSearch and String.forEachCharacter
+<!-- id: bytesearch-foreachcharacter; keys: memchr, containsUTF8Byte, containsByte, splitAtLineFeeds, white space count, import speed-up, Character stepping; src: TextMouth/Parsers/ByteSearch.swift, TextMouth/Models/DocumentContent.swift, TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouth/Parsers/PlainTextParser.swift, TextMouthProductionTests/ByteSearchTests.swift, TextMouthProductionTests/ImportSpeedUpPinTests.swift -->
+
+`ByteSearch.contains(_:in:count:)` (Parsers/ByteSearch.swift) is the C library's `memchr`, and three extensions give its answer the shape a reader needs: `String.containsUTF8Byte(_:)`, `Data.containsByte(_:)`, and `String.splitAtLineFeeds()`.
+Each gives exactly the answer of the plain walk it replaces (`utf8.contains`, `contains`, and `split(separator: "\n", omittingEmptySubsequences: false)`); a string that is not contiguous UTF-8 is walked as before, so the answer never depends on how the text is stored.
+Callers: the text decoders' ESC (0x1B) and carriage return (0x0D) tests, the plain text reader's form feed (0x0C) test, and the DOCX converter's split of each run.
+`splitAtLineFeeds()` relies on a line feed Character being a 0x0A byte that no carriage return precedes, so a string with no 0x0A byte is the one line it is.
+
+`String.forEachCharacter(_:)` (Models/DocumentContent.swift) steps a string's Characters over its UTF-8 bytes and says for each whether it is white space.
+An ASCII byte followed by another ASCII byte, or by the end, is a whole Character and is judged alone; CR LF is stepped as one; any other Character is read whole from its first byte.
+The word count of a book's text and the RTF heading census use it, and both give the count the Character split gives.
+`ByteSearchTests` and `ImportSpeedUpPinTests` compare each with the plain expression on random texts, and on the edge cases by name.
+
+## PlainTextLines
+<!-- id: plaintextlines; keys: newlines, trimming, line split, plain text import, CharacterSet.newlines; src: TextMouth/Parsers/PlainTextLines.swift, TextMouth/Parsers/PlainTextParser.swift, TextMouthProductionTests/PlainTextLinesTests.swift -->
+
+`PlainTextLines.trimmedLines(of:)` (Parsers/PlainTextLines.swift) splits a plain text book into its trimmed lines in one pass over its UTF-8 bytes.
+It makes what `components(separatedBy: .newlines)` and `trimmingCharacters(in: .whitespaces)` made: a line ends at each scalar of `CharacterSet.newlines` (U+000A to U+000D, U+0085, U+2028, and U+2029), each by itself, and the text always has a last line, empty when it ends with a line ending.
+The space and the tab are trimmed as bytes; a line with any other byte at an edge is trimmed by Foundation, so the whitespace set is not restated.
+`PlainTextLines.referenceLines(of:)` is the Foundation form, which the tests hold the pass to on each edge and on 20,000 random texts (`PlainTextLinesTests`).
+
+## XMLElementIndex
+<!-- id: xmlelementindex; keys: XPath, local-name, XMLDocument, EPUB package, NCX, page list, childElements, firstNavLabelText; src: TextMouth/Parsers/XMLElementIndex.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouthProductionTests/EPUBXMLIndexTests.swift -->
+
+`XMLElementIndex` (Parsers/XMLElementIndex.swift) lists a document's elements by local name in one walk, in document order, with the local name of each one's parent.
+`elements(named:)` is what `//*[local-name()='name']` returned, and `elements(named:insideParentNamed:)` what `//*[local-name()='parent']/*[local-name()='name']` returned.
+`XMLElement.childElements(localName:)` and `firstNavLabelText` replace the two relative paths the NCX entries used.
+The EPUB reader makes one index for its package document, and one for each NCX and page list, instead of 21 XPath queries that each tested every element; `authorName(in:index:)` takes the caller's index and makes its own when not given one.
+The walk keeps its own stack, since a document may nest thousands deep and an import runs on a worker thread's small stack.
+An index is a picture of the tree when it was made, so it is made again after any change.
+`EPUBXMLIndexTests` keeps the old XPath as the reference and compares the two on 1,000 random packages, the container, an NCX, and a 2,000-deep document.
+
+## Blank chapters and EPUB types by name
+<!-- id: blank-chapters-epub-types-by-name; keys: holdsOnlyWhitespaceAndPageMarkers, typeAttributeNames, ReadingFlow.typeNames, epub:type, page marker, blank chapter; src: TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/PublicationSemantics.swift, TextMouth/Parsers/MarkdownPageMarker.swift, TextMouthProductionTests/EPUBBlankChapterTests.swift, TextMouthProductionTests/PublicationSemanticsTypeNamesTests.swift -->
+
+`EPUBParser.holdsOnlyWhitespaceAndPageMarkers(_:)` says a converted chapter is blank by reading it from its start, skipping white space and page markers, until the first other character.
+A marker is `MarkdownPageMarker.prefix`, one or more characters that are neither "<" nor ">", and `MarkdownPageMarker.suffix`; a chapter with words is judged by its first few characters, and no copy of it is made.
+`PublicationSemantics.typeAttributeNames(in:)` lists the attribute names of a document that end in ":type", from its markup, or nil when the markup is not plain enough to say for certain.
+`ReadingFlow.typeNames` holds the list, and the page break, page list, and navigation rules ask an element for those names alone.
+With nil (`ReadingFlow.unknownSource`), every attribute of the element is searched, as before.
+`EPUBBlankChapterTests` compares the blank test with the old regular expression on 20,000 random texts, and `PublicationSemanticsTypeNamesTests` the names with the full search.
+

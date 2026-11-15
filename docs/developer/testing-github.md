@@ -55,7 +55,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
 <!-- id: run-iphone-tests; keys: ios-ui-summary, ios_ui_tests, counts_by_bundle, PARALLEL_WORKERS, result bundle, keyboard preferences, NOT ASKED; src: Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
 
    - **The iPhone tests.**
-     Then `Scripts/agents/run-ios-ui-tests.py` runs `TextMouthiOSTests` (the 19 unit tests) and `TextMouthiOSUITests` (the interface tests) with one `xcodebuild test-without-building`, in an iPhone 17 simulator on the iOS 26.0.1 runtime that the job downloaded.
+     Then `Scripts/agents/run-ios-ui-tests.py` runs `TextMouthiOSTests` (the unit tests, 19 of its own and the Mac's shared ones) and `TextMouthiOSUITests` (the interface tests) with one `xcodebuild test-without-building`, in an iPhone 17 simulator on the iOS 26.0.1 runtime that the job downloaded.
      The platform download leaves an iPhone 17 ready, and the script makes one if it is missing.
      It does so when the request asks for them (`ios_ui_tests.py` decides):
      - every full suite,
@@ -127,7 +127,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), the runners are fr
   Only the first is a result.
 
 ## What differs from this Mac
-<!-- id: what-differs-from-this-mac; keys: coreaudiod, virtual machine, spindump, thread pool starvation, skip list, test timeout, no_skips; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/EndBehaviorMatrixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/VoiceCatalogTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift, TextMouthProductionTests/ImportProgressTests.swift, TextMouthProductionTests/RetainedPackageImportTests.swift, TextMouthProductionTests/PodcastChaptersHeadingsTests.swift, TextMouthProductionTests/PublishedFileProgressTests.swift, TextMouthProductionTests/ReaderAudioFailureTests.swift, Scripts/agents/run-on-runner.py, .github/workflows/tests.yml -->
+<!-- id: what-differs-from-this-mac; keys: coreaudiod, virtual machine, spindump, thread pool starvation, skip list, test timeout, no_skips; src: TextMouth/Parsers/AudioMediaProbe.swift, TextMouth/Services/VoiceCatalog.swift, TextMouthProductionTests/EpisodeDownloadContinuationTests.swift, TextMouthProductionTests/PreRenderedSpeechInvalidationTests.swift, TextMouthProductionTests/EndBehaviorMatrixTests.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouthProductionTests/VoiceCatalogTests.swift, TextMouthProductionTests/ReadingListReaderTests.swift, TextMouthProductionTests/ImportProgressTests.swift, TextMouthProductionTests/RetainedPackageImportTests.swift, TextMouthProductionTests/PodcastChaptersHeadingsTests.swift, TextMouthProductionTests/PublishedFileProgressTests.swift, TextMouthProductionTests/ReaderAudioFailureTests.swift, Scripts/agents/run-on-runner.py, Scripts/agents/runner_settings.py, Scripts/agents/runner_diagnose.py, Scripts/agents/runner_audio_probe.py, Scripts/agents/runner_ax_probe.py, .github/workflows/tests.yml -->
 
 The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), no display session, no sound hardware that works, and no Accessibility permission.
 
@@ -136,10 +136,10 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
   Restarting `coreaudiod` before the tests (the workflow's "Restart the audio service" step) made the tests that read silent audio files run in a minute instead of waiting out their 5-minute limits.
   In the reading-list area, 101 tests took 63 seconds, and without the restart each of its tests waited 300 seconds.
   A virtual device installed from Homebrew did no better than the restart alone.
-  Tests that decode audio still hang.
-  The spindump of a hung one (run 42856695469) shows `AudioMediaProbe.decodesSamples` in `-[AVAssetReaderTrackOutput copyNextSampleBuffer]`, which waits for ever on the runner (CoreMedia's `readerOfflineMixer` threads idle on a semaphore).
-  The app contains the hang (see The audio-decoding hang under Rules the runner's failures led to).
-  On a Mac with working audio the call returns.
+  Tests that decode audio hung once: the spindump of one (run 42856695469) shows `AudioMediaProbe.decodesSamples` in `-[AVAssetReaderTrackOutput copyNextSampleBuffer]`.
+  With the job as it is now, `AVAssetReader` decodes in 0.06 to 0.15 s (a probe, request key `audio_probe`), so the hang has not been seen again, and 87 audio tests left the skip list.
+  With every skip off, the 24 audio classes ran 598 tests in 183 s, and only the 2 `AudioEngineBehaviorTests` failed, since AudioQueue cannot start.
+  The app still contains a hang (see The audio-decoding hang under Rules the runner's failures led to).
 - **A blocked call in the concurrency pool starves the app.**
   Swift's pool has one thread for each core, and the runner has 3 or 4.
   `AVSpeechSynthesisVoice.speechVoices()` waits on a semaphore with no limit that the runner's speech service never signals, so three listings in pool tasks hold all three threads, and every other task of the process (a download's, a reader's, a test's) waits behind them.
@@ -148,6 +148,12 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
   So did the first reading-list hang.
   The listing runs on one dispatch queue (`VoiceCatalogTests.testListingsThatNeverComeBackLeaveTheConcurrencyPoolFree`).
   `ReadingListReaderTests`, `EpisodeDownloadContinuationTests`, `PreRenderedSpeechInvalidationTests`, `EndBehaviorMatrixTests`, `ImportProgressTests` and `RetainedPackageImportTests` all pass with no skips.
+- **Keyboard navigation** is off on a runner, so the tests that press Tab through a hosted window skipped.
+  `Scripts/agents/runner_settings.py` runs `defaults write NSGlobalDomain AppleKeyboardUIMode -int 2` (what turning the setting on does) on a runner only, and 3 of the 4 `BookmarkKeyboardAccessTests` that skipped now run.
+- **Probes** are request keys sent by hand with `github_run.py`; no train or suite sets them, and nothing they print is a verdict.
+  `diagnose` times the machine, package resolution, a build with no change, and a leaf and a hub edit, and names the files recompiled (`runner_diagnose.py`).
+  `audio_probe` asks whether audio decodes (`runner_audio_probe.py`), `ax_probe` whether a process can be an accessibility client (`runner_ax_probe.py`), and `parallel_workers` (2 or 3) runs the tests in clones of the test host.
+  Parallel hosts ran 22 classes (553 tests) in 224 s against about 406 s in one, but their log is in Swift's "Test case 'X.y()' passed on 'My Mac (pid)'" form, which the readers of the train, the merge, and `run-area.py` do not count ("Executed 0 tests"), so they are not used.
 - **The 2-minute limit.**
   `-test-timeouts-enabled` fails a test that passes its allowance; xcodebuild rounds the allowance up to a whole minute (its logs say "exceeded execution time allowance of 2 minutes"), so the runner sets 120 seconds, and then restarts the test host and goes on.
   One hung test costs about 2 minutes and not 5 (or all night: the first full run spent 80 minutes on 214 tests).
@@ -157,10 +163,16 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
 <!-- id: tests-left-out; keys: runner-skips.conf, skip list, no_skips, Not run on GitHub, accessibility tests, virtual machine; src: Scripts/agents/runner-skips.conf, Scripts/agents/runner_skips.py, Scripts/agents/run-on-runner.py, Scripts/agents/tests/test_run_on_runner.py, Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/test/run-area.py -->
 
 - **Tests left out.**
-  `Scripts/agents/runner-skips.conf` lists what the runner does not run: 103 entries, each one test, of about 11,960 tests.
+  `Scripts/agents/runner-skips.conf` lists what the runner does not run: 14 entries, each one test, of about 12,470 tests.
   Each is `Class.testName  # reason`, and each reason says why the test cannot work on the runner and that it still runs on this Mac.
-  Most read or play audio, which never returns there (the spindump of a hung one shows `AVAssetReader`'s `copyNextSampleBuffer` waiting for ever) or fails.
-  The rest need something a virtual machine lacks (goldens recorded on another macOS, a Mac model identifier, labelled fields in an accessibility session, Keyboard navigation) or are the flaky ones below.
+  The audio tests are no longer among them (see Audio under What differs from this Mac).
+  The families that stay out:
+  - `AudioEngineBehaviorTests` (2): AudioQueue cannot start there;
+  - `OggAfconvertTests` and `OggAudioConverterTests` (1 each): they pass Ogg to Apple's decoders, which once locked up a Mac, so no run is allowed to exercise them;
+  - `BookmarkKeyboardAccessTests` (1): with Keyboard navigation on, the focus never settles in a session with no active window;
+  - `DocumentGoldenTests` (2): goldens recorded on this Mac's macOS, which another macOS draws differently;
+  - `MetadataEditorBaselineTests` (3): they read labelled text fields through accessibility, and the runner exposes none;
+  - `IntegrationPersistenceTests`, `MenuKeyShortcutTests`, `LibraryLaunchFilesTests`, and `RecordingSaveTests` (1 each): the flaky ones below.
   A request that says `"no_skips": true` (sent by hand with `github_run.py`; no train or suite sets it) runs with none of the skips, as a probe of which entries are still needed.
   The file is read strictly: a line that does not parse stops the job, and `test_run_on_runner.py` checks that each entry names a test of its own class, that its reason says the Mac still runs it, and that version control keeps the file.
   A run's `summary.md` says how many entries it left out.
@@ -168,7 +180,10 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
   A remote result has a line "Not run on GitHub, no verdict: X (reason)" for each class or test the agent asked for (its classes, and the classes of its areas) that the merged tree's skips file leaves out, so a PASSED verdict is never read as covering them.
   A request of only skipped classes pushes nothing and has no verdict.
   To run them on this Mac the orchestrator uses a local `python3 -I Scripts/agents/build-train.py run` (without `--remote`), which takes the heavy-work lock and builds here; `run-area.py` on its own does not take the lock.
-- **Accessibility tests skip,** as they do on any session that exposes none (the HOSTED_ACCESSIBILITY_UNAVAILABLE and SWIFTUI_ELEMENTS_UNEXPOSED lines in the log; 155 tests skipped in the final full run, against 81 on this Mac at e0ea3b9d; the 74 more were not checked one by one).
+- **Accessibility tests skip,** as they do on any session that exposes none (the HOSTED_ACCESSIBILITY_UNAVAILABLE and SWIFTUI_ELEMENTS_UNEXPOSED lines in the log).
+  About 50 skip at run time with "no accessibility elements for the AppKit controls": the runner's hosted window exposes nothing, even to a trusted process (`AXIsProcessTrusted` is true and it finds 1 `AXGroup`, also with VoiceOver's Quickstart started), and no cause or fix was found.
+  The 34 that say SwiftUI exposes its elements only to an accessibility client skip on this Mac too.
+  A full run skips about 160 tests in all, the 14 entries among them.
 - A test must not pin a limit that depends on a machine's speed: a search time tuned on the runner, and AppKit's type-select wait (under 1.0 s on this Mac, 1.2 to 1.3 s on the runner), each failed on the other machine.
   Pin margins every Mac meets.
 
@@ -178,26 +193,27 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
 Measured on the `macos-26` runner (Xcode 26.0.1).
 The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); the numbers here are the ones that matter.
 
-- **Build:** about 8 minutes from nothing, and 1.3 to 3 minutes with the last run's products restored (the 640 MB cache restores in 15 to 20 seconds).
+- **Build:** about 8 minutes from nothing, and about 2 minutes on a Mac job with the last run's products restored (the 640 MB cache restores in 15 to 20 seconds); the iPhone app builds in 3.5.
+  Package resolution takes about 20 seconds, a rebuild with no change 8 to 11, and a one-file edit 40 to 45.
+  The runner has 3 cores (M1) and 7 GB, and a free account runs 5 macOS jobs at once.
 - **A few areas:** 8 to 10 minutes from the push to the downloaded results on a cold cache; a train of a few classes is 3 to 4 minutes on a warm one.
-- **The full suite:** three clean full suites in a row (runs 42894995288, 42897206889, and 42899832768, all of the commit af1a8f0c) took 13.0, 16.1, and 14.6 minutes from the push to the downloaded results, with 11,852 to 11,857 tests each and no failure.
-  The aim of about 10 minutes was not reached; this is where the minutes go.
+- **The full suite:** 12,468 tests took 26.3 minutes from the push to the downloaded results (run 43696270961, no failure): 3 Mac shards of 12.9, 13.8, and 14.9 minutes, and the iPhone job of 25.4.
+  Before the file-time fix below it took 35.8: 4 shards of 12.0 to 14.5, and the iPhone job of 35.3.
+  A train of 3 classes took 8.9 minutes (the Mac 3.6, the iPhone job 7.8), against 13.9 before.
   - A machine is ready 2 to 5 seconds after the job is queued, and setup (Xcode, XcodeGen, the cache) takes about 30 seconds.
-  - **The build before the first test takes 3 to 6 minutes in a shard, not the 1.5 of a warm train.**
-    The cache is the day's first (one a day, to keep the repository's 10 GB), so a run recompiles what changed since the day's cache was saved, on each of the four machines at once.
-    In these runs that was a day of commits; the cause is inferred from the step times, not measured.
-    The machines differ by a factor of 1.5 (the same step took 3.1 and 6.3 minutes in one run).
-  - The tests take 6 to 8 minutes in each shard (the tests' own seconds were 359 to 476).
-    The shards are dealt out by the times in `class-times.json`, which was refreshed from the first clean full run; its split came out at 508 seconds for each of four.
-  - **Building once and sharing the products** would not help: the one build (3 to 6 minutes) is on the path whichever way, and fetching its products to four machines adds minutes.
-    **A fifth shard** would make the tests 407 seconds each (about 1.7 minutes less), but the iPhone job is a sixth macOS job at the same time and GitHub runs 5 at once, so it was not tried.
-- **The iPhone job** (beside the shards): the platform download takes 3 to 4 minutes and the build 1.4 minutes from the saved products (6.4 and 8 to 10 from nothing), so without the interface tests it is off the longest path when the cache is warm and on it for the first run of a day.
+  - **A cached build compiles only the files whose text changed.**
+    `Scripts/agents/restore_mtimes.py` gives every tracked file a modification time taken from its own git blob hash, so the same text has the same time in every run, whichever run built the cached products.
+    Before that, an unchanged file got one fixed time and a changed file kept its checkout time, which the cached build recorded and no later run could give back: a tree with nothing new recompiled 154 files, and a day's changes 1,562 (387 s).
+    With 7 files changed, 4 compiled and the build took 109 s, and the full-suite iPhone build fell from 7.3 to 3.5 minutes.
+    Putting the time back to one fixed value fails `test_the_same_text_has_the_same_time_whichever_run_it_is_checked_out_in`.
+  - The shards are dealt out by the times in `class-times.json` (refreshed: 3 shards of about 574 seconds each, one shard per 600 seconds of tests).
+  - **Building once and sharing the products** would not help: a build is now 2 to 3 minutes, and uploading and downloading the products would cost as much.
+- **The iPhone job** (beside the shards): the platform download takes 3.4 to 4.9 minutes, the build 3.5 (7.3 before the file-time fix), and the simulator's set-up 5.8 (its first boot about 5.7), so it is on the longest path whenever it runs the interface tests.
   A run's page shows when it finished.
   - **The interface tests add the most.**
-    In runs 42948545901, 42952036750 and 42957244945 (in the report of the `iosuitests` branch), the platform download took 3 to 4 minutes, the build 3.5, the simulator's set-up 2.7, and the tests about 25 to 35 seconds each.
     A launch of the app takes 10 to 15 seconds on the runner's three slow cores, and the tests wait for screens.
-    In three full suites (runs 43012968916, 43021219456 and 43025487714), the 33 tests took 14.3 to 23.6 minutes of xcodebuild, and the step (with the simulator's set-up, 3.6 to 7.0 minutes) 19.4 to 27.1 minutes.
-    The iPhone job took 28.7 to 40.1 minutes, the longest of the run, against about 11 for the slowest of the four shards.
+    The 35 interface tests took about 733 seconds, and the unit bundle's 1,979 tests (the Mac's shared test files among them) 71 seconds; the whole step took 17.5 minutes, 2.3 of them the simulator's set-up.
+    So the interface tests, not the unit tests, are what to split, and the iPhone job is the longest of a full run.
     Two clones of the simulator took 17.1 minutes against 17.5 for one.
   - **Two cuts that were tried.**
     Looking with `exists` before a wait (`XCUIElement.appears(within:)`), the keyboard's one-time page checked with `exists`, and the timer test waiting for its value to change cost nothing and saved time.
@@ -230,7 +246,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   The development Mac sets nothing, so its limits are as written, and a value below 1 is read as 1.
   A request may carry `time_scale` to try another, from 1 to 10; anything else (a word, a truth value, 0.5, 1000) makes the run fail with its results written and no test run ("FAILED: the request's time_scale ...").
   A new timing test that has no uncancelled run of its own to compare with uses `TestMachine.allowed(seconds)`.
-- **The audio-decoding hang** is not fixed, only contained.
+- **The audio-decoding hang** is contained, and the runner no longer shows it.
   `AudioMediaProbe`'s decode check (`AVAssetReader`'s `copyNextSampleBuffer`, which never returns on the runner's audio) runs on a dispatch queue and not in the pool, so a hung read takes one thread and not the tests after it.
   The probe waits for it at most `decodeDeadline` (60 seconds).
   `AudioMediaProbe.duration(of:decoding:deadline:)` takes the check and the deadline, so a test can hold it.
@@ -238,7 +254,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   The file passes on its header's length rather than being refused as damaged, since a read that is only slow must not make a book "damaged".
   A check that still does not return keeps one dispatch thread.
   Three tests with a held check prove it: the passed-in check decides, a hung check is given up on at the deadline, and more held checks than cores leave the pool free.
-  The tests that read audio on the runner stay on the skip list.
+  The tests that read audio now run on the runner.
 - **`SpeechBufferSynthesizerTests.testStopEndsAWriteAtOnce`** looks up a stand-in voice first, which takes longer on a cold runner, so it presses Stop only after the write has started.
   `testStopPressedBeforeTheWriteStartsEndsItWithNothingToStop` pins the other outcome.
 - **A run that failed with no failed test** says why on its page: the function `unexplained_failure` in `Scripts/agents/run-on-runner.py`, which that script's `judge` calls, names the first ERROR line, else the first CRASH line, else that the log lacks `** TEST SUCCEEDED **`.

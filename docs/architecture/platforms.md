@@ -152,7 +152,10 @@ Each of the four closures is a one-line default or argument made into a closure 
 ## The portable XML tree
 <!-- id: portable-xml-tree; keys: XMLDocument, XPath, XMLParser, SwiftSoup, Tidy, differential test, stack size; src: TextMouth/Parsers/PortableXML.swift, TextMouth/Parsers/PortableXMLPath.swift, TextMouth/Parsers/PortableXMLBuilder.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Platform/iOS/Parsers/XMLTree+iOS.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/PortableXMLCorpus.swift -->
 
-The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it with XPath. iOS's Foundation has only the streaming `XMLParser`.
+The EPUB, feed, and OPML readers walk Foundation's `XMLDocument`.
+The EPUB reader reads its package document, NCX, and page list through `XMLElementIndex`, which uses only the tree's `children` and `localName`; the rest search it with XPath.
+See [Shared helpers: readers and markup guards](shared-helpers-parsers.md).
+iOS's Foundation has only the streaming `XMLParser`.
 So phase 0 added a portable tree that has the part of the interface those readers use, and gave it Foundation's names on iOS, so the reader files compile for iOS as they are.
 
 - `Parsers/PortableXML.swift` holds the classes (`PortableXMLDocument`, `PortableXMLElement`, and `PortableXMLNode`).
@@ -178,11 +181,28 @@ So phase 0 added a portable tree that has the part of the interface those reader
   The Mac compiles the portable tree too, but only `PortableXMLDifferentialTests` uses it: no Mac code reads through it, so the Mac's own EPUB and feed reading is unchanged.
 - `PortableXMLDifferentialTests` is what makes the tree trustworthy.
   It reads with Foundation's `XMLDocument` and with the portable tree, strictly and tidied, every XML document of every `.epub` under TestData (17 are tracked), the feed, OPML, and OPF fixtures there, and the small documents in `PortableXMLCorpus`.
-  It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use (a scan test confirms every XPath string in them is one the comparison makes).
+  It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use.
+  A scan test confirms every XPath string in them is one the comparison makes, and that at least 4 remain (the package, NCX, and page list no longer use XPath).
   The trees agree except where `knownDifferences` lists a difference, 16 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test.
   Some differences are accepted and hidden on purpose: attribute order within an element, `*` selecting a processing instruction in Foundation, the DTD node and XML declaration not being nodes, and the depth bound.
 - `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write.
   On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
+
+## Where the iPhone differs
+<!-- id: where-iphone-differs; keys: fenced tests, shared tests, simulator, Core Foundation, XMLParser, liblouis tables, LAME licence; src: project.yml, TextMouthProductionTests/TextEncodingCatalogTests.swift, TextMouthProductionTests/EPUBStructureFailureTests.swift, TextMouthProductionTests/BundledLicenseTests.swift, TextMouthProductionTests/ImportRefusalTestSupport.swift -->
+
+The Mac's tests that the iPhone's unit bundle shares (see [Testing the iPhone app](../developer/testing-iphone.md)) found these.
+Each is fenced with `#if os(macOS)` unless it says otherwise.
+
+- The iPhone app has no liblouis tables or `.dis` files, which the Mac reads (`BrailleFileCodeTests` 3 tests, `SoftHyphenEffectTests` 1).
+- iPhone lists keep titles as written whatever the leading-articles setting (`LeadingArticlesSortTests` 3), as `LibraryViewModel.leadingArticles` says.
+- Core Foundation on iOS names GBK "cp936" and has 36 distinct encodings, not 37, so the IANA round trip fails (`TextEncodingCatalogTests` 2).
+- `XMLParser`'s error code for a package document that is not XML is 111 on iOS and 4 on the Mac (`EPUBStructureFailureTests` 1).
+- In the simulator a case-variant package fails with "file already exists" (`FolderDuplicateRepairTests` 1), cause unknown.
+- The iPhone's runtime detection reads a launch request, by design (`PhoneLaunchRequestTests` 1).
+- An import's refusal alert is titled "Nothing Imported" on iOS and has no title on the Mac, by design; `ImportRefusalTestSupport` expects each, for the 10 EPUB and DOCX refusal tests.
+- Not a fence: the iPhone app bundles no Licenses folder, so LAME's licence (its code is linked in), liblouis's, and foliate-js's are not shipped there (`BundledLicenseTests` stays Mac-only).
+  Whether they should be is open.
 
 ## The iPhone app
 <!-- id: iphone-app; keys: interface spec, hand-check list, phone code; src: TextMouth/Phone/PhoneSession.swift -->

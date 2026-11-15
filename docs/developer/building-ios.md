@@ -45,6 +45,9 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
   `REF=<commit>` checks that commit (default HEAD) from any worktree, so an agent can check its branch before asking for a train.
   It has its own work folder (`build/typecheck/macos-tests/`), takes the heavy-work lock itself, and takes about four minutes when most test files compile again, six from a cold start, and seconds when nothing changed, after the wait for the lock.
   Never wrap it in `run_locked.py`.
+- **`make typecheck-ios-tests`** is the same for the iPhone's unit bundle: it compiles `TextMouthiOSTests` and the Mac test files it shares for iOS, and takes the lock itself.
+  **`make typecheck-tests-census`** counts which of the Mac's tests compile for the iPhone (slow; it writes `census.md`).
+  Both are described in [Testing the iPhone app](testing-iphone.md).
 - **`make mac-projection BASE=main`** compares, for each Swift file the Mac compiles that HEAD changes since BASE (`HEAD=` names another ref), what the Mac compiles of the old text and of the new.
   A file moved into `Platform/macOS`, Mac code wrapped in `#if os(macOS)`, and a platform alias or helper that is exactly the old type or expression on the Mac all count as unchanged.
   It prints the number of files changed, the number unchanged for the Mac, and the number with a real change, and with `DIFF=1` the lines that remain in each of those.
@@ -91,7 +94,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing or running a test.
   It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
-  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
+  Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`: about 1,960 tests, 19 its own and the rest the Mac's, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime.
   It does so when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
@@ -114,8 +117,11 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
 - **Why a run is quick.**
   Three things keep it short.
   The build products are kept between runs with `actions/cache`.
-  Each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every file unchanged since that build (by its git blob hash, from a manifest saved beside the products) one fixed old time, because a fresh checkout would otherwise make Xcode compile everything again.
-  A warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  Each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every tracked file a time taken from its own git blob hash, so the same text has the same time in every run, whichever run built the products.
+  A fresh checkout would otherwise make Xcode compile everything again.
+  The manifest saved beside the products now only names the files that differ, for the run's page.
+  A warm build took about 2 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  To see where a job's minutes go, a request sent by hand may carry `diagnose`, `audio_probe`, `ax_probe`, or `parallel_workers` (see [Tests on GitHub Actions](testing-github.md)).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
   [Tests on GitHub Actions](testing-github.md) has the details and the times.
