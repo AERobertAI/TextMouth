@@ -921,6 +921,57 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// Play/Pause pressed while Where Am I? speaks leaves the book the
+    /// announcement paused paused: that pause is watched like any other,
+    /// and lets go of the look-ahead's audio when it has grown long.
+    func testAPauseLeftByWhereAmIIsWatched() throws {
+        try withReader { reader, renders in
+            // The announcement goes to a recorder, never the synthesizer.
+            reader._whereAmIUtteranceRecorderForTesting = { _ in }
+            startSpeakingSilently(reader)
+            renders.renderNext()
+
+            reader.whereAmI()
+            XCTAssertTrue(reader.isWhereAmISpeaking)
+            XCTAssertTrue(reader.speechService.isPaused, "the announcement did not pause the book")
+            XCTAssertFalse(reader.longPause.isWaiting, "an announcement of a few seconds is not a pause to watch")
+            reader.togglePlayPause()
+
+            XCTAssertFalse(reader.isWhereAmISpeaking)
+            XCTAssertTrue(reader.speechService.isPaused)
+            XCTAssertTrue(reader.longPause.isWaiting)
+            reader.longPause._elapseNowForTesting()
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+        }
+    }
+
+    /// Speech that pauses itself, after a voice that would not start, is in
+    /// a pause that is watched too.
+    func testAPauseSpeechMadeItselfIsWatched() throws {
+        try withReader { reader, _ in
+            startSpeakingSilently(reader)
+            reader.speechService.isPaused = true
+
+            reader.showPlaybackPausedAfterStartStalls()
+
+            XCTAssertTrue(reader.longPause.isWaiting)
+        }
+    }
+
+    /// Speech that stopped itself, refused, is not paused, and nothing is
+    /// watched.
+    func testSpeechThatStoppedItselfIsNotWatched() throws {
+        try withReader { reader, _ in
+            startSpeakingSilently(reader)
+            reader.speechService.isSpeaking = false
+
+            reader.showPlaybackPausedAfterStartStalls()
+
+            XCTAssertFalse(reader.longPause.isWaiting)
+        }
+    }
+
     /// A pause repeated while paused keeps the first pause's time.
     func testASecondPauseWhilePausedKeepsTheLongPause() throws {
         try withReader { reader, renders in

@@ -1138,6 +1138,8 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
+        // Speech that paused itself is in a pause like any other.
+        watchPauseForGrowingLong()
     }
 
     // MARK: - Where a Chapter's End Stops the Timer
@@ -1562,9 +1564,18 @@ extension ReaderViewModel {
 
     // MARK: - A Long Pause (audit C11)
 
-    /// Watch the pause just made for growing long (`LongPauseWatch.delay`),
-    /// when the reader settles into it (`settleIntoLongPause()`).
-    private func watchForLongPause() {
+    /// Watch the pause a text book has just been left in for growing long
+    /// (`LongPauseWatch.delay`), when the reader settles into it
+    /// (`settleIntoLongPause()`). A pause already watched keeps its time,
+    /// and one that has grown long stays long; speech that is not paused,
+    /// and an audiobook, are not watched.
+    ///
+    /// Every way a text book is left paused comes through here: Pause
+    /// (`pause(playingPauseSound:)`), a Where Am I? announcement that ends
+    /// with the book it paused left paused (`settlePauseLeftByWhereAmI()`),
+    /// and speech that paused itself (`settleStopMadeBySpeech()`).
+    func watchPauseForGrowingLong() {
+        guard !isAudioBook, speechService.isPaused, !longPause.isWaiting, !longPause.hasElapsed else { return }
         longPause.begin { [weak self] in self?.settleIntoLongPause() }
     }
 
@@ -3735,10 +3746,8 @@ extension ReaderViewModel {
                 speechService.pause()
             }
             // A pause that lasts lets go of what only an instant resume
-            // needs (audit C11); one already watched keeps its time.
-            if speechService.isPaused, !longPause.isWaiting, !longPause.hasElapsed {
-                watchForLongPause()
-            }
+            // needs (audit C11).
+            watchPauseForGrowingLong()
         }
         // Now safe to clean up fade state. Audio books still restore here;
         // TTS restores inside SpeechService after the engine has stopped.
