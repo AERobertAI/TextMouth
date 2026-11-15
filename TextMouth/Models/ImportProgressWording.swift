@@ -97,10 +97,19 @@ enum ImportProgressWording {
     /// "reading its text" or "copying it into the library".
     static func step(_ step: ImportStep) -> String {
         let phrase = lowercasedFirst(step.activity)
+        switch step {
         // Converting a book of several tracks counts them, as in
         // "converting its audio: 12 of 176 tracks"; one file needs no count.
-        guard case let .convertingImportedAudio(done, total) = step, total > 1 else { return phrase }
-        return "\(phrase): \(tracks(done: done, of: total))"
+        case let .convertingImportedAudio(done, total) where total > 1:
+            return "\(phrase): \(tracks(done: done, of: total))"
+        // Reading a book of several pictured pages counts them the same way,
+        // as in "reading its text: 3 of 12 pages" (FMT34); one picture needs
+        // no count.
+        case let .readingPages(done, total) where total > 1:
+            return "\(phrase): \(pages(done: done, of: total))"
+        default:
+            return phrase
+        }
     }
 
     /// What the tracks of a book being converted at import are counted by
@@ -111,6 +120,16 @@ enum ImportProgressWording {
     /// 1 track", as an import's line and the library's conversion say it.
     static func tracks(done: Int, of total: Int) -> String {
         CountWording.part(done, of: total, trackNoun)
+    }
+
+    /// What the pages of a book read by text recognition at import are
+    /// counted by (FMT34).
+    static let pageNoun = CountWording.Noun(singular: "page", plural: "pages")
+
+    /// The pages read of a book's total: "3 of 12 pages", as an import's line
+    /// says it.
+    static func pages(done: Int, of total: Int) -> String {
+        CountWording.part(done, of: total, pageNoun)
     }
 
     /// `words` with their first letter in lowercase, to follow other words

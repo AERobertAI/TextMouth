@@ -1925,11 +1925,21 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
+        // A book read page by page (pictures of pages, FMT34) says how many
+        // of its pages are read, which the overlay counts as it counts the
+        // tracks it converts; every other format reads without a word.
+        let observer = run.observer
+        let package = book.tmbDirectory
         let generated: MarkdownCacheService.GeneratedCache
         do {
-            guard let written = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-                for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
-            ) else {
+            let reading = try ImportPageProgress.reporting(to: { done, total in
+                try observer?(.readingPages(done: done, of: total), package)
+            }) {
+                try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+                    for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
+                )
+            }
+            guard let written = reading else {
                 // Only a book without a package gets no cache, and every
                 // import gives its book one before reading it.
                 throw FileImportError.importFailed("The book has no package to hold its text.")
