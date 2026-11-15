@@ -828,6 +828,72 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index], in: root), "the index is here, only in the cloud")
     }
 
+    /// In a cloud location, statistics not on this Mac at all may not have
+    /// arrived yet: fresh ones stand in, a look as the file may have come
+    /// keeps waiting and writes nothing, and once the other Mac's file is
+    /// here the next save adds this session's listening to it.
+    func testStatisticsNotHereYetInTheCloudAreTakenUpAndNeverWrittenOver() throws {
+        let folder = try makeSandboxDirectory("StatsNotHereYet")
+        let file = folder.appendingPathComponent("reading_stats.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+
+        XCTAssertTrue(service.statsAwaitFileInCloud)
+        service.fileMayHaveArrived()
+        XCTAssertTrue(service.statsAwaitFileInCloud, "a look that found nothing ended the wait")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the stand-ins were written in the file's place")
+
+        try statsData(totalSeconds: 9_000).write(to: file)
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 9_120)
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_120)
+    }
+
+    /// Statistics that never come, as in a library new to the cloud, are
+    /// saved once there is listening to keep.
+    func testStatisticsThatNeverComeAreSavedOnceThereIsListening() throws {
+        let folder = try makeSandboxDirectory("StatsNeverCome")
+        let file = folder.appendingPathComponent("reading_stats.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.dropbox), of: folder)
+        installItemStatus(provider)
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 120)
+    }
+
+    /// One Mac, a folder elsewhere: statistics with no file start fresh,
+    /// waiting for nothing, and are saved as before.
+    func testStatisticsWithNoFileElsewhereStartFreshAsBefore() throws {
+        let file = try makeSandboxDirectory("StatsLocal").appendingPathComponent("reading_stats.json")
+        installItemStatus(FakeCloudItemStatusProvider())
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(60))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 60)
+    }
+
     // MARK: - Fixtures
 
     /// A file's state as a sync service reports a file only in the cloud.
