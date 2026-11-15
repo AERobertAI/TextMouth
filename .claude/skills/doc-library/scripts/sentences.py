@@ -33,6 +33,9 @@ OPENERS = "`\"'“‘([*_"
 URL_TRAILING = ".,;:!?)]'\""
 
 _TERMINATOR = re.compile(r"[.!?]")
+# A terminator, its closers, and white space: all a sentence's end needs before the checks
+# of ``_sentence_end_at``; a text with none of these has a single sentence.
+_POSSIBLE_END = re.compile("[.!?][" + re.escape(CLOSERS) + r"]*\s")
 _BARE_URL = re.compile(r"https?://\S+")
 _AUTOLINK = re.compile(r"<[A-Za-z][A-Za-z0-9+.\-]{1,31}:[^\s<>]*>")
 # A word of single capital letters separated by periods ("J", "J.R"): initials.
@@ -251,12 +254,15 @@ def split_sentences(text: str) -> List[Span]:
     Each span starts and ends on a non-space character, spans never overlap, and
     every non-space character of ``text`` is inside exactly one span.
     """
-    protected = protected_spans(text)
     spans: List[Span] = []
     start = 0
+    # Most lines hold no terminator that could end a sentence; one search settles that,
+    # before the protected spans (the costly part) are found.
+    possible = _POSSIBLE_END.search(text) is not None
+    protected = protected_spans(text) if possible else []
     # Only a terminator can end a sentence, so visit those alone: a Python call
     # per character cost a fifth of a second over the docs.
-    for match in _TERMINATOR.finditer(text):
+    for match in (_TERMINATOR.finditer(text) if possible else ()):
         index = match.start()
         if index < start:
             continue  # among the closers of the sentence just ended

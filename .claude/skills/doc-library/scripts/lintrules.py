@@ -157,6 +157,34 @@ def sales_pattern(words: Sequence[str]) -> Optional["re.Pattern[str]"]:
     return re.compile(r"\b(?:" + "|".join(alternatives) + r")\b", re.IGNORECASE)
 
 
+# The characters that ``re.IGNORECASE`` takes for an ASCII letter but ``str.lower`` leaves alone.
+# (long s, dotless i, dotted capital I, the Kelvin sign.)
+_FOLDS_TO_ASCII = str.maketrans({"\u017f": "s", "\u0131": "i", "\u0130": "i", "\u212a": "k"})
+
+
+def folded(text: str) -> str:
+    """``text`` lowered so that every match of an ASCII word under ``re.IGNORECASE`` shows in it.
+
+    A test on the result may let a block through that has no match (it only gates the
+    exact search), but never turns away one that has.
+    """
+    return text.lower() if text.isascii() else text.translate(_FOLDS_TO_ASCII).lower()
+
+
+def sales_prefilter(words: Sequence[str]) -> Tuple[str, ...]:
+    """The lowercase first word of each entry of ``words``: a text with none of them has no sales word.
+
+    Test ``folded`` text with ``holds_any``; the substring searches run in C and are
+    much quicker than the pattern, which tries every alternative at every position.
+    """
+    return tuple(sorted({word.split()[0].lower() for word in words}))
+
+
+def holds_any(text: str, needles: Iterable[str]) -> bool:
+    """True when ``text`` holds at least one of ``needles`` as a substring."""
+    return any(needle in text for needle in needles)
+
+
 @dataclass
 class LintContext:
     """What every rule needs, built once for a run.
@@ -171,6 +199,7 @@ class LintContext:
     pages: List[Page]
     repo: RepoFiles
     sales: Optional["re.Pattern[str]"]
+    sales_quick: Tuple[str, ...] = ()
     _by_path: Dict[str, Page] = field(default_factory=dict)
     _prose: Dict[str, List[ProseBlock]] = field(default_factory=dict)
     _links: Dict[str, List[Link]] = field(default_factory=dict)
@@ -182,8 +211,9 @@ class LintContext:
         """Read the lint pages and the repository's file list, once."""
         paths = docmodel.lint_pages(root)
         pages = docmodel.load_pages(root, paths)
+        words = load_sales_words()
         context = cls(root=root, paths=paths, pages=pages, repo=RepoFiles.load(root),
-                      sales=sales_pattern(load_sales_words()))
+                      sales=sales_pattern(words), sales_quick=sales_prefilter(words))
         context._by_path = {page.path: page for page in pages}
         return context
 
@@ -310,6 +340,13 @@ _MONTH_FIRST = rf"\b{_MONTH}\b\.?[ \t]+(?:{_DAY}\b(?:,?[ \t]+{_YEAR}\b)?|{_YEAR}
 # ``12 October``, ``12 October 2026``.
 _DAY_FIRST = rf"\b{_DAY}[ \t]+{_MONTH}\b(?:\.?[ \t]+{_YEAR}\b)?"
 _NAMED_DATE = re.compile(f"{_MONTH_FIRST}|{_DAY_FIRST}")
+# What every ISO date holds, and every month-name date: a hyphen, month digits, a hyphen, and
+# day digits; or the first three letters of a month name (``Sept`` and the long names start
+# with them), whose capital lets the matcher skip along. Each is a looser pattern than the
+# date's own (``might_hold_date``), found cheaply, so that the dates' own patterns, which
+# are slow, run on the few blocks that might hold a date.
+_ISO_QUICK = re.compile(r"-[01]\d-[0-3]\d")
+_MONTH_QUICK = re.compile(r"Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
 # ``2026-10-12`` with a real month and day, not part of a longer word or number.
 _ISO_DATE = re.compile(r"(?<!\w)(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?!\w)")
 # The characters beside a date that make it part of a name: ``TODO-2026-09-04.md``.
@@ -338,17 +375,31 @@ def in_a_path_name(line: str, start: int, end: int) -> bool:
     return bool(after) and (after[0] in _NAME_AFTER or (after[0] == "." and after[1:].isalnum()))
 
 
-def prose_lines(context: LintContext, page: Page) -> Iterator[Tuple[int, str]]:
-    """Each line of the page's prose as ``(line number, plain text)``."""
+def prose_lines(context: LintContext, page: Page,
+                might_match: Optional[Callable[[str], bool]] = None) -> Iterator[Tuple[int, str]]:
+    """Each line of the page's prose as ``(line number, plain text)``.
+
+    A rule that looks for something rare passes ``might_match``, a quick test on a
+    block's whole plain text that is false only when no line of the block can hold what
+    the rule seeks; the lines of such a block are not split out. This is what makes a
+    rule cost one search for a block, not one for each of its lines.
+    """
     for block in context.prose(page):
+        if might_match is not None and not might_match(block.plain):
+            continue
         for offset, text in enumerate(block.plain.split("\n")):
             yield block.start + offset, text
+
+
+def might_hold_date(plain: str) -> bool:
+    """False only when ``plain`` holds no date that ``rule_date`` reports."""
+    return bool(_ISO_QUICK.search(plain) or _MONTH_QUICK.search(plain))
 
 
 def rule_date(context: LintContext) -> Iterator[Violation]:
     """``date``: ISO and month-name dates in prose, on pages but logs."""
     for page in context.selected(logs=False):
-        for number, text in prose_lines(context, page):
+        for number, text in prose_lines(context, page, might_hold_date):
             for match in _ISO_DATE.finditer(text):
                 if not in_a_path_name(text, match.start(), match.end()):
                     yield violation(page, "date", number, number, f"date {match.group()}")
@@ -369,7 +420,7 @@ def word_count(text: str) -> int:
 def rule_user_quote(context: LintContext) -> Iterator[Violation]:
     """``user-quote``: long double-quoted spans on a line that mentions the user, on pages but logs."""
     for page in context.selected(logs=False):
-        for number, text in prose_lines(context, page):
+        for number, text in prose_lines(context, page, lambda plain: "user" in folded(plain)):
             if not _USER_WORD.search(text):
                 continue
             for match in _QUOTED.finditer(text):
@@ -384,7 +435,7 @@ def rule_sales_word(context: LintContext) -> Iterator[Violation]:
     if context.sales is None:
         return
     for page in context.selected():
-        for number, text in prose_lines(context, page):
+        for number, text in prose_lines(context, page, lambda plain: holds_any(folded(plain), context.sales_quick)):
             for match in context.sales.finditer(text):
                 yield violation(page, "sales-word", number, number, f"sales word {match.group().lower()}")
 
@@ -396,6 +447,9 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬅-⬇⬛⬜⭐⭕️]")
 def rule_emoji(context: LintContext) -> Iterator[Violation]:
     """``emoji``: each emoji character outside code (code blocks and inline code spans)."""
     for page in context.selected():
+        # Most pages have no emoji at all, in code or out: one search of the page settles that.
+        if not _EMOJI.search("\n".join(page.lines)):
+            continue
         for block in page.blocks:
             if block.kind == "code":
                 continue
