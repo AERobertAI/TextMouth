@@ -1,10 +1,10 @@
 # Package records
-<!-- id: package-records; keys: ; src: -->
+<!-- id: package-records; keys: package, tmb, per-book state; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The book record files
-<!-- id: book-record-files; keys: ; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/LenientFields.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/TextMouthPaths.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift -->
+<!-- id: book-record-files; keys: package record, BookState, Codable, JSON file, storage, package folder; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Models/LenientFields.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift -->
 
 bookInfo.json and contentIndex.json: each package's record of its book (BookInfo), in two files. bookInfo.json holds the metadata, the reading state, and the bookmarks, about a kilobyte, pretty-printed with sorted keys; contentIndex.json, beside it, holds the content index alone, compact with sorted keys, since it can run to hundreds of kilobytes and changes only when the book is imported or analyzed.
 
@@ -31,7 +31,7 @@ bookInfo.json and contentIndex.json: each package's record of its book (BookInfo
 - Files: Models/BookInfo.swift, Models/Book.swift, Models/TextEncodingRecord.swift, Models/LenientFields.swift, Services/LibraryPersistenceService.swift, Services/TextMouthPaths.swift.
 
 ## Revisions
-<!-- id: revisions; keys: ; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Services/LibraryPersistenceService.swift -->
+<!-- id: revisions; keys: revision counter, revisionFloor, record version, monotonic; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/Book.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Revisions.
 
@@ -42,7 +42,7 @@ Revisions.
 - Files: Models/BookInfo.swift, Models/Book.swift, Services/LibraryPersistenceService.swift.
 
 ## Analysis-owned fields
-<!-- id: analysis-owned-fields; keys: ; src: TextMouth/Models/Book.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/ViewModels/TextExtractionProgress.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/ContentView.swift -->
+<!-- id: analysis-owned-fields; keys: word count, extraction progress, analysis result, text extraction; src: TextMouth/Models/Book.swift, TextMouth/Models/TextEncodingRecord.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/ContentAnalysisSummaryBuffer.swift, TextMouth/ViewModels/TextExtractionProgress.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Views/ContentView.swift -->
 
 Analysis-owned fields.
 
@@ -62,7 +62,7 @@ Analysis-owned fields.
 - Files: Models/Book.swift, Models/TextEncodingRecord.swift, Services/LibraryPersistenceService.swift, ViewModels/LibraryViewModel+BookOperations.swift, ViewModels/LibraryViewModel+Migration.swift, ViewModels/ContentAnalysisSummaryBuffer.swift, ViewModels/TextExtractionProgress.swift.
 
 ## Metadata reader version
-<!-- id: metadata-reader-version; keys: ; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Models/SemanticVersion.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Models/BookInfo.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+<!-- id: metadata-reader-version; keys: EPUB author, Unknown author, launch refresh, outdated metadata; src: TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/SemanticVersion.swift, TextMouth/Parsers/EPUBParser.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/MaintenanceFileAccess.swift -->
 
 The metadata reader's version: which reader last read a book's file for its title and author.
 
@@ -80,7 +80,7 @@ The metadata reader's version: which reader last read a book's file for its titl
 - Files: Services/FileImportService.swift, Models/Book.swift, Models/SemanticVersion.swift, Parsers/EPUBParser.swift, ViewModels/LibraryViewModel+MetadataRefresh.swift, ViewModels/LibraryViewModel+Migration.swift, Services/StorageGeneration.swift, Services/MaintenanceFileAccess.swift.
 
 ## Hand edits
-<!-- id: hand-edits; keys: ; src: TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/MetadataEditorView.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Views/Library/FeedItemBookInfoSheet.swift, TextMouth/ViewModels/LibraryViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/LenientFields.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift -->
+<!-- id: hand-edits; keys: manual edit, user-edited fields, edit flags, metadata override; src: TextMouth/Models/Book.swift, TextMouth/Models/BookInfo.swift, TextMouth/Models/LenientFields.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/FileImportService+Packages.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/Services/Feeds/FeedEpisodeImporter.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/Views/Reader/MetadataEditorView.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Views/Library/FeedItemBookInfoSheet.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
 Hand edits (FR06): which of a book's metadata fields the user edited by hand.
 
