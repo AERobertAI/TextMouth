@@ -121,7 +121,7 @@ Quitting while work is under way (0.4.4):
 - Pressing Command-Q again, or choosing Quit in the Dock again, while TextMouth finishes no longer quits at once and cuts the work off.
   TextMouth says the same words again and goes on finishing.
 - Quit Anyway in the alert about changes that could not be saved still quits after the work has finished, and the alert is not shown a second time.
-- While such work is under way, choosing Quit Anyway, or answering an audio editor's or the Record window's question, ends the quit.
+- While such work is under way, choosing Quit Anyway, or answering an audio editor's or the Record window's question, carries out the quit once the work has finished.
   TextMouth does not stay open with its windows stuck.
 - Log out, restart, and shut down wait for the same work as before, with the same words, and are not cancelled by it.
   If you log out while TextMouth is finishing for your Quit, the log out goes on when the work has ended.
