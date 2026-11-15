@@ -669,3 +669,6 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 
 - **The record's encoding and source on every save:** Any other save, a reading checkpoint among them, writes the stored record's encoding and source back as they are, and never the old encoding beside the new text (review of October 24, finding 5).
 - **When hand edits began to be recorded:** Since October 7, 2026, FileImportService.importFileWithReport begins such a record on every book it makes (hand edits, below); nil means nothing was recorded: every row saved before October 7, 2026, and every book since that the file import did not make.
+## From Package records: places, transcripts, origin, manifests
+
+- **The transcript index version:** BookContentTranscriptIndex.currentVersion, "1.1.0", was raised from "1.0.0" on October 23, 2026 with that escaping, so each transcribed book's text is written again once as it opens.
