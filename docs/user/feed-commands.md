@@ -1,6 +1,8 @@
 # Feed, episode, and article commands
 <!-- id: feed-episode-article-commands; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Commands
 <!-- id: commands; keys: ; src: -->
 

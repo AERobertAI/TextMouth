@@ -1,6 +1,8 @@
 # Downloading feed episodes and articles
 <!-- id: downloading-feed-episodes-articles; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Listing and downloading
 <!-- id: listing-downloading; keys: ; src: -->
 

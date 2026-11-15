@@ -1,6 +1,8 @@
 # Listening on, feed settings, and transcripts
 <!-- id: listening-feed-settings-transcripts; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Listening on to the next episode
 <!-- id: listening-next-episode; keys: ; src: -->
 
