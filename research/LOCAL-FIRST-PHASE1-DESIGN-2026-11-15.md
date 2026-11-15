@@ -418,16 +418,23 @@ From `docs/developer/testing.md`, "Testing on real cloud drives", in a throwaway
 
 ### The instruments, checked in a scratch folder
 
-`clone_probe.swift`, run once through `run_locked.py` in the session's scratch folder on the startup disk, on a 16 MB file of random bytes.
-It read three things for each file: the content identifier, the may-share flag, and the private size (`ATTR_CMNEXT_PRIVATESIZE`, the bytes deleting the file would free).
+A 60-line Python script, run once in the session's scratch folder on the startup disk, on a 16 MB file of random bytes.
+It needs no compile: it calls `clonefile(2)` and `getattrlist(2)` through `ctypes`.
+It read two things for each file, with `FSOPT_ATTR_CMN_EXTENDED`: the private size (`ATTR_CMNEXT_PRIVATESIZE`, the bytes deleting the file would free) and the clone identifier (`ATTR_CMNEXT_CLONEID`).
 
-The run was still waiting for the heavy-work lock when this page was first committed; its result follows in a later commit.
+- The file alone: private size 16,777,216.
+- After a clone: the file and its clone each report private size 0, and one clone identifier.
+- A plain copy of the same bytes: private size 16,777,216, and another identifier.
+- A clone replaced by a new file of the same bytes, as a drive rewriting it would do: private size 16,777,216, and another identifier.
+
+So the two readings tell a clone from a copy, and show the moment a clone stops being one.
+The script is in the report's scratch folder; a later agent can write it again from this section.
 
 ### The run that needs the user's yes
 
 The same probe, pointed at a throwaway folder in iCloud Drive (as October's tests used `TextMouth Cloud Tests`), with one 16 MB file:
 
-1. clone it into the folder, and read all three at once;
+1. clone it into the folder, and read both at once, for the file and for its original;
 2. read them again when the drive reports it uploaded, and five minutes later;
 3. remove its download, ask for it back, and read them again.
 
