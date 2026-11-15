@@ -641,3 +641,26 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Orchestrating TextMouth's agents
+
+- **Sonnet by default:**
+  - Since October 31, 2026, workers, verifiers, documentation passes, and narrow fixes run on Sonnet at high effort (`model: "sonnet"`, `effort: "high"`),
+  - and Opus (`model: "opus"`) is kept for the lead of a large design and the first outside review of a big or risky branch.
+  - After a night of 76 Opus agents the user asked: "Are the subagents teams running as sonnet agents? just checking given how fast they used usage last night."
+  - Every launch also passes `subagent_type: "general-purpose"` and `isolation: "worktree"`; an agent launched without a model override inherits the orchestrator's model, which on October 6 and 7,
+  - 2026 put thirteen task agents on Fable and spent the weekly Fable window (only the four read-only sheet sweeps of October 6 ran on Opus).
+- **The version rule:**
+  - The user's rule (October 23, 2026) is one bump for each day on which main gains bug fixes or small backward-compatible features.
+- **The build train:**
+  - **Builds go through the build train** (since October 31, 2026).
+  - That day the Mac, with 8 GB of memory, froze under the agents' builds and was force-restarted, and the user asked for "1 build at a time maybe on a schedule or something every 30 minutes and have the agents pool there work into each build".
+  - On November 8, 2026, finding that the builds took a lot of CPU, they asked for "the builds every hour and putting them one after the other",
+  - and for the agents "to use the wait time to review there patches and fix any obvius issues so its less likely a hour cycle would be waisted, or to improve tests so each indiviusal build would give more information".
+- **Builds on GitHub:**
+  - **Builds on GitHub** (since November 9, 2026).
+  - The user, finding the builds hard on this Mac's CPU, asked to move the testing and compiling to GitHub Actions.
+- **Type-checks between trains:**
+  - **Type-checks between trains** (since November 3, 2026).
+- **Team leads in place of task agents:**
+  - The user asked for it on October 12 ("a sub sub orcistrater pattern where tasks are broken down even smaller... the subsubagents could be high Sonnet agents to see if that can save some cost").

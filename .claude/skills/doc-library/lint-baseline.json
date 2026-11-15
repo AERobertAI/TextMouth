@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "docs/agents/history.md": {"line-length": 18},
-    "docs/agents/orchestrator.md": {"date": 13, "line-length": 16, "user-quote": 3},
+    "docs/agents/orchestrator.md": {"line-length": 14},
     "docs/agents/working-with-agents.md": {"date": 4, "line-length": 5, "user-quote": 1},
     "docs/architecture/known-duplication.md": {"date": 5, "line-length": 6},
     "docs/architecture/launch.md": {"line-length": 10},
