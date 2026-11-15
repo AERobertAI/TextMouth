@@ -8,18 +8,18 @@ Repeated code that is known and left for now, each with the reason:
 ## Singular and plural wording
 <!-- id: singular-plural-wording; keys: pluralization, CountWording.phrase, plural noun, ternary, count == 1, message wording; src: TextMouth/Models/CountWording.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/LegacyBookMigration.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/Parsers/AudioBookParser.swift, TextMouth/Models/RemovalWording.swift -->
 
-More than a dozen messages still choose singular or plural inline, in FileImportService, LegacyBookMigration, LibraryViewModel+Migration, PersistenceFailureCenter, LibraryViewModel+BookOperations, and AudioBookParser; they could use CountWording.
+More than a dozen messages still choose singular or plural inline, in FileImportService, LegacyBookMigration, PersistenceFailureCenter, LibraryViewModel+BookOperations, and AudioBookParser; they could use CountWording.
 A few sentences deliberately drop the number for one ("Remove Book?", "the book inside") and do not fit it.
 
 ## Time remaining tally
 <!-- id: time-remaining-tally; keys: summary bar, time left, LibraryInfoRow, LiveReadingPositions, reading time sum, unused code; src: TextMouth/ViewModels/TimeRemainingTally.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Views/Library/LibrarySubviews.swift -->
 
-TimeRemainingTally (ViewModels/TimeRemainingTally.swift), which the Library's summary bar adds its list up with, repeats LibraryViewModel.totalTimeRemaining(books:wpm:) (ViewModels/LibraryViewModel+Migration.swift), which nothing calls at all, applying each book's live reading position first (the bar's own computeTimeRemaining went in the audit's C7).
+TimeRemainingTally (ViewModels/TimeRemainingTally.swift), which the Library's summary bar adds its list up with, repeats LibraryViewModel.totalTimeRemaining(books:wpm:) (ViewModels/LibraryViewModel+Migration.swift), which nothing calls at all, applying each book's live reading position first.
 
 ## PDF page readers
 <!-- id: pdf-page-readers; keys: PDFKit, readPage, embeddedLines, plainLines, formattedLines, paragraph joiner, font size; src: TextMouth/Parsers/PDFTextParser.swift -->
 
-PDFTextParser's two page readers, with and without heading detection, share most of their loop, but record font sizes differently in ways that the paragraph joiner reads, so merging them would change some PDFs' paragraphs.
+PDFTextParser's two line readers, `plainLines(in:)` and `formattedLines(in:)`, which `embeddedLines(of:detectsHeadings:)` chooses between, share most of their loop, but record font sizes differently in ways that the paragraph joiner reads, so merging them would change some PDFs' paragraphs.
 
 ## VoiceOver focus searches
 <!-- id: voiceover-focus-searches; keys: accessibility tree, NSView, focus trigger, VoiceOverFocus, initial focus; src: TextMouth/Platform/macOS/Views/VoiceOverFocus.swift -->
@@ -48,11 +48,6 @@ They could share one.
 <!-- id: folder-listing-failure-classes; keys: FileManager.enumerator, errorHandler, first error, directory enumeration; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/Services/DataDirectoryMigrator.swift -->
 
 ListingFailure (Services/ReaderWorkingCopy.swift) and FolderListingFailure (Services/DataDirectoryMigrator.swift) are the same small class, keeping the first error a folder enumeration's handler meets; one could serve both.
-
-## ContentView literals
-<!-- id: contentview-literals; keys: windowID, openWindow, announceFolderChange, folder announcement, reader window; src: TextMouth/Views/ContentView.swift, TextMouth/Views/Reader/BookReaderWindowView.swift, TextMouth/Services/VoiceOverAnnouncer.swift -->
-
-ContentView opens readers with the literal window ID "book-reader" rather than BookReaderWindowView.windowID, and posts its folder announcement directly rather than through VoiceOverAnnouncer.
 
 ## Content file watcher
 <!-- id: content-file-watcher; keys: DispatchSource, O_EVTONLY, file watcher, config.json watcher, file system events; src: TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/ConfigService.swift -->
