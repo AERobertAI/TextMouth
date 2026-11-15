@@ -16,8 +16,8 @@ import Foundation
 /// whose results of November 15, 2026 are recorded at its end.
 enum LookAheadLead {
     /// The shortest lead, in seconds of listening: five minutes, however
-    /// short the next chapter. It is also how long a pause lasts before it
-    /// counts as long (`LongPauseWatch.delay`).
+    /// short the next chapter. A pause counts as long after the same time
+    /// (`LongPauseWatch.delay`, which is this number).
     static let minimum: TimeInterval = 5 * 60
 
     /// How many times the next chapter's estimated render time the lead is.

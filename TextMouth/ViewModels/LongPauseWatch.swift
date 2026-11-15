@@ -20,10 +20,13 @@ final class LongPauseWatch {
     /// back expecting everything as it was. Past five minutes the only cost
     /// of letting go is a render of a few seconds made again, for a pause
     /// near a chapter's end, which is not heard. It is the look-ahead's
-    /// smallest lead too
-    /// (`LookAheadLead.minimum`), so one number says what "a few minutes"
-    /// means to playback.
-    static let delay: TimeInterval = 5 * 60
+    /// smallest lead (`LookAheadLead.minimum`), so one number says what "a
+    /// few minutes" means to playback.
+    ///
+    /// Only time the Mac is awake counts: the watch waits on the main
+    /// queue's uptime clock, which stops while the Mac sleeps, so a pause
+    /// that spans a sleep grows long five waking minutes after it began.
+    static let delay: TimeInterval = LookAheadLead.minimum
 
     /// The pause's end of patience, waiting on the main queue, or nil.
     private var pending: DispatchWorkItem?

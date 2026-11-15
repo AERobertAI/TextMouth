@@ -33,10 +33,11 @@ import Foundation
 //
 //     python3 -I Scripts/agents/run_locked.py NAME swiftc -O \
 //         Scripts/agents/probes/paused-engine-wakeups-probe.swift -o SCRATCH/wakeups
-//     python3 -I Scripts/agents/run_locked.py NAME SCRATCH/wakeups [--no-buffer]
+//     python3 -I Scripts/agents/run_locked.py NAME SCRATCH/wakeups [--buffer]
 //
-// `--no-buffer` leaves out state 3. The result recorded on November 15, 2026
-// is at the end of this file.
+// State 3 runs only when asked for with `--buffer`: without it the probe
+// writes no property of the output device at all. The result recorded on
+// November 15, 2026 is at the end of this file.
 
 // MARK: - Counting render cycles
 
@@ -331,7 +332,7 @@ DispatchQueue.global(qos: .userInitiated).async {
     playAndCheck("2 power hint raised during a play") { _ = setPowerHint(.favorSavingPower) }
     playAndCheck("2 power hint set back during a play") { _ = setPowerHint(.none) }
 
-    if !CommandLine.arguments.contains("--no-buffer") {
+    if CommandLine.arguments.contains("--buffer") {
         // This process's own I/O buffer, raised to 4,096 frames or the top
         // of the range if that is lower.
         let raised = UInt32(min(4_096, range.mMaximum))
@@ -352,8 +353,8 @@ DispatchQueue.global(qos: .userInitiated).async {
 }
 RunLoop.main.run()
 
-// Result, November 15, 2026 (macOS 26.3, output on AirPods; run with
-// --no-buffer, so state 3 never ran and no device property was written):
+// Result, November 15, 2026 (macOS 26.3, output on AirPods; run without
+// state 3, so no device property was written):
 //
 //     output device: transport 'blue', 48000 Hz, buffer range 15-960 frames
 //     1 today, node paused: 93.8 cycles/s, 512 frames a cycle, buffer here 512, in another process 512, idle wake-ups/s 0, CPU % 0.3

@@ -1662,10 +1662,13 @@ extension ReaderViewModel {
     /// current voice, still has the signature it renders, as after a section
     /// is skipped in the chapter being spoken; a repeated notice of one change
     /// therefore does nothing more. Otherwise its render is abandoned and the
-    /// next speakable chapter, which may now be another one, is queued to
-    /// render from the current settings, so the next chapter keeps its
-    /// instant start. Speed and pitch are not such settings: they are applied
-    /// as the audio plays.
+    /// next speakable chapter, which may now be another one, is chosen and
+    /// prepared from the current settings, its render queued at once or left
+    /// waiting for the lead (`preRenderNextChapter()`), so the next chapter
+    /// keeps its instant start. A look-ahead whose render still waits is
+    /// always chosen again: it has no signature to compare, and choosing
+    /// costs only a search of speech already prepared. Speed and pitch are
+    /// not such settings: they are applied as the audio plays.
     ///
     /// Nothing happens unless a text book's speech is playing or paused.
     /// Speech already prepared from the current settings is not prepared
