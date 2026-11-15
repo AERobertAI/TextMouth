@@ -13,10 +13,17 @@ Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, th
   Info.plist makes it a document type at Alternate rank and imports the type com.textmouth.kfx.
   Its page reader line is "1.0.0" (PageReaderVersions.current(for: .kfx)), a case of its own, so only KFX books are read again for pages.
   An .azw file holding KFX bytes is a BookFormat.mobi book that MOBIParser hands to KFXParser by its bytes, and it is read without pages.
-- Recognizing: KFXSignature decides by the first bytes, never the name: CONT is a KFX container, DRMION is a copy-protected container (refused, never opened: MOBIError.copyProtected), and PK is a ZIP that KFXPackage looks at by member names and first bytes only (a .kfx-zip set, or a .kpf with a .kdf database, which is KFXError.kindleCreatePackage).
+- Recognizing: KFXSignature decides by the first bytes, never the name:
+  - CONT is a KFX container,
+  - DRMION is a copy-protected container (refused, never opened: MOBIError.copyProtected), and
+  - PK is a ZIP that KFXPackage looks at by member names and first bytes only (a .kfx-zip set, or a .kpf with a .kdf database, which is KFXError.kindleCreatePackage).
+
   KFXSidecar looks beside the book for a Book.sdr folder and a Book.voucher (a voucher or a protected member anywhere is copyProtected), following no symbolic link, visiting at most 200 names, going no deeper than 3 levels, and reading at most 16 containers, and a sidecar's fragments never override the main file's.
   FileImportService refuses a protected book at import before its size is asked.
   A nonzero compression or DRM field in a container is refused (the format notes find both 0 in every readable file); a nonzero compression is MOBI's "compressed in a way TextMouth can't read yet".
+### Reading a KFX book
+<!-- id: reading-kfx-book; keys: KFXContainer, Ion, KFXSymbols, KFXMetadata, KFXWalk, noFlowingText, partOfABook, refusals; src: TextMouth/Parsers/KFXContainer.swift, TextMouth/Parsers/KFXView.swift, TextMouth/Parsers/KFXIon.swift, TextMouth/Parsers/KFXSymbols.swift, TextMouth/Parsers/KFXFragments.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift -->
+
 - Reading: KFXContainer opens a container with every offset and length checked through KFXView, which throws MOBIError.damaged on any field that points outside the data.
   KFXIon reads binary Ion from the public specification, with an explicit stack and a budget of values, never recursion.
   KFXSymbols knows the shared table by number and the container's local symbols, which start after the import's max_id (860 when max_id is 859).
@@ -24,11 +31,25 @@ Kindle KFX books (FMT52): DRM-free KFX books, read by TextMouth's own reader, th
   KFXMetadata reads the title, author (a book made by Kindle Previewer spells every name "Last, First", which is flipped back for that tool alone), and language, and the capability marks that say a book has no flowing text (fixed layout, textbook, publisher panels, facing page, double-page spread, text popups, dictionary, a magazine's content type, a comic's panel mode, a notebook), which throw KFXError.noFlowingText, as does a book whose every section is fixed layout or only pictures; KFXError.partOfABook is a container with no sections, storylines, or document data.
 - KFXNavigation reads the table of contents, the print page list (a list named APPROXIMATE_PAGE_LIST is a machine's and is passed over), and the heading levels the headings container gives (levels 1 to 6), at most 200,000 units.
   KFXTargets turns each into an anchor at a node and an offset in code points.
-  KFXWalk walks each section of the reading order with its own stack and one counter of work against one limit, and writes HTML: paragraphs, headings, emphasis (KFXStyles: bold by weight, italic, and a heading hint), links, lists, tables (a caption, thead, tbody, and cells that hold text blocks), and a picture's alt text; KFXInlineText writes one text block's string, cutting it at every run boundary so overlapping runs nest, and the HTML of inline nodes (pictures, math, floated spans).
+  KFXWalk walks each section of the reading order with its own stack and one counter of work against one limit, and writes HTML:
+  - paragraphs,
+  - headings,
+  - emphasis (KFXStyles: bold by weight, italic, and a heading hint),
+  - links,
+  - lists,
+  - tables (a caption, thead, tbody, and cells that hold text blocks), and
+  - a picture's alt text.
+
+  KFXInlineText writes one text block's string, cutting it at every run boundary so overlapping runs nest, and the HTML of inline nodes (pictures, math, floated spans).
   A footnote's body is a node at the end of its chapter.
   Sections the producer left uncut are joined when the producer writes the auxiliary fragments that mark the cuts.
   The sections end in MOBIParser.preparedBook, the same function a MOBI book ends in, so the chapters, headings, and Markdown are made the same way.
-- The refusals: protected (MOBIError.copyProtected: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."), damaged or not a Kindle book (MOBIError, the MOBI sentences), no flowing text (KFXError.noFlowingText: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."), a Kindle Create package (KFXError.kindleCreatePackage: "This file is a Kindle Create package, which TextMouth can't read yet."), and a partial container (KFXError.partOfABook: "This file holds only part of a Kindle book.
+- The refusals:
+  - protected (MOBIError.copyProtected: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."),
+  - damaged or not a Kindle book (MOBIError, the MOBI sentences),
+  - no flowing text (KFXError.noFlowingText: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."),
+  - a Kindle Create package (KFXError.kindleCreatePackage: "This file is a Kindle Create package, which TextMouth can't read yet."), and
+  - a partial container (KFXError.partOfABook: "This file holds only part of a Kindle book.
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
   The sample books and their tests are in [Tests of the markup guard, Kindle, and MOBI readers](../../developer/testing-formats.md).
@@ -57,14 +78,17 @@ Reading: BookParser and MarkdownCacheService.extractFromKindle call MOBIParser, 
    Every read of the file goes through MOBIView, which checks an offset and a length against the data without adding values the file gives, so no field read from it can overflow or reach past its end.
 2. MOBIHeaders reads record 0: the PalmDOC header (compression, text length, text record count, record size, and encryption) and, in a BOOKMOBI book, the MOBI header (its length, encoding, version, Huffman records, EXTH flag, DRM offset, extra-data flags, and NCX index record) and its EXTH records.
    A field past the end of a shorter, older header reads as absent.
-3. MOBIBook.refuseProtected refuses an encryption field that is not 0 or a DRM offset that is not 0xFFFFFFFF (copyProtected, before any text record is read; nothing removes protection), in the book's first half and in the KF8 half of a hybrid, whichever is read; then MOBIText refuses a compression other than none, PalmDOC, and HUFF/CDIC (unsupportedCompression).
+3. MOBIBook.refuseProtected refuses an encryption field that is not 0 or a DRM offset that is not 0xFFFFFFFF (copyProtected, before any text record is read; nothing removes protection), in the book's first half and in the KF8 half of a hybrid, whichever is read.
+   Then MOBIText refuses a compression other than none, PalmDOC, and HUFF/CDIC (unsupportedCompression).
 4. MOBIText joins the text records.
    It takes each record's trailing entries (by the extra-data flags) and multibyte overlap off its end, decompresses it with PalmDOC's LZ77, whose back-references may not reach before the record's own output, or with MOBIHuffman (HUFF/CDIC).
    A text that decompresses past the length the header declares is cut there, as two real dictionaries need, and one that comes up short throws damaged, as a broken download would.
    The records' bytes are joined before they are decoded, as UTF-8 (encoding 65001) or Windows-1252, so no character is split.
    A TEXtREAd book, which has no MOBI header, is one section of plain text, unless MOBIMarkup.looksLikeHTML finds an html or body tag in its first 4,096 bytes, as in an early Mobipocket book: such a text goes through the markup path below.
 5. MOBIIndex reads the NCX index (the INDX, TAGX, IDXT, and CNCX records) into entries of offset, label, and depth.
-   MOBIMarkup scans the text for filepos targets (none inside a comment, a declaration, or a quoted attribute) and mbp:pagebreak tags, puts an anchor, filepos-N, at each target, takes the Mobipocket tags out, and cuts the text into sections: one for each top-level entry, with the words before the first entry a section of their own, or, with no index, one for each page break.
+   MOBIMarkup scans the text for filepos targets (none inside a comment, a declaration, or a quoted attribute) and mbp:pagebreak tags, puts an anchor, filepos-N, at each target, takes the Mobipocket tags out, and cuts the text into sections:
+   - one for each top-level entry, with the words before the first entry a section of their own, or,
+   - with no index, one for each page break.
    No section begins before Scan.bodyStart, the first body tag, else the end of the head, else the text's start, so the head (an OEB metadata block, a guide) is never read: SwiftSoup would move a head element it doesn't know into the body.
    A deeper entry is a heading annotation (level depth + 1, at most 6) at its anchor.
    MOBIMarkup checks no nesting of its own: a section's markup reaches SwiftSoup only through MarkupGuard, in HTMLToMarkdownConverter.convert, which refuses markup nested more than 128 levels deep, with too many tags, too many attributes on one tag, or too much work, by throwing MarkupRefusal before SwiftSoup builds anything (see Shared helpers and, for the sentences, [Import progress and errors](../../user/import-progress-and-errors.md)).
@@ -130,9 +154,15 @@ It is read by TextMouth's own code, written from the format's published descript
 ### KF8 endings: rewriting, pages, and refusals
 <!-- id: kf8-endings-rewriting-pages-refusals; keys: contents page, generated contents, SVG, epub:type, page list, soft hyphen, MarkupRefusal, cancel; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/ArchiveExtraction.swift -->
 
-8. The last document is left out when the guide names its start as the book's contents page (generatedContentsCandidate) and KF8Book.isGeneratedContents holds: its only words outside its links are its own title, every link goes to a place in the book (kindle:pos), and each link's words are a label of the contents.
+8. The last document is left out when the guide names its start as the book's contents page (generatedContentsCandidate) and KF8Book.isGeneratedContents holds:
+   - its only words outside its links are its own title,
+   - every link goes to a place in the book (kindle:pos), and
+   - each link's words are a label of the contents.
+
    A last page with words of its own is read.
-9. Rewriting: kindle:flow SVG pictures are put back where they stood, once each, and only a small flow that is an SVG picture is put back; the words in them are read. epub:type values calibre strips of their prefix (type="pagebreak", page-list, landmarks, toc) are put back whole-attribute only, so the shared reading rules find the page breaks and leave the navigation lists unread.
+9. Rewriting: kindle:flow SVG pictures are put back where they stood, once each, and only a small flow that is an SVG picture is put back.
+   The words in them are read.
+   epub:type values calibre strips of their prefix (type="pagebreak", page-list, landmarks, toc) are put back whole-attribute only, so the shared reading rules find the page breaks and leave the navigation lists unread.
    Soft hyphens are removed by ParserUtilities.removingSoftHyphens, in a document's markup and in a contents entry's label (see Shared helpers and the MOBI 6 item above); the EPUB reader keeps them.
    Links (kindle:pos) are never followed, and pictures are read by description.
 10. Pages: the page-break elements a KF8 book kept are pages (the includesPages flag reaches MOBIParser.prepareBook and the converter), and its page list is not kept.
