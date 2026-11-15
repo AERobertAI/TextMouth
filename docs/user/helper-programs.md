@@ -15,7 +15,14 @@ The debug log records OGG_CONVERTED for each book converted and OGG_CONVERSION_W
 ## afconvert, the audio converter
 <!-- id: afconvert-audio-converter; keys: AAC, Apple Lossless, converter limits, AUDIO_CONVERSION_KILLED; src: TextMouth/Services/ImportAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](what-textmouth-reads.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when it runs longer than a minute plus a tenth of the track's length, grows past 1 GB, stops writing for 20 seconds, or writes more than four times what the track should come to and 16 MB more, and that the Mac itself ends when it has used more than four times that many seconds of processor time or tries to write past that amount.
+TextMouth converts Ogg audio, and the other audio its import converts (see [What TextMouth reads](what-textmouth-reads.md)), to AAC, or to Apple Lossless when the source is lossless, with Apple's own afconvert tool, run as a separate process that TextMouth stops when:
+
+- it runs longer than a minute plus a tenth of the track's length,
+- grows past 1 GB,
+- stops writing for 20 seconds,
+- or writes more than four times what the track should come to and 16 MB more.
+
+The Mac itself ends it when it has used more than four times that many seconds of processor time or tries to write past that amount.
 An import that can't convert a track stops (see [Adding books](adding-books.md)).
 A library book whose Ogg conversion fails is left exactly as it was and tried again at the next launch; Play says so.
 The debug log records AUDIO_CONVERSION_KILLED for each conversion stopped, as OGG_CONVERSION_KILLED did before version 0.2.0.
@@ -30,9 +37,10 @@ The debug log records OGG_ORPHAN_SWEPT, with how many it stopped, when it stoppe
 ## afinfo, which checks what an audio file holds
 <!-- id: afinfo-which-checks-what-audio; keys: audio file info, MPEG-4, QuickTime, implausible length; src: TextMouth/Services/AudioFileInfo.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-Before it converts a file other than Ogg, and when a file's first bytes don't settle whether to convert it (an MPEG-4 or QuickTime file), TextMouth asks Apple's afinfo tool what the file holds, also as a separate process that TextMouth watches.
+Before it converts a file other than Ogg, and when a file's first bytes don't settle whether to convert it (an MPEG-4 or QuickTime file), TextMouth asks Apple's afinfo tool what the file holds.
+It does so also as a separate process that TextMouth watches.
 TextMouth stops it when it runs longer than 30 seconds plus one more for each 20 MB of the file, holds more than 512 MB of memory, or prints more than 1 MB.
-afinfo prints into a hidden file in the Mac's temporary folder, named with a dot, an ID, and .watched-output, which is removed when afinfo ends.
+Apple's afinfo prints into a hidden file in the Mac's temporary folder, named with a dot, an ID, and .watched-output, which is removed when afinfo ends.
 The debug log records AUDIO_INFO_KILLED, with the file's name and the reason, for each afinfo stopped, and AUDIO_INFO_IMPLAUSIBLE, with the file's name and the length it claimed, for a file whose header claims a length that its size cannot hold.
 
 ### When afinfo ends

@@ -33,7 +33,8 @@ Each book's row also records which version of TextMouth's metadata reader last r
 The first launch after an update that reads a format's metadata better reads every older row's file again, in the background before the text caches, and takes the author the file names where the row still says Unknown; an author you typed stays, and a file that still names no one leaves Unknown.
 It never replaces a field edited by hand.
 For a book imported from its own file by Open Book, from Finder, in a ZIP of books, or with Import Folder…, whose record of hand edits begins at its import, it also brings up to date the title, author, publisher, and publication date the file names.
-For every other book, imported before its record of hand edits began, or made with New from Text, by a recording, from a feed's episode or article, or from a ZIP of audio tracks or a DAISY audio book's ZIP, whose names come from elsewhere than the file it reads, it replaces nothing but that Unknown author, and only with a name, so a title or an author you typed stays.
+Every other book is one imported before its record of hand edits began, or made with New from Text, by a recording, from a feed's episode or article, or from a ZIP of audio tracks or a DAISY audio book's ZIP, whose names come from elsewhere than the file it reads.
+For such a book it replaces nothing but that Unknown author, and only with a name, so a title or an author you typed stays.
 It never reads an episode or article its feed lists, whose title and author come from the feed.
 A book whose files are only in the cloud waits for a launch that finds them on this Mac.
 library.json is read one row at a time.
@@ -153,15 +154,18 @@ Beside its file, a feed that has downloaded anything has a folder of its own, Fe
 - a package for each episode or article it downloaded, laid out as a book's package is (Library, below),
 - and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
 
-A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text, while it keeps your place, bookmarks, settings, details you edited by hand, transcript, or such a copy, and its row stays in the index, so downloading the item again restores the same book.
+A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text.
+It stays while it keeps your place, bookmarks, settings, details you edited by hand, transcript, or such a copy, and its row stays in the index, so downloading the item again restores the same book.
 
 ### Hidden folders in a feed's folder
 <!-- id: hidden-folders-feed-folder; keys: replaced package, removing folder, record absent, Delete Download; src: TextMouth/Services/Feeds/FeedItemPackage.swift, TextMouth/ViewModels/LibraryViewModel+FeedDownloadReturn.swift -->
 
 A feed's folder can also hold, hidden,
 
-- .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders, until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile;
-- .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which, should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says;
+- .replaced- followed by a package's name, a package a new download replaced, set aside when the two packages couldn't be swapped in one step, as on a drive that can't swap two folders,
+  - until the new one is in place, which the item's next download puts back or removes should TextMouth stop meanwhile;
+- .removing- followed by the download's identifier and a name of its own, the folder an article's Delete Download moves its file and text into to remove them as one item, which,
+  - should a crash cut the deletion short, the next launch sends to the Trash under the article's own name, or deletes, as Removal Behavior says;
 - should a refused Delete Download leave its files there, the next launch puts them back into the package;
 - and, in a library in the cloud, empty .record-absent- files named after a Mac and one of its launches, each noting that the launch found the feed's record missing.
 

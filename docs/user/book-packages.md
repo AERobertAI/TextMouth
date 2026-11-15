@@ -38,7 +38,8 @@ A downloaded episode's or article's record also names its feed and item, as its 
 ### A text book's encoding
 <!-- id: text-book-encoding; keys: text encoding, charset, Text Encoding pop-up, textEncoding; src: TextMouth/Models/TextEncodingRecord.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
-A plain text, Markdown, or HTML book whose encoding TextMouth guessed when it was added, or whose encoding you chose in Book Information (see [What TextMouth reads](what-textmouth-reads.md)), keeps it in its row and in its record, by name, such as windows-1251, koi8-r, macintosh, or utf-8, and every later reading of the book's text, a rebuild of content.md included, uses it.
+A plain text, Markdown, or HTML book whose encoding TextMouth guessed when it was added, or whose encoding you chose in Book Information (see [What TextMouth reads](what-textmouth-reads.md)), keeps it in its row and in its record, by name, such as windows-1251, koi8-r, macintosh, or utf-8.
+Every later reading of the book's text, a rebuild of content.md included, uses it.
 A choice is recorded as chosen, in a second key beside it, textEncodingSource, whose value is "chosen", or "automatic" when you chose Automatic.
 A chosen encoding is read whatever the file's bytes say of themselves, and a guessed one only where they name no encoding.
 
@@ -83,7 +84,9 @@ Earlier versions of TextMouth kept the index inside bookInfo.json: TextMouth mov
 <!-- id: library-content-md-text-cache; keys: text cache, Markdown, rebuild, Redo Text Extraction; src: TextMouth/Services/MarkdownCacheService.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again.
-TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better, but these automatic rebuilds keep text you changed with Edit Text, and Redo Text Extraction, a button in the Storage tab of Settings, rebuilds it on request for every text book (see [Editing a book's text](editing-book-text.md) for what it does to that text), and a choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](library-window.md)).
+TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better, but these automatic rebuilds keep text you changed with Edit Text.
+Redo Text Extraction, a button in the Storage tab of Settings, rebuilds it on request for every text book (see [Editing a book's text](editing-book-text.md) for what it does to that text).
+A choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](library-window.md)).
 
 ### Pages and page markers
 <!-- id: pages-page-markers; keys: page break, page label, page number, pagebreak; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Models/PageReaderVersions.swift -->
@@ -141,7 +144,9 @@ A transcribed audiobook's content.md holds its transcript's text instead (see tr
 <!-- id: braille-plain-text-epub-html; keys: read again, page number, heading names, braille emphasis; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
 The first launch of version 0.2.2 reads every braille, plain text, EPUB, and HTML book again, once, in the way just described.
-Braille and plain text books gain their pages, an EPUB or HTML book loses the number of a page break from the name of any heading that held one, and a braille book is read with the update's better reading of emphasis and of some words (see [What TextMouth reads](what-textmouth-reads.md) and [Reader windows](reader-windows.md)).
+Braille and plain text books gain their pages.
+An EPUB or HTML book loses the number of a page break from the name of any heading that held one.
+A braille book is read with that version's better reading of emphasis and of some words (see [What TextMouth reads](what-textmouth-reads.md) and [Reader windows](reader-windows.md)).
 A braille book whose new reading differs from its text, by its words or by its emphasis alone, as one whose braille holds emphasis signs may, keeps a copy of its old text beside it, as any book whose content.md differs from what its file gives does.
 An EPUB or HTML book that has its pages already is read again without that comparison, and keeps no copy.
 A book's places follow its words in every case.
@@ -175,7 +180,8 @@ transcript.json: an audiobook's transcript, present once the book has been trans
 - its last cleanup, once it has been cleaned up (when, whose rules, their version and date, and how many corrections),
 - and, for each audio file, its fingerprint (its size, modification time, and digest) and every sentence heard in it, with each word's start and end in milliseconds and the recognizer's confidence.
 
-TextMouth writes the book's content.md from it, a heading for each chapter and a paragraph for every few sentences, and writes content.md again from it when the book next opens if content.md is missing or holds text TextMouth didn't write or take, which it first keeps beside content.md as content.md.edited- followed by a date and time, or if a newer version of TextMouth writes it differently.
+TextMouth writes the book's content.md from it, a heading for each chapter and a paragraph for every few sentences.
+TextMouth writes content.md again from it when the book next opens if content.md is missing or holds text TextMouth didn't write or take, which it first keeps beside content.md as content.md.edited- followed by a date and time, or if a newer version of TextMouth writes it differently.
 The transcript itself changes only when the book is transcribed again, Edit Text takes an edit of its text, or a cleanup is applied or undone, and Delete Transcript deletes it.
 - One whose audio file has changed since it was made is kept, but its text is no longer shown;
 - one written by a later version of TextMouth, as on another Mac sharing the library, is left as it is, unread;
