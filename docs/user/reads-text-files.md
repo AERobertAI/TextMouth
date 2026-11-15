@@ -143,7 +143,8 @@ Part of [TextMouth's documentation](../../README.md).
   - Big5-HKSCS characters, the Hong Kong additions to Big5, are refused.
   - A GB 18030 file that holds the replacement character itself, U+FFFD, is refused.
   - In Big5 as Windows writes it, the two bytes 0xA2 0xCC are read as 十 followed by a character from a private-use area, which a braille display shows.
-- A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read: "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read.
+- A book recorded as read in an encoding this TextMouth does not know, as a choice made on a Mac that knows more encodings, or in a later TextMouth, can be, is refused when its text is read.
+  "The file “Moby-Dick.txt” is set to be read as “x-cp1999”, a text encoding this version of TextMouth can't read.
   Choose another in Book Information."
 
 ## Safari web archives

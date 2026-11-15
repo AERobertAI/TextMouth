@@ -29,7 +29,8 @@ Part of [TextMouth's documentation](../../README.md).
 - TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
 - It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
 - A book keeps the code it was imported with, through Remove from Library Only and adding it back too, so changing the setting never changes what an imported book says.
-- A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence: "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
+- A book read with one of this Mac's tables (see [Settings](settings.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence.
+  "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
 - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
 - A book that recorded no version is never refused for this.
 - Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](library-window.md)).

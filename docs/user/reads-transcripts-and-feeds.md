@@ -52,8 +52,10 @@ Part of [TextMouth's documentation](../../README.md).
 
 - Feeds refresh when TextMouth opens and every hour while it runs, unless the Feeds tab of Settings says otherwise, skipping an hour in Low Power Mode.
 - A feed you unsubscribed from is never refreshed, at launch, every hour, or by Refresh All Feeds, until you choose Resubscribe (see Commands, under [Podcasts and article feeds](feeds.md)).
-- Each feed's List and download choice decides which of its episodes and articles are listed and which download by themselves: unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feeds.md)).
-- Those refreshes, and the episodes TextMouth downloads by itself, never use a network with data limits, such as Low Data Mode or a phone's hotspot: such an episode waits, its row saying "Waiting to Download, it downloads once this Mac is on a network without data limits", and is asked for again after the next refresh TextMouth makes by itself on a network without them.
+- Each feed's List and download choice decides which of its episodes and articles are listed and which download by themselves.
+  Unless you choose otherwise, every one the feed lists is listed, and those of the newest 5 not yet played are kept downloaded (see Listing and downloading, under [Podcasts and article feeds](feeds.md)).
+- Those refreshes, and the episodes TextMouth downloads by itself, never use a network with data limits, such as Low Data Mode or a phone's hotspot.
+  Such an episode waits, its row saying "Waiting to Download, it downloads once this Mac is on a network without data limits", and is asked for again after the next refresh TextMouth makes by itself on a network without them.
 - A finished episode or article counts among Books Finished.
 - Its download's file is deleted for good a day after it finished, or as the Feeds tab of Settings says, unless it is open in a reader, being transcribed, or being exported, when it goes at a later pass.
 - Its place and bookmarks are kept should you download it again (see Commands, under [Podcasts and article feeds](feeds.md)).
