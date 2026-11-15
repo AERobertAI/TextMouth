@@ -12,6 +12,7 @@ the citation finder must agree on what an inline code span is.
 
 from __future__ import annotations
 
+import bisect
 import re
 from typing import List, Tuple
 
@@ -30,6 +31,7 @@ OPENERS = "`\"'“‘([*_"
 # Characters a bare URL does not end with: a sentence's own punctuation.
 URL_TRAILING = ".,;:!?)]'\""
 
+_TERMINATOR = re.compile(r"[.!?]")
 _BARE_URL = re.compile(r"https?://\S+")
 _AUTOLINK = re.compile(r"<[A-Za-z][A-Za-z0-9+.\-]{1,31}:[^\s<>]*>")
 # A word of single capital letters separated by periods ("J", "J.R"): initials.
@@ -69,8 +71,14 @@ def code_spans(text: str) -> List[Tuple[int, int, str]]:
 
 
 def _inside(position: int, spans: List[Span]) -> bool:
-    """True when ``position`` lies inside one of ``spans`` (``[start, end)``)."""
-    return any(start <= position < end for start, end in spans)
+    """True when ``position`` lies inside one of ``spans`` (``[start, end)``).
+
+    ``spans`` must be sorted and must not overlap, as code spans and the merged
+    protected spans are, so the one span that could hold ``position`` is the last
+    one starting at or before it.
+    """
+    index = bisect.bisect_right(spans, (position, float("inf"))) - 1
+    return index >= 0 and spans[index][0] <= position < spans[index][1]
 
 
 def _link_destinations(text: str, code: List[Span]) -> List[Span]:
@@ -228,15 +236,17 @@ def split_sentences(text: str) -> List[Span]:
     protected = protected_spans(text)
     spans: List[Span] = []
     start = 0
-    index = 0
-    while index < len(text):
+    # Only a terminator can end a sentence, so visit those alone: a Python call
+    # per character cost a fifth of a second over the docs.
+    for match in _TERMINATOR.finditer(text):
+        index = match.start()
+        if index < start:
+            continue  # among the closers of the sentence just ended
         end = _sentence_end_at(text, index, protected)
         if end == -1:
-            index += 1
             continue
         spans.append((_first_nonspace(text, start), end))
         start = end
-        index = end
     # The last sentence runs to the last non-space character.
     first = _first_nonspace(text, start)
     last = len(text.rstrip())
