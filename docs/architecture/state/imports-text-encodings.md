@@ -151,7 +151,7 @@ The label, TextEncodingWording.bookInfoLabel, is "Text Encoding", not "Read As",
 TextEncodingBookInfoTests pins the words of Speak Info, and TextEncodingChoiceTests those of the pop-up.
 
 ### Logs
-<!-- id: logs; keys: DiagnosticLog, debug log, console, log tag, import event; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/LogContentPolicyTests.swift -->
+<!-- id: text-encoding-logs; keys: DiagnosticLog, debug log, console, log tag, import event; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift, TextMouthProductionTests/LogContentPolicyTests.swift -->
 
 Logs: TextFileDecoder.readDecodedText logs one import event for a read that guessed, `TEXT_ENCODING_GUESS: <file name>: read as windows-1251` (guessLogTag), once, since only the import guesses and a recorded read logs nothing, and one for a read by the fallback, `TEXT_ENCODING_FALLBACK: <file name>: decoded as Windows-1252` (fallbackLogTag), on every such read.
 Neither holds any of the book's text, and LogContentPolicyTests pins both tags (see [Logs](logs.md)); a re-read in another encoding writes TEXT_ENCODING_CHANGED, pinned there too (Reading a book again in another encoding, in [Text caches](text-caches.md)).
