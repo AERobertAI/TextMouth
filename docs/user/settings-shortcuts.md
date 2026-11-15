@@ -35,7 +35,8 @@ Every shortcut you haven't changed follows TextMouth's defaults, so a default th
 Recording a key that another action working in any of the same windows had takes the key from that action and says so, as in "Command + B, recorded for Show Bookmarks.
 Taken from Toggle Bookmark."
 A menu command's key counts as pressed once and twice, so recording it as a double press takes it too, as in "Command + O twice, recorded for Book Info.
-Taken from Open Book…" An action you changed keeps its other keys; one you haven't isn't marked Edited for the loss, says on its row, on screen and to VoiceOver, which action has the key, as in "New from Text… has its default, Shift + Command + T.", and has the key again once the action that took it lets it go.
+Taken from Open Book…" An action you changed keeps its other keys.
+One you haven't isn't marked Edited for the loss, says on its row, on screen and to VoiceOver, which action has the key, as in "New from Text… has its default, Shift + Command + T.", and has the key again once the action that took it lets it go.
 
 ### Reset to Defaults for all shortcuts
 <!-- id: reset-defaults-all-shortcuts; keys: Reset Keyboard Shortcuts?, alert, restore all shortcuts; src: TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift, TextMouth/Models/ShortcutEdits.swift -->
@@ -108,7 +109,8 @@ A line of text under the button and its result, which VoiceOver and a braille di
 ### Shift with a shortcut's key
 <!-- id: shift-shortcut-key; keys: Shift-J, Shift-L, Shift skip units, Increase Speed, Command-Plus; src: TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Models/KeyboardShortcut.swift -->
 
-Shift with the keys of Skip Forward, Skip Backward, and Increase Speed still triggers them, wherever they work, telling them Shift was held: Shift-J and Shift-L, and Shift with Command-Left Arrow or Command-Right Arrow, skip by the Playback tab's Shift units, and Increase Speed's Command-Plus works as a US keyboard types it, Shift-Command-Equal Sign.
+Shift with the keys of Skip Forward, Skip Backward, and Increase Speed still triggers them, wherever they work, telling them Shift was held.
+Shift-J and Shift-L, and Shift with Command-Left Arrow or Command-Right Arrow, skip by the Playback tab's Shift units, and Increase Speed's Command-Plus works as a US keyboard types it, Shift-Command-Equal Sign.
 No other shortcut answers its key with Shift added, so outside an audio editor's window Shift-W and Shift-Command-Delete trigger no shortcut unless you give them to an action.
 A Shift shortcut of its own, such as a Shift-R you gave Release Media Controls, always wins; Shift never reaches a shortcut this way from a text field; and an audio editor's window matches only its own Shift keys, so there Shift-J and Shift-L are its own ten-second moves.
 In a Library window J and L are not shortcuts, so Shift-J and Shift-L fall back to nothing there.
@@ -117,7 +119,8 @@ While a sheet or an alert is in front, no shortcut takes Return, the keypad's En
 ### Go to View 1 to Go to View 9
 <!-- id: go-view-1-go-view; keys: Command-1, Go to View submenu, view shortcuts, Library menu; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/App/MenuCommands.swift -->
 
-Go to View 1 to Go to View 9, under Library, go to the first to the ninth view the Library window's View pop-up offers, and have Command-1 to Command-9 until you change them; like the other Library actions they work in Library windows, and each is changed, recorded, and reset like any other shortcut.
+Go to View 1 to Go to View 9, under Library, go to the first to the ninth view the Library window's View pop-up offers, and have Command-1 to Command-9 until you change them.
+Like the other Library actions they work in Library windows, and each is changed, recorded, and reset like any other shortcut.
 The Library menu's Go to View submenu shows the key each of its first nine views has in force.
 A key with no view says "There is no view 7.
 Go to View reaches 6 views."
