@@ -565,6 +565,7 @@ targets:
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KFXFixture.swift
       - TextMouthProductionTests/KFXTestBook.swift
+      - TextMouthProductionTests/LibraryFeedListCountTests.swift
       - TextMouthProductionTests/LibraryIndexTestSupport.swift
       - TextMouthProductionTests/LogTestSupport.swift
       - TextMouthProductionTests/MOBIFixture.swift
@@ -577,6 +578,7 @@ targets:
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/TextAnchorRealReadings.swift
       - TextMouthProductionTests/TextEncodingFixtures.swift
+      - TextMouthProductionTests/TimeLeftEstimateTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
     settings:
