@@ -56,6 +56,10 @@ extension FeedBookLink {
     /// The names of a link's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What a stored link holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
     /// Reads a link as the synthesized decoder read it, both fields
     /// required, and keeps every other key as it is (V04).
     init(from decoder: Decoder) throws {

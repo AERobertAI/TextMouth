@@ -347,6 +347,19 @@ struct Library: Codable, Equatable, KeepsUnknownKeys {
     /// The names of library.json's sections that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What library.json holds, for the scan that says whether the file can
+    /// hold unknown keys (`StoredKeyScan`): its sections, and of them the
+    /// rows, the folders, and the reading list, which keep unknown keys.
+    /// The sort settings keep none, and are not looked into.
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.books.stringValue: Book.keySchema,
+            CodingKeys.folders.stringValue: BookFolder.keySchema,
+            CodingKeys.readingList.stringValue: ReadingList.keySchema,
+        ]
+    )
+
     /// Backward-compatible decoding: folderSortSettings may be absent in
     /// older library.json files, and the reading list in any written before
     /// it existed (FR09). A reading list that cannot be read at all is left

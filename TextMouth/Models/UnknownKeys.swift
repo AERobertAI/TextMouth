@@ -76,9 +76,16 @@ struct UnknownKeys: Sendable {
     /// Reads, from the JSON object `decoder` is at, every member whose name
     /// `isKnown` rejects. The form for a type with synthesized coding keys,
     /// which can say whether a name is one of them but cannot list them.
+    ///
+    /// A decoder told that its bytes hold no unknown key
+    /// (`StoredKeyScan.userInfo(forDecoding:schema:)`) is believed, and
+    /// nothing is looked for: opening a second container and listing its
+    /// keys is the whole cost of keeping unknown keys, paid for every
+    /// object of a library index unless the scan spares it.
     init(from decoder: Decoder, isKnown: (String) -> Bool) {
         members = [:]
-        guard let container = try? decoder.container(keyedBy: AnyCodingKey.self) else { return }
+        guard !StoredKeyScan.foundNoUnknownKeys(for: decoder),
+              let container = try? decoder.container(keyedBy: AnyCodingKey.self) else { return }
         for key in container.allKeys where !isKnown(key.stringValue) {
             // `try?`: an unreadable member is left out (see above).
             if let value = try? container.decode(JSONValue.self, forKey: key) {
@@ -185,6 +192,16 @@ protocol KeepsUnknownKeysBesideSynthesizedCoding: KeepsUnknownKeys, Codable {
 /// ever written under it, so a member of this name in a file is unknown too.
 private let unknownKeysPropertyName = "unknownKeys"
 
+extension KeepsUnknownKeysBesideSynthesizedCoding {
+    /// Whether `name` is a member the type's own coding reads and writes:
+    /// one of its coding keys, other than the name of the property that
+    /// holds the unknown ones. What `WithUnknownKeys` keeps apart from the
+    /// unknown members, and what the type's `StoredKeySchema` knows.
+    static func isStoredKey(_ name: String) -> Bool {
+        name != unknownKeysPropertyName && isCodingKey(name)
+    }
+}
+
 /// A value read and written together with its unknown members: the value's
 /// own coding, and beside it, in the same JSON object, the members it does
 /// not know. For a `KeepsUnknownKeysBesideSynthesizedCoding` type; a type
@@ -202,9 +219,7 @@ struct WithUnknownKeys<Value: KeepsUnknownKeysBesideSynthesizedCoding>: Codable 
     /// same object that are none of its coding keys.
     init(from decoder: Decoder) throws {
         value = try Value(from: decoder)
-        value.unknownKeys = UnknownKeys(from: decoder) { name in
-            name != unknownKeysPropertyName && Value.isCodingKey(name)
-        }
+        value.unknownKeys = UnknownKeys(from: decoder, isKnown: Value.isStoredKey)
     }
 
     /// Writes the unknown members, then the value over them, so a field

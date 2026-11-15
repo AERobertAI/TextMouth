@@ -246,6 +246,10 @@ extension EditedText {
     /// The names of the record's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What a stored record of an edit holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
     /// Reads a record as the synthesized decoder read it, both fields
     /// required, and keeps every other key as it is (V04).
     init(from decoder: Decoder) throws {
@@ -865,6 +869,24 @@ struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// of a row is kept as it is (`unknownKeys`). Not private, so a test can
     /// hold the encoder and the box's fields to them.
     static let knownKeyNames = CodingKeys.names
+    /// What a stored row holds, for the scan that says whether a file can
+    /// hold unknown keys (`StoredKeyScan`): its keys, and each member that
+    /// is a record keeping unknown keys of its own, or a list of them. A
+    /// field added to `Book` whose type keeps unknown keys is added here
+    /// too (`UnknownKeysTests` fails until it is).
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.readingPosition.stringValue: ReadingPosition.keySchema,
+            CodingKeys.bookmarks.stringValue: Bookmark.keySchema,
+            CodingKeys.skippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.waitingSkippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.textCacheFingerprint.stringValue: TextCacheFingerprint.keySchema,
+            CodingKeys.editedText.stringValue: EditedText.keySchema,
+            CodingKeys.handEdits.stringValue: HandEdits.keySchema,
+            CodingKeys.feedLink.stringValue: FeedBookLink.keySchema,
+        ]
+    )
     func encode(to encoder: Encoder) throws {
         // The row's unknown keys first, so a field always wins (V04);
         // nothing at all for a row without any.
@@ -2382,6 +2404,10 @@ extension Book {
         /// The names of the record's keys that this version knows.
         private static let knownKeyNames = CodingKeys.names
 
+        /// What a stored record of hand edits holds, for the scan that says
+        /// whether a file can hold unknown keys (`StoredKeyScan`).
+        static let keySchema = StoredKeySchema(names: knownKeyNames)
+
         /// The record of `fields`, kept since the import when `sinceImport`.
         init(fields: Set<MetadataField> = [], sinceImport: Bool) {
             self.fields = MetadataField.ordered(fields)
@@ -2474,6 +2500,10 @@ struct ReadingPosition: Codable, Hashable, KeepsUnknownKeys {
     /// The names of a position's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What a stored position holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
+
     init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil, anchor: TextAnchor? = nil) {
         self.chapterIndex = chapterIndex
         self.headingIndex = headingIndex
@@ -2539,6 +2569,10 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
 
     /// The names of a bookmark's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored bookmark holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
 
     init(
         id: UUID = UUID(),
@@ -2650,6 +2684,10 @@ struct SkippedHeading: Codable, Hashable, Sendable, KeepsUnknownKeys {
 
     /// The names of a skip's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored skipped heading holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
 
     init(level: Int, label: String, chapterIndex: Int, characterOffset: Int, anchor: TextAnchor? = nil) {
         self.level = level

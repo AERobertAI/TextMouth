@@ -215,6 +215,10 @@ struct TextAnchor: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The names of an anchor's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What a stored anchor holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
     /// Decodes an anchor leniently: each field missing or of the wrong
     /// type takes its empty value (no quote, a share of 0, no measure,
     /// format 1), so an older or a damaged file loads rather than failing

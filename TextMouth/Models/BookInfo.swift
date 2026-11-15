@@ -53,6 +53,21 @@ struct BookInfo: Codable, KeepsUnknownKeys {
     /// inside the record is never kept a second time as an unknown key.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What bookInfo.json holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`). A content index an older
+    /// version kept inside the record is not described: it holds
+    /// fingerprints, which keep unknown keys, so a record with one is
+    /// always looked through.
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.metadata.stringValue: BookMetadata.keySchema,
+            CodingKeys.state.stringValue: BookState.keySchema,
+            CodingKeys.bookmarks.stringValue: Bookmark.keySchema,
+        ],
+        undescribed: [CodingKeys.contentIndex.stringValue]
+    )
+
     init(
         metadata: BookMetadata = BookMetadata(),
         state: BookState = BookState(),
@@ -230,6 +245,16 @@ struct BookMetadata: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
         CodingKeys(stringValue: name) != nil
     }
 
+    /// What stored metadata holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(
+        isKnown: { BookMetadata.isStoredKey($0) },
+        objects: [
+            CodingKeys.handEdits.stringValue: Book.HandEdits.keySchema,
+            CodingKeys.feedLink.stringValue: FeedBookLink.keySchema,
+        ]
+    )
+
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,
@@ -366,6 +391,20 @@ struct BookState: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     static func isCodingKey(_ name: String) -> Bool {
         CodingKeys(stringValue: name) != nil
     }
+
+    /// What a stored state holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(
+        isKnown: { BookState.isStoredKey($0) },
+        objects: [
+            CodingKeys.readingPosition.stringValue: ReadingPosition.keySchema,
+            CodingKeys.skippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.waitingSkippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.textCacheFingerprint.stringValue: TextCacheFingerprint.keySchema,
+            CodingKeys.editedText.stringValue: EditedText.keySchema,
+            CodingKeys.transcript.stringValue: TranscriptNote.keySchema,
+        ]
+    )
 
     init(
         readingPosition: ReadingPosition? = nil,
@@ -537,6 +576,16 @@ extension BookInfo {
         return d
     }()
 
+    /// The decoder of a bookInfo.json whose bytes a scan found to hold no
+    /// unknown key (`StoredKeyScan`): as `decoder`, and told so, so that
+    /// nothing is looked for object by object.
+    private static let decoderOfRecordsWithoutUnknownKeys: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        d.userInfo[StoredKeyScan.noUnknownKeysInfoKey] = true
+        return d
+    }()
+
     // MARK: Writing
 
     /// Replaces the package's whole record with this one: afterwards
@@ -627,8 +676,13 @@ extension BookInfo {
     /// Decodes the bytes of a bookInfo.json as every read of one does, which
     /// Compare Libraries uses for the records of another copy, read
     /// without touching the package.
+    ///
+    /// The bytes are scanned first for a key some part of a record does not
+    /// know (`StoredKeyScan`); only a record that may hold one is looked
+    /// through for them as it is decoded (V04).
     static func decodeRecordFile(_ data: Data) throws -> BookInfo {
-        try decoder.decode(BookInfo.self, from: data)
+        let mayHoldUnknownKeys = StoredKeyScan.mayHoldUnknownKeys(data, schema: keySchema)
+        return try (mayHoldUnknownKeys ? decoder : decoderOfRecordsWithoutUnknownKeys).decode(BookInfo.self, from: data)
     }
 
     /// The package's contentIndex.json: nil when there is none, or when it

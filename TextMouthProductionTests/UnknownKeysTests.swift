@@ -119,6 +119,43 @@ final class UnknownKeysTests: XCTestCase {
         return tree
     }
 
+    /// `tree` with the tests' unknown member added to one object only: the
+    /// one numbered `target`, counting the objects from 0 in the order this
+    /// walk meets them (an object before the objects inside it, members by
+    /// name). `counter` ends as the number of objects met, so a call with a
+    /// target of -1 counts them and changes nothing. The values of the
+    /// members named in `skipping` are not walked: they keep no unknown
+    /// keys.
+    private static func addingUnknownMember(
+        to tree: Any,
+        atObject target: Int,
+        counter: inout Int,
+        skipping: Set<String> = []
+    ) -> Any {
+        if let object = tree as? [String: Any] {
+            let number = counter
+            counter += 1
+            var changed: [String: Any] = [:]
+            for (key, value) in object.sorted(by: { $0.key < $1.key }) {
+                changed[key] = skipping.contains(key)
+                    ? value
+                    : addingUnknownMember(to: value, atObject: target, counter: &counter, skipping: skipping)
+            }
+            if number == target {
+                changed[addedKey] = everyKind
+            }
+            return changed
+        }
+        if let array = tree as? [Any] {
+            var changed: [Any] = []
+            for element in array {
+                changed.append(addingUnknownMember(to: element, atObject: target, counter: &counter, skipping: skipping))
+            }
+            return changed
+        }
+        return tree
+    }
+
     /// How many objects `tree` holds that have the tests' unknown member.
     private static func countOfAddedMembers(in tree: Any) -> Int {
         if let object = tree as? [String: Any] {
@@ -817,6 +854,160 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertEqual(copy.unknownKeys, UnknownKeys(["addedLater": .integer(2)]))
     }
 
+    // MARK: - The Scan That Spares the Look
+
+    /// The scan answers "may hold unknown keys" for anything but JSON it
+    /// followed to the end in which every described object holds known
+    /// names only.
+    func testTheScanAnswersNoOnlyForKnownNamesInTextItUnderstands() {
+        let position = StoredKeySchema(names: ["chapterIndex", "characterOffset"])
+        let row = StoredKeySchema(
+            names: ["title", "readingPosition", "bookmarks", "map"],
+            objects: ["readingPosition": position, "bookmarks": position]
+        )
+        let top = StoredKeySchema(names: ["books", "folders", "legacy"], objects: ["books": row], undescribed: ["legacy"])
+        let escapedName = #"{"books":[{"ti"# + #"\u0074le"# + #"":1}]}"#
+        let cases: [(json: String, mayHold: Bool, what: String)] = [
+            (#"{"books":[],"folders":[{"anything":1}]}"#, false, "an unchecked member's inside is not looked at"),
+            (#"{"books":[{"readingPosition":{"chapterIndex":1}}]}"#, false, "known names at every level"),
+            (#" { "books" : [ { "readingPosition" : { "chapterIndex" : 1 } } ] } "#, false, "white space anywhere"),
+            ("{\n  \"books\" : [\n    {\n      \"title\" : \"a\"\n    }\n  ]\n}\n", false, "an indented file"),
+            (#"{"books":[{"readingPosition":{"chapterIndex":1,"page":2}}]}"#, true, "an unknown name in a nested object"),
+            (#"{"books":[{"later":true}]}"#, true, "an unknown name in a row"),
+            (#"{"books":[],"later":{}}"#, true, "an unknown name at the top"),
+            (#"{"books":[{"bookmarks":[{"chapterIndex":1},{"chapterIndex":2,"colour":"x"}]}]}"#, true, "an unknown name in an array's second element"),
+            (#"{"books":[{"map":{"any name":{"deeper":[1,{"x":"}"}]}}}]}"#, false, "an unchecked map, with a bracket inside a string"),
+            (#"{"books":[{"title":"a \" quote and a \\"}]}"#, false, "escapes inside a value"),
+            (escapedName, true, "a name written with an escape is not trusted"),
+            (#"{"books":[{"readingPosition":null,"bookmarks":"text"}]}"#, false, "a described member holding a scalar"),
+            (#"{"books":[{"chapterIndex":1}]}"#, true, "a name only another type knows"),
+            (#"{"books":[{"readingPosition":{"chapterIndex":1}}]"#, true, "text cut short"),
+            (#"{"books":[]} trailing"#, true, "text after the value"),
+            ("", true, "no text at all"),
+            (#"{"books":[],"legacy":{"a":1}}"#, true, "an object no schema describes"),
+            (#"{"books":[],"legacy":null}"#, false, "an undescribed member holding null"),
+            (String(repeating: "[", count: 200) + String(repeating: "]", count: 200), true, "nested too deep to follow"),
+            (#"[1,2]"#, false, "a top level that is not an object holds no names"),
+        ]
+        for (json, mayHold, what) in cases {
+            XCTAssertEqual(StoredKeyScan.mayHoldUnknownKeys(Data(json.utf8), schema: top), mayHold, what)
+        }
+        // A file in UTF-16, which JSONDecoder reads, is not followed.
+        let wide = try? XCTUnwrap(#"{"books":[]}"#.data(using: .utf16))
+        XCTAssertEqual(wide.map { StoredKeyScan.mayHoldUnknownKeys($0, schema: top) }, true)
+
+        // A schema that knows its names by a rule, as a type with
+        // synthesized keys gives one.
+        let ruled = StoredKeySchema(isKnown: { $0 == "a" || $0 == "b" }, objects: ["b": position])
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(Data(#"{"a":1,"b":{"chapterIndex":2}}"#.utf8), schema: ruled))
+        XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(Data(#"{"a":1,"b":{"x":2}}"#.utf8), schema: ruled))
+        XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(Data(#"{"a":1,"c":2}"#.utf8), schema: ruled))
+    }
+
+    /// The files TextMouth writes hold no unknown key, and the scan says so
+    /// of each, so each is decoded without the look: a library index, a
+    /// package record as its file holds it, and a feed's index.
+    func testTheScanFindsNoUnknownKeyInTheFilesTextMouthWrites() throws {
+        var book = Self.plainBook()
+        let feedIndex = FeedIndex(feedID: try XCTUnwrap(book.feedLink).feedID, books: [book])
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(try FeedIndexFiles.encoded(feedIndex), schema: FeedIndex.keySchema))
+
+        let package = try makeSandboxDirectory("Unknown Keys Scan")
+        try Self.plainRecord().saveRecord(to: package)
+        let record = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: package))
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(record, schema: BookInfo.keySchema))
+
+        book.feedLink = nil
+        let index = try LibraryPersistenceService.encodedIndex(Self.library(of: [book]))
+        XCTAssertFalse(StoredKeyScan.mayHoldUnknownKeys(index, schema: Library.keySchema))
+    }
+
+    /// An unknown key in any one object of a library index, whichever it
+    /// is, is found by the scan, and so kept by the index's decoder: the
+    /// index's top level, a row, each record inside a row, a folder, and
+    /// the reading list, one at a time. A record that keeps unknown keys
+    /// and is missing from a schema fails here.
+    func testAnUnknownKeyInAnyOneObjectOfALibraryIndexIsFoundAndKept() throws {
+        var book = Self.plainBook()
+        book.feedLink = nil
+        let tree = try Self.tree(LibraryPersistenceService.encodedIndex(Self.library(of: [book])))
+        // The sort settings keep no unknown keys, so none is added there.
+        let skipping: Set<String> = ["folderSortSettings"]
+        var objects = 0
+        _ = Self.addingUnknownMember(to: tree, atObject: -1, counter: &objects, skipping: skipping)
+        XCTAssertEqual(objects, 1 + 14 + 2 + 1, "the fixture's objects")
+
+        for target in 0..<objects {
+            var counter = 0
+            let read = Self.addingUnknownMember(to: tree, atObject: target, counter: &counter, skipping: skipping)
+            let data = try Self.data(read)
+            XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(data, schema: Library.keySchema), "object \(target)")
+            let written = try Self.tree(LibraryPersistenceService.encodedIndex(LibraryPersistenceService.decodeIndex(from: data)))
+            XCTAssertEqual(written, try XCTUnwrap(read as? NSObject), "object \(target)")
+        }
+    }
+
+    /// The same of a package record: an unknown key in any one of its
+    /// objects is found by the scan and kept by the record's decoder.
+    func testAnUnknownKeyInAnyOneObjectOfAPackageRecordIsFoundAndKept() throws {
+        let tree = try Self.tree(Self.encoder.encode(Self.plainRecord()))
+        var objects = 0
+        _ = Self.addingUnknownMember(to: tree, atObject: -1, counter: &objects)
+        XCTAssertEqual(objects, 19, "the fixture's objects")
+
+        for target in 0..<objects {
+            var counter = 0
+            let read = Self.addingUnknownMember(to: tree, atObject: target, counter: &counter)
+            let data = try Self.data(read)
+            XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(data, schema: BookInfo.keySchema), "object \(target)")
+            let written = try Self.tree(Self.encoder.encode(BookInfo.decodeRecordFile(data)))
+            XCTAssertEqual(written, try XCTUnwrap(read as? NSObject), "object \(target)")
+        }
+    }
+
+    /// A feed's index keeps the unknown keys of its rows through its own
+    /// decoder and encoder.
+    func testAFeedsIndexKeepsItsRowsUnknownKeys() throws {
+        let book = Self.plainBook()
+        let feedIndex = FeedIndex(feedID: try XCTUnwrap(book.feedLink).feedID, books: [book])
+        let read = Self.addingUnknownMembers(to: try Self.tree(FeedIndexFiles.encoded(feedIndex)))
+        var expected = try XCTUnwrap(read as? [String: Any])
+        // The index's own top level keeps none.
+        expected[Self.addedKey] = nil
+
+        let decoded = try FeedIndexFiles.decoded(Self.data(read))
+
+        XCTAssertEqual(decoded.books.count, 1)
+        XCTAssertEqual(try Self.tree(FeedIndexFiles.encoded(decoded)), expected as NSDictionary)
+    }
+
+    /// A record an older TextMouth wrote with its content index inside is
+    /// always looked through: the index holds fingerprints, which keep
+    /// unknown keys, and no schema describes it.
+    func testARecordWithItsContentIndexInsideIsAlwaysLookedThrough() throws {
+        var index = BookContentIndex.build(fromChapters: [Chapter(title: "One", text: "one two three")], format: .txt)
+        index.textCacheFingerprint = Self.plainBook().textCacheFingerprint
+        var record = try XCTUnwrap(try Self.tree(Self.encoder.encode(Self.plainRecord())) as? [String: Any])
+        record["contentIndex"] = try Self.tree(Self.encoder.encode(index))
+        let data = try Self.data(record)
+
+        XCTAssertTrue(StoredKeyScan.mayHoldUnknownKeys(data, schema: BookInfo.keySchema))
+        XCTAssertNotNil(try BookInfo.decodeRecordFile(data).contentIndex)
+    }
+
+    /// A decoder told that its bytes hold no unknown key is believed:
+    /// nothing is looked for. (Only the scan tells a decoder so.)
+    func testADecoderToldItsBytesHoldNoUnknownKeyLooksForNone() throws {
+        var row = try XCTUnwrap(try Self.tree(Self.encoder.encode(Self.plainBook())) as? [String: Any])
+        row["addedLater"] = 1
+        let told = JSONDecoder()
+        told.dateDecodingStrategy = .iso8601
+        told.userInfo[StoredKeyScan.noUnknownKeysInfoKey] = true
+
+        XCTAssertTrue(try told.decode(Book.self, from: Self.data(row)).unknownKeys.isEmpty)
+        XCTAssertFalse(try Self.decoder.decode(Book.self, from: Self.data(row)).unknownKeys.isEmpty)
+    }
+
     // MARK: - What Keeping Them Costs
 
     /// Measures loading and saving a library index of 1,500 rows, without
@@ -857,7 +1048,16 @@ final class UnknownKeysTests: XCTestCase {
         let loadedWithKeys = try LibraryPersistenceService.decodeIndex(from: dataWithKeys)
         let saveWithKeys = try median { rows &+= try LibraryPersistenceService.encodedIndex(loadedWithKeys).count }
 
+        var mayHold = false
+        let scan = median { mayHold = StoredKeyScan.mayHoldUnknownKeys(data, schema: Library.keySchema) }
+        XCTAssertFalse(mayHold, "an index without unknown keys is decoded without the look")
+        // What the load costs when the scan is not there to spare the look.
+        let looking = JSONDecoder()
+        looking.dateDecodingStrategy = .iso8601
+        let loadLooking = try median { rows &+= try looking.decode(Library.self, from: data).books.count }
+
         print("UNKNOWNKEYS library.json of 1500 rows: \(data.count) bytes")
+        print("UNKNOWNKEYS scan \(scan) ms; load without the scan's word, looking in every object: \(loadLooking) ms")
         print("UNKNOWNKEYS load \(load) ms, save \(save) ms (no unknown keys)")
         print("UNKNOWNKEYS load \(loadWithKeys) ms, save \(saveWithKeys) ms (two unknown keys in every row)")
         XCTAssertGreaterThan(rows, 0)

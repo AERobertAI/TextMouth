@@ -290,6 +290,10 @@ extension TranscriptNote {
     /// The names of a note's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
 
+    /// What a stored note holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["source": TranscriptSource.keySchema])
+
     /// Reads a note as the synthesized decoder read it (its version,
     /// language, and date required; its source optional), and keeps every
     /// other key as it is (V04).
@@ -372,6 +376,10 @@ struct TranscriptSource: Codable, Hashable, Sendable, KeepsUnknownKeys {
 
     /// The names of a source's keys that this version knows.
     private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored source holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
 
     /// Reads a source as the synthesized decoder read it (its origin and
     /// format required; its file name and formats optional), and keeps

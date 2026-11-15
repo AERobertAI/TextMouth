@@ -45,9 +45,18 @@ struct FeedIndexNewerLayout: Error, Equatable {
 
 extension FeedIndex: Codable {
     /// The index's keys: its layout's version, its feed, and its rows.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case formatVersion, feedID, books
     }
+
+    /// What a feed's index holds, for the scan that says whether the file
+    /// can hold unknown keys (`StoredKeyScan`): its rows keep them (V04).
+    /// The index's own top level keeps none, so a key added there only
+    /// makes the decode look through the rows.
+    static let keySchema = StoredKeySchema(
+        names: CodingKeys.names,
+        objects: [CodingKeys.books.stringValue: Book.keySchema]
+    )
 
     /// Reads an index: its layout's version first, so one a newer TextMouth
     /// wrote is never read as this layout (`FeedIndexNewerLayout`); an index
@@ -120,9 +129,14 @@ enum FeedIndexFiles {
 
     /// The index `data` holds. Throws when it holds none, or
     /// `FeedIndexNewerLayout` for one a newer TextMouth wrote.
+    ///
+    /// The bytes are scanned first for a key a row does not know
+    /// (`StoredKeyScan`); only an index that may hold one is looked through
+    /// for them as it is decoded (V04).
     static func decoded(_ data: Data) throws -> FeedIndex {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        decoder.userInfo = StoredKeyScan.userInfo(forDecoding: data, schema: FeedIndex.keySchema)
         return try decoder.decode(FeedIndex.self, from: data)
     }
 

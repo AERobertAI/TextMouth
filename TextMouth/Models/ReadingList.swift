@@ -115,6 +115,10 @@ struct ReadingList: Codable, Equatable, Sendable, KeepsUnknownKeysBesideSynthesi
         CodingKeys(stringValue: name) != nil
     }
 
+    /// What the stored list holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(isKnown: { ReadingList.isStoredKey($0) })
+
     /// A list of `bookIDs`, in that order and each kept once, with the
     /// given options: by default empty, continuing to the book below,
     /// skipping finished books, and keeping them on the list.

@@ -35,6 +35,11 @@ struct BookFolder: Identifiable, Codable, Hashable, KeepsUnknownKeysBesideSynthe
         CodingKeys(stringValue: name) != nil
     }
 
+    /// What a folder's entry holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`). Its listening options keep
+    /// none, and are not looked into.
+    static let keySchema = StoredKeySchema(isKnown: { BookFolder.isStoredKey($0) })
+
     var fullPath: String {
         if parentPath.isEmpty {
             return name
