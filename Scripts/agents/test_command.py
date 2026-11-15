@@ -42,7 +42,12 @@ def full_suite_command(derived_data, result_bundle=None, extra=()):
     """The argv of the full suite, built in `derived_data`. With `result_bundle`
     (a path), xcodebuild also writes its result bundle there; `extra` is more
     xcodebuild arguments, put before it."""
-    command = [*FULL_SUITE_BASE, "-derivedDataPath", str(derived_data), *extra]
+    base = list(FULL_SUITE_BASE)
+    if "-parallel-testing-enabled" in extra:
+        # xcodebuild refuses an option given twice: an extra one takes the place of the base's `NO`.
+        at = base.index("-parallel-testing-enabled")
+        del base[at:at + 2]
+    command = [*base, "-derivedDataPath", str(derived_data), *extra]
     if result_bundle:
         command += ["-resultBundlePath", str(result_bundle)]
     return command

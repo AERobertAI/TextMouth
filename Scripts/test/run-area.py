@@ -681,6 +681,10 @@ def selftest() -> int:
     extra = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False, extra=["-test-timeouts-enabled", "YES"])
     check("extra arguments go before the classes", extra[-3:] == ["-test-timeouts-enabled", "YES", "-only-testing:TextMouthProductionTests/A"],
           extra[-3:])
+    parallel = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False,
+                                     extra=["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", "2"])
+    check("an extra -parallel-testing-enabled replaces the default, never repeats it",
+          parallel.count("-parallel-testing-enabled") == 1 and parallel[parallel.index("-parallel-testing-enabled") + 1] == "YES", parallel)
     slotted = testkit.build_command(Path("/r"), ["A"], "/tmp/D")
     check("the wrapper goes first", slotted[0] == "/r/" + testkit.SLOT_WRAPPER and slotted[1] == "xcodebuild", slotted[:2])
 

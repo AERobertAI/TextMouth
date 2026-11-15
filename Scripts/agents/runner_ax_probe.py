@@ -51,4 +51,6 @@ def probe(scratch):
     say(f"swiftc: exit {status} {output[:300]}")
     if status != 0:
         return
-    show("the probe program", [str(binary)] if os.access(binary, os.X_OK) else ["true"])
+    say(f"the program is {'there' if os.access(binary, os.X_OK) else 'NOT there or not executable'}: {binary}")
+    show("the probe program", [str(binary)])
+    show("the probe program through the audio session's own launchd domain", ["launchctl", "asuser", str(os.getuid()), str(binary)])

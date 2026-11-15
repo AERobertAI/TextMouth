@@ -25,6 +25,8 @@ func roles(of element: Any, depth: Int = 0) -> [String] {
     return found
 }
 
+// Unbuffered, so that what the program printed survives a stop by its time limit.
+setvbuf(stdout, nil, _IONBF, 0)
 let application = NSApplication.shared
 application.setActivationPolicy(.accessory)
 print("AXIsProcessTrusted: \(AXIsProcessTrusted())")

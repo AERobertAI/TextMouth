@@ -263,7 +263,9 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
     several areas launch the test host once (each launch leaves about 23 MB in
     a system cache). Run it from the repository root. The wrapper is left out
     when use_slot is false. `extra` is more xcodebuild arguments, put before the
-    classes (the GitHub runner passes its test time limits this way).
+    classes (the GitHub runner passes its test time limits this way). xcodebuild
+    refuses an option given twice, so an `extra` that carries
+    `-parallel-testing-enabled` takes the place of the default `NO`.
     """
     command = [str(root / SLOT_WRAPPER)] if use_slot else []
     command += [
@@ -271,7 +273,7 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
         "-project", PROJECT,
         "-scheme", SCHEME,
         "-destination", "platform=macOS",
-        "-parallel-testing-enabled", "NO",
+        *([] if "-parallel-testing-enabled" in extra else ["-parallel-testing-enabled", "NO"]),
         "-jobs", str(jobs),
         "CODE_SIGNING_ALLOWED=NO",
         "COMPILER_INDEX_STORE_ENABLE=NO",
