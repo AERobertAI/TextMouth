@@ -866,6 +866,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Imports: audio
 
 - Package track scans: the formats a package's scans leave out (the page's coreAudioExtensions) are the formats added on October 18, 2026.
+- AudioFileInfo's plausibility check (isPlausible(inFileOfBytes:)): a 136 KB CAF once claimed 25 billion seconds.
 
 ## From Imports: braille tables and the translator
 
