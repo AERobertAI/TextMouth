@@ -179,6 +179,38 @@ final class AudioEditorSavingTests: XCTestCase {
         }
     }
 
+    /// A file written without the chapter markers it should hold says so,
+    /// rather than "Exported" alone (FMT11): here a WAVE file exported under
+    /// a name the marker list never opens, so its markers are refused. A
+    /// save in place of a CAF book still warns that the book won't list its
+    /// markers, which TextMouth never reads back from CAF, though an export
+    /// as CAF keeps them for other programs.
+    func testAFileWrittenWithoutItsMarkersSaysSo() async throws {
+        let harness = try await openRamp(seconds: 4)
+        let model = harness.model
+        await model.insertChapter(titled: "Quay")
+        let destination = try makeSandboxDirectory("editor-markers-refused").appendingPathComponent("Quay.bin")
+
+        await model.export(as: .wav, to: destination)
+
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            "Exported “Quay.bin”. Its chapter marker couldn't be written into the file, so it has none."
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path), "the audio is written all the same")
+        XCTAssertEqual(model.markersLeftOut(false, count: 1), "")
+        XCTAssertEqual(model.chapterWarning(for: .pcmCAF), "")
+        XCTAssertEqual(model.chapterWarning(for: .pcmWAV, savingInPlace: true), "")
+        XCTAssertEqual(
+            model.chapterWarning(for: .pcmCAF, savingInPlace: true),
+            " TextMouth doesn't read chapter markers back from CAF files, so this book won't list its chapter marker once saved."
+        )
+        XCTAssertEqual(
+            AudioEditorWording.chapterMarkersNotWritten(3),
+            "Its 3 chapter markers couldn't be written into the file, so it has none."
+        )
+    }
+
     // MARK: - Labels Beside an Export (FMT06)
 
     /// With its checkbox on, an export writes the chapter markers and the

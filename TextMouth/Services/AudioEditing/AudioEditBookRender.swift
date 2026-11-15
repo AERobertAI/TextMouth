@@ -70,6 +70,10 @@ enum AudioEditBookRender {
         /// undone and the original audio was rendered back, which the
         /// podcast chapters kept beside it fit again.
         let appliedEditCount: Int
+        /// Whether the file was written without the chapter markers the
+        /// render had for it (`AudioEditRenderer.Outcome`), which the save
+        /// then says.
+        var chapterMarkersLeftOut = false
     }
 
     /// Renders `request` at `now`, telling `progress` how far it is.
@@ -149,7 +153,7 @@ enum AudioEditBookRender {
             : freeURL(named: newName, in: folder)
         let staged = folder.appendingPathComponent(".\(UUID().uuidString).editing.\(format.fileExtension)")
         defer { try? FileManager.default.removeItem(at: staged) }
-        _ = try await AudioEditRenderer.render(
+        let outcome = try await AudioEditRenderer.render(
             timeline,
             sources: sources,
             to: staged,
@@ -201,7 +205,8 @@ enum AudioEditBookRender {
             replacedFile: newPath == request.audioFile ? nil : request.audioFile,
             duration: writtenSeconds,
             rendered: true,
-            appliedEditCount: renderedIDs.count
+            appliedEditCount: renderedIDs.count,
+            chapterMarkersLeftOut: outcome.chapterMarkersLeftOut
         )
     }
 

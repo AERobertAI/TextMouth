@@ -680,6 +680,23 @@ enum AudioEditorWording {
         return "\(format) files can't hold chapter markers, so \(markers) left out of this file."
     }
 
+    /// Said when a save writes the book's file in a format whose markers
+    /// TextMouth writes but never reads back as a book's chapters (a CAF
+    /// file's, FMT11): "TextMouth doesn't read chapter markers back from CAF
+    /// files, so this book won't list its 3 chapter markers once saved."
+    static func chaptersNotReadBack(_ count: Int, format: String) -> String {
+        let markers = count == 1 ? "its chapter marker" : "its \(count) chapter markers"
+        return "TextMouth doesn't read chapter markers back from \(format) files, so this book won't list \(markers) once saved."
+    }
+
+    /// Said after a save or an export whose audio was written but whose
+    /// chapter markers could not be (FMT11): "Its 3 chapter markers couldn't
+    /// be written into the file, so it has none."
+    static func chapterMarkersNotWritten(_ count: Int) -> String {
+        let markers = count == 1 ? "Its chapter marker" : "Its \(count) chapter markers"
+        return "\(markers) couldn't be written into the file, so it has none."
+    }
+
     /// Said as a save ends: the new length, and a new file name when the
     /// format's extension changed it.
     static func saved(_ duration: TimeInterval, renamedTo file: String?) -> String {

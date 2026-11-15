@@ -39,6 +39,15 @@ extension AudioRenderFormat {
     var holdsChapterMarkers: Bool {
         isMPEG4 || self == .mp3 || isPCM
     }
+
+    /// Whether a book whose file is saved in this format keeps its chapter
+    /// markers as its chapters: as `holdsChapterMarkers`, except a CAF
+    /// file's markers, which a save writes but TextMouth never reads back as
+    /// a book's chapters (`FileChapterReaders` reads WAVE and AIFF markers
+    /// alone), so a save in place of a CAF book still warns.
+    var keepsBookChapters: Bool {
+        holdsChapterMarkers && self != .pcmCAF
+    }
 }
 
 /// What closing the editor window needs first (FR04).
@@ -81,8 +90,9 @@ extension AudioEditorModel {
         stopPlayingForEdit()
         let format = await readSaveFormat()
         let detail = AudioEditorWording.savingDetail(duration, format: format.map(AudioEditorWording.formatName))
-            + chapterWarning(for: format)
+            + chapterWarning(for: format, savingInPlace: true)
         let fileBefore = session.audioFile
+        let markerCount = chapters.count
         progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: detail, fraction: 0)
         sheet = .progress
         announce(detail)
@@ -94,7 +104,8 @@ extension AudioEditorModel {
             await loadPreview()
             // A file written in a format of another extension has a new name.
             let renamed = outcome.audioFile == fileBefore ? nil : (outcome.audioFile as NSString).lastPathComponent
-            announce(AudioEditorWording.saved(outcome.duration, renamedTo: renamed))
+            announce(AudioEditorWording.saved(outcome.duration, renamedTo: renamed)
+                + markersLeftOut(outcome.chapterMarkersLeftOut, count: markerCount))
             return true
         } catch {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the edits couldn't be saved (\(AudioEditorLauncher.describe(error)))")
@@ -115,11 +126,25 @@ extension AudioEditorModel {
     }
 
     /// The sentence, after a space, saying the chapter markers are left out
-    /// of a file in `format`, which has no place for them; empty when there
-    /// are none, or the format keeps them, or it isn't known.
-    func chapterWarning(for format: AudioRenderFormat?) -> String {
-        guard let format, !chapters.isEmpty, !format.holdsChapterMarkers else { return "" }
-        return " " + AudioEditorWording.chaptersLeftOut(chapters.count, format: AudioEditorWording.formatName(format))
+    /// of a file in `format`, which has no place for them, or, `savingInPlace`
+    /// a CAF book, that the book will not read them back
+    /// (`AudioRenderFormat.keepsBookChapters`); empty when there are none,
+    /// or the file keeps them, or the format isn't known.
+    func chapterWarning(for format: AudioRenderFormat?, savingInPlace: Bool = false) -> String {
+        guard let format, !chapters.isEmpty else { return "" }
+        let name = AudioEditorWording.formatName(format)
+        if !format.holdsChapterMarkers {
+            return " " + AudioEditorWording.chaptersLeftOut(chapters.count, format: name)
+        }
+        guard savingInPlace, !format.keepsBookChapters else { return "" }
+        return " " + AudioEditorWording.chaptersNotReadBack(chapters.count, format: name)
+    }
+
+    /// The sentence, after a space, saying a file was written without its
+    /// `count` chapter markers, when `leftOut` (FMT11); empty otherwise.
+    func markersLeftOut(_ leftOut: Bool, count: Int) -> String {
+        guard leftOut, count > 0 else { return "" }
+        return " " + AudioEditorWording.chapterMarkersNotWritten(count)
     }
 
     // MARK: Exporting
@@ -142,9 +167,9 @@ extension AudioEditorModel {
         announce(detail)
         defer { endProgress() }
         do {
-            try await session.export(to: url, as: format, progress: progressReporter())
+            let outcome = try await session.export(to: url, as: format, progress: progressReporter())
             endProgress()
-            announce(exportLabelsIfAsked(beside: url))
+            announce(exportLabelsIfAsked(beside: url) + markersLeftOut(outcome.chapterMarkersLeftOut, count: chapters.count))
         } catch {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the audio couldn't be exported (\(AudioEditorLauncher.describe(error)))")
             endProgress()

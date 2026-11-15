@@ -94,6 +94,9 @@ struct AudioEditSaveOutcome: Equatable, Sendable {
     /// Whether anything was rendered: false when the file already held
     /// every applied edit.
     let rendered: Bool
+    /// Whether the file was written without its chapter markers, their
+    /// marker list refused (FMT11), which the save then says.
+    var chapterMarkersLeftOut = false
 }
 
 extension LibraryViewModel {
@@ -177,7 +180,8 @@ extension LibraryViewModel {
                 book: bookByID(bookID) ?? book,
                 audioFile: saved.render.audioFile,
                 duration: saved.render.duration,
-                rendered: saved.render.rendered
+                rendered: saved.render.rendered,
+                chapterMarkersLeftOut: saved.render.chapterMarkersLeftOut
             )
         }
         library.books[row].filePath = saved.bookFilePath
@@ -211,7 +215,8 @@ extension LibraryViewModel {
             book: updated,
             audioFile: saved.render.audioFile,
             duration: saved.render.duration,
-            rendered: true
+            rendered: true,
+            chapterMarkersLeftOut: saved.render.chapterMarkersLeftOut
         )
     }
 

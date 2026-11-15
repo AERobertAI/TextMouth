@@ -482,14 +482,21 @@ final class AudioEditSession: ObservableObject {
     /// far it is. The book's own file is left as it is. MP3 is encoded by the
     /// LAME built into TextMouth, or, should that be unavailable, by the
     /// installed ffmpeg (`MP3Route`).
+    /// - Returns: what the render wrote, which says whether a WAVE, AIFF, or
+    ///   CAF file was left without its chapter markers.
     /// - Throws: `AudioEditError.mp3NeedsFFmpeg` for MP3 with neither
     ///   encoder, or the render's errors.
-    func export(to url: URL, as format: AudioExportFormat, progress: (@Sendable (Double) -> Void)? = nil) async throws {
+    @discardableResult
+    func export(
+        to url: URL,
+        as format: AudioExportFormat,
+        progress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> AudioEditRenderer.Outcome {
         guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
         let ffmpeg = library.audioFilterEngine().ffmpeg
         guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
         try await restorePurgedStretches()
-        _ = try await AudioEditRenderer.render(
+        return try await AudioEditRenderer.render(
             timeline,
             sources: sources,
             to: url,

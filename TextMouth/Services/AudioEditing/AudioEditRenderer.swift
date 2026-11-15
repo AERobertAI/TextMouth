@@ -446,6 +446,10 @@ enum AudioEditRenderer {
         let frames: Int64
         /// Whether its samples were copied as they were stored.
         let copiedSamples: Bool
+        /// Whether a WAVE, AIFF, or CAF file was written without the chapter
+        /// markers the timeline has, their marker list refused (FMT11): the
+        /// save or export that asked says so, rather than "saved" alone.
+        var chapterMarkersLeftOut = false
     }
 
     /// Renders `timeline`, whose stretches come from `sources`, into a new
@@ -507,8 +511,8 @@ enum AudioEditRenderer {
                 try await write(.stored(storedFormat), to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
                     try await drain(output, of: reader, made: made, progress: progress, consume: consume)
                 }
-                writeMarkers(markers, to: destination)
-                return Outcome(frames: made.frames, copiedSamples: true)
+                let keptMarkers = writeMarkers(markers, to: destination)
+                return Outcome(frames: made.frames, copiedSamples: true, chapterMarkersLeftOut: !keptMarkers)
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -520,8 +524,8 @@ enum AudioEditRenderer {
         try await write(.decoded, to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
             try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress, consume: consume)
         }
-        writeMarkers(markers, to: destination)
-        return Outcome(frames: timeline.length, copiedSamples: false)
+        let keptMarkers = writeMarkers(markers, to: destination)
+        return Outcome(frames: timeline.length, copiedSamples: false, chapterMarkersLeftOut: !keptMarkers)
     }
 
     /// The tag of the debug-log line saying a render's chapter markers could
@@ -536,12 +540,16 @@ enum AudioEditRenderer {
     /// (`FileChapterReaders`). Nothing for no markers. A failure leaves the
     /// file whole without markers, and is recorded as one line,
     /// `AUDIO_MARKERS_NOT_WRITTEN: <file>: <reason>`, which names no folder.
-    private static func writeMarkers(_ markers: [AudioRenderChapter], to destination: URL) {
-        guard !markers.isEmpty else { return }
+    /// - Returns: whether the file holds every marker given: false only when
+    ///   there were markers and they could not be written.
+    private static func writeMarkers(_ markers: [AudioRenderChapter], to destination: URL) -> Bool {
+        guard !markers.isEmpty else { return true }
         do {
             try AudioMarkerList.write(markers.map { (title: $0.title, start: $0.start) }, to: destination)
+            return true
         } catch {
             DiagnosticLog.event(.storage, "\(markersNotWrittenLogTag): \(destination.lastPathComponent): \(error)")
+            return false
         }
     }
 
