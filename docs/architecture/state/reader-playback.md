@@ -45,7 +45,7 @@ The look-ahead and its render signature.
 - Owner: ReaderViewModel.lookAhead: the next speakable chapter's index, the SpeechRenderSignature its render was asked for (a hash and length of the exact spoken text, and the voice), and the AudioEngineService that holds the audio.
 - Who may write it: preRenderNextChapter(), after each chapter starts; refreshLookAhead(), whenever the voice, the substitution rules or their switch, the repeated-symbol settings, the punctuation pause level, or the skipped sections change; and discardLookAhead().
   Speed and pitch do not count, because they are applied as the audio plays.
-  So applyLocalSpeechOverrides, which every playing reader runs at each step of a global setting, refreshes it only when the voice in effect is not the one the look-ahead renders in.
+  So applyLocalSpeechOverrides, which every playing reader runs at each step of a global setting, refreshes the look-ahead only when the voice in effect is not the one the look-ahead renders in.
   The look-ahead carries its chapter's speech to that chapter's start (ChapterSpeechCache.lookAheadSpeech), so the chapter's end prepares nothing.
   The reader's renders wait their turn on SpeechRenderCoordinator.shared, so the look-ahead never competes with the chapter Play waits for, and a stale or oversized render never starts.
   Overlapping calls of AVSpeechSynthesizer.write() don't change what each one writes: two and three writes at once, in one voice and in two (Samantha, and the Eloquence voice Eddy), each wrote the very samples it wrote alone.
