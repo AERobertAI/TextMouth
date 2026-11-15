@@ -204,8 +204,7 @@ final class PageImageArchiveTests: XCTestCase {
         XCTAssertEqual(script.pictures.count, 2, "the damaged page is never read")
         XCTAssertEqual(
             extraction.report.message,
-            "OCR could not run on 1 of 3 pages, so text that appears only in its images is missing: "
-                + "page 2 (its file could not be read as a picture)."
+            "Text recognition could not read 1 of 3 pages: page 2 (its file could not be read as a picture)."
         )
         XCTAssertEqual(extraction.report.container, "this comic book archive")
         XCTAssertEqual(

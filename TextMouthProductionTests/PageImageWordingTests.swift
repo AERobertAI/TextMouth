@@ -78,6 +78,38 @@ final class PageImageWordingTests: XCTestCase {
         XCTAssertEqual(PageImageWording.noPictures, "This comic book archive holds no pictures TextMouth can read.")
     }
 
+    /// The pages a book of pictures could not read are said without the
+    /// PDF's clause about text in images, since every word of a picture is
+    /// pictured; a PDF's pages keep their own sentence.
+    func testUnreadPagesOfPicturesHaveTheirOwnSentence() {
+        XCTAssertEqual(
+            PageImageWording.pagesNotRead(1, of: 3, pages: "page 2 (its picture could not be decoded)"),
+            "Text recognition could not read 1 of 3 pages: page 2 (its picture could not be decoded)."
+        )
+        XCTAssertEqual(
+            PageImageWording.pagesNotRead(2, of: 2, pages: "pages 1 and 2 (its picture could not be decoded)"),
+            "Text recognition could not read any of the 2 pages: pages 1 and 2 (its picture could not be decoded)."
+        )
+        XCTAssertEqual(
+            PageImageWording.pagesNotRead(1, of: 1, pages: "page 1 (its picture could not be decoded)"),
+            "Text recognition could not read the only page: page 1 (its picture could not be decoded)."
+        )
+        let pages = [
+            PDFPageDiagnosis(pageNumber: 1, source: .recognized, recognition: .recognizedText),
+            PDFPageDiagnosis(pageNumber: 2, source: .none, recognition: .couldNotRun(PageImageWording.pageCannotDecode)),
+        ]
+        XCTAssertEqual(
+            PDFExtractionDiagnostics(pages: pages, medium: .pictures).problem,
+            "Text recognition could not read 1 of 2 pages: page 2 (its picture could not be decoded)."
+        )
+        XCTAssertEqual(
+            PDFExtractionDiagnostics(pages: pages).problem,
+            "OCR could not run on 1 of 2 pages, so text that appears only in its images is missing: "
+                + "page 2 (its picture could not be decoded).",
+            "a PDF's sentence is as it was"
+        )
+    }
+
     // MARK: - Why One Page Could Not Be Read
 
     /// Each page's reason, as it completes the page's parenthesis.

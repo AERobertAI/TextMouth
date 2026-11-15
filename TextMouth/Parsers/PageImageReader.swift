@@ -173,7 +173,7 @@ enum PageImageReader {
             try ImportPageProgress.pagesRead(number, of: total)
         }
 
-        let diagnostics = PDFExtractionDiagnostics(pages: diagnoses, ocrUnavailableReason: unavailableReason)
+        let diagnostics = PDFExtractionDiagnostics(pages: diagnoses, ocrUnavailableReason: unavailableReason, medium: .pictures)
         guard pages.contains(where: \.hasText) else {
             throw refusal(of: book, diagnostics: diagnostics, firstUnreadable: firstUnreadable,
                           firstRecognitionFailure: firstRecognitionFailure)

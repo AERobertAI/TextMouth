@@ -217,9 +217,8 @@ final class PageImageImportTests: XCTestCase {
         XCTAssertTrue(result.keepsOriginal)
         XCTAssertEqual(
             result.failureSummary,
-            "Imported 1 book, but 1 book has pages that could not be read:\nnotices.cbz: OCR could not run on 1 of 2 pages, "
-                + "so text that appears only in its images is missing: page 2 (its file could not be read as a picture).\n"
-                + "The original file was kept."
+            "Imported 1 book, but 1 book has pages that could not be read:\nnotices.cbz: Text recognition could not read "
+                + "1 of 2 pages: page 2 (its file could not be read as a picture).\nThe original file was kept."
         )
     }
 

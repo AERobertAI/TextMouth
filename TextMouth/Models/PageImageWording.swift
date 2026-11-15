@@ -9,9 +9,8 @@ import Foundation
 /// Each refusal completes "Reading its text failed: ", as in "Could not
 /// import “IMG_4821.heic”. Reading its text failed: No text was found in this
 /// picture." Each page's reason completes the parenthesis of a page that
-/// could not be read, as in "OCR could not run on 1 of 12 pages, so text that
-/// appears only in its images is missing: page 3 (its picture could not be
-/// decoded)."
+/// could not be read, as in "Text recognition could not read 1 of 12 pages:
+/// page 3 (its picture could not be decoded)." (`pagesNotRead`).
 enum PageImageWording {
 
     // MARK: - What Is Being Read
@@ -123,6 +122,23 @@ enum PageImageWording {
     /// A comic book archive that holds no picture TextMouth reads: "This
     /// comic book archive holds no pictures TextMouth can read."
     static let noPictures = "This comic book archive holds no pictures TextMouth can read."
+
+    /// The pages of a book of pictures that text recognition could not
+    /// read, as an import's warning, and a refusal when no page could be,
+    /// say them: "Text recognition could not read 1 of 3 pages: page 2 (its
+    /// picture could not be decoded).", "… could not read any of the 2
+    /// pages: pages 1 and 2 (…).", and, for a book of one page, "… could not
+    /// read the only page: page 1 (…)." `pages` names the pages and why, as
+    /// the report groups them (`PDFExtractionDiagnostics`).
+    static func pagesNotRead(_ failed: Int, of total: Int, pages: String) -> String {
+        let count: String
+        if failed >= total {
+            count = total == 1 ? "the only page" : "any of the \(ArchiveFigures.count(total)) pages"
+        } else {
+            count = "\(ArchiveFigures.count(failed)) of \(ArchiveFigures.count(total)) pages"
+        }
+        return "Text recognition could not read \(count): \(pages)."
+    }
 
     // MARK: - Why One Page Could Not Be Read
 

@@ -122,8 +122,7 @@ final class PageImageReaderTests: XCTestCase {
         XCTAssertFalse(extraction.report.isComplete)
         XCTAssertEqual(
             extraction.report.message,
-            "OCR could not run on 1 of 3 pages, so text that appears only in its images is missing: "
-                + "page 2 (text recognition failed: the model gave up)."
+            "Text recognition could not read 1 of 3 pages: page 2 (text recognition failed: the model gave up)."
         )
         XCTAssertTrue(extraction.markdown.contains("<!-- page: 2 -->"), extraction.markdown)
         XCTAssertTrue(extraction.markdown.hasSuffix("Signed"), extraction.markdown)
@@ -138,8 +137,7 @@ final class PageImageReaderTests: XCTestCase {
         XCTAssertThrowsError(try read(try pictureFile(pages: 2), with: script)) { error in
             XCTAssertEqual(
                 error.localizedDescription,
-                "OCR could not run on all 2 pages, so text that appears only in their images is missing: "
-                    + "pages 1 and 2 (text recognition failed: the model gave up)."
+                "Text recognition could not read any of the 2 pages: pages 1 and 2 (text recognition failed: the model gave up)."
             )
         }
     }
