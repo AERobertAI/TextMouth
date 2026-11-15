@@ -406,7 +406,9 @@ enum BookCloudWording {
             return "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, "
                 + "so its download can't be removed: the only copy might be on this Mac. Try again in a moment."
         case .uploadFailed(let message):
-            return "\(serviceStartingSentence) couldn't upload this book: \(message) "
+            // The drive's own words end a sentence, whether or not they end in a period.
+            let reason = message.hasSuffix(".") || message.hasSuffix("!") || message.hasSuffix("?") ? message : message + "."
+            return "\(serviceStartingSentence) couldn't upload this book: \(reason) "
                 + "Its download can't be removed until it has uploaded."
         case .inConflict:
             return "\(serviceStartingSentence) holds two versions of a file of this book, "

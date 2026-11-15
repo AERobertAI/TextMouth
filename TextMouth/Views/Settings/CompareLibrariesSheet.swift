@@ -40,6 +40,18 @@ struct CompareLibrariesSheet: View {
                 .frame(minHeight: 220)
                 .accessibilityLabel("Differences")
             }
+            // The files not read, a list of their own, so a list of the
+            // differences holds only differences.
+            if model.phase == .finished, !model.unreadRows.isEmpty {
+                List(model.unreadRows) { row in
+                    Text(row.sentence)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(row.sentence)
+                }
+                .frame(minHeight: 100)
+                .accessibilityLabel(LibraryComparisonWording.unreadListLabel)
+            }
 
             HStack {
                 Button(LibraryComparisonWording.copyLabel) { model.copyResults() }
@@ -59,6 +71,10 @@ struct CompareLibrariesSheet: View {
         .padding(20)
         .frame(minWidth: 520, idealWidth: 620, minHeight: 320)
         .onAppear { model.start() }
+        #if os(macOS)
+        // Escape closes the finished sheet; while it works Stop has it.
+        .onExitCommand { if model.phase == .finished { dismiss() } }
+        #endif
         .accessibilityElement(children: .contain)
         .accessibilityLabel(LibraryComparisonWording.sheetLabel)
     }

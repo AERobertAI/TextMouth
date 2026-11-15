@@ -78,6 +78,14 @@ enum LibraryComparisonWording {
             + "files that are only in the cloud are brought to this Mac to be read. Nothing is changed."
     }
 
+    /// What is spoken now and then during a long comparison.
+    static func progressSentence(seconds: Int) -> String {
+        "Still comparing: \(CountWording.seconds(seconds)) so far. Press Escape to stop."
+    }
+
+    /// The label of the list of files that were not read.
+    static let unreadListLabel = "Files not read"
+
     /// What the sheet says when the folder holds another library.
     static func differentLibrarySentence(folder: String) -> String {
         "The folder \(folder) holds a different library, so nothing was compared."
@@ -97,7 +105,7 @@ enum LibraryComparisonWording {
     /// What is announced once the results are on the clipboard.
     static let copiedSentence = "Results copied to the clipboard."
     /// The Storage settings button that opens the sheet, and what VoiceOver calls it.
-    static let buttonTitle = "Compare Libraries..."
+    static let buttonTitle = "Compare Libraries…"
     /// The button that closes the sheet.
     static let doneLabel = "Done"
     /// The button that stops the comparison.

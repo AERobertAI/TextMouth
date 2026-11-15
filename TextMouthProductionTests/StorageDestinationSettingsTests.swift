@@ -145,7 +145,7 @@ final class StorageDestinationSettingsTests: XCTestCase {
             }
             XCTAssertTrue(buttons.map(\.label).contains(LibraryComparisonWording.title), "\(buttons.map(\.label))")
         }
-        XCTAssertEqual(LibraryComparisonWording.buttonTitle, "Compare Libraries...")
+        XCTAssertEqual(LibraryComparisonWording.buttonTitle, "Compare Libraries…")
         XCTAssertTrue(LibraryComparisonWording.buttonHint.hasSuffix("Nothing in either copy is changed."))
     }
 

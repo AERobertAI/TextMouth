@@ -291,10 +291,11 @@ final class LibraryComparisonTests: XCTestCase {
                 + "23 files couldn't be read, so the comparison may be missing differences. "
                 + "They are listed after the differences."
         )
-        XCTAssertEqual(shown.rows.count, 1 + 20 + 1)
-        XCTAssertEqual(shown.rows[0], "Book only in this copy: Emma.")
-        XCTAssertTrue(shown.rows[1].hasPrefix("Unread: the record of Book 1 in the other copy"))
-        XCTAssertEqual(shown.rows[21], "And 3 more files couldn't be read.")
+        // The differences and the files not read are lists of their own.
+        XCTAssertEqual(shown.rows, ["Book only in this copy: Emma."])
+        XCTAssertEqual(shown.unread.count, 20 + 1)
+        XCTAssertTrue(shown.unread[0].hasPrefix("Unread: the record of Book 1 in the other copy"))
+        XCTAssertEqual(shown.unread[20], "And 3 more files couldn't be read.")
     }
 
     /// The sheet says plainly when the folder holds another library, when
@@ -311,7 +312,8 @@ final class LibraryComparisonTests: XCTestCase {
             "Nothing could be compared with the copy in /Other, because a file the comparison needs couldn't be read. "
                 + "The files that couldn't be read are listed."
         )
-        XCTAssertEqual(shown.rows, [
+        XCTAssertEqual(shown.rows, [])
+        XCTAssertEqual(shown.unread, [
             "Unread: the identity marker of the library in the other copy couldn't be read (no file is there), "
                 + "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
         ])
@@ -333,6 +335,25 @@ final class LibraryComparisonTests: XCTestCase {
         XCTAssertEqual(
             LibraryComparisonWording.shortReason(for: file),
             "the library index of the copy in this folder wasn't read within 60 seconds"
+        )
+    }
+
+    /// A long comparison says now and then that it is still going.
+    func testTheProgressSentenceSaysHowLongAndHowToStop() {
+        XCTAssertEqual(
+            LibraryComparisonWording.progressSentence(seconds: 30),
+            "Still comparing: 30 seconds so far. Press Escape to stop."
+        )
+        XCTAssertEqual(LibraryComparisonWording.buttonTitle, "Compare Libraries…", "one ellipsis character")
+    }
+
+    /// The upload-failed refusal ends the drive's words with a period when
+    /// they have none, so the next sentence doesn't run on.
+    func testTheUploadFailedRefusalIsPunctuated() {
+        let bare = BookCloudError.cloudCopyNotProven(.uploadFailed("The disk is full")).explanation(in: .googleDrive)
+        XCTAssertEqual(
+            bare,
+            "Google Drive couldn't upload this book: The disk is full. Its download can't be removed until it has uploaded."
         )
     }
 

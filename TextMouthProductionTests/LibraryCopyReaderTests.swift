@@ -248,6 +248,41 @@ final class LibraryCopyReaderTests: XCTestCase {
         XCTAssertTrue(guardOfTwo.begin("/c"))
     }
 
+    /// A comparison that goes on says so every interval, and stops saying so
+    /// once it ends.
+    @MainActor
+    func testALongComparisonSaysItIsStillGoing() async throws {
+        let (this, other) = try makeDivergedCopies()
+        let release = DispatchSemaphore(value: 0)
+        addTeardownBlock { for _ in 0..<8 { release.signal() } }
+        let reader = LibraryCopyReader(
+            itemStatus: FakeCloud(onlyInCloud: ["bookInfo.json"]),
+            fetch: { _ in _ = release.wait(timeout: .now() + 30) },
+            waitLimit: 2,
+            fetchGuard: FetchGuard()
+        )
+        var said: [String] = []
+        let model = LibraryComparisonModel(
+            otherFolder: other,
+            thisFolder: this,
+            thisLibrary: try LibraryPersistenceService.decodeIndex(from: Data(contentsOf: this.appendingPathComponent("library.json"))),
+            reader: reader,
+            progressInterval: .milliseconds(300),
+            announce: { said.append($0) }
+        )
+
+        model.start()
+        for _ in 0..<200 where model.phase == .comparing {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        let progress = said.filter { $0.hasPrefix("Still comparing") }
+
+        XCTAssertGreaterThanOrEqual(progress.count, 2, "\(said)")
+        XCTAssertEqual(said.last, model.heading, "the count is the last thing said")
+        XCTAssertFalse(model.unreadRows.isEmpty, "the files not read are a list of their own")
+        XCTAssertTrue(model.rows.allSatisfy { !$0.sentence.hasPrefix("Unread") })
+    }
+
     /// A fetch the sync service fails is unread with its reason, never
     /// missing.
     func testAFileTheDriveFailsToBringIsUnreadWithItsReason() throws {
