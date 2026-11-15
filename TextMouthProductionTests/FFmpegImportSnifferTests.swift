@@ -78,8 +78,8 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertNil(FFmpegContainer.of(Array("MP+".utf8) + [0x08, 0, 0]))
         XCTAssertEqual(FFmpegContainer.of(Array("MPCK".utf8) + [0x53, 0x48]), .musepack8)
         XCTAssertEqual(FFmpegContainer.of(Array(".ra".utf8) + [0xFD, 0, 4]), .realMedia)
-        XCTAssertEqual(FFmpegContainer.of(Array("RIFF".utf8) + [1, 2, 3, 4] + Array("AVI LIST".utf8)), .avi)
-        XCTAssertNil(FFmpegContainer.of(Array("RIFF".utf8) + [1, 2, 3, 4] + Array("WAVEfmt ".utf8)))
+        XCTAssertEqual(FFmpegContainer.of(joinedBytes(Array("RIFF".utf8), [1, 2, 3, 4], Array("AVI LIST".utf8))), .avi)
+        XCTAssertNil(FFmpegContainer.of(joinedBytes(Array("RIFF".utf8), [1, 2, 3, 4], Array("WAVEfmt ".utf8))))
     }
 
     /// Each container names the demuxer ffmpeg knows it by.
@@ -97,8 +97,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
     func testSpeexIsFoundAfterTheSegmentTable() {
         /// An Ogg page header with `segments` lacing values, then `packet`.
         func page(segments: Int, packet: [UInt8]) -> [UInt8] {
-            Array("OggS".utf8) + [0, 2] + [UInt8](repeating: 0, count: 20) + [UInt8(segments)]
-                + [UInt8](repeating: 0xFF, count: segments) + packet
+            joinedBytes(
+                Array("OggS".utf8), [0, 2], [UInt8](repeating: 0, count: 20), [UInt8(segments)],
+                [UInt8](repeating: 0xFF, count: segments), packet
+            )
         }
         let speex = Array("Speex   1.2".utf8)
         XCTAssertTrue(FFmpegContainer.isOggSpeex(page(segments: 1, packet: speex)))
@@ -116,7 +118,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
     func testSpeexIsFoundAfterASkeletonPage() {
         /// An Ogg page of one packet, `packet`, beginning a stream when `begins`.
         func page(_ packet: [UInt8], begins: Bool = true) -> [UInt8] {
-            Array("OggS".utf8) + [0, begins ? 2 : 0] + [UInt8](repeating: 0, count: 20) + [1, UInt8(packet.count)] + packet
+            let headerType: UInt8 = begins ? 2 : 0
+            return joinedBytes(
+                Array("OggS".utf8), [0, headerType], [UInt8](repeating: 0, count: 20), [1, UInt8(packet.count)], packet
+            )
         }
         let skeleton = page(Array("fishead".utf8) + [UInt8](repeating: 0, count: 57))
         let speex = page(Array("Speex   1.2rc1".utf8) + [UInt8](repeating: 0, count: 66))
@@ -215,7 +220,7 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertFalse(FFmpegAudioConverter.converts(floats))
         // An ID3v2 tag of 20 bytes (version 4, no flags) before the signature.
         let tagged = folder.appendingPathComponent("Tagged.wma")
-        try Data(Array("ID3".utf8) + [4, 0, 0, 0, 0, 0, 20] + [UInt8](repeating: 0, count: 20) + Array("TTA1".utf8) + [1, 0])
+        try Data(joinedBytes(Array("ID3".utf8), [4, 0, 0, 0, 0, 0, 20], [UInt8](repeating: 0, count: 20), Array("TTA1".utf8), [1, 0]))
             .write(to: tagged)
         XCTAssertTrue(FFmpegContainer.holdsOwnReaderFormat(fileAt: tagged))
         XCTAssertFalse(FFmpegAudioConverter.converts(tagged))
@@ -295,8 +300,10 @@ final class FFmpegImportSnifferTests: XCTestCase {
     /// A Header object holding `objects`, with its size and count right.
     private func asfHeader(objects: [[UInt8]]) -> [UInt8] {
         let body = objects.flatMap { $0 }
-        return ASFHeader.headerObjectID + asfLittleEndian(UInt64(30 + body.count), count: 8)
-            + asfLittleEndian(UInt64(objects.count), count: 4) + [1, 2] + body
+        return joinedBytes(
+            ASFHeader.headerObjectID, asfLittleEndian(UInt64(30 + body.count), count: 8),
+            asfLittleEndian(UInt64(objects.count), count: 4), [1, 2], body
+        )
     }
 
     /// The Header object of the ASF file `file`, with `object` added: the
@@ -322,8 +329,14 @@ extension XCTestCase {
     /// A Header Extension object holding `objects`: its reserved identifier
     /// (16 bytes), reserved number (2), and data size (4), then the objects.
     func headerExtension(holding objects: [UInt8]) -> [UInt8] {
-        let fields = [UInt8](repeating: 0x11, count: 16) + [6, 0] + asfLittleEndian(UInt64(objects.count), count: 4)
+        let fields = joinedBytes([UInt8](repeating: 0x11, count: 16), [6, 0], asfLittleEndian(UInt64(objects.count), count: 4))
         return asfObject(ASFHeader.headerExtensionID, body: fields + objects)
+    }
+
+    /// `parts` joined in order: one array of bytes, made without a chain of
+    /// `+`, whose many literals the type checker can take too long to settle.
+    func joinedBytes(_ parts: [UInt8]...) -> [UInt8] {
+        parts.flatMap { $0 }
     }
 
     /// The ASF file `bytes` with `object` added at the end of its Header

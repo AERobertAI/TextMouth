@@ -364,19 +364,22 @@ final class FFmpegImportConversionTests: XCTestCase {
     /// ffmpeg it keeps its file's name.
     func testTheTagsBeforeTheConversionComeFromFFprobe() throws {
         let wma = try source()
-        let named = try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(report: standInWMAReport)) {
+        let wmaStandIn = try ffmpegStandIn(report: standInWMAReport)
+        let named = FFmpegAudioConverter.$tool.withValue(wmaStandIn) {
             ImportedFileMetadata.read(from: wma, format: .audio)
         }
         XCTAssertEqual([named.title, named.author, named.audioAlbum], ["Three Tones", "TextMouth Test", "Harbour Recordings"])
 
         let streamTagged = #"{"streams": [{"index": 0, "codec_type": "audio", "codec_name": "speex", "sample_rate": "8000", "channels": 1, "disposition": {"default": 0}, "tags": {"title": "Field Notes", "artist": "A Speaker"}}], "format": {"format_name": "ogg"}}"#
         let speex = try source("spx/tones.spx", named: "notes.spx")
-        let fromStream = try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(report: streamTagged)) {
+        let speexStandIn = try ffmpegStandIn(report: streamTagged)
+        let fromStream = FFmpegAudioConverter.$tool.withValue(speexStandIn) {
             ImportedFileMetadata.read(from: speex, format: .audio)
         }
         XCTAssertEqual([fromStream.title, fromStream.author], ["Field Notes", "A Speaker"])
 
-        let unnamed = try FFmpegAudioConverter.$tool.withValue(try ffmpegStandIn(located: .ffmpegMissing, report: standInWMAReport)) {
+        let missingStandIn = try ffmpegStandIn(located: .ffmpegMissing, report: standInWMAReport)
+        let unnamed = FFmpegAudioConverter.$tool.withValue(missingStandIn) {
             ImportedFileMetadata.read(from: wma, format: .audio)
         }
         XCTAssertEqual([unnamed.title, unnamed.author], ["tones", Book.unknownAuthor])
