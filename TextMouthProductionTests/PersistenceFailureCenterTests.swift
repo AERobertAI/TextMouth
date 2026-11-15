@@ -309,16 +309,14 @@ final class PersistenceFailureCenterTests: XCTestCase {
         first.release()
         let second = try boundary.holdWork(for: .rebuildingDirectory)
         defer { second.release() }
-        // The wait's turn comes once this test yields; it finds the second
-        // hold and keeps the retry for it, which the row then says.
-        let rebuilding = "Text substitution rules could not be saved: "
-            + "TextMouth saves them once it has finished rebuilding its data directory."
-        for _ in 0..<1_000 where center.bannerRows.map(\.text) != [rebuilding] {
-            await Task.yield()
-        }
+        // The wait saw the first release; it returns having found the second
+        // hold and kept the retry for it, which the row then says.
+        await center.waitForRetriesKeptForStorageWork()
 
         XCTAssertEqual(attempts.calls, [], "the kept retry ran while the second operation held the work")
-        XCTAssertEqual(center.bannerRows.map(\.text), [rebuilding])
+        XCTAssertEqual(center.bannerRows.map(\.text), [
+            "Text substitution rules could not be saved: TextMouth saves them once it has finished rebuilding its data directory.",
+        ])
 
         second.release()
         await center.waitForRetriesKeptForStorageWork()
@@ -342,9 +340,7 @@ final class PersistenceFailureCenterTests: XCTestCase {
         center.reset()
         hold.release()
         await center.waitForRetriesKeptForStorageWork()
-        for _ in 0..<20 {
-            await Task.yield()
-        }
+        recordingAnnouncements { center.runRetriesKeptForStorageWork() }
 
         XCTAssertEqual(attempts.calls, [], "a retry ran after the center was reset")
         XCTAssertTrue(center.outstandingFailures().isEmpty)

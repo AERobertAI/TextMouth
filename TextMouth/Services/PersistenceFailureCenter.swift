@@ -740,12 +740,20 @@ final class PersistenceFailureCenter: ObservableObject {
         announceOutcomeOfWaitingRetries(of: Set(kept.values))
     }
 
-    /// Returns once no retry is kept for an operation holding the storage
-    /// work: each has run after the operation ended, or `reset()` dropped
-    /// it. Tests await this after letting the hold go.
+    /// Returns once the wait for the operation holding the storage work has
+    /// seen it end: the kept retries have run, or, when another operation
+    /// took the work before their turn, they are kept for that one, which
+    /// this does not wait for. Returns at once when no retry is kept, as
+    /// after `reset()`. Tests await this after letting a hold go, never
+    /// while it still holds, or it would wait for good.
     func waitForRetriesKeptForStorageWork() async {
         while let wait = storageWorkWait {
             await wait.value
+            // Kept again for an operation that still holds the work: that
+            // one ends only when the test lets it go.
+            if boundary.heldFor != nil {
+                return
+            }
         }
     }
 
