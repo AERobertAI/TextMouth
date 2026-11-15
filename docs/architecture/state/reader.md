@@ -93,6 +93,24 @@ The look-ahead and its render signature.
 - How others observe it: at a chapter's end, takeLookAheadEngine(for:) hands over the engine only when it holds finished audio whose renderedSignature equals the signature of the chapter's speech prepared now. Otherwise the chapter starts from its current text.
 - Files: ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel+VoiceAndSpeed.swift, ViewModels/ChapterSpeechCache.swift, Services/AudioEngineService.swift, Services/SpeechService.swift.
 
+## Pause between chapters
+<!-- id: pause-between-chapters; keys: ; src: TextMouth/Models/ChapterPauses.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/AudioManifest.swift -->
+
+A pause between chapters (FR15): the silence a book keeps after a chapter before the next starts, while it plays on.
+
+- Owner: ReaderViewModel.chapterPauses (Models/ChapterPauses.swift), set as the book loads and never saved, supplied for now by ChapterPauses.betweenTracks through AudioTrackPlan, from a multi-file audiobook's manifest, and equal to another when it gives the same pause after every chapter, whatever list made it ([shared helpers](../shared-helpers.md)); and chapterStartAfterPause, the cancellable start of the next chapter. A later setting of pauses between headings (FR16) makes or combines a ChapterPauses at the same place.
+- Who may write it: +Playback's audioDidFinish begins the wait; stopWaitingOutChapterPause(because:) ends it, called from stopAudioWaitingToPlay, stop(), playAudioChapter(), and +LibraryUpdates' pauseAudioForPackageMove.
+- How others observe it: through isPlaybackUnderWay and isWaitingOutChapterPause.
+- Files: Models/ChapterPauses.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift.
+
+## Playback and bookmark fixes
+<!-- id: playback-bookmark-fixes; keys: ; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
+
+Playback and bookmark fixes of October 31, 2026: the reader's choices that a review found wrong.
+
+- Owner: ReaderViewModel and SpeechService. bookmarksInBookOrder (ReaderViewModel+Bookmarks.swift) orders bookmarks by chapter, then place in the chapter, then number, and Next Bookmark takes the first after the cursor and Previous the last before it, each still saying its own number. In one file of chapters, the clip end of chapter n is the start of chapter n + 1 and the last chapter has none (clipEnd(ofChapter:chapterUTF16Lengths:), ReaderViewModel+Playback.swift), so the file's own end finishes the book through onPlaybackFinished and handleEndOfBook(). stop() lets go of everything an audiobook waits for through stopAudioWaitingToPlay(because:), as pause() does, including a chapter whose files it waited to download, and counts what was under way as pause() does; finishStopping halts a minutes sleep timer's countdown at every stop. SpeechService.isUsableSpokenRange(_:inTextOfLength:) ignores a range the synthesizer reports that is negative, at NSNotFound, or past the utterance's text, with one SPOKEN_RANGE_IGNORED trace line, since NSString.substring(with:) raises an Objective-C exception for it.
+- Files: ViewModels/ReaderViewModel+Bookmarks.swift, ViewModels/ReaderViewModel+Playback.swift, Services/SpeechService.swift.
+
 ## Where Am I announcement
 <!-- id: where-am-i-announcement; keys: ; src: TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+Navigation.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift, TextMouth/Models/SummaryPress.swift, TextMouthProductionTests/FullSummaryReaderTests.swift, TextMouthProductionTests/MediaCommandPlaybackTests.swift, TextMouthProductionTests/IntegrationTestSupport.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Views/Reader/ReaderView.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/NowPlayingService.swift -->
 
@@ -164,16 +182,6 @@ Moving to another book on a command, and Next in Folder and Previous in Folder (
 - How others observe it: the announcements, through announceToVoiceOver(_:); the window the book shows in follows folderMoveWindowChoice. A later move ends the wait for an episode, which goes on downloading but starts nothing, and so does closing the reader (close() clears nextEpisodeWait).
 - Files: ViewModels/ReaderViewModel+BookMoves.swift, ViewModels/ReaderViewModel+FolderNavigation.swift, ViewModels/ReaderViewModel+SleepTimerHandOver.swift, ViewModels/ReaderViewModel+NextBookWindow.swift, ViewModels/ReaderViewModel+EpisodeDownload.swift, ViewModels/ReaderViewModel+ReadingList.swift, ViewModels/ReaderViewModel+Playback.swift, Models/FolderNavigationWording.swift, Models/KeyboardShortcut.swift, App/MenuCommands.swift.
 
-## Pause between chapters
-<!-- id: pause-between-chapters; keys: ; src: TextMouth/Models/ChapterPauses.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/AudioManifest.swift -->
-
-A pause between chapters (FR15): the silence a book keeps after a chapter before the next starts, while it plays on.
-
-- Owner: ReaderViewModel.chapterPauses (Models/ChapterPauses.swift), set as the book loads and never saved, supplied for now by ChapterPauses.betweenTracks through AudioTrackPlan, from a multi-file audiobook's manifest, and equal to another when it gives the same pause after every chapter, whatever list made it ([shared helpers](../shared-helpers.md)); and chapterStartAfterPause, the cancellable start of the next chapter. A later setting of pauses between headings (FR16) makes or combines a ChapterPauses at the same place.
-- Who may write it: +Playback's audioDidFinish begins the wait; stopWaitingOutChapterPause(because:) ends it, called from stopAudioWaitingToPlay, stop(), playAudioChapter(), and +LibraryUpdates' pauseAudioForPackageMove.
-- How others observe it: through isPlaybackUnderWay and isWaitingOutChapterPause.
-- Files: Models/ChapterPauses.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/ReaderViewModel.swift.
-
 ## Manifest edit while the book is open
 <!-- id: manifest-edit-while-book-open; keys: ; src: TextMouth/ViewModels/LibraryBookUpdates.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
@@ -193,11 +201,3 @@ Search in Book on a transcribed audiobook, and Go Back (FR05, October 23, 2026):
   - noTextToSearch(bookTitle:canTranscribe:hasTranscript:withheld:offersTranscription:) and announceNoTextToSearch(hasTranscript:offersTranscription:) take offersTranscription, true by default. The Mac passes nothing and says what it said. With false, no sentence names Transcribe Audio or tells the listener to transcribe again: "<title> has no transcript to search." and the stale transcript's reason alone.
   - BookSearchModel takes a debounceInterval, init(corpus:debounceInterval:announce:). Its default, BookSearchModel.debounceInterval, is the Mac's 250 milliseconds, and the Mac's one call (BookSearchView) passes none.
 - Files: ViewModels/ReaderViewModel+Bookmarks.swift, ViewModels/ReaderViewModel.swift, ViewModels/ReaderViewModel+Transcript.swift, Views/Reader/BookSearchView.swift, Views/Reader/ReaderView.swift, Services/TranscriptTextLoader.swift, Models/TranscriptTextIndex.swift. Tests: TranscriptSearchTests, in the reader-text area of Scripts/test/areas.conf.
-
-## Playback and bookmark fixes
-<!-- id: playback-bookmark-fixes; keys: ; src: TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/Services/SpeechService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
-
-Playback and bookmark fixes of October 31, 2026: the reader's choices that a review found wrong.
-
-- Owner: ReaderViewModel and SpeechService. bookmarksInBookOrder (ReaderViewModel+Bookmarks.swift) orders bookmarks by chapter, then place in the chapter, then number, and Next Bookmark takes the first after the cursor and Previous the last before it, each still saying its own number. In one file of chapters, the clip end of chapter n is the start of chapter n + 1 and the last chapter has none (clipEnd(ofChapter:chapterUTF16Lengths:), ReaderViewModel+Playback.swift), so the file's own end finishes the book through onPlaybackFinished and handleEndOfBook(). stop() lets go of everything an audiobook waits for through stopAudioWaitingToPlay(because:), as pause() does, including a chapter whose files it waited to download, and counts what was under way as pause() does; finishStopping halts a minutes sleep timer's countdown at every stop. SpeechService.isUsableSpokenRange(_:inTextOfLength:) ignores a range the synthesizer reports that is negative, at NSNotFound, or past the utterance's text, with one SPOKEN_RANGE_IGNORED trace line, since NSString.substring(with:) raises an Objective-C exception for it.
-- Files: ViewModels/ReaderViewModel+Bookmarks.swift, ViewModels/ReaderViewModel+Playback.swift, Services/SpeechService.swift.
