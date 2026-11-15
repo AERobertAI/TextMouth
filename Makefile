@@ -73,8 +73,8 @@ PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.r
 # compiled code earlier builds left there.
 TEST_DERIVED_DATA =
 
-# The branch that `make lint-tests` and `make lint-a11y` compare against: they
-# check the lines added since the merge-base of this ref and HEAD.
+# The branch that `make lint-tests`, `make lint-a11y`, and `make lint-docs` compare
+# against: they check what was added since the merge-base of this ref and HEAD.
 LINT_BASE = main
 
 # Set to 1, as `make check` sets it, to have the performance baselines tests
@@ -100,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -124,6 +124,7 @@ help:
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
 	@echo "  make lint-ogg   - Check the app lines this branch adds for audio readers that must refuse Ogg first"
+	@echo "  make lint-docs  - Check that no doc page has more rule violations than its baseline records (.claude/skills/doc-library/lint-baseline.json)"
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
@@ -323,6 +324,13 @@ lint-a11y:
 ## line ends with `// lint-ok: <how this path refuses Ogg>`. No building.
 lint-ogg:
 	@python3 Scripts/test/ogg-lint.py --base $(LINT_BASE)
+
+## Check the docs against docs/agents/writing-docs.md: no page may have more
+## violations of a rule than .claude/skills/doc-library/lint-baseline.json
+## records for it, and the baseline's totals may not rise above those at the
+## merge-base of LINT_BASE and HEAD. Prints what got worse. No building.
+lint-docs:
+	@python3 -I .claude/skills/doc-library/scripts/doclib.py lint --against $(LINT_BASE)
 
 ## Compile and link the app's sources for iOS with SwiftPM, which needs only
 ## the iOS SDK Xcode includes, not the iOS platform xcodebuild asks for
