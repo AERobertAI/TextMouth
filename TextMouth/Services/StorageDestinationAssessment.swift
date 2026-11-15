@@ -392,8 +392,11 @@ enum StorageChoice: Equatable {
     }
 
     /// The choice offered for `assessment`, with `current` the library in
-    /// use.
-    init(for assessment: StorageDestinationAssessment, current: CurrentLibrary) {
+    /// use. For a folder holding another copy of that library, `comparison`
+    /// is what comparing the two copies found (`LibraryCopyReader`), which
+    /// the confirmation says in words (`StorageWording.copyOfCurrentLibrarySentence`);
+    /// nil when no comparison was made.
+    init(for assessment: StorageDestinationAssessment, current: CurrentLibrary, comparison: LibraryComparisonOutcome? = nil) {
         let path = assessment.folder.path
         switch assessment.verdict {
         case .moveHere:
@@ -410,7 +413,7 @@ enum StorageChoice: Equatable {
         case .useLibrary(let found):
             let message = [
                 StorageWording.useSentence(of: path, current: current),
-                found.isCopyOfCurrentLibrary ? StorageWording.copyOfCurrentLibrarySentence : nil,
+                found.isCopyOfCurrentLibrary ? StorageWording.copyOfCurrentLibrarySentence(comparison) : nil,
                 StorageWording.useLocationSentence(assessment.location),
                 StorageWording.unsavedSentence(current),
             ]
@@ -510,9 +513,20 @@ enum StorageWording {
     }
 
     /// Said of a folder holding another copy of the library in use, by its
-    /// identity, such as the folder an earlier move left behind.
-    static let copyOfCurrentLibrarySentence =
-        "This folder holds another copy of the library TextMouth is using, which may not have its latest changes."
+    /// identity, such as the folder an earlier move left behind: which copy
+    /// is newer, from comparing the two (Compare Libraries), or that this
+    /// could not be told, and why. `comparison` is nil when none was made.
+    static func copyOfCurrentLibrarySentence(_ comparison: LibraryComparisonOutcome?) -> String {
+        switch comparison {
+        case .compared(let found):
+            return LibraryComparisonWording.newerCopySentence(found, reason: nil)
+        case .notComparable(let unread):
+            let reason = unread.first.map { LibraryComparisonWording.shortReason(for: $0) }
+            return LibraryComparisonWording.newerCopySentence(nil, reason: reason)
+        case .differentLibraries, .cancelled, nil:
+            return LibraryComparisonWording.newerCopySentence(nil, reason: nil)
+        }
+    }
 
     /// What starting a new library in the default location, `path`, does
     /// while the library in use isn't available.
