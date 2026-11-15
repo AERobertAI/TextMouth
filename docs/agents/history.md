@@ -814,6 +814,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From The reader
 
 - **Next Page and Previous Page commands:** The separate Next Page and Previous Page commands were removed at the user's request on November 5, 2026.
+- **A label on the reader's text (A11):** ReaderTextArea puts its label, ReaderTextArea.accessibilityLabel ("Book content"), on its ScrollView, never on the Text: a label on a SwiftUI Text replaces the text's accessibility value.
+  So a playing book's text read "Book content", and a paused one's, selectable, held the book's characters under that 12-character value, of which VoiceOver read twelve (A11).
 
 ## From Windows
 
