@@ -54,7 +54,7 @@
     "docs/developer/building-ios.md": {"line-length": 8},
     "docs/developer/building.md": {"line-length": 12},
     "docs/developer/third-party-code.md": {"line-length": 8},
-    "docs/user/changelog.md": {"line-length": 25},
+    "docs/user/changelog.md": {"line-length": 10},
     "docs/user/library-typing-and-speak-info.md": {"date": 1}
   }
 }

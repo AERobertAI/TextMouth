@@ -415,9 +415,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.4.0 (November 6, 2026)
 ### Kindle books in the KFX format
-- TextMouth reads Kindle books in the KFX format that are not copy-protected: .kfx, .kfx-zip, and .azw8 files, and an .azw file that holds KFX, as Kindle's apps name their KFX books. Each becomes a text book like any other, shown in the Library window as Kindle Book (KFX), so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
-- A book's chapters come from its own table of contents, and its headings keep the levels the book gives them. A book with a print page list has pages, so Page, Skip Forward, Skip Backward, and Go to Page… work as they do in an EPUB (see [Reader windows](reader-windows.md)). A page list that a machine made to approximate pages is not read as pages.
-- A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book with no flowing text, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, or a notebook, is refused with "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it." A Kindle Create package (.kpf) is refused with "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+- TextMouth reads Kindle books in the KFX format that are not copy-protected: .kfx, .kfx-zip, and .azw8 files, and an .azw file that holds KFX, as Kindle's apps name their KFX books.
+  Each becomes a text book like any other, shown in the Library window as Kindle Book (KFX), so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+- A book's chapters come from its own table of contents, and its headings keep the levels the book gives them. A book with a print page list has pages, so Page, Skip Forward, Skip Backward, and Go to Page… work as they do in an EPUB (see [Reader windows](reader-windows.md)).
+  A page list that a machine made to approximate pages is not read as pages.
+- A copy-protected book is refused, never read, and TextMouth never tries to remove the protection: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
+  A book with no flowing text, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, or a notebook, is refused with "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+  A Kindle Create package (.kpf) is refused with "This file is a Kindle Create package, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
 
 ### OpenDocument text and Word 2003 XML
 - TextMouth reads OpenDocument text (.odt, .ott) and Word 2003 XML with code of its own, on the Mac as on iPhone, where Apple's textutil does not exist. On the Mac, textutil now reads only Word 6 and Word 95 documents, which iPhone still refuses.
@@ -427,33 +431,42 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A picture, formula, or chart in an OpenDocument text is read as its description. Hidden text, tracked deletions, comments, headers, and footers are not read, and footnotes and endnotes follow the text.
 
 ### Every document reader reads the same
-- Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents now follow one rule: TextMouth reads what a person reading the document sees in its ordinary view. Hidden text is not read, and text hidden only on the web is. A tracked deletion is not read and an insertion is. Text a tracked change moved is read once, in its new place. A field's code is never read, and its result is.
-- Footnotes and endnotes follow the main text, in the order the file keeps them, with no reference marks (a Word 97-2003 document's custom mark, the symbol an author typed in place of a number, is still read). A note is read only if a person would see its reference. Comments, headers, and footers are not read.
+- Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents now follow one rule: TextMouth reads what a person reading the document sees in its ordinary view. Hidden text is not read, and text hidden only on the web is. A tracked deletion is not read and an insertion is.
+  Text a tracked change moved is read once, in its new place. A field's code is never read, and its result is.
+- Footnotes and endnotes follow the main text, in the order the file keeps them, with no reference marks (a Word 97-2003 document's custom mark, the symbol an author typed in place of a number, is still read). A note is read only if a person would see its reference.
+  Comments, headers, and footers are not read.
 - A text box is read right after the paragraph that holds its anchor, so a sentence stays whole. A Word 97-2003 document keeps its text boxes apart, and they follow its notes. A Word text box that the file writes twice is read once.
 - Rich text: text a tracked change deleted is no longer read aloud, footnotes and endnotes are read after the text, and a list inside a table cell is a list in an export.
 - Word documents: hidden text is no longer read, notes follow the text, and the marks of bold, italic, and strikethrough are never spoken. Some Word documents spoke an asterisk or a tilde where bold or italic text began or ended beside punctuation.
-- Word 97-2003: hidden text and tracked deletions are left out, and the formatting a fast-saved document keeps is read. A paragraph that Word numbers or bullets through its own lists is a real list item, with its number in the book's stored text, so an export shows it. The number is not read aloud, and a numbered heading reads its words alone, as in every format. A note whose reference is hidden or deleted is left out, and a few documents that were refused are read.
+- Word 97-2003: hidden text and tracked deletions are left out, and the formatting a fast-saved document keeps is read. A paragraph that Word numbers or bullets through its own lists is a real list item, with its number in the book's stored text, so an export shows it.
+  The number is not read aloud, and a numbered heading reads its words alone, as in every format. A note whose reference is hidden or deleted is left out, and a few documents that were refused are read.
 - Cancel in the import overlay now stops the reading of a rich text, Word, OpenDocument text, or Word 2003 XML document, or a Kindle book, partway through it, where it waited for the whole document before. A Word 97-2003 document ends at the next step after it is read.
 
 ### Older versions
-- Caution: TextMouth 0.2.1 to 0.3.2 opens a library that holds a KFX book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version. TextMouth 0.2.0 and earlier can't open such a library at all.
+- Caution: TextMouth 0.2.1 to 0.3.2 opens a library that holds a KFX book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version.
+  TextMouth 0.2.0 and earlier can't open such a library at all.
 - The first time this version opens, every rich text, rich text with attachments, Word 97-2003, Word, OpenDocument text, and Word 2003 XML book is read again once, for what the readers now find. Your place follows its words, and a book whose text you changed with Edit Text keeps that text.
 
 ## 0.3.2 (November 6, 2026)
 ### A library in the cloud
-- A library in Google Drive, iCloud Drive, or Dropbox now opens by itself when some of its files aren't on this Mac. TextMouth gets them from the sync service, shows Getting Your Library while it does, and opens the library when they arrive. It used to stop on Library Not Available until you chose Try Again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A library in Google Drive, iCloud Drive, or Dropbox now opens by itself when some of its files aren't on this Mac. TextMouth gets them from the sync service, shows Getting Your Library while it does, and opens the library when they arrive.
+  It used to stop on Library Not Available until you chose Try Again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 - If it can't get them, TextMouth says so and says what to check, after trying again for a little while. Books you opened from Finder while waiting open with the library, or are named if they couldn't.
 - TextMouth also gets your settings, statistics, substitutions, and feed records in the background when a library in the cloud opens, and never saves over a copy still in the cloud.
 - TextMouth can no longer freeze at launch waiting for a folder that is only in the cloud.
 ### Commands
-- The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-windows.md)). A key you gave either of those commands is dropped the next time TextMouth opens, and your other shortcuts are kept.
+- The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-windows.md)).
+  A key you gave either of those commands is dropped the next time TextMouth opens, and your other shortcuts are kept.
 
 ## 0.3.1 (November 5, 2026)
 ### Rich text and Word documents
-- TextMouth reads rich text (.rtf), rich text with attachments (.rtfd), and Word 97-2003 documents and templates (.doc, .dot) with code of its own, on the Mac as on iOS. Apple's textutil tool read them on the Mac before, and does not exist on iOS (see [What TextMouth reads](what-textmouth-reads.md)).
+- TextMouth reads rich text (.rtf), rich text with attachments (.rtfd), and Word 97-2003 documents and templates (.doc, .dot) with code of its own, on the Mac as on iOS.
+  Apple's textutil tool read them on the Mac before, and does not exist on iOS (see [What TextMouth reads](what-textmouth-reads.md)).
 - A document's headings are the ones its author set: a paragraph in a heading style, or with an outline level, is a heading at that level, where textutil lost the styles and guessed from font sizes. A document that names no heading still gets the guess from font sizes and bold.
-- Pages that textutil lost are found. In rich text, a paragraph set to start a page and a section that starts a page begin pages, as a page break does. In a Word 97-2003 document, a paragraph set to start a page, directly or by its style, and a section that starts a page begin pages, as the author's page breaks do (see [Reader windows](reader-windows.md)).
-- A Word field's code, which textutil sometimes read aloud as words such as TITLE and MERGEFORMAT, is never read, only the field's result. A Word document's headers are no longer read at the end of the book. Text a tracked change deleted is left out, and the footnotes and endnotes follow the main text.
+- Pages that textutil lost are found. In rich text, a paragraph set to start a page and a section that starts a page begin pages, as a page break does.
+  In a Word 97-2003 document, a paragraph set to start a page, directly or by its style, and a section that starts a page begin pages, as the author's page breaks do (see [Reader windows](reader-windows.md)).
+- A Word field's code, which textutil sometimes read aloud as words such as TITLE and MERGEFORMAT, is never read, only the field's result. A Word document's headers are no longer read at the end of the book.
+  Text a tracked change deleted is left out, and the footnotes and endnotes follow the main text.
 - Hidden text in a rich text document is not read, and neither are its headers, footers, and footnotes. The words in a drawing's text box are read.
 - A rich text file that textutil refused as damaged, such as one that begins {\rtf with no version number, is read.
 - Rich text in a code page of two-byte characters, such as Japanese, Chinese, or Korean, is read whole.
@@ -463,14 +476,17 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.3.0 (November 4, 2026)
 ### Kindle books
-- TextMouth reads Kindle books that are not copy-protected, in the MOBI format: .mobi, .prc, and .azw files in the older MOBI 6 format, and the MOBI 6 part of a .mobi made for both formats, as many Kindle books are. Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+- TextMouth reads Kindle books that are not copy-protected, in the MOBI format: .mobi, .prc, and .azw files in the older MOBI 6 format, and the MOBI 6 part of a .mobi made for both formats, as many Kindle books are.
+  Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
 - A book's chapters come from its own table of contents, the entries under a chapter being its headings, and a book with no table of contents is a chapter for each page break its maker wrote. What a book's head says about it is never read aloud.
 - Open Book… offers Kindle books, and Finder offers TextMouth in the Open With menu for them.
-- A copy-protected book is refused, never read: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book only in the newer KF8 format, as an .azw3 is, is refused for now, with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+- A copy-protected book is refused, never read: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book only in the newer KF8 format, as an .azw3 is, is refused for now, with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
+  [Adding books](adding-books.md) gives every sentence.
 - Kindle books have no pages yet.
 
 ### Older versions
-- Caution: TextMouth 0.2.1 to 0.2.6 opens a library that holds a Kindle book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version. TextMouth 0.2.0 and earlier can't open such a library at all.
+- Caution: TextMouth 0.2.1 to 0.2.6 opens a library that holds a Kindle book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version.
+  TextMouth 0.2.0 and earlier can't open such a library at all.
 
 ## 0.2.6 (November 4, 2026)
 ### Reading
