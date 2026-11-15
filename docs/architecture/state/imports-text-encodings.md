@@ -45,6 +45,7 @@ The steps: TextFileDecoder.decode(_:fileName:format:policy:) finds the encoding 
    (about 81,000 windows of TestData, 12,000 of the sentences in 14 encodings) (TextFileDecoderTests).
    It comes before UTF-8 because UTF-16 of ASCII text is valid UTF-8 too, and so is Cyrillic UTF-16, read as control characters.
    The basis is unmarkedUnicode.
+
 ### The steps after the unmarked Unicode rules
 <!-- id: steps-after-unmarked-unicode; keys: ISO-2022-JP, declaration, valid UTF-8, fallback, Windows-1252, decodeBytes; src: TextMouth/Parsers/TextFileDecoder.swift, TextMouth/Parsers/TextEncodingGuesser.swift, TextMouthProductionTests/TextFileDecoderTests.swift -->
 
