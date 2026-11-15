@@ -22,7 +22,7 @@
     "docs/architecture/state/imports-audio.md": {"date": 1, "line-length": 27, "sentences-per-line": 12},
     "docs/architecture/state/imports-braille-tables.md": {"date": 5, "line-length": 42, "sentences-per-line": 25},
     "docs/architecture/state/imports-braille.md": {"date": 4, "line-length": 29, "sentences-per-line": 14},
-    "docs/architecture/state/imports-daisy.md": {"date": 1, "line-length": 3, "sentences-per-line": 1},
+    "docs/architecture/state/imports-daisy.md": {"date": 1, "line-length": 3},
     "docs/architecture/state/imports-duplicates.md": {"date": 2, "line-length": 18, "sentences-per-line": 9},
     "docs/architecture/state/imports-kindle.md": {"date": 4, "line-length": 30, "sentences-per-line": 30},
     "docs/architecture/state/imports-office-xml.md": {"date": 1, "line-length": 16, "sentences-per-line": 12},
