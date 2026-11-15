@@ -93,7 +93,7 @@ Speech, for text books.
   It waits for directStartWatchdogColdRequiredTicks (directStartWatchdogColdTimeout, 10 s, so about 10.5 s) instead when, as the watchdog began, the synthesizer had started no utterance since it was made.
   Whether it had is directSynthHasStarted, false for the service's first synthesizer and cleared by replaceDirectSynthesizer(after:).
   The recovery is a fresh synthesizer, then rendered audio or direct speech from the utterance's start.
-  It recovers at most directStartWatchdogRecoveriesPerPlace (2) times at one place, the utterance's start offset (startStallRecoveries, forgotten when an utterance starts or a word of it is heard, at stop(), and as speech pauses after the stalls; a stall at another place counts from one again).
+  The watchdog recovers at most directStartWatchdogRecoveriesPerPlace (2) at one place, the utterance's start offset (startStallRecoveries, forgotten when an utterance starts or a word of it is heard, at stop(), and as speech pauses after the stalls; a stall at another place counts from one again).
   The next stall there calls pauseAfterStalls(at:because:) with .neverStarted (DIRECT_START_STALLED): a fresh synthesizer, speech paused with the place in pendingDirectSeekOffset and the cursor there, then onSpeechStalled.
   The reader's showPlaybackPausedAfterStartStalls() settles the pause through settleStopMadeBySpeech(), which showPlaybackStoppedAfterRefusal(_:) shares, logs PLAYBACK_PAUSED_AFTER_START_STALLS, and announces SpeechService.voiceDidNotStartAnnouncement; with no reader, speech announces it.
   The playback watchdog's idle recovery (recoverFromIdleDirectSynthesizer(watchedUtteranceID:), DIRECT_WATCHDOG_RECOVERY) is capped at directIdleWatchdogRecoveriesPerPlace (2) per place, whichever of its branches makes the recovery.
@@ -106,8 +106,8 @@ Speech, for text books.
 <!-- id: speech-refused-text; keys: refusal; src: TextMouth/Services/SpeechService.swift -->
 
   A cancel the service did not ask for (DIRECT_CANCEL_UNEXPECTED), of the live direct utterance, playing or paused, or of a sleep fade's segment the fade still holds, comes from the engine's refusal of a text, which it raises before the first word.
-  Every stop of the service's lets go of both before it stops the synthesizer.
   So the playback watchdog, which the utterance's start would arm, never looks, and the start watchdog would act only once its timeout passed.
+  Every stop of the service's lets go of both before it stops the synthesizer.
   It replaces directSynth first, whatever follows (replaceDirectSynthesizer(after:), DIRECT_SYNTH_REPLACED), since a synthesizer that refused never speaks again.
   For the live chunk, recoverFromCancelledDirectUtterance(_:) then plays the engine's audio of this speech, when renderedAudioMatchesSpeech, from the last word reported within the chunk or from its start (switchToRenderedAudio(at:), DIRECT_RETRY_ENGINE).
   Otherwise, or when the engine does not start (DIRECT_RETRY_ENGINE_FAILED), it speaks again from there with the rest of the chunk strictly guarded (takeRetry(from:to:), DIRECT_RETRY), once for each place until speech passes it.
@@ -239,7 +239,7 @@ Now Playing and media keys.
 
 - How others observe it: remote commands go to the active owner, the reader that is playing, or else the focused reader (focusedOwnerID, above), but Play to the focused reader first.
   MediaPlayer doesn't say which thread it calls a command's handler on, so the handlers are made outside the main actor (remoteCommandHandler(for:of:)), where Swift 6's check that main-actor code runs on the main thread can't stop the app.
-  Its receiveRemoteCommand(_:by:) accepts a command at once on the main thread, and from any other thread queues it to the main queue, in the order it came, and tells MediaPlayer it succeeded.
+  The method receiveRemoteCommand(_:by:) accepts a command at once on the main thread, and from any other thread queues it to the main queue, in the order it came, and tells MediaPlayer it succeeded.
   Everything the system's Now Playing center is told goes through one writer (writeSystemNowPlaying), which a test can replace to see it.
   The skip and track commands go to the active owner (dispatchSkipCommandToActiveOwner), whose session's handlers call the reader's skipBackward() and skipForward(), as its keyboard shortcuts and playback bar do.
   The reader's performSkip(unit:forward:) plays a finished book again from where a backward skip lands, as a skip during playback plays on, with Play's own start sound after the skip's, but only while its reader is the active owner (NowPlayingSession.isActiveOwner).
