@@ -565,6 +565,7 @@ targets:
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
       - TextMouthProductionTests/CollectionTestSupport.swift
+      - TextMouthProductionTests/CountWordingTests.swift
       - TextMouthProductionTests/DOCXMalformedXMLTests.swift
       - TextMouthProductionTests/DOCXStructureTests.swift
       - TextMouthProductionTests/DOCXTestPackages.swift

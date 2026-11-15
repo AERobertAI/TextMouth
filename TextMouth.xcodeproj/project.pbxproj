@@ -1725,6 +1725,7 @@
 		A4ED940DD5A6B88BEAB0AEA8 /* WordDocumentLists.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6D9D585824EEF9766C2BD9 /* WordDocumentLists.swift */; };
 		A4FC4B62C8B7C47285F7E015 /* PhoneLibraryChoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = E11C5A2D10EF2686E2F34511 /* PhoneLibraryChoices.swift */; };
 		A50CDB0AC00207B8AAC4D1FF /* KFXTargets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34445A07A126D5B9A44394C7 /* KFXTargets.swift */; };
+		A544BAE2AC40E6FEC6B99FEB /* CountWordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A3E0B35F8C458F2AF8B529 /* CountWordingTests.swift */; };
 		A550CB617FA4E87C614C1365 /* ReaderViewModel+LibrarySearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A874D2DD0E43640538D44FA1 /* ReaderViewModel+LibrarySearch.swift */; };
 		A573A0CD337BD9B32E904EB9 /* DAISYMalformedXMLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C5C1211EE29A6C08B383087 /* DAISYMalformedXMLTests.swift */; };
 		A587DD571563B54E66B762FB /* PhoneControlKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A7095BDCB2B1AF0F16004A /* PhoneControlKind.swift */; };
@@ -7442,6 +7443,7 @@
 				1DF5B6E368E3F8BAD454E37D /* CloudStorageContractTests.swift in Sources */,
 				B5FFAD269F00FE6653A3A69D /* CloudTestDoubles.swift in Sources */,
 				B1B44B90EDB852B915CBE04E /* CollectionTestSupport.swift in Sources */,
+				A544BAE2AC40E6FEC6B99FEB /* CountWordingTests.swift in Sources */,
 				FECD3535843D6C9409821927 /* DOCXMalformedXMLTests.swift in Sources */,
 				E727D84BC57D67A741380FEA /* DOCXStructureTests.swift in Sources */,
 				E90D8B45B24C5CE59102D7AD /* DOCXTestPackages.swift in Sources */,
