@@ -13,15 +13,19 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
 - **On this Mac:** merging the requests, pushing, waiting, reading the result.
   A remote train takes no heavy-work lock and runs no iOS census (the run builds the iPhone app on GitHub instead).
   A push waits first for any run already on `TestBuild` to end (`github_run.py`, up to 125 minutes), because a newer push cancels the run before it; so a train, `run_suite.py --remote`, and a run sent by hand take turns, and none cuts off another's.
-  Each push also holds one exclusive lock (`flock` on `textmouth-testbuild-push.lock` in the repository's git common folder, so every worktree shares it) from before its idle check until GitHub lists the run of its own commit, about 90 seconds at most: GitHub takes a few seconds to register a run, and a push whose idle check came in that gap found nothing, pushed, and cancelled the first.
+  Each push also holds one exclusive lock (`flock` on `textmouth-testbuild-push.lock` in the repository's git common folder, so every worktree shares it) from before its idle check until GitHub lists the run of its own commit, about 90 seconds at most.
+  GitHub takes a few seconds to register a run, and a push whose idle check came in that gap found nothing, pushed, and cancelled the first.
   The train loop runs its own copy of the script until it is restarted, so a copy that was started before the lock was merged does not take it.
   A train leaves 5 minutes after the first waiting request.
-- **On GitHub:** generating the project, building, and running the tests, in up to four jobs at once ("shards"), and, beside them, building the iPhone app and its two test bundles for the iOS Simulator and running them there: the unit tests (`TextMouthiOSTests`) and the interface tests (`TextMouthiOSUITests`, pressing Play and typing).
+- **On GitHub:** generating the project, building, and running the tests, in up to four jobs at once ("shards"), and, beside them, building the iPhone app and its two test bundles for the iOS Simulator and running them there:
+  - the unit tests (`TextMouthiOSTests`) and
+  - the interface tests (`TextMouthiOSUITests`, pressing Play and typing).
+
   The two bundles run in one `xcodebuild` run.
 - **Still on this Mac:** the type-checks (`make typecheck-mac`, `make typecheck-ios`), the lints, `make check`, anything that needs the development Mac's voices, accessibility session, or signing identity, and the tests the runner leaves out (below).
 
 ## How a run goes
-<!-- id: how-run-goes; keys: CI, matrix, workflow_call, build-for-testing, simulator, artifact, xcresult, xcodegen; src: TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/run_suite.py, .github/workflows/tests.yml, .github/workflows/test-build.yml, .github/workflows/check.yml, Scripts/agents/class-times.json, Scripts/agents/plan_shards.py, Scripts/agents/run-on-runner.py, Scripts/agents/test_command.py, Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, Scripts/agents/merge_shards.py, Scripts/test/run-area.py, project.yml -->
+<!-- id: how-run-goes; keys: CI, matrix, workflow_call, build-for-testing, simulator, artifact, xcresult, xcodegen; src: Scripts/agents/run_suite.py, .github/workflows/tests.yml, .github/workflows/test-build.yml, .github/workflows/check.yml, Scripts/agents/class-times.json, Scripts/agents/plan_shards.py, Scripts/agents/run-on-runner.py, Scripts/agents/test_command.py, Scripts/test/run-area.py -->
 
 1. **The request.**
    A train or a suite pushes a commit of the tree to test plus `.github/test-request.json`: `areas`, `classes`, `full`, and `shards`.
@@ -30,16 +34,29 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
    `Scripts/agents/plan_shards.py` reads the request and says how many test jobs to start, and whether the iPhone build is wanted (`"ios": false` leaves it out) and whether the build starts from nothing (`"cold": true`).
    The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (the gate on main) both call.
 3. **Test** (macOS, one job per shard).
-   Each job restores the last run's build products from the cache, restarts the audio service, generates the project, and runs its share of the classes through `Scripts/agents/run-on-runner.py`, which takes the same test command the train and `run_suite.py` use from `Scripts/agents/test_command.py` and adds a 2-minute limit for any one test and the tests left out.
+   - Each job restores the last run's build products from the cache,
+   - restarts the audio service,
+   - generates the project, and
+   - runs its share of the classes through `Scripts/agents/run-on-runner.py`, which takes the same test command the train and `run_suite.py` use from `Scripts/agents/test_command.py` and adds a 2-minute limit for any one test and the tests left out.
+
    Each uploads its log and summary as `shard-results-N`.
+
+### The iPhone job
+<!-- id: run-iphone-job; keys: build-for-testing, simulator, iPhone 17, iOS 26.0.1, xcodebuild, downloadPlatform, ios-ui-summary; src: Scripts/agents/run-ios-build.py, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/ios_ui_tests.py, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, project.yml -->
+
 4. **The iPhone app** (macOS, beside the shards).
-   `Scripts/agents/run-ios-build.py` runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination: it compiles the app and its two test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests`, without signing (the scheme's test action builds Debug, which is why the two unit tests inside `#if DEBUG` are there).
+   `Scripts/agents/run-ios-build.py` runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination.
+   It compiles the app and its two test bundles, `TextMouthiOSTests` and `TextMouthiOSUITests`, without signing (the scheme's test action builds Debug, which is why the two unit tests inside `#if DEBUG` are there).
    The runner image's Xcode 26.0.1 lists the iOS SDKs but says "iOS 26.0 is not installed", so the job first downloads the platform (`xcodebuild -downloadPlatform iOS`, about 3 minutes).
    It uploads `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`.
    A build that does not compile is a result, not a failure of the job.
    - **The iPhone tests.**
      Then `Scripts/agents/run-ios-ui-tests.py` runs `TextMouthiOSTests` (the 19 unit tests) and `TextMouthiOSUITests` (the interface tests) with one `xcodebuild test-without-building`, in an iPhone 17 simulator on the iOS 26.0.1 runtime that the job downloaded (the platform download leaves an iPhone 17 ready; the script makes one if it is missing).
-     It does so when the request asks for them (`ios_ui_tests.py` decides): every full suite, a request for the area `phone` or `all`, or a request that names a class of either bundle in `classes` (`ReaderUITests`, `SearchUITests`, `PhoneValueRowTests`, and so on; the Mac's runner moves those names aside, since `run-area.py` does not know them, and a request that names classes runs those classes alone, each in its own bundle).
+     It does so when the request asks for them (`ios_ui_tests.py` decides):
+     - every full suite,
+     - a request for the area `phone` or `all`, or
+     - a request that names a class of either bundle in `classes` (`ReaderUITests`, `SearchUITests`, `PhoneValueRowTests`, and so on; the Mac's runner moves those names aside, since `run-area.py` does not know them, and a request that names classes runs those classes alone, each in its own bundle).
+
      One run for both bundles saves xcodebuild's start-up, 2 to 2.7 minutes.
      `"ios": false` leaves the whole iPhone job out, and `"ios_ui": false` only the tests.
      Before the first test it sets the simulator's keyboard preferences (the one-time swipe-typing page off, no prediction), and the job restarts the audio service as the shards do.
@@ -50,12 +67,31 @@ Building.md (Builds on GitHub Actions) has the design; this section is for readi
      The script exits 1, the job turns red, and the later steps still run; the join keeps the Mac tests' verdict from `run-summary.txt`, which no iPhone test can change.
      A bundle that gives back fewer results than its asked classes hold (a unit test missing, or the whole unit bundle, though xcodebuild said it succeeded) fails the run too, with a reason that names the bundle: each bundle's count is checked on its own, from the sources (`ios_ui_tests.counts_by_bundle`, which reads each folder's Swift files and subfolders as `project.yml` compiles them; the methods inside `#if DEBUG` count, and so do tests written with attributes (`@MainActor func testA()`) or in an extension of a test class; a Python test fails if any `func test` in either folder is left uncounted, which is how a test class that inherits another test class, not `XCTestCase` or `TextMouthUITestCase` itself, would show up, since the counter recognizes only those two parents).
      The run's page (`summary.md`), a train's result, and `run_suite.py --remote` show `iOS UI tests: ...`, the Executed line followed by how many unit tests and how many interface tests ran, `iOS UI test failures: N`, and each failed test.
+
+### Collecting and reading the results
+<!-- id: run-collect-results; keys: merge_shards, test-build-results, run-summary, artifact, summary.md, Run on GitHub; src: Scripts/agents/merge_shards.py, Scripts/agents/run_suite.py -->
+
 5. **Collect** (Linux, seconds).
-   `Scripts/agents/merge_shards.py` joins the shards (and the iPhone job's five files) into one `test-build-results` artifact: `run-summary.txt` (the form `summarize` reads: the Executed line, each FAILED and ERROR line, a last line of PASSED or FAILED), `run.log` (the shards' logs one after another), `summary.md`, `request.json`, `ios-summary.txt`, `ios-errors.txt`, `ios.log`, `ios-ui-summary.txt`, and `ios-ui.log`.
+   `Scripts/agents/merge_shards.py` joins the shards (and the iPhone job's five files) into one `test-build-results` artifact:
+   - `run-summary.txt` (the form `summarize` reads: the Executed line, each FAILED and ERROR line, a last line of PASSED or FAILED),
+   - `run.log` (the shards' logs one after another),
+   - `summary.md`,
+   - `request.json`,
+   - `ios-summary.txt`,
+   - `ios-errors.txt`,
+   - `ios.log`,
+   - `ios-ui-summary.txt`, and
+   - `ios-ui.log`.
+
    The run fails if any shard failed or reported nothing.
    The iPhone build never decides that: it is shown beside the verdict.
 6. **The Mac** finds the run by its commit's SHA, waits for it (up to 125 minutes), downloads that artifact into the train's folder, and reports from it as for a local train.
-   The result file of each agent carries a line "Run on GitHub" with the run's link, a line "iOS build of the merged tree on GitHub" with the iPhone build's verdict, the iOS errors in the files its branch changes (as a Mac train's census listed them), and, when the run was asked for the iPhone tests, a line "iPhone tests on GitHub" with their verdict, Executed line and the count of each bundle, and the failures in the iPhone test classes (unit or interface) the agent asked for.
+   The result file of each agent carries
+   - a line "Run on GitHub" with the run's link,
+   - a line "iOS build of the merged tree on GitHub" with the iPhone build's verdict,
+   - the iOS errors in the files its branch changes (as a Mac train's census listed them), and,
+   - when the run was asked for the iPhone tests, a line "iPhone tests on GitHub" with their verdict, Executed line and the count of each bundle, and the failures in the iPhone test classes (unit or interface) the agent asked for.
+
    `run_suite.py --remote` prints the same verdicts, the files the errors are in with how many errors each holds, and each failed iPhone test, unit or interface, with its bundle.
 
 ## Reading a run
@@ -95,7 +131,8 @@ The runner is a virtual machine: macOS 26.7.2 on arm64 (this Mac runs 26.3.1), n
 - **Tests left out.**
   `Scripts/agents/runner-skips.conf` lists what the runner does not run: 103 entries, each one test, of about 11,960 tests.
   Each is `Class.testName  # reason`, and each reason says why the test cannot work on the runner and that it still runs on this Mac.
-  Most read or play audio, which never returns there (the spindump of a hung one shows `AVAssetReader`'s `copyNextSampleBuffer` waiting for ever) or fails; the rest need something a virtual machine lacks (goldens recorded on another macOS, a Mac model identifier, labelled fields in an accessibility session, Keyboard navigation) or are the flaky ones below.
+  Most read or play audio, which never returns there (the spindump of a hung one shows `AVAssetReader`'s `copyNextSampleBuffer` waiting for ever) or fails.
+  The rest need something a virtual machine lacks (goldens recorded on another macOS, a Mac model identifier, labelled fields in an accessibility session, Keyboard navigation) or are the flaky ones below.
   A request that says `"no_skips": true` (sent by hand with `github_run.py`; no train or suite sets it) runs with none of the skips, as a probe of which entries are still needed.
   The file is read strictly: a line that does not parse stops the job, and `test_run_on_runner.py` checks that each entry names a test of its own class, that its reason says the Mac still runs it, and that version control keeps the file.
   A run's `summary.md` says how many entries it left out.
