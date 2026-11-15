@@ -55,7 +55,7 @@
     "docs/developer/building.md": {"line-length": 12},
     "docs/developer/testing-formats.md": {"line-length": 17},
     "docs/developer/testing-github.md": {"line-length": 30},
-    "docs/developer/testing-goldens.md": {"line-length": 19},
+    "docs/developer/testing-goldens.md": {"line-length": 9},
     "docs/developer/testing-iphone-audit.md": {"line-length": 6},
     "docs/developer/testing-iphone.md": {"line-length": 7},
     "docs/developer/testing-tools.md": {"line-length": 7},
