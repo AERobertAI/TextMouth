@@ -488,10 +488,9 @@ final class TranscriptExportTests: XCTestCase {
     func testThePickersLabels() {
         XCTAssertEqual(BookExportWording.convertToLabel(for: .transcript), "Convert transcript to")
         XCTAssertEqual(BookExportWording.convertToLabel(for: .markdown), "Convert to")
-        // The headings' and bookmarks' pickers have names of their own too
-        // (FMT24, FMT06).
+        // The headings' picker has a name of its own too (FMT24); the
+        // bookmarks, of one format, have no picker (FMT06).
         XCTAssertEqual(BookExportWording.convertToLabel(for: .headings), "Convert headings to")
-        XCTAssertEqual(BookExportWording.convertToLabel(for: .bookmarks), "Convert bookmarks to")
         for kind in BookExportKind.allCases where kind != .transcript && !kind.writesChapterList {
             XCTAssertEqual(BookExportWording.convertToLabel(for: kind), BookExportWording.convertToLabel, "\(kind)")
         }

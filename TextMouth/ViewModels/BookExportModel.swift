@@ -440,9 +440,13 @@ final class BookExportModel: ObservableObject, Identifiable {
             return transcriptConversionChoices
         }
         // An audiobook's headings and bookmarks are always written in a
-        // format chosen here (FMT24, FMT06), the first until another is.
+        // format chosen here (FMT24, FMT06), the first until another is. A
+        // kind of one format (bookmarks, as Audacity labels) has no pop-up:
+        // its checkbox names the format ("Bookmarks as Audacity labels").
         if let source = kind.chapterListSource {
-            return ChapterListFormat.formats(for: source).map { format in
+            let formats = ChapterListFormat.formats(for: source)
+            guard formats.count > 1 else { return [] }
+            return formats.map { format in
                 BookExportConversionChoice(
                     id: format.choiceID,
                     name: format.name,

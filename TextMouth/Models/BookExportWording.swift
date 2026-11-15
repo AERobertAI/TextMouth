@@ -58,14 +58,14 @@ enum BookExportWording {
     static let convertToLabel = "Convert to"
 
     /// The name of the Convert to picker beside the checkbox of `kind`:
-    /// "Convert transcript to" beside Transcript (FMT23), so the two pickers
-    /// never sound alike when one export shows both, and `convertToLabel`
-    /// beside any other.
+    /// "Convert transcript to" beside Transcript (FMT23) and "Convert
+    /// headings to" beside Headings (FMT24), so no two pickers sound alike
+    /// when one export shows them, and `convertToLabel` beside any other.
+    /// (Bookmarks, of one format, have no picker.)
     static func convertToLabel(for kind: BookExportKind) -> String {
         switch kind {
         case .transcript: return "Convert transcript to"
         case .headings: return "Convert headings to"
-        case .bookmarks: return "Convert bookmarks to"
         default: return convertToLabel
         }
     }

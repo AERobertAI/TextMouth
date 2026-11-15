@@ -338,8 +338,9 @@ final class ChapterListExportTests: XCTestCase {
         XCTAssertEqual(BookExportKind.allCases.filter { BookExportConversion.chapterList(.audacityLabels, of: .bookmarks).applies(to: $0) }, [.bookmarks])
     }
 
-    /// A book with bookmarks lists a Bookmarks checkbox, whose picker lists
-    /// Audacity labels alone, named as its own.
+    /// A book with bookmarks lists a Bookmarks checkbox with no pop-up beside
+    /// it, Audacity labels being its one format, which its label and hint
+    /// name.
     func testTheDialogListsBookmarksForABookWithThem() async throws {
         let world = try makeIntegrationWorld("Bookmarks Dialog")
         let book = try world.makeSilentAudioFileBook(title: "Weir", duration: 2)
@@ -351,7 +352,8 @@ final class ChapterListExportTests: XCTestCase {
         await model.load()
 
         XCTAssertEqual(model.choices.map(\.kind), [.audio, .bookmarks])
-        XCTAssertEqual(model.conversionChoices(for: .bookmarks).map(\.name), ["Audacity labels"])
+        // One format needs no pop-up of one choice: the checkbox names it.
+        XCTAssertEqual(model.conversionChoices(for: .bookmarks), [])
         model.setChecked(true, for: .bookmarks)
         XCTAssertEqual(model.conversions[.bookmarks], .chapterList(.audacityLabels, of: .bookmarks))
         let bookmarks = try XCTUnwrap(model.choices.first { $0.kind == .bookmarks })
@@ -360,7 +362,6 @@ final class ChapterListExportTests: XCTestCase {
             model.hint(for: .bookmarks),
             "Each bookmark's name and place, as Audacity labels, for a book whose audio is one file."
         )
-        XCTAssertEqual(BookExportWording.convertToLabel(for: .bookmarks), "Convert bookmarks to")
     }
 
     // MARK: - Helpers
