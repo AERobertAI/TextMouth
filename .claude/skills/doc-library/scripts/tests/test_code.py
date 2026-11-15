@@ -76,6 +76,12 @@ class CodeTests(DocLibCase):
         _status, lines, _err = self.code("docs/p.md#P")
         self.assertEqual(lines, ["TextMouth/Services/Saver.swift:1-3  cited (text)  file"])
 
+    def test_a_backticked_file_name_is_a_path_and_not_a_code_name(self) -> None:
+        # ``Saver.swift`` has the shape of a dotted name, but its declaration of Saver is not listed.
+        self.write_tree({"docs/p.md": "# P\n\nSee `Saver.swift`.\n"})
+        _status, lines, _err = self.code("docs/p.md#P")
+        self.assertEqual(lines, ["TextMouth/Services/Saver.swift:1-3  cited (text)  file"])
+
     def test_a_missing_citation_is_listed_once(self) -> None:
         self.write_tree({"docs/p.md": "# P\n\n<!-- id: p; src: a/b.swift -->\nFiles: a/b.swift\n"})
         # a/b.swift is no repository path in a Files: line (its first folder is unknown), the src entry is.

@@ -39,16 +39,6 @@ from swiftindex import SwiftIndex
 # Where the allowlist is, from the repository's root.
 ALLOWLIST_PATH = ".claude/skills/doc-library/stale-allowlist.txt"
 
-# The last part of a dotted name that makes it a file name (``Info.plist``), not a code name.
-FILE_EXTENSIONS = frozenset({
-    "plist", "md", "json", "txt", "yml", "yaml", "xml", "html", "css", "js", "py", "sh", "swift",
-    "h", "m", "mm", "c", "strings", "entitlements", "xcconfig", "xcodeproj", "pbxproj", "xcscheme",
-    "storyboard", "xib", "xcassets", "xcstrings", "csv", "log", "zip", "epub", "mobi", "azw3",
-    "pdf", "rtf", "doc", "docx", "ogg", "mp3", "m4a", "m4b", "wav", "png", "jpg", "jpeg", "gif",
-    "svg", "icns", "app", "dmg", "lock", "toml", "ini", "cfg", "conf", "db", "sqlite", "brf",
-    "brl", "ctb", "utb", "dis", "cti",
-})
-
 # The two kinds of stale reference (the ``kind`` of a ``StaleItem``).
 KIND_PATH = "path"
 KIND_NAME = "name"
@@ -158,10 +148,10 @@ def unknown_part(written: str, repo: RepoFiles, index: SwiftIndex, allow: Allowl
     call's name must be a function or a type (an initializer). Both can be
     allowlisted. Other lowercase parts are not checked.
     """
+    if swiftindex.is_file_name(written):
+        return None
     called = swiftindex.is_call(written)
     parts = written.split("(", 1)[0].lstrip(".").split(".")
-    if len(parts) > 1 and not called and parts[-1].lower() in FILE_EXTENSIONS:
-        return None
     if len(parts) == 1 and names_repo_file(parts[0], repo):
         return None
     # A whole name the allowlist knows (a bundle identifier, ``com.*``) needs no part checked.

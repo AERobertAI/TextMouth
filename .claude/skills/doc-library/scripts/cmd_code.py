@@ -91,8 +91,10 @@ def section_hits(page: Page, section: Section, repo: RepoFiles, index: SwiftInde
     """All the hits of ``code`` for one section: its cited paths, then its named declarations."""
     yield from path_hits(sectionrefs.section_citations(page, section, repo), repo)
     blocks = sectionrefs.section_blocks(page, section)
-    # dict keeps the order of first mention while dropping repeats.
-    names = list(dict.fromkeys(m.name for m in swiftindex.mentions(blocks, index)))
+    # A backticked file name is a path, cited above, not a code name. dict keeps the order of
+    # first mention while dropping repeats.
+    names = list(dict.fromkeys(m.name for m in swiftindex.mentions(blocks, index)
+                               if not swiftindex.is_file_name(m.name)))
     yield from declaration_hits(names, index)
 
 

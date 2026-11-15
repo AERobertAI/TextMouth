@@ -63,6 +63,16 @@ _MODIFIERS = frozenset({
     "optional", "indirect", "prefix", "postfix", "infix", "async", "actor",
 })
 
+# The last part of a dotted name that makes it a file name (``Info.plist``), not a code name.
+FILE_EXTENSIONS = frozenset({
+    "plist", "md", "json", "txt", "yml", "yaml", "xml", "html", "css", "js", "py", "sh", "swift",
+    "h", "m", "mm", "c", "strings", "entitlements", "xcconfig", "xcodeproj", "pbxproj", "xcscheme",
+    "storyboard", "xib", "xcassets", "xcstrings", "csv", "log", "zip", "epub", "mobi", "azw3",
+    "pdf", "rtf", "doc", "docx", "ogg", "mp3", "m4a", "m4b", "wav", "png", "jpg", "jpeg", "gif",
+    "svg", "icns", "app", "dmg", "lock", "toml", "ini", "cfg", "conf", "db", "sqlite", "brf",
+    "brl", "ctb", "utb", "dis", "cti",
+})
+
 # A word shaped like a Swift type: capital first, a lowercase letter, and a second capital.
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
@@ -98,6 +108,12 @@ def is_type_shaped(word: str) -> bool:
     It is a capitalised word (``is_capitalised_word``) that holds a second capital.
     """
     return is_capitalised_word(word) and any(c.isupper() for c in word[1:])
+
+
+def is_file_name(written: str) -> bool:
+    """True when a backticked name is a file name (``Info.plist``): dotted, not a call, ending in a file extension."""
+    parts = written.lstrip(".").split(".")
+    return len(parts) > 1 and "(" not in written and parts[-1].lower() in FILE_EXTENSIONS
 
 
 def name_keys(written: str) -> List[str]:

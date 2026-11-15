@@ -207,6 +207,12 @@ class NameHelperTests(DocLibCase):
         self.assertFalse(swiftindex.is_capitalised_word("book"))
         self.assertFalse(swiftindex.is_capitalised_word(""))
 
+    def test_is_file_name(self) -> None:
+        for written in ("Info.plist", "content.md", "library.json", "EPUBParser.swift", "Settings.PLIST"):
+            self.assertTrue(swiftindex.is_file_name(written), written)
+        for written in ("Book.Storage", "Book", "run.swift()", ".shared", ".plist", "a.b.cx"):
+            self.assertFalse(swiftindex.is_file_name(written), written)
+
     def test_is_call(self) -> None:
         self.assertTrue(swiftindex.is_call("startLibrary()"))
         self.assertFalse(swiftindex.is_call("Book.Storage"))
