@@ -111,9 +111,13 @@ class MergeChainCase(unittest.TestCase):
         return f"{name}:{path}"
 
     def run_chain(self, *names):
-        """Run the repository's copy of merge-chain.sh for the branches; returns (status, standard output)."""
+        """Run the repository's copy of merge-chain.sh for the branches; returns (status, standard output).
+
+        The copy is run as the orchestrator runs it, by its own path, so its
+        first line must name its shell.
+        """
         result = subprocess.run(
-            ["bash", "Scripts/agents/merge-chain.sh", *[self.message_file(name) for name in names]],
+            ["./Scripts/agents/merge-chain.sh", *[self.message_file(name) for name in names]],
             cwd=self.repo, env=self.env, capture_output=True, text=True, timeout=60)
         return result.returncode, result.stdout + result.stderr
 

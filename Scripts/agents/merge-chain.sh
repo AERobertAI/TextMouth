@@ -1,3 +1,4 @@
+#!/bin/bash
 # merge-chain.sh: merge the named branches into main one after another. Each
 # merge stops before it commits so the docs lint can check the merged tree; the
 # full hosted suite (through the build-slot wrapper) then runs after the commit,
