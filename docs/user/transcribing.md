@@ -5,6 +5,8 @@ Part of [TextMouth's documentation](../../README.md).
 
 Transcribing an audiobook needs macOS 26 or later.
 
+In a sentence quoted below, DATE stands for a day as the app writes it: the month's name, the day, and the year.
+
 ## Transcribe Audio…
 <!-- id: transcribe-audio; keys: ; src: -->
 
@@ -39,9 +41,9 @@ A book that has a transcript is transcribed again with Retranscribe Audio… (ne
 
 Retranscribe Audio… transcribes the book's audio again and replaces its transcript.
 Its sheet, headed "Retranscribe Moby-Dick", has a button that reads Retranscribe in place of Transcribe, whose hint is "Transcribes the book's audio again, replacing its transcript."
-After the language, the sheet says in one line each what Retranscribe replaces: "Transcribed on October 4, 2026, in English (United States).
-Transcribing again replaces this transcript."; if you edited the transcript, "You edited this transcript on October 5, 2026.
-Transcribing again replaces your edits."; and if you cleaned it up, "You cleaned up this transcript on October 5, 2026.
+After the language, the sheet says in one line each what Retranscribe replaces: "Transcribed on DATE, in English (United States).
+Transcribing again replaces this transcript."; if you edited the transcript, "You edited this transcript on DATE.
+Transcribing again replaces your edits."; and if you cleaned it up, "You cleaned up this transcript on DATE.
 Transcribing again replaces the cleanup."
 A transcript that a later TextMouth wrote, as on another Mac sharing the library, which this TextMouth can't read, gets "This book has a transcript made by a later version of TextMouth.
 Transcribing again replaces it." in place of the first line.
@@ -59,7 +61,7 @@ A text that goes to iCloud while the audio is being transcribed is caught when t
 <!-- id: clean-up-transcript-experimental; keys: ; src: -->
 
 Clean Up Transcript (Experimental)…, in the same places for a transcribed audiobook, a feed's episode included, opens the Clean Up sheet, which corrects words the recognizer always writes another way, by rules, and changes nothing until you press Apply.
-The sheet names the rules in use, as in "Rules: your copy, version 1 of October 4, 2026, 2 rules.",
+The sheet names the rules in use, as in "Rules: your copy, version 1 of DATE, 2 rules.",
 - says what they would change, as in "23 corrections in 19 sentences.",
 - and lists each rule that changes something, with its count and up to three examples, before and after, each read by VoiceOver as one line.
 A rule that would leave a sentence with no text at all, as a rule that turns "um" into nothing would for a sentence that is only "Um", leaves that sentence as it is, neither listing nor counting it.
@@ -119,7 +121,7 @@ A rule has a pattern and a replacement;
 - and an optional note.
 Matching ignores case and the kind of apostrophe, the replacement takes the case of the words it replaces, and the rules apply in order.
 Your copy can't be used when TextMouth can't read it in that format,
-- or when its version is below 1, its date isn't a day written as 2026-10-04,
+- or when its version is below 1, its date isn't a day written as `2026-10-04`,
 - or one of its rules has an empty pattern or replacement, a pattern without a letter or figure, or a replacement holding its own pattern, which every cleanup would change again:
 - the sheet says why, naming the field, as in "rules[2].replacement is empty",
 - a copy of it is kept beside it, its name followed by .unreadable- and the date and time,
@@ -221,12 +223,12 @@ An audiobook can take one from a WebVTT (.vtt) or SubRip (.srt) file, on any mac
 
 - Book Information has a read-only detail named Transcript, which says where the book's transcript came from and when.
   VoiceOver reads it as "Transcript: " and the line.
-- Made by recognition: "Transcribed on October 4, 2026, in English (United States)."
-- Attached: "Attached from “lecture.vtt” on October 30, 2026."
+- Made by recognition: "Transcribed on DATE, in English (United States)."
+- Attached: "Attached from “lecture.vtt” on DATE."
   With several files, or a file whose name isn't known, it says "Attached from a WebVTT file on …" or "Attached from a file on …".
-- Found at import: "Attached from “lecture.vtt” when the book was imported, on October 30, 2026."
-- Found at import in files of more than one format, such as 01.vtt beside the first track and 02.srt beside the second: "Attached from WebVTT and SubRip files when the book was imported, on October 30, 2026."
-- A podcast's own: "The podcast's own transcript, downloaded with the episode on November 2, 2026."
+- Found at import: "Attached from “lecture.vtt” when the book was imported, on DATE."
+- Found at import in files of more than one format, such as 01.vtt beside the first track and 02.srt beside the second: "Attached from WebVTT and SubRip files when the book was imported, on DATE."
+- A podcast's own: "The podcast's own transcript, downloaded with the episode on DATE."
 - If you edited it or cleaned it up, the line goes on with "You edited it on …" and "You cleaned it up on …".
 - A transcript only in the cloud: "The transcript is only in the cloud.
   Its details appear once the book is downloaded."
