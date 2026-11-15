@@ -78,11 +78,14 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.4.10 (tag `v0.4.10`, on GitHub), and the user still runs 0.4.2.
-- Merged since, for 0.4.11 (its changelog section is open):
-  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`, `make_vendor.py`): the Release app is 17.9 MB, and HTML parses about 40% faster;
-  - the doc-library skill and `make lint-docs`;
-  - the docs reworked: this file, `CLAUDE.md`, `docs/agents/orchestrator.md`, and the architecture and testing pages split into marked sections.
-- Under way: the safe import speed-ups (`importfast`), the cloud library's Phase 0 (`guards0`, `compare0`), faster GitHub runs (`ghci`), the Mac's tests in the iPhone bundle (`testport`), and the docs team's later phases.
-- Waiting for the user (`humanQuestions/2026-11-14.md`): the audit's C11 and C12, reading Markdown from cmark's tree, PDFs read by two workers, and which drive holds the local-first store.
-  C15 and C19 were declined.
+- Main is version 0.4.11 (tag `v0.4.11`), and the user still runs 0.4.2.
+- 0.4.11 holds:
+  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`): the Release app is 17.9 MB;
+  - the safe import speed-ups;
+  - the cloud library's Phase 0: the guards (`Book.readingState(standingAgainst:)`, `movedToLibrary`, the two-file waits) and Compare Libraries;
+  - the Mac's tests shared with the iPhone unit bundle (1,960 tests);
+  - faster GitHub runs, with the iPhone job as a matrix;
+  - the doc-library skill, and the docs reworked into marked sections (`make lint-docs` gates at 0 violations).
+- Waiting for the user (`humanQuestions/2026-11-14.md`): the audit's C11 and C12, Markdown from cmark's tree, PDFs read by two workers, the local-first store's drive, ffmpeg, and V04.
+  Their hand checks: Remove Download on one Google Drive and one Dropbox book, and the new cloud alerts and Compare Libraries with VoiceOver.
+- Open: the iPhone app bundles no Licenses folder though LAME is linked; `AudioExportTests.testAnMP3BookIsSavedAsMP3` failed once in a full suite and passed alone; the heavy-work lock serves its waiters in no order (FIFO tickets wanted).
