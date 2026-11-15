@@ -11,6 +11,7 @@ without it; the other tests use a small release written to a temporary folder.
 import contextlib
 import io
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -205,6 +206,15 @@ class Files(unittest.TestCase):
         self.assertTrue(all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*|[-+*/=<>!&|^~%?.]+", name) for name in names))
         entries = make_vendor.read_internal_list(make_vendor.INTERNAL_LIST)
         self.assertGreater(sum(len(lines) for lines in entries.values()), 5)
+
+    def test_the_lists_are_in_version_control(self):
+        """Both name lists are tracked by git. The repository's .gitignore ignores
+        every *.txt file, so a list added without -f stays on one disk, and no
+        other checkout can run the script or these tests."""
+        for path in (make_vendor.ALLOW_LIST, make_vendor.INTERNAL_LIST):
+            result = subprocess.run(["git", "ls-files", "--error-unmatch", path.name],
+                                    cwd=path.parent, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, f"{path.name} is not tracked by git: add it with git add -f")
 
 
 if __name__ == "__main__":
