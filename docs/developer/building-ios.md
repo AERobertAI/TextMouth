@@ -77,24 +77,43 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
 - **What runs there.**
   `.github/workflows/test-build.yml` runs for a push to the branch `TestBuild`, and for nothing else: not a pull request, not a fork.
   It only calls `.github/workflows/tests.yml`, which holds the jobs and which `check.yml` calls too (so the repository has one way to run its suite on GitHub), and the local action `.github/actions/setup-xcode` holds the toolchain pins once.
-  A job selects Xcode 26.0.1 on the `macos-26` image, installs XcodeGen 2.45.3 (checked against its published digest), runs `make generate`, and then `Scripts/agents/run-on-runner.py`, which reads the request file `.github/test-request.json` in the pushed tree and runs what it names: areas and classes through `Scripts/test/run-area.py`, or the full suite.
+  A job:
+  - selects Xcode 26.0.1 on the `macos-26` image;
+  - installs XcodeGen 2.45.3 (checked against its published digest);
+  - runs `make generate`;
+  - and then `Scripts/agents/run-on-runner.py`, which reads the request file `.github/test-request.json` in the pushed tree and runs what it names: areas and classes through `Scripts/test/run-area.py`, or the full suite.
+
   Both commands come from `Scripts/agents/test_command.py`, the one place the local train, `run_suite.py`, and the runner take them from.
   The app is not signed (`CODE_SIGNING_ALLOWED=NO`), as in every test run, since a runner has no signing identity.
   The job has a token that may only read, no secrets, GitHub's own actions pinned to full commit hashes, a limit of 100 minutes for each job (the runner script stops the tests at 80, so their results are still written), and one run at a time: a newer push cancels the older run.
   The shared workflow has four jobs: a Linux job that plans the shards, one macOS job per shard, a macOS job that builds the iPhone app and runs its interface tests, and a Linux job that joins the results.
-  The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing and without running a test; it writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
+  The iPhone job (`Scripts/agents/run-ios-build.py`) runs `xcodebuild build-for-testing` on the `TextMouthiOS` scheme for a generic iOS Simulator destination, which compiles the app and both of its test bundles (`TextMouthiOSTests` and `TextMouthiOSUITests`) without signing and without running a test.
+  It writes `ios-summary.txt`, `ios-errors.txt` (each error as `path:line:col: error: message`, repository-relative), and `ios.log`, and its errors are a result, not a failure: they never decide whether the tests passed.
   A request that says `"ios": false` leaves it out.
   Then `Scripts/agents/run-ios-ui-tests.py` runs the unit tests (`TextMouthiOSTests`, 19, which make no sound) and the interface tests (`TextMouthiOSUITests`) in one `xcodebuild` run, in an iPhone 17 simulator on the downloaded iOS 26.0.1 runtime, when the request asks for them (every full suite, the phone area, or a class of either bundle).
   The interface tests press Play and type as a person does, which is why the iPhone tests run there and not here: no iPhone test of either bundle needs a simulator on this Mac.
   It writes `ios-ui-summary.txt` (the unit tests and the interface tests counted apart) and `ios-ui.log`.
   A failed or missing iPhone test fails the iPhone job and never the Mac tests' verdict (see Tests on GitHub Actions in [Tests on GitHub Actions](testing-github.md)).
+### The Mac's push, the caches, and what to keep
+<!-- id: github-mac-push-caches-keep; keys: github_run.py, TestBuild push, refspec, actions/cache, restore_mtimes.py, shards; src: Scripts/agents/github_run.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/restore_mtimes.py, Scripts/agents/shard.py, Scripts/agents/plan_shards.py, Scripts/agents/merge_shards.py, .github/workflows/tests.yml, .github/workflows/test-build.yml -->
+
 - **What the Mac does.**
   `build-train.py run --remote` (and `loop --remote`) merges the requests here, pushes the merged tree plus the request to `TestBuild` with `--force`, waits for that commit's run, and reads the result; `run_suite.py --remote COMMIT NAME LOG` does it for the full suite.
-  `Scripts/agents/github_run.py` is the Mac's side: it makes the commit with git's plumbing in a temporary index (no checkout is touched), refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`, waits (up to 125 minutes, asking GitHub every 30 seconds) while a run is queued or going on `TestBuild`, because a newer push cancels the run before it, and fails with a sentence naming that run, having pushed nothing, if it is still there then (the train puts its requests back, like any failed push), pushes only `<commit>:refs/heads/TestBuild`, finds the run by its SHA, and downloads the artifact `test-build-results`.
+  `Scripts/agents/github_run.py` is the Mac's side:
+  - it makes the commit with git's plumbing in a temporary index (no checkout is touched);
+  - refuses a tree holding a path under `build/`, `humanQuestions/`, or `humanReports/`;
+  - waits (up to 125 minutes, asking GitHub every 30 seconds) while a run is queued or going on `TestBuild`, because a newer push cancels the run before it;
+  - and fails with a sentence naming that run, having pushed nothing, if it is still there then (the train puts its requests back, like any failed push);
+  - pushes only `<commit>:refs/heads/TestBuild`;
+  - finds the run by its SHA;
+  - and downloads the artifact `test-build-results`.
+
   Nothing but `TestBuild` is ever pushed, and the commit holds only what git tracks.
 - **Why a run is quick.**
   Three things keep it short.
-  The build products are kept between runs with `actions/cache`: each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every file unchanged since that build (by its git blob hash, from a manifest saved beside the products) one fixed old time, because a fresh checkout would otherwise make Xcode compile everything again; a warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
+  The build products are kept between runs with `actions/cache`.
+  Each job restores the newest cache for this Xcode, and `Scripts/agents/restore_mtimes.py` gives every file unchanged since that build (by its git blob hash, from a manifest saved beside the products) one fixed old time, because a fresh checkout would otherwise make Xcode compile everything again.
+  A warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
   Testing TextMouth (Tests on GitHub Actions) has the details and the times.
@@ -199,5 +218,6 @@ This is how the iPhone team builds and runs the app there.
 
 - **Do not press Play or type by hand, and run no sound test here.**
   The simulator plays through the Mac's speakers, which the user could hear at any hour, and the keyboard's clicks are sounds too.
-  The interface tests that press Play or type run on GitHub's runners, where nobody listens, and so do the unit tests, which make no sound and so never skip; on this Mac the interface tests that make sound skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it, which refuses to run anywhere but on a GitHub runner (see [Testing the iPhone app](testing-iphone.md)).
+  The interface tests that press Play or type run on GitHub's runners, where nobody listens, and so do the unit tests, which make no sound and so never skip.
+  On this Mac the interface tests that make sound skip unless `TEXTMOUTH_UI_SOUND` is 1, and only `Scripts/agents/run-ios-ui-tests.py` sets it, which refuses to run anywhere but on a GitHub runner (see [Testing the iPhone app](testing-iphone.md)).
   Nothing records audio anywhere.
