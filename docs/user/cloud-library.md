@@ -262,7 +262,8 @@ config.json travels with the library, so a dataDirectoryPath that another Mac wr
 <!-- id: update-textmouth-every-mac; keys: ; src: -->
 
 Update TextMouth on every Mac that opens the library.
-A TextMouth built before October 18, 2026, such as 0.1.1, can't open a library that holds a book in a format added that day (rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, or SSML), and one built before October 20, 2026 can't open a library that holds a braille book (BRF, BRL, or PEF), the format added that day: it finds the index unreadable and leaves it as it is, writing no index, but it still writes each book's record, which loses 0.2.0's records of edits and pages.
+A TextMouth older than 0.2.0, such as 0.1.1, can't open a library that holds a book in a format 0.2.0 added: rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, web archive, SSML, or braille (BRF, BRL, or PEF).
+It finds the index unreadable and leaves it as it is, writing no index, but it still writes each book's record, which loses 0.2.0's records of edits and pages.
 It offers Rebuild Library Index; never choose it there (see library.json.unreadable-, under [Where TextMouth keeps your library](where-your-library-lives.md)).
 A TextMouth from 0.2.1 to 0.3.2 opens a library that holds a KFX book, a format added in 0.4.0, without that book (see the [changelog](changelog.md)).
 
