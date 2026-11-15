@@ -91,11 +91,11 @@ Run these from the repository root:
 
 The user wants the Mac app under 20 MB, and under 15 MB if that costs nothing they use.
 `make check` fails the app above its hard limit of 20 MB (see The make check gate, below).
-On November 13, 2026 compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
+Compiling the app and its packages for size (`-Osize`, and no export trie; see Make targets, above) brought the Release app from 23,545,276 bytes to 18,983,332 bytes, 19.0 MB, its executable from 22,820,048 to 18,258,016 bytes, in 35 files, measured by `make check`.
 The price is slower HTML parsing at import, about 4 ms more for each megabyte of EPUB, since SwiftSoup parses 43% slower; ten benchmarks (HTML to Markdown, Markdown parsing, speech preparation, sorting, JSON, the offset map, and an EPUB read) gave identical results with `-O` and `-Osize` and ran 2% to 10% slower.
-Under 15 MB is out of reach of build settings; the size audit of that day names the code changes that remain.
+Under 15 MB is out of reach of build settings; the size audit names the code changes that remain.
 Two more settings would save 82,736 bytes (mergeable traps, which would make crash reports lose line detail within a function) and 95,472 bytes (`-no_function_starts`, which would make `sample` and Activity Monitor lose function boundaries without the dSYM); both wait for the user's yes.
-The pieces below are what a measurement of the Release build showed on November 9, 2026, at commit e0ea3b9d, before that work.
+The pieces below are what a measurement of the Release build showed at commit e0ea3b9d, before that work.
 
 - **The totals.**
   - The Release executable, `TextMouth.app/Contents/MacOS/TextMouth`, was 22.7 MB (22,737,216 bytes), and the whole bundle about 23 MB.
@@ -131,7 +131,7 @@ Run it once before a release, and after any change to the build settings in proj
   The compiled Swift code is the shipped code.
   What the tested binary lacks is the export trie, dead stripping, and stripping, which change no code.
 - **What it costs.**
-  The first run, on November 13, 2026, took 14 minutes 4 seconds, ran 129 tests with 0 failures and 0 skips, and its build folder took 1.5 GB.
+  The first run took 14 minutes 4 seconds, ran 129 tests with 0 failures and 0 skips, and its build folder took 1.5 GB.
   It plays no sound.
   When other agents work, run it through `Scripts/agents/run_locked.py`.
   Afterwards unregister the app it built with `lsregister -u` on `Build/Products/Release/TextMouth.app` in its derived-data folder.
@@ -144,7 +144,7 @@ Run it once before a release, and after any change to the build settings in proj
 
 TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PATCH`.
 MAJOR stays 0 until the user calls TextMouth released (1.0).
-The rules for raising the version are the user's, from October 23, 2026:
+The rules for raising the version are the user's:
 
 ### The rules for raising the version
 <!-- id: rules-raising-version; keys: bump, PATCH, MINOR, git tag, backward compatible, changelog entry; src: Scripts/set-version.sh, Makefile -->
@@ -166,7 +166,7 @@ The rules for raising the version are the user's, from October 23, 2026:
   - A merge that joins the version afterwards, as in the second open case below, moves the tag to that merge, but only while the tag is unpushed.
     A pushed tag stays, and the merge waits for the next version.
   - The orchestrator pushes the tags with main, only at a version bump it judges a fairly stable release (`AGENTS.md`, The user's standing rules): `git push origin --tags`.
-  - The tags v0.2.0 to v0.4.2 were added on November 9, 2026, each at its version's bump commit.
+  - The tags v0.2.0 to v0.4.2 are each at its version's bump commit.
     The exception is v0.4.2, at e0ea3b9d, the build the user installed, since 0.4.2 took in the KF8 merge after its bump.
     The numbers before 0.2.0 ("1.0", then "0.1.1") came before the beta's rules and have no tags.
 - **Two cases the rules leave open.**
@@ -205,8 +205,8 @@ The script, Scripts/set-version.sh:
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
 Run `make check` before merging.
 It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
-It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 19.0 MB (18,983,332 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh (it was 50 MB until November 13, 2026).
-Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hung for 27 minutes in codesign on November 13, 2026.
+It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 19.0 MB (18,983,332 bytes), within the 20 MB limit", and fails when the app is larger than 20 MB, a limit set once, as APP_SIZE_LIMIT_MB in Scripts/check.sh.
+Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
 Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file.

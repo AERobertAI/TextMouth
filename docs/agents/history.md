@@ -641,3 +641,9 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 - **CLAUDE.md's Start here:** it listed the project's documents (writing-docs.md, README.md, ARCHITECTURE.md, the TODO, AGENT-NOTES, `research/`), the message board with its build wrapper `build-slot-with-bbs.sh`, `merge-chain.sh` and `extract-report.py`.
   It also gave the `*.md` gitignore rule and the `humanQuestions/` rule.
   AGENTS.md's Start here holds them now, and the orchestrator's tools are in orchestrator.md.
+
+## From Building TextMouth
+
+- **The release tags:** The tags v0.2.0 to v0.4.2 were added on November 9, 2026, each at its version's bump commit.
+- **The app size limit:** `APP_SIZE_LIMIT_MB` in `Scripts/check.sh` was 50 MB until November 13, 2026.
+- **The gate and the locked keychain:** The gate hung for 27 minutes in codesign on November 13, 2026, because the login keychain was locked and codesign waited for a password nobody could type.
