@@ -135,8 +135,60 @@ extension LibraryViewModel {
     /// its whole folder, and with ".." in its folder path it could be every
     /// folder of the library, which one rename would carry into the feed's
     /// folder with every other book in it.
-    func downloadsToMoveIntoTheirFeeds(records: [UUID: FeedRecord]) -> [(book: Book, link: FeedBookLink)] {
-        downloadRows(namedBy: records).filter { FileImportService.namesManagedPackage($0.book) }
+    ///
+    /// So is a book Move to Library… made the library's own, whose record
+    /// says so (`BookMetadata.movedToLibrary`), whatever a feed's record
+    /// says: another Mac's record of the feed, written whole from memory, can
+    /// still call its item downloaded, and moving the book into the feed
+    /// would let the feed's rules delete its file (risk 4 of the local-first
+    /// research). A book whose record cannot be read now, being only in the
+    /// cloud with its package, waits for a later launch rather than move on
+    /// a guess. Every other download moves as before.
+    /// - Parameter access: How the books' records are read: with dataless
+    ///   files left in the cloud, unless a test pretends some are.
+    func downloadsToMoveIntoTheirFeeds(
+        records: [UUID: FeedRecord],
+        access: MaintenanceFileAccess = .live
+    ) -> [(book: Book, link: FeedBookLink)] {
+        downloadRows(namedBy: records).filter { row in
+            FileImportService.namesManagedPackage(row.book)
+                && Self.whatTheRecordSays(of: row.book, access: access) == .nothingAgainstTheMove
+        }
+    }
+
+    /// What a download's own record says about moving it into its feed's
+    /// folder at launch (risk 4).
+    enum DownloadRecordWord: Equatable {
+        /// Nothing against the move: no note of Move to Library…, no record,
+        /// or one that cannot be read or names another book, as before.
+        case nothingAgainstTheMove
+        /// Move to Library… made the book the library's own, at this time.
+        case movedToLibrary(Date)
+        /// The package or the record is only in the cloud, so the record
+        /// cannot be read now without downloading it.
+        case onlyInTheCloud
+    }
+
+    /// What `book`'s record says about moving it into its feed
+    /// (`DownloadRecordWord`), read as the startup repair reads a record:
+    /// bookInfo.json alone, through `access`, with dataless files left in
+    /// the cloud.
+    nonisolated static func whatTheRecordSays(of book: Book, access: MaintenanceFileAccess) -> DownloadRecordWord {
+        let package = book.tmbDirectory
+        let recordURL = TextMouthPaths.bookInfoPath(in: package)
+        guard !access.isInCloud(package), !access.isInCloud(recordURL) else { return .onlyInTheCloud }
+        let record: BookInfo
+        do {
+            record = try access.read(recordURL) { try StoredBookRecord.read(from: package) }.info
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return .onlyInTheCloud
+        } catch {
+            return .nothingAgainstTheMove
+        }
+        guard record.metadata.bookID == book.id, let movedAt = record.metadata.movedToLibrary else {
+            return .nothingAgainstTheMove
+        }
+        return .movedToLibrary(movedAt)
     }
 
     /// Every row of the library's own that a feed's record in `records`
@@ -161,14 +213,36 @@ extension LibraryViewModel {
     /// `records` that stays a book because its row names no package the
     /// library manages (`downloadsToMoveIntoTheirFeeds(records:)`), naming
     /// what its row holds, so a download that never moves can be found.
-    private func logDownloadsThatCannotMove(records: [UUID: FeedRecord]) {
-        for (book, _) in downloadRows(namedBy: records) where !FileImportService.namesManagedPackage(book) {
-            DiagnosticLog.event(
-                .storage,
-                "FEED_DOWNLOAD_MOVE_REFUSED: \"\(book.title)\": its row names no package the library manages "
-                    + "(package name \"\(book.tmbDirectoryName)\", folder \"\(book.folderPath)\"); "
-                    + "it stays a book where it is"
-            )
+    private func logDownloadsThatCannotMove(records: [UUID: FeedRecord], access: MaintenanceFileAccess) {
+        for (book, _) in downloadRows(namedBy: records) {
+            guard FileImportService.namesManagedPackage(book) else {
+                DiagnosticLog.event(
+                    .storage,
+                    "FEED_DOWNLOAD_MOVE_REFUSED: \"\(book.title)\": its row names no package the library manages "
+                        + "(package name \"\(book.tmbDirectoryName)\", folder \"\(book.folderPath)\"); "
+                        + "it stays a book where it is"
+                )
+                continue
+            }
+            // A book its own record keeps out of the move (risk 4).
+            switch Self.whatTheRecordSays(of: book, access: access) {
+            case .nothingAgainstTheMove:
+                break
+            case .movedToLibrary(let movedAt):
+                DiagnosticLog.event(
+                    .storage,
+                    "FEED_DOWNLOAD_MOVE_REFUSED: \"\(book.title)\": its record says Move to Library made it a book "
+                        + "of the library's own on \(movedAt.formatted(.iso8601)), though its feed's record names it "
+                        + "as a download; it stays a book where it is"
+                )
+            case .onlyInTheCloud:
+                DiagnosticLog.event(
+                    .storage,
+                    "FEED_DOWNLOAD_MOVE_REFUSED: \"\(book.title)\": its record is only in the cloud, so whether "
+                        + "Move to Library made it the library's own can't be read; it stays where it is, "
+                        + "and a later launch looks again"
+                )
+            }
         }
     }
 
@@ -203,14 +277,20 @@ extension LibraryViewModel {
     /// the library index is recovered, the data directory is away or moving,
     /// or another operation holds the storage work; the next launch tries
     /// again.
-    /// - Parameter records: The feeds' records: the feed engine's, unless a
-    ///   test gives its own.
+    /// A book Move to Library… made the library's own never moves, whatever
+    /// a feed's record says (`downloadsToMoveIntoTheirFeeds(records:access:)`,
+    /// risk 4).
+    /// - Parameters:
+    ///   - records: The feeds' records: the feed engine's, unless a test
+    ///     gives its own.
+    ///   - access: How the books' records are read: with dataless files left
+    ///     in the cloud, unless a test pretends some are.
     /// - Returns: How many downloads moved.
     @discardableResult
-    func moveDownloadsIntoTheirFeeds(records: [UUID: FeedRecord]? = nil) async -> Int {
+    func moveDownloadsIntoTheirFeeds(records: [UUID: FeedRecord]? = nil, access: MaintenanceFileAccess = .live) async -> Int {
         let records = records ?? feeds.store.records
-        logDownloadsThatCannotMove(records: records)
-        guard canMoveDownloads, !downloadsToMoveIntoTheirFeeds(records: records).isEmpty else { return 0 }
+        logDownloadsThatCannotMove(records: records, access: access)
+        guard canMoveDownloads, !downloadsToMoveIntoTheirFeeds(records: records, access: access).isEmpty else { return 0 }
         guard let hold = try? StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders) else {
             DiagnosticLog.event(
                 .storage,
@@ -224,7 +304,7 @@ extension LibraryViewModel {
 
         // The library as it is now, after the wait; nothing below awaits, so
         // no other change can come between reading it and publishing it.
-        let moving = downloadsToMoveIntoTheirFeeds(records: records)
+        let moving = downloadsToMoveIntoTheirFeeds(records: records, access: access)
         guard canMoveDownloads, !moving.isEmpty else { return 0 }
         let movingIDs = Set(moving.map(\.book.id))
         bookUpdates.packagesWillMove(movingIDs)
