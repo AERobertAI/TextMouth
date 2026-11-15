@@ -185,7 +185,12 @@ def wait_for_boot(udid, seconds, log):
 def ready_simulator(log):
     """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
-    SimulatorFailure, naming it."""
+    SimulatorFailure, naming it. The seconds each phase took are printed, so that a run's log says where a slow set-up went."""
+    began = time.monotonic()
+
+    def lap(label):
+        print(f"simulator set-up: {label} at {time.monotonic() - began:.0f} s", flush=True)
+
     listing = simctl("list")
     log.write(f"$ xcrun simctl list\n{listing.stdout}\n")
     runtime = choose_runtime(simctl_json("runtimes").get("runtimes", []))
@@ -198,8 +203,10 @@ def ready_simulator(log):
         log.write(f"$ xcrun simctl create -> {made.returncode}: {made.stdout}{made.stderr}\n")
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"could not make an {DEVICE_NAME} on {runtime['identifier']}: {made.stderr.strip()[:300]}")
+    lap("the device is chosen")
     try:
         wait_for_boot(udid, FIRST_BOOT_SECONDS, log)
+        lap("the first boot finished")
     except BootTimedOut as stuck:
         # The device is stuck (it prints "Waiting on BackBoard" and goes no further): shut it down and boot a new one.
         log.write(f"The boot of {udid} did not finish: {stuck}\n")
@@ -218,6 +225,7 @@ def ready_simulator(log):
         written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
                          tolerate_timeout=True)
         log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
+    lap("the keyboard settings are written")
     sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
     if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
         sentence += f" (the wanted iOS {RUNTIME_VERSION} runtime was not there)"
