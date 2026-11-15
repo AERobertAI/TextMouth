@@ -99,10 +99,20 @@ enum PageImageError: LocalizedError, Equatable, Sendable {
 ///   claims a vast picture cannot fill the Mac's memory.
 /// - **Decoded small.** Each page is decoded through ImageIO's thumbnail
 ///   reader, which applies the picture's EXIF orientation (which
-///   `VNImageRequestHandler(cgImage:)` ignores) and decodes no more than
-///   `decodedPixels`, downsampling as it reads where the format allows (a
-///   JPEG is scaled while it is decoded), never from the small preview a
-///   camera embeds.
+///   `VNImageRequestHandler(cgImage:)` ignores), reads the picture itself,
+///   never the small preview a camera embeds, and gives a picture of no more
+///   than the device's `Limits.decodedPixels`. That caps the picture it
+///   gives, not the decode. Asked for more than half a JPEG's, PNG's, or
+///   TIFF's sides, ImageIO decodes the picture whole before scaling it;
+///   asked for half or less (a PNG: less than half, rounded down), it reads
+///   it at a half, a quarter, or an eighth of them. It reads a HEIC by its
+///   tiles, and always decodes a WebP or GIF whole. Measured on the
+///   development Mac with these options, the page flattened, a 6,000 by
+///   6,000 picture's decode peaked at 435 to 445 MB at its own size and at
+///   197 to 357 MB at the Mac's 16 megapixels (404 MB as a GIF), and one of
+///   10,000 by 10,000, the most a picture may declare, at 198 to 269 MB (517
+///   MB as a WebP, 916 MB as a GIF). The Mac has the memory; the iPhone
+///   reads a larger picture at a fraction of its sides (`Limits.phone`).
 /// - **Flattened.** The page is drawn onto an opaque background before it is
 ///   read, since Vision finds no text drawn on transparency.
 enum PageImageDecoding {
@@ -116,12 +126,51 @@ enum PageImageDecoding {
     /// The most pixels a picture may declare, from `PageImageWording`.
     static let maximumPixels = PageImageWording.maximumMegapixels * 1_000_000
 
-    /// The most pixels a page is decoded at: 16 megapixels, a 12 megapixel
-    /// phone photograph at its full size, and 64 MB to hold once flattened.
-    /// A larger picture is scaled down to it,
-    /// its proportions kept, so a tall strip of a page is not shrunk to a
-    /// sliver as a cap on its longest side would shrink it.
-    static let decodedPixels = 16_000_000
+    /// How large a device decodes a page, and whether it reads a large
+    /// picture at a fraction of its sides (see "Decoded small" above).
+    struct Limits: Equatable, Sendable {
+        /// The most pixels a page's picture is decoded to. A larger picture
+        /// is scaled down to it, its proportions kept, so a tall strip of a
+        /// page is not shrunk to a sliver as a cap on its longest side would
+        /// shrink it.
+        let decodedPixels: Int
+        /// Whether a larger picture is read at a half, a quarter, or an
+        /// eighth of its sides, the largest of them within `decodedPixels`,
+        /// so that ImageIO reduces it as it reads it instead of decoding it
+        /// whole first; it then comes out with between a quarter of
+        /// `decodedPixels` and all of them.
+        let readsAtAFraction: Bool
+
+        /// The Mac's: 16 megapixels, a 12-megapixel phone photograph at its
+        /// full size, and 64 MB once flattened, from a picture ImageIO may
+        /// decode whole first; the Mac has the memory for the peaks above.
+        static let mac = Limits(decodedPixels: 16_000_000, readsAtAFraction: false)
+
+        /// The iPhone's: 4 megapixels, a larger picture read at a fraction of
+        /// its sides (a 12-megapixel photograph at half, 3 megapixels; a 24-
+        /// or 48-megapixel one at a quarter, 1.5 or 3), so that a page's
+        /// decode stays well under 100 MB: at most 72 MB in the probe above,
+        /// for JPEG, PNG, HEIC, and TIFF pictures up to the most a picture may
+        /// declare. A WebP or GIF picture is still decoded whole, 164 MB and
+        /// 307 MB for 6,000 by 6,000. The iPhone ends an app that holds more
+        /// memory than its model allows; that can't be measured on an iPhone
+        /// here, so these are the Mac's measurements of the ImageIO that the
+        /// iPhone uses too.
+        static let phone = Limits(decodedPixels: 4_000_000, readsAtAFraction: true)
+
+        /// This device's.
+        static var thisDevice: Limits {
+            #if os(iOS)
+            phone
+            #else
+            mac
+            #endif
+        }
+    }
+
+    /// The fractions of a picture's sides that ImageIO reads one at, as their
+    /// denominators, least first.
+    static let readingFractions = [2, 4, 8]
 
     /// Refuses a picture that declares `width` by `height` pixels when it
     /// declares no size, or more than `maximumPixels`, counted in floating
@@ -135,16 +184,27 @@ enum PageImageDecoding {
         }
     }
 
-    /// The longest side to decode a picture of `width` by `height` pixels at,
-    /// as the thumbnail reader takes its limit: the picture's own longest
-    /// side when it holds no more than `decodedPixels`, else the side that
-    /// scales its area down to that, rounded up.
-    static func decodedLongestSide(width: Int, height: Int) -> Int {
+    /// The longest side to decode a picture of `width` by `height` pixels at
+    /// within `limits`, as the thumbnail reader takes its limit: the
+    /// picture's own when it holds no more than `decodedPixels`, else the
+    /// side that scales its area down to them, rounded up; or, when the
+    /// limits read at a fraction, one pixel under the picture's side over
+    /// the least of `readingFractions` that brings it within them, when that
+    /// is smaller.
+    static func decodedLongestSide(width: Int, height: Int, within limits: Limits) -> Int {
         let longest = max(width, height)
         let pixels = Double(width) * Double(height)
-        guard pixels > Double(decodedPixels) else { return longest }
-        let scale = (Double(decodedPixels) / pixels).squareRoot()
-        return max(1, Int((Double(longest) * scale).rounded(.up)))
+        let cap = Double(limits.decodedPixels)
+        guard pixels > cap else { return longest }
+        let scaled = max(1, Int((Double(longest) * (cap / pixels).squareRoot()).rounded(.up)))
+        guard limits.readsAtAFraction,
+              let fraction = readingFractions.first(where: { pixels / Double($0 * $0) <= cap }) ?? readingFractions.last
+        else { return scaled }
+        // One pixel under the side over the fraction, rounded down: ImageIO
+        // reads a JPEG or TIFF at that fraction when asked for no more than
+        // it, but a PNG only when asked for less (measured), and then scales
+        // the page down by the pixel.
+        return min(scaled, max(1, longest / fraction - 1))
     }
 }
 
@@ -218,13 +278,15 @@ struct PageImageSource {
     }
 
     /// The picture of the page at `index` (one of `pageIndexes`), upright and
-    /// no larger than `PageImageDecoding.decodedPixels`, as decoded: it may
-    /// still have an alpha channel (`DecodedPage.flattened(onto:)`).
+    /// no larger than `limits` allow, as decoded: it may still have an alpha
+    /// channel (`DecodedPage.flattened(onto:)`).
+    /// - Parameter limits: how large it is decoded: this device's, unless a
+    ///   test asks for another's.
     /// - Throws: `PageImageError.tooLarge` for a page that declares more than
     ///   `PageImageDecoding.maximumPixels`, before anything is decoded, and
     ///   `.cannotDecode` for one ImageIO cannot decode or that declares no
     ///   size.
-    func decodedPage(at index: Int) throws -> DecodedPage {
+    func decodedPage(at index: Int, within limits: PageImageDecoding.Limits = .thisDevice) throws -> DecodedPage {
         let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any] ?? [:]
         let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue ?? 0
         let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue ?? 0
@@ -235,7 +297,9 @@ struct PageImageSource {
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             // The EXIF orientation applied, so the page is upright.
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: PageImageDecoding.decodedLongestSide(width: width, height: height),
+            kCGImageSourceThumbnailMaxPixelSize: PageImageDecoding.decodedLongestSide(
+                width: width, height: height, within: limits
+            ),
             // Decoded now, inside the caller's autorelease pool, not later.
             kCGImageSourceShouldCacheImmediately: true,
         ]

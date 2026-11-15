@@ -7,8 +7,9 @@ import XCTest
 /// Decoding an untrusted picture for text recognition (FMT34), within the
 /// limits every decode passes: only the common kinds, judged by the bytes;
 /// a declared size checked before anything is decoded; the EXIF
-/// orientation applied; the size decoded capped; and the page flattened onto
-/// an opaque background. No test here needs Vision.
+/// orientation applied; the size decoded capped, by each device's limits;
+/// and the page flattened onto an opaque background. No test here needs
+/// Vision.
 final class PageImageDecoderTests: XCTestCase {
 
     // MARK: - Kinds
@@ -85,16 +86,19 @@ final class PageImageDecoderTests: XCTestCase {
         }
     }
 
-    /// The size decoded is the picture's own up to 16 megapixels, and else
-    /// the size that scales its area down to that, its proportions kept, so
-    /// a tall strip keeps its width.
+    /// On the Mac the size decoded is the picture's own up to 16
+    /// megapixels, and else the size that scales its area down to that, its
+    /// proportions kept, so a tall strip keeps its width: up to the most a
+    /// picture may declare, never a fraction of its sides.
     func testTheDecodedSizeCapsTheAreaNotTheSide() {
-        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 4_032, height: 3_024), 4_032)
-        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 800, height: 12_000), 12_000)
-        let scaled = PageImageDecoding.decodedLongestSide(width: 8_064, height: 6_048)
+        let mac = PageImageDecoding.Limits.mac
+        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 4_032, height: 3_024, within: mac), 4_032)
+        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 800, height: 12_000, within: mac), 12_000)
+        let scaled = PageImageDecoding.decodedLongestSide(width: 8_064, height: 6_048, within: mac)
         XCTAssertEqual(scaled, Int((8_064 * (16_000_000.0 / (8_064.0 * 6_048.0)).squareRoot()).rounded(.up)))
         let shorter = Double(scaled) * 6_048 / 8_064
         XCTAssertLessThanOrEqual(Double(scaled) * shorter, 16_010_000, "the area decoded stays at the cap")
+        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 10_000, height: 10_000, within: mac), 4_000)
     }
 
     /// A picture larger than the decoded cap is decoded smaller, its
@@ -105,8 +109,78 @@ final class PageImageDecoderTests: XCTestCase {
 
         let page = try source.decodedPage(at: 0).image
 
-        XCTAssertLessThanOrEqual(page.width * page.height, PageImageDecoding.decodedPixels + 10_000)
+        XCTAssertLessThanOrEqual(page.width * page.height, PageImageDecoding.Limits.thisDevice.decodedPixels + 10_000)
         XCTAssertEqual(Double(page.width) / Double(page.height), 1.25, accuracy: 0.01)
+    }
+
+    // MARK: - Each Device's Limits
+
+    /// The Mac decodes a page at up to 16 megapixels, the iPhone at up to 4,
+    /// read at a fraction of a larger picture's sides, and the Mac's tests
+    /// run with the Mac's.
+    func testEachDeviceHasItsLimits() {
+        XCTAssertEqual(PageImageDecoding.Limits.mac, .init(decodedPixels: 16_000_000, readsAtAFraction: false))
+        XCTAssertEqual(PageImageDecoding.Limits.phone, .init(decodedPixels: 4_000_000, readsAtAFraction: true))
+        XCTAssertEqual(PageImageDecoding.readingFractions, [2, 4, 8])
+        #if os(macOS)
+        XCTAssertEqual(PageImageDecoding.Limits.thisDevice, .mac)
+        #endif
+    }
+
+    /// On the iPhone a picture of more than 4 megapixels is asked for one
+    /// pixel under its side over the least of 2, 4, and 8 that brings it
+    /// within them, rounded down: a 12-megapixel photograph at half its
+    /// sides, a 16-megapixel one too, a 24- or 48-megapixel one at a quarter,
+    /// and the most a picture may declare at an eighth. A tall strip keeps
+    /// its width, and a picture of 4 megapixels or fewer, as a phone's
+    /// screenshot is, is decoded at its own size.
+    func testTheiPhoneReadsALargerPictureAtAFractionOfItsSides() {
+        let cases: [(width: Int, height: Int, side: Int)] = [
+            (2_000, 2_000, 2_000),
+            (1_179, 2_556, 2_556),
+            (4_032, 3_024, 2_015),
+            (4_033, 3_025, 2_015),
+            (4_608, 3_456, 2_303),
+            (5_712, 4_284, 1_427),
+            (8_064, 6_048, 2_015),
+            (10_000, 10_000, 1_249),
+            (800, 12_000, 5_999),
+            (100_000, 1_000, 12_499),
+        ]
+        for size in cases {
+            XCTAssertEqual(
+                PageImageDecoding.decodedLongestSide(width: size.width, height: size.height, within: .phone), size.side,
+                "\(size.width) by \(size.height)"
+            )
+        }
+    }
+
+    /// When even an eighth of its sides holds more than the cap, a picture
+    /// is scaled down to the cap: here a cap of 100 pixels, which no device
+    /// has, so that an eighth of 200 by 200 pixels, 25 by 25, is too many.
+    func testAPictureTooLargeForAnEighthIsScaledToTheCap() {
+        let limits = PageImageDecoding.Limits(decodedPixels: 100, readsAtAFraction: true)
+        XCTAssertEqual(PageImageDecoding.decodedLongestSide(width: 200, height: 200, within: limits), 10)
+    }
+
+    /// Decoded within the iPhone's limits, a 12-megapixel photograph comes
+    /// out a pixel under half its sides, 3 megapixels, as JPEG, PNG, and
+    /// TIFF (not HEIC: ImageIO writes one only with a HEVC encoder, which a
+    /// test machine may lack), and upright when its EXIF says it was taken
+    /// on its side; the Mac's limits keep it whole.
+    func testAPhotographDecodedWithinTheiPhonesLimitsComesOutAtHalfItsSides() throws {
+        let photograph = try PageImageFixtures.picture(width: 4_032, height: 3_024, lines: ["Ferry"], fontSize: 200)
+        for type in [UTType.jpeg, .png, .tiff] {
+            let source = try PageImageSource(data: PageImageFixtures.encoded(photograph, as: type))
+            let page = try source.decodedPage(at: 0, within: .phone).image
+            XCTAssertEqual(page.width, 2_015, type.identifier)
+            XCTAssertEqual(page.height, 1_511, type.identifier)
+            XCTAssertEqual(try source.decodedPage(at: 0, within: .mac).image.width, 4_032, type.identifier)
+        }
+        let onItsSide = try PageImageFixtures.encoded(photograph, as: .jpeg, properties: [kCGImagePropertyOrientation: 6])
+        let upright = try PageImageSource(data: onItsSide).decodedPage(at: 0, within: .phone).image
+        XCTAssertEqual(upright.width, 1_511)
+        XCTAssertEqual(upright.height, 2_015)
     }
 
     // MARK: - Orientation
