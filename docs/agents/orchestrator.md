@@ -45,14 +45,26 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   - A lead's growing context is the team's largest cost.
 
 ## Lessons
-<!-- id: orchestrator-lessons; keys: disk, icon cache, lsregister, usage override, weekly reset, stall-watch; src: Scripts/agents/stall-watch.py, Scripts/agents/wait-for-usage-reset.py, Scripts/agents/usage-watch-unscoped.py -->
+<!-- id: orchestrator-lessons; keys: disk, icon cache, lsregister, usage override, weekly reset, stall-watch, exit status; src: Scripts/agents/stall-watch.py, Scripts/agents/wait-for-usage-reset.py, Scripts/agents/usage-watch-unscoped.py, Scripts/agents/run_suite.py -->
 
 - **Deleting to free disk:** the user allows the orchestrator, when the disk runs low or whenever it helps, to delete build folders that can be rebuilt.
   That means DerivedData, release and scratch builds, and finished agents' worktrees, each folder's apps unregistered first (the icon-cache lesson).
+  When the disk falls under 8 GB, clear finished worktrees and scratch at once, with literal paths.
+  Keep two gigabytes free before a merge suite: the archive-import tests refuse to run under the app's one-gigabyte reserve.
 - **The system icon cache** (`/Library/Caches/com.apple.iconservices.store`, root-only, invisible to `du`) grows about 23 MB with every build-and-launch of the test host, and only the user can purge it.
   At each merge check `stat -f %l /Library/Caches/com.apple.iconservices.store` (entries plus two), and tell the user when it passes 10,000.
   Before deleting any build folder run `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u <folder>/Build/Products/Debug/TextMouth.app`.
   Batch targeted test runs into fewer launches.
 - **The usage override before the weekly reset** (Saturdays at 8:00 a.m. Eastern).
   On a Friday night or Saturday morning, keep a full set of agents going until the limit runs out, and tell every agent so in its launch message.
+  An agent that follows the usage rule stops itself at a "critical" reading, so say in the launch message whenever the user has overridden it.
   Keep a background task that exits after the reset, so you are re-invoked to resume agents that were cut off.
+- **A spent usage window:** nothing re-invokes you when it comes back, and once the limit is reached you cannot start a watcher.
+  At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking you, when a window it saw spent has headroom again.
+- **Stalled agents:** an agent can stall with "no progress for 600s": a message to its id resumes it with its context intact, and its branch keeps its commits.
+  A background suite stopped at its time limit must be rerun.
+  While agents work, run `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task.
+  It exits naming any agent whose tool call has waited fifteen minutes for its result, usually at a permission prompt.
+- **The Agent tool runs at most 20 subagents at once** in a session ("Concurrent subagent limit reached (20)"), so count the leads, reviewers, and workers before a launch.
+- **The Mac suite's exit status is the gate.**
+  Read `Scripts/agents/run_suite.py`'s exit status, not the Executed line: "1 failure (0 unexpected)" is a real failure.

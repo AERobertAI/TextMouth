@@ -61,32 +61,17 @@ The agent:
 
 ## Lessons that cost time
 
-- `git merge -F -` does not read standard input; write merge messages to files.
-  Two heredocs on one command line swallow the second; write helper scripts to files first.
-- Every agent of one session shares the session's scratchpad folder: on October 9, 2026 one agent's commit-message files were overwritten by another's after use.
-  Each agent prefixes its scratch files with its slug (or keeps a subfolder named for it), and the orchestrator's own start with `orchestrator-`.
-- Agents can stall with "no progress for 600s"; a message to the agent's id resumes it with its context intact, and its branch keeps its commits.
-  A background suite stopped at its time limit must be rerun.
-- An agent that follows the usage rule stops itself at a "critical" reading; say in the launch message when the user has overridden it.
-- Keep two gigabytes free before a merge suite: the archive-import tests refuse to run under the app's one-gigabyte reserve.
-- A hosted SwiftUI view whose width outgrows the width offered (a macOS form in the columns style did) makes its window chase it until AppKit raises "more Update Constraints in Window passes than there are views in the window" and the test host ends with a crash dialog the user sees (twice on October 10, 2026).
-  Host such views inside a fixed frame, or measure them with `NSHostingController.sizeThatFits(in:)` and no window.
-- An agent's worktree (`isolation: "worktree"`) starts at origin/main, which can be far behind local main (1,081 commits on October 12, 2026): every brief has its agent make its branch from local main or a team branch, by name.
-- A changed copy of `bbs.py` must never run against the live board: one worker did on October 12, which created the new tables early (harmlessly).
-  Point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
-- A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
-- A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away.
-  Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still.
-  Every `rm`, in a brief or the orchestrator's own commands, takes literal paths.
-  While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
-- The Agent tool runs at most 20 subagents at once in a session ("Concurrent subagent limit reached (20)").
-  Count the leads, reviewers, and workers before a launch: on October 30, 2026 two leads built most of their tasks themselves because they could not launch workers.
-- Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either.
-  At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again.
-  On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
-- A revert must keep what other code uses.
-  Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed.
-  Before a revert, grep for each symbol the commit added.
+- Write merge messages and helper scripts to files: `git merge -F -` does not read standard input, and two heredocs on one command line swallow the second.
+- Prefix every scratch file with your slug, or keep a subfolder named for it: all agents of a session share its scratchpad folder, and the orchestrator's files start with `orchestrator-`.
+- Run a changed copy of `bbs.py` only with `TEXTMOUTH_BBS_DIR` set to a scratch folder, never against the live board.
+- Give every `rm` literal paths, never a shell variable: a tool call that waits on a permission prompt stops its agent until the user answers.
+- Before a revert, grep for each symbol the commit added: a revert also removes helpers that other code uses.
+- Host a SwiftUI view whose width follows its offer inside a fixed frame, or measure it with `NSHostingController.sizeThatFits(in:)` and no window, or the test host ends in a crash dialog.
+  Rebase an old branch before any hosted test run on this Mac, or the test host can take the user's AirPods.
+  The mechanisms of both are in [The hosted-test sandbox](docs/architecture/state/hosted-test-sandbox.md).
+- Check a braille rule that an agent states against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
+- Run every `make check` with `SIGN_APP=true`: without it `codesign` waits on the login keychain while holding the heavy lock.
+- Write times from `date`, never from a guess.
 
 ## Where things stood on November 14, 2026
 

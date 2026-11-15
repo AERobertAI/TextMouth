@@ -583,19 +583,19 @@ The user's open decisions: P07 (the end-of-book position), P08 (the audiobook ju
 
 The date, the incident, and the user's words behind a rule that AGENTS.md or CLAUDE.md now states without them.
 
-- **The message board.** It was used for every task since October 2: well over a thousand messages by October 4.
-- **Pushing main and its tags.** Since November 14, 2026 the orchestrator pushes main and its version tags to GitHub, and only at a version bump it judges a fairly stable release.
+- **The message board:** It was used for every task since October 2: well over a thousand messages by October 4.
+- **Pushing main and its tags:** Since November 14, 2026 the orchestrator pushes main and its version tags to GitHub, and only at a version bump it judges a fairly stable release.
   The user: "You have permission to push to main and tags I say when you increment the release number to a fairly stable release".
   The project CLAUDE.md carried the same authorization, dated November 14, 2026.
-- **The workflow guard.** Once main held `tests.yml` (since that first push, 0.4.10), `github_run.py`'s workflow guard was on.
-- **No iPhone simulator on this Mac.** The user also allowed deleting the iPhone simulator runtime once the iPhone tests ran wholly on GitHub; it was deleted on November 14, 2026 (7.5 GB).
-- **The usage override.** The user set the override as standing for the night before the weekly reset (Saturdays at 8:00 a.m. Eastern).
+- **The workflow guard:** Once main held `tests.yml` (since that first push, 0.4.10), `github_run.py`'s workflow guard was on.
+- **No iPhone simulator on this Mac:** The user also allowed deleting the iPhone simulator runtime once the iPhone tests ran wholly on GitHub; it was deleted on November 14, 2026 (7.5 GB).
+- **The usage override:** The user set the override as standing for the night before the weekly reset (Saturdays at 8:00 a.m. Eastern).
   On October 10, 2026 they said: "please don't warry about the weekly reset and have a full set of agents going and work until the limit runs out, everything can just be resumed without issue in the new week...
   and remember this for Friday nights / Saturday mornings before the usage resets").
   On such a night the orchestrator kept three builders and the non-building agents going until the limit ran out.
-- **Branching from local main.** An agent's worktree (`isolation: "worktree"`) starts at origin/main, which can be far behind local main (1,081 commits on October 12, 2026).
+- **Branching from local main:** An agent's worktree (`isolation: "worktree"`) starts at origin/main, which can be far behind local main (1,081 commits on October 12, 2026).
   So every brief has its agent make its branch from local main or a team branch, by name.
-- **Builds through the wrapper, before the build train.** Task agents built and tested only through `.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh`, one build of their own at a time, with a build folder of their own outside the repository.
+- **Builds through the wrapper, before the build train:** Task agents built and tested only through `.claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh`, one build of their own at a time, with a build folder of their own outside the repository.
   The command:
   `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-<slug>"`.
   `-jobs 4` holds a clean build's peak memory to about 1.9 GB, against 2.6 GB at Xcode's default of eight jobs, for 13 seconds more (69 to 82 seconds, measured October 12, 2026; compiling is about a minute of a full run, the tests about eleven).
@@ -604,5 +604,23 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   Hosted tests run inside the real app against a sandbox under the temporary directory and never join the system's media session.
   Before reporting, an agent deleted its build folder after unregistering its app.
   The build train replaced all of this on October 31, 2026, and trains moved to GitHub Actions on November 9, 2026.
-- **The commit trailer.** Each commit message ended `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`, or the attribution the session's own instructions gave.
-- **Notices before a full suite.** An agent posted a `build` notice on the board before a full suite, while agents built on their own; trains made the notice unnecessary.
+- **The commit trailer:** Each commit message ended `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`, or the attribution the session's own instructions gave.
+- **Notices before a full suite:** An agent posted a `build` notice on the board before a full suite, while agents built on their own; trains made the notice unnecessary.
+- **The shared scratchpad:** On October 9, 2026 one agent's commit-message files were overwritten by another's after use.
+- **The live board:** A changed copy of `bbs.py` ran against the live board on October 12, 2026, which created the new tables early (harmlessly).
+- **A permission prompt on `rm`:** Claude Code asks before an `rm` through a shell variable.
+  On October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still.
+  Every `rm`, in a brief or the orchestrator's own commands, takes literal paths.
+- **A revert:** Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed.
+- **The hosted view that chased its width:** A macOS form in the columns style made its window chase it until AppKit raised "more Update Constraints in Window passes than there are views in the window".
+  The test host ended with a crash dialog the user saw, twice on October 10, 2026.
+- **The AirPods:** A test host that joined the system's media session took the user's AirPods.
+  It never does now, but a branch older than that fix still can until it rebases.
+- **The braille rule claim:** A reviewer said UEB writes 6-N and 6-Y, and the user, a braille reader, knew UEB had dropped ation and ally (BANA's UEB FAQ).
+  It was November 13, 2026.
+- **`SIGN_APP=true`:** Two agents' `make check` runs held the heavy lock for an hour each, waiting on the login keychain (November 14, 2026).
+- **Times from `date`:** The orchestrator's log ran up to 5.5 hours ahead of the clock and told the user the reset was near when it was five hours away (November 14, 2026).
+- **The 20-agent limit:** On October 30, 2026 two leads built most of their tasks themselves because they could not launch workers.
+- **A spent usage window:** On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
+- **The Executed line:** Main was fast-forwarded once on the Executed line of a run with "1 failure (0 unexpected)" and taken back within a minute.
+- **Disk under 8 GB:** The disk reached 2.7 GB free during measurements on November 14, 2026.
