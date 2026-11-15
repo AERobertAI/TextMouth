@@ -675,3 +675,6 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Preferences
 
 - **The Leading articles setting:** LeadingArticles (Models/LeadingArticles.swift) is saved under leadingArticles (November 13, 2026).
+## From Preferences: keyboard shortcuts
+
+- **The former default shortcuts:** Move Book Up and Move Book Down had Control-Option arrows before March 22, 2026 (1ec35f02), and Next Bookmark had Shift-Command-B before March 24 (ffb538b1), when Show Bookmarks took Shift-Command-B (the comment on ShortcutAction.formerDefaultBindings).

@@ -39,7 +39,7 @@
     "docs/architecture/state/media-playback.md": {"date": 4, "line-length": 46},
     "docs/architecture/state/package-records-places-and-files.md": {"line-length": 35},
     "docs/architecture/state/package-records.md": {"line-length": 25},
-    "docs/architecture/state/preferences-shortcuts.md": {"date": 2, "line-length": 21},
+    "docs/architecture/state/preferences-shortcuts.md": {"line-length": 21},
     "docs/architecture/state/preferences.md": {"line-length": 20},
     "docs/architecture/state/reader-navigation.md": {"date": 4, "line-length": 33, "user-quote": 1},
     "docs/architecture/state/reader-playback.md": {"date": 4, "line-length": 24},
