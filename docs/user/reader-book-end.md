@@ -1,6 +1,8 @@
 # When a book ends, and your saved places
 <!-- id: reader-book-end-page; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## When a book ends
 <!-- id: reader-when-book-ends; keys: ; src: -->
 

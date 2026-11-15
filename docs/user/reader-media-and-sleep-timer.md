@@ -1,6 +1,8 @@
 # Media keys and the sleep timer
 <!-- id: reader-media-and-sleep-timer-page; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Headphone and media keys
 <!-- id: reader-headphone-media-keys; keys: ; src: -->
 

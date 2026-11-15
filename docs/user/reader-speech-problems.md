@@ -1,6 +1,8 @@
 # When speech or audio goes wrong
 <!-- id: reader-speech-problems-page; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Speech markup in a book's text
 <!-- id: reader-speech-markup-book-text; keys: ; src: -->
 

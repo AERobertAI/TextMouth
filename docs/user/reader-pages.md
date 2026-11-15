@@ -1,6 +1,8 @@
 # Pages in a reader
 <!-- id: reader-pages-page; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## Pages
 <!-- id: reader-pages; keys: ; src: -->
 
