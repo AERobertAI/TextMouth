@@ -118,7 +118,7 @@ The repository is public (`github.com/AERobertAI/TextMouth`), and free hosted ru
   A warm build took 1.3 minutes against 8 cold (the cache is about 640 MB, and the first shard of each run saves it).
   A long request runs as up to four jobs side by side, each with its share of the test classes (`Scripts/agents/shard.py` deals them out by their times on the runner in `class-times.json`; `plan_shards.py` starts the jobs; `merge_shards.py` joins their results into the one artifact the Mac reads).
   And a test that waits for something the runner lacks fails after 2 minutes (xcodebuild rounds to the minute), or is left out (`Scripts/agents/runner-skips.conf`).
-  Testing TextMouth (Tests on GitHub Actions) has the details and the times.
+  [Tests on GitHub Actions](testing-github.md) has the details and the times.
   A cache can go stale: a train once failed to link symbols that its sources held.
   Deleting the Mac caches with `gh api -X DELETE repos/AERobertAI/TextMouth/actions/caches?key=<key>` fixed it.
 - **What the user must keep.**
