@@ -75,9 +75,9 @@ Tests that act as a person does find what tests of the parts miss.
   - `ReaderUITests` (4 tests): the reader's order, its first values, 44-point controls, and its audit.
   - `LibraryUITests` (4 tests): the Library's words and order, empty and with a book, and the audit of each.
   - `ScreenOrderUITests` (10 tests): the order of the Add to Library sheet, Settings, Bookmarks, Headings, Go To, Sleep Timer, the Voice sheet, Book Information, and the navigation unit's choice, with the audit of each.
-  - `LargeTextUITests` (4 tests): see [LargeTextUITests](testing-iphone-audit.md).
-  - `SearchUITests` (7 tests, 0.4.4; typed; see [SearchUITests](testing-iphone-audit.md)).
-  - `PlaybackUITests` (6 tests): see [PlaybackUITests](testing-iphone-audit.md).
+  - `LargeTextUITests` (4 tests): see [LargeTextUITests](testing-iphone-audit.md#largetextuitests).
+  - `SearchUITests` (7 tests, 0.4.4; typed; see [SearchUITests](testing-iphone-audit.md#searchuitests)).
+  - `PlaybackUITests` (6 tests): see [PlaybackUITests](testing-iphone-audit.md#playbackuitests).
   - What iOS shows for a button in `.cancellationAction` is in `PhoneSheetButton.swift` and in [The two apps and the platform folders](../architecture/platforms-phone-interface.md).
   - They read what VoiceOver would be given: each element's label, value, and traits, in the order of the accessibility tree, as a depth-first walk of one snapshot.
   - No wait lasts longer than 60 seconds.
