@@ -23,6 +23,8 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertFalse(PhoneLaunchRequest.runsInSandbox(["XCTestConfigurationFilePath": "/tmp/x.xctestconfiguration"]))
     }
 
+    // Mac only: TextMouthRuntime.detect on iOS reads the launch request, which is what this test says the Mac never does.
+    #if os(macOS)
     /// The Mac's process never asks: its detection is the one it was, keyed on
     /// XCTest's own variable, whatever the environment holds.
     func testTheMacsRuntimeIgnoresTheRequest() {
@@ -33,6 +35,7 @@ final class PhoneLaunchRequestTests: XCTestCase {
         )
         XCTAssertFalse(runtime.isHostedTest, "Only the iPhone app's debug build reads the request")
     }
+    #endif
 
     // MARK: - The File Sent
 

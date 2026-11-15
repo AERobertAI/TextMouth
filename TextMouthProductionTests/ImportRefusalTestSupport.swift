@@ -52,7 +52,12 @@ extension XCTestCase {
             line: line
         )
         XCTAssertEqual(library.errorMessage, failure, file: file, line: line)
+        #if os(iOS)
+        // The iPhone's alert for a failed import is titled as its spec asks (LibraryViewModel.presentImportError).
+        XCTAssertEqual(library.errorTitle, ImportProgressWording.nothingImportedTitle, file: file, line: line)
+        #else
         XCTAssertNil(library.errorTitle, "a failure's alert is titled Error", file: file, line: line)
+        #endif
         XCTAssertEqual(library.library.books.map(\.title), [], "no row may be added", file: file, line: line)
 
         XCTAssertEqual(try folderEntries(of: folder), [], "no package may be left in the folder", file: file, line: line)

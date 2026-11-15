@@ -45,6 +45,8 @@ final class SoftHyphenEffectTests: XCTestCase {
         return result
     }
 
+    // Mac only: the iPhone app has no liblouis tables (no braille helper), so the table en-ueb-g1.ctb is unknown there.
+    #if os(macOS)
     /// In uncontracted and in contracted English braille, a soft hyphen in a word is written as a hyphen cell,
     /// and nothing else of the word changes (so a listener of a braille display reads "hy-phenation").
     func testASoftHyphenInAWordIsAHyphenInBraille() throws {
@@ -65,4 +67,5 @@ final class SoftHyphenEffectTests: XCTestCase {
             }
         }
     }
+    #endif
 }
