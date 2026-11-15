@@ -84,7 +84,8 @@ final class UnknownKeysTests: XCTestCase {
     /// A member of every JSON kind, as a later TextMouth might add one: a
     /// null, a bool, a whole number, one above `Int64.max`, a fraction, a
     /// string, an array in an order that is not sorted, and nested objects.
-    private static let everyKind: [String: Any] = [
+    /// Computed, since a dictionary of `Any` cannot be a shared constant.
+    private static var everyKind: [String: Any] { [
         "nothing": NSNull(),
         "flag": true,
         "whole": -7,
@@ -93,7 +94,7 @@ final class UnknownKeysTests: XCTestCase {
         "text": "héllo \"quoted\"",
         "list": [3, "two", [1.5, NSNull()], ["inner": false]] as [Any],
         "object": ["deeper": ["deepest": [] as [Any]]],
-    ]
+    ] }
 
     /// The name the tests give the unknown member they add to an object.
     private static let addedKey = "addedByALaterTextMouth"
