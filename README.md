@@ -42,3 +42,4 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 - [Working on TextMouth with coding agents](docs/agents/working-with-agents.md): the message board the agents coordinate through.
 - [Where things stood, earlier campaigns](docs/agents/history.md): the status of each earlier campaign.
 - [Writing docs and memory files](docs/agents/writing-docs.md): the rules every page and memory file follows.
+- [Orchestrating TextMouth's agents](docs/agents/orchestrator.md): launching, merging, recording, trains, teams.
