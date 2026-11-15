@@ -59,7 +59,7 @@
     "docs/developer/testing-iphone-audit.md": {"line-length": 6},
     "docs/developer/testing-iphone.md": {"line-length": 7},
     "docs/developer/testing-tools.md": {"line-length": 19},
-    "docs/developer/testing.md": {"line-length": 19},
+    "docs/developer/testing.md": {"line-length": 7},
     "docs/developer/third-party-code.md": {"line-length": 8},
     "docs/user/adding-books.md": {"date": 3, "line-length": 39, "marker-missing": 55, "page-size": 1, "sentences-per-line": 95},
     "docs/user/audiobook-manifest.md": {"date": 3, "line-length": 13, "marker-missing": 13, "sentences-per-line": 36},
