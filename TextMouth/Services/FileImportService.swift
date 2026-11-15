@@ -417,9 +417,14 @@ struct ImportedFileMetadata {
     /// The common metadata tags of the audio file at `url`, read through
     /// AVFoundation's asynchronous loading while this thread waits, as an
     /// import runs off the main thread. Reading tags never throws, so the
-    /// empty tags are only the type checker's fallback.
+    /// empty tags are only the type checker's fallback. A file only ffmpeg
+    /// reads is asked of ffprobe with the tool this thread sees (FMT31),
+    /// read here, since the wait's task does not inherit it.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+        let ffmpeg = FFmpegAudioConverter.tool
+        return (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) {
+            await AudioPlaybackService.extractFullMetadata(from: url, ffmpeg: ffmpeg)
+        }) ?? AudioMetadata()
     }
 }
 
@@ -3171,6 +3176,14 @@ enum FileImportService {
         // The formats macOS decodes that the import converts (FMT09), by
         // their extensions' system types where they have one.
         types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sortedStably().compactMap {
+            UTType(filenameExtension: $0)
+        })
+        // The formats the installed ffmpeg converts (FMT31, FMT32), audio and
+        // video alike, by their extensions' types: the system's, TextMouth's
+        // own declarations, or a type made for the extension (.spx is the
+        // System Profiler's, so its files are offered too, and refused when
+        // they hold no Ogg).
+        types.append(contentsOf: FFmpegAudioConverter.extensions.sortedStably().compactMap {
             UTType(filenameExtension: $0)
         })
         // Video, imported as an audiobook whose sound alone plays (FR03).

@@ -397,8 +397,13 @@ enum FeedMediaKind: String, Equatable, Sendable {
     static let videoExtensions: Set<String> = ["mp4", "m4v", "mov"]
 
     /// The extensions of audio files: those the import pipeline takes as
-    /// audiobooks (`BookFormat.audio`), but for video's.
-    static let audioExtensions = Set(BookFormat.audio.fileExtensions).subtracting(videoExtensions)
+    /// audiobooks (`BookFormat.audio`), but for video's, and but for the
+    /// formats only an installed ffmpeg converts (`FFmpegAudioConverter`,
+    /// FMT31): a feed fetches none of those, so an episode in one, such as
+    /// Windows Media Audio, fails before its download, as it always has.
+    static let audioExtensions = Set(BookFormat.audio.fileExtensions)
+        .subtracting(videoExtensions)
+        .subtracting(FFmpegAudioConverter.extensions)
 
     /// The kind of a file whose MIME type is `mimeType` and whose address is
     /// `url`: by the type's top-level part when it is audio or video, and

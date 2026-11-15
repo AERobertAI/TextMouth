@@ -19,6 +19,9 @@ is left out by name, with the declaration of any type nothing else names:
 - "Ogg Audio" and "Audio Converted at Import": the import converts that audio
   with Apple's afconvert program (ImportAudioConverter), and iOS lets an app
   start no program.
+- "Audio and Video Converted with ffmpeg" (WMA, WebM, Matroska, AVI, and the
+  rest of FFmpegAudioConverter), with the declarations of its own types: the
+  import converts them with the Mac's installed ffmpeg, which iOS cannot start.
 - "ALAC Audio": the one type it names, `com.apple.coreaudio-format`, is the
   system's type for `.caf` files too (the system types `tones-*.caf` so), which
   are converted at import with afconvert. Leaving the type in would offer every
@@ -61,6 +64,7 @@ IOS_PLIST = Path("TextMouth/Platform/iOS/Info.plist")
 REFUSED = {
     "Ogg Audio",
     "Audio Converted at Import",
+    "Audio and Video Converted with ffmpeg",
     "ALAC Audio",
     "BRF Braille File",
     "BRL Braille File",

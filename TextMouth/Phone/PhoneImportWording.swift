@@ -93,6 +93,20 @@ enum PhoneImportWording {
         "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play yet. \(refusalNextStep)"
     }
 
+    /// The next step the refusal of a format only ffmpeg reads gives: the
+    /// Mac needs ffmpeg for it too (FMT31).
+    static let ffmpegRefusalNextStep = "Add it on a Mac with ffmpeg installed, then send the book here."
+
+    /// The refusal of audio or video that only a Mac's installed ffmpeg
+    /// converts: "“Lecture” is in WMA, which TextMouth on iPhone can't play.
+    /// Add it on a Mac with ffmpeg installed, then send the book here."
+    /// `kind` names the format as the Mac names it
+    /// (`FFmpegImportWording.kindName(of:container:)`). It says no "yet": the
+    /// phone can start no ffmpeg. A nil `name` says "This file".
+    static func ffmpegAudioRefusal(_ name: String?, kind: String) -> String {
+        "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play. \(ffmpegRefusalNextStep)"
+    }
+
     /// The refusal of a Word 6 or Word 95 document, which only textutil
     /// reads: "“Notes” is a Word 6 or Word 95 document, which TextMouth on
     /// iPhone can't read yet. Add it on your Mac, then send the book here."

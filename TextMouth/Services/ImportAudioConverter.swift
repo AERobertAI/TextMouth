@@ -54,8 +54,12 @@ enum ImportAudioConverter {
     ]
 
     /// The extensions, in lowercase, of every audio format the import
-    /// converts (FMT09): Ogg's and `coreAudioExtensions`.
-    static let convertedExtensions: Set<String> = oggExtensions.union(coreAudioExtensions)
+    /// converts (FMT09): Ogg's, `coreAudioExtensions`, and those the
+    /// installed ffmpeg converts (`FFmpegAudioConverter.extensions`, FMT31),
+    /// so the reader guards keep all of them from Apple's decoders.
+    static let convertedExtensions: Set<String> = oggExtensions
+        .union(coreAudioExtensions)
+        .union(FFmpegAudioConverter.extensions)
 
     /// The extensions, in lowercase, of files TextMouth writes itself from
     /// its own samples with Apple's encoder and reads back in the app: a

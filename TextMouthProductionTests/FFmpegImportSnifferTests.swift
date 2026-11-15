@@ -127,6 +127,24 @@ final class FFmpegImportSnifferTests: XCTestCase {
         XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(speexNamedOgg))
     }
 
+    /// Every extension ffmpeg converts is an audiobook extension that the
+    /// import converts and no reader ever decodes in the app, and none is a
+    /// package track or a feed's audio: a package holds the .m4a made of
+    /// each, and a feed fetches none of them.
+    func testEveryFFmpegExtensionIsConvertedAndNeverDecodedInTheApp() {
+        for ext in FFmpegAudioConverter.extensions {
+            let url = URL(fileURLWithPath: "/nonexistent/track.\(ext)")
+            XCTAssertEqual(BookFormat.detect(from: url), .audio, ext)
+            XCTAssertTrue(ImportAudioConverter.isConvertedAtImport(url), ext)
+            XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(url), ext)
+            XCTAssertNil(AudioPlaybackService.metadataAsset(for: url), ext)
+            XCTAssertTrue(ArchiveEntryLimits.isAudio("Disc/track.\(ext)"), ext)
+            XCTAssertFalse(BookFormat.packageTrackExtensions.contains(ext), ext)
+            XCTAssertFalse(FeedMediaKind.audioExtensions.contains(ext), ext)
+        }
+        XCTAssertTrue(FFmpegAudioConverter.extensions.isDisjoint(with: ["tta", "wv", "ape"]))
+    }
+
     // MARK: - Copy Protection
 
     /// The Header object's identifier is the first 16 bytes of every ASF

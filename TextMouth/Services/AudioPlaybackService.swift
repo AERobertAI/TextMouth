@@ -1695,14 +1695,17 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Extract comprehensive metadata from an audio file including album, genre, year, and duration.
     /// Returns an AudioMetadata struct with all available fields populated.
-    static func extractFullMetadata(from url: URL) async -> AudioMetadata {
+    /// A file only ffmpeg reads (FMT31) is asked of ffprobe with `ffmpeg`,
+    /// which the import reads on its own thread (`FFmpegAudioConverter.tool`).
+    static func extractFullMetadata(from url: URL, ffmpeg: FFmpegAudioConverter.Tool = .installed) async -> AudioMetadata {
         var result = AudioMetadata()
 
         // Set the file format from the extension
         result.fileFormat = url.pathExtension.uppercased()
 
         // An Ogg file is never opened by AVFoundation (see `metadataAsset`):
-        // its tags and length are read from its own bytes.
+        // its tags and length are read from its own bytes. Nor is a file
+        // only ffmpeg reads, whose tags ffprobe reads in a watched child.
         guard let asset = metadataAsset(for: url) else {
             if let header = OggHeaderReader.read(at: url) {
                 result.title = header.tags.title
@@ -1711,6 +1714,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 result.genre = header.tags.genre
                 result.year = header.tags.date
                 result.duration = durationString(header.duration)
+            } else if let probed = await FFmpegAudioConverter.tags(of: url, using: ffmpeg) {
+                result.title = probed.tags["title"] ?? ""
+                // ASF's Author and Matroska's ARTIST both reach ffprobe as the artist.
+                result.artist = probed.tags["artist"] ?? probed.tags["album_artist"] ?? ""
+                result.album = probed.tags["album"] ?? ""
+                result.genre = probed.tags["genre"] ?? ""
+                result.year = probed.tags["date"] ?? probed.tags["year"] ?? ""
+                result.duration = probed.duration.map(durationString) ?? ""
             }
             return result
         }
