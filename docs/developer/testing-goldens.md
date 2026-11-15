@@ -40,7 +40,7 @@ They are 46 of the 91 samples of the rich text, RTFD, Word, Word 97-2003, Word t
 Three more groups are held back or left to a comparison test.
 The 9 real DOCX files from LibreOffice (`docx/libreoffice-*.docx`) are held back because `DOCXRealFileTests` asks them, by name, what hidden text, notes, and text boxes read as, where a failure says what changed.
 The 10 Word 97-2003 files of `TextPipelineFixtures.wordFollowUpSamples` are held back because `WordDocumentReaderTests` and `WordDocumentLegacyTests` pin what each reads as.
-`WordDocumentComparisonTests` (Word 97-2003) or `WordDocumentLegacyComparisonTests` (Word 6 and Word 95) also compares its words with textutil's.
+`WordDocumentComparisonTests` (Word 97-2003) or `WordDocumentLegacyComparisonTests` (Word 6 and Word 95) also compares each file's words with textutil's.
 And the 15 real OpenDocument files from LibreOffice (`odt/libreoffice-*.odt`) have no goldens (`TextPipelineFixtures.isComparedByODTTests`, which is not part of `formatSamplesHeldBack`), since `ODTTextutilComparisonTests` compares their reading with textutil's and names every difference.
 The other real .doc and .dot files from LibreOffice are not held back: they have goldens, recorded again for the own reader.
 `Scripts/test/update-goldens.sh` records these goldens with the others.
