@@ -1,17 +1,17 @@
 # Settings: the Braille tab
-<!-- id: settings-braille-tab; keys: ; src: -->
+<!-- id: settings-braille-tab; keys: braille settings, braille code, liblouis, BRF, PEF, braille display; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Braille tab
-<!-- id: braille-tab; keys: ; src: -->
+<!-- id: braille-tab; keys: brailleTable, brailleFileCode, UEB, English Braille American Edition, grade 2, contracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift -->
 
 The Braille tab, between Text and Sounds, chooses the braille code TextMouth reads braille files with and writes braille in (see [What TextMouth reads](what-textmouth-reads.md) and [Exporting books](exporting-books.md)).
 Its one group is headed "Braille", and holds three pop-up buttons, a sentence, and a caption.
 Export's braille options draw the same three pop-ups.
 
 ### Language, Braille code, and Contraction
-<!-- id: language-braille-code-contraction; keys: ; src: -->
+<!-- id: language-braille-code-contraction; keys: Language pop-up, Braille code pop-up, Contraction pop-up, Grade 1, Grade 2, uncontracted; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/ViewModels/BrailleCodeChoiceModel.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 - "Language" comes first.
   Its hint is "The language of the braille code TextMouth reads braille files with and writes braille in."
@@ -27,7 +27,7 @@ Export's braille options draw the same three pop-ups.
   Choosing another language or code keeps the contraction you had when the new code has it, and otherwise takes its contracted table, or its first.
 
 ### Defaults, and where the chosen table comes from
-<!-- id: defaults-where-chosen-table-comes; keys: ; src: -->
+<!-- id: defaults-where-chosen-table-comes; keys: default braille table, built into TextMouth, liblouis version, table missing; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Models/BrailleTableCatalog.swift -->
 
 - Until you choose, the language is English, the code is Unified English Braille, and the contraction is contracted (Grade 2).
   English stays built in and stays the default.
@@ -40,7 +40,7 @@ Export's braille options draw the same three pop-ups.
   A change applies to the books imported from then on; a book already in the library keeps its code.
 
 ### Braille file characters
-<!-- id: braille-file-characters; keys: ; src: -->
+<!-- id: braille-file-characters; keys: brailleFileCode, ascii-na, Eurobraille, Braille ASCII, Unicode braille patterns, BRL; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/ViewModels/BrailleFileCodeChoiceModel.swift, TextMouth/Parsers/BrailleFileCode.swift -->
 
 - "Braille file characters" follows that caption: a pop-up button that chooses how a BRF or BRL file writes each braille cell as a character, for the books you add from now on.
   It is left out, as the other pop-ups are, when TextMouth finds no braille tables.
@@ -56,7 +56,7 @@ Export's braille options draw the same three pop-ups.
 - config.json holds the choice as brailleFileCode (see [Editing settings in config.json](config-json.md)).
 
 ### Guess the braille code of new books
-<!-- id: guess-braille-code-new-books; keys: ; src: -->
+<!-- id: guess-braille-code-new-books; keys: code detection, guessed code, English Braille American Edition, auto-detect, import; src: TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Parsers/BrailleCodeDetector.swift -->
 
 - "Guess the braille code of new books" follows, a switch that is on by default.
   It is left out, as the pop-ups are, when TextMouth finds no braille tables.
@@ -72,14 +72,14 @@ Export's braille options draw the same three pop-ups.
   - config.json does not hold this switch.
 
 ### Built-in tables and where the choice is kept
-<!-- id: built-tables-where-choice-kept; keys: ; src: -->
+<!-- id: built-tables-where-choice-kept; keys: en-ueb-g1.ctb, en-ueb-g2.ctb, en_US.tbl, en-us-g1.ctb, brailleTable; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Views/Settings/BrailleSettingsView.swift -->
 
 - Four tables are built into TextMouth: Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the U.S. The pop-ups offer what the tables say about themselves.
   In place of them, the tab says "TextMouth found no braille tables in its bundle." when TextMouth finds no table at all, in its bundle or on this Mac.
 - config.json holds the choice as brailleTable (see [Editing settings in config.json](config-json.md)).
 
 ## This Mac's braille tables
-<!-- id: this-mac-braille-tables; keys: ; src: -->
+<!-- id: this-mac-braille-tables; keys: VoiceOver braille tables, mac: tables, BrailleTables folder, LiblouisBrailleTranslator, 26.3, eight-dot; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouth/Services/BrailleTranslator.swift -->
 
 This Mac's braille tables, in the Braille tab and in Export's braille options, are VoiceOver's own, and they add the languages and codes beyond TextMouth's four English tables.
 
