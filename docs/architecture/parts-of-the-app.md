@@ -14,8 +14,9 @@ TextMouthApp (Platform/macOS/App/TextMouthApp.swift) declares three kinds of win
 - Reader windows, one per book, identified by the book's ID (BookReaderWindowView, in the scene whose ID is BookReaderWindowView.windowID).
   A window's book can change in place when listening goes on to the next book, its scene value becoming the next book's ID in the same window (0.2.5, in [Windows](state/windows.md)).
   Window restoration is off, so none reopen at launch.
-- The Settings window (SettingsView), with ten tabs, one for each SettingsTab case, at the fixed SettingsView.windowSize.
-  SettingsTabContent matches each tab with its view, and SettingsTabPage draws every tab but Text in the grouped form style, which scrolls and fills the window's width, keeping checkboxes and bordered fields (SettingsTab.scrollsAsAWhole); the Text tab's rule list scrolls by itself.
+- The Settings window (SettingsView), with one tab for each SettingsTab case, at the fixed SettingsView.windowSize.
+  SettingsTabContent matches each tab with its view.
+  SettingsTabPage draws every tab but Text and Library in the grouped form style, which scrolls and fills the window's width, keeping checkboxes and bordered fields (SettingsTab.scrollsAsAWhole); the Text tab's rule list and the Library tab's list of views scroll by themselves.
   SettingsTabFitTests finds every AppKit control of each tab where the window shows it or a scroll view reaches it, and measures each tab's height and width without a window (TODO A10: in the columns style, the Shortcuts tab was 4,113 points tall in the 540-point window, and 223 points wider than any width it was given).
 
 ## The AppKit windows
@@ -99,9 +100,9 @@ The mode adds runtime isolation checks to `@objc` methods of main-actor classes 
 SpeechService handles every callback of its direct synthesizer on the main queue, so its announcement of a text the speech engine refused, made only when no reader listens, asserts the main actor there (endDirectSpeechRefused(at:refusing:spanning:)).
 A render's RenderCancellationObserver, called on whatever thread the synthesizer uses, only sets a flag in an OSAllocatedUnfairLock and signals the semaphore the render queue waits on; it is Sendable, as the SDK makes every synthesizer delegate (AVSpeechSynthesizerDelegate is NS_SWIFT_SENDABLE), and the compiler checks it, with no `@unchecked`.
 Speak Info's LibraryInfoSpeechDelegate ends an announcement at once when called on the main thread, and otherwise on the next turn of the main queue, and the reader's WhereAmIDelegateHelper hands each finish and cancel of an announcement to the main queue.
-UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (27 and 15).
-The twenty-seventh `@unchecked Sendable` is ManifestOwedFields, the record of the title and author a manifest is owed, whose one stored property is a constant and UserDefaults is documented thread-safe.
-The fourteenth `nonisolated(unsafe)` is the record of each feed's index on disk, LibraryPersistenceService.feedIndexesOnDisk, confined to the save queue since FR11's branch A1, and the fifteenth the record of library.json on disk beside it, libraryIndexOnDisk, confined the same way.
+UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (30 and 16).
+One `@unchecked Sendable` is ManifestOwedFields, the record of the title and author a manifest is owed, whose one stored property is a constant and UserDefaults is documented thread-safe.
+One `nonisolated(unsafe)` is the record of each feed's index on disk, LibraryPersistenceService.feedIndexesOnDisk, confined to the save queue, and another the record of library.json on disk beside it, libraryIndexOnDisk, confined the same way.
 Work that can block for good, such as listing voices or decoding audio with `AVAssetReader`, runs on a dispatch queue with a deadline and never in Swift's concurrency pool, which has one thread for each core: a blocked task there starves every other task of the process.
 
 ## The memory guard
