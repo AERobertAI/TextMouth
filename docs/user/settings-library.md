@@ -1,17 +1,17 @@
 # Settings: the Library tab
-<!-- id: settings-library-tab; keys: ; src: -->
+<!-- id: settings-library-tab; keys: custom views, smart folders, saved filters, View pop-up, libraryViews; src: TextMouth/Views/Settings/LibraryViewsSettingsView.swift, TextMouth/Models/LibraryViewsSettingsWording.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## Library tab: views
-<!-- id: library-tab-views; keys: ; src: -->
+<!-- id: library-tab-views; keys: libraryViews, View pop-up, 860 points, Reading List, Feeds view, Folders view; src: TextMouth/Views/Settings/LibraryViewsSettingsView.swift, TextMouth/Models/LibraryViewsSettingsWording.swift, TextMouth/Models/LibraryViewDefinition.swift -->
 
 The Library tab, between Stats and Feeds, arranges the views the Library window's View pop-up offers (see [The Library window](library-window.md)).
 Its toolbar symbol is a row of books, and the window is 860 points wide, so its eleven tabs fit.
 Like the Text tab, it does not scroll as a whole: its list fills the room the other controls leave.
 
 ### The list of views
-<!-- id: list-views; keys: ; src: -->
+<!-- id: list-views; keys: built in, custom, Show Always, Show When Applicable, Hide, Move Up, Move Down, VO-Command-Space; src: TextMouth/Models/LibraryViewsSettingsWording.swift, TextMouth/Views/Settings/LibraryViewsSettingsView.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift -->
 
 - The heading "Views" is followed by two captions.
   The first reads "The Library window's View pop-up offers these views, in this order.
@@ -29,7 +29,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
   After Show Always, Show When Applicable, or Hide from a row, VoiceOver says, as in "Feeds, shown always", "Feeds, shown when applicable", or "Feeds, hidden".
 
 ### Controls for the selected view
-<!-- id: controls-selected-view; keys: ; src: -->
+<!-- id: controls-selected-view; keys: Visibility, New View, Edit, Duplicate, Delete, Restore Default, 200 views, Copy 2; src: TextMouth/Models/LibraryViewsSettingsWording.swift, TextMouth/ViewModels/LibraryViewsSettingsActions.swift, TextMouth/Views/Settings/LibraryViewsSettingsView.swift, TextMouth/Models/LibraryViewDefinitionList.swift -->
 
 - Under the list are the controls for the selected view.
   Each is dimmed while it does not apply, and its hint then says why.
@@ -66,7 +66,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
     Rename it first, then restore this view."
 
 ### Newer views and where the list is kept
-<!-- id: newer-views-where-list-kept; keys: ; src: -->
+<!-- id: newer-views-where-list-kept; keys: libraryViews, needs a newer TextMouth, unreadable views, library.json, view sort; src: TextMouth/Models/LibraryViewDefinitionStore.swift, TextMouth/Models/LibraryViewsSettingsWording.swift, TextMouth/Services/ConfigService.swift -->
 
 - When config.json holds views a later TextMouth wrote, which this TextMouth keeps as they are and never offers, a caption under the controls says so: "1 view needs a newer TextMouth.
   It is kept as it is, and not offered." or, for more, "2 views need a newer TextMouth.
@@ -74,7 +74,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
 - Where the choices are kept: config.json holds the list as libraryViews (see [Editing settings in config.json](config-json.md)); each view's sort stays with the library's sorts, in library.json.
 
 ### Titles: leading articles
-<!-- id: titles-leading-articles; keys: ; src: -->
+<!-- id: titles-leading-articles; keys: leadingArticles, partOfTitle, ignoredWhenTyping, ignoredWhenTypingAndSorting, The Hobbit, sort title; src: TextMouth/Models/LeadingArticleWording.swift, TextMouth/Models/LeadingArticles.swift, TextMouth/Views/Settings/LeadingArticlesSettingsSection.swift -->
 
 - The Titles section, at the bottom of the tab under the controls for the selected view, decides what a title's leading article does in the Library window's lists.
   Its heading, "Titles", is a heading to VoiceOver, and it holds one pop-up button, "Leading articles", with the hint "Chooses whether The, A, and An at the start of a title count when the Library sorts titles and when you type a title's first letters to go to it."
@@ -103,7 +103,7 @@ Like the Text tab, it does not scroll as a whole: its list fills the room the ot
   - Where the choice is kept: config.json holds it as leadingArticles, "partOfTitle", "ignoredWhenTyping", or "ignoredWhenTypingAndSorting" (see [Editing settings in config.json](config-json.md)).
     A change is saved at once, and every open Library window sorts, shows, and finds titles by it from then on.
 ### The view editor
-<!-- id: view-editor; keys: ; src: -->
+<!-- id: view-editor; keys: New View sheet, Edit sheet, Name, Lists, Match, All Conditions, Any Condition; src: TextMouth/Models/LibraryViewEditorWording.swift, TextMouth/Views/Settings/LibraryViewEditorSheet.swift, TextMouth/ViewModels/LibraryViewEditorModel.swift -->
 
 The view editor is a sheet over Settings, 620 points wide and 520 high, that scrolls inside.
 Its heading is "New View", or "Edit" and the view's name, as in "Edit Unopened".
@@ -121,7 +121,7 @@ From the top, it has these controls, and Escape presses Cancel and Return presse
   A row that no condition tests is listed.
 
 ### The view editor: conditions
-<!-- id: view-editor-conditions; keys: ; src: -->
+<!-- id: view-editor-conditions; keys: condition tests, Reading State, Date Added, Date Opened, Title or Author, Format, Subscription, New Items; src: TextMouth/Models/LibraryViewEditorWording.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/Models/LibraryViewDefinition.swift -->
 
 - "Conditions" is a heading above one row for each condition, or, with none, the sentence "No conditions: the view lists every item of the kinds chosen."
   A condition's row has a test pop-up, which VoiceOver calls "Condition 2"; a relation pop-up, "Condition 2 relation"; "Remove", which VoiceOver calls "Remove condition 2"; and the control the test needs.
@@ -140,7 +140,7 @@ From the top, it has these controls, and Escape presses Cancel and Return presse
   Format, Reading State, Reading List, Date Added, and Date Opened test books, episodes, and articles only; New Items and Subscription test feeds only; Folder, by the folder a feed lives in, and Title or Author, by a feed's title and author, test all four kinds.
 
 ### The view editor: sort, limit, and saving
-<!-- id: view-editor-sort-limit-saving; keys: ; src: -->
+<!-- id: view-editor-sort-limit-saving; keys: Sort By, Order, Show at Most, Chosen By, Only the Latest from Each Feed, Save, Cancel; src: TextMouth/Models/LibraryViewEditorWording.swift, TextMouth/ViewModels/LibraryViewEditorModel.swift, TextMouth/Views/Settings/LibraryViewEditorSheet.swift -->
 
 - "Only the Latest from Each Feed" is a checkbox with the hint "Of each feed's episodes and articles, lists only the one you opened last."
   It is dimmed, with the hint "Applies only to a view that lists episodes or articles.", while the view lists neither.
