@@ -629,6 +629,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
   The BRF fixes from the user's Life of Pi: running heads left out (keyed without their numbers), print page change lines, chapter rows as headings, title and author from the braille title page, and the English Braille, American Edition suggestion announced once.
   All 13 "St."/"Still." places in Life of Pi read as its EPUB does (checked by the orchestrator, read-only).
   The Reading List's cloud follow-ups: unknown sizes one at a time, books left out logged.
+  The braille code guess at import (the Braille tab's switch, Keep This Code) was kept through Replace Existing.
   Every merge went review, then a fix round, then often a check, then a Mac full suite on `integrate/1113`, then a fast-forward.
 - **The lessons of that night (November 14, 2026), which hold for any campaign.** A reviewer said UEB writes 6-N and 6-Y; two agents' `make check` runs held the heavy lock for an hour each without `SIGN_APP=true`; main was fast-forwarded once on the Executed line and taken back within a minute.
   A branch that adds a test file must commit the regenerated project, since trains regenerate it and never notice when it's missing.
