@@ -98,13 +98,13 @@ Braille: brailleTable, the table braille files are read and written with, by its
 
 - "en-ueb-g1.ctb" or "en-ueb-g2.ctb" for Unified English Braille, uncontracted or contracted,
 - and "en-us-g1.ctb" or "en_US.tbl" for English Braille, American Edition, uncontracted or contracted,
-- or "mac:" and the file name of one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (see the Braille tab, under [Settings](settings.md)).
+- or "mac:" and the file name of one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (see the Braille tab, under [Settings](settings-braille.md)).
 
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
 A missing, empty, or other value, such as a name that is not exactly one of these four or "mac:" and a bare file name (no slash or comma, and not starting with a dot), leaves the current table as it is.
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](adding-books.md)).
 It chooses the table for books imported and braille exported from then on.
-A book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings.md)).
+A book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings-braille.md)).
 TextMouth writes the one in use, "ascii-na" until one is chosen.
 A missing, empty, or other value, "unicode" included, since TextMouth recognizes Unicode braille patterns by a file's bytes and never takes them from the setting, leaves the current choice as it is.
 It chooses the characters for books imported from then on, and the Export dialog starts a BRF with them; a book already in the library keeps the characters it was imported with (see [Where TextMouth keeps your library](where-your-library-lives.md)).
@@ -142,7 +142,7 @@ recordingAnnouncesLevel, whether it announces the level while recording (false b
 ### Library views setting
 <!-- id: library-views-setting; keys: libraryViews, custom views, view filter, conditions, onePerFeed, UUID; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewDefinitionStore.swift -->
 
-Library: libraryViews, the Library window's views in the order its View pop-up offers them (see the Library tab, under [Settings](settings.md)).
+Library: libraryViews, the Library window's views in the order its View pop-up offers them (see the Library tab, under [Settings](settings-library.md)).
 It is a list, and each entry is an object.
 A built-in view's entry names the view by "id", one of "Folders", "All Items", "Unopened", "Recently Opened", "Reading List", or "Feeds", and gives its "visibility", "always", "whenApplicable", or "hidden".
 It holds "name" or "filter" only once you have changed them, so a later TextMouth can improve the views it ships.
@@ -212,7 +212,7 @@ Every view's sort stays in library.json with the folders' sorts, a view of your 
 ### Titles setting
 <!-- id: titles-setting; keys: leadingArticles, partOfTitle, ignoredWhenTyping, ignoredWhenTypingAndSorting, sort title, The Hobbit; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/LeadingArticles.swift -->
 
-Library, the Titles section: leadingArticles, what a title's leading article does in the Library's lists (see the Library tab, under [Settings](settings.md)): "partOfTitle", the default, "ignoredWhenTyping", or "ignoredWhenTypingAndSorting".
+Library, the Titles section: leadingArticles, what a title's leading article does in the Library's lists (see the Library tab, under [Settings](settings-library.md)): "partOfTitle", the default, "ignoredWhenTyping", or "ignoredWhenTypingAndSorting".
 TextMouth writes the choice in force.
 A missing or empty value, or a name that is not exactly one of these, leaves the current choice as it is.
 
