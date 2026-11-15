@@ -64,7 +64,7 @@
     "docs/user/adding-books.md": {"date": 3, "line-length": 39, "marker-missing": 55, "page-size": 1, "sentences-per-line": 95},
     "docs/user/audiobook-manifest.md": {"date": 3, "line-length": 13, "marker-missing": 13, "sentences-per-line": 36},
     "docs/user/changelog.md": {"line-length": 68},
-    "docs/user/cloud-library.md": {"date": 2, "line-length": 27, "sentences-per-line": 30},
+    "docs/user/cloud-library.md": {"date": 2, "line-length": 10},
     "docs/user/config-json.md": {"date": 1, "line-length": 25, "marker-missing": 1, "sentences-per-line": 17},
     "docs/user/editing-audio.md": {"line-length": 16, "marker-missing": 1, "section-length": 1, "sentences-per-line": 22},
     "docs/user/editing-book-text.md": {"line-length": 10, "marker-missing": 1, "sentences-per-line": 12},
