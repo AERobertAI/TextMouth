@@ -35,9 +35,13 @@ Export's Original file offers it, with the hint "The book's own file, as it was 
 
 The Storage tab's Find Duplicate Books… groups the library's books, never a feed's episodes and articles, by the criteria you check: Identical File (MD5), checked as the sheet opens, Same ISBN, Same Title, and Same Author.
 Checked criteria combine, so Same Title with Same Author groups by both, and no separate Same Title & Author is offered; a book without an author is left out while Same Author is checked, so check Same Title alone to find two copies of it.
-Scan for Duplicates says how many duplicate groups it found, or that it found none; each group's heading names the criteria and what its books share, as in "Same Title and Same Author" over "Moby-Dick by Herman Melville"; each row speaks the book's title, author, format, folder, and the date it was added, which tells two copies apart, and the list keeps every row of the page it shows, so VoiceOver's cursor stays put in it; and the books you check, on every page, are moved to the Trash or deleted together, as Removal Behavior says, after asking when it says to.
+Scan for Duplicates says how many duplicate groups it found, or that it found none.
+Each group's heading names the criteria and what its books share, as in "Same Title and Same Author" over "Moby-Dick by Herman Melville".
+Each row speaks the book's title, author, format, folder, and the date it was added, which tells two copies apart, and the list keeps every row of the page it shows, so VoiceOver's cursor stays put in it.
+And the books you check, on every page, are moved to the Trash or deleted together, as Removal Behavior says, after asking when it says to.
 The groups are shown a page at a time: whole groups listing at most 40 books in all, or one larger group on a page of its own.
-While there is more than one page, a line above the list, shown and spoken alike, says which groups are shown, as in "Showing groups 1 to 5 of 116", and Previous Groups and Next Groups, each dimmed where there is no page to turn to, turn the page and announce the new line; each page opens at its top.
+While there is more than one page, a line above the list, shown and spoken alike, says which groups are shown, as in "Showing groups 1 to 5 of 116", and Previous Groups and Next Groups, each dimmed where there is no page to turn to, turn the page and announce the new line.
+Each page opens at its top.
 After a removal, the list shows the page now holding the group that headed the page you were on.
 Before the first scan, the sheet says "Check the criteria above, then Scan for Duplicates."
 
@@ -45,6 +49,7 @@ Before the first scan, the sheet says "Check the criteria above, then Scan for D
 <!-- id: redo-text-extraction; keys: re-read text, reextract, Library Maintenance, text encoding, edited text; src: TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
 
 The Storage tab's Redo Text Extraction…, in its Library Maintenance group, reads every text book's file again after asking first, and shows its progress (see [Where TextMouth keeps your library](where-your-library-lives.md), under content.md, and [Editing a book's text](editing-book-text.md) for what it does to text you edited).
-It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)): it starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
+It waits while TextMouth reads any book's file again in another encoding, with the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)).
+It starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
 Try again when that finishes.", naming that book.
 Choose it again once the re-read has ended.
