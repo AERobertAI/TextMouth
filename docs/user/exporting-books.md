@@ -73,14 +73,14 @@ The choices are Markdown, HTML, RTF, "Word 97-2003 (.doc)", EPUB, BRF, and PEF, 
 ### What a dialog starts on and keeps
 <!-- id: what-dialog-starts-keeps; keys: ; src: -->
 
-Every Export dialog starts on Markdown, so an export made as before gives a file under the same name, and a dialog keeps the choice made in it until it closes.
+Every Export dialog starts on Markdown, so an export that leaves the menu alone gives the Markdown file, named like "Moby-Dick - Text.md", and a dialog keeps the choice made in it until it closes.
 Only a text book's Text as Markdown checkbox has the menu: an audiobook's Transcript has none, and gives its transcript.json byte for byte and its text as Markdown.
 
 ### The checkbox's name when a format is chosen
 <!-- id: checkbox-name-when-format-chosen; keys: ; src: -->
 
 While HTML, RTF, Word, EPUB, BRF, or PEF is chosen, the checkbox is named for the choice, as in "Text as HTML" or "Text as Word 97-2003 (.doc)", and "Text as HTML, 2 books" for several books.
-It then gives no size, since a converted file's size is known only once it is written; with Markdown chosen it keeps its size, as before.
+It then gives no size, since a converted file's size is known only once it is written; with Markdown chosen it keeps its size.
 Its hint is "The book's text as HTML, made from the Markdown TextMouth reads it from.", with RTF, Word 97-2003 (.doc), EPUB, BRF, or PEF in place of HTML.
 
 ### File names of converted text
@@ -149,7 +149,7 @@ The Transcript's Markdown is written the same way.
 
 HTML is a web page (XHTML), and it carries the book's language when the book has one.
 When the text has headings, the page has a contents list, a navigation landmark named "Contents", that links each heading; the list leaves out the book's own title heading.
-A book that skips heading levels (a level 1, then 3, then 2) has one nested list for them, the 3 and the 2 beside each other under the 1, where it used to have two lists inside one item.
+A book that skips heading levels (a level 1, then 3, then 2) has one nested list for them, the 3 and the 2 beside each other under the 1.
 The page carries the book's language only when it is a well-formed language tag, and so do the PEF and EPUB files.
 
 ### RTF
@@ -345,7 +345,7 @@ Italic and bold are written as emphasis, as the next bullet says, except in a ta
 Italic and bold in the book's text are written as the braille code's emphasis signs, where the table carries them.
 TextMouth's braille helper tests each table it uses, by writing a sample with each kind of emphasis and reading it back, and a table whose signs do not read back exactly as written writes plain braille.
 Unified English Braille, contracted or not, carries them.
-English Braille, American Edition, and most of this Mac's tables do not, since liblouis cannot read their emphasis back, so they write plain braille as every export did, and the export of a book with emphasis is then the export of the same book without it, byte for byte.
+English Braille, American Edition, and most of this Mac's tables do not, since liblouis cannot read their emphasis back, so they write plain braille, and the export of a book with emphasis is then the export of the same book without it, byte for byte.
 TextMouth reads UEB braille back with its emphasis, as italic and bold in the book's text, and a word before an emphasis end sign comes back whole (see [What TextMouth reads](what-textmouth-reads.md), which also says how EBAE braille is read).
 
 ### A character the table lacks
@@ -389,7 +389,7 @@ Its choices are JSON and Markdown, then each text writer, such as HTML, RTF, or 
 <!-- id: json-markdown; keys: ; src: -->
 
 JSON and Markdown is the first choice and the default.
-It gives the transcript as TextMouth keeps it, as before.
+It gives the transcript as TextMouth keeps it.
 
 ### A text writer for a transcript
 <!-- id: text-writer-transcript; keys: ; src: -->
@@ -512,7 +512,6 @@ A text book can be spoken by its voice into one audio file, with a chapter for e
     It will quit as soon as that is done."
     With several exports it says "stopping 2 speech exports with the chapters they finished kept".
   - Pressing Command-Q again, or choosing Quit in the Dock again, says the same words again and does not cut the export off (0.4.4).
-    It used to quit at once.
   - Logging out, restarting, or shutting down waits for the export to stop, up to 5 seconds, and is not cancelled.
 - The spoken chapters are deleted only after the finished file is in the chosen folder, so a file that can't be put there loses no chapters.
 
