@@ -142,6 +142,23 @@ class SplitCheckTests(DocLibCase):
         with self.assertRaises(UsageError):
             splitcheck.read_version(self.root, "-x:old.md")
 
+    def test_several_old_versions_joined_by_commas_check_a_move_between_pages(self) -> None:
+        self.git_repo({"a.md": "# A\n\nalpha one.\n\n## Moved\n\nmoved text here.\n", "b.md": "# B\n\nbeta two.\n"})
+        # The section moves from the end of a.md to the top of b.md.
+        self.write_tree({"a.md": "# A\n\nalpha one.\n", "b.md": "# B\n\n## Moved\n\nmoved text here.\n\nbeta two.\n"})
+        status, lines, err = self.check("HEAD:a.md,HEAD:b.md", "a.md", "b.md")
+        self.assertEqual((status, err, lines), (0, "", ["split-check: same words (7 words)"]))
+        # In another order of the pages the words no longer follow one another.
+        status, lines, _ = self.check("HEAD:a.md,HEAD:b.md", "b.md", "a.md")
+        self.assertEqual(status, 1)
+        self.assertIn("OLD HEAD:a.md:3", lines[1])
+        self.assertIn("NEW b.md:", lines[2])
+        # And the OLD versions are read in the order given too.
+        self.assertEqual(self.check("HEAD:b.md,HEAD:a.md", "a.md", "b.md")[0], 1)
+
+    def test_a_missing_old_version_in_the_list_is_a_usage_error(self) -> None:
+        self.assertEqual(self.run_cli("split-check", "old.md,none.md", "old.md")[0], 2)
+
     def test_a_long_page_is_checked_in_well_under_a_second(self) -> None:
         text = "# Long\n\n" + "\n".join("word%d " % i * 10 for i in range(4000)) + "\n"
         self.write_tree({"old.md": text, "new.md": text.replace("\n", "\n\n")})
@@ -211,3 +228,11 @@ class FilesToSrcTests(DocLibCase):
         self.write_tree({"new.md": "# Imports\n\nImports read a file.\n"})
         status, _, _ = self.run_cli("split-check", "old.md", "new.md")
         self.assertEqual(status, 1)
+
+    def test_files_blocks_of_every_old_version_must_be_named(self) -> None:
+        self.write_tree({"other.md": "# Other\n\nOther text.\n\nFiles: project.yml\n"})
+        self.write_tree({"new.md": "# Imports\n\n<!-- id: imports; src: TextMouth/Importer.swift, Parser.swift, Parsers/ -->\n"
+                                   "Imports read a file.\n\nOther text.\n"})
+        status, out, _ = self.run_cli("split-check", "old.md,other.md", "new.md", "--files-to-src")
+        self.assertEqual(status, 1)
+        self.assertEqual(out.splitlines()[-1], "  project.yml")

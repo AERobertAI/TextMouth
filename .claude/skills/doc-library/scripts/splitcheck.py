@@ -143,12 +143,12 @@ def spellings(repo: RepoFiles, token: str) -> Set[str]:
     return set(repo.resolve(token)) | {token}
 
 
-def missing_paths(old: Page, new_pages: Iterable[Page], repo: RepoFiles) -> List[str]:
-    """The tokens of OLD's ``Files:`` blocks that no NEW marker ``src`` or ``Files:`` block names.
+def missing_paths(old_pages: Iterable[Page], new_pages: Iterable[Page], repo: RepoFiles) -> List[str]:
+    """The tokens of the OLD pages' ``Files:`` blocks that no NEW marker ``src`` or ``Files:`` block names.
 
     Only a token ``repo.is_repo_path`` accepts counts. A token is named when it, or
     anything it resolves to, is among the names the NEW pages give. Each missing
-    token is listed once, in the order OLD writes it.
+    token is listed once, in the order the OLD pages write it.
     """
     named: Set[str] = set()
     for page in new_pages:
@@ -156,9 +156,10 @@ def missing_paths(old: Page, new_pages: Iterable[Page], repo: RepoFiles) -> List
         for token in sources + [token for token in files if repo.is_repo_path(token)]:
             named |= spellings(repo, token)
     missing: List[str] = []
-    for token in page_paths(old)[0]:
-        if repo.is_repo_path(token) and token not in missing and not (spellings(repo, token) & named):
-            missing.append(token)
+    for old in old_pages:
+        for token in page_paths(old)[0]:
+            if repo.is_repo_path(token) and token not in missing and not (spellings(repo, token) & named):
+                missing.append(token)
     return missing
 
 
@@ -182,6 +183,15 @@ def read_version(root: Path, spec: str) -> Tuple[str, str]:
     except (OSError, subprocess.CalledProcessError):
         raise UsageError(f"git has no file {spec}") from None
     return spec, result.stdout.decode("utf-8", errors="replace")
+
+
+def spec_path(root: Path, spec: str) -> str:
+    """The page ``spec`` names as a path from ``root``: the PATH of ``REF:PATH``, else the path itself.
+
+    ``read_version`` has checked the spec by then, so a path that leaves the root is not met here.
+    """
+    path = spec.split(":", 1)[1] if ":" in spec else spec
+    return docmodel.name_inside(root, path) or path
 
 
 def _context(listed: List[Word], index: int) -> str:
