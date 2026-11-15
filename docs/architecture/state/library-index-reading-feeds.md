@@ -1,6 +1,7 @@
 # The reading list and feed items
-
 <!-- id: library-index-reading-feeds; keys: ; src: -->
+
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## The reading list
 <!-- id: reading-list; keys: ; src: TextMouth/Models/ReadingList.swift, TextMouth/Models/ReadingListCommand.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/Library.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/Models/ImportDecision.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryListCache.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryInfoRow.swift, TextMouth/Views/ContentView.swift, TextMouth/App/MenuCommands.swift, TextMouth/Models/KeyboardShortcut.swift, TextMouth/Services/ReadingStatsService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/ReadingListPlace.swift -->
