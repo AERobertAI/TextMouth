@@ -189,6 +189,30 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: TextMouthPaths.libraryIndexFile), indexBytes, "The quit rewrote library.json")
     }
 
+    /// The flush runs a Retry kept until an operation holding the storage
+    /// work ended, when the operation has ended and the kept retry's own turn
+    /// has not come yet: a quit right after a folder edit then asks about
+    /// nothing the retry saves. Nothing here awaits, so that turn never
+    /// comes before the flush.
+    func testTheFlushRunsARetryKeptForStorageWorkThatHasEnded() throws {
+        let shared = cleanSharedFailureCenter()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        shared.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+            shared.recordSuccess(.statistics)
+        }
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        defer { hold.release() }
+        recordingAnnouncements { shared.retry(.statistics) }
+        XCTAssertEqual(attempts.calls, [], "the retry ran while a folder edit held the storage work")
+
+        hold.release()
+        recordingAnnouncements { UnsavedChangesTerminationGuard.flushPendingWrites() }
+
+        XCTAssertEqual(attempts.calls.count, 1, "the flush left the kept retry for later")
+        XCTAssertFalse(shared.hasUnsavedChanges)
+    }
+
     // MARK: - The Prompt
 
     /// The prompt names each unsaved subsystem as the banner does, leaves
