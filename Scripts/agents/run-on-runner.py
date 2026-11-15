@@ -50,6 +50,7 @@ sys.dont_write_bytecode = True
 AGENTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS))
 import github_run  # noqa: E402  (the path above must be set first)
+import runner_diagnose  # noqa: E402
 import ios_ui_tests  # noqa: E402
 import shard  # noqa: E402
 import test_command  # noqa: E402
@@ -206,6 +207,12 @@ def run_tests(train, request, out, limit_minutes):
                                             extra=runner_arguments(request, read_skips())
                                             + ["-resultBundlePath", str(out / "result.xcresult")])
         sink = subprocess.PIPE
+    if request.get("diagnose"):
+        # A request sent by hand asks for the build to be timed apart first (runner_diagnose.py); the tests then find it built.
+        sys.path.insert(0, str(ROOT / "Scripts" / "test"))
+        import testkit
+        runner_diagnose.diagnose(ROOT, derived, testkit.build_command(
+            ROOT, [], str(derived), jobs=RUNNER_JOBS, use_slot=False, action="build-for-testing"), out)
     print("command:", " ".join(command), flush=True)
     process = subprocess.Popen(command, cwd=ROOT, stdout=sink, stderr=subprocess.STDOUT, env=runner_environment(request))
     finished = threading.Event()
