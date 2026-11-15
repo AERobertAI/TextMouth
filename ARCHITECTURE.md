@@ -19,6 +19,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [The library index](docs/architecture/state/library-index.md)
   - [The reading list and feed items](docs/architecture/state/library-index-reading-feeds.md)
 - [Package records](docs/architecture/state/package-records.md)
+  - [Package records: places, transcripts, origin, manifests](docs/architecture/state/package-records-places-and-files.md)
 - [Audio edits](docs/architecture/state/audio-edits.md)
 - [Text caches and content indexes](docs/architecture/state/text-caches.md)
   - [Kept texts, re-reads, and edited text](docs/architecture/state/text-caches-rereads-edits.md)
