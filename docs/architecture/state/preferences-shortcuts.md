@@ -1,5 +1,7 @@
 # Preferences: keyboard shortcuts
-<!-- id: preferences-shortcuts; keys: ; src: -->
+<!-- id: preferences-shortcuts; keys: hotkey, key binding, shortcut editor, double press; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Services/KeyboardShortcutManager.swift -->
+
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Keyboard shortcuts
 <!-- id: keyboard-shortcuts; keys: hotkey, key binding, key equivalent, double press, shortcut editor; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/ShortcutEdits.swift, TextMouth/Services/KeyboardShortcutManager.swift, TextMouth/Services/ShortcutPressDispatcher.swift -->
