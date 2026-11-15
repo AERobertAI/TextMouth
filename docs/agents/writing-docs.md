@@ -34,6 +34,7 @@ These are the files agents load to work: `CLAUDE.md`, `AGENTS.md`, briefs, and n
 - One topic per heading, and no two headings alike in a page.
 - One sentence per line.
 - A line is at most 300 characters, a section at most 40 lines, and a page at most 40 kB.
+  A marker line and a line of code are exempt from the line limit: a marker's `src` is one line however many paths it holds.
 - `AGENTS.md` is at most 12 kB, and `CLAUDE.md` at most 3 kB.
 - An index line is a link and at most 12 words.
 - Code identifiers go in backticks.
@@ -62,5 +63,9 @@ Each section of a reference page starts with one marker line under its heading:
 
 ## Tools
 
-The `doc-library` skill (`.claude/skills/doc-library/`) finds a section by keyword, type, or code path. It also shows one section and checks the rules above.
-Until it exists, search with `git grep`.
+The `doc-library` skill does this page's mechanical work, and `.claude/skills/doc-library/SKILL.md` lists its commands.
+
+- `find`, `where`, `show`, `outline`, and `code` find a section by keyword, path, or Swift name, and lead from it to its code.
+- `affected` names the sections a branch's changes touch, `suggest-src` the paths a marker should cite, and `stale` the citations that no longer exist.
+- `lint` checks the rules above and fails only when a page has more violations than its baseline records; `make lint-docs` runs it, and so does `Scripts/agents/merge-chain.sh` before every merge.
+- `reflow` (one sentence per line) and `mark` (a marker under each heading) rewrite a page without changing a word, which `split-check` proves.
