@@ -548,6 +548,17 @@ final class PersistenceFailureCenter: ObservableObject {
         }
     }
 
+    /// Tells VoiceOver how a retry of `subsystem` went once the writes it
+    /// had to wait for have ended, as `retry(_:)` tells of one that ran at
+    /// once: "Feed subscriptions saved.", or "Retry did not succeed." and the
+    /// row. A feed's record waits while an operation holds the storage work,
+    /// and its store calls this once the last such write has ended
+    /// (`FeedStore`), so the save it promised is never a silent one.
+    func announceOutcomeOfWaitingRetry(of subsystem: PersistenceSubsystem) {
+        publish()
+        announceRetryOutcome(for: [subsystem])
+    }
+
     /// Hides `subsystem`'s banner row until the subsystem has no failure
     /// left. The failures stay outstanding: dismissing saves nothing.
     func dismiss(_ subsystem: PersistenceSubsystem) {
