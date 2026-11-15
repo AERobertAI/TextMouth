@@ -446,7 +446,16 @@ final class FFmpegImportPlanTests: XCTestCase {
         XCTAssertNil(FFmpegImportWording.kindName(forExtension: "mp3"))
         XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk.ogg"), container: .oggSpeex), "Speex")
         XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk.WMA"), container: .asf), "WMA")
-        XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk.xyz"), container: .asf), "XYZ")
+        // A name that says nothing of the format is named by the bytes' container.
+        XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk.xyz"), container: .asf), "Windows Media")
+        XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk"), container: .matroska), "Matroska")
+        XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk.xyz"), container: nil), "XYZ")
+        XCTAssertEqual(FFmpegImportWording.kindName(of: URL(fileURLWithPath: "/a/Talk"), container: nil), "this format")
+        let containers = FFmpegContainer.allCases.map { "\($0.rawValue): \(FFmpegImportWording.kindName(of: $0))" }
+        XCTAssertEqual(containers, [
+            "asf: Windows Media", "matroska: Matroska", "flv: Flash video", "avi: AVI video", "realMedia: RealMedia",
+            "musepack7: Musepack", "musepack8: Musepack", "oggSpeex: Speex", "ogg: Ogg",
+        ])
     }
 
     /// The sentences a listener hears, word for word: they name the format,

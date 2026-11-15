@@ -28,14 +28,32 @@ enum FFmpegImportWording {
         }
     }
 
-    /// The name of the format of the file at `url`, which ffmpeg converts:
-    /// "Speex" for Speex in Ogg whatever the file's name, otherwise by its
-    /// extension (`kindName(forExtension:)`), and the extension in capitals
-    /// for any other name.
+    /// The name of the format of the file at `url`, which ffmpeg converts,
+    /// whose bytes are of `container`: "Speex" for Speex in Ogg whatever the
+    /// file's name; otherwise its extension's name (`kindName(forExtension:)`);
+    /// for a name that says nothing of the format, its container's
+    /// (`kindName(of:)`), so no sentence reads "To import XYZ files"; and the
+    /// extension in capitals, or "this format", when nothing names it.
     static func kindName(of url: URL, container: FFmpegContainer?) -> String {
         if container == .oggSpeex { return "Speex" }
         let fileExtension = url.pathExtension
-        return kindName(forExtension: fileExtension) ?? (fileExtension.isEmpty ? "this format" : fileExtension.uppercased())
+        if let named = kindName(forExtension: fileExtension) { return named }
+        if let container { return kindName(of: container) }
+        return fileExtension.isEmpty ? "this format" : fileExtension.uppercased()
+    }
+
+    /// The name of the format whose container is `container`, as people say it.
+    static func kindName(of container: FFmpegContainer) -> String {
+        switch container {
+        case .asf: return "Windows Media"
+        case .matroska: return "Matroska"
+        case .flv: return "Flash video"
+        case .avi: return "AVI video"
+        case .realMedia: return "RealMedia"
+        case .musepack7, .musepack8: return "Musepack"
+        case .oggSpeex: return "Speex"
+        case .ogg: return "Ogg"
+        }
     }
 
     // MARK: - When It Can't Be Imported
