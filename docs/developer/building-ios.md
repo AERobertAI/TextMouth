@@ -64,7 +64,9 @@ A run exits with status 0 when the build succeeded, 1 when it found errors, 2 wh
 **The heavy-work lock.**
 The Mac has 8 GB of memory, and several builds at once freeze it, so one heavy job runs on it at a time.
 The type-checks and the build train both take a lock (`Scripts/agents/heavy_lock.py`) before they start: a folder made with mkdir, build/orchestrator/heavy-lock in the main checkout, holding its owner's process ID, name, and start time.
-A job that finds it held says whom it waits for and since when, and waits, a type-check by default up to three hours.
+A job that finds it held says its place in line and whom it waits for, and waits, a type-check by default up to three hours.
+The waiting jobs are served first come, first served: each takes a ticket (a JSON file in `heavy-lock-line/` beside the lock), and takes the lock only when no live older ticket remains; a ticket whose process ended or whose wait ran out counts for nothing.
+`python3 -I -B Scripts/agents/heavy_lock.py status` prints the holder, the first-in-line mark, and the line, and changes nothing.
 A lock whose owner has ended, from a crash or a killed agent, is taken over.
 So a type-check started while the train builds waits for the train, and the reverse.
 The build train waits first in line: while it waits, no other job takes the lock, even a free one, so the train goes next, and it never runs without the lock.

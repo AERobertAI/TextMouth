@@ -64,7 +64,7 @@ When git cannot tell, the script goes ahead, and TEXTMOUTH_BBS_ALLOW_UNMERGED=1 
 
 An agent checks its code in three ways, none of which builds with Xcode.
 It type-checks for iOS with `make typecheck-ios` (`CENSUS=1` while it still has AppKit uses to count) and for the Mac with `make typecheck-mac`, and the Mac's tests with `make typecheck-tests`.
-All run under the machine-wide heavy-work lock, which the build train shares, so each waits its turn and says whom it waits for.
+All run under the machine-wide heavy-work lock, which the build train shares, so each waits first come, first served and says its place in line and whom it waits for ("third in line, behind holder, typecheck-a and run-suite").
 And, when its change must leave the Mac as it was, it runs `make mac-projection BASE=main`.
 It tests through the build train (see [The build train](../developer/testing-tools.md#the-build-train)), and waits for the train's result in the background with `python3 -I Scripts/agents/wait-for-result.py --agent SLUG`, which exits when the result is written.
 What the commands do is in [Building TextMouth](../developer/building.md), under The iOS app.

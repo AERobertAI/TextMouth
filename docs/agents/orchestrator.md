@@ -118,6 +118,7 @@ While agents work, the orchestrator runs two background tasks.
 `Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own.
 `python3 -I Scripts/agents/build-train.py loop --hours <N>` runs a train every hour, on the hour; with `--remote` the trains build and test on GitHub Actions instead of this Mac (see **Builds on GitHub** below), and `--remote --soon <minutes>` sends one that many minutes after a request comes.
 Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so one runs at a time: the trains, the type-checks, `run_suite.py`, and anything run through `run_locked.py`, simulator runs included.
+The jobs that wait go first come, first served: a waiting job takes a ticket in `heavy-lock-line/` beside the lock, and takes the lock only when no live older ticket remains; the train's first-in-line mark still goes ahead of every ticket.
 
 ### The helper scripts
 <!-- id: helper-scripts; keys: heavy lock, exit status, xcodebuild, pbxproj, make generate; src: Scripts/agents/run_locked.py, Scripts/agents/run_suite.py, Scripts/agents/copy_phases.py, Scripts/agents/regenerate-project.py -->
@@ -143,7 +144,7 @@ Every brief points the agent at Making each train count, in `docs/agents/working
 <!-- id: what-each-train-does; keys: train/base, lock queue, conflict, summary.md, free disk, run-area; src: Scripts/agents/build-train.py, Scripts/agents/heavy_lock.py, Scripts/test/run-area.py -->
 
 **Each train:**
-- it waits for the heavy-work lock first in line, so no other job takes the lock before it, for up to 50 minutes, and never runs without it; a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock;
+- it waits for the heavy-work lock first in line, ahead of every ticket, so no other job takes the lock before it, for up to 50 minutes, and never runs without it; a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock;
 - it then takes every waiting request, those made while it waited included, and merges the commit each one names onto `train/base` in `.claude/worktrees/train`, leaving out a branch that conflicts anywhere but project.pbxproj and telling its agent;
 - it builds once, with two jobs.
   If the build fails to compile only in files some merged branches change, it builds again without those branches, and merges again, in the order of the requests, every branch it had left out for a conflict: one that now merges cleanly is taken back, and the summary says so;
@@ -159,10 +160,11 @@ Point `train/base` at the integration branch, then queue `--agent orchestrator -
 The loop does not exit when a train ends, so wait for that summary with a background task that exits when the file appears.
 
 ### Look at the train and finish
-<!-- id: look-at-train-finish; keys: status, release flag, stop the loop, queue; src: Scripts/agents/build-train.py, Scripts/agents/hold-build-slots.sh -->
+<!-- id: look-at-train-finish; keys: status, release flag, stop the loop, queue, heavy_lock status; src: Scripts/agents/build-train.py, Scripts/agents/hold-build-slots.sh, Scripts/agents/heavy_lock.py -->
 
 **Look and finish.**
 `build-train.py status` shows the next train, what a running train is doing (waiting for the lock and for whom, or which branches it builds), and the queue.
+`python3 -I -B Scripts/agents/heavy_lock.py status` prints the lock's holder and how long it has held it, the first-in-line mark, and the line of waiting jobs in order; it changes nothing.
 When the agents are done, stop the loop and `touch` the release flag.
 
 ### Builds on GitHub
