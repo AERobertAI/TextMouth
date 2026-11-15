@@ -94,8 +94,8 @@ In the store's root, created exclusively (`.withoutOverwriting`, as `LibraryIden
 
 ### A manifest's keys
 
-- `formatVersion` (integer), `bookID` (string), `written` (string, a date).
-- `files` (array), one entry for each regular file of the package, at any depth, hidden ones included.
+- `formatVersion` (integer) and `bookID` (string); no date, so the same files always give the same manifest, and a step run twice writes it once.
+- `files` (array, sorted by `path`), one entry for each regular file of the package, at any depth, hidden ones included.
   Left out: the pointer, `.DS_Store`, and the `cachedAudio` folder (`TextMouthPaths.swift:401`), which TextMouth can make again.
   A symbolic link is never followed; a package holding one is not backed up, and says why.
 - Each entry:
@@ -278,6 +278,7 @@ Each encodes a value with every field set, compares `Set(written.keys)` with a l
 - It never touches the library in use, and ends by naming the folder for Use This Library.
 - **Tests:** `StoreRebuildTests`: a library backed up, rebuilt, then compared with `LibraryComparison.compare` gives no difference; a missing blob is listed and its book still made; a stop and a second run finish.
 - **It is also the rehearsal:** rebuild into a scratch folder, then Compare Libraries against the real one.
+  A rehearsal's library is compared and never used: in use, it would write this Mac's device folder.
 
 ## 5. Wording
 
@@ -337,7 +338,7 @@ Shown and spoken after the New or Now Reading badge, where today's cloud notes a
   - opens the library, and reads a text book from content.md;
   - can't play such an audiobook (`AudioPlaybackService.swift:908`), export its original, or read it again from its file;
   - stamps its row and record as failed for pages at the launch re-read, and doesn't try again (`LibraryViewModel+Migration.swift:1254`, `unreadableText`);
-  - **leaves it out of a rebuilt index:** Rebuild Library Index returns no book for a package whose content is absent (`FileImportService.swift:3886` and the lines after it).
+  - **leaves it out of a rebuilt index:** `orphanedBook(in:libraryDirectory:access:)` returns no book for a package whose content is absent (`FileImportService.swift:3886` and the lines after it).
     Nothing is deleted, and a newer TextMouth adopts the package again, but the book's place on the reading list is lost.
 - So `store-remove` is 0.5.0, and its changelog entry says: update every Mac first, and don't rebuild the index in an older TextMouth.
 - **Whether an older data-directory move or Replace Existing carries the hidden pointer** is read from the code, not run.
