@@ -114,7 +114,7 @@ The old folder is left where it was.
 The hidden folder is gone when the move ends, however it ends: renamed into place when the move finishes, removed when it is cancelled or fails.
 When it can't be removed, because the new location's drive was unplugged during the copy or TextMouth was force-quit, it stays on that drive, and TextMouth removes it the next time it starts.
 
-- TextMouth notes each hidden folder in Move Leftovers.json, a file of this Mac's own (see below), before the move creates it, and a launch removes only the folders that list names.
+- TextMouth notes each hidden folder in Move Leftovers.json, a file of this Mac's own (see [Folders of this Mac's own](this-macs-folders.md)), before the move creates it, and a launch removes only the folders that list names.
   Even then it removes a folder only if its name is exactly .TextMouth-migration- followed by a UUID and it is a real folder, never a link.
 
 - A folder that can't be seen, because its drive is still away, stays on the list for 30 days, and each launch in that time tries again.

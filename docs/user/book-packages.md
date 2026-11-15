@@ -239,7 +239,7 @@ When no copy can be kept, adding the book back stops with "Harbour Pilots was no
 <!-- id: import-folders-imports-progress; keys: import staging, interrupted import, leftover folder; src: TextMouth/Services/ImportStaging.swift -->
 
 A folder whose name starts with .import- is an import in progress.
-Imports build their packages here only while the data directory is on another drive than this Mac's own folders (below), and otherwise in this Mac's Import Staging folder.
+Imports build their packages here only while the data directory is on another drive than this Mac's own folders (see [Folders of this Mac's own](this-macs-folders.md)), and otherwise in this Mac's Import Staging folder.
 Nothing else in TextMouth treats such a folder as a book.
 The next import into the same library folder removes one that an interrupted import, or an earlier version, left behind, and each import that builds in this Mac's folder clears what interrupted imports left there.
 

@@ -8,7 +8,7 @@ TextMouth also keeps folders of this Mac's own, which never sync and keep workin
 ## Logs on this Mac
 <!-- id: logs-this-mac; keys: Logs folder, Library Logs, log location; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/LogWriter.swift -->
 
-~/Library/Logs/TextMouth: the diagnostic logs (see Logs, above), when Storage settings put them on this Mac, and while the data directory can't take them.
+~/Library/Logs/TextMouth: the diagnostic logs (see Logs in [The diagnostic logs](library-logs.md)), when Storage settings put them on this Mac, and while the data directory can't take them.
 Logs that earlier builds wrote only here stay here.
 
 ## Application Support folder
@@ -60,7 +60,7 @@ Keep Reading List Books.json, beside it: whether this Mac keeps the reading list
 ### Move Leftovers.json
 <!-- id: move-leftovers-json; keys: migration staging, hidden folders, unfinished move; src: TextMouth/Services/MigrationStagingLeftovers.swift, TextMouth/Models/CloudStorageContract.swift -->
 
-Move Leftovers.json: the hidden folders that moves of the library began and have not yet cleaned up (see Moving the library, above), which the next launch removes.
+Move Leftovers.json: the hidden folders that moves of the library began and have not yet cleaned up (see Moving the library in [Where TextMouth keeps your library](where-your-library-lives.md)), which the next launch removes.
 It is kept here because those folders are on the new location's drive, which may be away.
 The file is there only while it lists a folder.
 

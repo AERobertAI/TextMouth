@@ -24,7 +24,7 @@ It never holds a feed's downloaded episode or article, whose feed's own index li
 ### How reading positions reach the index
 <!-- id: how-reading-positions-reach-index; keys: saving position, five minutes, autosave, reader closes; src: TextMouth/Services/LibraryPersistenceService.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift -->
 
-While a book plays, its reading position reaches the index within five minutes, or sooner when anything else in the library changes, when the book's reader closes, or when TextMouth quits; meanwhile the book's record in its package holds it (below).
+While a book plays, its reading position reaches the index within five minutes, or sooner when anything else in the library changes, when the book's reader closes, or when TextMouth quits; meanwhile the book's record in its package holds it (see [bookInfo.json](book-packages.md)).
 
 ### The metadata reader and the Unknown author refresh
 <!-- id: metadata-reader-unknown-author-refresh; keys: metadata refresh, author, title, edited by hand, metadata reader version; src: TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Models/Book.swift -->
@@ -74,7 +74,7 @@ The preserved copy keeps them.
 A TextMouth that does not know a format finds the index unreadable whenever it holds a book in that format: 0.1.1 does for all eight (braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML).
 The index names each book's format, and 0.1.1 does not know the names rtf, rtfd, doc, odt, wordml, webarchive, ssml, and braille.
 It leaves library.json as it is, saves this copy beside it, and writes no index, but it still writes each book's package record, and those records lose the fields it does not know: the record of an edit of the book's text and of the page reader that wrote it.
-A newer TextMouth then reads a book whose text you edited from its file again, keeping your edit beside it as content.md.edited- followed by a date and time (below).
+A newer TextMouth then reads a book whose text you edited from its file again, keeping your edit beside it as content.md.edited- followed by a date and time (see content.md.edited- in [A book's package](book-packages.md)).
 Nothing else is lost until someone chooses Rebuild Library Index there, which makes an index without the books in the formats it does not know, though their packages stay in the Library folder, and without the folders and the manual order that only the index held, which the preserved copy keeps.
 Never choose it.
 Open the library with a TextMouth built on or after the day its newest format was added instead.
@@ -151,7 +151,7 @@ A file that can't be read is kept beside itself, its name followed by .unreadabl
 
 Beside its file, a feed that has downloaded anything has a folder of its own, Feeds/ followed by the feed's identifier alone, holding
 
-- a package for each episode or article it downloaded, laid out as a book's package is (Library, below),
+- a package for each episode or article it downloaded, laid out as a book's package is (Library, in [A book's package](book-packages.md)),
 - and the feed's own index of them, library.json, holding a row for each as the library's index holds a book's.
 
 A package whose download was deleted stays there without its file, holding its record, its content index, its content.md (an episode's transcript text, or an article's text unless Delete Download removed it), its transcript, and any copies Edit Text kept of an edited text.
@@ -187,6 +187,6 @@ A launch that finds this folder while the feed's record is gone returns its down
 ## Archive Extraction in the data directory
 <!-- id: archive-extraction-data-directory; keys: ZIP import, unzip, working folder; src: TextMouth/Services/ArchiveExtraction.swift, TextMouth/Services/ImportScratchSpace.swift -->
 
-Archive Extraction: the working folder of ZIP imports while the data directory is on another drive than this Mac's own folders; otherwise ZIPs are extracted in this Mac's Archive Extraction folder (below).
+Archive Extraction: the working folder of ZIP imports while the data directory is on another drive than this Mac's own folders; otherwise ZIPs are extracted in this Mac's Archive Extraction folder (see [Folders of this Mac's own](this-macs-folders.md)).
 Each import removes its own folder when it ends.
 At startup TextMouth removes any left over, here and in this Mac's folder, and, while this Mac's folder is the one in use, removes this one once it is empty.
