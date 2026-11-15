@@ -226,7 +226,7 @@ The dispatcher posts back a Trigger, at once or, for a single press that waits, 
 Its Index is built in ShortcutAction.allCases order and rebuilt whenever the bindings in force change (rebuild(from:), from the manager's take(_:), which also runs a waiting single press at once).
 It gives each kind of window's keys a single and a double action, each action's entered in every kind where its keys act (ShortcutScope.windowKinds(of:)), except that:
 - a letter alone (KeyBinding.isLetterAlone: one letter, of any alphabet, with none of Command, Option, Shift, or Control, once or twice) is left out of every kind of window that navigatesByLetter (ShortcutWindowKind.navigatesByLetter, which only the Library's does).
-  A sheet over a Library window counts as one,
+  A sheet over a Library window counts as one.
 - so the list takes it, no key of that kind waits on it, and Shift-J and Shift-L find no J or L there to fall back to (B10),
 - and a key equivalent's noted there (isKeyEquivalent(_:in:)) and given to no action,
 
