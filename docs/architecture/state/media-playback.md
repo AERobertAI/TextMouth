@@ -135,7 +135,7 @@ SoundEffectService plays through SystemSoundEffectPlayer, an actor on its own se
 ## Refusing converted formats in playback
 <!-- id: refusing-converted-formats-playback; keys: Ogg, Vorbis, unplayable, last guard, converted format; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AudioEditing/AudioEditorPlayer.swift -->
 
-AudioPlaybackService.fileProblem(at:) refuses, as a last guard, every format the import converts (ImportAudioConverter.isNeverDecodedInApp(_:): a converted extension but TextMouth's own CAF, or a file that begins with OggS), and AudioEditorPlayer holds no item for a preview of one (B06, FMT09).
+AudioPlaybackService.fileProblem(at:) refuses, as a last guard, every format the import converts (ImportAudioConverter.isNeverDecodedInApp(_:): a converted extension but TextMouth's own CAF, or a file that begins with OggS), and AVAudioEditorPlayer holds no item for a preview of one (B06, FMT09).
 
 ## Metadata probing of audio files
 <!-- id: metadata-probing-audio-files; keys: chapters, duration, probe, AVURLAsset, tags; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Services/AsyncBridge.swift, TextMouth/Services/OggHeaderReader.swift, TextMouth/Parsers/NeroChapterReader.swift -->
