@@ -71,6 +71,36 @@ final class PageImageArchiveTests: XCTestCase {
         XCTAssertEqual(names.author, "Odile Banerjee")
     }
 
+    /// A page's Type is a list of values apart by white space, "Story" when
+    /// it lists none (ComicInfo 2.0 and the 2.1 draft): a picture whose list
+    /// holds "Deleted" is no page, and one whose list holds a cover is titled
+    /// by the first cover in it.
+    func testAPagesTypeIsAListOfValues() throws {
+        let page = try PageImageFixtures.plainPage()
+        let info = PageImageFixtures.comicInfo("""
+            <Pages>
+              <Page Image="0" Type="FrontCover Story"/>
+              <Page Image="1" Type="Advertisement Deleted"/>
+              <Page Image="2" Type="  Story   BackCover "/>
+              <Page Image="3"/>
+            </Pages>
+            """)
+        let url = try PageImageFixtures.comicArchive([
+            TestZIPEntry("ComicInfo.xml", info),
+            TestZIPEntry("001.png", page), TestZIPEntry("002.png", page),
+            TestZIPEntry("003.png", page), TestZIPEntry("004.png", page),
+        ], for: self)
+
+        let archive = try PageImageArchive(url: url)
+
+        XCTAssertEqual(archive.pages.map(\.entry.path), ["001.png", "003.png", "004.png"])
+        XCTAssertEqual(archive.pages.map(\.title), ["Front Cover", "Back Cover", "Page 3"])
+        XCTAssertEqual(PageImageComicInfo.Page(type: nil, bookmark: nil).types, ["Story"])
+        XCTAssertEqual(PageImageComicInfo.Page(type: "Advertisement Deleted", bookmark: nil).types, ["Advertisement", "Deleted"])
+        XCTAssertEqual(PageImageWording.coverTitle(forPageTypes: ["Story", "BackCover", "FrontCover"]), "Back Cover")
+        XCTAssertNil(PageImageWording.coverTitle(forPageTypes: ["Story", "Letters"]))
+    }
+
     /// A book with no title of its own is named by its series and number,
     /// and a ComicInfo.xml that cannot be read is passed over, the book read
     /// without it.

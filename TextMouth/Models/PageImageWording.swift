@@ -171,8 +171,8 @@ enum PageImageWording {
     }
 
     /// The title of a comic book archive's page that its ComicInfo.xml calls
-    /// a cover, by the type it gives (`FrontCover`, `InnerCover`,
-    /// `BackCover`); nil for any other type, whose page keeps its number.
+    /// a cover, by one value of its Type (`FrontCover`, `InnerCover`,
+    /// `BackCover`); nil for any other value.
     static func coverTitle(forPageType type: String) -> String? {
         switch type {
         case "FrontCover": return "Front Cover"
@@ -180,6 +180,14 @@ enum PageImageWording {
         case "BackCover": return "Back Cover"
         default: return nil
         }
+    }
+
+    /// The title of a comic book archive's page whose Type lists `types`
+    /// (ComicInfo's Type is a list of values, as in "FrontCover Story"): the
+    /// first cover among them; nil when none is a cover, and the page keeps
+    /// its number.
+    static func coverTitle(forPageTypes types: [String]) -> String? {
+        types.lazy.compactMap(coverTitle(forPageType:)).first
     }
 
     // MARK: - Parts

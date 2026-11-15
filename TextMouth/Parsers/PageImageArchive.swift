@@ -180,22 +180,34 @@ struct PageImageArchive: PageImageBook {
 struct PageImageComicInfo: Equatable {
     /// What the file says of one picture.
     struct Page: Equatable {
-        /// The picture's type: "FrontCover", "Story", "Deleted", and the
-        /// schema's others.
+        /// The picture's Type as the file writes it: a list of the schema's
+        /// values ("FrontCover", "Story", "Deleted", and the others) apart by
+        /// white space, as in "Advertisement Deleted" (ComicInfo 2.0 and the
+        /// 2.1 draft).
         var type: String?
         /// The name the file gives the picture, such as a chapter's.
         var bookmark: String?
 
+        /// The value a picture's Type has when the file gives none.
+        static let defaultType = "Story"
+
+        /// The values of the picture's Type, in the order written; the
+        /// schema's default, "Story", when it lists none.
+        var types: [String] {
+            let listed = (type ?? "").split(whereSeparator: \.isWhitespace).map(String.init)
+            return listed.isEmpty ? [Self.defaultType] : listed
+        }
+
         /// Whether the picture is no page of the book, as comic readers leave
-        /// out a picture of type "Deleted".
-        var isDeleted: Bool { type == "Deleted" }
+        /// out a picture whose types include "Deleted".
+        var isDeleted: Bool { types.contains("Deleted") }
 
         /// The title of the picture's chapter: its bookmark, made fit for a
-        /// chapter line (`chapterTitle(_:)`), else the name of the cover it
-        /// is (`PageImageWording.coverTitle(forPageType:)`); nil for a page
-        /// that keeps its number.
+        /// chapter line (`chapterTitle(_:)`), else the name of the first cover
+        /// among its types (`PageImageWording.coverTitle(forPageTypes:)`); nil
+        /// for a page that keeps its number.
         var title: String? {
-            bookmark.flatMap(PageImageComicInfo.chapterTitle) ?? type.flatMap(PageImageWording.coverTitle(forPageType:))
+            bookmark.flatMap(PageImageComicInfo.chapterTitle) ?? PageImageWording.coverTitle(forPageTypes: types)
         }
     }
 
