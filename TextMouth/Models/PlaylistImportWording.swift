@@ -37,6 +37,18 @@ enum PlaylistImportWording {
     /// The refusal of an HLS stream.
     static let streaming = "It is a streaming playlist for audio on the web, which TextMouth does not import."
 
+    /// The refusal of an XSPF playlist that is no readable XML playlist.
+    static func notReadable(fileName: String) -> String {
+        "The playlist “\(fileName)” is not a complete, valid playlist file."
+    }
+
+    /// The refusal of a .pls file that is a pronunciation lexicon, with the
+    /// way to use it (FMT08).
+    static func pronunciationLexicon(fileName: String) -> String {
+        "“\(fileName)” is a pronunciation lexicon, not a playlist. "
+            + "To use it, choose Import Rules on the Text tab in Settings."
+    }
+
     /// The refusal of a playlist that lists only web addresses.
     static let onlyWebAddresses = "It lists only web addresses, and TextMouth imports only files on this Mac."
 

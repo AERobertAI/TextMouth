@@ -3128,6 +3128,8 @@ enum FileImportService {
         if let playlist = UTType("public.m3u-playlist") {
             types.append(playlist)
         }
+        // PLS and XSPF playlists, read the same way (FMT12).
+        types.append(contentsOf: ["pls", "xspf"].compactMap { UTType(filenameExtension: $0) })
         return types
     }
 
