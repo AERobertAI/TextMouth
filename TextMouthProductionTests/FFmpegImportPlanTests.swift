@@ -438,6 +438,11 @@ final class FFmpegImportPlanTests: XCTestCase {
             "TextMouth can't read “Lecture.wma” as WMA. It may be damaged, or named for another format."
         )
         XCTAssertEqual(FFmpegAudioConverter.Failure.noSound(fileName: "Clip.mkv").localizedDescription, "“Clip.mkv” holds no sound to import.")
+        XCTAssertEqual(
+            ImportAudioConverter.Failure.checkFailed(fileName: "Talk.webm", reason: FFmpegImportWording.convertedFileIsSilent)
+                .localizedDescription,
+            "The audio converted from Talk.webm failed its check: it lasts no time."
+        )
         for sentence in [FFmpegImportWording.ffmpegMissing(kind: "WMA"), FFmpegImportWording.ffprobeMissing(kind: "WMA")] {
             XCTAssertNil(sentence.rangeOfCharacter(from: CharacterSet(charactersIn: "()[]{}<>/\\|*#@~`^:;")), sentence)
         }

@@ -512,7 +512,7 @@ enum FFmpegAudioConverter {
             throw ImportAudioConverter.Failure.checkFailed(fileName: sourceName, reason: problem.reason)
         case let .success(seconds):
             guard seconds > 0 else {
-                throw ImportAudioConverter.Failure.checkFailed(fileName: sourceName, reason: "it holds no sound")
+                throw ImportAudioConverter.Failure.checkFailed(fileName: sourceName, reason: FFmpegImportWording.convertedFileIsSilent)
             }
             return seconds
         }

@@ -85,4 +85,10 @@ enum FFmpegImportWording {
     static func noSound(fileName: String) -> String {
         "“\(fileName)” holds no sound to import."
     }
+
+    /// Why a converted file failed its check when its source said no length
+    /// and the file lasts no time at all, as the end of the sentence every
+    /// failed check says (`ImportAudioConverter.Failure.checkFailed`): "The
+    /// audio converted from Talk.webm failed its check: it lasts no time."
+    static let convertedFileIsSilent = "it lasts no time"
 }
