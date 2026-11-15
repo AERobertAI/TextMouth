@@ -83,7 +83,7 @@ It also repeats its handling of the end of one:
 - a check that the one reported is the one speaking;
 - and a synthesizer replaced when the engine refused it or a summary takes the place of one still speaking (its isLive(_:) and replaceSynthesizer() beside the reader's isLiveWhereAmIUtterance(_:) and replaceWhereAmISynthesizer()).
 
-Its LibraryInfoSpeechDelegate does what WhereAmIDelegateHelper (ViewModels/ReaderViewModel.swift) does.
+LibraryInfoSpeaker's LibraryInfoSpeechDelegate does what WhereAmIDelegateHelper (ViewModels/ReaderViewModel.swift) does.
 One speaker of short announcements in the app's own voice could serve both.
 
 ## Elapsed time rounding
