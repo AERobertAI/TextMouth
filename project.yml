@@ -398,6 +398,23 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/foliate-js
+      # The notices of the decoders TextMouth's own audio readers follow
+      # (TextMouth/Parsers/OwnAudio, shared code): see the TextMouth target.
+      - path: Vendor/package-licenses/TrueAudio/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      - path: Vendor/package-licenses/WavPack/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/WavPack
+      - path: Vendor/package-licenses/MonkeysAudio/License.txt
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/MonkeysAudio
       - path: Vendor/SwiftSoup/LICENSE
         buildPhase:
           copyFiles:
