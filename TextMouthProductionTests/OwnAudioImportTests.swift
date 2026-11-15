@@ -578,7 +578,7 @@ final class OwnAudioImportTests: XCTestCase {
     /// A hybrid WavPack file chosen with its correction file beside it
     /// imports as Apple Lossless that holds the source's samples; neither
     /// file is left in the package, and both originals are untouched.
-    func testAHybridFileImportsWithItsCorrectionFile() async throws {
+    func testAHybridFileImportsWithItsCorrectionFile() throws {
         let source = try copySample("wv/hybrid16.wv")
         let before = OggTestFixtures.names(in: source.deletingLastPathComponent())
 
@@ -587,8 +587,9 @@ final class OwnAudioImportTests: XCTestCase {
 
         let audio = URL(fileURLWithPath: imported.book.filePath)
         XCTAssertEqual(audio.lastPathComponent, "hybrid16.m4a")
-        let convertedRead = try await AudioFileInfo.read(audio)
-        XCTAssertEqual(convertedRead?.formatID, "alac")
+        // The import waits on its own thread for its conversions, so this test is not an async one.
+        let stored = try AVAudioFile(forReading: audio).fileFormat.streamDescription.pointee.mFormatID
+        XCTAssertEqual(stored, kAudioFormatAppleLossless)
         XCTAssertTrue(try samplesOfConvertedFile(at: audio) == (try samplesToBeWritten(of: "wv/hybrid16.wv")))
         let left = OggTestFixtures.names(in: audio.deletingLastPathComponent())
         XCTAssertEqual(left.filter { $0.hasSuffix(".wv") || $0.hasSuffix(".wvc") }, [])
