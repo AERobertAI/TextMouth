@@ -29,7 +29,9 @@ VoiceOverFocus.swift repeats its accessibility-tree searches (findElementByIdent
 ## JSON encoder configuration
 <!-- id: json-encoder-configuration; keys: JSONEncoder, prettyPrinted, sortedKeys, iso8601, withoutEscapingSlashes, library.json; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/RemovedFromLibraryMarker.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/DataDirectoryMigrator.swift, TextMouth/Services/LibraryIdentity.swift, TextMouth/Services/LibrarySessionLease.swift, TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
-Several stores configure their own JSON encoder with the same ISO 8601 dates and sorted, pretty output (bookInfo.json in BookInfo, RemovedFromLibraryMarker, ReadingStatsService, DataDirectoryMigrator, LibraryIdentity, LibrarySessionLease, and AudioEditHistoryStore, which also leaves slashes unescaped), while library.json (LibraryPersistenceService.encodedIndex(_:), whose keys were unsorted until the write-only-what-changed memory needed equal libraries to encode to equal bytes), contentIndex.json, and reading-checkpoints.json are written compact with sorted keys, so sharing one encoder with the pretty ones would change those files' layouts.
+Several stores configure their own JSON encoder with ISO 8601 dates and sorted, pretty output (bookInfo.json in BookInfo, RemovedFromLibraryMarker, ReadingStatsService, DataDirectoryMigrator, LibraryIdentity, LibrarySessionLease, and AudioEditHistoryStore, which also leaves slashes unescaped).
+The files library.json (LibraryPersistenceService.encodedIndex(_:), whose keys are sorted so that equal libraries encode to equal bytes for the write-only-what-changed memory), contentIndex.json, and reading-checkpoints.json are written compact with sorted keys.
+So sharing one encoder with the pretty ones would change those files' layouts.
 DataDirectoryMigrator writes a moved library's library.json with its own pretty, sorted encoder rather than encodedIndex(_:), so the index stays pretty-printed after a move until the library is next saved.
 
 ## Off-main work helpers
@@ -75,7 +77,13 @@ The book row could use it.
 ## Library info speaker
 <!-- id: library-info-speaker; keys: AVSpeechSynthesizer, Speak Info, utterance delegate, announcement voice, synthesizer; src: TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/ViewModels/ReaderViewModel.swift -->
 
-LibraryInfoSpeaker (ViewModels/LibraryInfoSpeaker.swift) repeats the utterance Where Am I? makes (speakWhereAmI, in ViewModels/ReaderViewModel+WhereAmI.swift: the text guarded, the voice, SpeechService.rateForWPM, and prefersAssistiveTechnologySettings off) and, since FR12's branch C, its handling of the end of one: finishes and cancels told apart by ReportedUtterance, a check that the one reported is the one speaking, and a synthesizer replaced when the engine refused it or a summary takes the place of one still speaking (its isLive(_:) and replaceSynthesizer() beside the reader's isLiveWhereAmIUtterance(_:) and replaceWhereAmISynthesizer()), its LibraryInfoSpeechDelegate doing what WhereAmIDelegateHelper (ViewModels/ReaderViewModel.swift) does.
+LibraryInfoSpeaker (ViewModels/LibraryInfoSpeaker.swift) repeats the utterance Where Am I? makes (speakWhereAmI, in ViewModels/ReaderViewModel+WhereAmI.swift): the text guarded, the voice, SpeechService.rateForWPM, and prefersAssistiveTechnologySettings off.
+It also repeats its handling of the end of one:
+- finishes and cancels told apart by ReportedUtterance;
+- a check that the one reported is the one speaking;
+- and a synthesizer replaced when the engine refused it or a summary takes the place of one still speaking (its isLive(_:) and replaceSynthesizer() beside the reader's isLiveWhereAmIUtterance(_:) and replaceWhereAmISynthesizer()).
+
+Its LibraryInfoSpeechDelegate does what WhereAmIDelegateHelper (ViewModels/ReaderViewModel.swift) does.
 One speaker of short announcements in the app's own voice could serve both.
 
 ## Elapsed time rounding
