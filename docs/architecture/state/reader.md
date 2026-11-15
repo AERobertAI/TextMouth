@@ -26,10 +26,10 @@ A reader's state: its content, cursor (chapter and character offset), headings, 
   ReaderViewModel.headings is the book's headings, in reading order, kept in step with content by its didSet, and Next Heading, Previous Heading, the jumps, and timeEstimateForHeading read it rather than ask the content index to build them again.
   ReaderView's body only puts its parts together, since the compiler type-checks a body as one expression.
   ReaderLocationHeader, ReaderTextArea, ReaderLoadFailureView, the toolbar's items, and the modifiers ReaderErrorAlert, ReaderPanelSheets, and ReaderPanelCommands are each type-checked on its own.
-  The three modifiers share one ReaderPanels, the panels showing.
+  ReaderPanelSheets and ReaderPanelCommands share one ReaderPanels, the panels showing.
   ReaderTextArea puts its label, ReaderTextArea.accessibilityLabel ("Book content"), on its ScrollView, never on the Text, since a label on a SwiftUI Text replaces the text's accessibility value (A11).
   The Text shows ReaderViewModel.displayVisibleTextWindow, which VisibleTextWindowPolicy.bounds(in:around:maximumLength:) cuts at most ReaderViewModel.maxDisplayChars (20,000 UTF-16 units) long, around the reading position, which it always holds.
-  Each cut edge moves inward at most a quarter of the window, to a paragraph break, else a line break, else stays where it falls between words, else to a space.
+  Each cut edge moves inward at most a quarter of the window, to a paragraph break, else a line break, else stays where it falls between words, else to a space; text with no space there is cut between whole characters.
   BookSettingsWording (Views/Reader/ReaderView.swift), which holds every word for a book's own settings, names their sheet (BookVoicePickerView) and the toolbar button that opens it: a text book's Voice ("Change voice for this book" to VoiceOver) and Voice & Speed.
   An audiobook's Audio Settings, the same on screen and to VoiceOver.
   And audioSpeedLabel, for the audiobook sheet's one speed control, a slider.
@@ -128,7 +128,7 @@ A book's pages (PG01 to PG04): where each page of the book begins, and the reade
   The cursor is read after the move, since a move may stop short of a page's place (the book's last word is as far as the reader goes).
   ReaderViewModel.goToPage(typed:) takes JumpInputValidator.page(_:in:currentIndex:), which compares labels without case and takes a label that more than one page has at the first such page after the current one (currentPageIndex), else at the first, so it wraps after the last.
   JumpInputValidator.pageIndices(named:in:) is the one rule that picks a label's pages, which goToPageLabelIsRepeated(_:) and occurrence(ofPageAt:) count by too.
-  It navigates the same way and says jumpAnnouncement(toPage:at:), which once said the label it had matched, so a blank page that shares its place with the next said one page while the row named the other.
+  ReaderViewModel.goToPage(typed:) navigates the same way and says jumpAnnouncement(toPage:at:), which once said the label it had matched, so a blank page that shares its place with the next said one page while the row named the other.
   With the cursor on the page asked for it says ReaderPageWording.jumped(to:occurrence:), the occurrence being which of the pages that carry its label it is, counted from 1 in book order and nil for a label of one page.
   With the cursor elsewhere it says where (ReaderPageWording.cursorPlace, from currentPagePosition) and why when the pages say, read from the pages and the skipped sections themselves and never from the cursor's being elsewhere, which after a jump while the book plays can have another reason.
   DocumentContent.pageHoldsWord(at:outside:) says whether the page holds a word of its own (hasNoWords: a blank page, which begins where the next page does, or a last page that begins after the book's last word, reached at that word).
@@ -136,7 +136,7 @@ A book's pages (PG01 to PG04): where each page of the book begins, and the reade
   A jump while the book plays passes over a page that holds none to the next words speech reads, and a stopped book's cursor stays on it.
   With no reason in the pages, as when a text substitution deletes the page's words, cursorIs says only where the cursor is.
   A page asked for whose label other pages carry is named as which of them it is, so a reason never denies the words of another page of its label.
-  It returns a refusal as the panel's error.
+  The function goToPage(typed:) returns a refusal as the panel's error.
   requestGoToPage() counts goToPageRequests, which BookInfoBar answers by opening JumpToPagePanel, a JumpFieldPanel.
   A JumpFieldPanel takes the label it started at as no answer (JumpFieldOutcome.unchanged), unless goToPageLabelIsRepeated(_:) holds for it.
   The panel hands that to JumpFieldPanel.submitsUnchanged, and JumpFieldOutcome.taking(_:startedAt:submitsUnchanged:submit:) then submits the starting label.
