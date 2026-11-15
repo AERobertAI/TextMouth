@@ -1287,6 +1287,7 @@
 		7228BC2390CCD4C970606531 /* BookExportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67283A117245BD7470B3C49 /* BookExportModel.swift */; };
 		722AE5FB2C038B35DE2DF2E6 /* MP3Encoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231478495494DE4D0FDB2B13 /* MP3Encoder.swift */; };
 		722C8CB76BBD68996E90885B /* CloudMaintenanceStatisticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E594D8233D422D4C8B9F15 /* CloudMaintenanceStatisticsTests.swift */; };
+		723161D0A93A621C6E4A5948 /* FFmpegImportRealTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB0956FA57FB98D04ED9DD76 /* FFmpegImportRealTests.swift */; };
 		7236D9E1623BA0EF3FE65F2A /* PageImageWordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C64B7756DEFEE246B03736 /* PageImageWordingTests.swift */; };
 		72390154DB44E461D6E40A59 /* ReaderPhoneHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D5D1BBC56B69185B1F78B5 /* ReaderPhoneHooks.swift */; };
 		7247BF8006B42B71D0F6B113 /* LibrarySessionLeaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00C0CEBE875A967C852D826 /* LibrarySessionLeaseTests.swift */; };
@@ -2998,10 +2999,11 @@
 		1110009E1C26377EA9791632 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3029,10 +3031,10 @@
 		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
+				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3091,21 +3093,20 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = "Licenses/swift-cmark";
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C5522D8A663C635367E6426B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
+			dstPath = "Licenses/swift-cmark";
 			dstSubfolderSpec = 7;
 			files = (
-				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
+				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3122,10 +3123,10 @@
 		E59FEE7CCC021127BD65AEAA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
+			dstPath = Licenses/ZIPFoundation;
 			dstSubfolderSpec = 7;
 			files = (
-				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
+				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4770,6 +4771,7 @@
 		DAD9D58AE728EFE1B5DD5B0C /* ImportRefusalTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportRefusalTestSupport.swift; sourceTree = "<group>"; };
 		DAE21BBDFF4068F2DFABBB8B /* RTFExportWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTFExportWriter.swift; sourceTree = "<group>"; };
 		DB03A27DEDE2446719BAC308 /* AudioEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorView.swift; sourceTree = "<group>"; };
+		DB0956FA57FB98D04ED9DD76 /* FFmpegImportRealTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegImportRealTests.swift; sourceTree = "<group>"; };
 		DB09F2553E63A4006BD38C15 /* BookExportPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportPresentation.swift; sourceTree = "<group>"; };
 		DB3AB8D0B1C0614EDA349ACD /* PodcastTranscriptReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastTranscriptReader.swift; sourceTree = "<group>"; };
 		DB55A0279C9E0F13D65B565E /* LibraryFeedItemEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFeedItemEditTests.swift; sourceTree = "<group>"; };
@@ -6552,6 +6554,7 @@
 				E001D0BD44B872AAD53A503E /* FeedUITestSupport.swift */,
 				4D2D662F871D10ABBA3E1A7C /* FFmpegImportConversionTests.swift */,
 				006E6F9E122A14A7DC57C5D7 /* FFmpegImportPlanTests.swift */,
+				DB0956FA57FB98D04ED9DD76 /* FFmpegImportRealTests.swift */,
 				A3A670DD0B54EADB927CCB15 /* FFmpegImportSnifferTests.swift */,
 				1DF7A0BB5950C52F5B7B5DF4 /* FFmpegMetadataTests.swift */,
 				FF3D9742A4204AD65A2DB3CB /* FinishedBookModelTests.swift */,
@@ -8337,6 +8340,7 @@
 				ADDB53521DD65E8ACFE36ECF /* ExtractionReportTests.swift in Sources */,
 				9CE38382195C03804B1C83D9 /* FFmpegImportConversionTests.swift in Sources */,
 				B8C4DEB57F1EAA3A5F5D71DE /* FFmpegImportPlanTests.swift in Sources */,
+				723161D0A93A621C6E4A5948 /* FFmpegImportRealTests.swift in Sources */,
 				BF5E0136F871F6BAFAF16E04 /* FFmpegImportSnifferTests.swift in Sources */,
 				794D65E1835F023A405A1937 /* FFmpegMetadataTests.swift in Sources */,
 				31D26BB60CF357873C587410 /* FLACCueSheetReaderTests.swift in Sources */,
