@@ -44,7 +44,6 @@
     "docs/architecture/state/reader-playback.md": {"line-length": 23},
     "docs/architecture/state/reader.md": {"line-length": 38},
     "docs/architecture/state/recordings.md": {"line-length": 6},
-    "docs/architecture/state/saving-failures.md": {"line-length": 1},
     "docs/architecture/state/text-caches-rereads-edits.md": {"line-length": 37},
     "docs/architecture/state/text-caches.md": {"line-length": 38},
     "docs/architecture/state/timers-and-statistics.md": {"date": 1, "line-length": 37},
