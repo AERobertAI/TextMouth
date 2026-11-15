@@ -19,7 +19,7 @@
     "docs/architecture/state/hosted-test-sandbox.md": {"date": 1, "line-length": 30, "marker-missing": 1, "section-length": 1, "sentences-per-line": 23, "user-quote": 1},
     "docs/architecture/state/imports.md": {"date": 28, "line-length": 321, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 196, "user-quote": 1},
     "docs/architecture/state/library-index.md": {"date": 10, "line-length": 83, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 33, "user-quote": 1},
-    "docs/architecture/state/logs.md": {"date": 2, "line-length": 17, "marker-missing": 1, "sentences-per-line": 6},
+    "docs/architecture/state/logs.md": {"date": 2, "line-length": 17, "sentences-per-line": 6},
     "docs/architecture/state/media-playback.md": {"date": 4, "line-length": 52, "marker-missing": 1, "sentences-per-line": 17},
     "docs/architecture/state/package-records.md": {"date": 4, "line-length": 66, "marker-missing": 1, "page-size": 1, "section-length": 1, "sentences-per-line": 28},
     "docs/architecture/state/preferences.md": {"date": 3, "line-length": 45, "marker-missing": 1, "section-length": 1, "sentences-per-line": 21},
