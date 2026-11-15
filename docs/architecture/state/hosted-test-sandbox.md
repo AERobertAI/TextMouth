@@ -117,7 +117,7 @@ VoiceOver announcements.
 
 - Owner: VoiceOverAnnouncer, through which the reader, the speech service (a text the speech engine refused, when no reader listens), the library and its import questions, the sleep timer, settings, transcription, the audio editor, and the feed reader announce.
   Its poster asks VoiceOver to speak in the app and records the announcement instead under hosted tests; a test may install a poster of its own and must restore the previous one.
-  ContentView's folder announcement still posts directly.
+  ContentView's folder announcement goes through it too (announceFolderChange).
 
 ## The network
 <!-- id: network; keys: URLProtocol, offline tests, notifications permission, URLSession, no internet, stubbing; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/FeedTestSupport.swift -->
