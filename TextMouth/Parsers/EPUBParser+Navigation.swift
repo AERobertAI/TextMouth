@@ -410,7 +410,7 @@ extension EPUBParser {
         }
 
         result += withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [NavigationTarget] in
-            let maps = (try? doc.nodes(forXPath: "//*[local-name()='navMap']")) ?? []
+            let maps = XMLElementIndex(doc).elements(named: "navMap")
             return maps.flatMap { ncxTargets(in: $0, relativeTo: path, level: 1) }
         } ?? []
 
@@ -491,14 +491,12 @@ extension EPUBParser {
         // pageTarget labelled by its navLabel, else its value, and numbered
         // from 1 in list order.
         return withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [PageTarget] in
-            let entries = (try? doc.nodes(
-                forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
-            )) ?? []
+            let entries = XMLElementIndex(doc).elements(named: "pageTarget", insideParentNamed: "pageList")
             var listed: [PageTarget] = []
-            for (index, entry) in entries.compactMap({ $0 as? XMLElement }).enumerated() {
-                let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
+            for (index, entry) in entries.enumerated() {
+                let text = entry.firstNavLabelText?.stringValue ?? ""
                 let value = entry.attribute(forName: "value")?.stringValue ?? ""
-                let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+                let content = entry.childElements(localName: "content").first
                 if let href = content?.attribute(forName: "src")?.stringValue,
                    let target = pageTarget(
                        href: href, labels: [text, value], entryID: entry.attribute(forName: "id")?.stringValue ?? "",
@@ -696,8 +694,8 @@ extension EPUBParser {
         var result: [NavigationTarget] = []
         var stack = pending(under: node, level: level)
         while let (navPoint, navPointLevel) = stack.popLast() {
-            let label = (try? navPoint.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-            let content = (try? navPoint.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+            let label = navPoint.firstNavLabelText?.stringValue ?? ""
+            let content = navPoint.childElements(localName: "content").first
             if let href = content?.attribute(forName: "src")?.stringValue,
                let target = navigationTarget(href: href, label: label, level: navPointLevel, relativeTo: path) {
                 result.append(target)
