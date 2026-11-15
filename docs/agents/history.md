@@ -695,3 +695,39 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
   - After the fix round, one pass passed 26 of 26, including all five and the Library test.
     A second pass was not run, so whether the audit is stable across launches is untested.
   - After that pass only a comment in the search sheet changed, to fix a train failure.
+
+## From Testing TextMouth
+
+- **The skip of the 33 hosted VoiceOver tests:** how it came about, and the follow-up the tests team left (see Tests that skip in an ordinary run in testing.md).
+  Each of the 33 skips at once with one message, "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, never to a test reading them in-process".
+  Where it once looked for the elements and then skipped, and the log has SWIFTUI_ELEMENTS_UNEXPOSED lines.
+  The 29 classes went from 164 to 68 seconds.
+  Running them would take a test host signed with a developer identity and granted Accessibility once in System Settings, or a trusted helper that reads the window as a client (a follow-up of the tests team of October 30, 2026).
+- **The first runs against real cloud drives:** which drive ran when, and why Dropbox was not run again; what the runs showed is in Testing on real cloud drives in testing.md.
+  On October 3, 2026, every test passed against Dropbox, which showed that:
+  Later that day, after TextMouth learned to treat a book's package that iCloud Drive syncs whole as one item, every test passed against iCloud Drive and Google Drive too.
+  Dropbox, whose files each carry their own flags, was not run again.
+  The runs showed that:
+
+## From Testing the iPhone app
+
+- **The probe test of the toolbar placement:**
+  `ToolbarPlacementProbeUITests` is gone (0.4.3).
+  It was one test that recorded what iOS shows for a button in `.cancellationAction`.
+  Its answer is in `PhoneSheetButton.swift` and in [The two apps and the platform folders](../architecture/platforms.md), and its launch variable, `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, went with it.
+- **The passes of the fix round `ios/fix-d-1109`:**
+  The passes of November 9, 2026 (the fix round `ios/fix-d-1109`), all on the iPhone 17:
+  Pass 3, before the review: 19 of 19 unit tests and 21 of 21 UI tests passed.
+  The review's fixes made Dynamic Type and clipped text fail again at the largest size (see LargeTextUITests in testing-iphone.md).
+  Pass 4 then ran 21 UI tests with 1 failure, Settings scrolled, on a nameless "Text clipped".
+  Pass 5 ran 21 with 2: a nameless "partially unsupported" on the Library scrolled, and a Bookmarks tap that opened nothing, which is not a largest-size test.
+  The branch's last commit accepts the first and retries the second.
+  The reports say it was only compiled.
+  The log of a sixth pass, in the round's folder under `build/orchestrator/iosfixd/`, shows 19 of 19 unit tests and 21 of 21 UI tests with 0 failures, finished after that commit.
+  The reports do not mention it, and the commit it ran is not recorded there.
+  Nothing here was run with VoiceOver.
+- **The rule about pressing Play and typing in the simulator:**
+  The old rule, "never press Play and never type in the simulator", was the orchestrator's, not the user's, and the user withdrew it on November 10, 2026 ("I definitely think those should be tested on the IOS").
+- **Compile errors in tests that every type-check had passed:**
+  This happened.
+  On November 8, 2026 the iPhone branch's trains of 03:30 and 04:00 each stopped on a compile error in a test, though every type-check had passed: a stand-in that was not on the main actor in `PhoneSettingsVoicePreviewTests`, and a fixture out of scope in `PhoneVoiceModelTests`.
