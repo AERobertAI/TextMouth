@@ -10,8 +10,6 @@ VoiceOver starts on its Microphone pop-up, Tab reaches every control, and each c
 ## Choosing what to record
 <!-- id: new-recording-choosing; keys: input device, mic, source, title, folder; src: TextMouth/Services/RecordingInputDevices.swift, TextMouth/Services/RecordingPreferences.swift, TextMouth/Views/Recording/RecordingWording.swift -->
 
-Choosing what to record:
-
 ### The microphone list
 <!-- id: new-recording-microphone-list; keys: input device, USB, AirPods, aggregate device, virtual device; src: TextMouth/Services/RecordingInputDevices.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/ViewModels/RecordingWindowModel.swift -->
 
@@ -37,8 +35,6 @@ Save in chooses the library folder, the top of the library, Library, by default.
 
 ## Recording
 <!-- id: new-recording-record-controls; keys: record button, start recording, microphone permission; src: TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Services/RecordingService.swift, TextMouth/Views/Recording/RecordingWording.swift -->
-
-Recording:
 
 ### Record, Pause, and Stop
 <!-- id: new-recording-record-pause-stop; keys: Command-R, Command-P, Command-Period, Privacy & Security, microphone access, shortcuts; src: TextMouth/Views/Recording/RecordingWording.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Services/RecordingService.swift -->
@@ -83,8 +79,6 @@ When a recording has held no sound at all for five seconds, as a muted microphon
 ## Saving
 <!-- id: new-recording-saving; keys: save recording, M4A, audiobook, Stop; src: TextMouth/Services/RecordingEncoder.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/ViewModels/RecordingWindowModel.swift -->
 
-Saving:
-
 ### What Stop saves
 <!-- id: new-recording-what-stop-saves; keys: M4A, AAC, mono, 64 kbps, Open in Reader, author Unknown; src: TextMouth/Services/RecordingEncoder.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/ViewModels/RecordingWindowModel.swift -->
 
@@ -117,8 +111,6 @@ A save that fails keeps TextMouth open, the window saying why, and the next quit
 ## Recovered recordings
 <!-- id: new-recording-recovered; keys: crash recovery, leftover take, power cut, Recordings folder, orphaned take; src: TextMouth/Services/RecordingTake.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWording.swift -->
 
-Recovered recordings:
-
 ### Where recovered recordings are listed
 <!-- id: new-recording-recovered-list; keys: crash recovery, leftover take, forced quit, Recordings folder; src: TextMouth/Services/RecordingTake.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift -->
 
@@ -136,8 +128,6 @@ Nothing is deleted on its own: a recording neither saved nor discarded is listed
 
 ## The original take
 <!-- id: new-recording-original-take; keys: lossless, PCM, CAF, original-take.caf, 345 megabytes; src: TextMouth/Services/RecordingTake.swift, TextMouth/Models/AudioOriginalPolicy.swift -->
-
-The original take:
 
 ### The original audio policy
 <!-- id: new-recording-original-policy; keys: recordingOriginalPolicy, recordingOriginalDays, Storage settings, Audio Editing, undo edits; src: TextMouth/Models/AudioOriginalPolicy.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Services/RecordingPreferences.swift -->
