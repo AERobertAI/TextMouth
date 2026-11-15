@@ -678,3 +678,7 @@ The date, the incident, and the user's words behind a rule that AGENTS.md or CLA
 ## From Preferences: keyboard shortcuts
 
 - **The former default shortcuts:** Move Book Up and Move Book Down had Control-Option arrows before March 22, 2026 (1ec35f02), and Next Bookmark had Shift-Command-B before March 24 (ffb538b1), when Show Bookmarks took Shift-Command-B (the comment on ShortcutAction.formerDefaultBindings).
+## From Logs
+
+- **The feed log keys are pinned:** Feeds, every one pinned since the feed review of October 10, 2026.
+- **BRAILLE_TABLE_CHANGED:** A braille book read again with another braille code has written BRAILLE_TABLE_CHANGED since November 13, 2026.
