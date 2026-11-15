@@ -2,7 +2,7 @@
   "version": 1,
   "pages": {
     "docs/agents/history.md": {"line-length": 18},
-    "docs/agents/orchestrator.md": {"line-length": 14},
+    "docs/agents/orchestrator.md": {"line-length": 6},
     "docs/agents/working-with-agents.md": {"line-length": 4},
     "docs/architecture/state/audio-edits.md": {"line-length": 26},
     "docs/architecture/state/cloud-state.md": {"line-length": 17},

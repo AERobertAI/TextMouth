@@ -12,12 +12,16 @@ Every launch also passes `subagent_type: "general-purpose"` and `isolation: "wor
 The orchestrator, on Fable, writes the briefs, reads each report and diff, decides, merges, and records; it uses a Fable agent only when the user asks for one.
 Briefs are kept in `Scripts/agents/briefs/<date>/` (stage with `git add -f`), never only in the session's scratch folder, so the next session can launch from them.
 The orchestrator itself may run on Opus too; the launches still name the model.
-The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count: read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
+The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count.
+Read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
 
 ## One brief per task
 <!-- id: one-brief-per-task; keys: brief, wave, launch message, origin/main, shared contract, core branch; src: -->
 
-One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message; it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main; the user's decisions quoted in the brief in their own words; waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
+- One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message;
+- it names the branch the agent makes its own from (local main or the team branch, by name), since a worktree starts at origin/main, which can be far behind local main;
+- the user's decisions quoted in the brief in their own words;
+- waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
 
 ## After an agent reports
 <!-- id: after-agent-reports; keys: merge message, worktree remove, unregister, DerivedData-main, flaky test, rerun, AGENT-NOTES; src: Scripts/agents/merge-chain.sh, Scripts/agents/record-merge.py, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/StorageGenerationMoveTests.swift, TextMouthProductionTests/BookSearchModelTests.swift, TextMouthProductionTests/DataDirectoryMoveTests.swift, TextMouthProductionTests/ViewsAndWindowsReaderSheetTests.swift, TextMouthProductionTests/FeedDownloadTests.swift, TextMouthProductionTests/MacBrailleTableCheckTests.swift -->
@@ -28,14 +32,19 @@ A suite that fails only in a load-sensitive test (the sleep-timer integration te
 ## Questions for the user
 <!-- id: questions-user; keys: humanQuestions, Answer line, recommended answer, numbered questions; src: -->
 
-Questions for the user go into a new file in `humanQuestions/` for each session or batch, so the user can answer while away and the answers are kept: each question numbered, with its context in a sentence or two, a recommended answer, and an `Answer:` line for the user; an optional "Answer for the whole section:" line; and an "Answered this session" section quoting the answers already given in chat.
+Questions for the user go into a new file in `humanQuestions/` for each session or batch, so the user can answer while away and the answers are kept:
+- each question numbered, with its context in a sentence or two, a recommended answer, and an `Answer:` line for the user;
+- an optional "Answer for the whole section:" line;
+- and an "Answered this session" section quoting the answers already given in chat.
+
 Say in chat which file holds new questions.
 When acting on an answer, record the decision in the TODO with the user's words, as before.
 
 ## A documentation pass
 <!-- id: documentation-pass; keys: docs agent, Markdown-only merge, no build, doc-library; src: -->
 
-A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch; it is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
+A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch.
+It is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
 
 ## The docs' checks
 <!-- id: docs-checks; keys: make lint-docs, lint baseline, rebuild-baseline, ratchet, doclib; src: Makefile, Scripts/agents/merge-chain.sh, .claude/skills/doc-library/scripts/doclib.py -->
@@ -60,8 +69,13 @@ Then write a new `Where things stand` of at most 1,400 bytes, without dates.
 
 **The version.**
 The user's rule is one bump for each day on which main gains bug fixes or small backward-compatible features.
-After the day's last merge, and before the user's next install, run `make bump-patch`; run `make bump-minor` instead when that day holds a change that is not backward compatible (an older TextMouth cannot open the library, every book is read again, a stored format changes, or a setting, shortcut, or file is removed or renamed).
-Commit the bump on its own, add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library), tag the commit the user is to install as `vX.Y.Z` with an annotated tag (the orchestrator pushes tags only at a stable release, with main, as AGENTS.md says), and record the bump in the TODO.
+After the day's last merge, and before the user's next install, run `make bump-patch`.
+Run `make bump-minor` instead when that day holds a change that is not backward compatible (an older TextMouth cannot open the library, every book is read again, a stored format changes, or a setting, shortcut, or file is removed or renamed).
+- Commit the bump on its own;
+- add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library);
+- tag the commit the user is to install as `vX.Y.Z` with an annotated tag (the orchestrator pushes tags only at a stable release, with main, as AGENTS.md says);
+- and record the bump in the TODO.
+
 MAJOR stays 0 until the user calls TextMouth released.
 Versions in `docs/developer/building.md` has the rules and the cases they leave open.
 
@@ -85,7 +99,8 @@ Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so o
 
 **The helpers** are in `Scripts/agents/`, each found from its own location, so they work from any checkout.
 `python3 -I Scripts/agents/run_locked.py NAME COMMAND...` runs one command under the lock and exits with its status.
-`python3 -I Scripts/agents/run_suite.py NAME LOG` runs the full hosted suite under the lock from the checkout to test (as a background task), ends an xcodebuild that outlives its tests, prints the log's Executed line, and exits 0 only when every test passed; `run_suite.py --remote COMMIT NAME LOG` runs the same suite on GitHub for COMMIT's tree, takes no heavy-work lock, writes the run's log to LOG, and judges it the same way (exit 4: the push or the run failed, not the tests; exit 3: a train held TestBuild throughout).
+`python3 -I Scripts/agents/run_suite.py NAME LOG` runs the full hosted suite under the lock from the checkout to test (as a background task), ends an xcodebuild that outlives its tests, prints the log's Executed line, and exits 0 only when every test passed.
+`run_suite.py --remote COMMIT NAME LOG` runs the same suite on GitHub for COMMIT's tree, takes no heavy-work lock, writes the run's log to LOG, and judges it the same way (exit 4: the push or the run failed, not the tests; exit 3: a train held TestBuild throughout).
 `python3 -I Scripts/agents/copy_phases.py A.pbxproj B.pbxproj` says whether two projects copy the same files to the same places.
 `Scripts/agents/regenerate-project.py` is what `make generate` runs.
 Their tests are in `Scripts/agents/tests`.
@@ -140,7 +155,8 @@ A long request runs as up to four parallel jobs (`Scripts/agents/shard.py` deals
 The runner cannot play or read audio, so `Scripts/agents/runner-skips.conf` lists the 103 entries (103 of about 11,960 tests) it does not run, each with its reason, and each remote result says which of an agent's requested tests were among them ("Not run on GitHub, no verdict"); a remote suite is therefore not the last check before a release: run those on this Mac too, with a local `build-train.py run`, which takes the heavy-work lock.
 A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github/actions/` differs from origin's main, once origin's main holds `test-build.yml`, which it does (origin's main has held it since 0.4.10, a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
 A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request.
-The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`); a train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
+The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`).
+A train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
 A test that fails on the runner with a timing, and passes here, is flaky there, not a reason to raise its limit or add it to the list.
 Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs from the Mac, and the flaky tests.
 
