@@ -369,12 +369,15 @@ extension ReaderViewModel {
         // Text books are read into memory when they open, so only an
         // audiobook goes on reading its files and needs a copy.
         let workingCopies = bookCopy.format.isAudio ? cloudServices.workingCopies : nil
+        // Only the opening load weighs the book's record (risk 2).
+        let opening = !hasOpened
         loadQueue.async { [weak self] in
             let read = ReaderViewModel.readDownloadedBook(
                 bookCopy,
                 package: package,
                 workingCopies: workingCopies,
-                isDataless: isDataless
+                isDataless: isDataless,
+                weighingRecordedState: opening
             )
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.hasClosed else {
@@ -405,11 +408,14 @@ extension ReaderViewModel {
     /// the cloud, then, given `workingCopies`, its working copy, then the
     /// content, as `loadContent()` reads it. An audiobook's tags are read
     /// from its working copy when it has one. Runs on a background queue.
+    /// `weighingRecordedState` is the opening load's, as `readContent` takes
+    /// it (risk 2).
     nonisolated static func readDownloadedBook(
         _ book: Book,
         package: BookPackage,
         workingCopies: ReaderWorkingCopies?,
-        isDataless: @Sendable (URL) -> Bool
+        isDataless: @Sendable (URL) -> Bool,
+        weighingRecordedState: Bool = false
     ) -> DownloadedBookRead {
         var workingCopy: ReaderWorkingCopyResult?
         let content = Result {
@@ -418,7 +424,8 @@ extension ReaderViewModel {
                 workingCopy = workingCopies?.makeCopy(of: package, isDataless: isDataless)
                 return try readContent(
                     of: book,
-                    audioTagsFrom: workingCopy?.copy?.location(of: book.bookFileURL)
+                    audioTagsFrom: workingCopy?.copy?.location(of: book.bookFileURL),
+                    weighingRecordedState: weighingRecordedState
                 )
             }
         }

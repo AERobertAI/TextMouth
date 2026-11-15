@@ -75,6 +75,16 @@ final class ConfigService: ObservableObject {
     /// on this Mac again; every save until then tries again.
     private var isFileInCloud = false
 
+    /// Whether config.json, in a cloud location, was not on this Mac at all
+    /// when the launch, or the data directory's return, would have written
+    /// it from this Mac's settings (risk 5 of the local-first research): it
+    /// may not have arrived yet, so it was left unwritten, the preferences
+    /// standing for it, as for a file only in the cloud. It is merged once a
+    /// save, or the library's fetch of its files, finds it; a save a changed
+    /// setting asks for writes it, missing or not, as substitutions.json is
+    /// written only once a rule changes.
+    private var awaitsFileOnItsWay = false
+
     // MARK: - Coalesced Saves
 
     /// How long a save asked for with `scheduleSave()` waits for the next
@@ -88,6 +98,9 @@ final class ConfigService: ObservableObject {
 
     /// The save waiting for `saveDelay` to pass, if any.
     private var scheduledSave: Task<Void, Never>?
+    /// Whether the waiting save may make a missing config.json: true when
+    /// any save merged into it may (`scheduleSave(creatingAwaitedFile:)`).
+    private var scheduledSaveMayCreateFile = true
 
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
@@ -826,7 +839,9 @@ final class ConfigService: ObservableObject {
         guard !isFileUnavailable else { return }
         if skippedFileWhileUnavailable {
             skippedFileWhileUnavailable = false
-            saveToDisk()
+            // A reconciliation, not a changed setting: a file not here yet
+            // in a cloud location is waited for (risk 5).
+            saveToDisk(creatingAwaitedFile: false)
         }
         if watchedFile == nil {
             rearmWatcher()
@@ -841,13 +856,23 @@ final class ConfigService: ObservableObject {
     /// every change at once; only the file waits. A save made meanwhile with
     /// `saveToDisk()` writes it at once instead, and `flushScheduledSave()`
     /// does when TextMouth quits or the data directory moves.
-    func scheduleSave() {
+    ///
+    /// - Parameter creatingAwaitedFile: Whether the save may make a missing
+    ///   config.json (`saveToDisk(creatingAwaitedFile:)`). A changed
+    ///   setting's save may; one that only notes a book was opened passes
+    ///   false, so that in a cloud location it never writes this Mac's
+    ///   settings into a file that has not arrived yet (risk 5). Saves
+    ///   merged into one write may if any of them may.
+    func scheduleSave(creatingAwaitedFile: Bool = true) {
+        // The saves waiting merge: one that may make the file lets the
+        // write make it. A save with none waiting starts afresh.
+        scheduledSaveMayCreateFile = (scheduledSave != nil && scheduledSaveMayCreateFile) || creatingAwaitedFile
         scheduledSave?.cancel()
         scheduledSave = Task { [weak self, saveDelay] in
             try? await Task.sleep(for: saveDelay)
             guard !Task.isCancelled, let self else { return }
             self.scheduledSave = nil
-            self.saveToDisk()
+            self.saveToDisk(creatingAwaitedFile: self.scheduledSaveMayCreateFile)
         }
     }
 
@@ -856,7 +881,7 @@ final class ConfigService: ObservableObject {
     /// latest settings. Does nothing when no save waits.
     func flushScheduledSave() {
         guard hasScheduledSave else { return }
-        saveToDisk()
+        saveToDisk(creatingAwaitedFile: scheduledSaveMayCreateFile)
     }
 
     /// Whether a save asked for with `scheduleSave()` is waiting.
@@ -881,7 +906,15 @@ final class ConfigService: ObservableObject {
     /// replace what another Mac saved. The preferences hold every setting
     /// meanwhile, and a later save, once the file is on this Mac, merges it
     /// as an edit found on disk.
-    func saveToDisk() {
+    ///
+    /// - Parameter creatingAwaitedFile: Whether a missing file may be made
+    ///   now, as a changed setting's save makes it. The launch's save and
+    ///   the data directory's return pass false: they only reconcile the
+    ///   file with the preferences, so in a cloud location, where a missing
+    ///   config.json may not have arrived yet (`SavedFile.mayStillArrive(_:)`,
+    ///   risk 5), they leave it unwritten rather than put this Mac's
+    ///   settings in its place (`awaitsFileOnItsWay`).
+    func saveToDisk(creatingAwaitedFile: Bool = true) {
         scheduledSave?.cancel()
         scheduledSave = nil
         // Nothing is written where the library isn't (FR02). The preferences
@@ -907,12 +940,23 @@ final class ConfigService: ObservableObject {
             }
             noteFileInCloud()
             return
+        case .missing where !creatingAwaitedFile && SavedFile.mayStillArrive(fileURL):
+            // Not here, in a cloud location: perhaps not arrived yet (risk
+            // 5). The settings in use stand for what the file holds, as for
+            // one only in the cloud, so the save that merges it keeps the
+            // changes made meanwhile.
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
+            noteFileAwaited()
+            return
         case .contents(let contents):
             onDisk = contents
-        case .none:
+        case .missing, .none:
             onDisk = nil
         }
         isFileInCloud = false
+        awaitsFileOnItsWay = false
         if let onDisk, onDisk != lastHandledContents {
             mergeUnhandledEdit(onDisk)
         }
@@ -963,7 +1007,9 @@ final class ConfigService: ObservableObject {
     private enum FileRead {
         /// The file's bytes.
         case contents(Data)
-        /// No file, or one that cannot be read.
+        /// No file at all.
+        case missing
+        /// A file that cannot be read.
         case none
         /// A file only in the cloud (FR02), which was not read: reading it
         /// would have downloaded it first.
@@ -977,6 +1023,8 @@ final class ConfigService: ObservableObject {
             return .contents(try fileOperations.read(fileURL))
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return .inCloud
+        } catch CocoaError.fileReadNoSuchFile {
+            return .missing
         } catch {
             return .none
         }
@@ -994,10 +1042,25 @@ final class ConfigService: ObservableObject {
     /// in use as the first save that finds it would, so a setting changed
     /// here meanwhile keeps its new value and every other one takes the
     /// file's, without a restart. Does nothing unless the file was waiting
-    /// in the cloud; while it still is, nothing is read or written.
+    /// in the cloud, or, in a cloud location, had not arrived at all
+    /// (`awaitsFileOnItsWay`, risk 5); while it still is, nothing is read or
+    /// written.
     func fileMayHaveArrived() {
-        guard isFileInCloud else { return }
-        saveToDisk()
+        guard isFileInCloud || awaitsFileOnItsWay else { return }
+        saveToDisk(creatingAwaitedFile: false)
+    }
+
+    /// Notes that config.json, in a cloud location, is not on this Mac and
+    /// was left unwritten in case it has not arrived yet (risk 5), which the
+    /// debug log says once.
+    private func noteFileAwaited() {
+        guard !awaitsFileOnItsWay else { return }
+        awaitsFileOnItsWay = true
+        log(
+            "\(fileURL.lastPathComponent) isn't on this Mac, and the library is in the cloud, so it may not "
+                + "have arrived yet; it is not written from this Mac's settings until a setting changes, and is "
+                + "merged once it is here"
+        )
     }
 
     /// Notes that config.json is only in the cloud, so it is neither read

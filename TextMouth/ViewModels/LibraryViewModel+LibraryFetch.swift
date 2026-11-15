@@ -265,7 +265,11 @@ extension LibraryViewModel {
 
     /// Ends the fetch with the failure screen: `ending` says in a few words
     /// why, for the log, and the reason names `files`, by default the ones
-    /// the last check named, that are still waiting.
+    /// the last check named, that are still waiting. When what is still
+    /// waiting is the library's index missing beside its identity file, or
+    /// the reverse (`DataDirectoryCheck.awaitedFile(among:in:)`, risk 5), the
+    /// reason says so and the screen puts the choice to the listener
+    /// (`DataDirectoryUnavailability.libraryFileNotArrived`).
     private func failLibraryFetch(
         _ token: UUID,
         _ provider: CloudProvider?,
@@ -278,7 +282,86 @@ extension LibraryViewModel {
         let named = files ?? names(of: pendingLibraryFiles, in: root)
         DiagnosticLog.event(.storage, "LIBRARY_FETCH: gave up on \(DataDirectoryUnavailability.listed(named)); \(ending)")
         endLibraryFetch(token)
+        let expectingIdentity = DataDirectoryPreferences.expectedIdentity.read(from: dataDirectoryEnvironment.preferences) != nil
+        if files == nil,
+           let awaited = DataDirectoryCheck.awaitedFile(among: pendingLibraryFiles, in: root, expectingIdentity: expectingIdentity) {
+            noteDataDirectoryUnavailable(.libraryFileNotArrived(provider, folder: folder, file: awaited))
+            return
+        }
         noteDataDirectoryUnavailable(.cloudFetchFailed(provider, folder: folder, files: named, ending: ending))
+    }
+
+    // MARK: Opening Without a File That Did Not Arrive (Risk 5)
+
+    /// Opens the library without the file the screen says did not arrive
+    /// beside the other (`DataDirectoryUnavailability.libraryFileNotArrived`),
+    /// once the listener has chosen to and confirmed it: never by itself.
+    ///
+    /// - The index: this data directory may open without it for the rest
+    ///   of this session (`libraryIndexWaitWaivedFor`), as it opened before
+    ///   the wait, and the startup repair makes the index anew from the
+    ///   books here.
+    /// - The identity file: the identity this Mac knows for the library is
+    ///   written in its place (`LibraryIdentity.adopt(in:identifiedAs:now:)`),
+    ///   never a new one, so the library is the same library on every Mac;
+    ///   a marker that arrived meanwhile stands.
+    ///
+    /// Then it checks again as Try Again does, which opens the library.
+    /// Does nothing for any other reason.
+    func openLibraryWithoutTheAwaitedFile() {
+        guard let awaited = dataDirectoryUnavailability?.awaitedFile else { return }
+        let root = TextMouthPaths.root
+        let name = DataDirectoryPaths.shortName(of: root)
+        switch awaited {
+        case .index:
+            libraryIndexWaitWaivedFor = root.standardizedFileURL.path
+            DiagnosticLog.event(
+                .storage,
+                "LIBRARY_INDEX: the listener chose to open the library in \(name) without its index, which did not "
+                    + "arrive; the startup repair makes a new one from the books here"
+            )
+        case .identityNotKnown:
+            // This Mac knows no identity to restore: the library is given a
+            // new one as it starts, now that the listener has said so.
+            libraryIdentityWaitWaivedFor = root.standardizedFileURL.path
+            DiagnosticLog.event(
+                .storage,
+                "LIBRARY_IDENTITY: the listener chose to open the library in \(name) without its identity file, "
+                    + "which did not arrive; it is given a new identity as it opens"
+            )
+        case .identity:
+            guard let expected = DataDirectoryPreferences.expectedIdentity.read(from: dataDirectoryEnvironment.preferences) else { return }
+            do {
+                // This runs on the main actor, so it never waits for a
+                // download: an identity file that arrived as a placeholder
+                // after the choice appeared is refused at once (reading the
+                // marker would otherwise download it, without a limit).
+                let restored = try DatalessFiles.withoutDownloading {
+                    try libraryIdentityAdopter(root, expected)
+                }
+                DiagnosticLog.event(
+                    .storage,
+                    "LIBRARY_IDENTITY: the listener chose to restore the identity of the library in \(name), "
+                        + "whose identity file did not arrive: \(restored.id.uuidString)"
+                )
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                // The file is on its way after all: the check that follows
+                // names it as only in the cloud, and the fetch, which has a
+                // limit, brings it.
+                DiagnosticLog.event(
+                    .storage,
+                    "LIBRARY_IDENTITY: the identity file of the library in \(name) arrived as a placeholder; "
+                        + "checking again so it is fetched, not restoring it"
+                )
+            } catch {
+                DiagnosticLog.event(
+                    .storage,
+                    "LIBRARY_IDENTITY: could not restore the identity of the library in \(name): \(error.localizedDescription)"
+                )
+                return
+            }
+        }
+        retryDataDirectory()
     }
 
     /// Ends the fetch named by `token`, unless another has replaced it.

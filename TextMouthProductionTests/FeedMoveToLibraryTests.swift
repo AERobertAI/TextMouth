@@ -34,6 +34,59 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
         try await assertMoved(fixture, in: world, model: next)
     }
 
+    // MARK: - A Stale Record of the Feed (Risk 4)
+
+    /// Move to Library… notes its time in the book's record, and the book's
+    /// later saves, a reading position here, keep the note.
+    func testTheRecordNotesTheMoveAndKeepsTheNote() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryNote")
+        let fixture = try await downloadedEpisode(world)
+        let before = Date()
+
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let noted = try XCTUnwrap(try BookInfo.load(from: row.tmbDirectory).metadata.movedToLibrary, "the record has no note of the move")
+        XCTAssertGreaterThanOrEqual(noted, before.addingTimeInterval(-1))
+        world.library.persistReadingPosition(bookID: row.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 77))
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 77)
+        XCTAssertEqual(record.metadata.movedToLibrary, noted, "a later save lost the note")
+    }
+
+    /// Another Mac's record of the feed, written whole from memory before
+    /// it knew of the move, still calls the episode downloaded: no later
+    /// launch takes the book back into its feed, whose rules could then
+    /// delete its file, because its own record says Move to Library… made
+    /// it the library's.
+    func testAStaleRecordOfTheFeedNeverTakesTheBookBack() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryStale")
+        let fixture = try await downloadedEpisode(world)
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+        XCTAssertEqual(outcome, .success(nil))
+        // The other Mac's record of the feed, as it writes it whole.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { item in
+            item.state = .downloaded(bookID: fixture.book.id)
+        }
+        await world.center.store.flush()
+
+        for launch in 1...2 {
+            let next = await nextLaunch(of: world)
+            let row = try XCTUnwrap(next.bookByID(fixture.book.id), "launch \(launch): the book left the library")
+            XCTAssertNil(row.feedLink, "launch \(launch): the book went back to its feed")
+            XCTAssertEqual(row.folderPath, fixture.keepers, "launch \(launch)")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: row.filePath), "launch \(launch): the book's file is not where its row says")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: fixture.book.tmbDirectory.path),
+                "launch \(launch): the package went back into its feed's folder"
+            )
+            XCTAssertEqual(row.readingPosition?.characterOffset, Self.place, "launch \(launch)")
+            XCTAssertNotNil(try BookInfo.load(from: row.tmbDirectory).metadata.movedToLibrary, "launch \(launch): the record lost its note")
+        }
+    }
+
     // MARK: - A Crash Between Two Steps
 
     /// A crash once the item said "In Library", before the package moved:

@@ -54,7 +54,10 @@ struct LibraryWindowView: View {
                         #if os(macOS)
                         QuitRequest.ask()
                         #endif
-                    }
+                    },
+                    // A library file that did not arrive beside the other
+                    // (risk 5): opened without it only as the listener chooses.
+                    onOpenWithoutAwaitedFile: { libraryViewModel.openLibraryWithoutTheAwaitedFile() }
                 )
             } else {
                 LibraryView(

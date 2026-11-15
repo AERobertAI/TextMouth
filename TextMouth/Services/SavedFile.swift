@@ -115,6 +115,20 @@ enum SavedFile {
         try? CloudServices.itemStatus.requestDownload(of: url)
     }
 
+    /// Whether a file at `url` that is not on this Mac may still be on its
+    /// way: true when its folder is in a cloud location, where a sync
+    /// service brings a library's small files down one at a time (risk 5
+    /// of the local-first research), so such a file is stood in for rather
+    /// than created afresh, which would put this Mac's copy over the one
+    /// still coming. Asked from file-system metadata, with dataless files
+    /// left in the cloud; false for every folder elsewhere, where a file
+    /// that isn't there simply isn't.
+    @MainActor
+    static func mayStillArrive(_ url: URL) -> Bool {
+        let folder = url.deletingLastPathComponent()
+        return DatalessFiles.withoutDownloading { CloudServices.itemStatus.location(of: folder).isCloud }
+    }
+
     // MARK: Replacing in one step
 
     /// Renames `from` to `to` with rename(2), which replaces whatever is at

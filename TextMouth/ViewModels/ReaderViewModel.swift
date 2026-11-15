@@ -706,9 +706,28 @@ final class ReaderViewModel: ObservableObject {
     /// `savePositionIfMoved()` compares the cursor with, so a quit writes
     /// only the places that changed.
     private var lastSavedPlace: TextPlace?
+    /// The date `lastSavedPlace` was saved with: its last durable save's,
+    /// or, from the load until the first save, the date of the place the
+    /// book opened at (`noteOpenedPlace()`); nil for a book never saved at
+    /// a place. A save of the same place, the cursor unmoved, keeps it
+    /// (`durablePosition()`, risk 2 of the local-first research).
+    private var lastSavedPlaceDate: Date?
+    /// The clock a moved place is dated by: the system's, unless a test
+    /// sets its own (to set the clock back, as a user can).
+    var positionClock: () -> Date = { Date() }
+    /// Whether the book's text has been shown once in this reader
+    /// (`showLoadedContent`). The first load is the book's opening: it weighs
+    /// the place, bookmarks, and settings the book's record holds against the
+    /// row's (`LoadedContent.recordedState`) and notes the place opened at
+    /// (`noteOpenedPlace()`), risk 2. A later load, as after an edit of the
+    /// text, a move of the package, or a download, does neither: this
+    /// reader's own saves are the newest it knows, while its copy of the book
+    /// keeps the place it opened with.
+    private(set) var hasOpened = false
     /// Whether the cursor was published live (playback moving it) since the
     /// last durable save. It counts as a move even should the cursor have
-    /// come back to the saved place.
+    /// come back to the saved place. A publish while nothing plays and the
+    /// cursor rests at the saved place does not set it (risk 2).
     private var hasPlayedSinceSave = false
     /// The measure of the text this reader shows, which every anchor it
     /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
@@ -1533,6 +1552,13 @@ final class ReaderViewModel: ObservableObject {
         /// taken or refused, for the manifest editor once the book shows;
         /// nil for every other book.
         var manifestLook: BookManifestEditCheck? = nil
+        /// The reading state that stood between the reader's copy of the
+        /// book and its record, when the record held the later place, as
+        /// another Mac sharing the library writes one while this Mac's row
+        /// lags behind (risk 2; `Book.readingState(standingAgainst:)`): the
+        /// load read the book from it, and the reader takes it first of all
+        /// (`takeNewerRecordedState(_:)`). Nil when the row's stood.
+        var recordedState: Book.ReadingState? = nil
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1551,6 +1577,8 @@ final class ReaderViewModel: ObservableObject {
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)
+        // Only the opening load weighs the book's record (risk 2).
+        let opening = !hasOpened
         loadQueue.async { [weak self] in
             let location = storage.libraryLocation()
             if location.isCloud {
@@ -1560,7 +1588,7 @@ final class ReaderViewModel: ObservableObject {
                 }
                 return
             }
-            let result = Result { try ReaderViewModel.readContent(of: bookCopy) }
+            let result = Result { try ReaderViewModel.readContent(of: bookCopy, weighingRecordedState: opening) }
             DispatchQueue.main.async { [weak self] in
                 self?.finishLoading(result, readFrom: bookCopy.filePath)
             }
@@ -1582,14 +1610,31 @@ final class ReaderViewModel: ObservableObject {
     /// cache of the reading text of the large books opened lately (PERF22,
     /// `ReadingTextCache`): it is read from there when kept for the book's
     /// content.md as it is, and kept there after a parse otherwise.
+    ///
+    /// `weighingRecordedState`, for the load that opens the book, weighs the
+    /// reading state the book's record holds against `book`'s first
+    /// (`LoadedContent.recordedState`, risk 2); a later load of the same
+    /// reader passes false, its copy of the book keeping the place it opened
+    /// with while its own saves went on.
     nonisolated static func readContent(
         of book: Book,
         audioTagsFrom tagsURL: URL? = nil,
-        readingTexts: ReadingTextCache? = .shared
+        readingTexts: ReadingTextCache? = .shared,
+        weighingRecordedState: Bool = false
     ) throws -> LoadedContent {
         var book = book
         let url = book.bookFileURL
         let format = book.format
+        // The book's record, written by another Mac sharing the library
+        // since this Mac's row was, may hold the later place (risk 2): the
+        // place, bookmarks, and settings that stand between the two are
+        // read before anything else, so every step below (an edit's moves,
+        // a rebuild's, the check at load) starts from them, as the reader
+        // takes them before those moves. Read without downloading anything.
+        var recordedState: Book.ReadingState?
+        if weighingRecordedState, let record = book.ownStoredRecord(), book.takeStandingReadingState(of: record) {
+            recordedState = book.readingState
+        }
         // A text being edited in the user's editor has a saved edit checked
         // first (FR05), so the read never finds an edit that would look like
         // a stale cache and be rebuilt from the source (TODO T07). An edit
@@ -1727,7 +1772,8 @@ final class ReaderViewModel: ObservableObject {
             // keeps the pauses a fresh analysis would find.
             chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none,
             transcriptWithheld: transcriptWithheld,
-            manifestLook: manifestLook
+            manifestLook: manifestLook,
+            recordedState: recordedState
         )
     }
 
@@ -1769,6 +1815,11 @@ final class ReaderViewModel: ObservableObject {
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
+        // The record's later reading state, when the load found one (risk
+        // 2), comes before every move, as the load took it before them.
+        if let recorded = loaded.recordedState {
+            takeNewerRecordedState(recorded)
+        }
         // The places the load moved come first, in order (a rebuild's, then
         // the check at load's), so that the opening place, the opened
         // place's anchor (`noteLoadedTextForAnchors`), the anchor capture,
@@ -1796,6 +1847,13 @@ final class ReaderViewModel: ObservableObject {
         if opening != saved {
             currentChapterIndex = opening.chapter
             currentCharacterOffset = opening.offset
+        }
+        // The place the book opened at keeps its date until the cursor
+        // moves, the load's own save below included (risk 2). A later load
+        // keeps the place and date of this reader's last save.
+        if !hasOpened {
+            noteOpenedPlace()
+            hasOpened = true
         }
         // Every place saved from now on takes its words from this text, but
         // the place the book opened at keeps the words it was saved with
@@ -2277,12 +2335,14 @@ final class ReaderViewModel: ObservableObject {
 
     // MARK: - Position Saving
 
-    /// Persist the current reading position to the library
+    /// Persist the current reading position to the library. A place saved
+    /// without moving keeps the date it was saved with (`durablePosition()`).
     func savePosition() {
         guard content != nil else { return }
-        let position = makeCurrentReadingPosition()
+        let position = durablePosition()
         libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
-        lastPersistedCheckpoint = position.lastUpdated
+        // When the checkpoint was made, whatever date the place keeps.
+        lastPersistedCheckpoint = Date()
         notePlaceSaved(position)
     }
 
@@ -2301,10 +2361,52 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Record that `position` was just saved durably: the place the next
-    /// `savePositionIfMoved()` compares with, and no live move is waiting.
+    /// `savePositionIfMoved()` compares with, with its date, and no live
+    /// move is waiting.
     private func notePlaceSaved(_ position: ReadingPosition) {
         lastSavedPlace = TextPlace(chapter: position.chapterIndex, offset: position.characterOffset)
+        lastSavedPlaceDate = position.lastUpdated
         hasPlayedSinceSave = false
+    }
+
+    /// Record that the book opened at the cursor, as its text loaded: the
+    /// place last saved, with the date of the place saved for it, until the
+    /// cursor moves (risk 2). The load's own save (`showLoadedContent`) then
+    /// writes it, with the words and the offset in the whole book it can
+    /// now take, under that date, and so do a close and a quit that find
+    /// the cursor where it was.
+    private func noteOpenedPlace() {
+        lastSavedPlace = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        lastSavedPlaceDate = book.readingPosition?.lastUpdated
+        hasPlayedSinceSave = false
+    }
+
+    /// The cursor's place, to save durably: dated now, unless the cursor
+    /// has not moved since the place was last saved, or since the book
+    /// opened at it, with no playback since, when it keeps that save's date
+    /// (risk 2 of LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md; section 5: "A
+    /// place saved without moving keeps the clock it had"). So opening or
+    /// closing a book, or a quit, never makes an old place the later one,
+    /// which would put it over a place another Mac sharing the library
+    /// saved since (`Book.readingState(standingAgainst:)`). A place never
+    /// saved before is dated now.
+    private func durablePosition() -> ReadingPosition {
+        var position = makeCurrentReadingPosition()
+        if !hasPlayedSinceSave,
+           let savedDate = lastSavedPlaceDate,
+           lastSavedPlace == TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
+            position.lastUpdated = savedDate
+        } else {
+            // A moved place is dated by the clock, but never earlier than a
+            // second after the place it moves on from: the files keep dates
+            // to the second, and a clock set back would otherwise date this
+            // move before the last save, so that the record's older state
+            // would stand over it at the next opening
+            // (`Book.readingState(standingAgainst:)`).
+            let now = positionClock()
+            position.lastUpdated = lastSavedPlaceDate.map { max(now, $0.addingTimeInterval(1)) } ?? now
+        }
+        return position
     }
 
     /// Builds the one canonical snapshot used by reader persistence and live
@@ -2356,15 +2458,22 @@ final class ReaderViewModel: ObservableObject {
             lastCheckpoint: lastPersistedCheckpoint,
             now: now
         ) {
-            // A durable checkpoint carries the words around the place.
-            let position = makeCurrentReadingPosition()
+            // A durable checkpoint carries the words around the place, and
+            // the date of its last save when the cursor has not moved.
+            let position = durablePosition()
             libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
             lastPersistedCheckpoint = now
             notePlaceSaved(position)
         } else {
             // A live position carries none: only its cursor is read.
             libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: makeCurrentReadingPosition(withAnchor: false))
-            hasPlayedSinceSave = true
+            // Playing, or a cursor that left its saved place, is a move; a
+            // publish while nothing plays and the cursor rests where it was
+            // saved, as setting the cursor to the same place asks for, is
+            // not, so it never dates that place anew (risk 2).
+            if isActivelyPlaying || lastSavedPlace != TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset) {
+                hasPlayedSinceSave = true
+            }
         }
         lastLivePositionPublish = now
         // With the position published, see whether the next episode of a
@@ -2389,10 +2498,13 @@ final class ReaderViewModel: ObservableObject {
         livePositionWorkItem?.cancel()
         livePositionWorkItem = nil
         // stop() records the stopped timestamp and persists when playback was
-        // active or paused. The explicit save also captures navigation made
+        // active or paused. The save below also captures navigation made
         // while stopped, and is a no-op until content has loaded.
         stop()
-        savePosition()
+        // Only a place that moved is saved, as a quit saves it: a reader
+        // that never moved, closing, would put the place it opened at over
+        // a later place another reader of the same book has saved since.
+        savePositionIfMoved()
         stopWhereAmISynthesizer()
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()

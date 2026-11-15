@@ -80,6 +80,39 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(waitingQuestions(of: scene.model), ["duplicate: Bestiary of Knots"])
     }
 
+    /// A book Move to Library… made the library's own, replaced by the same
+    /// file, keeps the note in its record (risk 4 of the local-first
+    /// research), which is what stops a stale record of a feed taking it
+    /// back into its feed at a launch
+    /// (`testABookItsRecordSaysMovedToLibraryStaysWhereItIs`). A book never
+    /// moved gains none.
+    func testReplaceExistingKeepsMoveToLibrarysNote() throws {
+        let scene = try makeScene()
+        let moved = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let plain = try existingBookAndCopy("Bestiary of Knots", in: scene)
+        scene.model.library = Library(books: [moved.existing, plain.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        // The first book's record says Move to Library… made it the library's own.
+        let movedAt = Date(timeIntervalSince1970: 1_790_000_000)
+        var record = moved.existing.makeBookInfo()
+        record.metadata.movedToLibrary = movedAt
+        try record.save(to: moved.existing.tmbDirectory)
+
+        scene.model.importFiles(urls: [moved.copy, plain.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        let replacedMoved = try XCTUnwrap(scene.model.bookByID(moved.existing.id))
+        XCTAssertNotEqual(replacedMoved.tmbDirectoryName, moved.existing.tmbDirectoryName, "the book was not replaced")
+        XCTAssertEqual(
+            try BookInfo.load(from: replacedMoved.tmbDirectory).metadata.movedToLibrary, movedAt,
+            "Replace Existing dropped Move to Library's note"
+        )
+        let replacedPlain = try XCTUnwrap(scene.model.bookByID(plain.existing.id))
+        XCTAssertNil(try BookInfo.load(from: replacedPlain.tmbDirectory).metadata.movedToLibrary)
+    }
+
     /// Two files imported while "After Importing a Book" asks each time are
     /// each offered for deletion, the first first, and each answer reaches
     /// its own file.

@@ -10,6 +10,186 @@ import os
 @MainActor
 final class LibraryCloudFetchTests: XCTestCase {
 
+    // MARK: - Small Files That Arrive Apart (Risk 5)
+
+    /// library.json missing beside the identity file in Google Drive is
+    /// waited for as a file only in the cloud is, and the library opens by
+    /// itself once it arrives, holding what the index holds, rather than as
+    /// a library with no index.
+    func testAnIndexThatArrivesLateOpensTheLibraryWithIt() throws {
+        let world = try CloudWorld(test: self, label: "IndexLate")
+        let index = world.index
+        let saved = try Data(contentsOf: index)
+        try FileManager.default.removeItem(at: index)
+        world.whenFetched(index) { try saved.write(to: index) }
+
+        let model = world.launch()
+        XCTAssertEqual(
+            model.dataDirectoryUnavailability,
+            .gettingFromCloud(.googleDrive, folder: world.fixture.root.path, files: ["library.json"])
+        )
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertEqual(model.library.folders.map(\.fullPath), [LibraryFixture.folderName], "the library opened without its index")
+    }
+
+    /// An index that never comes ends the wait with the choice, never a
+    /// fresh start: nothing is made until the listener chooses Open Without
+    /// the Index, which opens the library.
+    func testAnIndexThatNeverComesPutsTheChoiceToTheListener() throws {
+        let world = try CloudWorld(test: self, label: "IndexNever")
+        try FileManager.default.removeItem(at: world.index)
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .index }, "the wait never ended in the choice")
+        XCTAssertEqual(model.dataDirectoryUnavailability, .libraryFileNotArrived(.googleDrive, folder: world.fixture.root.path, file: .index))
+        XCTAssertFalse(model.hasStartedLibrary)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: world.index.path), "an index was made before the listener chose")
+
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertNil(model.dataDirectoryUnavailability)
+    }
+
+    /// An identity file that never comes, where this Mac expects one, ends
+    /// the wait with the choice, never a new identity: Restore Its Identity
+    /// writes the identity this Mac knows, and the library opens with it.
+    func testAnIdentityThatNeverComesIsRestoredAsThisMacKnowsIt() throws {
+        let world = try CloudWorld(test: self, label: "IdentityNever")
+        let root = world.fixture.root
+        let expected = try XCTUnwrap(DataDirectoryPreferences.expectedIdentity.read(from: world.fixture.preferences))
+        try FileManager.default.removeItem(at: LibraryIdentity.markerURL(in: root))
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .identity }, "the wait never ended in the choice")
+        XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity before the listener chose")
+
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
+    }
+
+    /// An identity file that arrived as a placeholder after the choice
+    /// appeared is never waited for on the main thread: reading it is
+    /// refused at once, as it is inside `DatalessFiles.withoutDownloading`,
+    /// and the choice goes straight to checking again, whose fetch (which
+    /// has a limit) brings it. The library then opens with the identity the
+    /// file holds, and no other was made.
+    func testAnIdentityThatArrivedAsAPlaceholderGoesStraightToTheFetch() throws {
+        let world = try CloudWorld(test: self, label: "IdentityPlaceholder")
+        let root = world.fixture.root
+        let marker = LibraryIdentity.markerURL(in: root)
+        let expected = try XCTUnwrap(DataDirectoryPreferences.expectedIdentity.read(from: world.fixture.preferences))
+        let saved = try Data(contentsOf: marker)
+        try FileManager.default.removeItem(at: marker)
+        let model = world.launch()
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .identity }, "the wait never ended in the choice")
+
+        // The file shows up as a placeholder: reading it is refused, as a
+        // read of a dataless file is where downloads are off. It is then
+        // only in the cloud, and the fetch brings it.
+        // The fetches made while the wait ran, before the choice.
+        let fetchesBefore = world.fetched.names(in: root).count
+        var adoptions = 0
+        model.libraryIdentityAdopter = { _, _ in
+            adoptions += 1
+            throw POSIXError(.EDEADLK)
+        }
+        world.keepInCloud(marker)
+        world.whenFetched(marker) { try saved.write(to: marker) }
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertEqual(adoptions, 1, "the restore was not tried inside the guard")
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertEqual(Array(world.fetched.names(in: root).dropFirst(fetchesBefore)), ["library-identity.json"], "the choice did not go to the fetch")
+        XCTAssertEqual(try LibraryIdentity.read(in: root)?.id, expected, "the library was given another identity")
+    }
+
+    /// A Mac that expects no identity, as one only just given the folder
+    /// (Use This Library) does, waits for the identity file as the other does,
+    /// and when it never comes puts the choice to the listener: no identity
+    /// is made on its own. Giving a new one writes it and opens the library.
+    func testAnIdentityThatNeverComesOnAMacExpectingNoneIsTheListenersChoice() throws {
+        let world = try CloudWorld(test: self, label: "IdentityNeverUnknown")
+        let root = world.fixture.root
+        world.fixture.preferences.removeObject(forKey: DataDirectoryPreferences.expectedIdentity.key)
+        try FileManager.default.removeItem(at: LibraryIdentity.markerURL(in: root))
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.awaitedFile == .identityNotKnown }, "the wait never ended in the choice")
+        XCTAssertEqual(model.dataDirectoryUnavailability, .libraryFileNotArrived(.googleDrive, folder: root.path, file: .identityNotKnown))
+        XCTAssertFalse(model.hasStartedLibrary)
+        XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity before the listener chose")
+
+        model.openLibraryWithoutTheAwaitedFile()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertNotNil(try LibraryIdentity.read(in: root), "the library was not given an identity as it opened")
+        XCTAssertNil(model.dataDirectoryUnavailability)
+    }
+
+    /// The words of the choice on a Mac that knows no identity: its reason
+    /// says there is none to restore, and its button and question offer a
+    /// new one.
+    func testTheWordsOfTheChoiceWhereNoIdentityIsKnown() {
+        let file = LibraryFileAwaited.identityNotKnown
+        XCTAssertEqual(
+            LibraryFileWaitWording.explanation(of: file, in: .googleDrive),
+            "The library's index is on this Mac, but its identity file, library-identity.json, hasn't arrived from "
+                + "Google Drive. TextMouth waited for it. This Mac doesn't know the library's identity, so it can't "
+                + "restore it. Check that Google Drive is running and that this Mac is online, then choose Try Again. "
+                + "If it is gone, choose Give It a New Identity."
+        )
+        XCTAssertEqual(LibraryFileWaitWording.openTitle(for: file), "Give It a New Identity…")
+        XCTAssertEqual(LibraryFileWaitWording.openHint(for: file), "Asks first, then gives the library a new identity and opens it.")
+        XCTAssertEqual(LibraryFileWaitWording.confirmationTitle(for: file), "Give the library a new identity?")
+        XCTAssertEqual(LibraryFileWaitWording.confirmTitle(for: file), "Give a New Identity")
+        XCTAssertEqual(
+            LibraryFileWaitWording.confirmationMessage(for: file, in: .iCloudDrive),
+            "TextMouth writes library-identity.json with a new identity for the library, and opens it. If the "
+                + "library's own library-identity.json arrives from iCloud Drive later, iCloud Drive may keep two copies "
+                + "of it, and this Mac and the other would disagree about which library this is."
+        )
+        XCTAssertEqual(LibraryFileWaitWording.naming(file), "its identity file, library-identity.json")
+    }
+
+    /// The words of the choice: the reason names the file that did not come,
+    /// what to check, and the button, whose title says it asks first; the
+    /// question says what opening does.
+    func testTheWordsOfTheChoice() {
+        let index = DataDirectoryUnavailability.libraryFileNotArrived(.googleDrive, folder: "/Volumes/Shelf/TextMouth", file: .index)
+        XCTAssertEqual(
+            index.explanation,
+            "The library's identity file is on this Mac, but its index, library.json, hasn't arrived from Google Drive. "
+                + "TextMouth waited for it. Check that Google Drive is running and that this Mac is online, then choose "
+                + "Try Again. If it is gone, choose Open Without the Index."
+        )
+        XCTAssertEqual(DataDirectoryUnavailableText.title(for: index), DataDirectoryUnavailableText.title)
+        let identity = DataDirectoryUnavailability.libraryFileNotArrived(.iCloudDrive, folder: "/x", file: .identity)
+        XCTAssertEqual(
+            identity.explanation,
+            "The library's index is on this Mac, but its identity file, library-identity.json, hasn't arrived from "
+                + "iCloud Drive. TextMouth waited for it. iCloud Drive may be turned off or signed out, or this Mac may "
+                + "be offline. Check that, then choose Try Again. If it is gone, choose Restore Its Identity."
+        )
+        XCTAssertEqual(LibraryFileWaitWording.openTitle(for: .index), "Open Without the Index…")
+        XCTAssertEqual(LibraryFileWaitWording.openTitle(for: .identity), "Restore Its Identity…")
+        XCTAssertEqual(LibraryFileWaitWording.confirmTitle(for: .index), "Make a New Index")
+        XCTAssertEqual(LibraryFileWaitWording.confirmationTitle(for: .identity), "Restore the library's identity?")
+        XCTAssertTrue(
+            LibraryFileWaitWording.confirmationMessage(for: .index, in: .googleDrive)
+                .hasSuffix("If library.json arrives from Google Drive later, Google Drive may keep two copies of it."),
+            LibraryFileWaitWording.confirmationMessage(for: .index, in: .googleDrive)
+        )
+        XCTAssertFalse(LibraryFileWaitWording.openHint(for: .index).isEmpty)
+        XCTAssertFalse(LibraryFileWaitWording.openHint(for: .identity).isEmpty)
+    }
+
     // MARK: - Launch
 
     /// A launch with library.json only in the cloud fetches it, opens the

@@ -1518,6 +1518,50 @@ struct Book: Identifiable, Codable, Hashable {
         }
     }
 
+    /// This book's reading state (`ReadingState`, in Book+ReadingState.swift,
+    /// risk 2 of the local-first research). Setting it changes exactly those
+    /// fields, as `libraryFields` changes its own, so everything else stays.
+    /// It lives here, beside the fields, because the skipped headings are
+    /// set together: their IDs first, which the headings follow, then the
+    /// headings exactly as the state holds them, so the two lists stay the
+    /// pair the state's copy of the book kept.
+    var readingState: ReadingState {
+        get {
+            ReadingState(
+                readingPosition: readingPosition,
+                lastOpened: lastOpened,
+                lastPlaybackStarted: lastPlaybackStarted,
+                lastPlaybackStopped: lastPlaybackStopped,
+                bookmarks: bookmarks,
+                skippedHeadingIDs: skippedHeadingIDs,
+                skippedHeadings: skippedHeadings,
+                waitingSkippedHeadings: waitingSkippedHeadings,
+                localVoiceID: localVoiceID,
+                localWPM: localWPM,
+                localPitch: localPitch,
+                localEndOfBookBehavior: localEndOfBookBehavior,
+                localSkipForwardUnit: localSkipForwardUnit,
+                localSkipBackwardUnit: localSkipBackwardUnit
+            )
+        }
+        set {
+            readingPosition = newValue.readingPosition
+            lastOpened = newValue.lastOpened
+            lastPlaybackStarted = newValue.lastPlaybackStarted
+            lastPlaybackStopped = newValue.lastPlaybackStopped
+            bookmarks = newValue.bookmarks
+            skippedHeadingIDs = newValue.skippedHeadingIDs
+            skippedHeadings = newValue.skippedHeadings
+            waitingSkippedHeadings = newValue.waitingSkippedHeadings
+            localVoiceID = newValue.localVoiceID
+            localWPM = newValue.localWPM
+            localPitch = newValue.localPitch
+            localEndOfBookBehavior = newValue.localEndOfBookBehavior
+            localSkipForwardUnit = newValue.localSkipForwardUnit
+            localSkipBackwardUnit = newValue.localSkipBackwardUnit
+        }
+    }
+
     /// Overlay metadata kept by TextMouth onto values extracted from the EPUB.
     /// Optional fields distinguish an unedited legacy book from an intentional
     /// empty-string edit that clears publisher or publication date.
@@ -1653,10 +1697,18 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`DataDirectoryMigrator`). The record it replaces is read without its
     /// content index (`StoredBookRecord`), or is nil when there is none or
     /// it cannot be read, and the package keeps its content index file as
-    /// it is unless `contentIndex` replaces it.
-    func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil, inPackageAt tmbDir: URL) throws {
+    /// it is unless `contentIndex` replaces it. `movedToLibrary` is the time
+    /// Move to Library… made the book the library's own, which the record
+    /// notes (`BookMetadata.movedToLibrary`, risk 4); nil keeps the note
+    /// the record holds, if any.
+    func saveBookInfoThrowing(
+        contentIndex: BookContentIndex? = nil,
+        inPackageAt tmbDir: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws {
         let stored = try? StoredBookRecord.read(from: tmbDir)
-        try bookInfo(replacing: stored, contentIndex: contentIndex).saveRecord(to: tmbDir)
+        try bookInfo(replacing: stored, contentIndex: contentIndex, notingMoveToLibraryAt: movedToLibrary)
+            .saveRecord(to: tmbDir)
     }
 
     /// The record now in this book's package, with its content index, or
@@ -1710,20 +1762,30 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// The metadata of the record now in this book's package when that
-    /// record is this book's own (its `bookID` is this row's `id`), read
-    /// without downloading anything: what `recordedTextEncodingRecord()`
-    /// and `recordedBrailleFileCode()` weigh against the row. Nil for a book
-    /// without a package, and when the package holds no record, one that
-    /// cannot be read, one only in the cloud, or another book's, as an old
-    /// shared package's may: such a record must never give this row that
+    /// record is this book's own (`ownStoredRecord()`): what
+    /// `recordedTextEncodingRecord()` and `recordedBrailleFileCode()` weigh
+    /// against the row. Such a record must never give this row another
     /// book's encoding or braille file code, which every later reading of
     /// this book would then use.
     private func ownStoredMetadata() -> BookMetadata? {
+        ownStoredRecord()?.metadata
+    }
+
+    /// The record now in this book's package, without its content index,
+    /// when that record is this book's own (its `bookID` is this row's
+    /// `id`), read without downloading anything. Nil for a book without a
+    /// package, and when the package holds no record, one that cannot be
+    /// read, one only in the cloud, or another book's, as an old shared
+    /// package's may. The load that opens a book weighs the reading state it
+    /// holds against the reader's copy of the book
+    /// (`ReaderViewModel.readContent(of:audioTagsFrom:readingTexts:weighingRecordedState:)`,
+    /// risk 2). Blocks on the file, so call it off the main thread.
+    func ownStoredRecord() -> BookInfo? {
         guard !tmbDirectoryName.isEmpty else { return nil }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
         // The record counts only when it is this book's.
-        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
-        return metadata
+        guard let info = stored?.info, info.metadata.bookID == id else { return nil }
+        return info
     }
 
     /// The record this book writes over `stored`, the record now in its
@@ -1756,6 +1818,12 @@ struct Book: Identifiable, Codable, Hashable {
     /// (FR11), and otherwise the one the stored record holds, so a row that
     /// never carried a link, or whose link was cleared, never erases it.
     ///
+    /// The note that Move to Library… made a feed's download the library's
+    /// own (`BookMetadata.movedToLibrary`, risk 4) is record-only, as the
+    /// transcript note is: the write that makes the move passes its time
+    /// (`movedToLibrary`), and every other write keeps the stored record's,
+    /// so no save of the book's state ever erases it.
+    ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
     /// the same way: the stored record's survives a row that lost it; and so
     /// is the Mac's liblouis version it was read with (review R2).
@@ -1783,6 +1851,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`TextEncodingRecord.standing(row:recorded:)`), which a recovered
     /// analysis and every reading of the book's file follow too.
     ///
+    /// The listener's reading state (`ReadingState`: the place, the playback
+    /// times, the bookmarks, the skipped headings, and the book's own
+    /// settings) is the one that stands between the row's and the stored
+    /// record's (`readingState(standingAgainst:)`, risk 2 of the local-first
+    /// research): the row's, unless the stored record, this book's own, holds
+    /// a place saved later, as another Mac sharing the library writes one
+    /// while this Mac's row lags behind. So a row that lags never writes its
+    /// older place, bookmarks, or settings over the record's. On one Mac the
+    /// record is written from the row, and the row's state is written as it
+    /// always was.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -1796,14 +1875,23 @@ struct Book: Identifiable, Codable, Hashable {
     ///     file code, this book's own: a re-read in other braille file
     ///     characters (`LibraryPersistenceService.saveContentAnalysis`'s
     ///     `brailleFileCode`).
+    ///   - movedToLibrary: When Move to Library… made the book the library's
+    ///     own, for the write that makes the move; nil keeps the stored
+    ///     record's note.
     func bookInfo(
         replacing stored: StoredBookRecord?,
         contentIndex: BookContentIndex?,
         revisionFloor: Int = 0,
         decidingTextEncoding: Bool = false,
-        decidingBrailleFileCode: Bool = false
+        decidingBrailleFileCode: Bool = false,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
     ) -> BookInfo {
         var recorded = self
+        // The reading state that stands between the row and the stored
+        // record: the record's only when it holds the later place (risk 2).
+        if let stored {
+            recorded.takeStandingReadingState(of: stored.info)
+        }
         var index = contentIndex
         if index == nil, let stored, stored.keepsContentIndex {
             index = stored.info.contentIndex
@@ -1819,6 +1907,9 @@ struct Book: Identifiable, Codable, Hashable {
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
+        // Move to Library's note: this write's, or else the stored record's
+        // (risk 4).
+        info.metadata.movedToLibrary = movedToLibrary ?? stored?.info.metadata.movedToLibrary
         // The braille table: the row's, or else the stored record's (FMT21).
         // Its version is the row's, or else the stored record's only when
         // that describes the same table: a book read again from one of this

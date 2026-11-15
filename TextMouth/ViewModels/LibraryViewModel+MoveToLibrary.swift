@@ -155,6 +155,9 @@ extension LibraryViewModel {
         defer { bookUpdates.packagesDidMove(movingIDs) }
 
         let root = TextMouthPaths.root
+        // When the books became the library's own, which each record notes
+        // (risk 4).
+        let movedAt = Date()
         var moved: [Book] = []
         // Each row whose package stayed, with why, for the words of a move
         // that moved only some (REV13 feeds 5).
@@ -162,7 +165,7 @@ extension LibraryViewModel {
         var failure: (any Error)?
         for row in rows {
             do {
-                moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root))
+                moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root, notingMoveToLibraryAt: movedAt))
             } catch {
                 failure = failure ?? error
                 stayed.append((title: row.title, reason: error.localizedDescription))
@@ -220,18 +223,27 @@ extension LibraryViewModel {
     /// gone (`returnDownloads(ofFeed:toFolderID:removingWith:)`): the inverse
     /// of `moveIntoItsFeed(_:link:root:)`. A package an earlier launch moved
     /// before it stopped is found in the library folder and not moved again.
+    /// Move to Library… passes its time as `movedToLibrary`, which the record
+    /// notes (`BookMetadata.movedToLibrary`), so no stale record of the feed
+    /// can take the book back into it at a later launch (risk 4); the
+    /// return of a gone feed's downloads passes nil.
     /// - Throws: `FeedItemMoveError.packageNotManaged` for a row that is no
     ///   feed item's or names no package the library manages, before anything
     ///   on disk is touched, or the errors of `relocatePackage(of:as:root:)`,
     ///   which puts the package back when its record could not be written.
-    nonisolated static func moveIntoTheLibrary(_ row: Book, folderPath: String, root: URL) throws -> Book {
+    nonisolated static func moveIntoTheLibrary(
+        _ row: Book,
+        folderPath: String,
+        root: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws -> Book {
         var book = row
         book.feedLink = nil
         book.folderPath = folderPath
         guard row.isFeedItem, FileImportService.namesManagedPackage(book) else {
             throw FeedItemMoveError.packageNotManaged
         }
-        return try relocatePackage(of: row, as: book, root: root)
+        return try relocatePackage(of: row, as: book, root: root, notingMoveToLibraryAt: movedToLibrary)
     }
 
     // MARK: The Items' States

@@ -54,6 +54,15 @@ final class ReadingStatsService: ObservableObject {
     /// put this session's listening in place of all it holds: each save
     /// reads it again first, and once it is on this Mac, adds the stand-ins
     /// to what it holds and saves the sum.
+    ///
+    /// In a cloud location a file not on this Mac at all is waited for the
+    /// same way (risk 5 of the local-first research,
+    /// `SavedFile.mayStillArrive(_:)`): a sync service can bring the
+    /// library's other files down first. It is read again as it may arrive
+    /// and before each save, and taken up with the stand-ins added once it
+    /// is here; only a save, which comes once there is listening to keep,
+    /// writes the stand-ins while it is still missing, as substitutions.json
+    /// is written only once a rule changes.
     private(set) var statsAwaitFileInCloud = false
 
     /// Whether `stats` hold what reading_stats.json held when this service
@@ -303,7 +312,9 @@ final class ReadingStatsService: ObservableObject {
     private enum SavedStats {
         /// The statistics the file holds.
         case saved(ReadingStats)
-        /// None: there is no file yet, or it can't be used.
+        /// None: there is no file yet.
+        case missing
+        /// None: the file can't be used, and was preserved beside itself.
         case none
         /// The file is only in the cloud, so it was not read.
         case inCloud
@@ -312,8 +323,10 @@ final class ReadingStatsService: ObservableObject {
     /// Reads reading_stats.json into `stats`: its statistics, or fresh ones
     /// when there is none yet or it can't be used, or, when it is only in
     /// the cloud, fresh ones that stand in for it until a save finds it on
-    /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it.
-    /// Only the file's own statistics count as read (`statsReadFromFile`).
+    /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it. A
+    /// file missing from a cloud location may not have arrived yet, and
+    /// fresh statistics stand in for it the same way (risk 5). Only the
+    /// file's own statistics count as read (`statsReadFromFile`).
     private func loadStatsFile() {
         statsAwaitFileInCloud = false
         statsReadFromFile = false
@@ -321,6 +334,17 @@ final class ReadingStatsService: ObservableObject {
         case .saved(let saved):
             stats = saved
             statsReadFromFile = true
+        case .missing:
+            stats = ReadingStats()
+            if SavedFile.mayStillArrive(fileURL) {
+                statsAwaitFileInCloud = true
+                DiagnosticLog.event(
+                    .statistics,
+                    "READING_STATS_FILE: \(fileURL.lastPathComponent) isn't on this Mac, and the library is in the "
+                        + "cloud, so it may not have arrived yet; this session's listening is kept in memory, and "
+                        + "added to the file once it is here"
+                )
+            }
         case .none:
             stats = ReadingStats()
         case .inCloud:
@@ -344,7 +368,7 @@ final class ReadingStatsService: ObservableObject {
     private func readSavedStats() -> SavedStats {
         switch SavedFile.read(fileURL, using: readFile) {
         case .missing:
-            return .none
+            return .missing
         case .inCloud:
             return .inCloud
         case .contents(let data):
@@ -381,7 +405,7 @@ final class ReadingStatsService: ObservableObject {
     /// while it still is, nothing is read or written.
     func fileMayHaveArrived() {
         guard statsAwaitFileInCloud else { return }
-        _ = mayReplaceStatsFile()
+        _ = mayReplaceStatsFile(forSave: false)
     }
 
     /// Whether a save may replace reading_stats.json now: always, unless
@@ -389,17 +413,23 @@ final class ReadingStatsService: ObservableObject {
     /// again first: once it is on this Mac, the listening credited meanwhile
     /// is added to what it holds, the wait ends, and the save goes on with
     /// the sum; while it is still in the cloud, nothing is written over it.
-    /// The statistics count as read from the file (`statsReadFromFile`) only
-    /// when the file held some.
-    private func mayReplaceStatsFile() -> Bool {
+    /// A file still missing ends the wait only for a save (`forSave`), whose
+    /// stand-ins are then all there is: a look as the file may have arrived
+    /// leaves the wait as it is (risk 5). The statistics count as read from
+    /// the file (`statsReadFromFile`) only when the file held some.
+    private func mayReplaceStatsFile(forSave: Bool = true) -> Bool {
         guard statsAwaitFileInCloud else { return true }
         let saved: ReadingStats
         let readFromFile: Bool
-        switch readSavedStats() {
+        let read = readSavedStats()
+        switch read {
         case .inCloud:
             return false
-        case .none:
-            // The file went, or can't be used: the stand-ins are all there is.
+        case .missing where !forSave:
+            return false
+        case .missing, .none:
+            // The file went, never came, or can't be used: the stand-ins are
+            // all there is.
             saved = ReadingStats()
             readFromFile = false
         case .saved(let found):
@@ -410,11 +440,20 @@ final class ReadingStatsService: ObservableObject {
         stats = saved.adding(standIn)
         statsAwaitFileInCloud = false
         statsReadFromFile = readFromFile
-        DiagnosticLog.event(
-            .statistics,
-            "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "
-                + "\(Int(standIn.totalListeningSeconds.rounded())) seconds listened while it was in the cloud"
-        )
+        let seconds = Int(standIn.totalListeningSeconds.rounded())
+        if case .missing = read {
+            DiagnosticLog.event(
+                .statistics,
+                "READING_STATS_FILE: \(fileURL.lastPathComponent) still isn't on this Mac, so the statistics "
+                    + "kept in memory, \(seconds) seconds listened, are saved as the file"
+            )
+        } else {
+            DiagnosticLog.event(
+                .statistics,
+                "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "
+                    + "\(seconds) seconds listened while it was in the cloud"
+            )
+        }
         return true
     }
 

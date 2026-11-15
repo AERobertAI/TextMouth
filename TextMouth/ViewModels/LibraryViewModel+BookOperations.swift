@@ -697,6 +697,21 @@ extension LibraryViewModel {
         LibraryPersistenceService.saveBookInfo(for: book)
     }
 
+    /// Gives the row of the book `bookID` the reading state that stands
+    /// between its own and `recorded` (`Book.readingState(standingAgainst:)`),
+    /// as a reader opening the book found its record holding the later
+    /// place (risk 2 of the local-first research,
+    /// `ReaderViewModel.takeNewerRecordedState(_:)`), and saves the row and
+    /// its record as any change of the book is saved. A row holding the
+    /// later place already, or a book no longer in the library, changes and
+    /// writes nothing.
+    func takeStandingReadingState(_ recorded: Book.ReadingState, of bookID: UUID) {
+        guard let row = bookByID(bookID) else { return }
+        let standing = row.readingState(standingAgainst: recorded)
+        guard standing != row.readingState else { return }
+        updateBook(id: bookID) { $0.readingState = standing }
+    }
+
     /// Saves `edit`, one save of a metadata editor, to the row of the book
     /// `bookID`, as every editor's save does, and returns the row as saved,
     /// or nil when the book has left the library.
@@ -939,14 +954,18 @@ extension LibraryViewModel {
 
     /// Notes that a reader opened the book `id`: the book is open until its
     /// last reader closes (`openReaderCounts`).
-    func registerOpenBook(_ id: UUID) {
+    ///
+    /// - Parameter config: The settings that note it as the last book opened;
+    ///   the app's own, unless a test gives one of its own.
+    func registerOpenBook(_ id: UUID, config: ConfigService = .shared) {
         openReaderCounts[id, default: 0] += 1
         openBookIDs.insert(id)
         // Track last opened book for quick-resume. config.json takes it once
-        // changes pause (PERF17), not as the reader window opens.
-        let config = ConfigService.shared
+        // changes pause (PERF17), not as the reader window opens. Opening a
+        // book changes no setting the listener chose, so its save never makes
+        // a config.json that has not arrived in a cloud location (risk 5).
         config.config.lastOpenedBookID = id.uuidString
-        config.scheduleSave()
+        config.scheduleSave(creatingAwaitedFile: false)
     }
 
     /// Notes that a reader of the book `id` closed: the book leaves

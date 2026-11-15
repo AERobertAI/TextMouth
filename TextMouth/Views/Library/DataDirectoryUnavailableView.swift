@@ -114,10 +114,26 @@ struct DataDirectoryUnavailableView: View {
     let onTryAgain: () -> Void
     /// Quits TextMouth.
     let onQuit: () -> Void
+    /// Opens the library without the file that did not arrive beside the
+    /// other in a cloud location (risk 5), once the listener has confirmed
+    /// it; nil offers no such button.
+    var onOpenWithoutAwaitedFile: (() -> Void)? = nil
+
+    /// Whether the question before opening without the file is shown.
+    @State private var isConfirmingOpen = false
 
     /// How long after VoiceOver's move the reason is announced: time for
     /// VoiceOver to land on the reason and begin saying it.
     static let announcementLag: TimeInterval = 0.8
+
+    /// The library file that did not arrive, with the service it was to come
+    /// from, when that is the reason the screen shows; nil otherwise.
+    private var awaited: (file: LibraryFileAwaited, provider: CloudProvider?)? {
+        if case .libraryFileNotArrived(let provider, _, let file) = unavailability {
+            return (file, provider)
+        }
+        return nil
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -155,6 +171,13 @@ struct DataDirectoryUnavailableView: View {
                     .keyboardShortcut(.defaultAction)
                     .accessibilityLabel(DataDirectoryUnavailableText.tryAgain)
                     .accessibilityHint(DataDirectoryUnavailableText.tryAgainHint)
+                // The way to open the library without the file that did not
+                // arrive, which asks first (risk 5).
+                if let awaited, onOpenWithoutAwaitedFile != nil {
+                    Button(LibraryFileWaitWording.openTitle(for: awaited.file)) { isConfirmingOpen = true }
+                        .accessibilityLabel(LibraryFileWaitWording.openTitle(for: awaited.file))
+                        .accessibilityHint(LibraryFileWaitWording.openHint(for: awaited.file))
+                }
                 Button(DataDirectoryUnavailableText.quit, action: onQuit)
                     .accessibilityLabel(DataDirectoryUnavailableText.quit)
                     .accessibilityHint(DataDirectoryUnavailableText.quitHint)
@@ -166,6 +189,24 @@ struct DataDirectoryUnavailableView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // A new reason, as when the fetch ends, is announced again.
         .task(id: unavailability) { await announceReason() }
+        // The question before opening without the file: its title and
+        // message are spoken by VoiceOver, Return or the Tab key reach its
+        // buttons, and Escape cancels.
+        .alert(
+            awaited.map { LibraryFileWaitWording.confirmationTitle(for: $0.file) } ?? "",
+            isPresented: $isConfirmingOpen,
+            presenting: awaited
+        ) { awaited in
+            Button(
+                LibraryFileWaitWording.confirmTitle(for: awaited.file),
+                role: awaited.file == .index ? .destructive : nil
+            ) {
+                onOpenWithoutAwaitedFile?()
+            }
+            Button(LibraryFileWaitWording.cancel, role: .cancel) {}
+        } message: { awaited in
+            Text(LibraryFileWaitWording.confirmationMessage(for: awaited.file, in: awaited.provider))
+        }
     }
 
     /// The data directory's full path, under its label, read by VoiceOver
