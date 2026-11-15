@@ -30,6 +30,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 ## For people building TextMouth
 
 - [Building TextMouth](docs/developer/building.md): make targets, versions, the check gate, the iOS app.
+  - [Building the iOS app](docs/developer/building-ios.md): type-checks, the heavy-work lock, GitHub builds, the simulator.
 - [Testing TextMouth](docs/developer/testing.md): the hosted suite, baselines, cloud tests.
   - [Reusable test tools](docs/developer/testing-tools.md): the `Scripts/test/` tools.
   - [Document goldens](docs/developer/testing-goldens.md): goldens, and the rich text, Word, and ODT tests.
