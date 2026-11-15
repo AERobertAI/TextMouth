@@ -1041,5 +1041,64 @@ class RunningTheScriptTests(unittest.TestCase):
         self.assertEqual(seen, [["SearchUITests"]])
 
 
+class ShardedRunTests(unittest.TestCase):
+    """With --shard I --of N the job runs only its slice of the asked classes (the iPhone work split over several jobs).
+    It borrows the throwaway repository of RunningTheScriptTests without inheriting its tests."""
+
+    request = RunningTheScriptTests.request
+
+    def setUp(self):
+        RunningTheScriptTests.setUp(self)
+        # A second interface class, with 3 tests against ReaderUITests' 1 (a test method each), so the slices differ.
+        (self.root / "TextMouthiOSUITests" / "Reader.swift").write_text(
+            "final class ReaderUITests: TextMouthUITestCase {\n    func testA() {}\n}\n")
+        (self.root / "TextMouthiOSUITests" / "Search.swift").write_text(
+            "final class SearchUITests: TextMouthUITestCase {\n    func testA() {}\n    func testB() {}\n    func testC() {}\n}\n")
+
+    def classes_run_by(self, *arguments):
+        """The classes the test command was made for when main runs with `arguments`; also returns the summary."""
+        seen = []
+        real = uitests.test_command
+
+        def spy(udid, derived, bundle, classes):
+            """Records the classes the command is made for."""
+            seen.append(classes)
+            return real(udid, derived, bundle, classes)
+
+        with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)), \
+                mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                contextlib.redirect_stdout(io.StringIO()):
+            uitests.main(["--out", "out", *arguments])
+        return seen, (self.out / "ios-ui-summary.txt").read_text()
+
+    def test_the_slices_of_the_jobs_add_up_to_every_class_once(self):
+        first, _ = self.classes_run_by("--shard", "1", "--of", "2")
+        second, _ = self.classes_run_by("--shard", "2", "--of", "2")
+        self.assertEqual(sorted(first[0] + second[0]), ["ReaderUITests", "SearchUITests"])
+        self.assertEqual(len(first[0]), 1, "each job is dealt one of the two")
+
+    def test_a_job_with_a_slice_names_its_classes_even_when_the_slice_is_every_class(self):
+        # Two jobs of one class each: neither runs "both whole bundles" (which would run the other job's class too).
+        seen, summary = self.classes_run_by("--shard", "1", "--of", "2")
+        self.assertTrue(seen[0], "a sharded job always names its classes")
+        self.assertIn("Shard: 1 of 2", summary)
+
+    def test_a_job_dealt_no_class_runs_nothing_and_says_not_asked(self):
+        # Three jobs for two classes: the third is dealt nothing; no simulator starts for it.
+        seen, summary = self.classes_run_by("--shard", "3", "--of", "3")
+        self.assertEqual(seen, [])
+        self.assertTrue(summary.startswith("iOS UI tests: NOT ASKED"), summary)
+        self.assertIn("shard 3 of 3 was dealt no iPhone test class", summary)
+
+    def test_one_job_runs_everything_as_before(self):
+        seen, summary = self.classes_run_by()
+        self.assertEqual(seen, [[]], "no classes named: both whole bundles")
+        self.assertNotIn("Shard:", summary)
+
+    def test_a_shard_outside_the_count_is_refused(self):
+        with mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(uitests.main(["--out", "out", "--shard", "3", "--of", "2"]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -310,5 +310,53 @@ class TheCountsInASummaryTests(unittest.TestCase):
         self.assertEqual(ui.executed_with_counts(["iOS UI tests: NOT ASKED", "Reason: x"]), "")
 
 
+class ShardingTests(TreeCase):
+    """Dealing the iPhone test classes over several jobs."""
+
+    def sized(self):
+        """A tree with a big interface class (4 tests), a small one (1), and a unit class (6 tests)."""
+        root = self.tree(
+            TextMouthUITestCase="class TextMouthUITestCase: XCTestCase {\n}\n",
+            Big="final class BigUITests: TextMouthUITestCase {\n    func testA() {}\n    func testB() {}\n    func testC() {}\n    func testD() {}\n}\n",
+            Small="final class SmallUITests: TextMouthUITestCase {\n    func testA() {}\n}\n")
+        (root / ui.UNIT_FOLDER).mkdir()
+        (root / ui.UNIT_FOLDER / "Units.swift").write_text("final class UnitsTests: XCTestCase {\n" + "    func testX() {}\n" * 6 + "}\n")
+        return root
+
+    def test_a_class_with_no_recorded_time_is_counted_by_its_tests_and_its_bundle(self):
+        seconds = ui.estimated_seconds(["BigUITests", "SmallUITests", "UnitsTests", "Nowhere"], self.sized(), times={})
+        self.assertEqual(seconds, {"BigUITests": 100.0, "SmallUITests": 25.0, "UnitsTests": 6.0, "Nowhere": 1.0})
+
+    def test_a_recorded_time_wins_over_the_estimate(self):
+        seconds = ui.estimated_seconds(["BigUITests"], self.sized(), times={"BigUITests": 7.5})
+        self.assertEqual(seconds, {"BigUITests": 7.5})
+
+    def test_the_slices_cover_every_class_once_and_do_not_depend_on_the_order(self):
+        root = self.sized()
+        classes = ui.all_classes(root)
+        for count in (2, 3):
+            with self.subTest(count=count):
+                slices = [ui.slice_for(classes, number, count, root, times={}) for number in range(1, count + 1)]
+                self.assertEqual(sorted(name for one in slices for name in one), sorted(classes))
+                self.assertEqual(slices, [ui.slice_for(list(reversed(classes)), n, count, root, times={}) for n in range(1, count + 1)])
+
+    def test_one_job_gets_every_class_in_the_order_given(self):
+        root = self.sized()
+        self.assertEqual(ui.slice_for(["UnitsTests", "BigUITests"], 1, 1, root, times={}), ["UnitsTests", "BigUITests"])
+
+    def test_the_count_grows_with_the_seconds_and_stops_at_the_most(self):
+        root = self.sized()
+        classes = ui.all_classes(root)
+        self.assertEqual(ui.shard_count(["SmallUITests"], root, times={}), 1)
+        self.assertEqual(ui.shard_count(classes, root, times={}), 1, "131 seconds is within one job's share")
+        self.assertEqual(ui.shard_count(classes, root, times={"BigUITests": 900}), 2)
+        self.assertEqual(ui.shard_count(classes, root, times={"BigUITests": 99999}), ui.MAX_SHARDS)
+        self.assertEqual(ui.shard_count([], root, times={}), 1)
+
+    def test_the_real_tree_needs_more_than_one_job_and_its_times_file_reads(self):
+        self.assertGreater(ui.shard_count(ui.all_classes(ROOT), ROOT), 1)
+        self.assertIsInstance(ui.load_times(), dict)
+
+
 if __name__ == "__main__":
     unittest.main()
