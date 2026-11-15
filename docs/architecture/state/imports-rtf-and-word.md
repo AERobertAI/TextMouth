@@ -89,7 +89,8 @@ The rich text reader (RTFDocumentReader, written from Microsoft's RTF 1.9.1 spec
    Bytes wait in a run and are decoded together, so the two bytes of a double-byte character are one, even when the second is ASCII (isMultibyte).
    A run invalid in its code page is read byte by byte as Windows-1252, and a number with no encoding is 1252.
    A \uN is a signed 16-bit value, a surrogate pair is two \u, and the \ucN characters after it are skipped.
-5. RTFStyleSheet records each paragraph style (at most 100,000) with its name, outline level, \sbasedon, and \pagebb. headingLevel(ofStyle:) follows the chain in a loop to the first style that says anything, and a loop or an undefined style gives no heading.
+5. RTFStyleSheet records each paragraph style (at most 100,000) with its name, outline level, \sbasedon, and \pagebb.
+   RTFStyleSheet.headingLevel(ofStyle:) follows the chain in a loop to the first style that says anything, and a loop or an undefined style gives no heading.
    An outline level of 0 to 8 is level 1 to 6 (deeper is 6) and wins over a name; "heading 1" to "heading 9" are the names, "Title" level 1, and "Subtitle" level 2.
    RTFListTable maps \lsN through \listid to the \levelnfc of each level (23 is a bullet, 255 none), at most 10,000 lists.
    A paragraph is a list item when it has a list or a \listtext or \pntext marker; the marker's text is never read; a bullet and a tab at the start of a paragraph make one too.
@@ -166,7 +167,8 @@ The Word 97-2003 reader (WordDocumentReader, written from [MS-DOC], [MS-CFB], an
    The writer's output is held to twice DocumentByteLimit.
 6. A document with no heading by a style or an outline level (a heading in a text box, or one written with only hidden words, does not count) has WordHeadingGuess.levels over the paragraphs of at most 120 characters that are not one letter, in no table or list.
    (the rule of RTFSizeHeadings, by the document's census of characters by size and weight).
-7. WordSummaryInformation takes the title (property 2) and the author (property 4) from the SummaryInformation property set (at most 1,000 properties, names of at most 4,096 characters; a damaged stream gives none). page(body:title:author:) writes the document.
+7. WordSummaryInformation takes the title (property 2) and the author (property 4) from the SummaryInformation property set (at most 1,000 properties, names of at most 4,096 characters; a damaged stream gives none).
+   WordDocumentReader.page(body:title:author:) writes the document.
 - Limits: DocumentByteLimit for the file, twice that for the HTML, the compound file's checks, 10,000 nested fields, and the 100,000 pages.
 
 ### The Word 6 and Word 95 layout
