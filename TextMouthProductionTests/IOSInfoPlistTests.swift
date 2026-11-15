@@ -106,9 +106,12 @@ final class IOSInfoPlistTests: XCTestCase {
     /// the audio the import converts with afconvert (`ImportAudioConverter`),
     /// among it the system's type for `.caf`, which ALAC's type names too; the
     /// audio and video the Mac's installed ffmpeg converts (FMT31); and the
-    /// braille files, which need the braille helper.
+    /// braille files, which need the braille helper. The formats TextMouth's own
+    /// readers decode (True Audio and the rest) are left out too, until the
+    /// iPhone's import converts them.
     private static let refused: Set<String> = [
-        "Ogg Audio", "Audio Converted at Import", "Audio and Video Converted with ffmpeg", "ALAC Audio",
+        "Ogg Audio", "Audio Converted at Import", "Audio and Video Converted with ffmpeg",
+        "Lossless Audio Read by TextMouth", "ALAC Audio",
         "BRF Braille File", "BRL Braille File", "PEF Braille File",
     ]
 

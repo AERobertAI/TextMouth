@@ -337,6 +337,19 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Lossless Audio Read by TextMouth</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>tta</string>
+				<string>wv</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>ALAC Audio</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>

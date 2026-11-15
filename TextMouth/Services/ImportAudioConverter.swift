@@ -53,12 +53,26 @@ enum ImportAudioConverter {
         "aifc", "caf", "au", "snd", "w64", "ac3", "ec3", "eac3", "mp1", "mp2", "mpa", "amr", "awb", "3gp", "3g2", "3ga",
     ]
 
+    /// The extensions, in lowercase, of the formats neither macOS nor iOS
+    /// decodes that TextMouth reads with readers of its own (`OwnAudioFormat`:
+    /// True Audio and the rest). Such a file is decoded in the app by its
+    /// reader and written as Apple Lossless (`OwnAudioConverter`); no
+    /// `afinfo` or `afconvert` could read it.
+    static let ownReaderExtensions: Set<String> = OwnAudioFormat.allFileExtensions
+
+    /// The extensions, in lowercase, that only an import takes: the formats
+    /// the import converts whose files a book's package never holds
+    /// afterwards (`coreAudioExtensions` and `ownReaderExtensions`). Open
+    /// Book accepts them, and a package's track scan does not
+    /// (`BookFormat.packageTrackExtensions`).
+    static let importOnlyExtensions: Set<String> = coreAudioExtensions.union(ownReaderExtensions)
+
     /// The extensions, in lowercase, of every audio format the import
-    /// converts (FMT09): Ogg's, `coreAudioExtensions`, and those the
+    /// converts (FMT09): Ogg's, `importOnlyExtensions`, and those the
     /// installed ffmpeg converts (`FFmpegAudioConverter.extensions`, FMT31),
     /// so the reader guards keep all of them from Apple's decoders.
     static let convertedExtensions: Set<String> = oggExtensions
-        .union(coreAudioExtensions)
+        .union(importOnlyExtensions)
         .union(FFmpegAudioConverter.extensions)
 
     /// The extensions, in lowercase, of files TextMouth writes itself from
@@ -158,6 +172,13 @@ enum ImportAudioConverter {
         /// which is which, so a mix to stereo would keep two arbitrary
         /// channels, often not the speech. Nothing was run.
         case unlabelledChannels(fileName: String, channels: Int)
+        /// One of TextMouth's own readers (`OwnAudioFormat`) gave the file
+        /// up, for `problem`: it is damaged, cut short, or of a form the
+        /// reader refuses.
+        case notRead(fileName: String, problem: OwnAudioError)
+        /// The audio one of TextMouth's own readers decoded could not be
+        /// written as an .m4a, for `reason` (an error's domain and code).
+        case notWritten(fileName: String, reason: String)
 
         var errorDescription: String? {
             switch self {
@@ -177,6 +198,10 @@ enum ImportAudioConverter {
             case let .unlabelledChannels(fileName, channels):
                 return "The audio file \(fileName) has \(channels) channels but does not say which is which, "
                     + "so TextMouth cannot mix it to stereo."
+            case let .notRead(fileName, problem):
+                return OwnAudioWording.sentence(for: problem, fileName: fileName)
+            case let .notWritten(fileName, reason):
+                return "The audio converted from \(fileName) could not be written (\(reason))."
             }
         }
     }
@@ -377,6 +402,10 @@ enum ImportAudioConverter {
         /// A conversion that keeps chapters writes them into the .m4a's
         /// chapter track (`ChapterTrackWriter`).
         var chapters: [NeroChapterReader.Chapter] = []
+        /// The format, when the file is one that TextMouth's own readers
+        /// decode: it is then converted in the app (`OwnAudioConverter`), by
+        /// no child process. Nil for every other source.
+        var ownReader: OwnAudioFormat? = nil
     }
 
     /// What the import does with one audio file.
@@ -427,6 +456,10 @@ enum ImportAudioConverter {
     /// - Throws: `CancellationError` only.
     static func inspect(_ url: URL, using afinfo: AudioFileInfo.Tool = .afinfo) async throws -> SourceInfo? {
         guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
+        // A format of TextMouth's own readers is told by its bytes and read
+        // by its reader; a file the reader refuses reads as no audio here
+        // (`convert` asks the reader itself, to say why).
+        if OwnAudioConverter.format(of: url) != nil { return try? OwnAudioConverter.sourceInfo(of: url) }
         if isOgg(url) { // lint-ok: Ogg alone is read from its own bytes; every other format by afinfo
             guard let header = OggHeaderReader.read(at: url) else { return nil }
             return SourceInfo(
@@ -822,7 +855,11 @@ enum ImportAudioConverter {
         }
         let started = Date()
         let name = source.lastPathComponent
-        guard let info = try await inspect(source, using: tool.info) else {
+        // A file of TextMouth's own readers is described by its reader, whose
+        // refusal (a damaged file, a form it does not read) is thrown as it is.
+        var described = try OwnAudioConverter.sourceInfo(of: source)
+        if described == nil { described = try await inspect(source, using: tool.info) }
+        guard let info = described else {
             #if os(iOS)
             // iOS has no afinfo, so `inspect` has no answer for any format but
             // Ogg, and every file reaching this line is one the import would
@@ -896,6 +933,12 @@ enum ImportAudioConverter {
         using tool: Tool
     ) async throws {
         let name = source.lastPathComponent
+        // One of TextMouth's own readers decodes the source in the app, mixing
+        // more than two channels to stereo itself: no child process runs.
+        if let format = info.ownReader {
+            try await OwnAudioConverter.write(source, of: format, to: staged, target: target)
+            return
+        }
         guard needsDownmix(info) else {
             try await run(
                 tool.command(source, staged, info, target), named: name, duration: info.duration, tool: tool,
@@ -1282,10 +1325,15 @@ enum ImportAudioConverter {
         }
     }
 
-    /// Removes the Ogg files `conversions` were made from, once their
-    /// converted files have taken their places.
+    /// Removes the files `conversions` were made from, once their converted
+    /// files have taken their places, each with its companion when it has
+    /// one (a WavPack correction file, `OwnAudioConverter.companion(of:)`),
+    /// which is of no use without it.
     static func removeSources(of conversions: [Conversion]) throws {
         for conversion in conversions {
+            if let companion = OwnAudioConverter.companion(of: conversion.source) {
+                try FileManager.default.removeItem(at: companion)
+            }
             try FileManager.default.removeItem(at: conversion.source)
         }
     }
@@ -1322,6 +1370,13 @@ enum ImportAudioConverter {
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
+            // A companion (a WavPack correction file) is kept beside its file, under its own name.
+            if let companion = OwnAudioConverter.companion(of: conversion.source) {
+                try FileManager.default.moveItem(
+                    at: companion,
+                    to: destination.deletingLastPathComponent().appendingPathComponent(companion.lastPathComponent)
+                )
+            }
             try FileManager.default.moveItem(at: conversion.source, to: destination)
         }
     }

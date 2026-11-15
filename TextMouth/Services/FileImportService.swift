@@ -1344,6 +1344,12 @@ enum FileImportService {
             let isText = format != .audio
             try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
             if isText { try removeSymbolicLinks(in: stagedFile) }
+            // An audio file's companion (a WavPack correction file beside
+            // it) is staged beside it, for the conversion to find.
+            if !isText, let companion = OwnAudioConverter.companion(of: source) {
+                try FileManager.default.copyItem(
+                    at: companion, to: directory.appendingPathComponent(companion.lastPathComponent))
+            }
             return stagedFile
         }
         logShortfalls(of: package)
@@ -1568,6 +1574,15 @@ enum FileImportService {
     ///   which an import's failure words as a full disk
     ///   (`ImportFailure.outOfSpaceDescription`); a copy's own error.
     static func copyTracks(_ tracks: [(path: String, source: URL)], into audioDirectory: URL) throws {
+        // A track's companion (a WavPack correction file beside it,
+        // `OwnAudioConverter.companion(of:)`) is copied beside it, so the
+        // conversion finds it.
+        let companions = tracks.compactMap { track -> (path: String, source: URL)? in
+            guard let companion = OwnAudioConverter.companion(of: track.source) else { return nil }
+            let folder = (track.path as NSString).deletingLastPathComponent
+            return ((folder as NSString).appendingPathComponent(companion.lastPathComponent), companion)
+        }
+        let tracks = tracks + companions
         try requireRoom(forCopying: tracks.map(\.source), onVolumeOf: audioDirectory)
         for track in tracks {
             let destination = audioDirectory.appendingPathComponent(track.path)
@@ -3180,7 +3195,7 @@ enum FileImportService {
         ].compactMap { $0 })
         // The formats macOS decodes that the import converts (FMT09), by
         // their extensions' system types where they have one.
-        types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sortedStably().compactMap {
+        types.append(contentsOf: ImportAudioConverter.importOnlyExtensions.sortedStably().compactMap {
             UTType(filenameExtension: $0)
         })
         // The formats the installed ffmpeg converts (FMT31, FMT32), audio and

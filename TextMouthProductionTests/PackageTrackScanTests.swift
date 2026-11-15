@@ -90,17 +90,19 @@ final class PackageTrackScanTests: XCTestCase {
     // MARK: - The Two Lists
 
     /// The package's list is the audio list without the core-audio formats
-    /// the import converts and without those the installed ffmpeg converts
-    /// (FMT31), and the three together are the audio list: nothing falls
-    /// between. Ogg stays in it, as the library's conversion of Ogg books has
-    /// to find those tracks.
+    /// the import converts, without the formats TextMouth's own readers
+    /// decode, and without those the installed ffmpeg converts (FMT31), and
+    /// together they are the audio list: nothing falls between. Ogg stays in
+    /// it, as the library's conversion of Ogg books has to find those tracks.
     func testThePackageListIsTheAudioListWithoutTheCoreAudioFormats() {
         let audio = Set(BookFormat.audio.fileExtensions)
         let package = BookFormat.packageTrackExtensions
         let convertedFormats = ImportAudioConverter.coreAudioExtensions.union(FFmpegAudioConverter.extensions)
 
         XCTAssertTrue(package.isDisjoint(with: convertedFormats))
-        XCTAssertEqual(package.union(audio.intersection(convertedFormats)), audio)
+        XCTAssertTrue(package.isDisjoint(with: ImportAudioConverter.ownReaderExtensions))
+        XCTAssertEqual(
+            package.union(audio.intersection(convertedFormats.union(ImportAudioConverter.importOnlyExtensions))), audio)
         for played in ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "mp4", "m4v", "mov", "ogg", "oga", "opus"] {
             XCTAssertTrue(package.contains(played), "\(played) stays a package track")
         }

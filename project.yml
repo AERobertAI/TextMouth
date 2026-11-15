@@ -171,6 +171,22 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/LAME
+      # The notices of the BSD-licensed decoders that TextMouth's own audio
+      # readers follow (TextMouth/Parsers/OwnAudio): none of their code is
+      # compiled in, and each reader's Swift is written from its decoder, so
+      # its notice ships with the app. True Audio: the README of the TTA
+      # Hardware Players Library 1.2, which holds its licence.
+      - path: Vendor/package-licenses/TrueAudio/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      # WavPack: libwavpack 5.9.0's COPYING.
+      - path: Vendor/package-licenses/WavPack/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/WavPack
       - path: Vendor/foliate-js/LICENSE
         buildPhase:
           copyFiles:

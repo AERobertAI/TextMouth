@@ -97,6 +97,7 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         case .threeGPP: return "3GPP"
         case .mpegLayerI: return "MP1"
         case .mpegLayerII: return "MP2"
+        case let .ownReader(format): return format.displayName
         case .aiff, .wave, .flac, .mpegLayerIII, .adts, .mpeg4, .unknown:
             return audioKindName(fileExtension: ext)
         }
@@ -120,7 +121,12 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         case "3gp", "3g2", "3ga": return "3GPP"
         case "mp1": return "MP1"
         case "mp2", "mpa": return "MP2"
-        default: return ext.isEmpty ? "this format" : ext.uppercased()
+        default:
+            // A format of TextMouth's own readers is named as its reader names it.
+            if let own = OwnAudioFormat.allCases.first(where: { $0.fileExtensions.contains(ext) }) {
+                return own.displayName
+            }
+            return ext.isEmpty ? "this format" : ext.uppercased()
         }
     }
 }
