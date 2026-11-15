@@ -269,9 +269,10 @@ struct ConflictCopyFinder: Sendable {
                 original: originalBytes.flatMap { try? BookInfo.decodeRecordFile($0) }
             )
         case .feedIndex:
+            // A feed's index is its own layout (a feed ID and rows, no folders).
             return ConflictCopyWording.feedIndexHolds(
-                copy: try? LibraryPersistenceService.decodeIndex(from: copyBytes),
-                original: originalBytes.flatMap { try? LibraryPersistenceService.decodeIndex(from: $0) }
+                copy: try? FeedIndexFiles.decoded(copyBytes),
+                original: originalBytes.flatMap { try? FeedIndexFiles.decoded($0) }
             )
         case .feedRecord:
             let decoder = FeedRecordCoding.decoder()
@@ -437,7 +438,7 @@ enum ConflictCopyWording {
     }
 
     /// What a copy of a feed's own index holds, set against the index itself.
-    static func feedIndexHolds(copy: Library?, original: Library?) -> String {
+    static func feedIndexHolds(copy: FeedIndex?, original: FeedIndex?) -> String {
         guard let copy else { return "It couldn't be read." }
         let held = "It holds \(CountWording.phrase(copy.books.count, singular: "episode", plural: "episodes"))"
         guard let original else { return held + "." }

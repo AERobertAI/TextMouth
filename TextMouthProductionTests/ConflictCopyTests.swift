@@ -75,8 +75,10 @@ final class ConflictCopyTests: XCTestCase {
         let folder = FeedPaths.itemsFolder(of: library.feedID, in: library.root)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let episode = Book(title: "Episode 1", format: .txt, filePath: "/e.mp3", md5Hash: "e", tmbDirectoryName: "e.tmb")
-        try LibraryPersistenceService.encodedIndex(Library(books: [episode])).write(to: folder.appendingPathComponent("library.json"))
-        try LibraryPersistenceService.encodedIndex(Library()).write(to: folder.appendingPathComponent("library (1).json"))
+        // A real feed index: its feed ID and rows, and no folders.
+        let feedID = library.feedID
+        try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: [episode])).write(to: folder.appendingPathComponent("library.json"))
+        try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: [])).write(to: folder.appendingPathComponent("library (1).json"))
 
         let findings = ConflictCopyFinder(itemStatus: FakeDrive()).findAll(in: library.root)
 
