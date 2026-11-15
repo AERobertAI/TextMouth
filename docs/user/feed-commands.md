@@ -57,8 +57,8 @@ A downloaded episode's book row offers these beside the book's own commands, les
 
 Cancel Download chosen on an episode whose book is already being added to the library changes nothing, since the book arrives all the same, and VoiceOver says "“Ep.
 368” is already being added to the library." instead of "Stopped downloading", the sentence the Feed Downloads section's Cancel says too; the episode stays as TextMouth's own rule asked for it, and is not made yours.
-Download or Open chosen right after Cancel Download downloads the episode, and opens it for Open, where the cancelled download's end used to swallow the new request.
-A download, or a check of a feed, that is cancelled just as it begins ends as cancelled, even while this Mac is offline, and no longer holds up every later download until TextMouth restarts.
+Download or Open chosen right after Cancel Download downloads the episode, and opens it for Open.
+A download, or a check of a feed, that is cancelled just as it begins ends as cancelled, even while this Mac is offline.
 
 ### Deleted episodes stay deleted
 <!-- id: feeds-deleted-episodes; keys: 90 days, deleted record, empty feed read, newest-episodes rule, check result; src: TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
@@ -84,7 +84,7 @@ It's a book of your library now, and its feed lists it In Library.
 2” stays in its feed: The file couldn't be moved."
 Book Info, Edit Text, and Move to Folder… then work on it as on any book.
 The feed lists the item "In Library", as in "Ep.
-368, In Library, July 17, 2026, 1 hour, 4 minutes", and its row's hint is "Opens its book in your library": Open opens the book; it counts among the newest and is never downloaded again by itself; Mark Played, Show Description…, and Delete Episode… stay, Delete Episode… asking "The episode leaves the list for good; the book it became in your library stays.
+368, In Library", the episode's date, and its duration, "1 hour, 4 minutes", and its row's hint is "Opens its book in your library": Open opens the book; it counts among the newest and is never downloaded again by itself; Mark Played, Show Description…, and Delete Episode… stay, Delete Episode… asking "The episode leaves the list for good; the book it became in your library stays.
 Checking the feed won't bring it back."; and once the book leaves the library, the item becomes not downloaded.
 A book you move into the feed's own folder is listed there once, as its book's row, offering the episode's commands beside the book's.
 A move cut short never loses the book: the next launch finds it in its feed or in the folder chosen.
@@ -99,7 +99,7 @@ VoiceOver then says what it kept, naming only what the download held, as in "Del
 Its place and bookmarks are kept for when you download it again.", or, when nothing was kept, "Deleted the download of “Ep.
 368”.
 It can be downloaded again."
-The rule that deletes played downloads, and the one that removes TextMouth's own downloads beyond a feed's newest (see Listing and downloading, above), keep them the same way, though they delete the file for good, and they keep an article's text as well, since it may hold an edit you made before feed items lost Edit Text, while an article holding nothing of yours goes entirely, its text included.
+The rule that deletes played downloads, and the one that removes TextMouth's own downloads beyond a feed's newest (see [Listing and downloading](feed-downloads.md)), keep them the same way, though they delete the file for good, and they keep an article's text as well, since it may hold an edit you made before feed items lost Edit Text, while an article holding nothing of yours goes entirely, its text included.
 The item then shows as not downloaded, and leaves Recently Opened and the Reading List; after Delete Download, TextMouth never downloads it again by itself.
 Downloading it again brings back the same book, opening where you left off, and its transcript shows its text again when the new file holds the same audio; a host that inserts different advertisements in each download makes it stale until you transcribe the episode again.
 A save of the episode's text that no Edit Text session took, as one made in your editor after its download was deleted, is kept in the new download's package as content.md.edited- followed by the date and time.
@@ -108,7 +108,7 @@ If TextMouth can't look inside the folder it kept for an episode or article, as 
 An episode's file is downloaded in full before this happens, and is then discarded.
 TextMouth saves the feed's list of its downloads before any file goes, and when it can't, keeps the download, saying in an alert, which VoiceOver reads; it is not announced besides, "TextMouth couldn't save its list of this feed's downloads, so the download was kept.
 Try again once the library can be saved."
-A download made before October 10, 2026 that hasn't yet moved into its feed's own folder isn't deleted this way, and says so.
+A download that hasn't yet moved into its feed's own folder (see [Downloads kept from an earlier version](feeds.md)) isn't deleted this way, and says so.
 An episode's or article's book row offers Delete Download among its own commands, and no Remove from Library….
 For episodes and articles alone, the library's Remove is their Delete Download: with several selected, the context menu offers Delete 3 Downloads…, and the edit bar's button reads Delete Downloads…, or Delete Download… for one, each without its ellipsis while Confirm before removing a book is off; the Library menu's Remove reads the same, Delete Download… or Delete Downloads…, without its ellipsis while that setting is off, and does the same, as does Command-Delete.
 With Confirm before removing a book on, it asks "Delete Download?", or "Delete 3 Downloads?" for several, as in "The download of “Ep.
@@ -127,7 +127,7 @@ A feed's record keeps every item you played, and every item whose place it keeps
 
 Feed Info… shows the feed's address, web site, publisher, episodes, counted as its row counts them, last check, the date you subscribed, and the date you unsubscribed, while you are, its last check then reading "Not checked since …", and a plain-http warning when it applies, each read as one line, and its description, under a Description heading, in a text area labelled with the feed's title, as "Description of Planet Money", so VoiceOver says Description once.
 It chooses the library folder that lists the feed's episodes and articles, its downloads included, all of them at once, since the downloads stay in the feed's own folder in the data directory; a feed whose library folder is gone downloads nothing until you choose another.
-It holds This Feed's Settings: the feed's List and download choice and number, worded with its own items, as in "Every episode listed, newest 5 downloaded" and "5 episodes", under Use the global setting (Every item listed, newest 5 downloaded), which dims them while checked and, unchecked, gives the feed the global choice as its own to change; and how many days after playing its downloads are deleted, under its own Use the global setting; and, last, its three listening controls (see Listening on to the next episode, below).
+It holds This Feed's Settings: the feed's List and download choice and number, worded with its own items, as in "Every episode listed, newest 5 downloaded" and "5 episodes", under Use the global setting (Every item listed, newest 5 downloaded), which dims them while checked and, unchecked, gives the feed the global choice as its own to change; and how many days after playing its downloads are deleted, under its own Use the global setting; and, last, its four listening controls (see [Listening on to the next episode](feed-listening-and-settings.md)).
 Below the settings is one button, Unsubscribe, or Unsubscribe… while it would ask first, or Resubscribe for a feed you unsubscribed from, whose name and hint follow the feed's state, so pressing it never takes away the button VoiceOver is on, and Feed Info stays open after either; then Delete Feed…, which closes Feed Info once you confirm it; and Done, which Escape presses.
 Return stays with the number fields, entering the number typed, except while the folder picker's New Folder fields are shown, when it presses their Create, and Escape closes the fields before it presses Done.
 Each change is saved as you make it; the feed's list follows a change of its List and download choice at once, and what downloads or is removed follows ten seconds after the last change, when VoiceOver says, as in "List and download for Finish It! is now in effect: Every episode listed, newest 3 downloaded.", or, once the box is checked again, "List and download for Finish It! now follows the global setting: Every item listed, newest 5 downloaded."

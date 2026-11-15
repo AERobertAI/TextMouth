@@ -9,7 +9,7 @@ Part of [TextMouth's documentation](../../README.md).
 ### The List and download choices
 <!-- id: feeds-list-download-choices; keys: feedItems, feedNewestCount, global setting, per feed, ten seconds, 1 to 2,000; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
-Every feed follows one List and download choice, the one for every feed, set in the Feeds tab of Settings, or one of its own, set in its Feed Info (below): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed, where 5 stands for the number that goes with the choice, from 1 to 2,000, 5 unless you change it.
+Every feed follows one List and download choice, the one for every feed, set in the Feeds tab of Settings, or one of its own, set in its [Feed Info](feed-commands.md): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed, where 5 stands for the number that goes with the choice, from 1 to 2,000, 5 unless you change it.
 A feed's list follows a change of the choice or the number at once; what downloads, and what is removed, follows once neither has changed for ten seconds.
 
 ### Newest downloaded by default
@@ -17,11 +17,11 @@ A feed's list follows a change of the choice or the number at once; what downloa
 
 Under the default, a feed's folder lists every episode and article the feed lists, and TextMouth keeps downloaded those of the newest 5 not yet played, newest by publication date, a serial show's too: it downloads each of them by itself, at launch, after you subscribe, after each refresh, and once one of its own downloads finishes, an episode only on a network without data limits.
 Played ones count among the newest 5, so playing one never downloads an older one, while deleting one with Delete Episode… brings the next older one in.
-When TextMouth holds more than 5 of its own downloads of a feed, as once a newer episode has arrived, it deletes for good the files of its oldest downloads beyond the newest 5 until it holds 5, keeping, as Delete Download keeps them, the place, bookmarks, settings, and transcript of any you opened (see Commands, below).
-This rule never removes a download you asked for, one made before this version, one on the reading list, or one open in a reader, being transcribed, or being exported, or whose text is open in an editor with Edit Text, which it leaves for a later pass, nor, in a library in the cloud, one not wholly on this Mac, and a download that waits or fails removes nothing.
+When TextMouth holds more than 5 of its own downloads of a feed, as once a newer episode has arrived, it deletes for good the files of its oldest downloads beyond the newest 5 until it holds 5, keeping, as Delete Download keeps them, the place, bookmarks, settings, and transcript of any you opened (see [Commands](feed-commands.md)).
+This rule never removes a download you asked for, one made before the rule existed, one on the reading list, or one open in a reader, being transcribed, or being exported, or whose text is open in an editor with Edit Text, which it leaves for a later pass, nor, in a library in the cloud, one not wholly on this Mac, and a download that waits or fails removes nothing.
 Opening or playing one of TextMouth's own downloads doesn't make it yours: it still goes once it falls beyond the newest 5, its place kept.
-An item becomes yours when you ask for its download, even while TextMouth's own download of it waits or runs, when you choose Cancel Download or Delete Download on it (the Feed Downloads section's Cancel doesn't make it yours, below), or when a download you asked for fails: from then on the rule never downloads it by itself, nor removes its download, though the rule that deletes played downloads still does (see Commands, below).
-Nor does it download an item whose download was deleted before this version.
+An item becomes yours when you ask for its download, even while TextMouth's own download of it waits or runs, when you choose Cancel Download or Delete Download on it (the Feed Downloads section's Cancel doesn't make it yours, below), or when a download you asked for fails: from then on the rule never downloads it by itself, nor removes its download, though the rule that deletes played downloads still does (see [Commands](feed-commands.md)).
+Nor does it download an item whose download was deleted before the rule existed.
 
 ### Downloads that wait
 <!-- id: feeds-downloads-that-wait; keys: Low Data Mode, data limits, constrained network, offline, 1 GB free, no room, retry; src: TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
@@ -45,7 +45,7 @@ Under Only the newest 5 listed, the feed's record keeps only the newest of that 
 ### Settings moved over from earlier versions
 <!-- id: feeds-settings-moved-over; keys: feedKeepEntries, feedAutoDownload, upgrade, migration, Keep every entry; src: TextMouth/Models/FeedSettings.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
-The first launch of this version moves the earlier settings over, once: Keep the newest 10 entries, as TextMouth shipped it, or Download new episodes and articles by themselves turned on, becomes the default; Keep every entry becomes Every item listed, downloads by hand; and any other number of entries becomes Only the newest of that number listed, at least 1.
+The first launch after an update moves the earlier settings over, once: Keep the newest 10 entries, as TextMouth shipped it, or Download new episodes and articles by themselves turned on, becomes the default; Keep every entry becomes Every item listed, downloads by hand; and any other number of entries becomes Only the newest of that number listed, at least 1.
 A feed's own number of entries, from its Feed Info, becomes its own Only the newest of that number listed, 10 included, and a feed's own Keep every entry makes it follow the choice for every feed when that lists every item, and otherwise gives it Every item listed, downloads by hand.
 So, in a library whose settings were as TextMouth shipped them, that launch downloads each feed's newest 5 not yet played or downloaded, its episodes on a network without data limits, and removes nothing.
 
@@ -117,9 +117,7 @@ Quitting waits at most three seconds for this.
   It will quit as soon as that is done."
   TextMouth then quits by itself.
 - Pressing Command-Q again, or choosing Quit in the Dock again, in those seconds says the same words again and does not cut the downloads off.
-  It used to quit at once.
-- If you quit with changes that could not be saved and chose Quit Anyway, TextMouth now finishes the downloads' place first and then quits, with no second alert.
-  Quit Anyway used to leave TextMouth open and stuck while downloads were under way.
+- If you quit with changes that could not be saved and chose Quit Anyway, TextMouth finishes the downloads' place first and then quits, with no second alert.
 - If a question stops the quit after the downloads have stopped (Cancel in an alert about unsaved changes, or an editor or a library move that began meanwhile), TextMouth stays open and the downloads stay stopped for the rest of that session.
   They are asked for again at the next launch.
-- Logging out, restarting, or shutting down waits for the downloads as before, with the same words, and is not cancelled.
+- Logging out, restarting, or shutting down waits for the downloads, with the same words, and is not cancelled.

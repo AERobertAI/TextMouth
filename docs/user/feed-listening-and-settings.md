@@ -42,14 +42,14 @@ Skip finished episodes passes over an episode that is downloaded and rests at it
 
 When an episode ends and the one that follows it is not on this Mac, TextMouth downloads it, at once and on any network, as Download does, and goes on with it when it arrives.
 That download goes first in the queue, ahead of the downloads waiting before it, though not ahead of the one under way.
-This counts as a download you asked for (see Listing and downloading, above).
+This counts as a download you asked for (see [Listing and downloading](feed-downloads.md)).
 
 ### Downloading the next episode ahead of time
 <!-- id: feeds-download-ahead; keys: predownload, 10 minutes left, time left, reading list; src: TextMouth/ViewModels/ReaderViewModel+Predownload.swift, TextMouth/Models/ListeningOptionsWording.swift -->
 
 Download the next episode before this one ends asks for that download ahead of time, the first time 10 minutes or less of the episode are left while it plays in a window, as the reader's time left shows it.
 It asks only when listening would go on to another episode, and that one is not on this Mac and not downloading already; a download TextMouth put off, for a network without data limits or for room, is asked for all the same, and the ask takes its place.
-The reader says nothing when it asks, and the download shows like any other (see Downloads under way, above).
+The reader says nothing when it asks, and the download shows like any other (see [Downloads under way](feed-downloads.md)).
 A book read from the reading list never asks, since the reading list goes on to books that are on this Mac.
 
 ## The Feeds tab of Settings
@@ -65,7 +65,7 @@ Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
 ### Episodes and Articles
 <!-- id: feeds-settings-episodes-articles; keys: feedItems, feedNewestCount, feedDeleteDownloadsDaysAfterPlayed, number field, stepper, ten seconds; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift, TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift -->
 
-Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself (see Listing and downloading, above): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed.
+Episodes and Articles: List and download, a pop-up menu, decides what every feed lists and what downloads by itself (see [Listing and downloading](feed-downloads.md)): Every item listed, newest 5 downloaded, the default; Every item listed, downloads by hand; or Only the newest 5 listed.
 The first and third titles say the number in force, and VoiceOver speaks the choice as the menu's value and the choice's own sentence as its hint, which the screen shows under the number, as in "Lists every episode and article with what you did with it, keeps the newest 5 downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
 How many of the newest, a number field and a stepper, sets that number, from 1 to 2,000, 5 by default, a number typed outside moving to the nearer bound; the stepper speaks it with its unit, as in "5 items", and both are dimmed under Every item listed, downloads by hand, which counts none and keeps the number for a choice that does.
 A line under them, which VoiceOver reads, says "The list follows a change of List and download at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then."
