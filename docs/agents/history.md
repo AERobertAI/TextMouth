@@ -872,6 +872,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 ## From Imports: audio
 
 - Package track scans: the formats a package's scans leave out (the page's coreAudioExtensions) are the formats added on October 18, 2026.
+- AudioFileInfo's plausibility check (isPlausible(inFileOfBytes:)): a 136 KB CAF once claimed 25 billion seconds.
 
 ## From Imports: braille tables and the translator
 
@@ -893,6 +894,8 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - DAISY 3 books of several DTBook files, and SMIL clocks, came on November 13, 2026.
 - DAISYParser.parseTime: "500ms" used to read as no time.
+- Raising DAISY's page reader version to "1.0.1" made every stamped DAISY book read again once at the next launch, though only a book of several DTBook files with a wordless page after an earlier page, or whose files were read out of order, makes another text.
+- A web page named .doc, a web archive, and SSML "now" honoured includesPages: false.
 
 ## From Imports: duplicates
 
@@ -905,10 +908,16 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - Kindle MOBI 6 books (FMT42) came on November 4, 2026.
 - KF8 (FMT48) came on November 8, 2026.
 - The continuation rule's measurement on the real books (the last chapters and licences of Pride and Prejudice, Moby Dick, and The Yellow Wallpaper) was made on November 9, 2026.
+- `MOBIBook.refuseProtected`: it was refuseWhatIsNotRead until 0.4.2, and MOBIError.kf8Only is gone.
+- `MOBIMarkup` checked its own nesting until 0.4.1, where it threw damaged for markup nested more than 256 open elements deep (MOBIMarkup.maximumNesting and its estimate of the depth are gone).
+- The first version of the repeated-title exception took any piece that opened in a different section, and the review showed it could cut a chapter in two.
 
 ## From Imports: DOCX, OpenDocument, and Word 2003 XML
 
 - The own readers of OpenDocument text and Word 2003 XML (FMT27 and FMT53) came on November 5 and 6, 2026.
+- The 1,000,000-byte limit on a start tag was replaced by the refusal of a start tag of more than 1,024 attributes in 0.4.1.
+- elementsBetweenCancellationChecks was lowered from 4,096.
+- Before 0.4.1 the words of a Word 2003 XML row marked w:trPr/w:hidden were dropped.
 
 ## From Imports: rich text and Word documents
 
@@ -927,6 +936,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - V03, which keeps a row this TextMouth cannot read as it was read, dates from October 23, 2026.
 - ImportedBook.originalKeptNotice was named rtfdOriginalKeptNotice until October 31, 2026.
 - docx (with .dotx, .docm, and .dotm) joined formatsRefusedWhenBlank on November 13, 2026.
+- Through 0.4.0 textutil read Word 6 and Word 95 documents too.
 
 ## From Imports
 
@@ -934,6 +944,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - Packages and originals (isBookPackage, the package handling of importFiles and importZip) dates from October 31, 2026.
 - Limits of what a file claims (EPUBParser.readingXML, withNCX) dates from October 31, 2026.
 - The Word documents joined formatsRefusedWhenBlank on November 13, 2026.
+- NSDirectoryEnumerator.skipDescendants() on a file or a symbolic link skips the contents of the next folder listed beside it, which lost the tracks of a book whose folder listed a link right before a folder.
 
 ## From Known duplication
 
