@@ -1022,3 +1022,14 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The HTML writer's contents lists:** HTMLExportWriter and EPUBExportWriter write their blocks through XHTMLMarkup (Services/Export/XHTMLMarkup.swift), so a heading, a list, or a table is written once, and their contents lists through ExportContentsList (the same file):
   - one list for each item,
   - a heading that rises out of a skipped level joining its sibling's list and an entry above the outermost level lowering it, where the HTML writer used to put two lists in one item.
+
+## From Preferences: keyboard shortcuts
+
+- **The Record window's group name:** The Record window's buttons are the group ShortcutAction.recordingWindowCategory, "New Recording", the window's own title (RecordingWording.windowTitle), which begins their names, as in "New Recording: Stop", where the group was "Recording Window" before REV11.
+- **The clash rule's overlap and its test helper:** ShortcutAction.sharesAWindow(in:with:in:) is the clash rule's overlap (ShortcutEdits.key(_:of:clashesWith:of:), and the move from the saved map), which
+  - KeyClaims,
+  - ShortcutPressDispatcher.Index, and
+  - the tests' ShortcutKeyOwners (keysOnTwoActions(in:scopes:) and actions(holding:in:sharingAWindowWith:scopes:), which took the place of KeyboardShortcutManager.action(holding:in:), used by tests alone) follow too.
+- **The Record window's hints:** The Record window does the same for its buttons (RecordingWindowView, through StoredKeyEquivalents):
+  - each hint ends with the button's key in force, in those words (RecordingWording.recordHint(device:key:), pauseHint(key:), resumeHint(key:), and stopHint(key:)),
+  - or with nothing while the button has no key, where it once named the default keys whatever was set.
