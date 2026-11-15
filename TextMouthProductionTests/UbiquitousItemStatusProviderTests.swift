@@ -317,7 +317,7 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         )
         XCTAssertEqual(stale.cloudCopyDoubt, .notCurrent, "downloaded, but a newer version exists")
         let unsaid = UbiquitousItemStatusProvider.status(from: Metadata(isUbiquitousItem: true, isUploaded: true))
-        XCTAssertEqual(unsaid.cloudCopyDoubt, .notCurrent, "no downloading status at all")
+        XCTAssertEqual(unsaid.cloudCopyDoubt, .currentNotReported, "no downloading status at all: lasting")
 
         let failed = UbiquitousItemStatusProvider.status(
             from: Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true, uploadError: "Quota exceeded.")
@@ -398,7 +398,7 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
             fileStatus,
             FlaggedItemStatus(
                 // A file in a package carries no flags: no upload state, and no word that its copy is current.
-                status: CloudItemStatus(state: .downloaded, isUploaded: false, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil, isUploadReported: false, isCurrent: false),
+                status: CloudItemStatus(state: .downloaded, isUploaded: false, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil, isUploadReported: false, isCurrent: false, isCurrentReported: false),
                 carriesSyncFlags: false
             )
         )

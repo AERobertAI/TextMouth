@@ -338,7 +338,8 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
             uploadError: metadata.uploadError,
             // The service's own word that the copy here is its current
             // version; any other status, or none, is not that word.
-            isCurrent: metadata.isDataless || metadata.downloadingStatus == .current
+            isCurrent: metadata.isDataless || metadata.downloadingStatus == .current,
+            isCurrentReported: metadata.isDataless || metadata.downloadingStatus != nil
         )
     }
 

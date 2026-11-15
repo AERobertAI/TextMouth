@@ -89,9 +89,12 @@ enum CloudCopyDoubt: Equatable, Sendable {
     case uploadFailed(String)
     /// The sync service holds conflicting versions of the file.
     case inConflict
-    /// The copy on this Mac is not, or is not said to be, the current
-    /// version.
+    /// The sync service reported that the copy on this Mac is not the
+    /// current version (a newer one exists): waiting can change that.
     case notCurrent
+    /// The sync service reports no downloading status for the file at all,
+    /// so it never says the copy here is current: waiting changes nothing.
+    case currentNotReported
 }
 
 /// One file's cloud state, with the sync details the commands need.
@@ -119,6 +122,10 @@ struct CloudItemStatus: Equatable, Sendable {
     /// version, by its downloading status. False when the status is any
     /// other, or none, for a file whose content is on this Mac.
     var isCurrent: Bool = true
+    /// Whether the sync service reported any downloading status for the
+    /// file. False when it gave none, which no wait changes, and which
+    /// `isCurrent` then counts as not current.
+    var isCurrentReported: Bool = true
 
     /// Why the cloud's copy of this file can't be taken as proven, or nil
     /// when the sync service says it is uploaded, free of error and
@@ -133,7 +140,7 @@ struct CloudItemStatus: Equatable, Sendable {
         if let uploadError { return .uploadFailed(uploadError) }
         if hasUnresolvedConflicts { return .inConflict }
         if !isUploadReported { return .uploadNotReported }
-        if !isCurrent { return .notCurrent }
+        if !isCurrent { return isCurrentReported ? .notCurrent : .currentNotReported }
         return nil
     }
 
@@ -407,6 +414,10 @@ enum BookCloudWording {
         case .notCurrent:
             return "\(serviceStartingSentence) hasn't said that the copy of this book on this Mac is the latest, "
                 + "so its download can't be removed. Try again in a moment."
+        case .currentNotReported:
+            return "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, "
+                + "so its download can't be removed, and waiting won't change that. "
+                + "Delete the book's files in \(service) itself if you need the space."
         }
     }
 
@@ -417,6 +428,7 @@ enum BookCloudWording {
         case .uploadFailed(let message): return "the upload failed: \(message)"
         case .inConflict: return "the sync service holds conflicting versions"
         case .notCurrent: return "the copy here is not said to be current"
+        case .currentNotReported: return "the sync service reports no downloading status at all"
         }
     }
 }

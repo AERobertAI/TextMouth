@@ -228,6 +228,11 @@ final class CloudStorageContractTests: XCTestCase {
                 + "so its download can't be removed. Try again in a moment."
         )
         XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: drive),
+            "Google Drive doesn't say whether the copy of this book on this Mac is the latest, so its download can't "
+                + "be removed, and waiting won't change that. Delete the book's files in Google Drive itself if you need the space."
+        )
+        XCTAssertEqual(
             BookCloudError.bookIsOpen.explanation(in: drive),
             "The book is open, so its download can't be removed. Close it first."
         )
