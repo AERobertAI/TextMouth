@@ -250,8 +250,8 @@ struct BookMetadata: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     static let keySchema = StoredKeySchema(
         isKnown: { BookMetadata.isStoredKey($0) },
         objects: [
-            CodingKeys.handEdits.stringValue: Book.HandEdits.keySchema,
-            CodingKeys.feedLink.stringValue: FeedBookLink.keySchema,
+            "handEdits": Book.HandEdits.keySchema,
+            "feedLink": FeedBookLink.keySchema,
         ]
     )
 
@@ -393,16 +393,19 @@ struct BookState: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     }
 
     /// What a stored state holds, for the scan that says whether a record
-    /// can hold unknown keys (`StoredKeyScan`).
+    /// can hold unknown keys (`StoredKeyScan`). The members are named as
+    /// the file names them, here and in the metadata: the synthesized
+    /// coding keys cannot be read in this initializer, and
+    /// `UnknownKeysTests` fails for a name that is wrong or missing.
     static let keySchema = StoredKeySchema(
         isKnown: { BookState.isStoredKey($0) },
         objects: [
-            CodingKeys.readingPosition.stringValue: ReadingPosition.keySchema,
-            CodingKeys.skippedHeadings.stringValue: SkippedHeading.keySchema,
-            CodingKeys.waitingSkippedHeadings.stringValue: SkippedHeading.keySchema,
-            CodingKeys.textCacheFingerprint.stringValue: TextCacheFingerprint.keySchema,
-            CodingKeys.editedText.stringValue: EditedText.keySchema,
-            CodingKeys.transcript.stringValue: TranscriptNote.keySchema,
+            "readingPosition": ReadingPosition.keySchema,
+            "skippedHeadings": SkippedHeading.keySchema,
+            "waitingSkippedHeadings": SkippedHeading.keySchema,
+            "textCacheFingerprint": TextCacheFingerprint.keySchema,
+            "editedText": EditedText.keySchema,
+            "transcript": TranscriptNote.keySchema,
         ]
     )
 
