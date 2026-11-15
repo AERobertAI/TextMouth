@@ -1,6 +1,8 @@
 # Feed options, interface, and arrivals
 <!-- id: feed-options-interface-arrivals; keys: ; src: -->
 
+Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
+
 ## List and download choice, newest-N rule
 <!-- id: list-download-choice-newest-n; keys: ; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Models/Feed.swift, TextMouth/Models/FeedItem.swift, TextMouth/Models/SettingsPolicy.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedLifecycle.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedFetchState.swift, TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/LibraryViewModel+Feeds.swift, TextMouthProductionTests/FeedItemPolicyTests.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/FeedDownloadProgressWording.swift -->
 
