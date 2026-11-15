@@ -100,7 +100,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist typecheck-ios typecheck-mac typecheck-tests mac-projection perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest test-area lint-tests lint-a11y lint-ogg lint-docs check-ios-plist typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -129,6 +129,8 @@ help:
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
+	@echo "  make typecheck-ios-tests - The iPhone's unit tests (and the Mac test files they share) compiled for iOS"
+	@echo "  make typecheck-tests-census - Which of the Mac's tests compile for the iPhone (slow; writes census.md)"
 	@echo "  make mac-projection BASE=main - Show what a branch changes in the code the Mac compiles (DIFF=1 for every line)"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
@@ -358,6 +360,20 @@ typecheck-mac:
 ## the other type-checks, so commit first).
 typecheck-tests:
 	@python3 -I Scripts/ios/typecheck.py --platform macos --tests $(if $(REF),--ref $(REF),)
+
+## The iPhone's unit tests (TextMouthiOSTests, with the Mac test files that
+## project.yml lists for it by path) compiled for the iPhone with SwiftPM, no
+## simulator needed: run it, with typecheck-tests, before a train request that
+## touches either bundle's files (REF=<commit> as above).
+typecheck-ios-tests:
+	@python3 -I Scripts/ios/typecheck.py --platform ios --tests $(if $(REF),--ref $(REF),)
+
+## The census of the Mac's hosted tests for the iPhone: compiles all of them
+## for iOS, leaving out the files that fail until a build is clean, and writes
+## census.md (which classes could run on the iPhone, by area) beside the
+## results. Slow (about ten builds) and takes the heavy-work lock the whole time.
+typecheck-tests-census:
+	@python3 -I Scripts/ios/typecheck.py --platform ios --tests-census $(if $(REF),--ref $(REF),)
 
 ## What this branch changes in the code the Mac compiles, since BASE: files
 ## moved, wrapped in #if os(macOS), or given a platform alias count as

@@ -142,6 +142,46 @@ class TheUnitTestsTests(TreeCase):
         self.assertEqual(ui.all_classes(root), ["IOSRuntimeTests", "PhoneValueRowTests",
                                                 "PlaybackUITests", "ReaderUITests", "SearchUITests"])
 
+    def with_shared(self, **shared):
+        """A tree whose project.yml lists Mac test files (those given, under TextMouthProductionTests) for the unit target,
+        with one unit class of its own."""
+        root = self.with_units(One=self.UNIT)
+        (root / "TextMouthProductionTests").mkdir()
+        for name, source in shared.items():
+            (root / "TextMouthProductionTests" / f"{name}.swift").write_text(source)
+        listed = "".join(f"      - TextMouthProductionTests/{name}.swift\n" for name in shared)
+        (root / "project.yml").write_text(
+            "targets:\n  TextMouthiOSTests:\n    sources:\n      - TextMouthiOSTests\n" + listed + "    settings:\n      base:\n        X: y\n")
+        return root
+
+    SHARED = "final class FeedParserTests: XCTestCase {\n    func testA() {}\n    func testB() {}\n}\nclass Base: XCTestCase {}\nfinal class ViaBaseTests: Base {\n    func testC() {}\n}\n"
+
+    def test_a_mac_test_file_listed_for_the_unit_target_adds_its_classes_to_the_unit_bundle(self):
+        root = self.with_shared(Feeds=self.SHARED)
+        self.assertEqual(ui.shared_classes(root), ["Base", "FeedParserTests", "ViaBaseTests"])
+        self.assertEqual(ui.unit_classes(root), ["Base", "FeedParserTests", "IOSRuntimeTests", "ViaBaseTests"])
+        self.assertEqual(ui.unit_counts(root)["FeedParserTests"], 2)
+        self.assertEqual(ui.unit_counts(root)["ViaBaseTests"], 1, "a class inheriting a shared base class is a test class")
+        self.assertEqual(ui.bundle_of("FeedParserTests", root), "TextMouthiOSTests")
+
+    def test_a_test_fenced_for_the_mac_is_not_counted_for_the_iphone_and_one_in_the_else_branch_is(self):
+        source = ("final class MixedTests: XCTestCase {\n    func testBoth() {}\n    #if os(macOS)\n    func testMacOnly() {}\n"
+                  "    #if DEBUG\n    func testNestedMac() {}\n    #endif\n    #else\n    func testPhoneOnly() {}\n    #endif\n"
+                  "    #if !os(macOS)\n    func testNotMac() {}\n    #endif\n}\n")
+        root = self.with_shared(Mixed=source)
+        self.assertEqual(ui.unit_counts(root)["MixedTests"], 3, "testBoth, testPhoneOnly and testNotMac")
+
+    def test_a_file_that_is_listed_but_not_in_the_tree_is_left_out(self):
+        root = self.with_shared(Feeds=self.SHARED)
+        (root / "TextMouthProductionTests" / "Feeds.swift").unlink()
+        self.assertEqual(ui.shared_files(root), [])
+
+    def test_a_request_naming_a_shared_class_keeps_it_for_the_mac_and_adds_it_for_the_iphone(self):
+        root = self.with_shared(Feeds=self.SHARED)
+        split = ui.split_classes({"classes": ["FeedParserTests", "IOSRuntimeTests", "OtherMacTests"]}, root)
+        self.assertEqual(split["classes"], ["FeedParserTests", "OtherMacTests"], "the Mac still runs the shared class")
+        self.assertEqual(split["ios_ui_classes"], ["FeedParserTests", "IOSRuntimeTests"])
+
     def test_a_tree_without_the_unit_folder_has_no_unit_classes(self):
         self.assertEqual(ui.unit_classes(self.standard()), [])
         self.assertEqual(ui.unit_counts(self.standard()), {})
@@ -183,7 +223,9 @@ class TheUnitTestsTests(TreeCase):
         self.assertEqual(ui.wanted({"ios_ui": False, "full": True}, root), [])
 
     def test_the_repositorys_own_unit_tests_are_found_with_their_methods(self):
-        self.assertEqual(ui.unit_classes(ROOT), ["IOSRuntimeTests", "PhoneControlButtonTests", "PhoneValueRowTests"])
+        # The bundle's own folder holds these three; the Mac test files it shares by path add their classes (see
+        # the shared-file tests above).
+        self.assertTrue({"IOSRuntimeTests", "PhoneControlButtonTests", "PhoneValueRowTests"} <= set(ui.unit_classes(ROOT)))
         # Four in IOSRuntimeTests, two of them inside #if DEBUG, which the Debug build holds.
         self.assertEqual(ui.unit_counts(ROOT)["IOSRuntimeTests"], 4)
         self.assertGreaterEqual(sum(ui.unit_counts(ROOT).values()), 19)
@@ -244,8 +286,11 @@ class CountingTheTestsTests(TreeCase):
         """The counter and a plain search of the sources agree: a `func test...(` left uncounted is a test that could be
         lost without a red run. Comment lines are left out of the search; a false red here is the safe side."""
         plain = re.compile(r"^(?!\s*//).*\bfunc\s+test\w*\s*\(", re.M)
-        for folder, counts in ((ui.UI_FOLDER, ui.test_counts(ROOT)), (ui.UNIT_FOLDER, ui.unit_counts(ROOT))):
-            found = sum(len(plain.findall(path.read_text(encoding="utf-8"))) for path in ui.swift_files(ROOT / folder))
+        # The unit bundle compiles its own folder and the Mac test files project.yml lists for it.
+        for folder, counts, files in ((ui.UI_FOLDER, ui.test_counts(ROOT), ui.swift_files(ROOT / ui.UI_FOLDER)),
+                                      (ui.UNIT_FOLDER, ui.unit_counts(ROOT), ui.unit_source_files(ROOT))):
+            # What the iPhone does not compile (`#if os(macOS)` blocks of shared Mac files) is not counted.
+            found = sum(len(plain.findall(ui.without_mac_only(path.read_text(encoding="utf-8")))) for path in files)
             self.assertGreater(found, 0, f"No test found in {folder}: the search itself is broken")
             self.assertEqual(sum(counts.values()), found,
                              f"{folder} holds {found} `func test` but the counter credits {sum(counts.values())} "
@@ -272,11 +317,13 @@ class TheNamesStayApartTests(TreeCase):
     """`split_classes` moves any name an iPhone folder holds out of a request's Mac classes, so a Mac test class with an
     iPhone class's name would quietly stop running when asked for."""
 
-    def test_no_iphone_test_class_shares_a_mac_test_class_name(self):
+    def test_no_iphone_test_class_shares_a_mac_test_class_name_unless_it_is_the_same_file(self):
         iphone = set(ui.all_classes(ROOT))
         self.assertTrue(iphone, "no iPhone test class found: the search itself is broken")
         self.assertGreater(len(mac_class_names(ROOT)), 100, "the Mac's test classes were not found")
-        self.assertEqual(sorted(iphone & mac_class_names(ROOT)), [],
+        # A shared class is the Mac's own file listed in project.yml, so its name is on both sides on purpose; any other
+        # name on both sides is a different class, which split_classes would confuse with the Mac's.
+        self.assertEqual(sorted((iphone & mac_class_names(ROOT)) - set(ui.shared_classes(ROOT))), [],
                          "an iPhone test class shares its name with a Mac test class: rename the iPhone one")
 
     def test_the_check_sees_a_shared_name(self):

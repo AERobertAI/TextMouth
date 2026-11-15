@@ -57,6 +57,8 @@ final class EPUBStructureFailureTests: XCTestCase {
         try assertRefused(epub, throwing: .invalidOPF, saying: "The EPUB package document could not be parsed.")
     }
 
+    // Mac only: Foundation's XML parser on iOS reports code 111 where the Mac's reports code 4 for this document.
+    #if os(macOS)
     /// A package document that is not XML fails with the sentence of
     /// Foundation's XML reader, which the parser passes on as it is.
     @MainActor
@@ -70,6 +72,7 @@ final class EPUBStructureFailureTests: XCTestCase {
             saying: "Line 1: Document is empty\n"
         )
     }
+    #endif
 
     // MARK: - A Tag With Too Many Attributes
 

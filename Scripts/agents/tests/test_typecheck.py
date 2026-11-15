@@ -45,7 +45,9 @@ targets:
         PRODUCT_NAME: x
   TextMouthiOSTests:
     sources:
-      - TextMouthTests/Sources/Tests/OtherTarget.swift
+      - TextMouthiOSTests
+      # A Mac test file the iPhone's unit tests share, listed by path.
+      - TextMouthProductionTests/FirstTests.swift
     settings:
       base:
         PRODUCT_NAME: y
@@ -64,7 +66,8 @@ FILES = {
     "TextMouthTests/Sources/Tests/ListedA.swift": "// a\n",
     "TextMouthTests/Sources/Tests/ListedB.swift": "// b\n",
     "TextMouthTests/Sources/Tests/NotMine.swift": "// not listed for the tests\n",
-    "TextMouthTests/Sources/Tests/OtherTarget.swift": "// another target's\n",
+    "TextMouthiOSTests/PhoneTests.swift": "// the iPhone's own\n",
+    "Scripts/test/areas.conf": "[demo] a demo area\nFirstTests\n",
     str(typecheck.RESOLVED): json.dumps({"pins": [
         {"identity": identity, "location": f"https://example.invalid/{identity}", "state": {"revision": "0" * 40}}
         for identity, _, _ in typecheck.PACKAGES]}),
@@ -122,10 +125,74 @@ class SourceTests(TypecheckTestsCase):
                          "the target's folder should hold only Swift files, and the listed ones in their own folder")
         self.assertTrue((self.src / "TextMouth" / "App.swift").exists())
 
+    def test_the_listed_files_of_the_iphone_target_are_the_mac_files_it_shares(self):
+        self.assertEqual(typecheck.listed_test_files(self.repo, self.commit, typecheck.IOS_TEST_TARGET),
+                         ["TextMouthProductionTests/FirstTests.swift"])
+
+    def test_the_iphone_tests_copy_holds_its_own_files_and_the_shared_ones_beside_them(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="ios")
+        found = sorted(str(p.relative_to(self.src / typecheck.IOS_TEST_TARGET)) for p in
+                       (self.src / typecheck.IOS_TEST_TARGET).rglob("*") if p.is_file())
+        self.assertEqual(found, ["PhoneTests.swift", "_SharedWithTheMac/FirstTests.swift"])
+
+    def test_the_census_copy_holds_all_of_the_mac_tests_and_the_area_list(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
+        self.assertTrue((self.src / typecheck.TEST_TARGET / "FirstTests.swift").exists())
+        self.assertFalse((self.src / typecheck.IOS_TEST_TARGET).exists())
+
     def test_without_tests_the_copy_holds_no_test_files(self):
         typecheck.prepare_sources(self.repo, self.commit, self.src, census=False)
         self.assertFalse((self.src / typecheck.TEST_TARGET).exists())
         self.assertFalse((self.src / "project.yml").exists())
+
+
+class CensusTests(TypecheckTestsCase):
+    """What the tests census finds before and after its builds."""
+
+    def test_a_file_that_imports_a_module_the_iphone_lacks_is_found_without_a_build(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
+        (self.src / typecheck.TEST_TARGET / "Power.swift").write_text("import XCTest\n@testable import TextMouth\nimport IOKit.pwr_mgt\n")
+        (self.src / typecheck.TEST_TARGET / "Plain.swift").write_text("import Foundation\nimport XCTest\n")
+        asked = []
+
+        def fake_swiftc(command, **options):
+            """The compiler: it lacks IOKit and has everything else."""
+            asked.append(Path(command[-1]).read_text().strip())
+            return SimpleNamespace(returncode=1 if "IOKit" in asked[-1] else 0)
+
+        with mock.patch.object(typecheck.subprocess, "run", fake_swiftc):
+            found = typecheck.unavailable_imports(self.src, "/sdk", "26.0", lambda text: None)
+        self.assertEqual(found, {"Power.swift": ["IOKit.pwr_mgt"]})
+        self.assertNotIn("import XCTest", asked, "the test framework is not asked about")
+
+    def test_those_files_are_left_out_of_the_first_build_and_the_closure_ends_when_a_build_is_clean(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
+        skipped_seen = []
+
+        def build(skipped):
+            """A build that is clean once nothing but the file named is left out."""
+            skipped_seen.append(list(skipped))
+            return "Build of target: 'TextMouthProductionTests' complete!\n"
+
+        result = typecheck.run_census(build, self.src, lambda text: None, None, {"FirstTests.swift": ["IOKit"]})
+        self.assertEqual(skipped_seen, [["FirstTests.swift"]])
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["skipped"]["FirstTests.swift"]["messages"], ["no such module 'IOKit' on iOS"])
+
+    def test_a_build_that_names_a_file_makes_the_next_one_leave_it_out(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
+        seen = []
+
+        def build(skipped):
+            """The first build fails in FirstTests; the second is clean."""
+            seen.append(list(skipped))
+            if not skipped:
+                return f"{self.src / typecheck.TEST_TARGET / 'FirstTests.swift'}:3:1: error: cannot find 'NSWindow' in scope\n"
+            return "Build of target: 'TextMouthProductionTests' complete!\n"
+
+        result = typecheck.run_census(build, self.src, lambda text: None)
+        self.assertEqual(seen, [[], ["FirstTests.swift"]])
+        self.assertEqual(result["skipped"]["FirstTests.swift"]["round"], 1)
 
 
 class PackageTests(TypecheckTestsCase):
@@ -142,6 +209,20 @@ class PackageTests(TypecheckTestsCase):
         self.assertIn(f'.testTarget(\n            name: "{typecheck.TEST_TARGET}"', text)
         self.assertIn(f'path: "{typecheck.TEST_TARGET}"', text)
         self.assertIn('"TextMouth",', text.split(".testTarget(")[1], "the test target does not depend on the app")
+
+    def test_the_iphone_package_names_its_target_its_folder_and_where_xctest_is(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="ios")
+        with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
+            typecheck.write_package(self.src, self.folder / "pkgs", "ios", "26.0", "ios")
+        text = (self.src / "Package.swift").read_text()
+        self.assertIn(f'name: "{typecheck.IOS_TEST_TARGET}"', text)
+        self.assertIn(f'path: "{typecheck.IOS_TEST_TARGET}"', text)
+        self.assertIn('"-F", "/platform/Developer/Library/Frameworks"', text)
+
+    def test_files_to_skip_are_left_out_of_the_target(self):
+        typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests="census")
+        typecheck.write_package(self.src, self.folder / "pkgs", "macos", "26.0", "census", ["FirstTests.swift"])
+        self.assertRegex((self.src / "Package.swift").read_text(), r'exclude: \[[^\]]*"FirstTests.swift"')
 
     def test_the_plain_package_has_no_test_target(self):
         self.assertNotIn(".testTarget(", self.package(tests=False))
@@ -262,8 +343,24 @@ class MainTests(TypecheckTestsCase):
         self.assertNotIn("--target", self.commands[0])
         self.assertFalse((typecheck.WORK_ROOT / "macos" / "src" / typecheck.TEST_TARGET).exists())
 
-    def test_tests_mode_is_for_the_mac_only(self):
-        for arguments in (("--platform", "ios", "--tests"), ("--platform", "macos", "--tests", "--census")):
+    def test_the_iphone_tests_build_the_iphone_target_under_the_lock_in_a_folder_of_their_own(self):
+        self.assertEqual(self.main("--platform", "ios", "--tests"), 0)
+        self.assertEqual(self.commands[0][self.commands[0].index("--target") + 1], typecheck.IOS_TEST_TARGET)
+        self.assertIn("--triple", self.commands[0])
+        self.assertEqual(self.lock_seen, [True])
+        self.assertTrue((typecheck.WORK_ROOT / "ios-tests" / "src" / typecheck.IOS_TEST_TARGET / "_SharedWithTheMac").is_dir())
+
+    def test_a_census_that_finds_no_error_is_one_build(self):
+        with mock.patch.object(typecheck, "census_report", lambda result, src: "report\n"):
+            self.assertEqual(self.main("--platform", "ios", "--tests-census"), 0)
+        self.assertEqual(len(self.commands), 1)
+        out = next((typecheck.RESULTS).iterdir())
+        self.assertEqual((out / "census.md").read_text(), "report\n")
+        self.assertTrue(json.loads((out / "census.json").read_text())["ok"])
+
+    def test_the_options_that_do_not_go_together_are_refused(self):
+        for arguments in (("--platform", "macos", "--tests-census"), ("--platform", "ios", "--tests", "--census"),
+                          ("--platform", "ios", "--tests", "--tests-census"), ("--platform", "macos", "--tests", "--census")):
             with self.assertRaises(SystemExit) as stopped, contextlib.redirect_stderr(io.StringIO()):
                 self.main(*arguments)
             self.assertEqual(stopped.exception.code, 2)

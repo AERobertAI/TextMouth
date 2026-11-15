@@ -136,6 +136,8 @@ final class LeadingArticlesSortTests: XCTestCase {
 
     // MARK: - The Library's Lists
 
+    // Mac only: the iPhone shows titles as written whatever the Mac's Leading articles setting holds (LibraryViewModel.leadingArticles).
+    #if os(macOS)
     /// A Library window's list follows the setting in the preferences store:
     /// as written, then without articles, the list derived again for the
     /// change; the second choice keeps the first's order; a search finds a
@@ -178,7 +180,10 @@ final class LeadingArticlesSortTests: XCTestCase {
         model.library.books[german].epubLanguage = "de"
         XCTAssertEqual(listed(), ["Gulliver's Travels", "The Hobbit", "Ivanhoe", "A Tale of Two Cities", "Die Verwandlung"])
     }
+    #endif
 
+    // Mac only: the iPhone shows titles as written whatever the Mac's Leading articles setting holds (LibraryViewModel.leadingArticles).
+    #if os(macOS)
     /// The Reading List keeps the order the user arranged in every choice,
     /// since it is never sorted, while its rows show titles as every other
     /// list's do: inverted in the third choice.
@@ -202,7 +207,10 @@ final class LeadingArticlesSortTests: XCTestCase {
         }
         XCTAssertEqual(shown, ["Tale of Two Cities, A", "Hobbit, The", "Ivanhoe"])
     }
+    #endif
 
+    // Mac only: the iPhone shows titles as written whatever the Mac's Leading articles setting holds (LibraryViewModel.leadingArticles).
+    #if os(macOS)
     /// The Books rotor lists the titles the rows show, in the list's order
     /// and for the book each row is: as written in the first two choices,
     /// "Hobbit, The" in the third, where the list is ordered by it. The
@@ -235,6 +243,7 @@ final class LeadingArticlesSortTests: XCTestCase {
             XCTAssertEqual(entries.map(\.id), books.map(\.id), "\(choice): an entry is for its row's book")
         }
     }
+    #endif
 
     // MARK: - Fixtures
 
