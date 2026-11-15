@@ -39,8 +39,9 @@ enum PronunciationLexiconWording {
     ///
     /// "Added 3 rules from “names.pls”. 1 rule was already in your rules.
     /// 2 entries give only a phonetic spelling, which TextMouth cannot use,
-    /// so they were set aside."
-    static func imported(fileName: String, added: Int, alreadyPresent: Int, setAside: Int) -> String {
+    /// so they were set aside." A lexicon past the limit adds "7 entries were
+    /// not read, because a lexicon adds at most 5000 rules at a time."
+    static func imported(fileName: String, added: Int, alreadyPresent: Int, setAside: Int, unread: Int = 0) -> String {
         var sentences = [
             added == 0
                 ? "No rules were added from “\(fileName)”."
@@ -58,6 +59,12 @@ enum PronunciationLexiconWording {
                 setAside == 1
                     ? "1 entry gives only a phonetic spelling, which TextMouth cannot use, so it was set aside."
                     : "\(setAside) entries give only a phonetic spelling, which TextMouth cannot use, so they were set aside."
+            )
+        }
+        if unread > 0 {
+            sentences.append(
+                (unread == 1 ? "1 entry was not read" : "\(unread) entries were not read")
+                    + ", because a lexicon adds at most \(PronunciationLexicon.ruleLimit) rules at a time."
             )
         }
         return sentences.joined(separator: " ")

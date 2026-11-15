@@ -162,6 +162,60 @@ final class PronunciationLexiconTests: XCTestCase {
         XCTAssertFalse(replacement?.contains("localhost") ?? false)
     }
 
+    // MARK: - The Rule Limit
+
+    /// A generated lexicon of `lexemes` lexemes with `spellings` spellings
+    /// each, every lexeme with an alias.
+    private func bigLexicon(lexemes: Int, spellings: Int) -> Data {
+        var body = ""
+        for lexeme in 0..<lexemes {
+            body += "<lexeme>"
+            for spelling in 0..<spellings { body += "<grapheme>w\(lexeme)x\(spelling)</grapheme>" }
+            body += "<alias>a\(lexeme)</alias></lexeme>\n"
+        }
+        return lexiconXML(body)
+    }
+
+    /// A lexicon past the limit is read up to the lexeme that would pass it:
+    /// the rules are at most the limit, and the lexemes left are counted,
+    /// small ones after the stop included.
+    func testReadingStopsAtTheRuleLimitAndCountsWhatIsLeft() throws {
+        let perLexeme = PronunciationLexicon.ruleLimit / 5
+        let lexicon = try PronunciationLexicon.parse(bigLexicon(lexemes: 7, spellings: perLexeme))
+        XCTAssertEqual(lexicon.substitutionRules.count, PronunciationLexicon.ruleLimit)
+        XCTAssertEqual(lexicon.lexemes.count, 5)
+        XCTAssertEqual(lexicon.unreadCount, 2)
+        // One lexeme past the limit by itself is not read, and a small
+        // lexeme after the stop is not read either.
+        let spellings = (0...PronunciationLexicon.ruleLimit).map { "<grapheme>g\($0)</grapheme>" }.joined()
+        let after = try PronunciationLexicon.parse(lexiconXML(
+            "<lexeme>" + spellings + "<alias>x</alias></lexeme><lexeme><grapheme>small</grapheme><alias>y</alias></lexeme>"
+        ))
+        XCTAssertEqual(after.substitutionRules.count, 0)
+        XCTAssertEqual(after.unreadCount, 2)
+    }
+
+    /// A lexicon at the limit exactly is read whole.
+    func testALexiconAtTheLimitIsReadWhole() throws {
+        let lexicon = try PronunciationLexicon.parse(bigLexicon(lexemes: 1, spellings: PronunciationLexicon.ruleLimit))
+        XCTAssertEqual(lexicon.substitutionRules.count, PronunciationLexicon.ruleLimit)
+        XCTAssertEqual(lexicon.unreadCount, 0)
+    }
+
+    /// An import past the limit adds the limit's rules, and its alert says
+    /// how many entries were not read.
+    func testTheImportSaysHowManyEntriesWereNotRead() throws {
+        let service = try makeService()
+        let file = try makeFolder().appendingPathComponent("huge.pls")
+        try bigLexicon(lexemes: 3, spellings: PronunciationLexicon.ruleLimit).write(to: file)
+        let outcome = LexiconFileActions.importLexicon(at: file, into: service)
+        XCTAssertEqual(service.rules.count, PronunciationLexicon.ruleLimit)
+        XCTAssertEqual(
+            outcome.message,
+            "Added 5000 rules from “huge.pls”. 2 entries were not read, because a lexicon adds at most 5000 rules at a time."
+        )
+    }
+
     // MARK: - Writing
 
     /// Rules are written as lexemes in order, and a regular expression, a

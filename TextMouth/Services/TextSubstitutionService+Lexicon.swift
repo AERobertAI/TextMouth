@@ -8,6 +8,9 @@ struct LexiconImportReport: Equatable {
     var alreadyPresent = 0
     /// How many lexemes were set aside, having phonemes but no alias.
     var setAside = 0
+    /// How many lexemes were not read, the lexicon being past the most
+    /// rules one import adds (`PronunciationLexicon.ruleLimit`).
+    var unread = 0
 }
 
 extension TextSubstitutionService {
@@ -18,7 +21,7 @@ extension TextSubstitutionService {
     /// rule is added.
     @discardableResult
     func importLexicon(_ lexicon: PronunciationLexicon) -> LexiconImportReport {
-        var report = LexiconImportReport(setAside: lexicon.setAsideCount)
+        var report = LexiconImportReport(setAside: lexicon.setAsideCount, unread: lexicon.unreadCount)
         // Each existing plain rule as "pattern, replacement", so a lexicon
         // that repeats a rule adds nothing the second time it is imported.
         func key(_ rule: SubstitutionRule) -> String { rule.pattern.lowercased() + "\u{0}" + rule.replacement }
@@ -69,7 +72,8 @@ enum LexiconFileActions {
                     fileName: name,
                     added: report.added,
                     alreadyPresent: report.alreadyPresent,
-                    setAside: report.setAside
+                    setAside: report.setAside,
+                    unread: report.unread
                 )
             )
         } catch {

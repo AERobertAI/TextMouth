@@ -25,8 +25,12 @@ struct PronunciationLexicon: Equatable {
     /// hostile file cannot make the reader hold unbounded memory.
     static let byteLimit = 8 * 1024 * 1024
 
-    /// The most lexemes taken from one lexicon.
-    static let lexemeLimit = 50_000
+    /// The most rules one lexicon adds. Each whole-word rule is a pass over
+    /// every chapter's text, so a lexicon of hundreds of thousands of
+    /// spellings would slow every book; reading stops at the first lexeme
+    /// that would pass this many, and the entries left are counted in
+    /// `unreadCount`.
+    static let ruleLimit = 5_000
 
     /// Why a file cannot be read as a lexicon.
     enum ReadError: Error, Equatable {
@@ -41,6 +45,10 @@ struct PronunciationLexicon: Equatable {
     /// The lexemes in the file's order, including those that only have
     /// phonemes (they have an empty `aliases`).
     var lexemes: [Lexeme] = []
+
+    /// How many lexemes were not read, having come after `ruleLimit` rules
+    /// were reached (or being the one that would pass it).
+    var unreadCount = 0
 
     /// How many lexemes the file holds that no rule can be made from: no
     /// alias, so only phonemes (or nothing usable at all), or an alias with
@@ -64,9 +72,8 @@ struct PronunciationLexicon: Equatable {
         parser.delegate = reader
         let finished = parser.parse()
         if reader.rootWasNotALexicon { throw ReadError.notALexicon }
-        // A lexicon cut off after the limit is still read up to it.
-        guard finished || reader.reachedLexemeLimit else { throw ReadError.notXML }
-        return PronunciationLexicon(lexemes: reader.lexemes)
+        guard finished else { throw ReadError.notXML }
+        return PronunciationLexicon(lexemes: reader.lexemes, unreadCount: reader.unreadCount)
     }
 
     /// Reads the lexicon file at `url`, checking its size before reading it.
@@ -188,8 +195,15 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
     private(set) var lexemes: [PronunciationLexicon.Lexeme] = []
     /// Whether the document's root element is not a `lexicon`.
     private(set) var rootWasNotALexicon = false
-    /// Whether reading stopped at `PronunciationLexicon.lexemeLimit`.
-    private(set) var reachedLexemeLimit = false
+    /// The lexemes left unread once the rule limit was reached.
+    private(set) var unreadCount = 0
+    /// How many rules the lexemes kept so far make.
+    private var ruleCount = 0
+    /// Whether the rule limit has been reached: every later lexeme is only counted.
+    private var limitReached = false
+    /// Whether the lexeme being read has more spellings than the limit allows,
+    /// so its spellings are no longer kept (the lexeme will be left unread).
+    private var currentOverflowed = false
 
     /// The lexeme being read, if the parser is inside one.
     private var current: PronunciationLexicon.Lexeme?
@@ -225,6 +239,7 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
         switch name {
         case "lexeme" where depth == 2:
             current = PronunciationLexicon.Lexeme()
+            currentOverflowed = false
         case "grapheme", "alias":
             guard current != nil else { return }
             collecting = name
@@ -250,14 +265,29 @@ private final class LexiconXMLReader: NSObject, XMLParserDelegate {
             // Runs of white space (a line break and its indent inside an
             // alias) say a single space.
             let words = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
-            if name == "grapheme" { current?.graphemes.append(words) } else { current?.aliases.append(words) }
+            if name == "grapheme" {
+                // A lexeme with more spellings than the limit is never kept,
+                // so keeping no more of its spellings bounds the memory it takes.
+                if (current?.graphemes.count ?? 0) >= PronunciationLexicon.ruleLimit {
+                    currentOverflowed = true
+                } else {
+                    current?.graphemes.append(words)
+                }
+            } else {
+                current?.aliases.append(words)
+            }
             collecting = nil
         } else if name == "lexeme", depth == 2, let lexeme = current {
-            lexemes.append(lexeme)
             current = nil
-            if lexemes.count >= PronunciationLexicon.lexemeLimit {
-                reachedLexemeLimit = true
-                parser.abortParsing()
+            // The rules the lexeme makes: one per spelling, if it has an alias.
+            let made = lexeme.aliases.isEmpty ? 0 : lexeme.graphemes.filter { !$0.isEmpty }.count
+            if limitReached || currentOverflowed || ruleCount + made > PronunciationLexicon.ruleLimit {
+                // From the first lexeme that does not fit, nothing more is kept.
+                limitReached = true
+                unreadCount += 1
+            } else {
+                ruleCount += made
+                lexemes.append(lexeme)
             }
         }
     }
