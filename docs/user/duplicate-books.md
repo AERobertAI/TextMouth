@@ -1,6 +1,8 @@
 # Duplicate books and Replace Existing
 <!-- id: duplicate-books-replace-existing; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## A book that is already in the library
 <!-- id: book-that-already-library; keys: ; src: -->
 

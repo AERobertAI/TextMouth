@@ -1,6 +1,8 @@
 # Import progress and errors
 <!-- id: import-progress-errors; keys: ; src: -->
 
+Part of [TextMouth's documentation](../../README.md).
+
 ## The import overlay
 <!-- id: import-overlay; keys: ; src: -->
 
