@@ -181,6 +181,12 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/TrueAudio
+      # The notice at the head of ttadec.c, whose copyright line the README lacks.
+      - path: Vendor/package-licenses/TrueAudio/COPYRIGHT
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
       # WavPack: libwavpack 5.9.0's COPYING.
       - path: Vendor/package-licenses/WavPack/COPYING
         buildPhase:
@@ -401,6 +407,12 @@ targets:
       # The notices of the decoders TextMouth's own audio readers follow
       # (TextMouth/Parsers/OwnAudio, shared code): see the TextMouth target.
       - path: Vendor/package-licenses/TrueAudio/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      # The notice at the head of ttadec.c, whose copyright line the README lacks.
+      - path: Vendor/package-licenses/TrueAudio/COPYRIGHT
         buildPhase:
           copyFiles:
             destination: resources

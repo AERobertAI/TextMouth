@@ -56,7 +56,8 @@ OWN_CODE = {"ObjCExceptionCatcher_iOS"}
 # files).
 FOLLOWED_CODE = {
     "foliate-js": ("foliate-js", ["Vendor/foliate-js/LICENSE"]),
-    "TrueAudio": ("TrueAudio", ["Vendor/package-licenses/TrueAudio/README"]),
+    "TrueAudio": ("TrueAudio", [
+        "Vendor/package-licenses/TrueAudio/README", "Vendor/package-licenses/TrueAudio/COPYRIGHT"]),
     "WavPack": ("WavPack", ["Vendor/package-licenses/WavPack/COPYING"]),
     "MonkeysAudio": ("MonkeysAudio", ["Vendor/package-licenses/MonkeysAudio/License.txt"]),
 }

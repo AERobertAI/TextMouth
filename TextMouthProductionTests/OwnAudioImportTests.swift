@@ -213,6 +213,10 @@ final class OwnAudioImportTests: XCTestCase {
         XCTAssertTrue(trueAudio.contains("(c) 2004 Alexander Djourik"), String(trueAudio.prefix(120)))
         XCTAssertTrue(trueAudio.contains("Redistributions in binary form must reproduce the above copyright"))
         XCTAssertTrue(trueAudio.contains("True Audio Software"))
+        // The sources the reader follows name another holder than the README: their own notice ships too.
+        let sourceNotice = try licenceText("TrueAudio", "COPYRIGHT")
+        XCTAssertTrue(sourceNotice.contains("Copyright (c) 2004 True Audio Software. All rights reserved."))
+        XCTAssertTrue(sourceNotice.contains("Redistributions in binary form must reproduce the above copyright"))
         let wavPack = try licenceText("WavPack", "COPYING")
         XCTAssertTrue(wavPack.contains("David Bryant"), String(wavPack.prefix(120)))
         XCTAssertTrue(wavPack.contains("Redistributions in binary form must reproduce the above copyright"))
