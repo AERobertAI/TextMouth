@@ -668,9 +668,30 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertNotIn("create", [call[0] for call in calls])
         self.assertIn(("bootstatus", "OLDUDID", "-b"), calls)
         written = [call for call in calls if call[:3] == ("spawn", "OLDUDID", "defaults")]
-        self.assertEqual([call[5] for call in written], [key for key, _ in uitests.KEYBOARD_SETTINGS])
+        # The writes go out together, so their order of arrival is not fixed; the log keeps the settings' order (below).
+        self.assertEqual(sorted(call[5] for call in written), sorted(key for key, _ in uitests.KEYBOARD_SETTINGS))
         self.assertIn(("spawn", "OLDUDID", "defaults", "write", "com.apple.keyboard.preferences",
                        "DidShowContinuousPathIntroduction", "-bool", "true"), calls)
+
+    def test_the_keyboard_settings_are_written_all_at_once_and_noted_in_order(self):
+        """Four writes took 90 seconds one after another on the runner. A barrier that only opens when all four are waiting
+        at once would stop a sequential loop (it times out), so passing proves they overlap."""
+        import threading
+        barrier = threading.Barrier(len(uitests.KEYBOARD_SETTINGS), timeout=10)
+        arrived = []
+
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+            """Holds each write until every write has started; answers it with its own key."""
+            barrier.wait()
+            arrived.append(args[5])
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        log = io.StringIO()
+        with mock.patch.object(uitests, "simctl", fake_simctl):
+            uitests.write_keyboard_settings("UDID", log)
+        self.assertEqual(sorted(arrived), sorted(key for key, _ in uitests.KEYBOARD_SETTINGS))
+        noted = [line.split()[4] for line in log.getvalue().splitlines()]
+        self.assertEqual(noted, [key for key, _ in uitests.KEYBOARD_SETTINGS])
 
     def test_with_no_iphone_17_one_is_made_on_the_runtime(self):
         (udid, _), calls, _ = self.run_setup(devices={})

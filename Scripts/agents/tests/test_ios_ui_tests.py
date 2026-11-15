@@ -412,6 +412,18 @@ class ShardingTests(TreeCase):
         self.assertGreater(ui.shard_count(ui.all_classes(ROOT), ROOT), 1)
         self.assertIsInstance(ui.load_times(), dict)
 
+    def test_the_full_suite_is_two_jobs_that_end_within_ten_percent_of_each_other(self):
+        """Run 43716590818 measured the real tree: about 1,000 seconds of tests, run in two jobs of 14.2 minutes each. Two jobs
+        leave the Mac tests three shards of the 5 macOS slots; a third iPhone job would cost the Mac one, and a slower run."""
+        classes = ui.all_classes(ROOT)
+        self.assertEqual(ui.shard_count(classes, ROOT), 2)
+        seconds = ui.estimated_seconds(classes, ROOT)
+        shares = [sum(seconds[name] for name in ui.slice_for(classes, number, 2, ROOT)) for number in (1, 2)]
+        self.assertLess(abs(shares[0] - shares[1]), 0.10 * max(shares), shares)
+        # Every class is in exactly one job.
+        dealt = [name for number in (1, 2) for name in ui.slice_for(classes, number, 2, ROOT)]
+        self.assertEqual(sorted(dealt), sorted(classes))
+
 
 if __name__ == "__main__":
     unittest.main()

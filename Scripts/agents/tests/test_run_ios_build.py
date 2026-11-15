@@ -130,6 +130,23 @@ class CommandTests(unittest.TestCase):
         self.assertIn("CODE_SIGNING_ALLOWED=NO", command)
         self.assertNotIn("test", command[1:2])
 
+    def test_the_command_builds_for_one_architecture_only(self):
+        """Both architectures compiled every file twice on the runner; the command names the machine's own."""
+        self.assertIn("ARCHS=arm64", ios.build_command("build/x", architecture="arm64"))
+        self.assertIn("ARCHS=x86_64", ios.build_command("build/x", architecture="x86_64"))
+        with mock.patch.object(ios.platform, "machine", return_value="arm64"):
+            self.assertIn("ARCHS=arm64", ios.build_command("build/x"))
+
+    def test_the_host_architecture_is_named_by_xcodes_word(self):
+        self.assertEqual(ios.host_architecture("arm64"), "arm64")
+        self.assertEqual(ios.host_architecture("aarch64"), "arm64")
+        self.assertEqual(ios.host_architecture("x86_64"), "x86_64")
+        self.assertEqual(ios.host_architecture("AMD64"), "x86_64")
+        # A machine that is neither names no architecture, and the build asks for none.
+        self.assertIsNone(ios.host_architecture("riscv64"))
+        with mock.patch.object(ios.platform, "machine", return_value="riscv64"):
+            self.assertFalse([word for word in ios.build_command("build/x") if word.startswith("ARCHS=")])
+
     def test_the_scheme_the_command_names_is_committed(self):
         scheme = AGENTS.parents[1] / "TextMouth.xcodeproj" / "xcshareddata" / "xcschemes" / "TextMouthiOS.xcscheme"
         self.assertTrue(scheme.exists(), "the iPhone scheme is gone, so the runner's build has nothing to build")

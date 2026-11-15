@@ -40,6 +40,7 @@ Usage: python3 -I -B Scripts/agents/run-ios-ui-tests.py [--out DIR] [--derived-d
 Run it from the repository root. Python 3 standard library only.
 """
 import argparse
+import concurrent.futures
 import json
 import os
 import re
@@ -182,6 +183,25 @@ def wait_for_boot(udid, seconds, log):
         raise SimulatorFailure(f"the simulator {udid} did not boot: {(booted.stderr or booted.stdout).strip()[-300:]}")
 
 
+def write_keyboard_settings(udid, log):
+    """Writes every KEYBOARD_SETTINGS entry into the simulator `udid`, all at once: each `simctl spawn` took about 22 seconds
+    on the runner (90 seconds for the four, one after another, in run 43716590818), mostly waiting for the booted device
+    to start a process, so they wait together. The notes go to `log` in the settings' order.
+
+    Best effort: a setting that is not written in time (run 43018768161: `simctl spawn` did not finish in 60 seconds after
+    a boot that had finished) is noted in the log and the tests go on; the typing tests dismiss the keyboard's one-time page
+    themselves, and a prediction bar or a correction would show in their failure."""
+    def write(setting):
+        key, value = setting
+        return simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
+                      tolerate_timeout=True)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(KEYBOARD_SETTINGS)) as pool:
+        # map yields in the settings' order, whichever call ends first.
+        for (key, value), written in zip(KEYBOARD_SETTINGS, pool.map(write, KEYBOARD_SETTINGS)):
+            log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
+
+
 def ready_simulator(log):
     """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
@@ -218,13 +238,7 @@ def ready_simulator(log):
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"the first boot did not finish ({stuck}) and a new device could not be made: {made.stderr.strip()[:300]}")
         wait_for_boot(udid, BOOT_SECONDS, log)
-    for key, value in KEYBOARD_SETTINGS:
-        # Best effort: a setting that is not written in time (run 43018768161: `simctl spawn` did not finish in 60 seconds after
-        # a boot that had finished) is noted in the log and the tests go on; the typing tests dismiss the keyboard's
-        # one-time page themselves, and a prediction bar or a correction would show in their failure.
-        written = simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
-                         tolerate_timeout=True)
-        log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
+    write_keyboard_settings(udid, log)
     lap("the keyboard settings are written")
     sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
     if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
