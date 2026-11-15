@@ -24,6 +24,11 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [Podcasts and article feeds](docs/user/feeds.md): subscribing, downloading, and reading feeds.
 - [Speed and memory](docs/user/speed-and-memory.md): how TextMouth stays quick with a large library.
 - [Where TextMouth keeps your library](docs/user/where-your-library-lives.md): the data directory, its files, and logs.
+  - [What the data directory holds](docs/user/data-directory-files.md): library.json, settings files, feeds, and sessions.
+  - [A book's package](docs/user/book-packages.md): the files inside each book's folder.
+  - [The diagnostic logs](docs/user/library-logs.md): the log files and where they go.
+  - [Folders of this Mac's own](docs/user/this-macs-folders.md): working copies, staging, recordings, and caches.
+  - [Helper programs TextMouth watches](docs/user/helper-programs.md): the converters, textutil, and the braille helper.
 - [Keeping your library in the cloud](docs/user/cloud-library.md): iCloud Drive, Dropbox, Google Drive.
 - [Editing settings in config.json](docs/user/config-json.md): every setting the file holds.
 
