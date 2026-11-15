@@ -1,5 +1,5 @@
 # Testing the iPhone app
-<!-- id: testing-iphone-app; keys: ; src: -->
+<!-- id: testing-iphone-app; keys: iPhone tests, iOS tests, simulator tests, interface tests; src: -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -9,7 +9,7 @@ See [The two apps and the platform folders](../architecture/platforms.md) for ho
 Tests that act as a person does find what tests of the parts miss: the first iPhone test to set End of heading at a book's opening found a bug that the Mac's unit tests never met.
 
 ## The phone area
-<!-- id: phone-area; keys: ; src: TextMouthProductionTests/PhoneSessionTests.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, TextMouthProductionTests/PhoneBookSearchTests.swift, TextMouthProductionTests/PhoneFocusRequestsTests.swift, TextMouthProductionTests/TranscriptSearchTests.swift -->
+<!-- id: phone-area; keys: phone tests, Mac test host, areas.conf, test-area, iOS branches; src: Scripts/test/areas.conf, Scripts/test/run-area.py, Makefile, TextMouth/Phone/PhoneSession.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneFocusRequests.swift, TextMouth/Phone/PhoneLifeCycle+Reopening.swift, TextMouthProductionTests/PhoneSessionTests.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, TextMouthProductionTests/PhoneBookSearchTests.swift, TextMouthProductionTests/PhoneFocusRequestsTests.swift, TextMouthProductionTests/TranscriptSearchTests.swift, TextMouthProductionTests/PhoneLifeCycleReopeningTests.swift, TextMouthProductionTests/PhoneReaderModelTests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift, TextMouthProductionTests/PhoneErrorAlertPlanTests.swift, TextMouthProductionTests/PhonePreviewPauseTests.swift, TextMouthProductionTests/PhoneSpeechRefusalPresentationTests.swift, TextMouthProductionTests/IOSBranchTests.swift, TextMouthProductionTests/IOSInfoPlistTests.swift -->
 
 - The `phone` area of `Scripts/test/areas.conf` holds the iPhone app's tests as far as the Mac's test host can reach it.
   It has 56 classes of TextMouthProductionTests: the session, the models, the routes, the words, the policies, `IOSInfoPlistTests`, and the iOS branches of shared code (`IOSBranchTests`).
@@ -30,7 +30,7 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
   A rule written under `#if os(iOS)` that has no plain type behind it is not reached here.
 
 ## The two iOS test targets
-<!-- id: two-ios-test-targets; keys: ; src: TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift -->
+<!-- id: two-ios-test-targets; keys: iOS test bundles, UI tests, interface tests, accessibility audit, Search in Book; src: project.yml, TextMouthiOSTests/PhoneControlButtonTests.swift, TextMouthiOSTests/IOSRuntimeTests.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouthiOSUITests/ReaderUITests.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/PhoneSheetButton.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthProductionTests/PhoneLaunchRequestTests.swift, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/tests/test_run_ios_ui_tests.py, .github/workflows/tests.yml -->
 
 - Both are in the committed `TextMouthiOS` scheme, which runs them together in the iOS simulator.
   The Mac's schemes do not run them.
@@ -71,7 +71,7 @@ Tests that act as a person does find what tests of the parts miss: the first iPh
   - Nothing here was run with VoiceOver.
 
 ## In the simulator, sound tests run on GitHub only
-<!-- id: simulator-sound-tests-run-github; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/tests/test_run_ios_ui_tests.py -->
+<!-- id: simulator-sound-tests-run-github; keys: UI sound, no audio on the Mac, keyboard clicks, GitHub runner, requireSound; src: TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/tests/test_run_ios_ui_tests.py, project.yml, .github/workflows/tests.yml, TestData/alice.epub -->
 
 The old rule, "never press Play and never type in the simulator", was the orchestrator's, not the user's, and the user withdrew it on November 10, 2026 ("I definitely think those should be tested on the IOS").
 The rule now:
@@ -99,7 +99,7 @@ The rule now:
   Everything that sounds or needs VoiceOver is checked only on a phone, with the spec's hand-check list.
 
 ## Type-checks and tests
-<!-- id: type-checks-tests; keys: ; src: TextMouthProductionTests/PhoneSettingsVoicePreviewTests.swift, TextMouthProductionTests/PhoneVoiceModelTests.swift, project.yml, Scripts/agents/run_locked.py -->
+<!-- id: type-checks-tests; keys: typecheck-tests, typecheck-ios, typecheck-mac, swiftc, SwiftPM, heavy-work lock, build train; src: Makefile, Scripts/ios/typecheck.py, Scripts/agents/run_locked.py, Scripts/agents/heavy_lock.py, project.yml, TextMouthProductionTests/PhoneSettingsVoicePreviewTests.swift, TextMouthProductionTests/PhoneVoiceModelTests.swift -->
 
 - `make typecheck-ios` and `make typecheck-mac` build the app's sources alone, in a package of their own.
   They compile no test file.
