@@ -125,58 +125,17 @@ struct AudioEditComposition {
         guard let track = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             throw AudioEditError.renderFailed("the composition took no audio track")
         }
-        let scale = CMTimeScale(timeline.sampleRate.rounded())
-        func time(_ frames: Int64) -> CMTime { CMTime(value: frames, timescale: scale) }
-
-        var assets: [URL: (asset: AVURLAsset, track: AVAssetTrack, end: CMTime)] = [:]
-        /// The first audio track of the file at `url`, read once.
-        func sourceTrack(_ url: URL, name: String) async throws -> (track: AVAssetTrack, end: CMTime) {
-            if let known = assets[url] { return (known.track, known.end) }
-            guard FileManager.default.fileExists(atPath: url.path) else { throw AudioEditError.missingAudio(name) }
-            guard !DatalessFiles.isDataless(url) else { throw AudioEditError.audioInCloud }
-            let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
-            guard let sourceTrack = try? await asset.loadTracks(withMediaType: .audio).first,
-                  let range = try? await sourceTrack.load(.timeRange) else {
-                throw AudioEditError.unreadableAudio
-            }
-            assets[url] = (asset, sourceTrack, range.end)
-            return (sourceTrack, range.end)
-        }
-
+        var sound = AudioEditStretchSound(sampleRate: timeline.sampleRate, sources: sources)
         var position: Int64 = 0
         for segment in timeline.segments {
-            switch segment.source {
-            case .silence:
-                let silence = try AudioEditScratch.silentFile(
-                    sampleRate: timeline.sampleRate,
-                    channels: sources.base.channelCount,
-                    in: sources.scratch
-                )
-                let source = try await sourceTrack(silence, name: silence.lastPathComponent)
-                let piece = Int64(silenceSeconds * timeline.sampleRate)
-                var remaining = segment.length
-                while remaining > 0 {
-                    let length = min(piece, remaining)
-                    try insert(CMTimeRange(start: .zero, duration: time(length)), of: source.track, at: time(position), into: track)
-                    position += length
-                    remaining -= length
-                }
-            default:
-                let (url, name) = try location(of: segment.source, in: sources)
-                let source = try await sourceTrack(url, name: name)
-                let range = CMTimeRange(start: time(segment.sourceStart), duration: time(segment.length))
-                // Rounding to frames can reach half a frame past a source's
-                // measured end; anything more names sound that isn't there.
-                guard CMTimeCompare(range.end, CMTimeAdd(source.end, time(1))) <= 0 else {
-                    throw AudioEditError.invalidEdit("A stretch of the edits runs past the end of “\(name)”.")
-                }
-                try insert(range, of: source.track, at: time(position), into: track)
-                position += segment.length
+            for piece in try await sound.pieces(of: segment) {
+                try insert(piece.range, of: piece.track, at: sound.time(position), into: track)
+                position += piece.length
             }
         }
         return AudioEditComposition(
             composition: composition,
-            sources: assets.values.map(\.asset),
+            sources: sound.assets,
             frames: position,
             sampleRate: timeline.sampleRate
         )
@@ -192,11 +151,103 @@ struct AudioEditComposition {
             throw AudioEditError.renderFailed("\(failure.domain) \(failure.code)")
         }
     }
+}
+
+// MARK: - The Stretches' Sound
+
+/// Where the stretches of a timeline find their sound (FR04): each file
+/// opened once, with its first audio track, and each stretch as the pieces
+/// of those files it plays, in order, as a composition is made of them
+/// (`AudioEditComposition.make`). The assets opened are kept here, so they
+/// live as long as it is used.
+struct AudioEditStretchSound {
+    /// One piece of a stretch: `range` of `track`, the first audio track of
+    /// the file `asset` opened, in that file's own time, lasting `length`
+    /// frames at the timeline's rate.
+    struct Piece {
+        let asset: AVURLAsset
+        let track: AVAssetTrack
+        let range: CMTimeRange
+        let length: Int64
+    }
+
+    /// The timeline's rate, the timescale of every time given here.
+    let sampleRate: Double
+    /// Where the stretches come from.
+    let sources: AudioEditComposition.Sources
+    /// The files opened so far, by their URL, with where each one's sound
+    /// ends.
+    private var opened: [URL: (asset: AVURLAsset, track: AVAssetTrack, end: CMTime)] = [:]
+
+    /// The sound of the stretches of a timeline at `sampleRate` whose
+    /// stretches come from `sources`, no file opened yet.
+    init(sampleRate: Double, sources: AudioEditComposition.Sources) {
+        self.sampleRate = sampleRate
+        self.sources = sources
+    }
+
+    /// Every file opened so far, to keep alive with what reads them.
+    var assets: [AVURLAsset] {
+        opened.values.map(\.asset)
+    }
+
+    /// `frames` frames as a time at the timeline's rate.
+    func time(_ frames: Int64) -> CMTime {
+        CMTime(value: frames, timescale: CMTimeScale(sampleRate.rounded()))
+    }
+
+    /// The pieces `segment` plays, in order: one range of its source, or,
+    /// for silence, pieces of the silent file of at most
+    /// `AudioEditComposition.silenceSeconds` each, as long as the silence
+    /// lasts.
+    /// - Throws: `AudioEditError.missingAudio`, `.audioInCloud`, or
+    ///   `.unreadableAudio` for a source that can't be read; `.invalidEdit`
+    ///   for a stretch reaching past the end of its source;
+    ///   `.fileOutsidePackage` for a source named outside the book.
+    mutating func pieces(of segment: AudioEditTimeline.Segment) async throws -> [Piece] {
+        guard case .silence = segment.source else {
+            let (url, name) = try Self.location(of: segment.source, in: sources)
+            let source = try await open(url, name: name)
+            let range = CMTimeRange(start: time(segment.sourceStart), duration: time(segment.length))
+            // Rounding to frames can reach half a frame past a source's
+            // measured end; anything more names sound that isn't there.
+            guard CMTimeCompare(range.end, CMTimeAdd(source.end, time(1))) <= 0 else {
+                throw AudioEditError.invalidEdit("A stretch of the edits runs past the end of “\(name)”.")
+            }
+            return [Piece(asset: source.asset, track: source.track, range: range, length: segment.length)]
+        }
+        let silence = try AudioEditScratch.silentFile(sampleRate: sampleRate, channels: sources.base.channelCount, in: sources.scratch)
+        let source = try await open(silence, name: silence.lastPathComponent)
+        let most = Int64(AudioEditComposition.silenceSeconds * sampleRate)
+        var pieces: [Piece] = []
+        var remaining = segment.length
+        while remaining > 0 {
+            let length = min(most, remaining)
+            pieces.append(Piece(asset: source.asset, track: source.track, range: CMTimeRange(start: .zero, duration: time(length)), length: length))
+            remaining -= length
+        }
+        return pieces
+    }
+
+    /// The file at `url`, named `name` for an error, opened once: its asset,
+    /// its first audio track, and where that track ends.
+    private mutating func open(_ url: URL, name: String) async throws -> (asset: AVURLAsset, track: AVAssetTrack, end: CMTime) {
+        if let known = opened[url] { return known }
+        guard FileManager.default.fileExists(atPath: url.path) else { throw AudioEditError.missingAudio(name) }
+        guard !DatalessFiles.isDataless(url) else { throw AudioEditError.audioInCloud }
+        let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+        guard let track = try? await asset.loadTracks(withMediaType: .audio).first,
+              let range = try? await track.load(.timeRange) else {
+            throw AudioEditError.unreadableAudio
+        }
+        opened[url] = (asset, track, range.end)
+        return (asset, track, range.end)
+    }
 
     /// The file `source` plays from, and its name for an error: the base
     /// audio, a take inside the package, or a processed stretch in the
     /// scratch folder.
-    private static func location(of source: AudioEditTimeline.Source, in sources: Sources) throws -> (URL, String) {
+    private static func location(of source: AudioEditTimeline.Source, in sources: AudioEditComposition.Sources) throws -> (URL, String) {
         switch source {
         case .base:
             return (sources.base.url, sources.base.url.lastPathComponent)
@@ -207,7 +258,7 @@ struct AudioEditComposition {
             guard BookOrigin.isPlainFileName(name) else { throw AudioEditError.fileOutsidePackage }
             return (sources.scratch.appendingPathComponent(name), name)
         case .silence:
-            // Silence is inserted from the silent file before this is asked.
+            // Silence is taken from the silent file before this is asked.
             throw AudioEditError.renderFailed("silence has no file of its own")
         }
     }
