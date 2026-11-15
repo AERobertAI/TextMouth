@@ -666,3 +666,32 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 - **The 503 on downloads:** GitHub answered "503 Egress is over the account limit" to `gh run download` for a while (November 10, about 16:00 local).
 - **The workflow guard was off at first:** until `test-build.yml` was on origin's main, the page said "the guard is off until then: on November 10, 2026 origin's main has only `check.yml`, and pushing main after the branch that adds `tests.yml` merges switches it on".
   Main has held `test-build.yml` since the first push at 0.4.10, so the guard is on.
+
+## From Document goldens
+
+- **The RTF real-file comparison:** The comparison of 2026-11-06 counted the notes of 14 and the text boxes of 5 of the 525 LibreOffice RTF test files, and that 363 of the 411 that both read have the same words, 16 differ in spacing only, and textutil refuses 114 that the reader reads.
+- **Four symbol tests:** Four were added from the November 8 check, which found that deleting a guard in the code left the first 18 tests green.
+  The four tests are named on the Symbols of Word documents section of the goldens page.
+- **The real voice export:** A real voice (Samantha) was exported to an M4B, an M4A, and an MP3, each with three chapters, in the November 8 check.
+
+## From The audit and its accepted findings
+
+- **The first LargeTextUITests version:** The branch's first version made all five audits report only, which silenced every Dynamic Type finding at any size, so a fixed font could pass.
+  The review caught it.
+- **The End of heading timer at the cover:** In run 42948545901 the timer set with "Stop at the end of this heading and start playing" was gone at once: the book was not playing and the control read "Off" for the whole minute the test waited.
+  The cause, read from the code on November 10 and fixed in 0.4.6 (the merge 5862bce0):
+  - the timer saved the first heading after the cursor,
+  - and the cursor is at the silent cover chapter, while Play skips to the first chapter with words, whose own heading was the saved one,
+  - so the first refresh found the heading already reached and ended the timer ("Sleep timer expired at the end of the heading").
+  The timer now takes the heading Play starts in.
+- **The failed Search in Book audit:** Run 43032983986 failed this audit on four findings, "Dynamic Type font sizes are partially unsupported", on
+  - the status line ("7 matches"),
+  - the "Search results" heading,
+  - the "Use regular expression" switch, and
+  - the "Search text" field, which the three full runs before it did not have.
+- **The first Search in Book audit:** The test first reported contrast without failing; the fix round replaced that with this one accepted finding.
+- **The Search in Book passes:** The passes of November 9 and 10, 2026, on the iPhone 17:
+  - Three passes of 26 tests before the fix round: the first passed 25 (the audit failed on the keyboard), the second 24 (the audit again, and `LibraryUITests.testABookSentIsListedByItsRow`, whose Back did not reach the Library), the third 24 (one contrast finding, and the same Library test).
+  - After the fix round, one pass passed 26 of 26, including all five and the Library test.
+    A second pass was not run, so whether the audit is stable across launches is untested.
+  - After that pass only a comment in the search sheet changed, to fix a train failure.

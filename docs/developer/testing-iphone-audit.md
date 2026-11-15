@@ -1,5 +1,5 @@
 # The audit and its accepted findings
-<!-- id: audit-accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: audit-accepted-findings; keys: XCUIAccessibilityAuditTypes, accessibility QA, iPhone, VoiceOver; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
@@ -8,7 +8,7 @@ Part of [TextMouth's documentation](../../README.md).
   A screenshot of the audited screen is kept with the results.
 
 ## How the audit runs
-<!-- id: how-audit-runs; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
+<!-- id: how-audit-runs; keys: audit kind, audit loop, SDK kinds, findings, audit types; src: TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 - **Each kind runs alone.**
   `audit` makes one `performAccessibilityAudit` call for each of the seven kinds, from one table, `auditKinds` in `TextMouthUITestCase` (the kind and its name), which `name(of:)` reads as well.
@@ -25,7 +25,7 @@ Part of [TextMouth's documentation](../../README.md).
   The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
 
 ## The accepted findings
-<!-- id: accepted-findings; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: accepted-findings; keys: Accepted struct, allow list, waived finding, color contrast; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/SearchUITests.swift -->
 
 - A finding is accepted only when the app cannot change it, or when it is proven false.
   An `Accepted` value matches the audit's type and the element's label (exactly, or by its start when `labelIsPrefix`), and, for some, Apple's own short description of the finding.
@@ -41,7 +41,7 @@ Part of [TextMouth's documentation](../../README.md).
     - `navigationTitle(title)`: the clipped-text finding on a screen's title, because iOS truncates a long title at large sizes, and VoiceOver and braille read it whole.
       It is accepted for the reader (the book's title) and the sheets: Add to Library, Settings, Bookmarks, Headings, Go To, Sleep Timer, "Voice & Speed for This Book", Book Information, and "Navigation unit".
   - **A false positive, proven:** `firstHeader(title)` is the contrast finding on the first section header under a bar, "Voice" on Settings and "New Timer" on Sleep Timer.
-    On November 9, 2026 the screenshots kept with the results showed black text, (0, 0, 0), on (235 to 242, 235 to 242, 240 to 247), in a frame 370 by 40 points at (16, 116) or (16, 132): about 17 to 1.
+    The screenshots kept with the results showed black text, (0, 0, 0), on (235 to 242, 235 to 242, 240 to 247), in a frame 370 by 40 points at (16, 116) or (16, 132): about 17 to 1.
     Nothing switched off cleared it.
     It is matched by the header's words and the contrast kind only, so any other contrast finding still fails.
   - **Large text, by element:** `librarySummary` is the Dynamic Type finding ("partially unsupported") on the Library's summary row, matched by the first words of its label, "1 book."
@@ -62,7 +62,7 @@ Part of [TextMouth's documentation](../../README.md).
   To accept a new kind, add an `Accepted` value with its reason to `TextMouthUITestCase`, and add its reason here.
 
 ## Audits that report without failing
-<!-- id: audits-that-report-without-failing; keys: ; src: TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/SearchUITests.swift -->
+<!-- id: audits-that-report-without-failing; keys: soft audit, report only, XCTAttachment, warning; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
 
 - `audit(_:screen:types:informing:accepting:)` takes `informing`, a kind of finding that is kept with the results and does not fail the test.
   The note is an attachment named "<screen>: findings reported, not failed".
@@ -79,15 +79,13 @@ Part of [TextMouth's documentation](../../README.md).
 - Every other kind of finding on those screens still fails.
 
 ## LargeTextUITests
-<!-- id: largetextuitests; keys: ; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/ScreenOrderUITests.swift -->
+<!-- id: largetextuitests; keys: accessibility size, AX5, Dynamic Type growth, retry tap; src: TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouth/Platform/iOS/Views/PhoneTextStyle.swift -->
 
 - It audits for Dynamic Type and clipped text only (`sizeFindings`), at the largest size iOS offers, Accessibility Extra Extra Extra Large.
   A bigger size does not exist.
 - The size is set at launch with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` (`TextMouthUITestCase.largestText`), as the Larger Text setting would.
   Nothing changes the simulator's own settings.
-- **Dynamic Type and clipped text fail again** (0.4.3).
-  The branch's first version made all five audits report only, which silenced every Dynamic Type finding at any size, so a fixed font could pass.
-  The review caught it.
+- **Dynamic Type and clipped text fail** (0.4.3).
   Now only the accepted findings above pass, and any other Dynamic Type finding, such as a fixed font on either screen, fails.
 - Its four tests:
   - `testTheLibraryWithABookHoldsAtTheLargestText` audits the Library with a book, as it first appears and then scrolled once, since the summary row is below the first screen at this size.
@@ -97,7 +95,7 @@ Part of [TextMouth's documentation](../../README.md).
     `PhoneValueRow` stacks the value under the name at these sizes, and the screenshots show nothing cut or overlapped.
   - `testAddToLibraryHoldsAtTheLargestText` audits the Add to Library sheet.
     It accepts its title and Cancel, and nothing else.
-  - `testTheSearchSheetHoldsAtTheLargestText` (November 11, 2026) types a search into the Search in Book sheet (so it runs only where sound is allowed) at the default size and then at the largest, in two launches of the same test, and measures the height in points of the four parts the sheet's audit named: the field, the status line, the switch, and the "Search results" heading.
+  - `testTheSearchSheetHoldsAtTheLargestText` types a search into the Search in Book sheet (so it runs only where sound is allowed) at the default size and then at the largest, in two launches of the same test, and measures the height in points of the four parts the sheet's audit named: the field, the status line, the switch, and the "Search results" heading.
     Each must have grown by at least its own bound (`minimumGrowth`: the field 2.4, the status line 1.55, the switch 2.5, the heading 1.75, as height at the largest size over height at the default).
     Each bound lies about halfway between what the sheet measures with every part capped at Accessibility 2 and what it measures as it is (run 43374972739 on a proof branch that capped it, never merged, and run 43066870675), so a cap at Accessibility 2 or any smaller size fails, naming every part that fell short, and the sheet as it is passes; text in a fixed font would not grow at all.
     Every run prints each part's heights and ratio on `SEARCH-GROWTH` lines of `ios-ui.log`.
@@ -112,7 +110,7 @@ Part of [TextMouth's documentation](../../README.md).
 - Nothing is pressed but a book's Back, Settings, Add to Library, and Search in Book, and nothing is typed but the one search of the Search test.
 
 ## PlaybackUITests
-<!-- id: playbackuitests; keys: ; src: TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSTests/PhoneControlButtonTests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
+<!-- id: playbackuitests; keys: transport controls, skip sentence, end of heading timer, regression proof, mutation; src: TextMouthiOSUITests/PlaybackUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSTests/PhoneControlButtonTests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift, TextMouth/Phone/PhoneSleepTimerModel.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
 
 - They press Play, Pause, the skip buttons, and the Sleep Timer's buttons in the reader, on Alice's Adventures in Wonderland (an EPUB, so nothing is played through Apple's players but the app's own speech), and read what VoiceOver would be given.
   Each starts with `requireSound`, so each skips on this Mac, saying why.
@@ -127,22 +125,20 @@ Part of [TextMouth's documentation](../../README.md).
   - `testASleepTimerCountsDownWhileTheBookPlaysAndStopsWhenItPauses`: the 10-minute preset starts the book (Pause), the Sleep Timer reads "M:SS remaining" between 9:00 and 10:00, a later reading is smaller while it plays, and two readings four seconds apart are equal once it is paused.
   - `testAnEndOfBookTimerNamesItsStopAndCancelEndsIt`: "Stop at the end of the book and start playing" starts the book and the control reads "stops at the end of the book"; the sheet then lists Sleep Timer (its title), Reset Timer, Cancel Timer and New Timer, and after Cancel Timer the control reads "Off".
     The sheet's "Current Timer" heading and its status line are not in the tree once a timer is set, though Reset Timer after them is; a list scrolled to the last timer used would explain the heading but not that, so whether VoiceOver misses them is not settled and needs a device.
-  - `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop` (November 11, 2026): at the book's opening, "Stop at the end of this heading and start playing" starts the book (Pause), the Sleep Timer reads "stops at the end of this heading" and not "Off", and Pause is still there three seconds later (`assertHolds`).
+  - `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop`: at the book's opening, "Stop at the end of this heading and start playing" starts the book (Pause), the Sleep Timer reads "stops at the end of this heading" and not "Off", and Pause is still there three seconds later (`assertHolds`).
     It passed in run 43041108180 with the fix, in 23 seconds, and fails without it (see the proof, below).
 - **End of heading at the cover.**
-  In run 42948545901 the timer set with "Stop at the end of this heading and start playing" was gone at once: the book was not playing and the control read "Off" for the whole minute the test waited.
-  The cause, read from the code on November 10 and fixed in 0.4.6 (the merge 5862bce0): the timer saved the first heading after the cursor, and the cursor is at the silent cover chapter, while Play skips to the first chapter with words, whose own heading was the saved one, so the first refresh found the heading already reached and ended the timer ("Sleep timer expired at the end of the heading").
-  The timer now takes the heading Play starts in.
+  A timer set to the end of the heading takes the heading Play starts in (`retargetSleepTimerHeading(toPlayStartingAt:)`, since 0.4.6), not the first heading after the cursor, since Play skips a silent cover chapter to the first chapter with words.
   The Mac's reader shares the code.
 - **Proof that the test finds the fault.**
-  A branch with the merge's changes under `TextMouth/ViewModels/` taken out (never merged, sent to `TestBuild` once by hand) was run with this class on GitHub (run 43048443160, November 11, 2026).
+  A branch with the merge's changes under `TextMouth/ViewModels/` taken out (never merged, sent to `TestBuild` once by hand) was run with this class on GitHub (run 43048443160).
   `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop` failed with the symptom of run 42948545901, "The book did not start playing ... The control reads \"Play\", and the Sleep Timer reads \"Off\"", and the class's other five tests passed.
 
 ## SearchUITests
-<!-- id: searchuitests; keys: ; src: TextMouthiOSUITests/SearchUITests.swift, TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouthiOSUITests/LargeTextUITests.swift -->
+<!-- id: searchuitests; keys: find in book, search sheet, software keyboard, PhoneBookSearchVocabulary; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift -->
 
 - They drive the Search in Book sheet (0.4.4) in the simulator.
-  Since November 10, 2026 the searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below).
+  The searches are typed into the field, as a person types them, so every test but the empty sheet's runs only where sound is allowed (on GitHub's runner; see In the simulator, sound tests run on GitHub only, below).
   The launch variable `TEXTMOUTH_SEARCH_IN_BOOK` that used to fill the field is gone.
   The word searched for is "Cheshire" in Alice's Adventures in Wonderland, which the book holds in several chapters, far below the 500-result limit.
   A result's jump is silent, since Auto-play after navigation is off in the launch's sandbox.
@@ -163,10 +159,9 @@ Part of [TextMouth's documentation](../../README.md).
   If the keyboard stays up, the audit runs all the same and a note says so.
 
 ### Dynamic Type, the accepted finding, and the passes
-<!-- id: dynamic-type-accepted-finding-passes; keys: ; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Services/TranscriptTextBuilder.swift, TextMouth/Parsers/WordDocumentStyles.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->
+<!-- id: dynamic-type-accepted-finding-passes; keys: search sheet audit, pass history, CI runs, on-screen keyboard; src: TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LibraryUITests.swift, TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift -->
 
-- **Dynamic Type is reported, not failed** (November 11, 2026).
-  Run 43032983986 failed this audit on four findings, "Dynamic Type font sizes are partially unsupported", on the status line ("7 matches"), the "Search results" heading, the "Use regular expression" switch, and the "Search text" field, which the three full runs before it did not have.
+- **Dynamic Type is reported, not failed.**
   The sheet's text does grow: its code draws all of it in the system's styles with no fixed size (`Text`, `TextField`, `Toggle`, a section header), and `LargeTextUITests.testTheSearchSheetHoldsAtTheLargestText` measures each of the four parts at the largest size against the default and passed (run 43041108180).
   So the findings are the audit's own, which come and go, like the Library's summary row and the other sheets' (see Audits that report without failing, above), and the audit reports Dynamic Type without failing it.
   Clipped text and every other kind still fail.
@@ -176,16 +171,11 @@ Part of [TextMouth's documentation](../../README.md).
   It is matched by that exact label and the contrast kind, and every other contrast finding fails.
   Whether it is a false positive is unproven: the phone draws every result in the primary label color.
   A real contrast failure on an element with exactly that label would pass.
-- The test first reported contrast without failing; the fix round replaced that with this one accepted finding.
-- The passes of November 9 and 10, 2026, on the iPhone 17:
-  - Three passes of 26 tests before the fix round: the first passed 25 (the audit failed on the keyboard), the second 24 (the audit again, and `LibraryUITests.testABookSentIsListedByItsRow`, whose Back did not reach the Library), the third 24 (one contrast finding, and the same Library test).
-  - After the fix round, one pass passed 26 of 26, including all five and the Library test.
-    A second pass was not run, so whether the audit is stable across launches is untested.
-  - After that pass only a comment in the search sheet changed, to fix a train failure.
+- The audit passed once on the iPhone 17, in a run that passed all 26 tests; whether it is stable across launches is untested.
 - Not verified: anything that needs VoiceOver or sound, the Return place after a jump, and the sheet's focus into its field.
 
 ## Book Information's test expects "Author"
-<!-- id: book-information-test-expects-author; keys: ; src: -->
+<!-- id: book-information-test-expects-author; keys: field label, PhoneLibraryVocabulary, authorFieldLabel; src: TextMouthiOSUITests/ScreenOrderUITests.swift, TextMouth/Phone/PhoneLibraryVocabulary.swift, TextMouth/Platform/iOS/Views/Library/PhoneBookInfoSheet.swift -->
 
 - `testTheBookInformationSheetHasTheSpecsOrder` expects the order "Book Information", "Cancel", "Save", "Book title", "Author", "Publisher", "Publication date", "Format", "Added", "Last Opened", "Word Count".
 - The book is an EPUB.
@@ -194,10 +184,10 @@ Part of [TextMouth's documentation](../../README.md).
   The test used to expect "Book author" and failed for that reason, which was not a missing Cancel.
 
 ## What is still open
-<!-- id: what-still-open; keys: ; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift -->
+<!-- id: what-still-open; keys: known issues, unverified, audit flakiness, Dynamic Type caption; src: TextMouth/Platform/iOS/Views/PhoneTextStyle.swift, TextMouthiOSTests/PhoneValueRowTests.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouthiOSUITests/TextMouthUITestCase.swift -->
 
 These are findings with no known cause, and things not verified.
-The last passes of November 9, 2026 fail on none of them.
+The last passes fail on none of them.
 
 - **Dynamic Type at the normal size** on Settings, Sleep Timer, Book Information, and the Library's summary is reported and not failed (see Audits that report without failing, above).
   Plain text nodes are named:
@@ -218,6 +208,6 @@ The last passes of November 9, 2026 fail on none of them.
   - `PhoneValueRowTests` against a row that is not stacked;
   - the Return key in Book Information's multi-line fields (a Return is dropped, so the value stays on one line);
   - anything that needs VoiceOver.
-- **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms.md)).
+- **Contrast:** Apple's audit says iOS's secondary gray only nearly passes contrast, so the phone draws all its text at full contrast (see PhoneTextStyle in [The two apps and the platform folders](../architecture/platforms-phone-interface.md)).
   That follows the recommended answer to question 2 of section 6 in `humanQuestions/2026-11-08.md`, which the user has not answered.
   Undoing it is one line.
