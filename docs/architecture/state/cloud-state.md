@@ -15,11 +15,17 @@ Where the library lives, and each book's cloud state.
   The contract (Models/CloudStorageContract.swift) defines what they answer with (StorageLocation, CloudItemStatus, BookPackage, BookDownloadProgress, BookCloudState, and BookCloudError) and the words each state and failure is shown and spoken in.
   Until TextMouthApp installs the services, LocalItemStatusProvider and LocalBookStorage treat every library as local; tests install fakes (TextMouthProductionTests/CloudTestDoubles.swift) and put the previous services back.
   - UbiquitousItemStatusProvider reads single items, files and folders: Foundation's ubiquitous-item keys and the file system's dataless flag, which overrules a key that disagrees, and, from the same read, whether the item carries sync flags of its own (SyncFlagReporting.flaggedStatus(of:), a FlaggedItemStatus).
-    It tells where a folder lives from its path (iCloud Drive's Mobile Documents, or a File Provider drive in CloudStorage, named for its service), from iCloud Drive managing it elsewhere, as it does Desktop and Documents, or from its volume, and it asks the sync service to download a file or remove its local copy (FileManager's startDownloadingUbiquitousItem and evictUbiquitousItem).
+    It tells where a folder lives from its path (iCloud Drive's Mobile Documents, or a File Provider drive in CloudStorage, named for its service), from iCloud Drive managing it elsewhere, as it does Desktop and Documents, or from its volume.
+    And it asks the sync service to download a file or remove its local copy (FileManager's startDownloadingUbiquitousItem and evictUbiquitousItem).
   - BookCloudStorageService reads whole books: each look at a package lists it and reads the state of each file and of the package folder itself (a Survey), and decides once which items the sync service syncs (Survey.packageItem).
-    The package is the one item when it carries sync flags and none of its listed files does, as on iCloud Drive, whose files inside a package carry none and are refused, as items that don't exist, when a download or a removal is asked for one of them; otherwise each file is, as on Google Drive and Dropbox, whose files carry flags of their own (as their package folders do too).
-    For a package synced as one item, the book's state comes from the package's flags, Downloading while the sync service fetches it whole; the refusal of a book with changes not uploaded reads the package's upload flag; a download asks for the package and ends on its download error; and a removal evicts it.
-    Nothing inside such a package can be looked up while it is evicted without downloading the whole package, so every check of a file inside a package runs with downloading off, as the reader's and Book Info's do (LocalBookFiles.availability(of:isDataless:)); Book Info looks at the package first and then the file (LibraryBookInfoReader).
+    The package is the one item when it carries sync flags and none of its listed files does, as on iCloud Drive, whose files inside a package carry none and are refused, as items that don't exist, when a download or a removal is asked for one of them.
+    Otherwise each file is, as on Google Drive and Dropbox, whose files carry flags of their own (as their package folders do too).
+    For a package synced as one item, the book's state comes from the package's flags, Downloading while the sync service fetches it whole.
+    The refusal of a book with changes not uploaded reads the package's upload flag.
+    A download asks for the package and ends on its download error.
+    And a removal evicts it.
+    Nothing inside such a package can be looked up while it is evicted without downloading the whole package, so every check of a file inside a package runs with downloading off, as the reader's and Book Info's do (LocalBookFiles.availability(of:isDataless:)).
+    Book Info looks at the package first and then the file (LibraryBookInfoReader).
   - It downloads by asking the sync service for every missing item and checking every half second until all are here, failing at once while this Mac is offline (NetworkReachability), when an item reports a download error, or when the package disappears, and after a minute in which nothing arrives or downloads.
     Meanwhile it listens, through PublishedFileProgress (Progress.addSubscriber), for the progress the sync service publishes for the package as a whole, as iCloud Drive publishes it for a package it syncs whole, and for each file still to come, as Google Drive and Dropbox publish it.
     The listener hands on only a download of the item it listens to (isDownload(_:of:)): an upload, or the progress the system also hands a folder's listener for each item inside the folder, is not, which it tells from the operation and the URL the published progress carries in its user info, since the proxy's own properties can still read nil then.
@@ -47,7 +53,9 @@ The list's cloud commands.
   Each says and logs what its DownloadOrigin calls for.
   Remove Download refuses a book open in a reader or kept on this Mac without asking the storage (BookCloudError.bookIsOpen and .keptOnThisMac), the storage refuses one with changes not uploaded, and a second request for a book under way does nothing.
 - How others observe it: BookCloudStates.shared shows each download in every window.
-  VoiceOverAnnouncer announces each command's start and, when every download was removed, one summary from the window that asked; a removal that kept any download is shown in an alert alone (LibraryCloudRefusal), whose message is the whole summary of what was removed, what stayed, and why, with nothing announced besides (REV14's alert-only rule, #2094); Keep on This Mac's one announcement covers the start of the downloads it begins, and a refresh's downloads of kept books announce nothing but that notice for the reading list's books.
+  VoiceOverAnnouncer announces each command's start and, when every download was removed, one summary from the window that asked.
+  A removal that kept any download is shown in an alert alone (LibraryCloudRefusal), whose message is the whole summary of what was removed, what stayed, and why, with nothing announced besides (REV14's alert-only rule, #2094).
+  Keep on This Mac's one announcement covers the start of the downloads it begins, and a refresh's downloads of kept books announce nothing but that notice for the reading list's books.
   LibraryCloudWording words every title and announcement.
   Book Info reads a book's metadata off the main thread through LibraryBookInfoReader and never downloads: a book only in the cloud shows the metadata the library keeps, and writing such an EPUB's file is refused.
 
@@ -63,9 +71,11 @@ Books kept on this Mac (Keep on This Mac).
   Every download that nobody asked for just then, and Add to Reading List's, starts only the books that fit: LibraryCloudCommands.downloadWhatFits(of:in:from:origin:) reads each book's remaining size (BookCloudStorage.bytesToDownload(of:), from the sizes its files report, nil when unknown, which then takes nothing) and the volume's free space (ArchiveLimits.volumeFreeSpace(at:), less ArchiveLimits.standard.freeSpaceReserve, 1 GB) off the main thread, and the books left over wait for a later refresh. planDownloads(of:) starts only the first book of unknown size in a pass and puts the books after it off (deferred), since the room cannot be weighed until it has downloaded; downloadWhatFits loops: it downloads what starts, waits for it, then plans the deferred books again against the free space read afresh.
   Each pass after the first first drops the books isStillWanted no longer wants, since they waited through a whole download: Download Now's books always, a keep's and a refresh's while the book is kept for either reason, and the reading list's add while the book is on the list and keepsReadingListBooks holds.
   The loop ends when nothing is deferred or the task is cancelled.
-  A later pass that leaves list books out for room says so once (announceShortfallOfLaterPass, in the first notice's words for a list none of whose books starts), and every book left out for room, kept by the listener or by the list, is logged once as DOWNLOAD_SKIPPED_NO_ROOM until it next starts (logBooksLeftOutForRoom).
+  A later pass that leaves list books out for room says so once (announceShortfallOfLaterPass, in the first notice's words for a list none of whose books starts).
+  And every book left out for room, kept by the listener or by the list, is logged once as DOWNLOAD_SKIPPED_NO_ROOM until it next starts (logBooksLeftOutForRoom).
   One huge book of unknown size can still fill the disk once it has started.
-  VoiceOver hears one notice, at medium priority, the first time the list's books start or find no room (LibraryCloudWording.readingListDownloadsStarted(titles:short:quietly:)), once for each book, so a book evicted again or still short of room says nothing more; turning the checkbox on says it afresh.
+  VoiceOver hears one notice, at medium priority, the first time the list's books start or find no room (LibraryCloudWording.readingListDownloadsStarted(titles:short:quietly:)), once for each book, so a book evicted again or still short of room says nothing more.
+  Turning the checkbox on says it afresh.
   Book Information says "for the reading list" (BookInfoFacts.isKeptOnlyForReadingList).
   Nothing is removed by a book's leaving the list.
 - Owner: KeptBooks.shared, on the main actor: the IDs of the books this Mac keeps downloaded, a choice of this Mac's alone, as Finder's Keep Downloaded is.
@@ -77,7 +87,8 @@ Books kept on this Mac (Keep on This Mac).
 - How others observe it: Library windows observe it.
   LibraryCloudCommand.commands(for:isSelection:states:kept:) offers Keep on This Mac for the books not kept and Stop Keeping on This Mac for the kept ones, only in a cloud location and whatever each book's state, so a book waiting for sync can be kept before it arrives.
   Rows show and speak "Kept on this Mac" after the cloud note (BookKeptNote, BookCloudStates.listsAsKept), and TimeRemainingBar counts the kept books (countKept).
-  After each refresh, LibraryCloudRefresher hands the library to LibraryCloudCommands.downloadEvictedKeptBooks(in:), which downloads every kept book the refresh recorded as only in the cloud, announcing nothing; one whose download failed waits keptBookRetryDelay, five minutes, before a refresh tries it again.
+  After each refresh, LibraryCloudRefresher hands the library to LibraryCloudCommands.downloadEvictedKeptBooks(in:), which downloads every kept book the refresh recorded as only in the cloud, announcing nothing.
+  One whose download failed waits keptBookRetryDelay, five minutes, before a refresh tries it again.
   Remove Download refuses a kept book (BookCloudError.keptOnThisMac).
   The log has KEEP_ON_MAC lines for keeping and stopping, and KEPT_BOOK_DOWNLOAD lines for the downloads.
 
