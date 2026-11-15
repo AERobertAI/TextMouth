@@ -78,13 +78,11 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.4.10 (tag `v0.4.10`, a1214dc0, pushed to GitHub with main); `v0.4.9` is at 8918f4ee and `v0.4.8` at 82e68c0d, and the user still runs 0.4.2.
-  The Release app is 18.3 MB (0.4.9 was 19.6 MB).
-- Since 0.4.7 main holds:
-  - the audit's runtime fixes C3 (the reader window redraws only when what it shows changes: `ReaderShownState`, `SleepTimerStatusLabel`), C4, C6 to C9, C16, and C17;
-  - the BRF fixes from the user's Life of Pi, and the EBAE decoding fixes (`fix_ebae_cells` in `TextMouthBraille/main.c`);
-  - the Reading List's cloud follow-ups;
-  - the braille code guess at import (`BrailleTableOrigin`, the Braille tab's switch, Keep This Code), the sort helper (C10), and `Book` in one copy-on-write box (C13, `Book.Storage`; see `docs/architecture/state/library-index.md` for adding a field);
-  - every hosted test class placed in an area of `Scripts/test/areas.conf` (`run-area.py --unassigned` says 0).
-- Every merge went review, a fix round, often a check, a Mac full suite on an `integrate/` branch, then a fast-forward; the TODO records each.
-- Not done, each needing the user's yes: the audit's C11, C12, C14, C15, and C19, and the cloud library's Phase 0 guards (`humanQuestions/2026-11-13.md`).
+- Main is version 0.4.10 (tag `v0.4.10`, on GitHub), and the user still runs 0.4.2.
+- Merged since, for 0.4.11 (its changelog section is open):
+  - SwiftSoup vendored and trimmed (audit C14, `Vendor/SwiftSoup`, `make_vendor.py`): the Release app is 17.9 MB, and HTML parses about 40% faster;
+  - the doc-library skill and `make lint-docs`;
+  - the docs reworked: this file, `CLAUDE.md`, `docs/agents/orchestrator.md`, and the architecture and testing pages split into marked sections.
+- Under way: the safe import speed-ups (`importfast`), the cloud library's Phase 0 (`guards0`, `compare0`), faster GitHub runs (`ghci`), the Mac's tests in the iPhone bundle (`testport`), and the docs team's later phases.
+- Waiting for the user (`humanQuestions/2026-11-14.md`): the audit's C11 and C12, reading Markdown from cmark's tree, PDFs read by two workers, and which drive holds the local-first store.
+  C15 and C19 were declined.
