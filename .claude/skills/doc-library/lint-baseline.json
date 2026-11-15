@@ -41,7 +41,7 @@
     "docs/architecture/state/package-records.md": {"date": 3, "line-length": 25},
     "docs/architecture/state/preferences-shortcuts.md": {"date": 2, "line-length": 21},
     "docs/architecture/state/preferences.md": {"date": 1, "line-length": 20},
-    "docs/architecture/state/reader-navigation.md": {"date": 4, "line-length": 33, "user-quote": 1},
+    "docs/architecture/state/reader-navigation.md": {"line-length": 33, "user-quote": 1},
     "docs/architecture/state/reader-playback.md": {"line-length": 23},
     "docs/architecture/state/reader.md": {"line-length": 38},
     "docs/architecture/state/recordings.md": {"line-length": 6},
