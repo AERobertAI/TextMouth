@@ -84,6 +84,7 @@ Earlier versions of TextMouth kept the index inside bookInfo.json: TextMouth mov
 
 content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again.
 TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better, but these automatic rebuilds keep text you changed with Edit Text, and Redo Text Extraction, a button in the Storage tab of Settings, rebuilds it on request for every text book (see [Editing a book's text](editing-book-text.md) for what it does to that text), and a choice in a book's Text Encoding pop-up in Book Information rebuilds it for that book alone, in the encoding chosen (see [The Library window](library-window.md)).
+
 ### Pages and page markers
 <!-- id: pages-page-markers; keys: page break, page label, page number, pagebreak; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/EPUBParser+Navigation.swift, TextMouth/Parsers/DAISYParser+TextExtraction.swift, TextMouth/Models/PageReaderVersions.swift -->
 
@@ -94,6 +95,7 @@ An EPUB's page-break element keeps its words: its own text is skipped only when 
 An element with no aria-label or title that holds more than that begins no page.
 DAISY 2.02 follows the same rule for what a page entry points at.
 A Word 6 or Word 95 document, which textutil read until version 0.4.1, with a table of contents or a link got every page, with the words kept apart at each break, where it got only its first page before.
+
 ### How the launch that adds pages treats your text
 <!-- id: how-launch-that-adds-pages; keys: page upgrade, changed text kept, copy of old text; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Services/BookTextEditing.swift -->
 
@@ -109,6 +111,7 @@ If no copy can be made, the book keeps its text, without pages, and every automa
 A book whose file is missing keeps its text without pages; one whose file can't be read is tried again at the next launch, then keeps its text without pages; and one whose files are only in the cloud gains its pages at a launch when they're on this Mac.
 A Word document older than Word 6, which textutil reads, whose pages textutil couldn't read is tried again at the next launch, then keeps its text without pages until Redo Text Extraction.
 The debug log records a PAGES_REPLACED_TEXT line naming each copy kept, a PAGES_SKIPPED_CHANGED_TEXT line for each book that keeps its text, and one PAGES_UPGRADE_SUMMARY line counting the books given pages, replaced keeping a copy, kept as changed, skipped, and failed.
+
 ### Rich text and Word books read again
 <!-- id: rich-text-word-books-read; keys: .doc, .docx, RTF, OpenDocument, page reader version; src: TextMouth/Models/PageReaderVersions.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
@@ -126,6 +129,7 @@ At the first launch of version 0.4.1,
 - and every .docx and .wordml book is read again once more (1.2.0), for the hidden text it now finds: a table style's and the document defaults' hiding in a .docx, and the words of a hidden row in Word 2003 XML.
 
 Each is kept or replaced by the same rules, so your place follows its words and text you changed with Edit Text is kept.
+
 ### New books, Edit Text, and transcribed audiobooks
 <!-- id: new-books-edit-text-transcribed; keys: new book, your own editor, transcript text; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/TranscriptTextLoader.swift -->
 
