@@ -32,6 +32,10 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
 - [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio, Retranscribe Audio, Clean Up Transcript, Attach Transcript.
 - [Settings](docs/user/settings.md): every tab of the Settings window.
+  - [Settings: Shortcuts](docs/user/settings-shortcuts.md): changing, recording, and resetting keys.
+  - [Settings: Braille](docs/user/settings-braille.md): the braille code, and this Mac's tables.
+  - [Settings: Library](docs/user/settings-library.md): the views, titles, and the view editor.
+  - [Settings: Storage](docs/user/settings-storage.md): library folder, imports, duplicates, maintenance.
 - [Recording from a microphone](docs/user/recording.md): the New Recording window.
 - [Editing audio](docs/user/editing-audio.md): the audio editor.
 - [Podcasts and article feeds](docs/user/feeds.md): subscribing, downloading, and reading feeds.
