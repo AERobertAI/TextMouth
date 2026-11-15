@@ -61,6 +61,33 @@ final class ChapterTrackWriterTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["plain.m4a", "radio.ogg"])
     }
 
+    /// An import cancelled while its converted file gains its chapters
+    /// stops there, as its conversion would: `keepChapters` throws
+    /// `CancellationError` rather than carrying on without the chapters, the
+    /// file is as it was, and no hidden copy is left beside it.
+    func testACancelledImportStopsWhileKeepingChapters() async throws {
+        let folder = try makeSandboxDirectory("chapter-track-cancelled")
+        let file = folder.appendingPathComponent("plain.m4a")
+        try writeSilence(to: file, codec: kAudioFormatMPEG4AAC, duration: 1)
+        let bytes = try Data(contentsOf: file)
+
+        // The task runs on the main actor, so it starts only once this test
+        // awaits it: it is already cancelled when it begins.
+        let task = Task {
+            try await ImportAudioConverter.keepChapters([.init(title: "A", start: 0)], in: file, lasting: 1, from: "plain.m4a")
+        }
+        task.cancel()
+        do {
+            try await task.value
+            XCTFail("the cancelled task carried on")
+        } catch {
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["plain.m4a"])
+    }
+
     /// A CAF file with two markers, imported on its own, is converted to an
     /// .m4a that keeps them as its chapters: afinfo lists them, the
     /// conversion carries them, and the book has a heading for each.

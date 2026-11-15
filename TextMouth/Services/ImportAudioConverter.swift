@@ -816,7 +816,7 @@ enum ImportAudioConverter {
             try await write(source, to: staged, info: info, target: target, using: tool)
             try await check(staged, against: info.duration, from: name)
             if keepingChapters, !info.chapters.isEmpty {
-                await keepChapters(info.chapters, in: staged, lasting: info.duration, from: name)
+                try await keepChapters(info.chapters, in: staged, lasting: info.duration, from: name)
             }
         } catch {
             try? FileManager.default.removeItem(at: staged)
@@ -945,12 +945,16 @@ enum ImportAudioConverter {
     /// failure leaves the file as it was, with no chapters, and is recorded
     /// as one line, `AUDIO_CHAPTERS_NOT_KEPT: <file>: <reason>`, the reason
     /// naming only an error's domain and code, which never quote a path.
-    private static func keepChapters(
+    /// Internal so a test can cancel it.
+    /// - Throws: `CancellationError` only, when the task is cancelled: a
+    ///   cancelled import stops here as its conversion would, the file as it
+    ///   was and the hidden one gone.
+    static func keepChapters(
         _ chapters: [NeroChapterReader.Chapter],
         in url: URL,
         lasting duration: TimeInterval,
         from sourceName: String
-    ) async {
+    ) async throws {
         let withChapters = temporaryURL(beside: url)
         do {
             // A list that makes no chapter (every start past the end) writes
@@ -960,6 +964,10 @@ enum ImportAudioConverter {
             _ = try FileManager.default.replaceItemAt(url, withItemAt: withChapters)
         } catch {
             try? FileManager.default.removeItem(at: withChapters)
+            // Whatever AVFoundation throws once the task is cancelled, the
+            // import was cancelled: that, not a lost chapter list, is what
+            // the caller hears.
+            if error is CancellationError || Task.isCancelled { throw CancellationError() }
             let failure = error as NSError
             DiagnosticLog.event(.storage, "\(chaptersNotKeptLogTag): \(sourceName): \(failure.domain) \(failure.code)")
         }
