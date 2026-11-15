@@ -1,7 +1,6 @@
 # TextMouth architecture
 
 This document explains how TextMouth is put together and, above all, which part of the app owns each kind of state: who keeps it, who may change it, and how everything else finds out about a change.
-It describes main as of October 10, 2026.
 When a change moves the ownership of some state, update its page in the same branch.
 
 README.md indexes the pages on building, testing, the files in the data directory, and keeping the library in the cloud.
@@ -29,7 +28,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
 - [Saving failures](docs/architecture/state/saving-failures.md)
-- [Imports](docs/architecture/state/imports.md) (including the Kindle readers: MOBIBook, KF8Layout and KF8Book for MOBI 6 and KF8, and the KFX files)
+- [Imports](docs/architecture/state/imports.md), the Kindle readers included
 - [Feeds](docs/architecture/state/feeds.md)
 - [Recordings](docs/architecture/state/recordings.md)
 - [Transcription](docs/architecture/state/transcription.md)
