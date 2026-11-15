@@ -125,7 +125,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Finder and size
 - Finder offers TextMouth in the Open With menu for .mp4, .m4v, and .mov files, and never as the default app. TextMouth plays their sound.
-- TextMouth's app is about 4 MB smaller, 19.5 MB where it was 23.5 MB, because it is compiled for size (with Search Library, Leading articles, and the rest of this version in it). HTML in an EPUB is read about 4 milliseconds slower for each megabyte at import, and nothing else you can notice changed.
+- TextMouth's app is about 4 MB smaller, 19.5 MB where it was 23.5 MB, because it is compiled for size (with Search Library, Leading articles, and the rest of this version in it).
+  HTML in an EPUB is read about 4 milliseconds slower for each megabyte at import, and nothing else you can notice changed.
 
 ### Not changed
 - How any book other than a DAISY book reads, sounds, or is laid out.
@@ -134,7 +135,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### The End of heading timer on a book's cover
 - A sleep timer set to End of heading on a book that opens at its cover, as a new Project Gutenberg EPUB does, no longer stops playback at once.
   - Before, the cover has no words, so Play started at the chapter after it. The timer had taken that chapter's first heading as the one to stop at, so it ran out as soon as reading began and said "Sleep timer expired at the end of the heading" before a word was read.
-  - Now the timer stops where the heading that playback starts in ends, as the reader's description of End of heading says. The same goes wherever Play starts past the cursor: the blank lines that end a chapter, a section you skip, empty chapters, white space before a heading, and a long chapter whose speech Play waits for.
+  - Now the timer stops where the heading that playback starts in ends, as the reader's description of End of heading says.
+    The same goes wherever Play starts past the cursor: the blank lines that end a chapter, a section you skip, empty chapters, white space before a heading, and a long chapter whose speech Play waits for.
 - Not changed: a timer set while playing, at a heading's start, or in the last heading; an audiobook's timer; how any book reads.
 
 ## 0.4.5 (November 10, 2026)
@@ -150,11 +152,14 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.4.4 (November 10, 2026)
 ### Quitting while work is under way
-- The hang after Quit Anyway, or after a save, is gone. While feed downloads, a book's text read again in another encoding, or a speech export were under way, choosing Quit Anyway in the alert about unsaved changes, or answering the Record window's question or an audio editor's Save or Discard, could leave TextMouth open with its windows stuck. Now the quit ends.
+- The hang after Quit Anyway, or after a save, is gone.
+  While feed downloads, a book's text read again in another encoding, or a speech export were under way, choosing Quit Anyway in the alert about unsaved changes, or answering the Record window's question or an audio editor's Save or Discard, could leave TextMouth open with its windows stuck.
+  Now the quit ends.
 - A second Command-Q, or the Dock's Quit, while TextMouth finishes that work no longer cuts it off. It used to quit at once, with a download's place not kept and a re-read or an export cut short.
 - TextMouth now says what it is doing when you quit during that work, in a small window titled "Quitting TextMouth" and through VoiceOver:
   - "TextMouth is finishing up before it quits: <what>. It will quit as soon as that is done."
-  - What it says for downloads is "keeping the place of your feed downloads for next time". For a re-read it is "reading a book's text again in another encoding", and for an export "stopping a speech export with the chapters it finished kept". When several run, the sentence counts them, as in "reading the text of 3 books again in another encoding".
+  - What it says for downloads is "keeping the place of your feed downloads for next time". For a re-read it is "reading a book's text again in another encoding", and for an export "stopping a speech export with the chapters it finished kept".
+    When several run, the sentence counts them, as in "reading the text of 3 books again in another encoding".
   - Pressing Command-Q again says the same words again.
   - The window does not take the keyboard from the window you were in.
   - The waits are the same as before: 3 seconds for downloads, 10 for a re-read, and 5 for an export. Work that cannot end gives up after its wait.
@@ -182,22 +187,28 @@ Every version of TextMouth, newest first, and what changed for you in each.
   - Found: UTF-32 in either byte order, and UTF-16 in Greek, Cyrillic, Armenian, Hebrew, Arabic, Chinese, Japanese, or Korean. Before, only UTF-16 in Latin letters was found.
   - Book Information names the encoding it found, as in "UTF-16 (little-endian), recognized by its bytes".
   - A few stray zero bytes in a UTF-8 or 8-bit file do not make it UTF-16. In testing, 89 text samples and the same sentences in more than 20 encodings were read as before.
-- Not found, and read with the wrong letters: UTF-16 in the scripts of India, and short Chinese, Japanese, or Korean UTF-16 with fewer than 8 spaces, digits, or line ends. A Chinese file needed about 46 characters and a Korean one about 28. UTF-16 and UTF-32 have no item in the Text Encoding pop-up, so save such a file as UTF-8, or with a byte-order mark, and add it again.
+- Not found, and read with the wrong letters: UTF-16 in the scripts of India, and short Chinese, Japanese, or Korean UTF-16 with fewer than 8 spaces, digits, or line ends. A Chinese file needed about 46 characters and a Korean one about 28.
+  UTF-16 and UTF-32 have no item in the Text Encoding pop-up, so save such a file as UTF-8, or with a byte-order mark, and add it again.
 - An HTML file that declares ISO-2022-JP, a Japanese 7-bit encoding, and holds its escape codes is read in it. It was read as UTF-8.
 - A subtitle file (.srt or .vtt) or an .m3u playlist in UTF-16 or UTF-32 without a mark, in a script other than Latin letters, is read right too.
 - A book that recorded its encoding when you added it keeps it. Your own choice in Text Encoding still overrules everything.
 
 ### A folder that is a link, and clearer messages
-- A folder that is a link to another folder imports as the folder it leads to, since you named it, and the book takes the name of that folder. A link to a folder of DAISY books in folders is refused, as the folder itself is, and a link to nothing is still an error (see [Adding books](adding-books.md)).
-- Moving the library's folder, with a book stored outside the data directory, no longer says that the copy is missing the book's content. It says where the book is, that it is outside the data directory, and what to do: import it again and choose Replace Existing, or remove it from the library (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-- A Word document or DAISY book with a damaged ZIP part now says "The file “word/document.xml” in this document is damaged or incomplete: its compressed data could not be decoded. Get a fresh copy of the document, then import it again." It showed the ZIP library's own error. A full disk while a DAISY file is copied is still reported as a full disk.
+- A folder that is a link to another folder imports as the folder it leads to, since you named it, and the book takes the name of that folder.
+  A link to a folder of DAISY books in folders is refused, as the folder itself is, and a link to nothing is still an error (see [Adding books](adding-books.md)).
+- Moving the library's folder, with a book stored outside the data directory, no longer says that the copy is missing the book's content.
+  It says where the book is, that it is outside the data directory, and what to do: import it again and choose Replace Existing, or remove it from the library (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A Word document or DAISY book with a damaged ZIP part now says "The file “word/document.xml” in this document is damaged or incomplete: its compressed data could not be decoded. Get a fresh copy of the document, then import it again." It showed the ZIP library's own error.
+  A full disk while a DAISY file is copied is still reported as a full disk.
 - A Word document whose title is empty takes its file's name, and one whose creator is empty has the author "Unknown", as if it had none.
 - A ZIP holding a DAISY book with audio is kept, and the "Book Imported" alert says why, even when a SMIL file in it has a tag with too many attributes for TextMouth to parse. Before, the archive could be offered for deletion although it held the only copy of the text.
 
 ### Transcripts
-- Attach Transcript… reads a transcript for a book of more than 100 hours. Its times may run to 1,000 hours, and they are cut into the book's audio files. A single audio file is timed for only its first 100 hours: a passage that starts after a file's hundredth hour is left out and counted with the passages that could not be read, as in "2 timed passages couldn't be read and were left out." (see [Transcribing an audiobook](transcribing.md)).
+- Attach Transcript… reads a transcript for a book of more than 100 hours. Its times may run to 1,000 hours, and they are cut into the book's audio files.
+  A single audio file is timed for only its first 100 hours: a passage that starts after a file's hundredth hour is left out and counted with the passages that could not be read, as in "2 timed passages couldn't be read and were left out." (see [Transcribing an audiobook](transcribing.md)).
 - A passage of more than 10,000 characters is cut short at the end of a sentence, or between words, and Attach says so: "1 timed passage was too long and was cut short." A file that is one huge passage no longer makes one huge sentence in the book.
-- A WebVTT or SubRip file chosen or opened together with its audio, with Open Book…, from Finder, or on the Dock icon, is attached to that audio's book, where it was refused as a book. A transcript file alone is still refused, and the refusal now says what to do: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." (see [Adding books](adding-books.md)).
+- A WebVTT or SubRip file chosen or opened together with its audio, with Open Book…, from Finder, or on the Dock icon, is attached to that audio's book, where it was refused as a book.
+  A transcript file alone is still refused, and the refusal now says what to do: "Unsupported file format: .vtt. A .vtt file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." (see [Adding books](adding-books.md)).
 - Transcribe Audio… waits while a transcript is being attached to the book, whichever way it was asked for: "A transcript is being attached to Moby-Dick. Transcribe it once that finishes."
 - Book Information names every format of a transcript found at import in files of more than one, as in "Attached from WebVTT and SubRip files when the book was imported, on …".
 - A podcast episode's chapters come back when you undo every edit of its audio and save. They are set aside when edits are saved, since the edited audio no longer fits them. After Start Over they do not come back (see [Editing audio](editing-audio.md)).
