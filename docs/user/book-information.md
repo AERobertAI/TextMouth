@@ -7,7 +7,8 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: details-you-edited-hand; keys: manual edit, metadata editor, library.json, trimmed spaces, EPUB metadata, empty title; src: TextMouth/Models/BookInfo.swift, TextMouth/Models/EPUBMetadataSave.swift, TextMouth/Views/Reader/MetadataEditorView.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift -->
 
 TextMouth records which of a book's details you typed yourself.
-When you save Book Info, or the metadata editor of an EPUB or an audiobook, each field whose value you changed is marked as edited by hand, in library.json and in the book's record: the title, the author (an audiobook's artist), an EPUB's publisher and publication date, and an audiobook's album, genre, and year.
+When you save Book Info, or the metadata editor of an EPUB or an audiobook, each field whose value you changed is marked as edited by hand, in library.json and in the book's record.
+The fields are the title, the author (an audiobook's artist), an EPUB's publisher and publication date, and an audiobook's album, genre, and year.
 The next time you open Book Info, from the Library window or from a reader, VoiceOver says "edited by hand" after the label of each such field, as in "Book title, edited by hand"; in a reader, that includes a field you saved there a moment before.
 Saving changes, and marks, only the fields you changed in that editor since it opened.
 A field you leave as the editor showed it is neither saved nor marked, even where the editor showed what the book's file says, and even if another window, or the metadata refresh after an update, changed it while the editor was open: that change stays.
@@ -17,7 +18,8 @@ A title of only spaces is never saved, by any editor, and the metadata editor of
 Type a title, then save again."
 A book that opened with no title can still be saved without one, so a change to another detail is never held back.
 While a book's file is only in the cloud, its editor shows empty each detail TextMouth doesn't know, such as an EPUB's publisher and date or an audiobook's album, genre, and year; a detail you leave empty there stays unknown, so the file's own values show once the book is downloaded.
-When you also check Also write to the library's copy of the EPUB file, the file takes the book's title, author, publisher, and date as the library has them at that moment, your changes included, and it is saved even when the EPUB's container file spells the package document's path in another case than the archive does (as "Content.opf" over "content.opf"): the archive's own spelling is kept.
+When you also check Also write to the library's copy of the EPUB file, the file takes the book's title, author, publisher, and date as the library has them at that moment, your changes included.
+The file is saved even when the EPUB's container file spells the package document's path in another case than the archive does (as "Content.opf" over "content.opf"): the archive's own spelling is kept.
 If that file is missing from the library, nothing is saved, and VoiceOver says "Could not save metadata to the library's copy of “alice.epub”, because that file is missing from the library.
 Turn off “Also write to the library's copy of the EPUB file” to save the metadata to the library only.
 Nothing was changed."
@@ -61,7 +63,8 @@ The item selected is the encoding the book is read in now, and its name says wha
 - "Windows-1251 (Cyrillic), guessed": TextMouth guessed it, when you added the file or when you chose Automatic.
 - "UTF-8, from its byte order mark": the file begins with a byte order mark.
   For UTF-16 it is "UTF-16 (little-endian), from its byte order mark" or "UTF-16 (big-endian), from its byte order mark".
-- "UTF-16 (little-endian), recognized by its bytes": a UTF-16 file with no byte order mark, found by the pattern of its bytes: its zero bytes if it is in Latin letters, its high bytes if it is in Greek, Cyrillic, Hebrew, or Arabic, or its mix of spaces, digits, or line ends among Chinese, Japanese, or Korean characters.
+- "UTF-16 (little-endian), recognized by its bytes": a UTF-16 file with no byte order mark, found by the pattern of its bytes.
+  The pattern is its zero bytes if it is in Latin letters, its high bytes if it is in Greek, Cyrillic, Hebrew, or Arabic, or its mix of spaces, digits, or line ends among Chinese, Japanese, or Korean characters.
   The other byte order is "UTF-16 (big-endian), recognized by its bytes".
   A UTF-32 file with no mark is named the same way, as in "UTF-32 (little-endian), recognized by its bytes".
 - "UTF-8": the bytes are valid UTF-8, which needs no more.
