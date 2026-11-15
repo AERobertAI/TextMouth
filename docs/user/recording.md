@@ -25,7 +25,9 @@ The list follows microphones as they connect and disconnect, even while recordin
 
 TextMouth remembers its own choice of microphone, which the audio editor's punch-ins use too, and leaves the input macOS uses for everything else alone.
 When the remembered microphone isn't connected, recordings use the system's input, and the window says so as it opens, as in "The microphone TextMouth used last isn't connected, so recordings use MacBook Pro Microphone.".
-While nothing is recording, the window says when the microphone in use disconnects, and which one recordings use now; when one connects that recordings now use, the remembered one coming back or the first connected at all, as in "AirPods Pro was connected, so recordings use it."; and when others connect, as in "USB Microphone was connected; choose it in the Microphone pop-up to record from it."
+While nothing is recording, the window says when the microphone in use disconnects, and which one recordings use now.
+When one connects that recordings now use, the remembered one coming back or the first connected at all, as in "AirPods Pro was connected, so recordings use it."
+And when others connect, as in "USB Microphone was connected; choose it in the Microphone pop-up to record from it."
 
 ### Title and folder
 <!-- id: new-recording-title-folder; keys: default title, timestamp, Save in, destination folder; src: TextMouth/Views/Recording/RecordingWording.swift, TextMouth/ViewModels/RecordingWindowModel.swift -->
@@ -141,7 +143,8 @@ The original take:
 <!-- id: new-recording-original-policy; keys: recordingOriginalPolicy, recordingOriginalDays, Storage settings, Audio Editing, undo edits; src: TextMouth/Models/AudioOriginalPolicy.swift, TextMouth/Views/Settings/AudioEditingSettingsSection.swift, TextMouth/Services/RecordingPreferences.swift -->
 
 A recording is first made as its original take, lossless audio of about 345 megabytes an hour, from which the audiobook's audio is encoded.
-What happens to it follows the original audio policy of Editing audio, below: Original audio, in the Storage tab's Audio Editing group, offers Keep, Don't keep, and Keep for a number of days, the default, with Days to keep an original, from 1 to 365, 1 by default, counted from when the recording was saved, or from its last edit.
+What happens to it follows the original audio policy of Editing audio, below.
+Original audio, in the Storage tab's Audio Editing group, offers Keep, Don't keep, and Keep for a number of days, the default, with Days to keep an original, from 1 to 365, 1 by default, counted from when the recording was saved, or from its last edit.
 A change applies to the originals already kept too.
 
 ### Deleting old originals
