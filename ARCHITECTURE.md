@@ -20,6 +20,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Package records](docs/architecture/state/package-records.md)
 - [Audio edits](docs/architecture/state/audio-edits.md)
 - [Text caches and content indexes](docs/architecture/state/text-caches.md)
+  - [Kept texts, re-reads, and edited text](docs/architecture/state/text-caches-rereads-edits.md)
 - [The data directory](docs/architecture/state/data-directory.md)
 - [Cloud state](docs/architecture/state/cloud-state.md)
 - [Preferences](docs/architecture/state/preferences.md)
