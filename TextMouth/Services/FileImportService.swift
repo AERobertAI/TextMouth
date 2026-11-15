@@ -1796,7 +1796,7 @@ enum FileImportService {
         from staging: ImportStaging,
         run: inout ImportRun,
         feedLink: FeedBookLink? = nil,
-        replacing replaced: BookState? = nil,
+        replacing replaced: BookInfo? = nil,
         refusingBlankText: Bool = false,
         adoptingDocumentNames: Bool = false,
         guessingEncoding: Bool = false,
@@ -1987,21 +1987,25 @@ enum FileImportService {
     /// until the episode opens and its text is laid over its index again
     /// (`TranscriptTextLoader`), which the record then notes; a transcript
     /// of other audio is found stale then, and stays unnoted. `replacing` is
-    /// the state of the record such a download replaces (FR11, branch A2):
-    /// the new record's revision rises above its own.
+    /// the record such a download replaces (FR11, branch A2): the new
+    /// record's revision rises above its own, and the new record keeps the
+    /// keys of it that this TextMouth does not know, at its top level, in
+    /// its metadata, and in its state (V04, `BookInfo.keepUnknownKeys(of:)`):
+    /// it is the same book's record, written anew for a new file.
     static func writeVerifiedRecord(
         of book: Book,
         contentIndex: BookContentIndex,
         into package: URL,
         feedLink: FeedBookLink? = nil,
-        replacing replaced: BookState? = nil
+        replacing replaced: BookInfo? = nil
     ) throws {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
         info.metadata.feedLink = feedLink
         info.state.transcript = contentIndex.transcript?.transcript
         if let replaced {
-            info.state.revision = BookState.revision(after: replaced.revision ?? 0)
+            info.state.revision = BookState.revision(after: replaced.state.revision ?? 0)
+            info.keepUnknownKeys(of: replaced)
         }
         try info.save(to: package)
 

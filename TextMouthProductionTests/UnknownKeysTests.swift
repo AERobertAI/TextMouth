@@ -818,6 +818,32 @@ final class UnknownKeysTests: XCTestCase {
         XCTAssertTrue(written.state.unknownKeys.isEmpty)
     }
 
+    /// A feed item downloaded again while its package is kept (FR11's
+    /// branch A2) has its record written anew for the new file, over the
+    /// kept one: the new record keeps the kept record's unknown keys, at
+    /// its top level, in its metadata, and in its state, and its revision
+    /// rises above the kept one's (review6, finding 2).
+    func testARecordWrittenOverAKeptFeedItemsKeepsItsUnknownKeys() throws {
+        let package = try makeSandboxDirectory("Unknown Keys Kept Item")
+        let book = Self.plainBook()
+        var kept = book.makeBookInfo()
+        kept.unknownKeys = UnknownKeys(["recordLevel": .integer(1)])
+        kept.metadata.unknownKeys = UnknownKeys(["metadataLevel": .string("m")])
+        kept.state.unknownKeys = UnknownKeys(["stateLevel": .array([.null])])
+        kept.state.revision = 6
+        let index = BookContentIndex.build(fromChapters: [Chapter(title: "One", text: "one two three")], format: book.format)
+
+        try FileImportService.writeVerifiedRecord(
+            of: book, contentIndex: index, into: package, feedLink: book.feedLink, replacing: kept
+        )
+
+        let written = try BookInfo.load(from: package)
+        XCTAssertEqual(written.unknownKeys, kept.unknownKeys)
+        XCTAssertEqual(written.metadata.unknownKeys, kept.metadata.unknownKeys)
+        XCTAssertEqual(written.state.unknownKeys, kept.state.unknownKeys)
+        XCTAssertEqual(written.state.revision, 7)
+    }
+
     // MARK: - config.json's Saves and Merges
 
     /// A setting changed and saved keeps config.json's unknown keys, and

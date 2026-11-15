@@ -328,7 +328,9 @@ enum FeedEpisodeImporter {
             let earlierText = format.isAudio
                 ? try FeedItemPackage.unrecordedTranscriptText(of: keptPackage)
                 : try FeedItemPackage.keptText(of: keptPackage)
-            let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
+            // The kept record whole: its revision, and the keys of it that
+            // this TextMouth does not know, go on into the new record (V04).
+            let keptRecord = (try? StoredBookRecord.read(from: keptPackage))?.info
 
             let file = try stageFile(named: fileName, in: staging, run: &run, chapters: chapters, of: item, placeFile: placeFile)
             var staged = kept
@@ -346,7 +348,7 @@ enum FeedEpisodeImporter {
                 from: staging,
                 run: &run,
                 feedLink: link,
-                replacing: keptState,
+                replacing: keptRecord,
                 publish: { built in
                     keptCopy = try FeedItemPackage.keepEarlierText(earlierText, in: built.directory)
                     try FeedItemPackage.putInPlace(built, of: keptPackage)
