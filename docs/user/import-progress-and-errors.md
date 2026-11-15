@@ -110,7 +110,6 @@ Part of [TextMouth's documentation](../../README.md).
 - On iOS, which runs no helper program, a Word document older than Word 6 is refused with "Converting this kind of file is not available on iPhone yet."
 - Rich text, rich text with attachments, Word 6 to Word 2003 documents, OpenDocument text, and Word 2003 XML are read there, as on the Mac.
 - A Word 6 or Word 95 document has been read there since version 0.4.1.
-  It was refused on iOS before, and read by textutil on the Mac.
 - A Word 6 or Word 95 document is told from a Word 97-2003 one by its own bytes.
 
 ### An OpenDocument text document's title and author
@@ -160,7 +159,6 @@ Part of [TextMouth's documentation](../../README.md).
     Get a fresh copy of the document, then import it again."
     - The reason is "its compressed data could not be decoded" for a compressed part, and "its data could not be read" for a stored one.
     - A DAISY book says "in this DAISY book" and "Get a fresh copy of the book", and an EPUB says "in this EPUB book", with the same reasons.
-      Before this, a Word or DAISY file with a damaged ZIP part showed the ZIP library's own error.
     - The ZIP library's own error goes to the debug log, in a line that begins DOCX_ZIP_ERROR, DAISY_ZIP_ERROR, or EPUB_ZIP_ERROR, with the part's name inside the archive and no path on this Mac.
     - A write that fails while a DAISY file is copied, such as a full disk, is not called damage.
       It is reported as the error it is.
@@ -177,7 +175,7 @@ Part of [TextMouth's documentation](../../README.md).
 - An OpenDocument or Word 2003 XML document is refused for any of these three with the one sentence of its kind, as in "This file could not be read as an OpenDocument text document.
   It may be damaged, or another kind of file.", and a PEF braille file with "This file could not be read as a PEF braille file.
   It may be damaged, or another kind of file."
-- A Word 2003 XML or OpenDocument document that declares a document type at all is refused too, as before.
+- A Word 2003 XML or OpenDocument document that declares a document type at all is refused too.
 
 ### Markup TextMouth can't safely read
 <!-- id: markup-textmouth-cant-safely-read; keys: MarkupGuard, nesting, 128 levels, 1,000 attributes, memory, far too long; src: TextMouth/Parsers/MarkupGuard.swift -->
@@ -189,7 +187,7 @@ Part of [TextMouth's documentation](../../README.md).
   No real book tried is refused for any of them.
 - The four sentences, as an alert gives them after "Could not import “x”.
   Reading its text failed: ":
-  - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since November 13, 2026: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library): "This file's markup nests more than 128 levels deep, which TextMouth can't read safely.
+  - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since 0.4.7: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library): "This file's markup nests more than 128 levels deep, which TextMouth can't read safely.
     Get another copy of the file, or save it in another format, then import it again."
   - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file holds too much markup for TextMouth to read without running out of memory.
     Divide the document into smaller files, then import them."
@@ -248,7 +246,6 @@ Part of [TextMouth's documentation](../../README.md).
   - For a file named as a Kindle book that is not one: "This file is not a Kindle book that TextMouth can read."
   - For a book with no words in it: "This file has no text to read."
 - A KF8 book (an .azw3) imports like any other Kindle book.
-  The sentence about the newer KF8 format that earlier versions gave is gone.
 - A file that holds both MOBI 6 and KF8 whose KF8 half is damaged is read from its MOBI 6 half and imports.
   Only a copy-protected book is refused for it.
 

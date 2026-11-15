@@ -595,6 +595,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Podcasts and article feeds can be subscribed to by address or by searching Apple's podcast directory, each feed lists its episodes and articles in a folder of its own, and the newest are downloaded as you choose.
 - A Reading List holds books from any folder in an order you choose and carries on from one to the next, and the Unopened and Recently Opened categories take the place of No Folder and Recent.
 - A library can live in iCloud Drive, Dropbox, or Google Drive, and each book can be downloaded when you need it, removed from this Mac to free space, or kept on it.
+- Add to Library, a plus button in the Library window's toolbar, opens a sheet with every way to add to the library, and on October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons (see [Adding books](adding-books.md)).
+- Import DAISY Folder… was renamed Import Folder… on October 14, 2026, since it imports a folder of audio tracks as one audiobook too, and a key you gave it keeps working.
 
 ## 0.1.1
 - The first beta version of TextMouth. Its changes are not listed here.

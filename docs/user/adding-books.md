@@ -7,7 +7,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: add-library-sheet; keys: plus button, toolbar, AddToLibraryChoice, ways to add, hints, Escape; src: TextMouth/Models/AddToLibraryWording.swift, TextMouth/Models/AddToLibraryChoice.swift, TextMouth/Views/Library/AddToLibrarySheet.swift -->
 
 - Add to Library, the plus button in the Library window's toolbar, opens a sheet with every way to add to the library.
-- On October 17, 2026 it took the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
+- It takes the place of the toolbar's Import, New from Text, and Add Feed buttons, whose commands are all in the sheet.
 - VoiceOver calls the button "Add to Library", and its hint is "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed".
 - When the window lists no books and has no Continue button, VoiceOver's focus starts on it, where it started on the Import button before.
 - The sheet has a heading, "Add to Library", a button for each way to add, and Cancel, which Escape presses.
@@ -77,7 +77,7 @@ Part of [TextMouth's documentation](../../README.md).
 <!-- id: import-folder; keys: Import DAISY Folder, importDAISYFolder, folder of tracks, symbolic link, ORIGINAL_KEPT, Shift-Command-O; src: TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - Library menu, Import Folder… (Shift-Command-O, in a Library window) imports a DAISY book kept as loose files, by its folder, one folder per book, or a folder of audio tracks as one audiobook, as a ZIP of the same tracks imports.
-- It was called Import DAISY Folder… before October 14, 2026, and a key you gave it keeps working.
+- A key you gave it when it was called Import DAISY Folder… keeps working.
 - Opening such a folder from Finder imports it the same way.
 - The folder's tracks, and its manifest, at its top level or inside its one folder, are copied into the book's package, and the folder is left as it was.
 - The book takes the folder's name unless the manifest gives a title.
@@ -178,7 +178,6 @@ Part of [TextMouth's documentation](../../README.md).
 - A ZIP holding a DAISY book with audio imports the book's audio alone, and the archive keeps its text and images, so the archive is kept whatever After Importing a Book says, and an alert titled "Book Imported" says why, as in "The original file was kept: TextMouth imported the audio of “Harbour Pilots” from the archive “pilots.zip”, and the archive is the only copy of its text."
 - The archive is kept even when a SMIL file in it is one TextMouth will not parse, such as one with a tag of more than 1,024 attributes (see XML parts TextMouth can't safely read, above).
   TextMouth still finds the text files that SMIL file names, by reading it as plain text, so it does not take the archive for one with no text and offer it for deletion.
-  Before 0.4.3 it could.
 - For a talking book that has no text, in an archive of other books, it says "The original file was kept: TextMouth imported only the DAISY book “Harbour Pilots” from the archive “pilots.zip”." and, when the archive holds other books, adds " The archive also holds 2 other books that were not imported; unzip it to import them.", or, for one, "1 other book that was not imported; unzip it to import it."
 - A DAISY ZIP without audio, which is imported whole, and a talking book whose archive holds nothing more, may still be deleted.
 
