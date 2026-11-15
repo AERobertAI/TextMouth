@@ -66,7 +66,7 @@ What a finished book is followed by (FR19): the rule that weighs the settings, a
 - Owner: EndOfBookRule (Models/EndOfBookRule.swift), a value that ReaderViewModel.endOfBookRule resolves each time it is asked.
   It resolves from the book's own end behavior (Book.localEndOfBookBehavior; a raw value that names no EndOfBookBehavior is ignored).
   It also takes the options of its feed or plain folder (LibraryViewModel.listeningOptions(of:), in [Feeds](feeds-interface.md)).
-  And the global setting (SettingsViewModel.endOfBookBehavior).
+  It also takes the global setting (SettingsViewModel.endOfBookBehavior).
   It holds the behavior, the direction (ReadingList.Direction), skipsFinished, and predownloadsNext.
   EndOfBookRule.resolve is the one place the order is written: the book's own choice, which always goes down.
   Else the options' choice (play the book below is Continue to Next Book going down, play the book above is Continue to Next Book going up, and stop is Stop).
@@ -86,13 +86,13 @@ The function goOnPastThisBook takes a BookSuccession: .book, which it hands over
 The timer ends listening here when it is fading out, or is set for the end of a heading or of the book, which this end reaches.
 Then the reader says "Next book not started because of the sleep timer", and starts no download either.
 A timer counting minutes goes on with the next book ([Timers and statistics](timers-and-statistics.md)).
-For that it says, from EndOfBookWording.downloadingNextNote ("article" for an article), "Finished: <title>.
+For an .episodeToDownload it says, from EndOfBookWording.downloadingNextNote ("article" for an article), "Finished: <title>.
 Downloading the next episode: <next title>."
 It then calls waitForNextEpisode(_:of:startingWith:) (ReaderViewModel+EpisodeDownload).
 That notes a NextEpisodeWait: the item, its feed, and the closure that starts the book.
-It also holds controlsOwner, the reader that held the media controls as the wait began (NowPlayingSession.activeOwnerID).
+The wait also holds controlsOwner, the reader that held the media controls as the wait began (NowPlayingSession.activeOwnerID).
 And it holds the NextEpisodeCause, .endOfBook or Next and Previous in Folder's .folderMove, and expiryMark, the sleep timer's expiry count as the wait began.
-It listens to the feed engine's events first, then asks FeedCenter.download(_:of:startingNext:) with startingNext true, the listener's download (in [Feeds](feeds.md)).
+The function waitForNextEpisode listens to the feed engine's events first, then asks FeedCenter.download(_:of:startingNext:) with startingNext true, the listener's download (in [Feeds](feeds.md)).
 So the newest-N rule never removes it, one already waiting or running is not started twice, and it is put ahead of the downloads queued before it, opening nothing since the wait hands over.
 Then it looks at the item's state: downloading or waiting, it waits.
 Already downloaded, it goes on at once.
@@ -101,7 +101,7 @@ The item's downloadFinished event hands listening over as for any next book ("St
 It does not when the listener has moved on (listenerHasMovedOn(_:)): the reader no longer rests finished, has closed, or plays, or another reader took the media controls since the wait began, by playing or by its window becoming the focused one.
 The controls returning to this reader, or staying with the reader that held them, is no move.
 Nor does it when this reader's sleep timer ran out since the wait began, whether it was set before or during the wait, or is fading out (SleepTimerService.endedListening(ownedBy:sinceExpiry:), against expiryMark).
-Then the episode is not started and nothing is said but what the timer said as it ran out.
+In both cases the episode is not started and nothing is said but what the timer said as it ran out.
 A running timer goes on with the episode, handOverToNextBook holding it for the book as for any next book.
 When the wait is for Next or Previous in Folder, a book that was playing hands over to the episode and any other only opens it, and the wait's failure and cancel use the folder commands' sentences (below).
 Its downloadFailed event says nextEpisodeNotDownloaded with the failure's own sentence.
@@ -137,7 +137,7 @@ Reading from the reading list (FR09): whether a reader reads its book from the r
   ReaderLocationHeader shows the place under the title (ReadingListReaderWording.place, "Reading list, book 3 of 12"), and the full Where Am I? says it after the times (fullWhereAmISummary).
   At its end, handleEndOfBook() hands a book read from the list to finishBookReadFromReadingList(sleepTimerEndsListening:sleepTimerStoppedHere:replayingAFinishedEnd:), in place of the book's own end-of-book behavior.
   The book rests at its end and is counted finished, once (finishAtTheEnd(replayingAFinishedEnd:), P07).
-  It then calls followReadingListPastThisBook(sleepTimerEndsListening:sleepTimerStoppedHere:sayingNothingFollows:), which Play on a finished book read from the list calls too (playFromTheEnd()).
+  Then finishBookReadFromReadingList calls followReadingListPastThisBook(sleepTimerEndsListening:sleepTimerStoppedHere:sayingNothingFollows:), which Play on a finished book read from the list calls too (playFromTheEnd()).
   That asks readingListContinuation(after:) for the book that follows.
   Then continueThroughReadingList(to:) starts it as Continue to Next Book starts the next book in a folder, through the same hand-over (handOverToNextBook(to:titled:askingWith:)), unless this reader's sleep timer ends listening here (sleepTimerEndsListeningHere).
   Otherwise the reader stops, says why, and rests finished (ReadingListReaderWording.stopNote and endNote(_:going:)).
@@ -146,7 +146,7 @@ Reading from the reading list (FR09): whether a reader reads its book from the r
   That pause ends whatever Where Am I? holds without resuming, even over a book that was not playing.
   It then announces the neighbor, and plays it when this book was playing, or else opens it, through the start every move shares (beginMoveToAnotherBook(), below).
   This reader's window's running sleep timer goes with the book (in [Timers and statistics](timers-and-statistics.md)): the window keeps it when the book changes in place, and a new window takes it once its book has loaded (each reader window has a timer of its own).
-  Its window follows the global Open the next book in, since the list has no choice of its own (readingListMoveWindowChoice).
+  The window a move through the list shows its book in follows the global Open the next book in, since the list has no choice of its own (readingListMoveWindowChoice).
   EndOfBookWording words every end of a book, the book's own end-of-book behavior's with the sentences it always had.
 
 ## Moving to another book
@@ -216,8 +216,8 @@ Search in Book on a transcribed audiobook, and Go Back (FR05): what the search r
   ReaderViewModel.canSearchText says whether there is a text to search: a text book that has loaded, or an audiobook whose content holds a transcript's text (any other audiobook has only spacing that counts time).
   ReaderViewModel.searchCorpus copies what a search reads, so that it can run off the main actor.
   That is a text book's chapters with its headings, or the transcript's chapter texts, named by the audio chapters' titles alone, since an audiobook's headings count audio time.
-  The corpus comes with a BookSearchTiming (Views/Reader/BookSearchView.swift: where each audio chapter begins, forTranscript(_:audioChapters:), and TranscriptText.chapterTime(atTextOffset:inChapter:)).
-  So each BookSearchResult carries the time it is heard (time, and timedLabel for its row and its rotor entry).
+  A transcript's corpus comes with a BookSearchTiming (Views/Reader/BookSearchView.swift: where each audio chapter begins, forTranscript(_:audioChapters:), and TranscriptText.chapterTime(atTextOffset:inChapter:)).
+  So each BookSearchResult of a transcript carries the time it is heard (time, and timedLabel for its row and its rotor entry).
   ReaderViewModel.transcriptWithheld (a TranscriptTextWithheld) is why a book that has a transcript shows none of its text.
   It is set by the load (TranscriptTextLoader.Load.withheld, or editHeld when readContent holds a text edit for an audiobook) and cleared by showTranscript(_:).
   ReaderViewModel.pendingJumpAnnouncement holds what to say once the sheet has closed.
