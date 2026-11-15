@@ -1,10 +1,10 @@
 # Imports: Kindle books
-<!-- id: imports-kindle-books; keys: ; src: -->
+<!-- id: imports-kindle-books; keys: Kindle, Amazon, AZW, KFX, MOBI, KF8, e-book, DRM; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## Kindle KFX books
-<!-- id: kindle-kfx-books; keys: ; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXPackage.swift, TextMouth/Parsers/KFXSidecar.swift, TextMouth/Parsers/KFXContainer.swift, TextMouth/Parsers/KFXView.swift, TextMouth/Parsers/KFXIon.swift, TextMouth/Parsers/KFXSymbol.swift, TextMouth/Parsers/KFXSymbols.swift, TextMouth/Parsers/KFXFragments.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift, TextMouth/Parsers/KFXBook.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Models/PageReaderVersions.swift -->
+<!-- id: kindle-kfx-books; keys: Amazon Kindle, Amazon Ion, DRM, Kindle Previewer, print replica, comic, KPF, calibre; src: TextMouth/Parsers/KFXParser.swift, TextMouth/Parsers/KFXSignature.swift, TextMouth/Parsers/KFXPackage.swift, TextMouth/Parsers/KFXSidecar.swift, TextMouth/Parsers/KFXContainer.swift, TextMouth/Parsers/KFXView.swift, TextMouth/Parsers/KFXIon.swift, TextMouth/Parsers/KFXSymbol.swift, TextMouth/Parsers/KFXSymbols.swift, TextMouth/Parsers/KFXFragments.swift, TextMouth/Parsers/KFXMetadata.swift, TextMouth/Parsers/KFXNavigation.swift, TextMouth/Parsers/KFXTargets.swift, TextMouth/Parsers/KFXBook.swift, TextMouth/Parsers/KFXWalk.swift, TextMouth/Parsers/KFXInlineText.swift, TextMouth/Parsers/KFXStyles.swift, TextMouth/Parsers/KFXError.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Resources/Info.plist, TextMouth/Services/ArchiveExtraction.swift -->
 
 Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by TextMouth's own reader, the same in both apps, with no helper process.
 
@@ -32,15 +32,14 @@ Kindle KFX books (FMT52, November 5 and 6, 2026): DRM-free KFX books, read by Te
   Open the book's main .kfx file.").
 - Cancellation: KFXWalk asks ImportCancellation.throwIfCancelled() as it works.
   The sample books and their tests are in [Testing](../../developer/testing.md).
-- Files: Parsers/KFXParser.swift, KFXSignature.swift, KFXPackage.swift, KFXSidecar.swift, KFXContainer.swift, KFXView.swift, KFXIon.swift, KFXSymbol.swift, KFXSymbols.swift, KFXFragments.swift, KFXMetadata.swift, KFXNavigation.swift, KFXTargets.swift, KFXBook.swift, KFXWalk.swift, KFXInlineText.swift, KFXStyles.swift, KFXError.swift, Parsers/MOBIParser.swift (preparedBook, shared with MOBI), Parsers/BookParser.swift, Services/MarkdownCacheService.swift (extractFromKindle), Services/FileImportService.swift.
 
 ## Kindle MOBI 6 and KF8 books
-<!-- id: kindle-mobi-6-kf8-books; keys: ; src: TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Resources/Info.plist, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/ParserUtilities.swift -->
+<!-- id: kindle-mobi-6-kf8-books; keys: Mobipocket, AZW3, PRC, PalmDOC, Amazon Kindle, kindlegen, e-book, DRM; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/BookParser.swift -->
 
 Kindle books (FMT42, November 4, 2026): DRM-free MOBI 6 books, read by TextMouth's own reader, the same in both apps, with no helper process and no textutil.
 
 ### The format
-<!-- id: mobi-format; keys: ; src: Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextutilConverter.swift -->
+<!-- id: mobi-format; keys: BookFormat, UTType, UTI, Open Book, Mobipocket, file extension, page reader version, version stamp; src: TextMouth/Models/Book.swift, TextMouth/Models/Library.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextutilConverter.swift, TextMouth/Models/PageReaderVersions.swift, TextMouth/Resources/Info.plist -->
 
 The format: BookFormat.mobi (raw value "mobi", displayName "Kindle Book (MOBI)", extensions mobi, prc, azw, and azw3) is written into library.json and bookInfo.json and never changed.
 A build from 0.2.1 on keeps a library that holds one and leaves that book out (UnreadableLibraryRow, V03); an older build cannot decode the index.
@@ -50,7 +49,7 @@ The first launch of each reads every .mobi book (.azw3, .azw, and .prc included)
 Before 0.4.2 it had no page reader.
 
 ### Reading a MOBI 6 book
-<!-- id: reading-mobi-6-book; keys: ; src: TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIText.swift -->
+<!-- id: reading-mobi-6-book; keys: Mobipocket, Palm OS, Huffman, decompression, encryption, table of contents, chapters, TEXtREAd; src: TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/MarkdownParser.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
 Reading: BookParser and MarkdownCacheService.extractFromMOBI call MOBIParser, which reads the file's bytes, held to DocumentByteLimit, into a MOBIBook:
 
@@ -77,7 +76,7 @@ Reading: BookParser and MarkdownCacheService.extractFromMOBI call MOBIParser, wh
    The effects are in Shared helpers.
 
 ### KF8 books and hybrids
-<!-- id: kf8-books-hybrids; keys: ; src: TextMouth/Parsers/MOBIBook.swift, TextMouth/Services/MarkdownCacheService.swift -->
+<!-- id: kf8-books-hybrids; keys: combo file, dual format, kindlegen, AZW3, fallback, upgrade, MOBI 6 half, KF8 half; src: TextMouth/Parsers/MOBIBook.swift, TextMouth/Services/MarkdownCacheService.swift -->
 
 KF8 (FMT48, November 8, 2026): MOBIBook also reads a KF8 book (an .azw3, or a KF8 file named .mobi or .azw; the MOBI header's version, 8 or more, decides, never the name).
 It is read by TextMouth's own code, written from the format's published description with foliate-js's mobi.js as a map (see [Third-party code](../../developer/third-party-code.md)), with no helper process.
@@ -90,7 +89,7 @@ It is read by TextMouth's own code, written from the format's published descript
    A hybrid's title and author come from the half read, the KF8 half first, then the MOBI 6 half where the KF8 half names nothing.
 
 ### KF8 tables and the text
-<!-- id: kf8-tables-text; keys: ; src: TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIText.swift -->
+<!-- id: kf8-tables-text; keys: skeleton, fragment table, flow table, memory map, SVG flows, size limit, kindlegen, markup flow; src: TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/DocumentByteLimit.swift -->
 
 3. KF8Layout reads the three tables: the flow table (FDST), the skeleton index (SKEL), and the fragment index (FRAG).
    The documents (a skeleton and its fragments) must lie end to end from the start of the markup flow to its end, each place and length inside the flow, else MOBIError.damaged (an end-to-end layout check, which holds the HTML written for them to the size of the text).
@@ -102,7 +101,7 @@ It is read by TextMouth's own code, written from the format's published descript
    DocumentByteLimit is held to the text, not the file.
 
 ### KF8 sections and the continuation rule
-<!-- id: kf8-sections-continuation-rule; keys: ; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIParser.swift -->
+<!-- id: kf8-sections-continuation-rule; keys: chapters, calibre, Project Gutenberg, split files, chapter boundary, licence, headings, NCX; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIParser.swift -->
 
 6. KF8Book makes the sections, one for each document, in reading order.
    A contents entry (NCX) that names the very start of a document's first fragment titles the document; one that names a place inside it is a heading there (level depth + 1, at most 6) at an anchor (MOBIMarkup.anchors, one for all the places inside one tag).
@@ -129,7 +128,7 @@ It is read by TextMouth's own code, written from the format's published descript
    - Not settled: a wrapper such as main with an id around several chapters would move the end of one chapter into the next, no sample has one, and boilerplate written as a section with the id pg-footer, not a footer, would make the back page a chapter of one word.
 
 ### KF8 endings: rewriting, pages, and refusals
-<!-- id: kf8-endings-rewriting-pages-refusals; keys: ; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MarkupGuard.swift, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Parsers/MOBIParser.swift -->
+<!-- id: kf8-endings-rewriting-pages-refusals; keys: contents page, generated contents, SVG, epub:type, page list, soft hyphen, MarkupRefusal, cancel; src: TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MarkupGuard.swift, TextMouth/Parsers/HTMLToMarkdownConverter.swift, TextMouth/Parsers/ParserUtilities.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/MOBIError.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/ArchiveExtraction.swift -->
 
 8. The last document is left out when the guide names its start as the book's contents page (generatedContentsCandidate) and KF8Book.isGeneratedContents holds: its only words outside its links are its own title, every link goes to a place in the book (kindle:pos), and each link's words are a label of the contents.
    A last page with words of its own is read.
@@ -144,7 +143,7 @@ It is read by TextMouth's own code, written from the format's published descript
 13. The refusals are the MOBI ones: copyProtected, unsupportedCompression, damaged, notAKindleBook, and FileImportError.noTextToRead for a book whose documents hold no words.
 
 ### Names, limits, and files
-<!-- id: mobi-names-limits-files; keys: ; src: TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Resources/Info.plist, Scripts/test/kf8-fuzz/Stubs.swift, TextMouth/Parsers/DocumentByteLimit.swift -->
+<!-- id: mobi-names-limits-files; keys: metadata, EXTH 503, title and author, foliate-js, limits, hostile files, MIT licence, readMetadata; src: TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIPalmDatabase.swift, TextMouth/Parsers/MOBIHeaders.swift, TextMouth/Parsers/MOBIText.swift, TextMouth/Parsers/MOBIHuffman.swift, TextMouth/Parsers/MOBIIndex.swift, TextMouth/Parsers/MOBIMarkup.swift, TextMouth/Parsers/MOBIBook.swift, TextMouth/Parsers/KF8Layout.swift, TextMouth/Parsers/KF8Book.swift, TextMouth/Parsers/MOBIParser.swift, TextMouth/Parsers/BookParser.swift, TextMouth/Parsers/DocumentByteLimit.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, TextMouth/Resources/Info.plist -->
 
 Names: MOBIBook.Metadata takes the title from EXTH 503, else the MOBI header's full name, else the database's name; the author from EXTH 100, the names joined with commas; and the language from EXTH 524.
 FileImportService adopts the title and author through MOBIParser.readMetadata, which never fails an import, so a book that is then refused is refused by its own reading.
