@@ -6,8 +6,6 @@ Part of [TextMouth's documentation](../../README.md).
 ## Commands
 <!-- id: feeds-commands; keys: context menu, VoiceOver Actions, VO-Command-Space, row commands; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
-Commands:
-
 ### A feed's commands
 <!-- id: feeds-feed-commands; keys: Check Feed, Unsubscribe, Resubscribe, Mark All Played, Command-I, Feed Settings button, orphaned feed folder; src: TextMouth/Views/Feeds/FeedCommands.swift, TextMouth/Views/Feeds/FeedCommandRunner.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 

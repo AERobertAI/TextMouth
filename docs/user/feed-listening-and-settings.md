@@ -6,8 +6,6 @@ Part of [TextMouth's documentation](../../README.md).
 ## Listening on to the next episode
 <!-- id: feeds-listening-next; keys: continue to next book, play next episode, autoplay, queue; src: TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
-Listening on to the next episode:
-
 ### The listening controls in Feed Info
 <!-- id: feeds-listening-controls; keys: When an episode ends, Open the next episode in, ListeningOptions, per-feed options, folder settings sheet; src: TextMouth/Models/ListeningOptionsWording.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
 
@@ -56,8 +54,6 @@ A book read from the reading list never asks, since the reading list goes on to 
 
 ## The Feeds tab of Settings
 <!-- id: feeds-settings-tab; keys: Settings window, feed settings, FeedSettings, config.json; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Models/FeedSettings.swift -->
-
-The Feeds tab of Settings:
 
 ### Refreshing
 <!-- id: feeds-settings-refreshing; keys: feedRefreshAtLaunch, refresh interval, feedRefreshIntervalHours, hours, Refresh All Feeds Now; src: TextMouth/Views/Feeds/FeedSettingsView.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Services/Feeds/FeedRefresher.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedThresholdControl.swift -->

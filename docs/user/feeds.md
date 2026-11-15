@@ -9,8 +9,6 @@ A feed's commands, and an episode's, are in their rows' context menus and among 
 ## Subscribing
 <!-- id: feeds-subscribing; keys: subscribe, add podcast, RSS, Atom; src: TextMouth/Views/Feeds/AddFeedSheet.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 
-Subscribing:
-
 ### Adding a feed
 <!-- id: feeds-add-feed; keys: Add Feed sheet, Shift-Command-F, feed URL, web page address, feed discovery, New Folder; src: TextMouth/Views/Feeds/AddFeedSheet.swift, TextMouth/Services/Feeds/FeedDiscovery.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedWording.swift -->
 
@@ -51,8 +49,6 @@ Export OPML… saves every feed you subscribe to as OPML 2.0, leaving out those 
 
 ## Feeds in the library
 <!-- id: feeds-in-the-library; keys: Feeds section, Feeds view, feed folder, library rows; src: TextMouth/Views/Feeds/FeedRows.swift, TextMouth/Views/Feeds/FeedLibraryPresentation.swift, TextMouth/Views/Feeds/LibraryFeedFolders.swift -->
-
-Feeds in the library:
 
 ### The Feeds section
 <!-- id: feeds-section; keys: Unopened, feed row, Unsubscribed badge, Actions menu, row description, last check; src: TextMouth/Views/Feeds/FeedRows.swift, TextMouth/Views/Feeds/FeedLibraryPresentation.swift, TextMouth/Views/Feeds/FeedLibraryWording.swift, TextMouth/Views/Feeds/LibraryFeedFolders.swift -->

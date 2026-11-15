@@ -6,8 +6,6 @@ Part of [TextMouth's documentation](../../README.md).
 ## Listing and downloading
 <!-- id: feeds-listing-downloading; keys: List and download, newest-N rule, auto download, feedItems; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Services/Feeds/FeedNewestRule.swift, TextMouth/Services/Feeds/FeedDownloadManager.swift, TextMouth/Models/FeedSettings.swift -->
 
-Listing and downloading:
-
 ### The List and download choices
 <!-- id: feeds-list-download-choices; keys: feedItems, feedNewestCount, global setting, per feed, ten seconds, 1 to 2,000; src: TextMouth/Models/FeedItemPolicy.swift, TextMouth/Models/FeedSettings.swift, TextMouth/Views/Feeds/FeedItemPolicyControls.swift, TextMouth/Views/Feeds/FeedInfoSheet.swift -->
 
@@ -53,8 +51,6 @@ So, in a library whose settings were as TextMouth shipped them, that launch down
 
 ## Downloads under way
 <!-- id: feeds-downloads-under-way; keys: Feed Downloads section, progress, cancel, Speak Download Progress; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/ViewModels/FeedDownloadProgress.swift -->
-
-Downloads under way:
 
 ### The Feed Downloads section
 <!-- id: feeds-downloads-section; keys: progress bar, Download 4 of 9, time left, waiting reason, every 5 seconds; src: TextMouth/Views/Feeds/FeedDownloadProgressSection.swift, TextMouth/Models/FeedDownloadProgressWording.swift, TextMouth/ViewModels/FeedDownloadProgress.swift -->
@@ -105,8 +101,6 @@ An episode's or article's row says "Downloading" while its download waits to sta
 
 ## Saving and quitting
 <!-- id: feeds-saving-quitting; keys: quit, unsaved feed record, downloads at quit; src: TextMouth/App/QuitFinisher.swift, TextMouth/Services/Feeds/FeedDownloadManager+PartialDownloads.swift, TextMouth/Services/Feeds/FeedStore.swift -->
-
-Saving and quitting:
 
 ### Saving a feed's record
 <!-- id: feeds-saving-record; keys: banner, Retry, Dismiss, unsaved change, library.json; src: TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Services/Feeds/FeedCenter.swift -->
