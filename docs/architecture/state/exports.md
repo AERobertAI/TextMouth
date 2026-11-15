@@ -30,7 +30,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
   The folder is the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export <UUID>" folder in the temporary directory.
   When the file is whole and Stop has not been pressed, moveExclusively moves it to its target, and the target's folder is made only then.
   The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic).
-  FileManager.moveItem checks and then renames, so a file made between the two would be replaced.
+  FileManager.moveItem is not used, since it checks and then renames, so a file made between the two would be replaced.
   Where the volume cannot do that (EXDEV, ENOTSUP, or EINVAL), the move is an exclusive copy (copyfile with COPYFILE_EXCL) and then the removal of the source.
   A target that exists, even one made an instant ago, fails that file with fileWriteFileExists and is left as it was, and the scratch folder is removed in every case.
   So an export never replaces a file in the chosen folder, removes none that was there before it began, and leaves no half-written file after a Stop or a failure.
@@ -156,7 +156,7 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
     BrailleDocumentWriter translates the blocks' text, with its emphasis, to braille (BrailleTranslator, print to braille, with the options' table).
     Liblouis writes the table's emphasis indicators for the classes the helper finds liblouis reads back exactly (the helper, in [Imports](imports-braille-tables.md)), UEB's.
     EBAE's italic and bold, which liblouis misreads, and most of this Mac's tables write plain braille, byte for byte as without emphasis, although the helper reads EBAE's signs in a braille book.
-    It lays the cells out with BrailleLayout.pages(of:format:).
+    BrailleDocumentWriter lays the cells out with BrailleLayout.pages(of:format:).
     It frames the pages with BrailleFileWriter: brf(pages:lineEnd:code:).
     Each row's cells are written in the options' braille file code (BrailleFileCode: a byte of North American Braille ASCII or of Eurobraille, which are ASCII only, or Unicode braille patterns in UTF-8 with no byte order mark and the blank cell as U+2800).
     The line end goes after each row, and one form feed between pages.
