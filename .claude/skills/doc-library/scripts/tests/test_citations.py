@@ -7,7 +7,8 @@ from typing import List
 from doclib_case import DocLibCase
 
 from citations import (
-    FILES_LINE, IDENTIFIER, Citation, citations, code_spans, files_block_paths, identifier_spans, path_tokens,
+    FILES_LINE, IDENTIFIER, Citation, citations, code_spans, files_block_paths, identifier_positions, identifier_spans,
+    line_of, path_tokens,
 )
 from repofiles import RepoFiles
 
@@ -224,6 +225,17 @@ class IdentifierTests(DocLibCase):
     def test_files_blocks_are_skipped(self) -> None:
         blocks = [(1, "- Files: `Book`, Models/A.swift"), (2, "Uses `Book`.")]
         self.assertEqual(identifier_spans(blocks), [(2, "Book")])
+
+    def test_positions_give_the_block_the_offset_and_the_line(self) -> None:
+        # The Files: block is block 0 and gives none; in block 1 (starting on line 4) each backtick opens at its offset.
+        blocks = [(1, "- Files: `Book`"), (4, "one\nab `Book` `x y` `run()`")]
+        self.assertEqual(identifier_positions(blocks), [(1, 7, 5, "Book"), (1, 20, 5, "run()")])
+        self.assertEqual(blocks[1][1][7], "`")
+        self.assertEqual(blocks[1][1][20], "`")
+
+    def test_line_of_counts_the_line_breaks_before_the_offset(self) -> None:
+        self.assertEqual(line_of(10, "a\nb\ncd", 5), 12)
+        self.assertEqual(line_of(10, "a\nb\ncd", 0), 10)
 
     def test_a_span_across_a_line_break_is_on_its_first_line(self) -> None:
         blocks = [(9, "a\nb `Book` c")]

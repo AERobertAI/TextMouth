@@ -17,8 +17,9 @@ from repofiles import APP_FOLDER, RepoFiles
 from sentences import code_spans
 
 __all__ = [
-    "FILES_LINE", "IDENTIFIER", "Citation", "code_spans", "path_tokens",
-    "files_block_paths", "citations", "identifier_spans", "names_path",
+    "FILES_LINE", "IDENTIFIER", "KIND_SRC", "KIND_FILES", "KIND_TEXT", "Citation", "code_spans",
+    "line_of", "path_tokens", "files_block_paths", "citations", "identifier_positions",
+    "identifier_spans", "is_top_folder", "names_path",
 ]
 
 # A block that starts, after optional indentation and an optional list marker,
@@ -84,7 +85,7 @@ def files_block_paths(text: str) -> Optional[List[Tuple[int, str]]]:
     return [(match.end() + offset, token) for offset, token in path_tokens(text[match.end():])]
 
 
-def _line_of(first_line: int, text: str, offset: int) -> int:
+def line_of(first_line: int, text: str, offset: int) -> int:
     """The line of the character at ``offset`` in a block that starts on ``first_line``."""
     return first_line + text.count("\n", 0, offset)
 
@@ -139,7 +140,7 @@ def citations(
             continue
         for offset, token in listed:
             if repo.is_repo_path(token):
-                _add(found, seen, repo, token, KIND_FILES, _line_of(first_line, text, offset))
+                _add(found, seen, repo, token, KIND_FILES, line_of(first_line, text, offset))
     for first_line, text in blocks:
         if FILES_LINE.match(text):
             continue
@@ -147,7 +148,25 @@ def citations(
             base = _span_content_offset(text, start, end, content)
             for offset, token in path_tokens(content):
                 if repo.is_repo_path(token):
-                    _add(found, seen, repo, token, KIND_TEXT, _line_of(first_line, text, base + offset))
+                    _add(found, seen, repo, token, KIND_TEXT, line_of(first_line, text, base + offset))
+    return found
+
+
+def identifier_positions(blocks: Iterable[Tuple[int, str]]) -> List[Tuple[int, int, int, str]]:
+    """Each code span that is a Swift name, outside ``Files:`` blocks, as ``(block, offset, line, content)``.
+
+    ``block`` is the index of the block in ``blocks``, ``offset`` where the span's
+    opening backtick is in that block's text, ``line`` the line it is on, and
+    ``content`` the name. The offset lets a caller merge these with words it finds
+    itself in the same text, in the order they are written.
+    """
+    found: List[Tuple[int, int, int, str]] = []
+    for number, (first_line, text) in enumerate(blocks):
+        if FILES_LINE.match(text):
+            continue
+        for start, _, content in code_spans(text):
+            if IDENTIFIER.match(content):
+                found.append((number, start, line_of(first_line, text, start), content))
     return found
 
 
@@ -156,14 +175,7 @@ def identifier_spans(blocks: Iterable[Tuple[int, str]]) -> List[Tuple[int, str]]
 
     Whether a name is defined anywhere is for a later check to decide.
     """
-    found: List[Tuple[int, str]] = []
-    for first_line, text in blocks:
-        if FILES_LINE.match(text):
-            continue
-        for start, _, content in code_spans(text):
-            if IDENTIFIER.match(content):
-                found.append((_line_of(first_line, text, start), content))
-    return found
+    return [(line, content) for _, _, line, content in identifier_positions(blocks)]
 
 
 def is_top_folder(path: str) -> bool:
