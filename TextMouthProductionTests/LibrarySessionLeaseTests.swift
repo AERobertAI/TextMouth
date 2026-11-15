@@ -143,6 +143,9 @@ final class LibrarySessionLeaseTests: XCTestCase {
         let harness = try LeaseHarness(test: self, itemStatus: itemStatus)
         try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
         let ended = expectation(description: "the refresh ended")
+        // A refresh that ends only after its wait has timed out fulfils it
+        // then, which must never trap the test host.
+        ended.assertForOverFulfill = false
 
         Task {
             await harness.lease.refresh()
