@@ -315,10 +315,9 @@ final class LibraryComparisonTests: XCTestCase {
             "Unread: the identity marker of the library in the other copy couldn't be read (no file is there), "
                 + "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
         ])
-        XCTAssertEqual(
-            LibraryComparisonModel.present(.cancelled, folder: "/Other"),
-            ("Comparing stopped. Nothing was changed.", [])
-        )
+        let stopped = LibraryComparisonModel.present(.cancelled, folder: "/Other")
+        XCTAssertEqual(stopped.heading, "Comparing stopped. Nothing was changed.")
+        XCTAssertEqual(stopped.rows, [])
     }
 
     /// A file whose comparison ran out of time is said to be unread for that
