@@ -199,6 +199,13 @@ class ReflowCommandTests(DocLibCase):
         self.assertEqual(out, f"reflow: {PAGE}: {len(MIXED.splitlines())} lines became {len(MIXED_AFTER.splitlines())}\n")
         self.assertEqual(self.page_bytes(), MIXED.encode("utf-8"))
 
+    def test_the_page_may_be_named_by_the_end_of_its_path(self) -> None:
+        # As every command names a page: "page" is the one page ending so.
+        self.write_tree({PAGE: MIXED})
+        status, out, _ = self.run_cli("reflow", "page", "--check")
+        self.assertEqual(status, 1)
+        self.assertTrue(out.startswith(f"reflow: {PAGE}: "), out)
+
     def test_check_exits_0_when_nothing_would_change(self) -> None:
         self.write_tree({PAGE: MIXED_AFTER})
         status, out, _ = self.reflow("--check")

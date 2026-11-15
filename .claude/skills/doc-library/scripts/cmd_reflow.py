@@ -27,6 +27,7 @@ from typing import Any, List, Optional, Tuple
 import docmodel
 import output
 import pagewrite
+import targets
 from docmodel import Block
 from sentences import split_sentences
 
@@ -200,24 +201,29 @@ def problems_with(old: str, new: str) -> List[str]:
 
 
 def run(args: Any) -> int:
-    """Reflow the page ``args.page``; with ``--check``, only say whether it would change."""
-    old = pagewrite.read_page_text(args.root, args.page)
+    """Reflow the page ``args.page``; with ``--check``, only say whether it would change.
+
+    The page is named as every command names one (``targets.resolve_page``): its
+    path, or the unique end of it.
+    """
+    page = targets.resolve_page(args.root, args.page)
+    old = pagewrite.read_page_text(args.root, page)
     new = reflow_text(old)
     if new == old:
-        print(f"reflow: {args.page}: already one sentence per line")
+        print(f"reflow: {page}: already one sentence per line")
         return output.EXIT_OK
     problems = problems_with(old, new)
     if problems:
-        print(f"reflow: {args.page}: refused, nothing written: " + "; ".join(problems))
+        print(f"reflow: {page}: refused, nothing written: " + "; ".join(problems))
         return output.EXIT_NONE
-    summary = (f"reflow: {args.page}: {len(docmodel.parse(args.page, old).lines)} lines became "
-               f"{len(docmodel.parse(args.page, new).lines)}")
+    summary = (f"reflow: {page}: {len(docmodel.parse(page, old).lines)} lines became "
+               f"{len(docmodel.parse(page, new).lines)}")
     if args.check:
         print(summary)
         return output.EXIT_NONE
-    problems = pagewrite.rewrite(args.root, args.page, old, new)
+    problems = pagewrite.rewrite(args.root, page, old, new)
     if problems:
-        print(f"reflow: {args.page}: refused, nothing written: the words differ")
+        print(f"reflow: {page}: refused, nothing written: the words differ")
         for line in problems:
             print(line)
         return output.EXIT_NONE
@@ -232,7 +238,7 @@ def register(subparsers: Any, common: Any) -> None:
         help="put each sentence of a page on a line of its own, changing no word",
         description="Rewrite PAGE with one sentence on each line of its paragraphs and list items. "
                     "No word, heading, or other block changes; the page is written only when every check passes.")
-    parser.add_argument("page", help="the page to reflow, a path inside the repository")
+    parser.add_argument("page", help="the page to reflow: its path, or the unique end of it")
     parser.add_argument("--check", action="store_true",
                         help="write nothing; exit 1 when the page would change, 0 when it would not")
     parser.set_defaults(func=run, default_max=0)
